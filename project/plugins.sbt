@@ -1,15 +1,8 @@
-resolvers += Resolver.sonatypeRepo("staging")
-
-val scalaJSVersion =
-  Option(System.getenv("SCALAJS_VERSION")).getOrElse("1.9.0")
-val scalaNativeVersion =
-  Option(System.getenv("SCALANATIVE_VERSION")).getOrElse("0.4.4")
-
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.2.0")
 addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "1.2.0")
 addSbtPlugin("org.scala-js" % "sbt-jsdependencies" % "1.0.2")
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % scalaJSVersion)
-addSbtPlugin("org.scala-native" % "sbt-scala-native" % scalaNativeVersion)
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.9.0")
+addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.4")
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.12")
 addSbtPlugin("com.github.sbt" % "sbt-release" % "1.1.0")
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.1.2")

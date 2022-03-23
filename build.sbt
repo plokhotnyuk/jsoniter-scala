@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
@@ -18,12 +17,6 @@ lazy val commonSettings = Seq(
       email = "plokhotnyuk@gmail.com",
       url = url("https://twitter.com/aplokhotnyuk")
     )
-  ),
-  resolvers ++= Seq(
-    Resolver.mavenLocal,
-    Resolver.sonatypeRepo("staging"),
-    Resolver.sonatypeRepo("snapshots"),
-    "scala-integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration/"
   ),
   scalaVersion := "2.13.8",
   scalacOptions ++= Seq(
@@ -107,7 +100,8 @@ lazy val publishSettings = Seq(
       newMajor == oldMajor && newMinor == oldMinor
     }
 
-    if (isPatch) "both" else "backward"
+    if (isPatch) "both"
+    else "backward"
   },
   mimaPreviousArtifacts := {
     def isCheckingRequired: Boolean = {
@@ -119,10 +113,6 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaBinaryIssueFilters := Seq( // internal compile-time API
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.MacroUtils"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.MacroUtils$")
-  ),
   mimaReportSignatureProblems := true
 )
 
@@ -147,6 +137,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
+    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0" % Test,
       "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.11.0" % Test,
@@ -155,14 +146,10 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   )
 
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
-  .settings(
-    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15")
-  )
 
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(jsSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M2",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M2"
@@ -194,7 +181,6 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
   .settings(
-    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -207,7 +193,6 @@ lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
 lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
   .settings(jsSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -294,5 +279,5 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
     libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.10.0",
     scalaJSUseMainModuleInitializer := true,
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
-    Test / test := {}, // FIXME: Add and enable `jsoniter-scala-benchmarkJS` tests
+    Test / test := {} // FIXME: Add and enable `jsoniter-scala-benchmarkJS` tests
   )
