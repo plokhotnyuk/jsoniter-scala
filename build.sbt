@@ -148,7 +148,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(publishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0" % Test,
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0" % Test,
       "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.11.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.11" % Test
     )
@@ -188,7 +188,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
     crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
       "org.scalatest" %%% "scalatest" % "3.2.11" % Test,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0" % Test
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0" % Test
     )
   )
 
@@ -274,7 +274,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.julienrf" %% "play-json-derived-codecs" % "10.0.2",
       "ai.x" %% "play-json-extensions" % "0.42.0",
       "io.github.kag0" %% "ninny" % "0.6.0",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0",
       "org.openjdk.jmh" % "jmh-core" % "1.34",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.34",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.34",
