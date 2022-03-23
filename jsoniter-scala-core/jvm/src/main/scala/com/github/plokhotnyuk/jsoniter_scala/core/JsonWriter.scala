@@ -1186,12 +1186,13 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeBoolean(x: Boolean): Unit = count = {
     val pos = ensureBufCapacity(8) // bytes in Long
-    val buf = this.buf
-    val v =
-      if (x) 0x65757274L
-      else 0x65736c6166L
-    ByteArrayAsLong.set(buf, pos, v)
-    pos + 4 + (v >> 38).toInt
+    if (x) {
+      ByteArrayAsInt.set(buf, pos, 0x65757274)
+      pos + 4
+    } else {
+      ByteArrayAsLong.set(buf, pos, 0x65736c6166L)
+      pos + 5
+    }
   }
 
   private[this] def writeByte(x: Byte): Unit = count = {
