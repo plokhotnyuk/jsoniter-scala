@@ -2019,27 +2019,23 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseMonthDay(pos: Int): MonthDay =
     if (pos + 7 < tail) {
       val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
+      if (buf(pos) != '-') tokenError('-', pos)
+      if (buf(pos + 1) != '-') tokenError('-', pos + 1)
       val b3 = buf(pos + 2)
       val b4 = buf(pos + 3)
       val month = b3 * 10 + b4 - 528 // 528 == '0' * 11
-      val b5 = buf(pos + 4)
-      val b6 = buf(pos + 5)
-      val b7 = buf(pos + 6)
-      val b8 = buf(pos + 7)
-      val day = b6 * 10 + b7 - 528 // 528 == '0' * 11
-      head = pos + 8
-      if (b1 != '-') tokenError('-', pos)
-      if (b2 != '-') tokenError('-', pos + 1)
       if (b3 < '0' || b3 > '9') digitError(pos + 2)
       if (b4 < '0' || b4 > '9') digitError(pos + 3)
       if (month < 1 || month > 12) monthError(pos + 3)
-      if (b5 != '-') tokenError('-', pos + 4)
+      if (buf(pos + 4) != '-') tokenError('-', pos + 4)
+      val b6 = buf(pos + 5)
+      val b7 = buf(pos + 6)
+      val day = b6 * 10 + b7 - 528 // 528 == '0' * 11
+      head = pos + 8
       if (b6 < '0' || b6 > '9') digitError(pos + 5)
       if (b7 < '0' || b7 > '9') digitError(pos + 6)
       if (day == 0 || (day > 28 && day > maxDayForMonth(month))) dayError(pos + 6)
-      if (b8 != '"') tokenError('"', pos + 7)
+      if (buf(pos + 7) != '"') tokenError('"', pos + 7)
       MonthDay.of(month, day)
     } else parseMonthDay(loadMoreOrError(pos))
 
