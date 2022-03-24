@@ -1431,7 +1431,7 @@ final class JsonReader private[jsoniter_scala](
       exp -= shift
       val roundingError =
         (if (m < 922337203685477580L) 1
-        else 15) << shift
+        else 19) << shift
       val truncatedBitNum = Math.max(-1074 - exp, 11)
       val savedBitNum = 64 - truncatedBitNum
       val mask = -1L >>> Math.max(savedBitNum, 0)
@@ -1570,7 +1570,7 @@ final class JsonReader private[jsoniter_scala](
       exp -= shift
       val roundingError =
         (if (m < 922337203685477580L) 1
-        else 15) << shift
+        else 19) << shift
       val truncatedBitNum = Math.max(-149 - exp, 40)
       val savedBitNum = 64 - truncatedBitNum
       val mask = -1L >>> Math.max(savedBitNum, 0)

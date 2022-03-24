@@ -2537,6 +2537,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkDouble("9223372036854776833.0", ws) // Round-up, above halfway
         checkDouble("11417981541647680316116887983825362587765178369.0", ws)
         checkDouble("36028797018963967.0", ws) // 2^n - 1 integer regression
+        checkDouble("11224326888185522059941158352151320185835795563643008", ws) // Regression after reducing an error range
       }
       forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))
       forAll(arbitrary[Float], genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))
