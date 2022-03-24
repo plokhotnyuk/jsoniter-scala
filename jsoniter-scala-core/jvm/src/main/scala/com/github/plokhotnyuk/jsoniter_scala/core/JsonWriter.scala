@@ -716,12 +716,7 @@ final class JsonWriter private[jsoniter_scala](
     while (offset < lenM1) {
       val offsetLim = Math.min(((posLim - pos + 1) >> 1) + offset, lenM1)
       while (offset < offsetLim) {
-        val d1 = ds(bs(offset) & 0xFF)
-        val d2 = ds(bs(offset + 1) & 0xFF)
-        buf(pos) = d1.toByte
-        buf(pos + 1) = (d1 >> 8).toByte
-        buf(pos + 2) = d2.toByte
-        buf(pos + 3) = (d2 >> 8).toByte
+        ByteArrayAsInt.set(buf, pos, ds(bs(offset) & 0xFF) | (ds(bs(offset + 1) & 0xFF) << 16))
         pos += 4
         offset += 2
       }
@@ -732,9 +727,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     if (offset == lenM1) {
-      val d1 = ds(bs(offset) & 0xFF)
-      buf(pos) = d1.toByte
-      buf(pos + 1) = (d1 >> 8).toByte
+      ByteArrayAsShort.set(buf, pos, ds(bs(offset) & 0xFF))
       pos += 2
     }
     buf(pos) = '"'
@@ -1209,15 +1202,11 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = (q0 + '0').toByte
       pos + 1
     } else if (q0 < 100) {
-      val d = digits(q0)
-      buf(pos) = d.toByte
-      buf(pos + 1) = (d >> 8).toByte
+      ByteArrayAsShort.set(buf, pos, digits(q0))
       pos + 2
     } else {
-      val d = digits(q0 - 100)
       buf(pos) = '1'
-      buf(pos + 1) = d.toByte
-      buf(pos + 2) = (d >> 8).toByte
+      ByteArrayAsShort.set(buf, pos + 1, digits(q0 - 100))
       pos + 3
     }
   }
@@ -1631,18 +1620,14 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write2Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val d = ds(q0)
-    buf(pos) = d.toByte
-    buf(pos + 1) = (d >> 8).toByte
+    ByteArrayAsShort.set(buf, pos, ds(q0))
     pos + 2
   }
 
   private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 * 1311 >> 17 // divide a small positive int by 100
     buf(pos) = (q1 + '0').toByte
-    val d = ds(q0 - q1 * 100)
-    buf(pos + 1) = d.toByte
-    buf(pos + 2) = (d >> 8).toByte
+    ByteArrayAsShort.set(buf, pos + 1, ds(q0 - q1 * 100))
     pos + 3
   }
 
@@ -2048,9 +2033,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = p
     while (pos > posLim) {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
-      val d = ds(q0 - q1 * 100)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
+      ByteArrayAsShort.set(buf, pos - 1, ds(q0 - q1 * 100))
       q0 = q1
       pos -= 2
     }
@@ -2061,18 +2044,12 @@ final class JsonWriter private[jsoniter_scala](
     var pos = p
     while (q0 >= 100) {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
-      val d = ds(q0 - q1 * 100)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
+      ByteArrayAsShort.set(buf, pos - 1, ds(q0 - q1 * 100))
       q0 = q1
       pos -= 2
     }
     if (q0 < 10) buf(pos) = (q0 + '0').toByte
-    else {
-      val d = ds(q0)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
-    }
+    else ByteArrayAsShort.set(buf, pos - 1, ds(q0))
   }
 
   private[this] def illegalNumberError(x: Double): Nothing = encodeError("illegal number: " + x)
