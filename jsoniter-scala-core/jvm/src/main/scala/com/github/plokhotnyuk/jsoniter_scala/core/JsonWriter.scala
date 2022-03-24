@@ -1648,12 +1648,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write4Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
-    val d1 = ds(q1)
-    buf(pos) = d1.toByte
-    buf(pos + 1) = (d1 >> 8).toByte
-    val d2 = ds(q0 - q1 * 100)
-    buf(pos + 2) = d2.toByte
-    buf(pos + 3) = (d2 >> 8).toByte
+    ByteArrayAsInt.set(buf, pos, ds(q1) | ds(q0 - q1 * 100) << 16)
     pos + 4
   }
 
@@ -1661,13 +1656,8 @@ final class JsonWriter private[jsoniter_scala](
     val y0 = q0 * 429497L // James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     buf(pos) = ((y0 >>> 32).toInt + '0').toByte
     val y1 = (y0 & 0xFFFFFFFFL) * 100
-    val d1 = ds((y1 >>> 32).toInt)
-    buf(pos + 1) = d1.toByte
-    buf(pos + 2) = (d1 >> 8).toByte
     val y2 = (y1 & 0xFFFFFFFFL) * 100
-    val d2 = ds((y2 >>> 32).toInt)
-    buf(pos + 3) = d2.toByte
-    buf(pos + 4) = (d2 >> 8).toByte
+    ByteArrayAsInt.set(buf, pos + 1, ds((y1 >>> 32).toInt) | ds((y2 >>> 32).toInt) << 16)
     pos + 5
   }
 
@@ -1676,11 +1666,8 @@ final class JsonWriter private[jsoniter_scala](
     val y2 = (y1 & 0x7FFFFFFFFFFFL) * 100
     val y3 = (y2 & 0x7FFFFFFFFFFFL) * 100
     val y4 = (y3 & 0x7FFFFFFFFFFFL) * 100
-    val d1 = ds((y1 >>> 47).toInt)
-    val d2 = ds((y2 >>> 47).toInt) << 16
-    val d3 = ds((y3 >>> 47).toInt).toLong << 32
-    val d4 = ds((y4 >>> 47).toInt).toLong << 48
-    ByteArrayAsLong.set(buf, pos, d1 | d2 | d3 | d4)
+    ByteArrayAsLong.set(buf, pos,
+      ds((y1 >>> 47).toInt) | ds((y2 >>> 47).toInt) << 16 | ds((y3 >>> 47).toInt).toLong << 32 | ds((y4 >>> 47).toInt).toLong << 48)
     pos + 8
   }
 
