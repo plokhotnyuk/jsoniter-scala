@@ -11,4 +11,8 @@ class ByteArrayAsLong { // FIXME: Use Java wrapper as w/a for missing support of
     static void set(byte[] buf, int pos, long value) {
         VH_LONG.set(buf, pos, value);
     }
+
+    static long get(byte[] buf, int pos) {
+        return (long) VH_LONG.get(buf, pos);
+    }
 }
