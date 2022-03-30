@@ -17,7 +17,6 @@ import org.openjdk.jmh.annotations._
   "-XX:+UseParallelGC",
   "-XX:-UseAdaptiveSizePolicy",
   "-XX:MaxInlineLevel=18",
-  "-XX:-UseBiasedLocking",
   "-XX:+AlwaysPreTouch",
   "-XX:+UseNUMA",
   "-XX:-UseAdaptiveNUMAChunkSizing"
