@@ -1457,12 +1457,40 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeZoneOffset(x: ZoneOffset): Unit = count = {
-    var pos = ensureBufCapacity(12) // 12 == "+10:10:10".length + 2
+    val pos = ensureBufCapacity(12) // 12 == number of bytes in Long and Int
     val buf = this.buf
-    buf(pos) = '"'
-    pos = writeOffset(x, pos + 1, buf, digits)
-    buf(pos) = '"'
-    pos + 1
+    val ds = digits
+    var q0 = x.getTotalSeconds
+    if (q0 == 0) {
+      ByteArrayAccess.setInt(buf, pos, 0x225A22)
+      pos + 3
+    } else {
+      var m = 0x3A00002B22L
+      if (q0 < 0) {
+        q0 = -q0
+        m = 0x3A00002D22L
+      }
+      val p1 = q0 * 37283
+      val q1 = p1 >>> 27 // divide a small positive int by 3600
+      m |= ds(q1) << 16
+      if ((p1 & 0x7FF8000) == 0) { // check if q0 is divisible by 3600
+        ByteArrayAccess.setLong(buf, pos, m | 0x2230300000000000L)
+        pos + 8
+      } else {
+        val r1 = q0 - q1 * 3600
+        val p2 = r1 * 17477
+        val q2 = p2 >> 20 // divide a small positive int by 60
+        m |= ds(q2).toLong << 40
+        if ((p2 & 0xFC000) == 0) { // check if r1 is divisible by 60
+          ByteArrayAccess.setLong(buf, pos, m | 0x2200000000000000L)
+          pos + 8
+        } else {
+          ByteArrayAccess.setLong(buf, pos, m | 0x3A00000000000000L)
+          ByteArrayAccess.setInt(buf, pos + 8, ds(r1 - q2 * 60) | 0x220000)
+          pos + 11
+        }
+      }
+    }
   }
 
   private[this] def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
