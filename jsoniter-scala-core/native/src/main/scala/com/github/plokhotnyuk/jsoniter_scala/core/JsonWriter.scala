@@ -1556,10 +1556,7 @@ final class JsonWriter private[jsoniter_scala](
     if ((second | nano) != 0) {
       buf(pos) = ':'
       pos = write2Digits(second, pos + 1, buf, ds)
-      if (nano != 0) {
-        buf(pos) = '.'
-        pos = writeNanos(nano, pos + 1, buf, ds)
-      }
+      if (nano != 0) pos = writeNanos(nano, pos, buf, ds)
     }
     pos
   }
@@ -1570,16 +1567,16 @@ final class JsonWriter private[jsoniter_scala](
     pos = write2Digits(minute, pos + 1, buf, ds)
     buf(pos) = ':'
     pos = write2Digits(second, pos + 1, buf, ds)
-    if (nano != 0) {
-      buf(pos) = '.'
-      writeNanos(nano, pos + 1, buf, ds)
-    } else pos
+    if (nano != 0) writeNanos(nano, pos, buf, ds)
+    else pos
   }
 
   private[this] def writeNanos(q0: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var pos = p
+    buf(pos) = '.'
     val q1 = (q0 * 1801439851L >> 54).toInt // divide a positive int by 10000000
     val r1 = q0 - q1 * 10000000
-    var pos = write2Digits(q1, p, buf, ds)
+    pos = write2Digits(q1, pos + 1, buf, ds)
     val p2 = r1 * 175921861L
     val q2 = (p2 >> 44).toInt // divide a positive int by 100000
     val d = ds(q2)

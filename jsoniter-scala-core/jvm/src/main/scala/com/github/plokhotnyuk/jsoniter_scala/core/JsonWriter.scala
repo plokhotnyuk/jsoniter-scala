@@ -1293,11 +1293,8 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(year, month, day, pos + 1, buf, ds)
-    buf(pos) = 'T'
-    pos = writeLocalTime(hour, minute, second, x.getNano, pos + 1, buf, ds)
-    buf(pos) = 'Z'
-    buf(pos + 1) = '"'
+    pos = writeLocalTime(hour, minute, second, x.getNano, writeLocalDate(year, month, day, pos + 1, buf, ds), buf, ds)
+    ByteArrayAccess.setShort(buf, pos, 0x225A)
     pos + 2
   }
 
@@ -1307,12 +1304,13 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeLocalDate(x: LocalDate): Unit = count = {
-    var pos = ensureBufCapacity(18) // 18 == LocalDate.MAX.toString.length + 2
+    var pos = ensureBufCapacity(19) // 19 == java.time.Year.MAX_VALUE.toString.length + 9
     val buf = this.buf
+    val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(x, pos + 1, buf, digits)
-    buf(pos) = '"'
-    pos + 1
+    pos = writeYear(x.getYear, pos + 1, buf, ds)
+    ByteArrayAccess.setLong(buf, pos, ds(x.getDayOfMonth).toLong << 32 | ds(x.getMonthValue) << 8 | 0x2200002D00002DL)
+    pos + 7
   }
 
   private[this] def writeLocalDateTime(x: LocalDateTime): Unit = count = {
@@ -1320,9 +1318,7 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
-    buf(pos) = 'T'
-    pos = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
+    pos = writeLocalTime(x.toLocalTime, writeLocalDate(x.toLocalDate, pos + 1, buf, ds), buf, ds)
     buf(pos) = '"'
     pos + 1
   }
@@ -1350,11 +1346,8 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
-    buf(pos) = 'T'
-    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
-    buf(pos) = '"'
-    pos + 1
+    writeOffset(x.getOffset,
+      writeLocalTime(x.toLocalTime, writeLocalDate(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
   }
 
   private[this] def writeOffsetTime(x: OffsetTime): Unit = count = {
@@ -1362,9 +1355,7 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
-    buf(pos) = '"'
-    pos + 1
+    writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
   }
 
   private[this] def writePeriod(x: Period): Unit = count = {
@@ -1433,9 +1424,8 @@ final class JsonWriter private[jsoniter_scala](
     var buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
-    buf(pos) = 'T'
-    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
+    pos = writeOffset(x.getOffset,
+      writeLocalTime(x.toLocalTime, writeLocalDate(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
     val zone = x.getZone
     if (!zone.isInstanceOf[ZoneOffset]) {
       val zoneId = zone.getId
@@ -1445,15 +1435,13 @@ final class JsonWriter private[jsoniter_scala](
         pos = flushAndGrowBuf(required, pos)
         buf = this.buf
       }
-      buf(pos) = '['
-      pos += 1
+      buf(pos - 1) = '['
       zoneId.getBytes(0, len, buf, pos)
       pos += len
-      buf(pos) = ']'
-      pos += 1
+      ByteArrayAccess.setShort(buf, pos, 0x225D)
+      pos += 2
     }
-    buf(pos) = '"'
-    pos + 1
+    pos
   }
 
   private[this] def writeZoneOffset(x: ZoneOffset): Unit = count = {
@@ -1495,16 +1483,14 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val pos = writeYear(x.getYear, p, buf, ds)
-    ByteArrayAccess.setInt(buf, pos, ds(x.getMonthValue) << 8 | 0x2D00002D)
-    ByteArrayAccess.setShort(buf, pos + 4, ds(x.getDayOfMonth))
-    pos + 6
+    ByteArrayAccess.setLong(buf, pos, ds(x.getDayOfMonth).toLong << 32 | ds(x.getMonthValue) << 8 | 0x5400002D00002DL)
+    pos + 7
   }
 
   private[this] def writeLocalDate(year: Int, month: Int, day: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val pos = writeYear(year, p, buf, ds)
-    ByteArrayAccess.setInt(buf, pos, ds(month) << 8 | 0x2D00002D)
-    ByteArrayAccess.setShort(buf, pos + 4, ds(day))
-    pos + 6
+    ByteArrayAccess.setLong(buf, pos, ds(day).toLong << 32 | ds(month) << 8 | 0x5400002D00002DL)
+    pos + 7
   }
 
   private[this] def writeYear(year: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
@@ -1521,29 +1507,23 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeLocalTime(x: LocalTime, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val d = ds(x.getHour) | ds(x.getMinute).toLong << 24
     val second = x.getSecond
     val nano = x.getNano
+    val d = ds(x.getHour) | ds(x.getMinute).toLong << 24 | 0x3A00003A0000L
     if ((second | nano) == 0) {
-      ByteArrayAccess.setLong(buf, pos, d | 0x3A0000)
+      ByteArrayAccess.setLong(buf, pos, d)
       pos + 5
     } else {
-      ByteArrayAccess.setLong(buf, pos, d | ds(second).toLong << 48 | 0x3A00003A0000L)
+      ByteArrayAccess.setLong(buf, pos, ds(second).toLong << 48 | d)
       if (nano == 0) pos + 8
-      else {
-        buf(pos + 8) = '.'
-        writeNanos(nano, pos + 9, buf, ds)
-      }
+      else writeNanos(nano, pos + 8, buf, ds)
     }
   }
 
   private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     ByteArrayAccess.setLong(buf, pos, ds(hour) | ds(minute).toLong << 24 | ds(second).toLong << 48 | 0x3A00003A0000L)
     if (nano == 0) pos + 8
-    else {
-      buf(pos + 8) = '.'
-      writeNanos(nano, pos + 9, buf, ds)
-    }
+    else writeNanos(nano, pos + 8, buf, ds)
   }
 
   private[this] def writeNanos(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
@@ -1552,45 +1532,55 @@ final class JsonWriter private[jsoniter_scala](
     val p2 = r1 * 175921861L
     val q2 = (p2 >> 44).toInt // divide a positive int by 100000
     val d = ds(q2)
-    ByteArrayAccess.setInt(buf, pos, ds(q1) | d << 16)
-    if ((p2 & 0xFFFF8000000L) == 0 && d <= 0x3039) pos + 3 // check if nanos are divisible by 1000000
-    else {
+    var m = ds(q1) << 8 | d.toLong << 24 | 0x300000000000002EL
+    if ((p2 & 0xFFFF8000000L) == 0 && d <= 0x3039) { // check if nanos are divisible by 1000000
+      ByteArrayAccess.setInt(buf, pos, m.toInt)
+      pos + 4
+    } else {
       val r2 = r1 - q2 * 100000
       val p3 = r2 * 2199023256L
       val q3 = (p3 >> 41).toInt // divide a positive int by 1000
-      ByteArrayAccess.setShort(buf, pos + 4, ds(q3))
-      if ((p3 & 0x1FF80000000L) == 0) pos + 6 // check if r2 divisible by 1000
-      else write3Digits(r2 - q3 * 1000, pos + 6, buf, ds)
+      m |= ds(q3).toLong << 40
+      if ((p3 & 0x1FF80000000L) == 0) { // check if r2 divisible by 1000
+        ByteArrayAccess.setLong(buf, pos, m)
+        pos + 7
+      } else {
+        val r4 = r2 - q3 * 1000
+        val q4 = r4 * 1311 >> 17 // divide a small positive int by 100
+        val r5 = r4 - q4 * 100
+        ByteArrayAccess.setLong(buf, pos, q4.toLong << 56 | m)
+        ByteArrayAccess.setShort(buf, pos + 8, ds(r5))
+        pos + 10
+      }
     }
   }
 
   private[this] def writeOffset(x: ZoneOffset, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var q0 = x.getTotalSeconds
     if (q0 == 0) {
-      buf(pos) = 'Z'
-      pos + 1
+      ByteArrayAccess.setShort(buf, pos, 0x225A)
+      pos + 2
     } else {
-      var m = 0x3A00002B
+      var m = 0x2230303A00002BL
       if (q0 < 0) {
         q0 = -q0
-        m = 0x3A00002D
+        m = 0x2230303A00002DL
       }
       val p1 = q0 * 37283
       val q1 = p1 >>> 27 // divide a small positive int by 3600
-      ByteArrayAccess.setInt(buf, pos, ds(q1) << 8 | m)
+      m |= ds(q1) << 8
       if ((p1 & 0x7FF8000) == 0) { // check if q0 is divisible by 3600
-        ByteArrayAccess.setShort(buf, pos + 4, 0x3030)
-        pos + 6
+        ByteArrayAccess.setLong(buf, pos, m)
+        pos + 7
       } else {
         val r1 = q0 - q1 * 3600
         val p2 = r1 * 17477
         val q2 = p2 >> 20 // divide a small positive int by 60
-        ByteArrayAccess.setShort(buf, pos + 4, ds(q2))
-        if ((p2 & 0xFC000) == 0) pos + 6 // check if r1 is divisible by 60
+        ByteArrayAccess.setLong(buf, pos, ds(q2).toLong << 32 | m)
+        if ((p2 & 0xFC000) == 0) pos + 7 // check if r1 is divisible by 60
         else {
-          buf(pos + 6) = ':'
-          ByteArrayAccess.setShort(buf, pos + 7, ds(r1 - q2 * 60))
-          pos + 9
+          ByteArrayAccess.setInt(buf, pos + 6, ds(r1 - q2 * 60) << 8 | 0x2200003A)
+          pos + 10
         }
       }
     }
