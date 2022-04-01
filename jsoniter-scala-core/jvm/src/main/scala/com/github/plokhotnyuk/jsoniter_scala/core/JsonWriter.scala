@@ -1603,8 +1603,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 * 1311 >> 17 // divide a small positive int by 100
-    buf(pos) = (q1 + '0').toByte
-    ByteArrayAccess.setShort(buf, pos + 1, ds(q0 - q1 * 100))
+    ByteArrayAccess.setInt(buf, pos, ds(q0 - q1 * 100) << 8 | q1 | '0')
     pos + 3
   }
 
@@ -1616,10 +1615,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write5Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =  {
     val y0 = q0 * 429497L // James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    buf(pos) = ((y0 >>> 32).toInt + '0').toByte
     val y1 = (y0 & 0xFFFFFFFFL) * 100
     val y2 = (y1 & 0xFFFFFFFFL) * 100
-    ByteArrayAccess.setInt(buf, pos + 1, ds((y1 >>> 32).toInt) | ds((y2 >>> 32).toInt) << 16)
+    ByteArrayAccess.setLong(buf, pos, (y0 >>> 32).toInt + '0' | ds((y1 >>> 32).toInt) << 8 | ds((y2 >>> 32).toInt).toLong << 24)
     pos + 5
   }
 
@@ -1642,7 +1640,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeShort(x: Short): Unit = count = {
-    var pos = ensureBufCapacity(6) // Short.MinValue.toString.length
+    var pos = ensureBufCapacity(9) // 8 bytes in long + a byte for the sign
     val buf = this.buf
     val q0: Int =
       if (x >= 0) x
