@@ -1178,8 +1178,7 @@ final class JsonWriter private[jsoniter_scala](
       ByteArrayAccess.setShort(buf, pos, digits(q0))
       pos + 2
     } else {
-      buf(pos) = '1'
-      ByteArrayAccess.setShort(buf, pos + 1, digits(q0 - 100))
+      ByteArrayAccess.setInt(buf, pos, digits(q0 - 100) << 8 | 0x31)
       pos + 3
     }
   }
