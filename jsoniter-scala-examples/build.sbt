@@ -11,5 +11,7 @@ val `jsoniter-scala-examples` = project.in(file("."))
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "latest.integration",
       // Use the "provided" scope instead when the "compile-internal" scope is not supported
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "latest.integration" % "compile-internal"
-    )
+    ),
+    nativeImageOptions ++= List("--no-fallback"),
+    nativeImageVersion := "22.0.0.2"
   )
