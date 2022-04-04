@@ -963,30 +963,31 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeChar(ch: Char): Unit = count = {
     var pos = ensureBufCapacity(8) // 6 bytes per char for escaped unicode + make room for the quotes
-    val buf = this.buf
-    buf(pos) = '"'
-    pos += 1
     if (ch < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
       val esc = escapedChars(ch)
       if (esc == 0) {
-        buf(pos) = ch.toByte
-        pos += 1
+        ByteArrayAccess.setInt(buf, pos, ch << 8 | 0x220022)
+        pos + 3
       } else if (esc > 0) {
-        ByteArrayAccess.setShort(buf, pos, (esc << 8 | 0x5C).toShort)
-        pos += 2
-      } else pos = writeEscapedUnicode(ch.toByte, pos, buf)
+        ByteArrayAccess.setInt(buf, pos, esc << 16 | 0x22005C22)
+        pos + 4
+      } else {
+        val d = lowerCaseHexDigits(ch)
+        ByteArrayAccess.setLong(buf, pos, d.toLong << 40 | 0x2200003030755C22L)
+        pos + 8
+      }
     } else if (config.escapeUnicode) {
       if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
-      pos = writeEscapedUnicode(ch, pos, buf)
+      val ds = lowerCaseHexDigits
+      ByteArrayAccess.setLong(buf, pos, ds(ch >> 8).toLong << 24 | ds(ch & 0xFF).toLong << 40 | 0x2200000000755C22L)
+      pos + 8
     } else if (ch < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
-      ByteArrayAccess.setShort(buf, pos, (ch >> 6 | (ch << 8 & 0x3F00) | 0x80C0).toShort)
-      pos += 2
+      ByteArrayAccess.setInt(buf, pos, (ch & 0x3F) << 16 | (ch & 0xFC0) << 2 | 0x2280C022)
+      pos + 4
     } else if (ch < 0xD800 || ch > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
-      ByteArrayAccess.setInt(buf, pos, ch >> 12 | (ch << 2 & 0x3F00) | (ch << 16 & 0x3F0000) | 0x8080E0)
-      pos += 3
+      ByteArrayAccess.setLong(buf, pos, ((ch & 0x3F) << 24 | (ch & 0xFC0) << 10 | (ch & 0xF000) >> 4) | 0x228080E022L)
+      pos + 5
     } else illegalSurrogateError()
-    buf(pos) = '"'
-    pos + 1
   }
 
   private[this] def writeEscapedUnicode(ch: Char, pos: Int, buf: Array[Byte]): Int = {
