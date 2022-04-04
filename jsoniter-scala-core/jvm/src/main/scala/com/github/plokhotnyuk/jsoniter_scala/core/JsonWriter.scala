@@ -641,16 +641,16 @@ final class JsonWriter private[jsoniter_scala](
     writeIndention(buf, pos, n)
   }
 
-  private[this] def writeIndention(buf: Array[Byte], pos: Int, n: Int): Int = {
-    var p = pos
-    buf(p) = '\n'
-    p += 1
-    val posLim = p + n
-    while (p < posLim) {
-      buf(p) = ' '
-      p += 1
+  private[this] def writeIndention(buf: Array[Byte], p: Int, n: Int): Int = {
+    var pos = p
+    buf(pos) = '\n'
+    pos += 1
+    val posLim = pos + n
+    while (pos < posLim) {
+      buf(pos) = ' '
+      pos += 1
     }
-    p
+    pos
   }
 
   private[this] def writeParenthesesWithColon(): Unit = count = {
