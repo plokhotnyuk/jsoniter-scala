@@ -1559,7 +1559,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 * 1311 >> 17 // divide a small positive int by 100
-    ByteArrayAccess.setInt(buf, pos, ds(q0 - q1 * 100) << 8 | q1 | 0x30)
+    ByteArrayAccess.setInt(buf, pos, q1 + '0' | ds(q0 - q1 * 100) << 8)
     pos + 3
   }
 
@@ -1567,14 +1567,6 @@ final class JsonWriter private[jsoniter_scala](
     val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
     ByteArrayAccess.setInt(buf, pos, ds(q1) | ds(q0 - q1 * 100) << 16)
     pos + 4
-  }
-
-  private[this] def write5Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =  {
-    val y0 = q0 * 429497L // James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    val y1 = (y0 & 0xFFFFFFFFL) * 100
-    val y2 = (y1 & 0xFFFFFFFFL) * 100
-    ByteArrayAccess.setLong(buf, pos, (y0 >>> 32).toInt + '0' | ds((y1 >>> 32).toInt) << 8 | ds((y2 >>> 32).toInt).toLong << 24)
-    pos + 5
   }
 
   private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
@@ -1598,27 +1590,45 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeShort(x: Short): Unit = count = {
     var pos = ensureBufCapacity(9) // 8 bytes in long + a byte for the sign
     val buf = this.buf
-    val q0: Int =
-      if (x >= 0) x
-      else {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      }
+    val ds = digits
+    var q0: Int = x
+    if (x < 0) {
+      buf(pos) = '-'
+      pos += 1
+      q0 = -q0
+    }
     if (q0 < 100) {
       if (q0 < 10) {
         buf(pos) = (q0 + '0').toByte
         pos + 1
-      } else write2Digits(q0, pos, buf, digits)
+      } else {
+        ByteArrayAccess.setShort(buf, pos, ds(q0))
+        pos + 2
+      }
     } else if (q0 < 10000) {
-      if (q0 < 1000) write3Digits(q0, pos, buf, digits)
-      else write4Digits(q0, pos, buf, digits)
-    } else write5Digits(q0, pos, buf, digits)
+      val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+      val d = ds(q0 - q1 * 100)
+      if (q0 < 1000) {
+        ByteArrayAccess.setInt(buf, pos, q1 + '0' | d << 8)
+        pos + 3
+      } else {
+        ByteArrayAccess.setInt(buf, pos, ds(q1) | d << 16)
+        pos + 4
+      }
+    } else { // James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      val y1 = q0 * 429497L
+      val y2 = (y1 & 0xFFFFFFFFL) * 100
+      val y3 = (y2 & 0xFFFFFFFFL) * 100
+      ByteArrayAccess.setLong(buf, pos,
+        (y1 >>> 32).toInt + '0' | ds((y2 >>> 32).toInt) << 8 | ds((y3 >>> 32).toInt).toLong << 24)
+      pos + 5
+    }
   }
 
   private[this] def writeInt(x: Int): Unit = count = {
     var pos = ensureBufCapacity(11) // Int.MinValue.toString.length
     val buf = this.buf
+    val ds = digits
     val q0 =
       if (x >= 0) x
       else if (x != -2147483648) {
@@ -1630,7 +1640,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 2
         147483648
       }
-    writePositiveInt(q0, pos, buf, digits)
+    writePositiveInt(q0, pos, buf, ds)
   }
 
   private[this] def writeLong(x: Long): Unit = count = {
@@ -1661,11 +1671,70 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writePositiveInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val lastPos = digitCount(q0) + pos
-    writePositiveIntDigits(q0, lastPos - 1, buf, ds)
-    lastPos
-  }
+  // Based on the great James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+  private[this] def writePositiveInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (q0 < 100) {
+      if (q0 < 10) {
+        buf(pos) = (q0 + '0').toByte
+        pos + 1
+      } else {
+        ByteArrayAccess.setShort(buf, pos, ds(q0))
+        pos + 2
+      }
+    } else if (q0 < 10000) {
+      val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+      val r1 = q0 - q1 * 100
+      val m = ds(r1) << 8
+      if (q0 < 1000) {
+        ByteArrayAccess.setInt(buf, pos, q1 + '0' | m)
+        pos + 3
+      } else {
+        ByteArrayAccess.setInt(buf, pos, ds(q1) | m << 8)
+        pos + 4
+      }
+    } else if (q0 < 1000000) {
+      val y1 = q0 * 429497L
+      val y2 = (y1 & 0xFFFFFFFFL) * 100
+      val y3 = (y2 & 0xFFFFFFFFL) * 100
+      val m = ds((y2 >>> 32).toInt) << 8 | ds((y3 >>> 32).toInt).toLong << 24
+      if (q0 < 100000) {
+        ByteArrayAccess.setLong(buf, pos, (y1 >>> 32).toInt + '0' | m)
+        pos + 5
+      } else {
+        ByteArrayAccess.setLong(buf, pos, ds((y1 >>> 32).toInt) | m << 8)
+        pos + 6
+      }
+    } else if (q0 < 100000000) {
+      val y1 = q0 * 140737489L
+      val y2 = (y1 & 0x7FFFFFFFFFFFL) * 100
+      val y3 = (y2 & 0x7FFFFFFFFFFFL) * 100
+      val y4 = (y3 & 0x7FFFFFFFFFFFL) * 100
+      val m = ds((y2 >>> 47).toInt) << 8 | ds((y3 >>> 47).toInt).toLong << 24 | ds((y4 >>> 47).toInt).toLong << 40
+      if (q0 < 10000000) {
+        ByteArrayAccess.setLong(buf, pos, (y1 >>> 47) + '0' | m)
+        pos + 7
+      } else {
+        ByteArrayAccess.setLong(buf, pos, ds((y1 >>> 47).toInt) | m << 8)
+        pos + 8
+      }
+    } else {
+      val y1 = q0 * 1441151881L
+      val y2 = (y1 & 0x1FFFFFFFFFFFFFFL) * 100
+      val y3 = (y2 & 0x1FFFFFFFFFFFFFFL) * 100
+      val y4 = (y3 & 0x1FFFFFFFFFFFFFFL) * 100
+      val y5 = (y4 & 0x1FFFFFFFFFFFFFFL) * 100
+      val m = ds((y2 >>> 57).toInt) | ds((y3 >>> 57).toInt) << 16 |
+        ds((y4 >>> 57).toInt).toLong << 32 | ds((y5 >>> 57).toInt).toLong << 48
+      if (q0 < 1000000000) {
+        buf(pos) = ((y1 >>> 57) + '0').toByte
+        ByteArrayAccess.setLong(buf, pos + 1, m)
+        pos + 9
+      } else {
+        ByteArrayAccess.setShort(buf, pos, ds((y1 >>> 57).toInt))
+        ByteArrayAccess.setLong(buf, pos + 2, m)
+        pos + 10
+      }
+    }
 
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
