@@ -1050,11 +1050,12 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val d = lowerCaseHexDigits(b & 0xFF)
+    val ds = lowerCaseHexDigits
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     buf(pos + 2) = '0'
     buf(pos + 3) = '0'
+    val d = ds(b & 0xFF)
     buf(pos + 4) = d.toByte
     buf(pos + 5) = (d >> 8).toByte
     pos + 6
@@ -1206,13 +1207,12 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeByte(x: Byte): Unit = count = {
     var pos = ensureBufCapacity(4) // Byte.MinValue.toString.length
     val buf = this.buf
-    val q0: Int =
-      if (x >= 0) x
-      else {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      }
+    var q0: Int = x
+    if (q0 < 0) {
+      buf(pos) = '-'
+      pos += 1
+      q0 = -q0
+    }
     if (q0 < 10) {
       buf(pos) = (q0 + '0').toByte
       pos + 1
@@ -1704,13 +1704,12 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeShort(x: Short): Unit = count = {
     var pos = ensureBufCapacity(6) // Short.MinValue.toString.length
     val buf = this.buf
-    val q0: Int =
-      if (x >= 0) x
-      else {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      }
+    var q0: Int = x
+    if (q0 < 0) {
+      buf(pos) = '-'
+      pos += 1
+      q0 = -q0
+    }
     if (q0 < 100) {
       if (q0 < 10) {
         buf(pos) = (q0 + '0').toByte

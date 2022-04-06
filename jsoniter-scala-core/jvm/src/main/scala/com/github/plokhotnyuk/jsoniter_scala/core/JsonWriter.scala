@@ -962,7 +962,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeChar(ch: Char): Unit = count = {
-    var pos = ensureBufCapacity(8) // 6 bytes per char for escaped unicode + make room for the quotes
+    val pos = ensureBufCapacity(8) // 6 bytes per char for escaped unicode + make room for the quotes
     if (ch < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
       val esc = escapedChars(ch)
       if (esc == 0) {
@@ -998,9 +998,9 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val d = lowerCaseHexDigits(b & 0xFF)
+    val ds = lowerCaseHexDigits
     ByteArrayAccess.setInt(buf, pos, 0x3030755C)
-    ByteArrayAccess.setShort(buf, pos + 4, d)
+    ByteArrayAccess.setShort(buf, pos + 4, ds(b & 0xFF))
     pos + 6
   }
 
@@ -1137,13 +1137,12 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeByte(x: Byte): Unit = count = {
     var pos = ensureBufCapacity(4) // Byte.MinValue.toString.length
     val buf = this.buf
-    val q0: Int =
-      if (x >= 0) x
-      else {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      }
+    var q0: Int = x
+    if (q0 < 0) {
+      buf(pos) = '-'
+      pos += 1
+      q0 = -q0
+    }
     if (q0 < 10) {
       buf(pos) = (q0 + '0').toByte
       pos + 1
@@ -1311,7 +1310,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeOffsetDateTime(x: OffsetDateTime): Unit = count = {
-    var pos = ensureBufCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
+    val pos = ensureBufCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -1320,7 +1319,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeOffsetTime(x: OffsetTime): Unit = count = {
-    var pos = ensureBufCapacity(29) // 29 == "00:00:07.999999998+00:00:08".length + 2
+    val pos = ensureBufCapacity(29) // 29 == "00:00:07.999999998+00:00:08".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -1598,13 +1597,12 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeShort(x: Short): Unit = count = {
     var pos = ensureBufCapacity(9) // 8 bytes in long + a byte for the sign
     val buf = this.buf
-    val q0: Int =
-      if (x >= 0) x
-      else {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      }
+    var q0: Int = x
+    if (q0 < 0) {
+      buf(pos) = '-'
+      pos += 1
+      q0 = -q0
+    }
     if (q0 < 100) {
       if (q0 < 10) {
         buf(pos) = (q0 + '0').toByte
