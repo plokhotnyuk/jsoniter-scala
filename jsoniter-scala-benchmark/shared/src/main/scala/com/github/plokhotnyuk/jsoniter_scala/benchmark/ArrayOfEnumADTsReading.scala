@@ -35,6 +35,9 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   def circe(): Array[SuitADT] = decode[Array[SuitADT]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[SuitADT] = io.circe.jawn.decodeByteArray[Array[SuitADT]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[SuitADT] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

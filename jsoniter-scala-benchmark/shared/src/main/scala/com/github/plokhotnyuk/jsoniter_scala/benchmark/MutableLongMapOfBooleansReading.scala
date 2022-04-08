@@ -26,6 +26,10 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
     decode[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): mutable.LongMap[Boolean] =
+    io.circe.jawn.decodeByteArray[mutable.LongMap[Boolean]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): mutable.LongMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

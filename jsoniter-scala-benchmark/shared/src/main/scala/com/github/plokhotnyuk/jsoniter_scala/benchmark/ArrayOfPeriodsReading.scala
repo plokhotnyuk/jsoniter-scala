@@ -31,6 +31,9 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   def circe(): Array[Period] = decode[Array[Period]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[Period] = io.circe.jawn.decodeByteArray[Array[Period]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[Period] = {
     import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._

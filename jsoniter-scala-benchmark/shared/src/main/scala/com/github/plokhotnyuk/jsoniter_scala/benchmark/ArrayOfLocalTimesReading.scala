@@ -31,6 +31,9 @@ class ArrayOfLocalTimesReading extends ArrayOfLocalTimesBenchmark {
   def circe(): Array[LocalTime] = decode[Array[LocalTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[LocalTime] = io.circe.jawn.decodeByteArray[Array[LocalTime]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[LocalTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._

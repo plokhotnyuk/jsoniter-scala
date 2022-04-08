@@ -26,6 +26,10 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
     decode[mutable.Map[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): mutable.Map[Int, Boolean] =
+    io.circe.jawn.decodeByteArray[mutable.Map[Int, Boolean]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): mutable.Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

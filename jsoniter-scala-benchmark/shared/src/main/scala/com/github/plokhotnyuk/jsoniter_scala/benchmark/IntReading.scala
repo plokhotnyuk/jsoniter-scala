@@ -29,6 +29,9 @@ class IntReading extends IntBenchmark {
   def circe(): Int = decode[Int](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Int = io.circe.jawn.decodeByteArray[Int](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Int = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

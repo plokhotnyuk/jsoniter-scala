@@ -31,6 +31,9 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
   def circe(): Array[OffsetDateTime] = decode[Array[OffsetDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[OffsetDateTime] = io.circe.jawn.decodeByteArray[Array[OffsetDateTime]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[OffsetDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._

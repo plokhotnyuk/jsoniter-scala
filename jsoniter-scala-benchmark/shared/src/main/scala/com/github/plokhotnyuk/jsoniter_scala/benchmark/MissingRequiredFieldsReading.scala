@@ -52,6 +52,10 @@ class MissingRequiredFieldsReading extends CommonParams {
     decode[MissingRequiredFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _.toString) // toString shouldn't be called
 
   @Benchmark
+  def circeJawn(): String =
+    io.circe.jawn.decodeByteArray[MissingRequiredFields](jsonBytes).fold(_.getMessage, _.toString) // toString shouldn't be called
+
+  @Benchmark
   def circeJsoniter(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

@@ -35,6 +35,9 @@ class PrimitivesReading extends PrimitivesBenchmark {
   def circe(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Primitives = io.circe.jawn.decodeByteArray[Primitives](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Primitives = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

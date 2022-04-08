@@ -37,6 +37,9 @@ class ADTReading extends ADTBenchmark {
   def circe(): ADTBase = decode[ADTBase](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): ADTBase = io.circe.jawn.decodeByteArray[ADTBase](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

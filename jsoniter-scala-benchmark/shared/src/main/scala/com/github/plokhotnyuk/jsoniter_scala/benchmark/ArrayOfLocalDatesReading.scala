@@ -31,6 +31,9 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
   def circe(): Array[LocalDate] = decode[Array[LocalDate]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[LocalDate] = io.circe.jawn.decodeByteArray[Array[LocalDate]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[LocalDate] = {
     import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._

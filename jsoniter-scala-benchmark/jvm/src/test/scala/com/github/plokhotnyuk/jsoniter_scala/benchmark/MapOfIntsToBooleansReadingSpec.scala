@@ -9,6 +9,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
+      benchmark.circeJawn() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
@@ -27,6 +28,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       b.jsonBytes(0) = 'x'.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())

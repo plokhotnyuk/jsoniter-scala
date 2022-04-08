@@ -27,6 +27,9 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   def circe(): mutable.Set[Int] = decode[mutable.Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): mutable.Set[Int] = io.circe.jawn.decodeByteArray[mutable.Set[Int]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): mutable.Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

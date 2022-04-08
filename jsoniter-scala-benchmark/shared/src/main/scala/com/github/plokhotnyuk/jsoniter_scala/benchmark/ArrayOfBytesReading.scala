@@ -30,6 +30,9 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   def circe(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[Byte] = io.circe.jawn.decodeByteArray[Array[Byte]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

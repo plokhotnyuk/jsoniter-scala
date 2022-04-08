@@ -29,6 +29,9 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   def circe(): Array[Short] = decode[Array[Short]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[Short] = io.circe.jawn.decodeByteArray[Array[Short]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[Short] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

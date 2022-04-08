@@ -28,6 +28,9 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   def circe(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): String = io.circe.jawn.decodeByteArray[String](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

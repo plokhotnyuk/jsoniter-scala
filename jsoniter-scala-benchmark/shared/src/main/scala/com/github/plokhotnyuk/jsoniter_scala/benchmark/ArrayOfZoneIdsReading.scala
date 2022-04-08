@@ -31,6 +31,9 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
   def circe(): Array[ZoneId] = decode[Array[ZoneId]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[ZoneId] = io.circe.jawn.decodeByteArray[Array[ZoneId]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[ZoneId] = {
     import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._

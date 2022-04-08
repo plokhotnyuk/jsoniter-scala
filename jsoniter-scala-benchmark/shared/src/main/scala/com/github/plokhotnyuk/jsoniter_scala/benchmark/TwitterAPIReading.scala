@@ -37,6 +37,9 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   def circe(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Seq[Tweet] = io.circe.jawn.decodeByteArray[Seq[Tweet]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Seq[Tweet] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

@@ -35,6 +35,9 @@ class GeoJSONReading extends GeoJSONBenchmark {
   def circe(): GeoJSON = decode[GeoJSON](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): GeoJSON = io.circe.jawn.decodeByteArray[GeoJSON](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

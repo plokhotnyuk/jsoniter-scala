@@ -32,6 +32,9 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
   def circe(): Array[YearMonth] = decode[Array[YearMonth]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[YearMonth] = io.circe.jawn.decodeByteArray[Array[YearMonth]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[YearMonth] = {
     import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._

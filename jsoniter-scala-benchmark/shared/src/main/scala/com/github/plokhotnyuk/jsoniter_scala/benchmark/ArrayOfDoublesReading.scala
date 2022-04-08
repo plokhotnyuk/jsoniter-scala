@@ -29,6 +29,9 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   def circe(): Array[Double] = decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[Double] = io.circe.jawn.decodeByteArray[Array[Double]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[Double] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

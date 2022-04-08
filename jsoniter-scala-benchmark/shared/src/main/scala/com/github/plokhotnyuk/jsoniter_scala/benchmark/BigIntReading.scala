@@ -28,6 +28,9 @@ class BigIntReading extends BigIntBenchmark {
   def circe(): BigInt = decode[BigInt](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): BigInt = io.circe.jawn.decodeByteArray[BigInt](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

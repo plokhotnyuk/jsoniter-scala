@@ -8,6 +8,7 @@ class AnyValsReadingSpec extends BenchmarkSpecBase {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
+      benchmark.circeJawn() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       //FIXME: DSL-JSON throws com.dslplatform.json.ParsingException: Expecting '{' to start decoding com.github.plokhotnyuk.jsoniter_scala.benchmark.ByteVal. Found 1 at position: 6, following: `{"b":1`, before: `,"s":2,"i":3,"l":4,"`
       //benchmark.dslJsonScala() shouldBe benchmark.obj
@@ -26,6 +27,7 @@ class AnyValsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())

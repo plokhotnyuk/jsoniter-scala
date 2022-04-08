@@ -32,6 +32,9 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   def circe(): Array[MonthDay] = decode[Array[MonthDay]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[MonthDay] = io.circe.jawn.decodeByteArray[Array[MonthDay]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[MonthDay] = {
     import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._

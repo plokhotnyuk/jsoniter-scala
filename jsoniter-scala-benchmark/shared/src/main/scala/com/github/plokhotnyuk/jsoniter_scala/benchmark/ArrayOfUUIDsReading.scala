@@ -32,6 +32,9 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   def circe(): Array[UUID] = decode[Array[UUID]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[UUID] = io.circe.jawn.decodeByteArray[Array[UUID]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[UUID] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

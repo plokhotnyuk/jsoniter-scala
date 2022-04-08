@@ -28,6 +28,9 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   def circe(): Map[Int, Boolean] = decode[Map[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Map[Int, Boolean] = io.circe.jawn.decodeByteArray[Map[Int, Boolean]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

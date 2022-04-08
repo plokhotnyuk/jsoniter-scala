@@ -33,6 +33,9 @@ class Base64Reading extends Base64Benchmark {
   def circe(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8))(base64D5r).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): Array[Byte] = io.circe.jawn.decodeByteArray[Array[Byte]](jsonBytes)(base64D5r).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

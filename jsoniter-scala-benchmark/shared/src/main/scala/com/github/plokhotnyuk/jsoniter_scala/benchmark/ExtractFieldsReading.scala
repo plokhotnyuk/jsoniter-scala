@@ -52,6 +52,9 @@ class ExtractFieldsReading extends CommonParams {
   def circe(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): ExtractFields = io.circe.jawn.decodeByteArray[ExtractFields](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

@@ -34,6 +34,9 @@ class NestedStructsReading extends NestedStructsBenchmark {
   def circe(): NestedStructs = decode[NestedStructs](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): NestedStructs = io.circe.jawn.decodeByteArray[NestedStructs](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): NestedStructs = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

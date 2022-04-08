@@ -34,6 +34,9 @@ class OpenRTBReading extends OpenRTBBenchmark {
   def circe(): BidRequest = decode[BidRequest](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): BidRequest = io.circe.jawn.decodeByteArray[BidRequest](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

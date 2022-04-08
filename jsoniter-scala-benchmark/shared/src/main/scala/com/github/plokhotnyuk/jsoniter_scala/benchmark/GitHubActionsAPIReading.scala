@@ -35,6 +35,10 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     decode[GitHubActionsAPI.Response](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): GitHubActionsAPI.Response =
+    io.circe.jawn.decodeByteArray[GitHubActionsAPI.Response](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

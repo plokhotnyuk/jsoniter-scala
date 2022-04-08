@@ -22,6 +22,9 @@ class BitSetReading extends BitSetBenchmark {
   def circe(): BitSet = decode[BitSet](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): BitSet = io.circe.jawn.decodeByteArray[BitSet](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

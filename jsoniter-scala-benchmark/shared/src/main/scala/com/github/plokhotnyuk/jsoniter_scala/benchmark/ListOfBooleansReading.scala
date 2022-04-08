@@ -29,6 +29,9 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
   def circe(): List[Boolean] = decode[List[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def circeJawn(): List[Boolean] = io.circe.jawn.decodeByteArray[List[Boolean]](jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def circeJsoniter(): List[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 

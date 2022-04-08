@@ -9,6 +9,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
+      benchmark.circeJawn() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson-scala has compilation failure: ambiguous implicit values
@@ -23,6 +24,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       b.jsonBytes(0) = 'x'.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
       //FIXME: Jackson-scala has compilation failure: ambiguous implicit values
