@@ -72,7 +72,7 @@ class ExtractFieldsReading extends CommonParams {
 
   @Benchmark
   def ninnyJson(): ExtractFields = {
-    import io.github.kag0.ninny.Json
+    import nrktkt.ninny.Json
 
     Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ExtractFields].get
   }

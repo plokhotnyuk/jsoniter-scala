@@ -19,7 +19,7 @@ import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.Decoder
 import io.circe.parser._
-import io.github.kag0.ninny
+import nrktkt.ninny
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._

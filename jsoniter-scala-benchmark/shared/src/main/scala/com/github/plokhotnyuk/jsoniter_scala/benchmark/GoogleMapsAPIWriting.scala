@@ -53,7 +53,7 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def ninnyJson(): Array[Byte] = {
-    import io.github.kag0.ninny.{AnySyntax, Json}
+    import nrktkt.ninny.{AnySyntax, Json}
 
     Json.render(obj.toSomeJson).getBytes(UTF_8)
   }

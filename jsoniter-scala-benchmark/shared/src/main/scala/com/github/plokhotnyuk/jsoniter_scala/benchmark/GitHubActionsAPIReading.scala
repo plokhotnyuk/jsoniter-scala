@@ -19,7 +19,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import spray.json.JsonParser
 import zio.json._
-import io.github.kag0.ninny._
+import nrktkt.ninny._
 import scala.collection.immutable.ArraySeq
 
 class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {

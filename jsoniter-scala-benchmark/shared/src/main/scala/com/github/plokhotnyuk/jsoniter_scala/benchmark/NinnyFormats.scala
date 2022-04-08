@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import io.github.kag0.ninny._
-import io.github.kag0.ninny.ast._
+import nrktkt.ninny._
+import nrktkt.ninny.ast._
 import GoogleMapsAPI._
 import java.time.Instant
 import java.time.OffsetDateTime

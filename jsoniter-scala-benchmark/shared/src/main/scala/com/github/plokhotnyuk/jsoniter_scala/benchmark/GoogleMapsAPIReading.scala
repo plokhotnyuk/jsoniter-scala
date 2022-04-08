@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import zio.json.DecoderOps
-import io.github.kag0.ninny
+import nrktkt.ninny
 import scala.collection.immutable.ArraySeq
 
 class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
