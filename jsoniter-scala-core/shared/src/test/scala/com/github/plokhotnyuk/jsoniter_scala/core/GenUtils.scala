@@ -19,6 +19,7 @@ object GenUtils {
       java.util.Arrays.fill(bs, ws(Random.nextInt(ws.length)))
       new String(bs, 0, bs.length, UTF_8)
   }
+  val genChar: Gen[Char] = Gen.choose('\u0000', '\uffff')
   val genHighSurrogateChar: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
   val genSurrogateChar: Gen[Char] = Gen.oneOf(genHighSurrogateChar, genLowSurrogateChar)

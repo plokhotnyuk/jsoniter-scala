@@ -38,12 +38,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.toHashCode" should {
     "produce the same hash value for strings as JDK by default" in {
-      forAll(minSuccessful(10000)) { (x: String) =>
+      forAll(arbitrary[String], minSuccessful(10000)) { x =>
         assert(JsonReader.toHashCode(x.toCharArray, x.length) == x.hashCode)
       }
     }
     "produce 0 hash value when the provided 'len' isn't greater than 0" in {
-      forAll(minSuccessful(10000)) { (x: Int) =>
+      forAll(arbitrary[Int], minSuccessful(10000)) { x =>
         whenever(x <= 0) {
           assert(JsonReader.toHashCode("VVV".toCharArray, x) == 0)
         }
@@ -1849,7 +1849,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check("x", "")
       check("", "x")
       check("x", "x")
-      forAll(minSuccessful(10000)) { (s1: String, s2: String) =>
+      forAll(arbitrary[String], arbitrary[String], minSuccessful(10000)) { (s1, s2) =>
         whenever(s1.forall(ch => ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
           check(s1, s2)
         }
@@ -2056,7 +2056,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
-      forAll(arbitrary[Char], genWhitespaces, minSuccessful(10000)) { (ch, ws) =>
+      forAll(genChar, genWhitespaces, minSuccessful(10000)) { (ch, ws) =>
         whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           check(ch, ws)
         }
@@ -2074,14 +2074,14 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "parse hexadecimal escaped chars which are non-surrogate" in {
-      forAll(arbitrary[Char], genWhitespaces, minSuccessful(10000)) { (ch, ws) =>
+      forAll(genChar, genWhitespaces, minSuccessful(10000)) { (ch, ws) =>
         whenever(!Character.isSurrogate(ch)) {
           checkEscaped(toHexEscaped(ch), ch, ws)
         }
       }
     }
     "throw parsing exception for string with length > 1" in {
-      forAll(minSuccessful(10000)) { (ch: Char) =>
+      forAll(genChar, minSuccessful(10000)) { ch =>
         whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           checkError(s""""$ch$ch"""", "expected '\"'") // offset can differs for non-ASCII characters
         }
@@ -2837,7 +2837,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         jsonReader.nextToken().toChar shouldBe s2.charAt(0)
       }
 
-      forAll(Gen.size, minSuccessful(10000)) { (n: Int) =>
+      forAll(Gen.size, minSuccessful(10000)) { n =>
         check(n, "123456")(_.readBigInt(null))
         check(n, "\"UTC\"")(_.readZoneId(null))
         check(n, "[true]")(_.readRawValAsBytes())
