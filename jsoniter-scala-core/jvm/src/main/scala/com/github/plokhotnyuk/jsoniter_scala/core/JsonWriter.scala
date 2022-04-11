@@ -1277,7 +1277,9 @@ final class JsonWriter private[jsoniter_scala](
     val ds = digits
     buf(pos) = '"'
     pos = writeYear(x.getYear, pos + 1, buf, ds)
-    ByteArrayAccess.setLong(buf, pos, ds(x.getDayOfMonth).toLong << 32 | ds(x.getMonthValue) << 8 | 0x2200002D00002DL)
+    val day = x.getDayOfMonth
+    val month = x.getMonthValue
+    ByteArrayAccess.setLong(buf, pos, ds(day).toLong << 32 | ds(month) << 8 | 0x2200002D00002DL)
     pos + 7
   }
 
@@ -1294,8 +1296,9 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeLocalTime(x: LocalTime): Unit = count = {
     var pos = ensureBufCapacity(20) // 20 == LocalTime.MAX.toString.length + 2
     val buf = this.buf
+    val ds = digits
     buf(pos) = '"'
-    pos = writeLocalTime(x, pos + 1, buf, digits)
+    pos = writeLocalTime(x, pos + 1, buf, ds)
     buf(pos) = '"'
     pos + 1
   }
@@ -1448,7 +1451,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val pos = writeYear(x.getYear, p, buf, ds)
-    ByteArrayAccess.setLong(buf, pos, ds(x.getDayOfMonth).toLong << 32 | ds(x.getMonthValue) << 8 | 0x5400002D00002DL)
+    val day = x.getDayOfMonth
+    val month = x.getMonthValue
+    ByteArrayAccess.setLong(buf, pos, ds(day).toLong << 32 | ds(month) << 8 | 0x5400002D00002DL)
     pos + 7
   }
 
@@ -1472,21 +1477,18 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeLocalTime(x: LocalTime, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val hour = x.getHour
+    val minute = x.getMinute
     val second = x.getSecond
     val nano = x.getNano
-    val d = ds(x.getHour) | ds(x.getMinute).toLong << 24 | 0x3A00003A0000L
-    if ((second | nano) == 0) {
-      ByteArrayAccess.setLong(buf, pos, d)
-      pos + 5
-    } else {
-      ByteArrayAccess.setLong(buf, pos, ds(second).toLong << 48 | d)
-      if (nano == 0) pos + 8
-      else writeNanos(nano, pos + 8, buf, ds)
-    }
+    ByteArrayAccess.setLong(buf, pos, ds(minute).toLong << 24 | ds(second).toLong << 48 | ds(hour) | 0x3A00003A0000L)
+    if ((second | nano) == 0) pos + 5
+    else if (nano == 0) pos + 8
+    else writeNanos(nano, pos + 8, buf, ds)
   }
 
   private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    ByteArrayAccess.setLong(buf, pos, ds(hour) | ds(minute).toLong << 24 | ds(second).toLong << 48 | 0x3A00003A0000L)
+    ByteArrayAccess.setLong(buf, pos, ds(minute).toLong << 24 | ds(second).toLong << 48 | ds(hour) | 0x3A00003A0000L)
     if (nano == 0) pos + 8
     else writeNanos(nano, pos + 8, buf, ds)
   }
