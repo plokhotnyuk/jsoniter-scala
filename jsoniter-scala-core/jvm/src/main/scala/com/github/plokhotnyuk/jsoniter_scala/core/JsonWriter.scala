@@ -1308,7 +1308,9 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    ByteArrayAccess.setLong(buf, pos + 1, ds(x.getDayOfMonth).toLong << 40 | ds(x.getMonthValue) << 16 | 0x2200002D00002D2DL)
+    val month = x.getMonthValue
+    val day = x.getDayOfMonth
+    ByteArrayAccess.setLong(buf, pos + 1, ds(month) << 16 | ds(day).toLong << 40 | 0x2200002D00002D2DL)
     pos + 9
   }
 
