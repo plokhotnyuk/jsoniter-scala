@@ -1868,37 +1868,31 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val lastWord = ((len * 445861642L) >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
-    var firstWord = lastWord
-    val numWords = lastWord + 1
-    val magWords = new Array[Int](numWords)
-    magWords(lastWord) = x.toInt
+    val last = ((len * 445861642L) >> 32).toInt << 2 // (len * Math.log(10) / Math.log(1L << 32)).toInt
+    var first = last
+    val size = last + 4
+    val magBytes = new Array[Byte](size)
+    ByteArrayAccess.setInt(magBytes, last, x.toInt)
     while (pos < limit) {
       x = ByteArrayAccess.getLong(buf, pos) // Use a trick of fast 8 digit to int conversion from: http://govnokod.ru/13461#comment189156
       x = (x & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8
       x = (x & 0x00FF00FF00FF00FFL) * 6553601 >> 16
       x = (x & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32
       x = x * 10 + (buf(pos + 8) - '0')
-      firstWord = Math.max(firstWord - 1, 0)
-      var i = lastWord
-      while (i >= firstWord) {
-        val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
-        magWords(i) = p.toInt
+      first = Math.max(first - 4, 0)
+      var i = last
+      while (i >= first) {
+        val p = (ByteArrayAccess.getInt(magBytes, i) & 0xFFFFFFFFL) * 1000000000 + x
+        ByteArrayAccess.setInt(magBytes, i, p.toInt)
         x = p >>> 32
-        i -= 1
+        i -= 4
       }
       pos += 9
     }
-    val magBytes = new Array[Byte](numWords << 2)
     var i = 0
-    while (i < numWords) {
-      val w = magWords(i)
-      val j = i << 2
-      magBytes(j) = (w >> 24).toByte
-      magBytes(j + 1) = (w >> 16).toByte
-      magBytes(j + 2) = (w >> 8).toByte
-      magBytes(j + 3) = w.toByte
-      i += 1
+    while (i < size) {
+      ByteArrayAccess.setInt(magBytes, i, java.lang.Integer.reverseBytes(ByteArrayAccess.getInt(magBytes, i)))
+      i += 4
     }
     val signum =
       if (isNeg) -1

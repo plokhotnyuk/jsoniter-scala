@@ -24,6 +24,10 @@ class ByteArrayAccess { // FIXME: Use Java wrapper as w/a for missing support of
         VH_INT.set(buf, pos, value);
     }
 
+    static int getInt(byte[] buf, int pos) {
+        return (int) VH_INT.get(buf, pos);
+    }
+
     static void setShort(byte[] buf, int pos, short value) {
         VH_SHORT.set(buf, pos, value);
     }
