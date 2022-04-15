@@ -2022,14 +2022,26 @@ final class JsonReader private[jsoniter_scala](
     val year = parseYearWithByte('-', 10, head)
     val month = parseMonthWithByte('-', head)
     val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinuteWithByte(':', head)
-    val second = parseSecond(head)
+    var seconds = 0L
+    val pos = head
+    if (pos + 7 < tail && {
+      seconds = ByteArrayAccess.getLong(buf, pos)
+      (seconds & 0xF0F0FFF0F0FFF0F0L) == 0x30303A30303A3030L &&
+        ((seconds + 0x060A00060A00060EL) & 0xF0F000F0F000F0F0L) == 0x3030003030003030L
+    } && { // Fast time string to seconds borrowed from here: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+      seconds = ((seconds & 0x0F07000F07000F03L) * 2561) >> 8
+      seconds = ((((seconds & 0x3F00001F) * 0xE1000003CL) >> 24) & 0x1FFFF) + (seconds >> 48)
+      seconds < 86400 // 86400 == seconds per day
+    }) head = pos + 8
+    else seconds = parseSeconds(pos)
     val nano = parseOptionalNanoWithByte('Z')
     nextByteOrError('"', head)
     val epochDay = epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
-    Instant.ofEpochSecond(epochDay * 86400 + (hour * 3600 + minute * 60 + second), nano) // 86400 == seconds per day
+    Instant.ofEpochSecond(epochDay * 86400 + seconds, nano)
   }
+
+  private[this] def parseSeconds(pos: Int): Int =
+    parseHourWithByte(':', pos) * 3600 + parseMinuteWithByte(':', head) * 60 + parseSecond(head)
 
   private[this] def parseLocalDate(): LocalDate = {
     val year = parseYearWithByte('-', 9, head)
