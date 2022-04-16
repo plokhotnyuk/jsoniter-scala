@@ -1141,7 +1141,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeByte(x: Byte): Unit = count = {
-    var pos = ensureBufCapacity(4) // Byte.MinValue.toString.length
+    var pos = ensureBufCapacity(5) // size of int in bytes + one byte for the sign
     val buf = this.buf
     val ds = digits
     var q0: Int = x
