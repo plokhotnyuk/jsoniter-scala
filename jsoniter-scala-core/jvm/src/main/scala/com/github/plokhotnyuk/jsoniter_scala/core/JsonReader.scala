@@ -2077,24 +2077,15 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseMonthDay(pos: Int): MonthDay =
     if (pos + 7 < tail) {
-      val buf = this.buf
-      if (buf(pos) != '-') tokenError('-', pos)
-      if (buf(pos + 1) != '-') tokenError('-', pos + 1)
-      val b3 = buf(pos + 2)
-      val b4 = buf(pos + 3)
-      val month = b3 * 10 + b4 - 528 // 528 == '0' * 11
-      if (b3 < '0' || b3 > '9') digitError(pos + 2)
-      if (b4 < '0' || b4 > '9') digitError(pos + 3)
-      if (month < 1 || month > 12) monthError(pos + 3)
-      if (buf(pos + 4) != '-') tokenError('-', pos + 4)
-      val b6 = buf(pos + 5)
-      val b7 = buf(pos + 6)
-      val day = b6 * 10 + b7 - 528 // 528 == '0' * 11
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      val monthDay = ((bs & 0x000F03000F010000L) * 2561 >> 24).toInt
+      val month = monthDay & 0x1F
+      val day = monthDay >>> 24
       head = pos + 8
-      if (b6 < '0' || b6 > '9') digitError(pos + 5)
-      if (b7 < '0' || b7 > '9') digitError(pos + 6)
+      if ((bs & 0xFFF0F0FFF0F0FFFFL) != 0x2230302D30302D2DL ||
+        (bs + 0x00060C00060E0000L & 0xFFF0F0FFF0F0FFFFL) != 0x2230302D30302D2DL) monthDayError(pos)
+      if (month < 1 || month > 12) monthError(pos + 3)
       if (day == 0 || (day > 28 && day > maxDayForMonth(month))) dayError(pos + 6)
-      if (buf(pos + 7) != '"') tokenError('"', pos + 7)
       MonthDay.of(month, day)
     } else parseMonthDay(loadMoreOrError(pos))
 
@@ -2427,6 +2418,22 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def yearError(pos: Int): Nothing = decodeError("illegal year", pos)
+
+  private[this] def monthDayError(pos: Int): Nothing = {
+    val buf = this.buf
+    if (buf(pos) != '-') tokenError('-', pos)
+    if (buf(pos + 1) != '-') tokenError('-', pos + 1)
+    val b3 = buf(pos + 2)
+    val b4 = buf(pos + 3)
+    if (b3 < '0' || b3 > '9') digitError(pos + 2)
+    if (b4 < '0' || b4 > '9') digitError(pos + 3)
+    if (buf(pos + 4) != '-') tokenError('-', pos + 4)
+    val b6 = buf(pos + 5)
+    val b7 = buf(pos + 6)
+    if (b6 < '0' || b6 > '9') digitError(pos + 5)
+    if (b7 < '0' || b7 > '9') digitError(pos + 6)
+    tokenError('"', pos + 7)
+  }
 
   private[this] def monthError(pos: Int): Nothing = decodeError("illegal month", pos)
 
