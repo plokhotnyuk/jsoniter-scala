@@ -1992,8 +1992,7 @@ final class JsonReader private[jsoniter_scala](
     val second = parseSecond(head)
     val nano = parseOptionalNanoWithByte('Z')
     nextByteOrError('"', head)
-    val epochDay = epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
-    Instant.ofEpochSecond(epochDay * 86400 + (hour * 3600 + minute * 60 + second), nano) // 86400 == seconds per day
+    Instant.ofEpochSecond(epochDay(year, month, day) * 86400 + (hour * 3600 + minute * 60 + second), nano) // 86400 == seconds per day
   }
 
   private[this] def parseLocalDate(): LocalDate = {
@@ -2307,18 +2306,15 @@ final class JsonReader private[jsoniter_scala](
     } else ZoneOffset.ofTotalSeconds(if (isNeg) -offsetTotal else offsetTotal)
   }
 
-  private[this] def epochDayForYear(year: Int): Long =
+  private[this] def epochDay(year: Int, month: Int, day: Int): Long =
     year * 365L + (((year + 3) >> 2) - {
       val cp = year * 1374389535L
       if (year < 0) (cp >> 37) - (cp >> 39) // year / 100 - year / 400
       else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
-    }.toInt)
-
-  private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
-    ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
+    }.toInt + ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
       (if (month <= 2) 0
       else if (isLeap(year)) 1
-      else 2)
+      else 2) + day - 719529) // 719528 == days 0000 to 1970)
 
   private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
     if (month != 2) ((month >> 3) ^ (month & 0x1)) + 30
