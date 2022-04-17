@@ -1283,14 +1283,12 @@ final class JsonReader private[jsoniter_scala](
         buf = this.buf
         pos + 7 < tail
       }) && {
-        bs = ByteArrayAccess.getLong(buf, pos) // Use a trick of fast 8 digit checking from: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+        bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
           ((bs + 0x0606060606060606L) & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
       }) {
-        if (x < -92233720368L || { // Use a trick of fast 8 digit to int conversion from: http://govnokod.ru/13461#comment189156
-          bs = (bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8
-          bs = (bs & 0x00FF00FF00FF00FFL) * 6553601 >> 16
-          bs = (bs & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32
+        if (x < -92233720368L || { // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
+          bs = (((bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32
           x = x * 100000000 - bs
           x > 0
         }) longOverflowError(pos + 2)
@@ -1646,7 +1644,7 @@ final class JsonReader private[jsoniter_scala](
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Use a trick of fast 8 digit checking from: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
             (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
               ((bs + 0x0606060606060606L) & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
           }) pos += 8
@@ -1706,7 +1704,7 @@ final class JsonReader private[jsoniter_scala](
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Use a trick of fast 8 digit checking from: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
             (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
               ((bs + 0x0606060606060606L) & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
           }) pos += 8
@@ -1734,7 +1732,7 @@ final class JsonReader private[jsoniter_scala](
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Use a trick of fast 8 digit checking from: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
             (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
               ((bs + 0x0606060606060606L) & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
           }) pos += 8
@@ -1844,16 +1842,12 @@ final class JsonReader private[jsoniter_scala](
       x1 = x1 * 10 + (buf(pos) - '0')
       pos += 1
     }
-    var bs = ByteArrayAccess.getLong(buf, pos) // Use a trick of fast 8 digit to int conversion from: http://govnokod.ru/13461#comment189156
-    bs = (bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8
-    bs = (bs & 0x00FF00FF00FF00FFL) * 6553601 >> 16
-    bs = (bs & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32
-    var x2 = (bs * 10 + (buf(pos + 8) - '0')) * 1000000000 + {
-      bs = ByteArrayAccess.getLong(buf, pos + 9) // Use a trick of fast 8 digit to int conversion from: http://govnokod.ru/13461#comment189156
-      bs = (bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8
-      bs = (bs & 0x00FF00FF00FF00FFL) * 6553601 >> 16
-      bs = (bs & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32
-      bs * 10 + (buf(pos + 17) - '0')
+    var bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
+    var x2 = (((((bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
+      (buf(pos + 8) - '0')) * 1000000000 + {
+      bs = ByteArrayAccess.getLong(buf, pos + 9) // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
+      ((((bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
+        (buf(pos + 17) - '0')
     }
     if (isNeg) {
       x1 = -x1
@@ -1879,11 +1873,9 @@ final class JsonReader private[jsoniter_scala](
     val magWords = new Array[Int](numWords)
     magWords(lastWord) = x.toInt
     while (pos < limit) {
-      x = ByteArrayAccess.getLong(buf, pos) // Use a trick of fast 8 digit to int conversion from: http://govnokod.ru/13461#comment189156
-      x = (x & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8
-      x = (x & 0x00FF00FF00FF00FFL) * 6553601 >> 16
-      x = (x & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32
-      x = x * 10 + (buf(pos + 8) - '0')
+      x = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
+      x = ((((x & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
+        (buf(pos + 8) - '0')
       firstWord = Math.max(firstWord - 1, 0)
       var i = lastWord
       while (i >= firstWord) {
