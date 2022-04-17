@@ -1285,7 +1285,7 @@ final class JsonReader private[jsoniter_scala](
       }) && {
         bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
-          ((bs + 0x0606060606060606L) & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
+          (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
       }) {
         if (x < -92233720368L || { // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
           bs = (((bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32
@@ -1646,7 +1646,7 @@ final class JsonReader private[jsoniter_scala](
           }) && {
             val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
             (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
-              ((bs + 0x0606060606060606L) & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
+              (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
           }) pos += 8
           while ((pos < tail || {
             pos = loadMore(pos)
@@ -1706,7 +1706,7 @@ final class JsonReader private[jsoniter_scala](
           }) && {
             val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
             (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
-              ((bs + 0x0606060606060606L) & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
+              (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
           }) pos += 8
           while ((pos < tail || {
             digits += pos
@@ -1734,7 +1734,7 @@ final class JsonReader private[jsoniter_scala](
           }) && {
             val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
             (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
-              ((bs + 0x0606060606060606L) & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
+              (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
           }) pos += 8
           while ((pos < tail || {
             fracLen += pos
@@ -2025,10 +2025,10 @@ final class JsonReader private[jsoniter_scala](
     if (pos + 7 < tail && {
       secondOfDay = ByteArrayAccess.getLong(buf, pos)
       (secondOfDay & 0xF0F0FFF0F0FFF0F0L) == 0x30303A30303A3030L &&
-        ((secondOfDay + 0x060A00060A00060DL) & 0xF0F0FFF0F0FFF0F0L) == 0x30303A30303A3030L
+        (secondOfDay + 0x060A00060A00060DL & 0xF0F0FFF0F0FFF0F0L) == 0x30303A30303A3030L
     } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-      secondOfDay = ((secondOfDay & 0x0F07000F07000F03L) * 2561) >> 8
-      secondOfDay = (((secondOfDay & 0x3F00001F) * 0x70800001e000000L) >>> 47) + (secondOfDay >> 48)
+      secondOfDay = (secondOfDay & 0x0F07000F07000F03L) * 2561 >> 8
+      secondOfDay = ((secondOfDay & 0x3F00001F) * 0x70800001e000000L >>> 47) + (secondOfDay >> 48)
       secondOfDay < 86400 // 86400 == seconds per day
     }) head = pos + 8
     else secondOfDay = parseSecondOfDay(pos)
