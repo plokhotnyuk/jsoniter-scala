@@ -890,6 +890,19 @@ final class JsonReader private[jsoniter_scala](
       day
     } else parseDayWithByte(year, month, t, loadMoreOrError(pos))
 
+  private[this] def parseHourWithMinute(pos: Int): Int = {
+    var hourMinute = 0
+    if (pos + 7 < tail && {
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      hourMinute = ((bs & 0x0F07000F03L) * 2561 >> 8).toInt
+      (bs & 0xF0F0FFF0F0L) == 0x30303A3030L &&
+        (bs + 0x060A00060DL & 0xF0F0FFF0F0L) == 0x30303A3030L && (hourMinute & 0x3F) < 24
+    }) {
+      head = pos + 5
+      hourMinute
+    } else parseHourWithByte(':', pos) | parseMinute(head) << 24
+  }
+
   @tailrec
   private[this] def parseHourWithByte(t: Byte, pos: Int): Int =
     if (pos + 2 < tail) {
@@ -2012,9 +2025,8 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseInstant(): Instant = {
     val year = parseInstantYearWithHyphen(head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, 'T', head)
-    val epochSecond = epochDay(year, month, day) * 86400 + { // 86400 == seconds per day
+    val monthDay = parseMonthWithDayWithT(year, head)
+    val epochSecond = epochDay(year, monthDay & 0x1F, monthDay >>> 24) * 86400 + { // 86400 == seconds per day
       val pos = head
       var secondOfDay = 0L
       if (pos + 7 < tail && {
@@ -2040,36 +2052,45 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseLocalDate(): LocalDate = {
     val year = parseYearWithByte('-', head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, '"', head)
+    var month, day = 0
+    val pos = head
+    if (pos + 7 < tail && {
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      val monthDay = ((bs & 0x0F03000F01L) * 2561 >> 8).toInt
+      month = monthDay & 0x1F
+      day = monthDay >>> 24
+      (bs & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && (bs + 0x00060C00060EL & 0xFFF0F0FFF0F0L) == 0x2230302D3030L &&
+        (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
+    }) head = pos + 6
+    else {
+      month = parseMonthWithByte('-', pos)
+      day = parseDayWithByte(year, month, '"', head)
+    }
     LocalDate.of(year, month, day)
   }
 
   private[this] def parseLocalDateTime(): LocalDateTime = {
     val year = parseYearWithByte('-', head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
+    val monthDay = parseMonthWithDayWithT(year, head)
+    val hourMinute = parseHourWithMinute(head)
     var second, nano = 0
     val b = nextByte(head)
     if (b == ':') {
       second = parseSecond(head)
       nano = parseOptionalNanoWithByte('"')
     } else if (b != '"') tokensError(':', '"')
-    LocalDateTime.of(year, month, day, hour, minute, second, nano)
+    LocalDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano)
   }
 
   private[this] def parseLocalTime(): LocalTime = {
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
+    val hourMinute = parseHourWithMinute(head)
     var second, nano = 0
     val b = nextByte(head)
     if (b == ':') {
       second = parseSecond(head)
       nano = parseOptionalNanoWithByte('"')
     } else if (b != '"') tokensError(':', '"')
-    LocalTime.of(hour, minute, second, nano)
+    LocalTime.of(hourMinute & 0x3F, hourMinute >>> 24, second, nano)
   }
 
   @tailrec
@@ -2087,12 +2108,28 @@ final class JsonReader private[jsoniter_scala](
       MonthDay.of(month, day)
     } else parseMonthDay(loadMoreOrError(pos))
 
+  private[this] def parseMonthWithDayWithT(year: Int, pos: Int): Int = {
+    var monthDay = 0
+    if (pos + 7 < tail && {
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      monthDay = ((bs & 0x0F03000F01L) * 2561 >> 8).toInt
+      val month = monthDay & 0x1F
+      val day = monthDay >>> 24
+      (bs & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && (bs + 0x00060C00060EL & 0xFFF0F0FFF0F0L) == 0x5430302D3030L &&
+        (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
+    }) {
+      head = pos + 6
+      monthDay
+    } else {
+      val month = parseMonthWithByte('-', pos)
+      parseDayWithByte(year, month, 'T', head) << 24 | month
+    }
+  }
+
   private[this] def parseOffsetDateTime(): OffsetDateTime = {
     val year = parseYearWithByte('-', head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
+    val monthDay = parseMonthWithDayWithT(year, head)
+    val hourMinute = parseHourWithMinute(head)
     var second, nano = 0
     var nanoDigitWeight = -1
     var b = nextByte(head)
@@ -2135,12 +2172,11 @@ final class JsonReader private[jsoniter_scala](
         else if (b != '"') tokensError(':', '"')
         toZoneOffset(offsetNeg, offsetTotal)
       }
-    OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
+    OffsetDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano, zoneOffset)
   }
 
   private[this] def parseOffsetTime(): OffsetTime = {
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
+    val hourMinute = parseHourWithMinute(head)
     var second, nano = 0
     var nanoDigitWeight = -1
     var b = nextByte(head)
@@ -2183,7 +2219,7 @@ final class JsonReader private[jsoniter_scala](
         else if (b != '"') tokensError(':', '"')
         toZoneOffset(offsetNeg, offsetTotal)
       }
-    OffsetTime.of(hour, minute, second, nano, zoneOffset)
+    OffsetTime.of(hourMinute & 0x3F, hourMinute >>> 24, second, nano, zoneOffset)
   }
 
   private[this] def parsePeriod(): Period = {
@@ -2246,10 +2282,8 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseZonedDateTime(): ZonedDateTime = {
     val year = parseYearWithByte('-', head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
+    val monthDay = parseMonthWithDayWithT(year, head)
+    val hourMinute = parseHourWithMinute(head)
     var second, nano = 0
     var nanoDigitWeight = -1
     var b = nextByte(head)
@@ -2276,7 +2310,7 @@ final class JsonReader private[jsoniter_scala](
         head = pos
       }
     }
-    val localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, nano)
+    val localDateTime = LocalDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano)
     val zoneOffset =
       if (b == 'Z') {
         b = nextByte(head)
