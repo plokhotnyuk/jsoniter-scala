@@ -1288,8 +1288,7 @@ final class JsonReader private[jsoniter_scala](
           (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
       }) {
         if (x < -92233720368L || { // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
-          bs = (((bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32
-          x = x * 100000000 - bs
+          x = x * 100000000 - ((((bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32)
           x > 0
         }) longOverflowError(pos + 2)
         pos += 8
@@ -1841,14 +1840,11 @@ final class JsonReader private[jsoniter_scala](
     while (pos < firstBlockLimit) {
       x1 = x1 * 10 + (buf(pos) - '0')
       pos += 1
-    }
-    var bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
-    var x2 = (((((bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
-      (buf(pos + 8) - '0')) * 1000000000 + {
-      bs = ByteArrayAccess.getLong(buf, pos + 9) // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
-      ((((bs & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
-        (buf(pos + 17) - '0')
-    }
+    } // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
+    var x2 = (((((ByteArrayAccess.getLong(buf, pos) & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
+      buf(pos + 8)) * 1000000000 +
+      ((((ByteArrayAccess.getLong(buf, pos + 9) & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
+      buf(pos + 17) - 48000000048L // 48000000048 == '0' * 1000000001L
     if (isNeg) {
       x1 = -x1
       x2 = -x2
@@ -1872,9 +1868,8 @@ final class JsonReader private[jsoniter_scala](
     val numWords = lastWord + 1
     val magWords = new Array[Int](numWords)
     magWords(lastWord) = x.toInt
-    while (pos < limit) {
-      x = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
-      x = ((((x & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
+    while (pos < limit) { // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
+      x = ((((ByteArrayAccess.getLong(buf, pos) & 0x0F0F0F0F0F0F0F0FL) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
         (buf(pos + 8) - '0')
       firstWord = Math.max(firstWord - 1, 0)
       var i = lastWord
@@ -2028,7 +2023,7 @@ final class JsonReader private[jsoniter_scala](
           (secondOfDay + 0x060A00060A00060DL & 0xF0F0FFF0F0FFF0F0L) == 0x30303A30303A3030L
       } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
         secondOfDay = (secondOfDay & 0x0F07000F07000F03L) * 2561 >> 8
-        secondOfDay = ((secondOfDay & 0x3F00001F) * 0x70800001e000000L >>> 47) + (secondOfDay >> 48)
+        secondOfDay = ((secondOfDay & 0x3F00001F) * 506654958582497280L >>> 47) + (secondOfDay >> 48)
         secondOfDay < 86400
       }) {
         head = pos + 8
