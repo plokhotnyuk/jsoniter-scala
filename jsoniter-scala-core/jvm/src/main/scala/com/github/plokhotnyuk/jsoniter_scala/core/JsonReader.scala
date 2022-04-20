@@ -1148,33 +1148,36 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseBoolean(isToken: Boolean, pos: Int): Boolean =
     if (pos + 3 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      if (b1 == 't') {
-        val b2 = buf(pos + 1)
-        val b3 = buf(pos + 2)
-        val b4 = buf(pos + 3)
+      val bs = ByteArrayAccess.getInt(buf, pos)
+      if (bs == 0x65757274) {
         head = pos + 4
-        if (b2 != 'r') booleanError(pos + 1)
-        if (b3 != 'u') booleanError(pos + 2)
-        if (b4 != 'e') booleanError(pos + 3)
         true
-      } else if (b1 == 'f') {
-        if (pos + 4 < tail) {
-          val b2 = buf(pos + 1)
-          val b3 = buf(pos + 2)
-          val b4 = buf(pos + 3)
-          val b5 = buf(pos + 4)
-          head = pos + 5
-          if (b2 != 'a') booleanError(pos + 1)
-          if (b3 != 'l') booleanError(pos + 2)
-          if (b4 != 's') booleanError(pos + 3)
-          if (b5 != 'e') booleanError(pos + 4)
-          false
-        } else parseBoolean(isToken, loadMoreOrError(pos))
-      } else if (isToken && (b1 == ' ' || b1 == '\n' || (b1 | 0x4) == '\r')) parseBoolean(isToken, pos + 1)
-      else booleanError(pos)
+      } else if (bs == 0x736C6166) {
+        if (nextByte(pos + 4) != 'e') booleanError(pos + 4)
+        false
+      } else if (isToken && {
+        val b1 = bs.toByte
+        b1 == ' ' || b1 == '\n' || (b1 | 0x4) == '\r'
+      }) parseBoolean(isToken, pos + 1)
+      else booleanError(bs, pos)
     } else parseBoolean(isToken, loadMoreOrError(pos))
+
+  private[this] def booleanError(bs: Int, pos: Int): Nothing = booleanError({
+    val b1 = bs.toByte
+    val b2 = (bs >> 8).toByte
+    val b3 = (bs >> 16).toByte
+    if (b1 == 't') {
+      pos +
+        (if (b2 != 'r') 1
+        else if (b3 != 'u') 2
+        else 3)
+    } else if (b1 == 'f') {
+      pos +
+        (if (b2 != 'a') 1
+        else if (b3 != 'l') 2
+        else 3)
+    } else pos
+  })
 
   private[this] def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
 
