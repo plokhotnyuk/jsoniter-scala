@@ -479,14 +479,42 @@ final class JsonReader private[jsoniter_scala](
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
 
+  @tailrec
   def readNullOrError[@sp A](default: A, msg: String): A =
-    if (default != null && isCurrentToken('n', head)) parseNullOrError(default, msg, head)
-    else decodeError(msg)
+    if (default != null) {
+      val pos = head
+      if (pos != 0) {
+        if (pos + 2 < tail) {
+          val bs = ByteArrayAccess.getInt(buf, pos - 1)
+          if (bs == 0x6C6C756E) {
+            head = pos + 3
+            default
+          } else decodeError(msg, bs, pos)
+        } else if (buf(pos - 1) == 'n') {
+          loadMoreOrError(pos - 1)
+          head = pos
+          readNullOrError(default, msg)
+        } else decodeError(msg, pos - 1)
+      } else illegalTokenOperation()
+    } else decodeError(msg)
 
+  @tailrec
   def readNullOrTokenError[@sp A](default: A, t: Byte): A =
     if (default != null) {
-      if (isCurrentToken('n', head)) parseNullOrTokenError(default, t, head)
-      else tokenOrNullError(t)
+      val pos = head
+      if (pos != 0) {
+        if (pos + 2 < tail) {
+          val bs = ByteArrayAccess.getInt(buf, pos - 1)
+          if (bs == 0x6C6C756E) {
+            head = pos + 3
+            default
+          } else tokenOrNullError(t, bs, pos)
+        } else if (buf(pos - 1) == 'n') {
+          loadMoreOrError(pos - 1)
+          head = pos
+          readNullOrTokenError(default, t)
+        } else tokenOrNullError(t)
+      } else illegalTokenOperation()
     } else tokenError(t)
 
   def nextByte(): Byte = nextByte(head)
@@ -1079,34 +1107,6 @@ final class JsonReader private[jsoniter_scala](
       case ex: DateTimeException => timezoneError(ex)
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
-
-  @tailrec
-  private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
-    if (pos + 2 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      head = pos + 3
-      if (b1 != 'u') decodeError(error, pos)
-      if (b2 != 'l') decodeError(error, pos + 1)
-      if (b3 != 'l') decodeError(error, pos + 2)
-      default
-    } else parseNullOrError(default, error, loadMoreOrError(pos))
-
-  @tailrec
-  private[this] def parseNullOrTokenError[@sp A](default: A, t: Byte, pos: Int): A =
-    if (pos + 2 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      head = pos + 3
-      if (b1 != 'u') tokenOrNullError(t, pos)
-      if (b2 != 'l') tokenOrNullError(t, pos + 1)
-      if (b3 != 'l') tokenOrNullError(t, pos + 2)
-      default
-    } else parseNullOrTokenError(default, t, loadMoreOrError(pos))
 
   private[this] def appendChar(ch: Char, i: Int): Int = {
     if (i >= charBuf.length) growCharBuf(i + 1)
@@ -1914,9 +1914,17 @@ final class JsonReader private[jsoniter_scala](
     new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale) // FIXME: Use cached arrays with the constructor that has an offset and a len params after dropping of JDK 8 support
   }
 
+  @tailrec
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
-    if (default != null) parseNullOrError(default, "expected number or null", pos)
-    else numberError(pos - 1)
+    if (default != null) {
+      if (pos + 2 < tail) {
+        val bs = ByteArrayAccess.getInt(buf, pos - 1)
+        if (bs == 0x6C6C756E) {
+          head = pos + 3
+          default
+        } else decodeError("expected number or null", bs, pos)
+      } else readNullOrNumberError(default, loadMoreOrError(pos - 1) + 1)
+    } else numberError(pos - 1)
 
   private[this] def numberError(pos: Int = head - 1): Nothing = decodeError("illegal number", pos)
 
@@ -1933,6 +1941,28 @@ final class JsonReader private[jsoniter_scala](
   private[this] def intOverflowError(pos: Int): Nothing = decodeError("value is too large for int", pos)
 
   private[this] def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
+
+  private[this] def decodeError(msg: String, bs: Int, pos: Int): Nothing = decodeError(msg, {
+    val b0 = bs.toByte
+    val b1 = (bs >> 8).toByte
+    val b2 = (bs >> 16).toByte
+    pos +
+      (if (b0 != 'n') -1
+      else if (b1 != 'u') 0
+      else if (b2 != 'l') 1
+      else 2)
+  })
+
+  private[this] def tokenOrNullError(t: Byte, bs: Int, pos: Int): Nothing = tokenOrNullError(t, {
+    val b0 = bs.toByte
+    val b1 = (bs >> 8).toByte
+    val b2 = (bs >> 16).toByte
+    pos +
+      (if (b0 != 'n') -1
+      else if (b1 != 'u') 0
+      else if (b2 != 'l') 1
+      else 2)
+  })
 
   private[this] def parseDuration(): Duration = {
     var seconds = 0L
