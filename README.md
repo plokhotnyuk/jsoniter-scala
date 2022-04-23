@@ -20,7 +20,7 @@ serialization performance of jsoniter-scala with [AVSystem's scala-commons](http
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
 (max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 21.10, and latest versions of Azul Zulu 11/17, OpenJDK 19[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
-and GraalVM CE/EE 22.0 for Java 11/17.
+and GraalVM CE/EE 22.1 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
 compares the same libraries on the same environment by the same code which is compiled by Scala.js 1.9.0 to ES 2015 with
