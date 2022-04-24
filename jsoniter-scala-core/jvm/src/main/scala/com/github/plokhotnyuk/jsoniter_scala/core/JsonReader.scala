@@ -2189,20 +2189,24 @@ final class JsonReader private[jsoniter_scala](
         head = pos
       }
     }
+    val pos = head
     val zoneOffset =
       if (b == 'Z') {
-        nextByteOrError('"', head)
+        nextByteOrError('"', pos)
         ZoneOffset.UTC
       } else {
         val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
-        var offsetTotal = parseOffsetHour(head) * 3600
-        b = nextByte(head)
-        if (b == ':' && {
-          offsetTotal += parseOffsetMinute(head) * 60
-          b = nextByte(head)
-          b == ':'
-        }) offsetTotal += parseOffsetSecondWithByte('"', head)
-        else if (b != '"') tokensError(':', '"')
+        var offsetTotal = 0
+        var bs = 0L
+        if (pos + 7 < tail && {
+          bs = ByteArrayAccess.getLong(buf, pos)
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+        } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
+          offsetTotal < 64800
+        }) {
+          head = pos + 6
+        } else offsetTotal = parseOffsetTotalWithByte('"', pos)
         toZoneOffset(offsetNeg, offsetTotal)
       }
     OffsetDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano, zoneOffset)
@@ -2236,20 +2240,24 @@ final class JsonReader private[jsoniter_scala](
         head = pos
       }
     }
+    val pos = head
     val zoneOffset =
       if (b == 'Z') {
-        nextByteOrError('"', head)
+        nextByteOrError('"', pos)
         ZoneOffset.UTC
       } else {
         val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
-        var offsetTotal = parseOffsetHour(head) * 3600
-        b = nextByte(head)
-        if (b == ':' && {
-          offsetTotal += parseOffsetMinute(head) * 60
-          b = nextByte(head)
-          b == ':'
-        }) offsetTotal += parseOffsetSecondWithByte('"', head)
-        else if (b != '"') tokensError(':', '"')
+        var offsetTotal = 0
+        var bs = 0L
+        if (pos + 7 < tail && {
+          bs = ByteArrayAccess.getLong(buf, pos)
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+        } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
+          offsetTotal < 64800
+        }) {
+          head = pos + 6
+        } else offsetTotal = parseOffsetTotalWithByte('"', pos)
         toZoneOffset(offsetNeg, offsetTotal)
       }
     OffsetTime.of(hourMinute & 0x3F, hourMinute >>> 24, second, nano, zoneOffset)
@@ -2344,25 +2352,40 @@ final class JsonReader private[jsoniter_scala](
       }
     }
     val localDateTime = LocalDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano)
+    val pos = head
     val zoneOffset =
       if (b == 'Z') {
-        b = nextByte(head)
+        b = nextByte(pos)
         ZoneOffset.UTC
       } else {
         val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
         nanoDigitWeight = -3
-        var offsetTotal = parseOffsetHour(head) * 3600
-        b = nextByte(head)
-        if (b == ':') {
-          offsetTotal += parseOffsetMinute(head) * 60
+        var offsetTotal = 0
+        var bs = 0L
+        if (pos + 7 < tail && {
+          bs = ByteArrayAccess.getLong(buf, pos)
+          (bs & 0xF0F0FFF0F0L) == 0x30303A3030L && (bs + 0x060A00060EL & 0xF0F0FFF0F0L) == 0x30303A3030L &&
+            (bs & 0xFF0000000000L) != 0x3A0000000000L
+        } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
+          offsetTotal < 64800
+        }) {
+          head = pos + 6
+          b = (bs >> 40).toByte
+        } else {
+          offsetTotal = parseOffsetHour(pos) * 3600
           b = nextByte(head)
           if (b == ':') {
-            nanoDigitWeight = -4
-            offsetTotal += parseOffsetSecond(head)
+            offsetTotal += parseOffsetMinute(head) * 60
             b = nextByte(head)
+            if (b == ':') {
+              nanoDigitWeight = -4
+              offsetTotal += parseOffsetSecond(head)
+              b = nextByte(head)
+            }
           }
         }
-        toZoneOffset(offsetNeg, offsetTotal)
+      toZoneOffset(offsetNeg, offsetTotal)
       }
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (b == '[') {
@@ -2373,22 +2396,38 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseZoneOffset(): ZoneOffset = {
-    var b = nextByte(head)
+    val b = nextByte(head)
+    val pos = head
     if (b == 'Z') {
-      nextByteOrError('"', head)
+      nextByteOrError('"', pos)
       ZoneOffset.UTC
     } else {
       val offsetNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
-      var offsetTotal = parseOffsetHour(head) * 3600
-      b = nextByte(head)
-      if (b == ':' && {
-        offsetTotal += parseOffsetMinute(head) * 60
-        b = nextByte(head)
-        b == ':'
-      }) offsetTotal += parseOffsetSecondWithByte('"', head)
-      else if (b != '"') tokensError(':', '"')
+      var offsetTotal = 0
+      var bs = 0L
+      if (pos + 7 < tail && {
+        bs = ByteArrayAccess.getLong(buf, pos)
+        (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+      } && {
+        offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
+        offsetTotal < 64800
+      }) { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+        head = pos + 6
+      } else offsetTotal = parseOffsetTotalWithByte('"', pos)
       toZoneOffset(offsetNeg, offsetTotal)
     }
+  }
+
+  private[this] def parseOffsetTotalWithByte(t: Byte, pos: Int): Int = {
+    var offsetTotal = parseOffsetHour(pos) * 3600
+    var b = nextByte(head)
+    if (b == ':' && {
+      offsetTotal += parseOffsetMinute(head) * 60
+      b = nextByte(head)
+      b == ':'
+    }) offsetTotal += parseOffsetSecondWithByte(t, head)
+    else if (b != '"') tokensError(':', t)
+    offsetTotal
   }
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetTotal: Int): ZoneOffset = {
