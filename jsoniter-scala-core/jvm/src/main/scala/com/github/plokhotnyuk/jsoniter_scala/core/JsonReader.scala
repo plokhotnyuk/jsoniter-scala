@@ -2592,9 +2592,10 @@ final class JsonReader private[jsoniter_scala](
     } else parseUUID(loadMoreOrError(pos))
 
   private[this] def parseString(): Int = {
-    val minLim = Math.min(charBuf.length, tail - head)
-    if (isGraalVM) parseStringUnrolled(0, minLim, charBuf, head)
-    else parseString(0, minLim, charBuf, head)
+    val pos = head
+    val minLim = Math.min(charBuf.length, tail - pos)
+    if (isGraalVM) parseStringUnrolled(0, minLim, charBuf, pos)
+    else parseString(0, minLim, charBuf, pos)
   }
 
   @tailrec
@@ -2614,33 +2615,28 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private[this] def parseStringUnrolled(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i + 3 < minLim) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      charBuf(i) = b1.toChar
-      val b2 = buf(pos + 1)
-      charBuf(i + 1) = b2.toChar
-      val b3 = buf(pos + 2)
-      charBuf(i + 2) = b3.toChar
-      val b4 = buf(pos + 3)
-      charBuf(i + 3) = b4.toChar
-      if (b1 == '"') {
-        head = pos + 1
-        i
-      } else if (((b1 - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
-      else if (b2 == '"') {
-        head = pos + 2
-        i + 1
-      } else if (((b2 - 32) ^ 60) <= 0) parseEncodedString(i + 1, charBuf.length - 1, charBuf, pos + 1)
-      else if (b3 == '"') {
-        head = pos + 3
-        i + 2
-      } else if (((b3 - 32) ^ 60) <= 0) parseEncodedString(i + 2, charBuf.length - 1, charBuf, pos + 2)
-      else if (b4 == '"') {
-        head = pos + 4
-        i + 3
-      } else if (((b4 - 32) ^ 60) <= 0) parseEncodedString(i + 3, charBuf.length - 1, charBuf, pos + 3)
-      else parseStringUnrolled(i + 4, minLim, charBuf, pos + 4)
+    if (i + 7 < minLim) { // Based on SWAR routine of JSON string parsing: https://github.com/sirthias/borer/blob/fde9d1ce674d151b0fee1dd0c2565020c3f6633a/core/src/main/scala/io/bullet/borer/json/JsonParser.scala#L456
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      val notz = java.lang.Long.numberOfTrailingZeros(
+        (((bs ^ 0x5D5D5D5D5D5D5D5DL) + 0x0101010101010101L | (bs ^ 0x2323232323232323L) + 0x0101010101010101L) |
+          ((bs | 0x1F1F1F1F1F1F1F1FL) - 0x2020202020202020L | bs)) & 0x8080808080808080L)
+      val bs1 = bs & 0x00FF00FF00FF00FFL
+      val bs2 = bs & 0xFF00FF00FF00FF00L
+      charBuf(i) = bs1.toChar
+      charBuf(i + 1) = (bs2 >>> 8).toChar
+      charBuf(i + 2) = (bs1 >>> 16).toChar
+      charBuf(i + 3) = (bs2 >>> 24).toChar
+      charBuf(i + 4) = (bs1 >>> 32).toChar
+      charBuf(i + 5) = (bs2 >>> 40).toChar
+      charBuf(i + 6) = (bs1 >>> 48).toChar
+      charBuf(i + 7) = (bs2 >>> 56).toChar
+      if (notz < 64) {
+        val offset = notz >> 3
+        if (bs << ~notz >>> 56 == '"') {
+          head = pos + offset + 1
+          i + offset
+        } else parseEncodedString(i + offset, charBuf.length - 1, charBuf, pos + offset)
+      } else parseStringUnrolled(i + 8, minLim, charBuf, pos + 8)
     } else if (i < minLim) {
       val b = buf(pos)
       charBuf(i) = b.toChar
