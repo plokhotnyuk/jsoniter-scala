@@ -1442,7 +1442,9 @@ final class JsonReader private[jsoniter_scala](
           val pow10 = pow10Doubles
           val slop = 16 - digits
           (posMant * pow10(slop)) * pow10(exp.toInt - slop)
-        } else toDouble(posMant, exp, from, newMark, pos)
+        } else if (posMant == 0 || exp < -343) 0.0
+        else if (exp >= 310) Double.PositiveInfinity
+        else toDouble(posMant, exp.toInt, from, newMark, pos)
       if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
@@ -1450,42 +1452,39 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toDouble(m: Long, e: Long, from: Int, newMark: Int, pos: Int): Double =
-    if (m == 0 || e < -343) 0.0
-    else if (e >= 310) Double.PositiveInfinity
-    else {
-      var shift = java.lang.Long.numberOfLeadingZeros(m)
-      var mant = unsignedMultiplyHigh(m << shift, pow10Mantissas(e.toInt + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
-      var exp = addExp(-shift, e.toInt)
-      shift = java.lang.Long.numberOfLeadingZeros(mant)
-      mant <<= shift
-      exp -= shift
-      val roundingError =
-        (if (m < 922337203685477580L) 1
-        else 19) << shift
-      val truncatedBitNum = Math.max(-1074 - exp, 11)
-      val savedBitNum = 64 - truncatedBitNum
-      val mask = -1L >>> Math.max(savedBitNum, 0)
-      val halfwayDiff = (mant & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
-        if (savedBitNum <= 0) mant = 0
-        mant >>>= truncatedBitNum
-        exp += truncatedBitNum
-        if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mant == 0x001FFFFFFFFFFFFFL) {
-            mant = 0x0010000000000000L
-            exp += 1
-          } else mant += 1
-        }
-        if (exp == -1074) mant
-        else if (exp >= 972) 0x7FF0000000000000L
-        else (exp + 1075L) << 52 | mant & 0x000FFFFFFFFFFFFFL
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
+  private[this] def toDouble(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Double = {
+    var shift = java.lang.Long.numberOfLeadingZeros(m10)
+    var m2 = unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+    var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
+    shift = java.lang.Long.numberOfLeadingZeros(m2)
+    m2 <<= shift
+    e2 -= shift
+    val roundingError =
+      (if (m10 < 922337203685477580L) 1
+      else 19) << shift
+    val truncatedBitNum = Math.max(-1074 - e2, 11)
+    val savedBitNum = 64 - truncatedBitNum
+    val mask = -1L >>> Math.max(savedBitNum, 0)
+    val halfwayDiff = (m2 & mask) - (mask >>> 1)
+    if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
+      if (savedBitNum <= 0) m2 = 0
+      m2 >>>= truncatedBitNum
+      e2 += truncatedBitNum
+      if (savedBitNum >= 0 && halfwayDiff > 0) {
+        if (m2 == 0x001FFFFFFFFFFFFFL) {
+          m2 = 0x0010000000000000L
+          e2 += 1
+        } else m2 += 1
       }
+      if (e2 == -1074) m2
+      else if (e2 >= 972) 0x7FF0000000000000L
+      else (e2 + 1075L) << 52 | m2 & 0x000FFFFFFFFFFFFFL
+    } else {
+      var offset = from
+      if (mark == 0) offset -= newMark
+      java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
     }
+  }
 
   private[this] def parseFloat(isToken: Boolean): Float = {
     var b =
@@ -1581,7 +1580,9 @@ final class JsonReader private[jsoniter_scala](
         else if (posMant < 4294967296L && exp >= digits - 23 && exp <= 19 - digits) {
           (if (exp < 0) posMant / pow10Doubles(-exp.toInt)
           else posMant * pow10Doubles(exp.toInt)).toFloat
-        } else toFloat(posMant, exp, from, newMark, pos)
+        } else if (posMant == 0 || exp < -64) 0.0f
+        else if (exp >= 39) Float.PositiveInfinity
+        else toFloat(posMant, exp.toInt, from, newMark, pos)
       if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
@@ -1589,48 +1590,42 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toFloat(m: Long, e: Long, from: Int, newMark: Int, pos: Int): Float =
-    if (m == 0 || e < -64) 0.0f
-    else if (e >= 39) Float.PositiveInfinity
-    else {
-      var shift = java.lang.Long.numberOfLeadingZeros(m)
-      var mant = unsignedMultiplyHigh(m << shift, pow10Mantissas(e.toInt + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
-      var exp = addExp(-shift, e.toInt)
-      shift = java.lang.Long.numberOfLeadingZeros(mant)
-      mant <<= shift
-      exp -= shift
-      val roundingError =
-        (if (m < 922337203685477580L) 1
-        else 19) << shift
-      val truncatedBitNum = Math.max(-149 - exp, 40)
-      val savedBitNum = 64 - truncatedBitNum
-      val mask = -1L >>> Math.max(savedBitNum, 0)
-      val halfwayDiff = (mant & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
-        if (savedBitNum <= 0) mant = 0
-        mant >>>= truncatedBitNum
-        exp += truncatedBitNum
-        if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mant == 0x00FFFFFF) {
-            mant = 0x00800000
-            exp += 1
-          } else mant += 1
-        }
-        if (exp == -149) mant.toInt
-        else if (exp >= 105) 0x7F800000
-        else (exp + 150) << 23 | mant.toInt & 0x007FFFFF
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
+  private[this] def toFloat(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Float = {
+    var shift = java.lang.Long.numberOfLeadingZeros(m10)
+    var m2 = unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+    var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
+    shift = java.lang.Long.numberOfLeadingZeros(m2)
+    m2 <<= shift
+    e2 -= shift
+    val roundingError =
+      (if (m10 < 922337203685477580L) 1
+      else 19) << shift
+    val truncatedBitNum = Math.max(-149 - e2, 40)
+    val savedBitNum = 64 - truncatedBitNum
+    val mask = -1L >>> Math.max(savedBitNum, 0)
+    val halfwayDiff = (m2 & mask) - (mask >>> 1)
+    if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
+      if (savedBitNum <= 0) m2 = 0
+      m2 >>>= truncatedBitNum
+      e2 += truncatedBitNum
+      if (savedBitNum >= 0 && halfwayDiff > 0) {
+        if (m2 == 0x00FFFFFF) {
+          m2 = 0x00800000
+          e2 += 1
+        } else m2 += 1
       }
+      if (e2 == -149) m2.toInt
+      else if (e2 >= 105) 0x7F800000
+      else (e2 + 150) << 23 | m2.toInt & 0x007FFFFF
+    } else {
+      var offset = from
+      if (mark == 0) offset -= newMark
+      java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
     }
+  }
 
   private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
     Math.multiplyHigh(x, y) + ((x >> 63) & y) + ((y >> 63) & x)
-
-  private[this] def addExp(e2: Int, e10: Int): Int =
-    (e10 * 108853 >> 15) + e2 + 1 // (e10 * Math.log(10) / Math.log(2)).toInt + e2 + 1
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
@@ -2204,9 +2199,8 @@ final class JsonReader private[jsoniter_scala](
         } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
           offsetTotal < 64800
-        }) {
-          head = pos + 6
-        } else offsetTotal = parseOffsetTotalWithByte('"', pos)
+        }) head = pos + 6
+        else offsetTotal = parseOffsetTotalWithByte('"', pos)
         toZoneOffset(offsetNeg, offsetTotal)
       }
     OffsetDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano, zoneOffset)
@@ -2255,9 +2249,8 @@ final class JsonReader private[jsoniter_scala](
         } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
           offsetTotal < 64800
-        }) {
-          head = pos + 6
-        } else offsetTotal = parseOffsetTotalWithByte('"', pos)
+        }) head = pos + 6
+        else offsetTotal = parseOffsetTotalWithByte('"', pos)
         toZoneOffset(offsetNeg, offsetTotal)
       }
     OffsetTime.of(hourMinute & 0x3F, hourMinute >>> 24, second, nano, zoneOffset)
@@ -2408,12 +2401,11 @@ final class JsonReader private[jsoniter_scala](
       if (pos + 7 < tail && {
         bs = ByteArrayAccess.getLong(buf, pos)
         (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
-      } && {
+      } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
         offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
         offsetTotal < 64800
-      }) { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-        head = pos + 6
-      } else offsetTotal = parseOffsetTotalWithByte('"', pos)
+      }) head = pos + 6
+      else offsetTotal = parseOffsetTotalWithByte('"', pos)
       toZoneOffset(offsetNeg, offsetTotal)
     }
   }
@@ -2656,18 +2648,19 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseStringUnrolled(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
     if (i + 7 < minLim) { // Based on SWAR routine of JSON string parsing: https://github.com/sirthias/borer/blob/fde9d1ce674d151b0fee1dd0c2565020c3f6633a/core/src/main/scala/io/bullet/borer/json/JsonParser.scala#L456
       val bs = ByteArrayAccess.getLong(buf, pos)
-      val notz = java.lang.Long.numberOfTrailingZeros(
-        (((bs ^ 0x5D5D5D5D5D5D5D5DL) + 0x0101010101010101L | (bs ^ 0x2323232323232323L) + 0x0101010101010101L) |
-          ((bs | 0x1F1F1F1F1F1F1F1FL) - 0x2020202020202020L | bs)) & 0x8080808080808080L)
+      val qMask = (bs ^ 0x5D5D5D5D5D5D5D5DL) + 0x0101010101010101L
+      val bMask = (bs ^ 0x2323232323232323L) + 0x0101010101010101L
+      val cMask = (bs | 0x1F1F1F1F1F1F1F1FL) - 0x2020202020202020L
+      val notz = java.lang.Long.numberOfTrailingZeros((qMask | bMask | cMask) & 0x8080808080808080L)
       val bs1 = bs & 0x00FF00FF00FF00FFL
       val bs2 = bs & 0xFF00FF00FF00FF00L
       charBuf(i) = bs1.toChar
-      charBuf(i + 1) = (bs2 >>> 8).toChar
-      charBuf(i + 2) = (bs1 >>> 16).toChar
-      charBuf(i + 3) = (bs2 >>> 24).toChar
-      charBuf(i + 4) = (bs1 >>> 32).toChar
-      charBuf(i + 5) = (bs2 >>> 40).toChar
-      charBuf(i + 6) = (bs1 >>> 48).toChar
+      charBuf(i + 1) = (bs2 >> 8).toChar
+      charBuf(i + 2) = (bs1 >> 16).toChar
+      charBuf(i + 3) = (bs2 >> 24).toChar
+      charBuf(i + 4) = (bs1 >> 32).toChar
+      charBuf(i + 5) = (bs2 >> 40).toChar
+      charBuf(i + 6) = (bs1 >> 48).toChar
       charBuf(i + 7) = (bs2 >>> 56).toChar
       if (notz < 64) {
         val offset = notz >> 3
