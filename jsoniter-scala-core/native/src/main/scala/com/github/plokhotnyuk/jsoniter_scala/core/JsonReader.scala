@@ -2089,18 +2089,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         nextByteOrError('"', head)
         ZoneOffset.UTC
-      } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
-        var offsetTotal = parseOffsetHour(head) * 3600
-        b = nextByte(head)
-        if (b == ':' && {
-          offsetTotal += parseOffsetMinute(head) * 60
-          b = nextByte(head)
-          b == ':'
-        }) offsetTotal += parseOffsetSecondWithByte('"', head)
-        else if (b != '"') tokensError(':', '"')
-        toZoneOffset(offsetNeg, offsetTotal)
-      }
+      } else toZoneOffset(b == '-' || (b != '+' && timeError(nanoDigitWeight)), parseOffsetTotalWithByte('"', head))
     OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
   }
 
@@ -2137,18 +2126,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         nextByteOrError('"', head)
         ZoneOffset.UTC
-      } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
-        var offsetTotal = parseOffsetHour(head) * 3600
-        b = nextByte(head)
-        if (b == ':' && {
-          offsetTotal += parseOffsetMinute(head) * 60
-          b = nextByte(head)
-          b == ':'
-        }) offsetTotal += parseOffsetSecondWithByte('"', head)
-        else if (b != '"') tokensError(':', '"')
-        toZoneOffset(offsetNeg, offsetTotal)
-      }
+      } else toZoneOffset(b == '-' || (b != '+' && timeError(nanoDigitWeight)), parseOffsetTotalWithByte('"', head))
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
   }
 
@@ -2272,22 +2250,24 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseZoneOffset(): ZoneOffset = {
-    var b = nextByte(head)
+    val b = nextByte(head)
     if (b == 'Z') {
       nextByteOrError('"', head)
       ZoneOffset.UTC
-    } else {
-      val offsetNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
-      var offsetTotal = parseOffsetHour(head) * 3600
+    } else toZoneOffset(b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'")),
+      parseOffsetTotalWithByte('"', head))
+  }
+
+  private[this] def parseOffsetTotalWithByte(t: Byte, pos: Int): Int = {
+    var offsetTotal = parseOffsetHour(pos) * 3600
+    var b = nextByte(head)
+    if (b == ':' && {
+      offsetTotal += parseOffsetMinute(head) * 60
       b = nextByte(head)
-      if (b == ':' && {
-        offsetTotal += parseOffsetMinute(head) * 60
-        b = nextByte(head)
-        b == ':'
-      }) offsetTotal += parseOffsetSecondWithByte('"', head)
-      else if (b != '"') tokensError(':', '"')
-      toZoneOffset(offsetNeg, offsetTotal)
-    }
+      b == ':'
+    }) offsetTotal += parseOffsetSecondWithByte(t, head)
+    else if (b != '"') tokensError(':', t)
+    offsetTotal
   }
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetTotal: Int): ZoneOffset = {
