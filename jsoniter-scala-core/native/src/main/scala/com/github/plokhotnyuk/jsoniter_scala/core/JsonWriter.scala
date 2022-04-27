@@ -107,7 +107,7 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos += 1
-    pos = writeString(x, 0, x.length, pos, limit - 1, escapedChars)
+    pos = writeString(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
     if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
     buf = this.buf
     buf(pos) = '"'
@@ -264,7 +264,7 @@ final class JsonWriter private[jsoniter_scala](
     } else comma = true
     buf(pos) = '"'
     pos += 1
-    pos = writeString(x, 0, x.length, pos, limit - 1, escapedChars)
+    pos = writeString(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
     buf(pos) = '"'
     pos + 1
   }
@@ -926,14 +926,36 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @tailrec
-  private[this] def writeString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
-    if (from >= to) pos
-    else if (pos >= posLim) writeString(s, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
-    else {
+  private[this] def writeString(s: String, from: Int, pos: Int, minLim: Int, escapedChars: Array[Byte]): Int =
+    if (pos + 3 < minLim) {
+      val buf = this.buf
+      val ch1 = s.charAt(from)
+      val ch2 = s.charAt(from + 1)
+      val ch3 = s.charAt(from + 2)
+      val ch4 = s.charAt(from + 3)
+      buf(pos) = ch1.toByte
+      buf(pos + 1) = ch2.toByte
+      buf(pos + 2) = ch3.toByte
+      buf(pos + 3) = ch4.toByte
+      if ((ch1 | ch2 | ch3 | ch4) >= 0x80 || {
+        val ech1 = escapedChars(ch1)
+        val ech2 = escapedChars(ch2)
+        val ech3 = escapedChars(ch3)
+        val ech4 = escapedChars(ch4)
+        (ech1 | ech2 | ech3 | ech4) != 0
+      }) writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      else writeString(s, from + 4, pos + 4, minLim, escapedChars)
+    } else if (pos < minLim) {
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
-      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
-      else writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      if (ch >= 0x80 || escapedChars(ch) != 0) writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      else writeString(s, from + 1, pos + 1, minLim, escapedChars)
+    } else {
+      val remaining = s.length - from
+      if (remaining > 0) {
+        val newPos = flushAndGrowBuf(2, pos)
+        writeString(s, from, newPos, Math.min(remaining, limit - newPos - 1) + newPos, escapedChars)
+      } else pos
     }
 
   private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]): Int =

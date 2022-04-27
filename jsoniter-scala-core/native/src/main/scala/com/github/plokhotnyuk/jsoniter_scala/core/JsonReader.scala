@@ -80,14 +80,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    val len = parseString()
+    val len = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
     nextTokenOrError(':', head)
     len
   }
 
   def readKeyAsString(): String = {
     nextTokenOrError('"', head)
-    val len = parseString()
+    val len = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
     nextTokenOrError(':', head)
     new String(charBuf, 0, len)
   }
@@ -313,7 +313,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readString(default: String): String =
     if (isNextToken('"', head)) {
-      val len = parseString()
+      val len = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
 
@@ -393,7 +393,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readStringAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    parseString()
+    parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
   }
 
   def readStringAsByte(): Byte = {
@@ -2439,12 +2439,36 @@ final class JsonReader private[jsoniter_scala](
         (leastSigBits1.toLong << 48) | leastSigBits2)
     } else parseUUID(loadMoreOrError(pos))
 
-  private[this] def parseString(): Int =
-    parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
-
   @tailrec
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i < minLim) {
+    if (i + 3 < minLim) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      charBuf(i) = b1.toChar
+      val b2 = buf(pos + 1)
+      charBuf(i + 1) = b2.toChar
+      val b3 = buf(pos + 2)
+      charBuf(i + 2) = b3.toChar
+      val b4 = buf(pos + 3)
+      charBuf(i + 3) = b4.toChar
+      if (b1 == '"') {
+        head = pos + 1
+        i
+      } else if (((b1 - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      else if (b2 == '"') {
+        head = pos + 2
+        i + 1
+      } else if (((b2 - 32) ^ 60) <= 0) parseEncodedString(i + 1, charBuf.length - 1, charBuf, pos + 1)
+      else if (b3 == '"') {
+        head = pos + 3
+        i + 2
+      } else if (((b3 - 32) ^ 60) <= 0) parseEncodedString(i + 2, charBuf.length - 1, charBuf, pos + 2)
+      else if (b4 == '"') {
+        head = pos + 4
+        i + 3
+      } else if (((b4 - 32) ^ 60) <= 0) parseEncodedString(i + 3, charBuf.length - 1, charBuf, pos + 3)
+      else parseString(i + 4, minLim, charBuf, pos + 4)
+    } else if (i < minLim) {
       val b = buf(pos)
       charBuf(i) = b.toChar
       if (b == '"') {

@@ -78,14 +78,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    val len = parseString()
+    val len = parseString(0, Math.min(tail - head, charBuf.length), charBuf, head)
     nextTokenOrError(':', head)
     len
   }
 
   def readKeyAsString(): String = {
     nextTokenOrError('"', head)
-    val len = parseString()
+    val len = parseString(0, Math.min(tail - head, charBuf.length), charBuf, head)
     nextTokenOrError(':', head)
     new String(charBuf, 0, len)
   }
@@ -311,7 +311,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readString(default: String): String =
     if (isNextToken('"', head)) {
-      val len = parseString()
+      val len = parseString(0, Math.min(tail - head, charBuf.length), charBuf, head)
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
 
@@ -391,7 +391,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readStringAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    parseString()
+    parseString(0, Math.min(tail - head, charBuf.length), charBuf, head)
   }
 
   def readStringAsByte(): Byte = {
@@ -2622,16 +2622,30 @@ final class JsonReader private[jsoniter_scala](
         (leastSigBits1.toLong << 48) | leastSigBits2)
     } else parseUUID(loadMoreOrError(pos))
 
-  private[this] def parseString(): Int = {
-    val pos = head
-    val minLim = Math.min(charBuf.length, tail - pos)
-    if (isGraalVM) parseStringUnrolled(0, minLim, charBuf, pos)
-    else parseString(0, minLim, charBuf, pos)
-  }
-
   @tailrec
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i < minLim) {
+    if (i + 7 < minLim) { // Based on SWAR routine of JSON string parsing: https://github.com/sirthias/borer/blob/fde9d1ce674d151b0fee1dd0c2565020c3f6633a/core/src/main/scala/io/bullet/borer/json/JsonParser.scala#L456
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      var m = (bs ^ 0x5D5D5D5D5D5D5D5DL) + 0x0101010101010101L
+      charBuf(i + 7) = (bs >>> 56).toChar
+      charBuf(i + 6) = (bs >> 48 & 0xFF).toChar
+      m |= (bs ^ 0x2323232323232323L) + 0x0101010101010101L
+      charBuf(i + 5) = (bs >> 40 & 0xFF).toChar
+      charBuf(i + 4) = (bs >> 32 & 0xFF).toChar
+      m |= (bs | 0x1F1F1F1F1F1F1F1FL) - 0x2020202020202020L
+      charBuf(i + 3) = (bs >> 24 & 0xFF).toChar
+      charBuf(i + 2) = (bs >> 16 & 0xFF).toChar
+      val notz = java.lang.Long.numberOfTrailingZeros(m & 0x8080808080808080L)
+      charBuf(i + 1) = (bs >> 8 & 0xFF).toChar
+      charBuf(i) = (bs & 0xFF).toChar
+      if (notz < 64) {
+        val offset = notz >> 3
+        if (bs << ~notz >>> 56 == '"') {
+          head = pos + offset + 1
+          i + offset
+        } else parseEncodedString(i + offset, charBuf.length - 1, charBuf, pos + offset)
+      } else parseString(i + 8, minLim, charBuf, pos + 8)
+    } else if (i < minLim) {
       val b = buf(pos)
       charBuf(i) = b.toChar
       if (b == '"') {
@@ -2643,44 +2657,6 @@ final class JsonReader private[jsoniter_scala](
       val newPos = loadMoreOrError(pos)
       parseString(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
     } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
-
-  @tailrec
-  private[this] def parseStringUnrolled(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i + 7 < minLim) { // Based on SWAR routine of JSON string parsing: https://github.com/sirthias/borer/blob/fde9d1ce674d151b0fee1dd0c2565020c3f6633a/core/src/main/scala/io/bullet/borer/json/JsonParser.scala#L456
-      val bs = ByteArrayAccess.getLong(buf, pos)
-      val qMask = (bs ^ 0x5D5D5D5D5D5D5D5DL) + 0x0101010101010101L
-      val bMask = (bs ^ 0x2323232323232323L) + 0x0101010101010101L
-      val cMask = (bs | 0x1F1F1F1F1F1F1F1FL) - 0x2020202020202020L
-      val notz = java.lang.Long.numberOfTrailingZeros((qMask | bMask | cMask) & 0x8080808080808080L)
-      val bs1 = bs & 0x00FF00FF00FF00FFL
-      val bs2 = bs & 0xFF00FF00FF00FF00L
-      charBuf(i) = bs1.toChar
-      charBuf(i + 1) = (bs2 >> 8).toChar
-      charBuf(i + 2) = (bs1 >> 16).toChar
-      charBuf(i + 3) = (bs2 >> 24).toChar
-      charBuf(i + 4) = (bs1 >> 32).toChar
-      charBuf(i + 5) = (bs2 >> 40).toChar
-      charBuf(i + 6) = (bs1 >> 48).toChar
-      charBuf(i + 7) = (bs2 >>> 56).toChar
-      if (notz < 64) {
-        val offset = notz >> 3
-        if (bs << ~notz >>> 56 == '"') {
-          head = pos + offset + 1
-          i + offset
-        } else parseEncodedString(i + offset, charBuf.length - 1, charBuf, pos + offset)
-      } else parseStringUnrolled(i + 8, minLim, charBuf, pos + 8)
-    } else if (i < minLim) {
-      val b = buf(pos)
-      charBuf(i) = b.toChar
-      if (b == '"') {
-        head = pos + 1
-        i
-      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
-      else parseStringUnrolled(i + 1, minLim, charBuf, pos + 1)
-    } else if (pos >= tail) {
-      val newPos = loadMoreOrError(pos)
-      parseStringUnrolled(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
-    } else parseStringUnrolled(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
   @tailrec
   private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int = {
@@ -3204,9 +3180,6 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
-  private final val isGraalVM: Boolean =
-    Option(System.getProperty("java.vendor.version")).getOrElse(System.getProperty("java.vm.name")).contains("GraalVM") ||
-      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.contains("-XX:+UseJVMCICompiler")
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)

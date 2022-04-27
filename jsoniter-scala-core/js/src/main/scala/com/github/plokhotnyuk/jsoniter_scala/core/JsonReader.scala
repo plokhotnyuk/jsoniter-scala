@@ -78,14 +78,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    val len = parseString()
+    val len = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
     nextTokenOrError(':', head)
     len
   }
 
   def readKeyAsString(): String = {
     nextTokenOrError('"', head)
-    val len = parseString()
+    val len = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
     nextTokenOrError(':', head)
     new String(charBuf, 0, len)
   }
@@ -311,7 +311,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readString(default: String): String =
     if (isNextToken('"', head)) {
-      val len = parseString()
+      val len = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
 
@@ -391,7 +391,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readStringAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    parseString()
+    parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
   }
 
   def readStringAsByte(): Byte = {
@@ -2431,11 +2431,6 @@ final class JsonReader private[jsoniter_scala](
       new UUID((mostSigBits1 << 32) | (mostSigBits2.toLong << 16) | mostSigBits3,
         (leastSigBits1.toLong << 48) | leastSigBits2)
     } else parseUUID(loadMoreOrError(pos))
-
-  private[this] def parseString(): Int = {
-    val minLim = Math.min(charBuf.length, tail - head)
-    parseString(0, minLim, charBuf, head)
-  }
 
   @tailrec
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
