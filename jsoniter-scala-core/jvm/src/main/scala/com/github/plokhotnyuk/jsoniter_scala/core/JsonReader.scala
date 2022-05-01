@@ -2627,17 +2627,17 @@ final class JsonReader private[jsoniter_scala](
     if (i + 7 < minLim) { // Based on SWAR routine of JSON string parsing: https://github.com/sirthias/borer/blob/fde9d1ce674d151b0fee1dd0c2565020c3f6633a/core/src/main/scala/io/bullet/borer/json/JsonParser.scala#L456
       val bs = ByteArrayAccess.getLong(buf, pos)
       var m = (bs ^ 0x5D5D5D5D5D5D5D5DL) + 0x0101010101010101L
-      charBuf(i + 7) = (bs >>> 56).toChar
-      charBuf(i + 6) = (bs >> 48 & 0xFF).toChar
-      m |= (bs ^ 0x2323232323232323L) + 0x0101010101010101L
-      charBuf(i + 5) = (bs >> 40 & 0xFF).toChar
-      charBuf(i + 4) = (bs >> 32 & 0xFF).toChar
-      m |= (bs | 0x1F1F1F1F1F1F1F1FL) - 0x2020202020202020L
-      charBuf(i + 3) = (bs >> 24 & 0xFF).toChar
-      charBuf(i + 2) = (bs >> 16 & 0xFF).toChar
-      val notz = java.lang.Long.numberOfTrailingZeros(m & 0x8080808080808080L)
-      charBuf(i + 1) = (bs >> 8 & 0xFF).toChar
       charBuf(i) = (bs & 0xFF).toChar
+      charBuf(i + 1) = (bs >> 8 & 0xFF).toChar
+      m |= (bs ^ 0x2323232323232323L) + 0x0101010101010101L
+      charBuf(i + 2) = (bs >> 16 & 0xFF).toChar
+      charBuf(i + 3) = (bs >> 24 & 0xFF).toChar
+      m |= (bs | 0x1F1F1F1F1F1F1F1FL) - 0x2020202020202020L
+      charBuf(i + 4) = (bs >> 32 & 0xFF).toChar
+      charBuf(i + 5) = (bs >> 40 & 0xFF).toChar
+      val notz = java.lang.Long.numberOfTrailingZeros(m & 0x8080808080808080L)
+      charBuf(i + 6) = (bs >> 48 & 0xFF).toChar
+      charBuf(i + 7) = (bs >>> 56).toChar
       if (notz < 64) {
         val offset = notz >> 3
         if (bs << ~notz >>> 56 == '"') {
