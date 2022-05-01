@@ -1325,10 +1325,10 @@ final class JsonReader private[jsoniter_scala](
       else oldMark
     mark = newMark
     try {
-      var posMant: Long = b - '0'
-      var exp = 0L
+      var m10: Long = b - '0'
+      var e10 = 0
       var digits = 1
-      if (isToken && posMant == 0) {
+      if (isToken && m10 == 0) {
         if ((pos < tail || {
           pos = loadMore(pos)
           buf = this.buf
@@ -1346,16 +1346,16 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posMant < 922337203685477580L) {
-            posMant = posMant * 10 + (b - '0')
+          if (m10 < 922337203685477580L) {
+            m10 = m10 * 10 + (b - '0')
             digits += 1
-          } else exp += 1
+          } else e10 += 1
           pos += 1
         }
       }
       if (b == '.') {
         pos += 1
-        exp += digits
+        e10 += digits
         var noFracDigits = true
         while ((pos < tail || {
           pos = loadMore(pos)
@@ -1365,14 +1365,14 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posMant < 922337203685477580L) {
-            posMant = posMant * 10 + (b - '0')
+          if (m10 < 922337203685477580L) {
+            m10 = m10 * 10 + (b - '0')
             digits += 1
           }
           noFracDigits = false
           pos += 1
         }
-        exp -= digits
+        e10 -= digits
         if (noFracDigits) numberError(pos)
       }
       if ((b | 0x20) == 'e') {
@@ -1380,7 +1380,7 @@ final class JsonReader private[jsoniter_scala](
         val isNegExp = b == '-'
         if (isNegExp || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
-        var posExp: Long = b - '0'
+        var exp = b - '0'
         pos = head
         buf = this.buf
         while ((pos < tail || {
@@ -1391,25 +1391,25 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 92233720368547758L) posExp = posExp * 10 + (b - '0')
+          if (exp < 214748364) exp = exp * 10 + (b - '0')
           pos += 1
         }
-        if (isNegExp) posExp = -posExp
-        exp += posExp
+        if (isNegExp) exp = -exp
+        e10 += exp
       }
       head = pos
       var x: Double =
-        if (exp == 0 && posMant < 922337203685477580L) posMant.toDouble
-        else if (posMant < 4503599627370496L && Math.abs(exp) <= 22) {
-          if (exp < 0) posMant / pow10Doubles(-exp.toInt)
-          else posMant * pow10Doubles(exp.toInt)
-        } else if (posMant < 4503599627370496L && exp > 22 && exp + digits <= 38) {
+        if (e10 == 0 && m10 < 922337203685477580L) m10.toDouble
+        else if (m10 < 4503599627370496L && Math.abs(e10) <= 22) {
+          if (e10 < 0) m10 / pow10Doubles(-e10)
+          else m10 * pow10Doubles(e10)
+        } else if (m10 < 4503599627370496L && e10 > 22 && e10 + digits <= 38) {
           val pow10 = pow10Doubles
           val slop = 16 - digits
-          (posMant * pow10(slop)) * pow10(exp.toInt - slop)
-        } else if (posMant == 0 || exp < -343) 0.0
-        else if (exp >= 310) Double.PositiveInfinity
-        else toDouble(posMant, exp.toInt, from, newMark, pos)
+          (m10 * pow10(slop)) * pow10(e10 - slop)
+        } else if (m10 == 0 || e10 < -343) 0.0
+        else if (e10 >= 310) Double.PositiveInfinity
+        else toDouble(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
@@ -1467,10 +1467,10 @@ final class JsonReader private[jsoniter_scala](
       else oldMark
     mark = newMark
     try {
-      var posMant: Long = b - '0'
-      var exp = 0L
+      var m10: Long = b - '0'
+      var e10 = 0
       var digits = 1
-      if (isToken && posMant == 0) {
+      if (isToken && m10 == 0) {
         if ((pos < tail || {
           pos = loadMore(pos)
           buf = this.buf
@@ -1488,16 +1488,16 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posMant < 922337203685477580L) {
-            posMant = posMant * 10 + (b - '0')
+          if (m10 < 922337203685477580L) {
+            m10 = m10 * 10 + (b - '0')
             digits += 1
-          } else exp += 1
+          } else e10 += 1
           pos += 1
         }
       }
       if (b == '.') {
         pos += 1
-        exp += digits
+        e10 += digits
         var noFracDigits = true
         while ((pos < tail || {
           pos = loadMore(pos)
@@ -1507,14 +1507,14 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posMant < 922337203685477580L) {
-            posMant = posMant * 10 + (b - '0')
+          if (m10 < 922337203685477580L) {
+            m10 = m10 * 10 + (b - '0')
             digits += 1
           }
           noFracDigits = false
           pos += 1
         }
-        exp -= digits
+        e10 -= digits
         if (noFracDigits) numberError(pos)
       }
       if ((b | 0x20) == 'e') {
@@ -1522,7 +1522,7 @@ final class JsonReader private[jsoniter_scala](
         val isNegExp = b == '-'
         if (isNegExp || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
-        var posExp: Long = b - '0'
+        var exp = b - '0'
         pos = head
         buf = this.buf
         while ((pos < tail || {
@@ -1533,21 +1533,21 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 92233720368547758L) posExp = posExp * 10 + (b - '0')
+          if (exp < 214748364) exp = exp * 10 + (b - '0')
           pos += 1
         }
-        if (isNegExp) posExp = -posExp
-        exp += posExp
+        if (isNegExp) exp = -exp
+        e10 += exp
       }
       head = pos
       var x: Float =
-        if (exp == 0 && posMant < 922337203685477580L) posMant.toFloat
-        else if (posMant < 4294967296L && exp >= digits - 23 && exp <= 19 - digits) {
-          (if (exp < 0) posMant / pow10Doubles(-exp.toInt)
-          else posMant * pow10Doubles(exp.toInt)).toFloat
-        } else if (posMant == 0 || exp < -64) 0.0f
-        else if (exp >= 39) Float.PositiveInfinity
-        else toFloat(posMant, exp.toInt, from, newMark, pos)
+        if (e10 == 0 && m10 < 922337203685477580L) m10.toFloat
+        else if (m10 < 4294967296L && e10 >= digits - 23 && e10 <= 19 - digits) {
+          (if (e10 < 0) m10 / pow10Doubles(-e10)
+          else m10 * pow10Doubles(e10)).toFloat
+        } else if (m10 == 0 || e10 < -64) 0.0f
+        else if (e10 >= 39) Float.PositiveInfinity
+        else toFloat(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
