@@ -13,5 +13,5 @@ val `jsoniter-scala-examples` = project.in(file("."))
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "latest.integration" % "compile-internal"
     ),
     nativeImageOptions ++= List("--no-fallback"),
-    nativeImageVersion := "22.0.0.2"
+    nativeImageVersion := "22.1.0"
   )
