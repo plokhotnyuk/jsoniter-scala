@@ -198,9 +198,9 @@ list of dependencies:
 ```sbt
 libraryDependencies ++= Seq(
   // Use the %%% operator instead of %% for Scala.js and Scala Native 
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.13.19",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.13.20",
   // Use the "provided" scope instead when the "compile-internal" scope is not supported  
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.13.19" % "compile-internal"
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.13.20" % "compile-internal"
 )
 ```
 
