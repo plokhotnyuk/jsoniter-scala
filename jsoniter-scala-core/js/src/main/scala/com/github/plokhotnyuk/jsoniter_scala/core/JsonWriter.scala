@@ -1634,13 +1634,14 @@ final class JsonWriter private[jsoniter_scala](
     val d = ds(q2)
     buf(pos) = d.toByte
     pos += 1
-    val b = (d >> 8).toByte
-    if ((r2 | b - '0') != 0) {
-      buf(pos) = b
+    if (r2 != 0 || d > 0x3039) { // check if q0 is divisible by 1000000
+      buf(pos) = (d >> 8).toByte
       val q3 = r2 / 1000
       val r3 = r2 - q3 * 1000
       pos = write2Digits(q3, pos + 1, buf, ds)
-      if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
+      if (r3 != 0) { // check if q0 is divisible by 1000
+        pos = write3Digits(r3, pos, buf, ds)
+      }
     }
     pos
   }

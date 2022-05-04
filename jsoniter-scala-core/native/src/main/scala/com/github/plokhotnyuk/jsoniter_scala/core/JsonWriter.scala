@@ -1594,25 +1594,22 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeNanos(q0: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val y1 = q0 * 1441151881L // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     var pos = p
     buf(pos) = '.'
-    val q1 = (q0 * 1801439851L >> 54).toInt // divide a positive int by 10000000
-    val r1 = q0 - q1 * 10000000
-    pos = write2Digits(q1, pos + 1, buf, ds)
-    val p2 = r1 * 175921861L
-    val q2 = (p2 >> 44).toInt // divide a positive int by 100000
-    val d = ds(q2)
-    buf(pos) = d.toByte
-    pos += 1
-    val b = (d >> 8).toByte
-    if ((p2 & 0xFFFF8000000L | b - '0') != 0) { // check if r1 divisible by 100000 and the next digit is zero
-      val r2 = r1 - q2 * 100000
-      buf(pos) = b
-      val p3 = r2 * 2199023256L
-      val q3 = (p3 >> 41).toInt // divide a positive int by 1000
-      pos = write2Digits(q3, pos + 1, buf, ds)
-      if ((p3 & 0x1FF80000000L) != 0) { // check if r2 divisible by 1000
-        pos = write3Digits(r2 - q3 * 1000, pos, buf, ds)
+    val y2 = (y1 & 0x1FFFFFFFFFFFFFFL) * 100
+    buf(pos + 1) = ((y1 >>> 57).toInt + '0').toByte
+    pos = write2Digits((y2 >>> 57).toInt, pos + 2, buf, ds)
+    if ((y2 & 0x1FFFFF800000000L) != 0) { // check if q0 is divisible by 1000000
+      val y3 = (y2 & 0x1FFFFFFFFFFFFFFL) * 100
+      val y4 = (y3 & 0x1FFFFFFFFFFFFFFL) * 100
+      pos = write2Digits((y3 >>> 57).toInt, pos, buf, ds)
+      val d = ds((y4 >>> 57).toInt)
+      buf(pos) = d.toByte
+      pos += 1
+      if ((y4 & 0x1FF000000000000L) != 0 || d > 0x3039) { // check if q0 is divisible by 1000
+        buf(pos) = (d >> 8).toByte
+        pos = write2Digits(((y4 & 0x1FFFFFFFFFFFFFFL) * 100 >>> 57).toInt, pos + 1, buf, ds)
       }
     }
     pos
@@ -1682,21 +1679,21 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write5Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =  {
-    val y0 = q0 * 429497L // James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    buf(pos) = ((y0 >>> 32).toInt + '0').toByte
-    val y1 = (y0 & 0xFFFFFFFFL) * 100
-    val d1 = ds((y1 >>> 32).toInt)
-    buf(pos + 1) = d1.toByte
-    buf(pos + 2) = (d1 >> 8).toByte
+    val y1 = q0 * 429497L // Based on James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    buf(pos) = ((y1 >>> 32).toInt + '0').toByte
     val y2 = (y1 & 0xFFFFFFFFL) * 100
     val d2 = ds((y2 >>> 32).toInt)
-    buf(pos + 3) = d2.toByte
-    buf(pos + 4) = (d2 >> 8).toByte
+    buf(pos + 1) = d2.toByte
+    buf(pos + 2) = (d2 >> 8).toByte
+    val y3 = (y2 & 0xFFFFFFFFL) * 100
+    val d3 = ds((y3 >>> 32).toInt)
+    buf(pos + 3) = d3.toByte
+    buf(pos + 4) = (d3 >> 8).toByte
     pos + 5
   }
 
   private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val y1 = q0 * 140737489L // James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y1 = q0 * 140737489L // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val d1 = ds((y1 >>> 47).toInt)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte

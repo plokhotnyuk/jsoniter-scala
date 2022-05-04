@@ -1504,29 +1504,21 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeNanos(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = (q0 * 1801439851L >> 54).toInt // divide a positive int by 10000000
-    val r1 = q0 - q1 * 10000000
-    val p2 = r1 * 175921861L
-    val q2 = (p2 >> 44).toInt // divide a positive int by 100000
-    val d = ds(q2)
-    var m = ds(q1) << 8 | d.toLong << 24 | 0x300000000000002EL
-    if ((p2 & 0xFFFF8000000L) == 0 && d <= 0x3039) { // check if nanos are divisible by 1000000
+    val y1 = q0 * 1441151881L // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y2 = (y1 & 0x1FFFFFFFFFFFFFFL) * 100
+    var m = y1 >>> 57 << 8 | ds((y2 >>> 57).toInt).toLong << 16 | 0x302E
+    if ((y2 & 0x1FFFFF800000000L) == 0) { // check if q0 is divisible by 1000000
       ByteArrayAccess.setInt(buf, pos, m.toInt)
       pos + 4
     } else {
-      val r2 = r1 - q2 * 100000
-      val p3 = r2 * 2199023256L
-      val q3 = (p3 >> 41).toInt // divide a positive int by 1000
-      m |= ds(q3).toLong << 40
-      if ((p3 & 0x1FF80000000L) == 0) { // check if r2 divisible by 1000
-        ByteArrayAccess.setLong(buf, pos, m)
-        pos + 7
-      } else {
-        val r3 = r2 - q3 * 1000
-        val q4 = r3 * 1311 >> 17 // divide a small positive int by 100
-        val r4 = r3 - q4 * 100
-        ByteArrayAccess.setLong(buf, pos, q4.toLong << 56 | m)
-        ByteArrayAccess.setShort(buf, pos + 8, ds(r4))
+      val y3 = (y2 & 0x1FFFFFFFFFFFFFFL) * 100
+      val y4 = (y3 & 0x1FFFFFFFFFFFFFFL) * 100
+      m |= ds((y3 >>> 57).toInt).toLong << 32
+      val d = ds((y4 >>> 57).toInt)
+      ByteArrayAccess.setLong(buf, pos, m | d.toLong << 48)
+      if ((y4 & 0x1FF000000000000L) == 0 && d <= 0x3039) pos + 7 // check if q0 is divisible by 1000
+      else {
+        ByteArrayAccess.setShort(buf, pos + 8, ds(((y4 & 0x1FFFFFFFFFFFFFFL) * 100 >>> 57).toInt))
         pos + 10
       }
     }
@@ -1583,18 +1575,18 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write5Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =  {
-    val y0 = q0 * 429497L // James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    val y1 = (y0 & 0xFFFFFFFFL) * 100
+    val y1 = q0 * 429497L // Based on James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val y2 = (y1 & 0xFFFFFFFFL) * 100
-    val d1 = (y0 >>> 32).toInt + '0'
-    val d2 = ds((y1 >>> 32).toInt) << 8
-    val d3 = ds((y2 >>> 32).toInt).toLong << 24
+    val y3 = (y2 & 0xFFFFFFFFL) * 100
+    val d1 = (y1 >>> 32).toInt + '0'
+    val d2 = ds((y2 >>> 32).toInt) << 8
+    val d3 = ds((y3 >>> 32).toInt).toLong << 24
     ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
     pos + 5
   }
 
   private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val y1 = q0 * 140737489L // James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y1 = q0 * 140737489L // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val y2 = (y1 & 0x7FFFFFFFFFFFL) * 100
     val y3 = (y2 & 0x7FFFFFFFFFFFL) * 100
     val y4 = (y3 & 0x7FFFFFFFFFFFL) * 100
