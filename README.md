@@ -56,7 +56,14 @@ serialization of floating-point and big numbers:
 - [rust-lexical](https://github.com/Alexhuszagh/rust-lexical) - the most efficient way to parse floats and doubles from
   the textual representation precisely
 - [big-math](https://github.com/eobermuhlner/big-math) - parsing of `BigInt` and `BigDecimal` values with the `O(n^1.5)`
-  complexity instead of `O(n^2)` using Java's implementations where `n` is a number of digits 
+  complexity instead of `O(n^2)` using Java's implementations where `n` is a number of digits
+  
+A bunch of SWAR technique tricks for JVM platform are based on following projects and blog/forum posts:
+- [borer](https://github.com/sirthias/borer) - the fast parsing of JSON strings by 8-byte words
+- [simdjson](https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344) - the fast checking of string for digits by 8-byte words
+- [Говнокод #13461 comment](http://govnokod.ru/13461#comment189156) - the fast string to int conversion by 8-byte words
+- [James Anhalt's algorithm](https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/) - the ingenious algorithm for printing integers into decimal strings
+- [Johnny Lee's article](https://johnnylee-sde.github.io/Fast-time-string-to-seconds/) - the fast time string to seconds conversion
 
 ## Goals
 
