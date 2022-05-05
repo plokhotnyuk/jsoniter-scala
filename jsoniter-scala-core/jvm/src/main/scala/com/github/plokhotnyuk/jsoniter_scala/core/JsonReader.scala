@@ -2054,7 +2054,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseInstant(): Instant = {
     val year = parseInstantYearWithHyphen(head)
     val monthDay = parseMonthDayWithT(year, head)
-    val epochSecond = epochDay(year, monthDay & 0x1F, monthDay >>> 24) * 86400 + { // 86400 == seconds per day
+    val epochSecond = epochDay(year, monthDay & 0x1F, monthDay >> 24) * 86400 + { // 86400 == seconds per day
       val pos = head
       var secondOfDay = 0L
       if (pos + 7 < tail && {
@@ -2086,7 +2086,7 @@ final class JsonReader private[jsoniter_scala](
       val bs = ByteArrayAccess.getLong(buf, pos)
       val monthDay = ((bs & 0x0F03000F01L) * 2561 >> 8).toInt
       month = monthDay & 0x1F
-      day = monthDay >>> 24
+      day = monthDay >> 24
       (bs & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && (bs + 0x00060C00060EL & 0xFFF0F0FFF0F0L) == 0x2230302D3030L &&
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
     }) head = pos + 6
@@ -2107,7 +2107,7 @@ final class JsonReader private[jsoniter_scala](
       second = parseSecond(head)
       nano = parseOptionalNanoWithByte('"')
     } else if (b != '"') tokensError(':', '"')
-    LocalDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano)
+    LocalDateTime.of(year, monthDay & 0x1F, monthDay >> 24, hourMinute & 0x3F, hourMinute >> 24, second, nano)
   }
 
   private[this] def parseLocalTime(): LocalTime = {
@@ -2118,7 +2118,7 @@ final class JsonReader private[jsoniter_scala](
       second = parseSecond(head)
       nano = parseOptionalNanoWithByte('"')
     } else if (b != '"') tokensError(':', '"')
-    LocalTime.of(hourMinute & 0x3F, hourMinute >>> 24, second, nano)
+    LocalTime.of(hourMinute & 0x3F, hourMinute >> 24, second, nano)
   }
 
   @tailrec
@@ -2127,7 +2127,7 @@ final class JsonReader private[jsoniter_scala](
       val bs = ByteArrayAccess.getLong(buf, pos)
       val monthDay = ((bs & 0x000F03000F010000L) * 2561 >> 24).toInt
       val month = monthDay & 0x1F
-      val day = monthDay >>> 24
+      val day = monthDay >> 24
       head = pos + 8
       if ((bs & 0xFFF0F0FFF0F0FFFFL) != 0x2230302D30302D2DL ||
         (bs + 0x00060C00060E0000L & 0xFFF0F0FFF0F0FFFFL) != 0x2230302D30302D2DL) monthDayError(pos)
@@ -2142,7 +2142,7 @@ final class JsonReader private[jsoniter_scala](
       val bs = ByteArrayAccess.getLong(buf, pos)
       monthDay = ((bs & 0x0F03000F01L) * 2561 >> 8).toInt
       val month = monthDay & 0x1F
-      val day = monthDay >>> 24
+      val day = monthDay >> 24
       (bs & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && (bs + 0x00060C00060EL & 0xFFF0F0FFF0F0L) == 0x5430302D3030L &&
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
     }) {
@@ -2203,7 +2203,7 @@ final class JsonReader private[jsoniter_scala](
         else offsetTotal = parseOffsetTotalWithByte('"', pos)
         toZoneOffset(offsetNeg, offsetTotal)
       }
-    OffsetDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano, zoneOffset)
+    OffsetDateTime.of(year, monthDay & 0x1F, monthDay >> 24, hourMinute & 0x3F, hourMinute >> 24, second, nano, zoneOffset)
   }
 
   private[this] def parseOffsetTime(): OffsetTime = {
@@ -2253,7 +2253,7 @@ final class JsonReader private[jsoniter_scala](
         else offsetTotal = parseOffsetTotalWithByte('"', pos)
         toZoneOffset(offsetNeg, offsetTotal)
       }
-    OffsetTime.of(hourMinute & 0x3F, hourMinute >>> 24, second, nano, zoneOffset)
+    OffsetTime.of(hourMinute & 0x3F, hourMinute >> 24, second, nano, zoneOffset)
   }
 
   private[this] def parsePeriod(): Period = {
@@ -2344,7 +2344,7 @@ final class JsonReader private[jsoniter_scala](
         head = pos
       }
     }
-    val localDateTime = LocalDateTime.of(year, monthDay & 0x1F, monthDay >>> 24, hourMinute & 0x3F, hourMinute >>> 24, second, nano)
+    val localDateTime = LocalDateTime.of(year, monthDay & 0x1F, monthDay >> 24, hourMinute & 0x3F, hourMinute >> 24, second, nano)
     val pos = head
     val zoneOffset =
       if (b == 'Z') {
