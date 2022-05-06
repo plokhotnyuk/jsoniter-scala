@@ -1254,7 +1254,7 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalTime(hour, minute, second, x.getNano, writeLocalDate(year, month, day, pos + 1, buf, ds), buf, ds)
+    pos = writeLocalTime(hour, minute, second, x.getNano, writeLocalDateWithT(year, month, day, pos + 1, buf, ds), buf, ds)
     ByteArrayAccess.setShort(buf, pos, 0x225A)
     pos + 2
   }
@@ -1270,10 +1270,8 @@ final class JsonWriter private[jsoniter_scala](
     val ds = digits
     buf(pos) = '"'
     pos = writeYear(x.getYear, pos + 1, buf, ds)
-    val day = x.getDayOfMonth
-    val month = x.getMonthValue
-    val d1 = ds(day).toLong << 32
-    val d2 = ds(month) << 8
+    val d1 = ds(x.getMonthValue) << 8
+    val d2 = ds(x.getDayOfMonth).toLong << 32
     ByteArrayAccess.setLong(buf, pos, d1 | d2 | 0x2200002D00002DL)
     pos + 7
   }
@@ -1283,7 +1281,7 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalTime(x.toLocalTime, writeLocalDate(x.toLocalDate, pos + 1, buf, ds), buf, ds)
+    pos = writeLocalTime(x.toLocalTime, writeLocalDateWithT(x.toLocalDate, pos + 1, buf, ds), buf, ds)
     buf(pos) = '"'
     pos + 1
   }
@@ -1303,10 +1301,8 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    val month = x.getMonthValue
-    val day = x.getDayOfMonth
-    val d1 = ds(month) << 16
-    val d2 = ds(day).toLong << 40
+    val d1 = ds(x.getMonthValue) << 16
+    val d2 = ds(x.getDayOfMonth).toLong << 40
     ByteArrayAccess.setLong(buf, pos + 1, d1 | d2 | 0x2200002D00002D2DL)
     pos + 9
   }
@@ -1317,7 +1313,7 @@ final class JsonWriter private[jsoniter_scala](
     val ds = digits
     buf(pos) = '"'
     writeOffset(x.getOffset,
-      writeLocalTime(x.toLocalTime, writeLocalDate(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
+      writeLocalTime(x.toLocalTime, writeLocalDateWithT(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
   }
 
   private[this] def writeOffsetTime(x: OffsetTime): Unit = count = {
@@ -1392,7 +1388,7 @@ final class JsonWriter private[jsoniter_scala](
     val ds = digits
     buf(pos) = '"'
     pos = writeOffset(x.getOffset,
-      writeLocalTime(x.toLocalTime, writeLocalDate(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
+      writeLocalTime(x.toLocalTime, writeLocalDateWithT(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
     val zone = x.getZone
     if (!zone.isInstanceOf[ZoneOffset]) {
       val zoneId = zone.getId
@@ -1449,56 +1445,54 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+  private[this] def writeLocalDateWithT(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val pos = writeYear(x.getYear, p, buf, ds)
-    val day = x.getDayOfMonth
-    val month = x.getMonthValue
-    val d1 = ds(day).toLong << 32
-    val d2 = ds(month) << 8
+    val d1 = ds(x.getMonthValue) << 8
+    val d2 = ds(x.getDayOfMonth).toLong << 32
     ByteArrayAccess.setLong(buf, pos, d1 | d2 | 0x5400002D00002DL)
     pos + 7
   }
 
-  private[this] def writeLocalDate(year: Int, month: Int, day: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+  private[this] def writeLocalDateWithT(year: Int, month: Int, day: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val pos = writeYear(year, p, buf, ds)
-    val d1 = ds(day).toLong << 32
-    val d2 = ds(month) << 8
+    val d1 = ds(month) << 8
+    val d2 = ds(day).toLong << 32
     ByteArrayAccess.setLong(buf, pos, d1 | d2 | 0x5400002D00002DL)
     pos + 7
   }
 
   private[this] def writeYear(year: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (year >= 0) {
-      if (year < 10000) write4Digits(year, pos, buf, ds)
-      else {
-        buf(pos) = '+'
-        writePositiveInt(year, pos + 1, buf, ds)
-      }
-    } else {
-      buf(pos) = '-'
-      if (year > -10000) write4Digits(-year, pos + 1, buf, ds)
-      else writePositiveInt(-year, pos + 1, buf, ds)
-    }
+    if (year >= 0 && year < 10000) write4Digits(year, pos, buf, ds)
+    else writeYearWithSign(year, pos, buf, ds)
+
+  private[this] def writeYearWithSign(year: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val posYear = Math.abs(year)
+    buf(pos) = ((year >>> 31 << 1) + '+').toByte
+    if (posYear < 10000) write4Digits(posYear, pos + 1, buf, ds)
+    else writePositiveInt(posYear, pos + 1, buf, ds)
+  }
 
   private[this] def writeLocalTime(x: LocalTime, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val hour = x.getHour
-    val minute = x.getMinute
     val second = x.getSecond
     val nano = x.getNano
-    val d1 = ds(minute).toLong << 24
-    val d2 = ds(second).toLong << 48
-    val d3 = ds(hour)
-    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3 | 0x3A00003A0000L)
-    if ((second | nano) == 0) pos + 5
-    else if (nano == 0) pos + 8
-    else writeNanos(nano, pos + 8, buf, ds)
+    val d1 = ds(x.getHour) | 0x3A00003A0000L
+    val d2 = ds(x.getMinute).toLong << 24
+    if ((second | nano) == 0) {
+      ByteArrayAccess.setLong(buf, pos, d1 | d2)
+      pos + 5
+    } else {
+      val d3 = ds(second).toLong << 48
+      ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
+      if (nano == 0) pos + 8
+      else writeNanos(nano, pos + 8, buf, ds)
+    }
   }
 
   private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val d1 = ds(minute).toLong << 24
-    val d2 = ds(second).toLong << 48
-    val d3 = ds(hour)
-    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3 | 0x3A00003A0000L)
+    val d1 = ds(hour) | 0x3A00003A0000L
+    val d2 = ds(minute).toLong << 24
+    val d3 = ds(second).toLong << 48
+    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
     if (nano == 0) pos + 8
     else writeNanos(nano, pos + 8, buf, ds)
   }
