@@ -1407,9 +1407,7 @@ final class JsonReader private[jsoniter_scala](
           val pow10 = pow10Doubles
           val slop = 16 - digits
           (m10 * pow10(slop)) * pow10(e10 - slop)
-        } else if (m10 == 0 || e10 < -343) 0.0
-        else if (e10 >= 310) Double.PositiveInfinity
-        else toDouble(m10, e10, from, newMark, pos)
+        } else toDouble(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
@@ -1417,39 +1415,42 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toDouble(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Double = {
-    var shift = java.lang.Long.numberOfLeadingZeros(m10)
-    var m2 = unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
-    var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
-    shift = java.lang.Long.numberOfLeadingZeros(m2)
-    m2 <<= shift
-    e2 -= shift
-    val roundingError =
-      (if (m10 < 922337203685477580L) 1
-      else 19) << shift
-    val truncatedBitNum = Math.max(-1074 - e2, 11)
-    val savedBitNum = 64 - truncatedBitNum
-    val mask = -1L >>> Math.max(savedBitNum, 0)
-    val halfwayDiff = (m2 & mask) - (mask >>> 1)
-    if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
-      if (savedBitNum <= 0) m2 = 0
-      m2 >>>= truncatedBitNum
-      e2 += truncatedBitNum
-      if (savedBitNum >= 0 && halfwayDiff > 0) {
-        if (m2 == 0x001FFFFFFFFFFFFFL) {
-          m2 = 0x0010000000000000L
-          e2 += 1
-        } else m2 += 1
+  private[this] def toDouble(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Double =
+    if (m10 == 0 || e10 < -343) 0.0
+    else if (e10 >= 310) Double.PositiveInfinity
+    else {
+      var shift = java.lang.Long.numberOfLeadingZeros(m10)
+      var m2 = unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
+      shift = java.lang.Long.numberOfLeadingZeros(m2)
+      m2 <<= shift
+      e2 -= shift
+      val roundingError =
+        (if (m10 < 922337203685477580L) 1
+        else 19) << shift
+      val truncatedBitNum = Math.max(-1074 - e2, 11)
+      val savedBitNum = 64 - truncatedBitNum
+      val mask = -1L >>> Math.max(savedBitNum, 0)
+      val halfwayDiff = (m2 & mask) - (mask >>> 1)
+      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
+        if (savedBitNum <= 0) m2 = 0
+        m2 >>>= truncatedBitNum
+        e2 += truncatedBitNum
+        if (savedBitNum >= 0 && halfwayDiff > 0) {
+          if (m2 == 0x001FFFFFFFFFFFFFL) {
+            m2 = 0x0010000000000000L
+            e2 += 1
+          } else m2 += 1
+        }
+        if (e2 == -1074) m2
+        else if (e2 >= 972) 0x7FF0000000000000L
+        else (e2 + 1075L) << 52 | m2 & 0x000FFFFFFFFFFFFFL
+      } else {
+        var offset = from
+        if (mark == 0) offset -= newMark
+        java.lang.Double.parseDouble(new String(buf, offset, pos - offset))
       }
-      if (e2 == -1074) m2
-      else if (e2 >= 972) 0x7FF0000000000000L
-      else (e2 + 1075L) << 52 | m2 & 0x000FFFFFFFFFFFFFL
-    } else {
-      var offset = from
-      if (mark == 0) offset -= newMark
-      java.lang.Double.parseDouble(new String(buf, offset, pos - offset))
     }
-  }
 
   private[this] def parseFloat(isToken: Boolean): Float = {
     var b =
@@ -1545,9 +1546,7 @@ final class JsonReader private[jsoniter_scala](
         else if (m10 < 4294967296L && e10 >= digits - 23 && e10 <= 19 - digits) {
           (if (e10 < 0) m10 / pow10Doubles(-e10)
           else m10 * pow10Doubles(e10)).toFloat
-        } else if (m10 == 0 || e10 < -64) 0.0f
-        else if (e10 >= 39) Float.PositiveInfinity
-        else toFloat(m10, e10, from, newMark, pos)
+        } else toFloat(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
@@ -1555,39 +1554,42 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toFloat(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Float = {
-    var shift = java.lang.Long.numberOfLeadingZeros(m10)
-    var m2 = unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
-    var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
-    shift = java.lang.Long.numberOfLeadingZeros(m2)
-    m2 <<= shift
-    e2 -= shift
-    val roundingError =
-      (if (m10 < 922337203685477580L) 1
-      else 19) << shift
-    val truncatedBitNum = Math.max(-149 - e2, 40)
-    val savedBitNum = 64 - truncatedBitNum
-    val mask = -1L >>> Math.max(savedBitNum, 0)
-    val halfwayDiff = (m2 & mask) - (mask >>> 1)
-    if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
-      if (savedBitNum <= 0) m2 = 0
-      m2 >>>= truncatedBitNum
-      e2 += truncatedBitNum
-      if (savedBitNum >= 0 && halfwayDiff > 0) {
-        if (m2 == 0x00FFFFFF) {
-          m2 = 0x00800000
-          e2 += 1
-        } else m2 += 1
+  private[this] def toFloat(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Float =
+    if (m10 == 0 || e10 < -64) 0.0f
+    else if (e10 >= 39) Float.PositiveInfinity
+    else {
+      var shift = java.lang.Long.numberOfLeadingZeros(m10)
+      var m2 = unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
+      shift = java.lang.Long.numberOfLeadingZeros(m2)
+      m2 <<= shift
+      e2 -= shift
+      val roundingError =
+        (if (m10 < 922337203685477580L) 1
+        else 19) << shift
+      val truncatedBitNum = Math.max(-149 - e2, 40)
+      val savedBitNum = 64 - truncatedBitNum
+      val mask = -1L >>> Math.max(savedBitNum, 0)
+      val halfwayDiff = (m2 & mask) - (mask >>> 1)
+      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
+        var mf = 0
+        if (savedBitNum > 0) mf = (m2 >>> truncatedBitNum).toInt
+        e2 += truncatedBitNum
+        if (savedBitNum >= 0 && halfwayDiff > 0) {
+          if (mf == 0x00FFFFFF) {
+            mf = 0x00800000
+            e2 += 1
+          } else mf += 1
+        }
+        if (e2 == -149) mf
+        else if (e2 >= 105) 0x7F800000
+        else (e2 + 150) << 23 | mf & 0x007FFFFF
+      } else {
+        var offset = from
+        if (mark == 0) offset -= newMark
+        java.lang.Float.parseFloat(new String(buf, offset, pos - offset))
       }
-      if (e2 == -149) m2.toInt
-      else if (e2 >= 105) 0x7F800000
-      else (e2 + 150) << 23 | m2.toInt & 0x007FFFFF
-    } else {
-      var offset = from
-      if (mark == 0) offset -= newMark
-      java.lang.Float.parseFloat(new String(buf, offset, pos - offset))
     }
-  }
 
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
   // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
