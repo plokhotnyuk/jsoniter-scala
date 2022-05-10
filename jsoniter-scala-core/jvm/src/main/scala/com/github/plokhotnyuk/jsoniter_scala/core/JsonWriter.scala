@@ -1222,7 +1222,6 @@ final class JsonWriter private[jsoniter_scala](
       if (epochSecond >= 0) epochSecond
       else epochSecond - 86399
     }, 1749024623285053783L) >> 13) - (epochSecond >> 63) // (if (epochSecond >= 0) epochSecond else epochSecond - 86399) / 86400
-    val secsOfDay = (epochSecond - epochDay * 86400).toInt
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
@@ -1246,15 +1245,11 @@ final class JsonWriter private[jsoniter_scala](
       (if (marchMonth < 10) 3
       else -9)
     val day = marchDayOfYear - ((marchMonth * 1002762 - 16383) >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
-    val hour = secsOfDay * 37283 >>> 27 // divide a small positive int by 3600
-    val secsOfHour = secsOfDay - hour * 3600
-    val minute = secsOfHour * 17477 >> 20 // divide a small positive int by 60
-    val second = secsOfHour - minute * 60
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalTime(hour, minute, second, x.getNano, writeLocalDateWithT(year, month, day, pos + 1, buf, ds), buf, ds)
+    pos = writeLocalTime(epochSecond - epochDay * 86400, x.getNano, writeLocalDateWithT(year, month, day, pos + 1, buf, ds), buf, ds)
     ByteArrayAccess.setShort(buf, pos, 0x225A)
     pos + 2
   }
@@ -1488,10 +1483,13 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val d1 = ds(hour) | 0x3A00003A0000L
-    val d2 = ds(minute).toLong << 24
-    val d3 = ds(second).toLong << 48
+  private[this] def writeLocalTime(secsOfDay: Long, nano: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val y1 = secsOfDay * 1193047 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y2 = (y1 & 0xFFFFFFFFL) * 60
+    val y3 = (y2 & 0xFFFFFFFFL) * 60
+    val d1 = ds((y1 >>> 32).toInt) | 0x3A00003A0000L
+    val d2 = ds((y2 >>> 32).toInt).toLong << 24
+    val d3 = ds((y3 >>> 32).toInt).toLong << 48
     ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
     if (nano == 0) pos + 8
     else writeNanos(nano, pos + 8, buf, ds)

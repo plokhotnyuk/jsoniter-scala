@@ -1328,7 +1328,6 @@ final class JsonWriter private[jsoniter_scala](
     val epochDay = // FIXME: Use (Math.multiplyHigh(if (epochSecond >= 0) epochSecond else epochSecond - 86399, 1749024623285053783L) >> 13) - (epochSecond >> 63) after dropping JDK 8 support
       (if (epochSecond >= 0) epochSecond
       else epochSecond - 86399) / 86400 // 86400 == seconds per day
-    val secsOfDay = (epochSecond - epochDay * 86400).toInt
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
@@ -1350,17 +1349,13 @@ final class JsonWriter private[jsoniter_scala](
       (if (marchMonth < 10) 3
       else -9)
     val day = marchDayOfYear - ((marchMonth * 1002762 - 16383) >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
-    val hour = secsOfDay * 37283 >>> 27 // divide a small positive int by 3600
-    val secsOfHour = secsOfDay - hour * 3600
-    val minute = secsOfHour * 17477 >> 20 // divide a small positive int by 60
-    val second = secsOfHour - minute * 60
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
     pos = writeLocalDate(year, month, day, pos + 1, buf, ds)
     buf(pos) = 'T'
-    pos = writeLocalTime(hour, minute, second, x.getNano, pos + 1, buf, ds)
+    pos = writeLocalTime(epochSecond - epochDay * 86400, x.getNano, pos + 1, buf, ds)
     buf(pos) = 'Z'
     buf(pos + 1) = '"'
     pos + 2
@@ -1581,12 +1576,15 @@ final class JsonWriter private[jsoniter_scala](
     pos
   }
 
-  private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var pos = write2Digits(hour, p, buf, ds)
+  private[this] def writeLocalTime(secsOfDay: Long, nano: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val y1 = secsOfDay * 1193047 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y2 = (y1 & 0xFFFFFFFFL) * 60
+    val y3 = (y2 & 0xFFFFFFFFL) * 60
+    var pos = write2Digits((y1 >>> 32).toInt, p, buf, ds)
     buf(pos) = ':'
-    pos = write2Digits(minute, pos + 1, buf, ds)
+    pos = write2Digits((y2 >>> 32).toInt, pos + 1, buf, ds)
     buf(pos) = ':'
-    pos = write2Digits(second, pos + 1, buf, ds)
+    pos = write2Digits((y3 >>> 32).toInt, pos + 1, buf, ds)
     if (nano != 0) writeNanos(nano, pos, buf, ds)
     else pos
   }
