@@ -1580,11 +1580,11 @@ final class JsonWriter private[jsoniter_scala](
     val y1 = secsOfDay * 1193047 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val y2 = (y1 & 0xFFFFFFFFL) * 60
     val y3 = (y2 & 0xFFFFFFFFL) * 60
-    var pos = write2Digits((y1 >>> 32).toInt, p, buf, ds)
+    var pos = write2Digits((y1 >> 32).toInt, p, buf, ds)
     buf(pos) = ':'
-    pos = write2Digits((y2 >>> 32).toInt, pos + 1, buf, ds)
+    pos = write2Digits((y2 >> 32).toInt, pos + 1, buf, ds)
     buf(pos) = ':'
-    pos = write2Digits((y3 >>> 32).toInt, pos + 1, buf, ds)
+    pos = write2Digits((y3 >> 32).toInt, pos + 1, buf, ds)
     if (nano != 0) writeNanos(nano, pos, buf, ds)
     else pos
   }
@@ -1676,13 +1676,13 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write5Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =  {
     val y1 = q0 * 429497L // Based on James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    buf(pos) = ((y1 >>> 32).toInt + '0').toByte
+    buf(pos) = ((y1 >> 32).toInt + '0').toByte
     val y2 = (y1 & 0xFFFFFFFFL) * 100
-    val d2 = ds((y2 >>> 32).toInt)
+    val d2 = ds((y2 >> 32).toInt)
     buf(pos + 1) = d2.toByte
     buf(pos + 2) = (d2 >> 8).toByte
     val y3 = (y2 & 0xFFFFFFFFL) * 100
-    val d3 = ds((y3 >>> 32).toInt)
+    val d3 = ds((y3 >> 32).toInt)
     buf(pos + 3) = d3.toByte
     buf(pos + 4) = (d3 >> 8).toByte
     pos + 5

@@ -1487,9 +1487,9 @@ final class JsonWriter private[jsoniter_scala](
     val y1 = secsOfDay * 1193047 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val y2 = (y1 & 0xFFFFFFFFL) * 60
     val y3 = (y2 & 0xFFFFFFFFL) * 60
-    val d1 = ds((y1 >>> 32).toInt) | 0x3A00003A0000L
-    val d2 = ds((y2 >>> 32).toInt).toLong << 24
-    val d3 = ds((y3 >>> 32).toInt).toLong << 48
+    val d1 = ds((y1 >> 32).toInt) | 0x3A00003A0000L
+    val d2 = ds((y2 >> 32).toInt).toLong << 24
+    val d3 = ds((y3 >> 32).toInt).toLong << 48
     ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
     if (nano == 0) pos + 8
     else writeNanos(nano, pos + 8, buf, ds)
@@ -1570,9 +1570,9 @@ final class JsonWriter private[jsoniter_scala](
     val y1 = q0 * 429497L // Based on James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val y2 = (y1 & 0xFFFFFFFFL) * 100
     val y3 = (y2 & 0xFFFFFFFFL) * 100
-    val d1 = (y1 >>> 32).toInt + '0'
-    val d2 = ds((y2 >>> 32).toInt) << 8
-    val d3 = ds((y3 >>> 32).toInt).toLong << 24
+    val d1 = (y1 >> 32).toInt + '0'
+    val d2 = ds((y2 >> 32).toInt) << 8
+    val d3 = ds((y3 >> 32).toInt).toLong << 24
     ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
     pos + 5
   }
