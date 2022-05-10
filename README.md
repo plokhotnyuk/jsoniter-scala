@@ -11,10 +11,12 @@ parsing and serialization.
 
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
 serialization performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), 
-[Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), [DSL-JSON](https://github.com/ngs-doo/dsl-json), 
-[Jackson](https://github.com/FasterXML/jackson-module-scala), 
-[ninny-json](https://kag0.github.io/ninny-json/USERGUIDE),
-[Play-JSON](https://github.com/playframework/play-json),
+[Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe),
+[Circe with jawn parser](https://github.com/circe/circe/tree/main/modules/jawn),
+[Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
+[DSL-JSON](https://github.com/ngs-doo/dsl-json), 
+[Jackson with jackson-module-scala](https://github.com/FasterXML/jackson-module-scala), 
+[ninny-json](https://kag0.github.io/ninny-json/USERGUIDE), [Play-JSON](https://github.com/playframework/play-json),
 [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
@@ -23,7 +25,7 @@ libraries using different JDK and GraalVM versions on the following environment:
 and GraalVM CE/EE 22.1 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares the same libraries on the same environment by the same code which is compiled by Scala.js 1.9.0 to ES 2015 with
+compares the libraries which supports Scala.js on the same environment compiled by Scala.js 1.10.0 to ES 2015 with
 GCC v20220202 optimizations applied.
 
 ## Contents
