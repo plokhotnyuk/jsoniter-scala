@@ -2634,7 +2634,7 @@ final class JsonReader private[jsoniter_scala](
       m |= (bs ^ 0x2323232323232323L) + 0x0101010101010101L
       charBuf(i + 2) = (bs >> 16 & 0xFF).toChar
       charBuf(i + 3) = (bs >> 24 & 0xFF).toChar
-      m |= (bs | 0x1F1F1F1F1F1F1F1FL) - 0x2020202020202020L
+      m |= bs - 0x2020202020202020L
       charBuf(i + 4) = (bs >> 32 & 0xFF).toChar
       charBuf(i + 5) = (bs >> 40 & 0xFF).toChar
       val notz = java.lang.Long.numberOfTrailingZeros(m & 0x8080808080808080L)
