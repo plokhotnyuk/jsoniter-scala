@@ -2666,11 +2666,11 @@ final class JsonReader private[jsoniter_scala](
     if (i < lim) {
       if (remaining > 0) {
         val b1 = buf(pos)
-        if (b1 >= 0) { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
+        if (b1 >= 0) {
           if (b1 == '"') {
             head = pos + 1
             i
-          } else if (b1 != '\\') {
+          } else if (b1 != '\\') { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
             if (b1 < ' ') unescapedControlCharacterError(pos)
             charBuf(i) = b1.toChar
             parseEncodedString(i + 1, lim, charBuf, pos + 1)
@@ -2742,9 +2742,9 @@ final class JsonReader private[jsoniter_scala](
     val remaining = tail - pos
     if (remaining > 0) {
       val b1 = buf(pos)
-      if (b1 >= 0) { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
+      if (b1 >= 0) {
         if (b1 == '"') decodeError("illegal value for char", pos)
-        else if (b1 != '\\') {
+        else if (b1 != '\\') { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
           if (b1 < ' ') unescapedControlCharacterError(pos)
           head = pos + 1
           b1.toChar

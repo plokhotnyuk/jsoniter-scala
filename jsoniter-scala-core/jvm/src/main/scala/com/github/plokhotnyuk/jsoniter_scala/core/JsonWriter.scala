@@ -650,7 +650,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeParenthesesWithColon(): Unit = count = {
-    var pos = ensureBufCapacity(4) // 4 == size of int in bytes
+    var pos = ensureBufCapacity(4) // 4 == size of Int in bytes
     ByteArrayAccess.setInt(buf, pos, 0x203A22)
     if (config.indentionStep > 0) pos += 1
     pos + 2
@@ -829,7 +829,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeUUID(mostSigBits: Long, leastSigBits: Long): Unit = count = {
-    val pos = ensureBufCapacity(40) // 38 == (new java.util.UUID(0, 0)).toString.length + 2
+    val pos = ensureBufCapacity(40) // 40 == 5 * size of Long in bytes
     val buf = this.buf
     val ds = lowerCaseHexDigits
     val mostSigBits1 = (mostSigBits >> 32).toInt
@@ -837,26 +837,26 @@ final class JsonWriter private[jsoniter_scala](
     val d2 = ds((mostSigBits1 >> 16) & 0xFF).toLong << 24
     val d3 = ds((mostSigBits1 >> 8) & 0xFF).toLong << 40
     val d4 = ds(mostSigBits1 & 0xFF)
-    ByteArrayAccess.setLong(buf, pos, '"' | d1 | d2 | d3 | d4.toLong << 56)
+    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3 | d4.toLong << 56 | 0x22)
     val mostSigBits2 = mostSigBits.toInt
     val d5 = ds(mostSigBits2 >>> 24) << 16
     val d6 = ds((mostSigBits2 >> 16) & 0xFF).toLong << 32
     val d7 = ds((mostSigBits2 >> 8) & 0xFF)
-    ByteArrayAccess.setLong(buf, pos + 8, d4 >> 8 | d5 | d6 | d7.toLong << 56 | 0x2D000000002D00L) // 0x2D000000002D00L == '-'.toLong << 48 | '-' << 8
+    ByteArrayAccess.setLong(buf, pos + 8, d4 >> 8 | d5 | d6 | d7.toLong << 56 | 0x2D000000002D00L)
     val d8 = ds(mostSigBits2 & 0xFF) << 8
     val leastSigBits1 = (leastSigBits >> 32).toInt
     val d9 = ds(leastSigBits1 >>> 24).toLong << 32
     val d10 = ds((leastSigBits1 >> 16) & 0xFF).toLong << 48
-    ByteArrayAccess.setLong(buf, pos + 16, d7 >> 8 | d8 | d9 | d10 | 0x2D000000) // 0x2D000000 == '-' << 24
+    ByteArrayAccess.setLong(buf, pos + 16, d7 >> 8 | d8 | d9 | d10 | 0x2D000000)
     val d11 = ds((leastSigBits1 >> 8) & 0xFF) << 8
     val d12 = ds(leastSigBits1 & 0xFF).toLong << 24
     val leastSigBits2 = leastSigBits.toInt
     val d13 = ds(leastSigBits2 >>> 24).toLong << 40
     val d14 = ds((leastSigBits2 >> 16) & 0xFF)
-    ByteArrayAccess.setLong(buf, pos + 24, '-' | d11 | d12| d13 | d14.toLong << 56)
+    ByteArrayAccess.setLong(buf, pos + 24, d11 | d12| d13 | d14.toLong << 56 | 0x2D)
     val d15 = ds((leastSigBits2 >> 8) & 0xFF) << 8
     val d16 = ds(leastSigBits2 & 0xFF).toLong << 24
-    ByteArrayAccess.setLong(buf, pos + 32, d14 >> 8 | d15 | d16 | 0x220000000000L) // 0x220000000000L == '"'.toLong << 40
+    ByteArrayAccess.setLong(buf, pos + 32, d14 >> 8 | d15 | d16 | 0x220000000000L)
     pos + 38
   }
 
@@ -899,9 +899,9 @@ final class JsonWriter private[jsoniter_scala](
     else if (pos >= posLim) writeEncodedString(s, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
       val ch1 = s.charAt(from)
-      if (ch1 < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+      if (ch1 < 0x80) {
         val esc = escapedChars(ch1)
-        if (esc == 0) {
+        if (esc == 0) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
           buf(pos) = ch1.toByte
           writeEncodedString(s, from + 1, to, pos + 1, posLim, escapedChars)
         } else if (esc > 0) {
@@ -950,10 +950,10 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeChar(ch: Char): Unit = count = {
-    val pos = ensureBufCapacity(8) // 6 bytes per char for escaped unicode + make room for the quotes
-    if (ch < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+    val pos = ensureBufCapacity(8) // 8 = size of Long in bytes
+    if (ch < 0x80) {
       val esc = escapedChars(ch)
-      if (esc == 0) {
+      if (esc == 0) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
         ByteArrayAccess.setInt(buf, pos, ch << 8 | 0x220022)
         pos + 3
       } else if (esc > 0) {
@@ -1127,7 +1127,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeByte(x: Byte): Unit = count = {
-    var pos = ensureBufCapacity(5) // size of int in bytes + one byte for the sign
+    var pos = ensureBufCapacity(5) // size of Int in bytes + one byte for the sign
     val buf = this.buf
     val ds = digits
     var q0: Int = x
@@ -1324,7 +1324,7 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     ByteArrayAccess.setShort(buf, pos, 0x5022)
     pos += 2
-    if (x.isZero) {
+    if (x eq Period.ZERO) {
       ByteArrayAccess.setShort(buf, pos, 0x4430)
       pos += 2
     } else {
