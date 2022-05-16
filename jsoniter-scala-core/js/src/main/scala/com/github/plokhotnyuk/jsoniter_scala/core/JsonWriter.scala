@@ -2056,7 +2056,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val z = (g1 * cp >>> 1) + multiplyHigh(g0, cp)
+    val z = multiplyHigh(g0, cp) + (g1 * cp >>> 1)
     multiplyHigh(g1, cp) + (z >>> 63) | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
   }
 

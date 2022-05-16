@@ -1627,7 +1627,7 @@ final class JsonReader private[jsoniter_scala](
     }
 
   private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
-    Math.multiplyHigh(x, y) + ((x >> 63) & y) + ((y >> 63) & x)
+    Math.multiplyHigh(x, y) + x + y // Use implementation that works only when both params are negative
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
