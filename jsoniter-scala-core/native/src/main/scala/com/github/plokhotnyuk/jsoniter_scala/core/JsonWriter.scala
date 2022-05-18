@@ -135,12 +135,8 @@ final class JsonWriter private[jsoniter_scala](
       }
       buf(pos) = '"'
       pos += 1
-      var i = 0
-      while (i < len) {
-        buf(pos) = x.charAt(i).toByte
-        pos += 1
-        i += 1
-      }
+      x.getBytes(0, len, buf, pos)
+      pos += len
       buf(pos) = '"'
       buf(pos + 1) = ':'
       pos += 2
@@ -283,12 +279,8 @@ final class JsonWriter private[jsoniter_scala](
       } else comma = true
       buf(pos) = '"'
       pos += 1
-      var i = 0
-      while (i < len) {
-        buf(pos) = x.charAt(i).toByte
-        pos += 1
-        i += 1
-      }
+      x.getBytes(0, len, buf, pos)
+      pos += len
       buf(pos) = '"'
       count = pos + 1
     } else writeLongNonEscapedAsciiVal(x)
