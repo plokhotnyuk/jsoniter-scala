@@ -1563,17 +1563,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 4
   }
 
-  private[this] def write5Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =  {
-    val y1 = q0 * 429497L // Based on James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    val y2 = (y1 & 0xFFFFFFFFL) * 100
-    val y3 = (y2 & 0xFFFFFFFFL) * 100
-    val d1 = (y1 >> 32).toInt + '0'
-    val d2 = ds((y2 >> 32).toInt) << 8
-    val d3 = ds((y3 >> 32).toInt).toLong << 24
-    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
-    pos + 5
-  }
-
   private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val y1 = q0 * 140737489L // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val y2 = (y1 & 0x7FFFFFFFFFFFL) * 100
@@ -1609,11 +1598,30 @@ final class JsonWriter private[jsoniter_scala](
       if (q0 < 10) {
         buf(pos) = (q0 + '0').toByte
         pos + 1
-      } else write2Digits(q0, pos, buf, ds)
+      } else {
+        ByteArrayAccess.setShort(buf, pos, ds(q0))
+        pos + 2
+      }
     } else if (q0 < 10000) {
-      if (q0 < 1000) write3Digits(q0, pos, buf, ds)
-      else write4Digits(q0, pos, buf, ds)
-    } else write5Digits(q0, pos, buf, ds)
+      val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+      val d2 = ds(q0 - q1 * 100)
+      if (q0 < 1000) {
+        ByteArrayAccess.setInt(buf, pos, q1 + '0' | d2 << 8)
+        pos + 3
+      } else {
+        ByteArrayAccess.setInt(buf, pos, ds(q1) | d2 << 16)
+        pos + 4
+      }
+    } else {
+      val y1 = q0 * 429497L // Based on James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      val y2 = (y1 & 0xFFFFFFFFL) * 100
+      val y3 = (y2 & 0xFFFFFFFFL) * 100
+      val d1 = (y1 >> 32).toInt + '0'
+      val d2 = ds((y2 >> 32).toInt) << 8
+      val d3 = ds((y3 >> 32).toInt).toLong << 24
+      ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
+      pos + 5
+    }
   }
 
   private[this] def writeInt(x: Int): Unit = count = {
