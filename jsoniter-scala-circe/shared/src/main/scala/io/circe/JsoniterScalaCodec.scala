@@ -1,6 +1,6 @@
 package io.circe
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonReaderException, JsonValueCodec, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.Json._
 import java.nio.charset.StandardCharsets
 import java.util
@@ -40,14 +40,14 @@ object JsoniterScalaCodec {
   }
 
   def bigIntValue(c: HCursor): BigInt = c.value match {
-    case n: JNumber =>
-      n.value match {
-        case jbd: JsonBigDecimal =>
-          val bd = jbd.value
-          if (bd.scale == 0) new BigInt(bd.unscaledValue)
-          else null
-        case _ => null
-      }
+    case n: JNumber => n.value match {
+      case jl: JsonLong => BigInt(jl.value)
+      case jbd: JsonBigDecimal =>
+        val bd = jbd.value
+        if (bd.scale == 0) new BigInt(bd.unscaledValue)
+        else null
+      case _ => null
+    }
     case _ => null
   }
 
