@@ -151,8 +151,8 @@ lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(jsSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M2",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M2"
+      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M3",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M3"
     )
   )
 
@@ -160,8 +160,8 @@ lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
   .settings(
     crossScalaVersions := Seq("2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M2",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M2"
+      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M3",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M3"
     ),
     coverageEnabled := false
   )
