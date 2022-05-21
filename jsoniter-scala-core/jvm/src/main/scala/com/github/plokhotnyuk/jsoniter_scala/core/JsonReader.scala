@@ -829,22 +829,22 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseInstantYearWithHyphen(pos: Int): Int =
     if (pos + 4 < tail) {
       val buf = this.buf
-      val bs = ByteArrayAccess.getInt(buf, pos)
-      val year = ((bs ^ 0x30303030) * 2561 >> 8 & 0x00FF00FF) * 6553601 >> 16
+      val bs = ByteArrayAccess.getInt(buf, pos) - 0x30303030
+      val year = (bs * 2561 >> 8 & 0x00FF00FF) * 6553601 >> 16
       head = pos + 5
-      if ((bs & 0xF0F0F0F0) == 0x30303030 && (bs + 0x06060606 & 0xF0F0F0F0) == 0x30303030 && buf(pos + 4) == '-') year
-      else parseNon4DigitYearWithByte('-', 10, bs, pos)
+      if (((bs + 0x76767676 | bs) & 0x80808080) == 0 && buf(pos + 4) == '-') year
+      else parseNon4DigitYearWithByte('-', 10, bs + 0x30303030, pos)
     } else parseInstantYearWithHyphen(loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseYearWithByte(t: Byte, pos: Int): Int =
     if (pos + 4 < tail) {
       val buf = this.buf
-      val bs = ByteArrayAccess.getInt(buf, pos)
-      val year = ((bs ^ 0x30303030) * 2561 >> 8 & 0x00FF00FF) * 6553601 >> 16
+      val bs = ByteArrayAccess.getInt(buf, pos) - 0x30303030
+      val year = (bs * 2561 >> 8 & 0x00FF00FF) * 6553601 >> 16
       head = pos + 5
-      if ((bs & 0xF0F0F0F0) == 0x30303030 && (bs + 0x06060606 & 0xF0F0F0F0) == 0x30303030 && buf(pos + 4) == t) year
-      else parseNon4DigitYearWithByte(t, 9, bs, pos)
+      if (((bs + 0x76767676 | bs) & 0x80808080) == 0 && buf(pos + 4) == t) year
+      else parseNon4DigitYearWithByte(t, 9, bs + 0x30303030, pos)
     } else parseYearWithByte(t, loadMoreOrError(pos))
 
   private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Byte, bs: Int, p: Int): Int = {
@@ -923,8 +923,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos + 7 < tail && {
       val bs = ByteArrayAccess.getLong(buf, pos)
       hourMinute = ((bs & 0x0F07000F03L) * 2561 >> 8).toInt
-      (bs & 0xF0F0FFF0F0L) == 0x30303A3030L &&
-        (bs + 0x060A00060DL & 0xF0F0FFF0F0L) == 0x30303A3030L && (hourMinute & 0x3F) < 24
+      ((bs + 0x060A00060DL | bs) & 0xF0F0FFF0F0L) == 0x30303A3030L && (hourMinute & 0x3F) < 24
     }) {
       head = pos + 5
       hourMinute
@@ -2089,7 +2088,7 @@ final class JsonReader private[jsoniter_scala](
       val monthDay = ((bs & 0x0F03000F01L) * 2561 >> 8).toInt
       month = monthDay & 0x1F
       day = monthDay >> 24
-      (bs & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && (bs + 0x00060C00060EL & 0xFFF0F0FFF0F0L) == 0x2230302D3030L &&
+      ((bs + 0x00060C00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x2230302D3030L &&
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
     }) head = pos + 6
     else {
@@ -2126,13 +2125,12 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseMonthDay(pos: Int): MonthDay =
     if (pos + 7 < tail) {
-      val bs = ByteArrayAccess.getLong(buf, pos)
-      val monthDay = ((bs ^ 0x2230302D30302D2DL) * 2561 >> 24).toInt
+      val bs = ByteArrayAccess.getLong(buf, pos) - 0x2230302D30302D2DL
+      val monthDay = (bs * 2561 >> 24).toInt
       val month = monthDay & 0x1F
       val day = monthDay >> 24
       head = pos + 8
-      if ((bs & 0xFFF0F0FFF0F0FFFFL) != 0x2230302D30302D2DL ||
-        (bs + 0x00060C00060E0000L & 0xFFF0F0FFF0F0FFFFL) != 0x2230302D30302D2DL) monthDayError(pos)
+      if (((bs + 0x00767C00767E0000L | bs) & 0xFF8080FF8080FFFFL) != 0) monthDayError(pos)
       if (month < 1 || month > 12) monthError(pos + 3)
       if (day == 0 || (day > 28 && day > maxDayForMonth(month))) dayError(pos + 6)
       MonthDay.of(month, day)
@@ -2145,7 +2143,7 @@ final class JsonReader private[jsoniter_scala](
       monthDay = ((bs & 0x0F03000F01L) * 2561 >> 8).toInt
       val month = monthDay & 0x1F
       val day = monthDay >> 24
-      (bs & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && (bs + 0x00060C00060EL & 0xFFF0F0FFF0F0L) == 0x5430302D3030L &&
+      ((bs + 0x00060C00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x5430302D3030L &&
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
     }) {
       head = pos + 6
@@ -2197,7 +2195,7 @@ final class JsonReader private[jsoniter_scala](
         var bs = 0L
         if (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos)
-          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+          ((bs + 0x00060A00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
         } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
           offsetTotal < 64800
@@ -2247,7 +2245,7 @@ final class JsonReader private[jsoniter_scala](
         var bs = 0L
         if (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos)
-          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+          ((bs + 0x00060A00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
         } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
           offsetTotal < 64800
@@ -2359,8 +2357,7 @@ final class JsonReader private[jsoniter_scala](
         var bs = 0L
         if (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos)
-          (bs & 0xF0F0FFF0F0L) == 0x30303A3030L && (bs + 0x060A00060EL & 0xF0F0FFF0F0L) == 0x30303A3030L &&
-            (bs & 0xFF0000000000L) != 0x3A0000000000L
+          (bs & 0xFF0000000000L) != 0x3A0000000000L && ((bs + 0x060A00060EL | bs) & 0xF0F0FFF0F0L) == 0x30303A3030L
         } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
           offsetTotal < 64800
@@ -2402,7 +2399,7 @@ final class JsonReader private[jsoniter_scala](
       var bs = 0L
       if (pos + 7 < tail && {
         bs = ByteArrayAccess.getLong(buf, pos)
-        (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+        ((bs + 0x00060A00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
       } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
         offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
         offsetTotal < 64800
