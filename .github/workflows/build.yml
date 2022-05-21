@@ -23,9 +23,7 @@ jobs:
           - zulu@1.11 # FIXME: revert to zulu@1.11 after fixing of https://github.com/scala-native/scala-native/issues/2611
           - graalvm-ce-java11
         os:
-          - ubuntu-latest
-          - macOS-latest
-          - windows-latest
+          - macOS-latest # FIXME: restore build on Ubuntu and Windows
       fail-fast: false
     steps:
       # Borrowed from scala-native GitHub action build configuration, see:
