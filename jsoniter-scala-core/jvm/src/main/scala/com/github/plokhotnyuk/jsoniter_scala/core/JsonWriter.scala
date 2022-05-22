@@ -1551,7 +1551,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 * 1311 >> 17 // divide a small positive int by 100
-    ByteArrayAccess.setInt(buf, pos, ds(q0 - q1 * 100) << 8 | q1 | 0x30)
+    ByteArrayAccess.setInt(buf, pos, ds(q0 - q1 * 100) << 8 | q1 + '0')
     pos + 3
   }
 
