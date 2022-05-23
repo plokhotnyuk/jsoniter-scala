@@ -829,22 +829,22 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseInstantYearWithHyphen(pos: Int): Int =
     if (pos + 4 < tail) {
       val buf = this.buf
-      val bs = ByteArrayAccess.getInt(buf, pos) - 0x30303030
-      val year = (bs * 2561 >> 8 & 0x00FF00FF) * 6553601 >> 16
+      val dec = ByteArrayAccess.getInt(buf, pos) - 0x30303030
+      val year = (dec * 2561 >> 8 & 0x00FF00FF) * 6553601 >> 16
       head = pos + 5
-      if (((bs + 0x76767676 | bs) & 0x80808080) == 0 && buf(pos + 4) == '-') year
-      else parseNon4DigitYearWithByte('-', 10, bs + 0x30303030, pos)
+      if (((dec + 0x76767676 | dec) & 0x80808080) == 0 && buf(pos + 4) == '-') year // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+      else parseNon4DigitYearWithByte('-', 10, dec + 0x30303030, pos)
     } else parseInstantYearWithHyphen(loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseYearWithByte(t: Byte, pos: Int): Int =
     if (pos + 4 < tail) {
       val buf = this.buf
-      val bs = ByteArrayAccess.getInt(buf, pos) - 0x30303030
-      val year = (bs * 2561 >> 8 & 0x00FF00FF) * 6553601 >> 16
+      val dec = ByteArrayAccess.getInt(buf, pos) - 0x30303030
+      val year = (dec * 2561 >> 8 & 0x00FF00FF) * 6553601 >> 16
       head = pos + 5
-      if (((bs + 0x76767676 | bs) & 0x80808080) == 0 && buf(pos + 4) == t) year
-      else parseNon4DigitYearWithByte(t, 9, bs + 0x30303030, pos)
+      if (((dec + 0x76767676 | dec) & 0x80808080) == 0 && buf(pos + 4) == t) year // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+      else parseNon4DigitYearWithByte(t, 9, dec + 0x30303030, pos)
     } else parseYearWithByte(t, loadMoreOrError(pos))
 
   private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Byte, bs: Int, p: Int): Int = {
@@ -1292,18 +1292,20 @@ final class JsonReader private[jsoniter_scala](
     else {
       var pos = head
       var buf = this.buf
-      var bs = 0L
+      var dec = 0L
       while ((pos + 7 < tail || {
         pos = loadMore(pos)
         buf = this.buf
         pos + 7 < tail
       }) && {
-        bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-        (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
-          (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
+        val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        dec = bs - 0x3030303030303030L
+        ((bs + 0x4646464646464646L | dec) & 0x8080808080808080L) == 0
       }) {
-        if (x < -92233720368L || { // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
-          x = x * 100000000 - ((((bs ^ 0x3030303030303030L) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 42949672960001L >> 32)
+        if (x < -92233720368L || {
+          dec = dec * 2561 >> 8
+          val mask = 0x000000FF000000FFL
+          x = x * 100000000 - (((dec & mask) * 4294967296000100L + (dec >>> 16 & mask) * 42949672960001L) >>> 32)
           x > 0
         }) longOverflowError(pos + 2)
         pos += 8
@@ -1655,9 +1657,8 @@ final class JsonReader private[jsoniter_scala](
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-            (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
-              (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
+            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+            ((bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L) == 0
           }) pos += 8
           while ((pos < tail || {
             pos = loadMore(pos)
@@ -1715,9 +1716,8 @@ final class JsonReader private[jsoniter_scala](
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-            (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
-              (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
+            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+            ((bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L) == 0
           }) pos += 8
           while ((pos < tail || {
             digits += pos
@@ -1743,9 +1743,8 @@ final class JsonReader private[jsoniter_scala](
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast 8 digit checking: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-            (bs & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L &&
-              (bs + 0x0606060606060606L & 0xF0F0F0F0F0F0F0F0L) == 0x3030303030303030L
+            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+            ((bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L) == 0
           }) pos += 8
           while ((pos < tail || {
             fracLen += pos
@@ -1852,11 +1851,15 @@ final class JsonReader private[jsoniter_scala](
     while (pos < firstBlockLimit) {
       x1 = x1 * 10 + (buf(pos) - '0')
       pos += 1
-    } // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
-    var x2 = (((((ByteArrayAccess.getLong(buf, pos) ^ 0x3030303030303030L) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
-      buf(pos + 8)) * 1000000000 +
-      ((((ByteArrayAccess.getLong(buf, pos + 9) ^ 0x3030303030303030L) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
-      buf(pos + 17) - 48000000048L // 48000000048 == '0' * 1000000001L
+    }
+    val mask = 0x000000FF000000FFL // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+    var x2 = ({
+      val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
+      ((dec & mask) * 42949672960001000L + (dec >>> 16 & mask) * 429496729600010L) >>> 32
+    } + buf(pos + 8)) * 1000000000 + {
+      val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561 >> 8
+      ((dec & mask) * 42949672960001000L + (dec >>> 16 & mask) * 429496729600010L) >>> 32
+    } + buf(pos + 17) - 48000000048L
     if (isNeg) {
       x1 = -x1
       x2 = -x2
@@ -1880,9 +1883,10 @@ final class JsonReader private[jsoniter_scala](
     val numWords = lastWord + 1
     val magWords = new Array[Int](numWords)
     magWords(lastWord) = x.toInt
-    while (pos < limit) { // Based on the fast 8 digit to int conversion: http://govnokod.ru/13461#comment189156
-      x = ((((ByteArrayAccess.getLong(buf, pos) ^ 0x3030303030303030L) * 2561 >> 8 & 0x00FF00FF00FF00FFL) * 6553601 >> 16 & 0x0000FFFF0000FFFFL) * 429496729600010L >>> 32) +
-        (buf(pos + 8) - '0')
+    while (pos < limit) { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+      x = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
+      val mask = 0x000000FF000000FFL
+      x = (((x & mask) * 42949672960001000L + (x >>> 16 & mask) * 429496729600010L) >>> 32) + (buf(pos + 8) - '0')
       firstWord = Math.max(firstWord - 1, 0)
       var i = lastWord
       while (i >= firstWord) {
@@ -2060,7 +2064,7 @@ final class JsonReader private[jsoniter_scala](
       var secondOfDay = 0L
       if (pos + 7 < tail && {
         secondOfDay = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
-        ((secondOfDay + 0x767A00767A00767DL | secondOfDay) & 0x8080FF8080FF8080L) == 0
+        ((secondOfDay + 0x767A00767A00767DL | secondOfDay) & 0x8080FF8080FF8080L) == 0 // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
       } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
         secondOfDay = secondOfDay * 2561 >> 8
         secondOfDay = ((secondOfDay & 0x3F00001F) * 506654958582497280L >>> 47) + (secondOfDay >> 48)
@@ -2129,7 +2133,7 @@ final class JsonReader private[jsoniter_scala](
       val month = monthDay & 0xFF
       val day = monthDay >> 24
       head = pos + 8
-      if (((bs + 0x00767C00767E0000L | bs) & 0xFF8080FF8080FFFFL) != 0) monthDayError(pos)
+      if (((bs + 0x00767C00767E0000L | bs) & 0xFF8080FF8080FFFFL) != 0) monthDayError(pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
       if (month < 1 || month > 12) monthError(pos + 3)
       if (day == 0 || (day > 28 && day > maxDayForMonth(month))) dayError(pos + 6)
       MonthDay.of(month, day)
