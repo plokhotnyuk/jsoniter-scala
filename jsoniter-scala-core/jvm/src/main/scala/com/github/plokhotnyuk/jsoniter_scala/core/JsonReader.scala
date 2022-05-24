@@ -923,7 +923,8 @@ final class JsonReader private[jsoniter_scala](
     if (pos + 7 < tail && {
       val bs = ByteArrayAccess.getLong(buf, pos)
       hourMinute = ((bs & 0x0F07000F03L) * 2561 >> 8).toInt
-      ((bs + 0x060A00060DL | bs) & 0xF0F0FFF0F0L) == 0x30303A3030L && (hourMinute & 0xFF) < 24
+      (bs & 0xF0F0FFF0F0L) == 0x30303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+        (bs + 0x060A00060DL & 0xF0F0FFF0F0L) == 0x30303A3030L && (hourMinute & 0x3F) < 24
     }) {
       head = pos + 5
       hourMinute
@@ -2091,7 +2092,7 @@ final class JsonReader private[jsoniter_scala](
       val monthDay = ((bs & 0x0F03000F01L) * 2561 >> 8).toInt
       month = monthDay & 0xFF
       day = monthDay >> 24
-      ((bs + 0x00060C00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x2230302D3030L &&
+      (bs & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && (bs + 0x00060C00060EL & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
     }) head = pos + 6
     else {
@@ -2146,7 +2147,7 @@ final class JsonReader private[jsoniter_scala](
       monthDay = ((bs & 0x0F03000F01L) * 2561 >> 8).toInt
       val month = monthDay & 0xFF
       val day = monthDay >> 24
-      ((bs + 0x00060C00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x5430302D3030L &&
+      (bs & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && (bs + 0x00060C00060EL & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
     }) {
       head = pos + 6
@@ -2198,7 +2199,7 @@ final class JsonReader private[jsoniter_scala](
         var bs = 0L
         if (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos)
-          ((bs + 0x00060A00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
           offsetTotal < 64800
@@ -2248,7 +2249,7 @@ final class JsonReader private[jsoniter_scala](
         var bs = 0L
         if (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos)
-          ((bs + 0x00060A00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && (bs + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
           offsetTotal < 64800
@@ -2360,7 +2361,8 @@ final class JsonReader private[jsoniter_scala](
         var bs = 0L
         if (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos)
-          (bs & 0xFF0000000000L) != 0x3A0000000000L && ((bs + 0x060A00060EL | bs) & 0xF0F0FFF0F0L) == 0x30303A3030L
+          (bs & 0xFF0000000000L) != 0x3A0000000000L &&  // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            (bs & 0xF0F0FFF0F0L) == 0x30303A3030L && (bs + 0x060A00060EL & 0xF0F0FFF0F0L) == 0x30303A3030L
         } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
           offsetTotal < 64800
@@ -2402,7 +2404,7 @@ final class JsonReader private[jsoniter_scala](
       var bs = 0L
       if (pos + 7 < tail && {
         bs = ByteArrayAccess.getLong(buf, pos)
-        ((bs + 0x00060A00060EL | bs) & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+        (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && ((bs + 0x00060A00060EL) & 0xFFF0F0FFF0F0L) == 0x2230303A3030L  // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
       } && { // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
         offsetTotal = (((bs & 0x0F07000F01L) * 2561 >> 8 & 0x3F00001F) * 506654958582497280L >>> 47).toInt
         offsetTotal < 64800
