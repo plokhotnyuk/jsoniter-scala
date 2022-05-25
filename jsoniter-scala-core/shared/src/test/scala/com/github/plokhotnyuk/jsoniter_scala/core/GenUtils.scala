@@ -8,6 +8,8 @@ import java.time._
 import java.util.UUID
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Gen
+
+import java.nio.charset.StandardCharsets
 import scala.jdk.CollectionConverters._
 import scala.util.{Random, Try}
 
@@ -24,6 +26,7 @@ object GenUtils {
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
   val genSurrogateChar: Gen[Char] = Gen.oneOf(genHighSurrogateChar, genLowSurrogateChar)
   val genAsciiChar: Gen[Char] = Gen.choose('\u0000', '\u007f')
+  val genISO8859Char: Gen[Char] = Gen.choose('\u0000', '\u00ff')
   val genControlChar: Gen[Char] = Gen.choose('\u0000', '\u001f')
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))

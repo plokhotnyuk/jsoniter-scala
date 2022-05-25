@@ -853,6 +853,7 @@ final class JsonReader private[jsoniter_scala](
     if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
     if (b != t) yearError(t, maxDigits, pos, yearNeg, yearDigits)
     if (yearNeg) year = -year
+    if (year >= 0 && year < 10000) digitError(pos)
     year
   }
 
