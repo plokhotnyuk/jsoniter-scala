@@ -1127,7 +1127,7 @@ final class JsonWriter private[jsoniter_scala](
         if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
         else {
           val q1 = (q0 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-          write8Digits((q0 - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
+          write8Digits(q0 - q1 * 100000000, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
         }
     }
   }
@@ -1283,7 +1283,7 @@ final class JsonWriter private[jsoniter_scala](
           if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
           else {
             val q1 = hours / 100000000 // FIXME: Use Math.multiplyHigh(hours, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-            write8Digits((hours - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
+            write8Digits(hours - q1 * 100000000, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
           }
         buf(pos) = 'H'
         pos += 1
@@ -1332,7 +1332,7 @@ final class JsonWriter private[jsoniter_scala](
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
       val marchZeroDayP1 = marchZeroDay + 1
-      val adjust400YearCycles = (((marchZeroDayP1 * 7525902) >> 40) + (~marchZeroDayP1 >> 63)).toInt // ((marchZeroDay + 1) / 146097).toInt - 1 (146097 == number of days in a 400 year cycle)
+      val adjust400YearCycles = ((marchZeroDayP1 * 7525902 >> 40) + (~marchZeroDayP1 >> 63)).toInt // ((marchZeroDay + 1) / 146097).toInt - 1 (146097 == number of days in a 400 year cycle)
       adjustYear = adjust400YearCycles * 400
       marchZeroDay -= adjust400YearCycles * 146097L // 146097 == number of days in a 400 year cycle
     }
@@ -1343,12 +1343,12 @@ final class JsonWriter private[jsoniter_scala](
       year -= 1
       marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
     }
-    val marchMonth = (marchDayOfYear * 17135 + 6854) >> 19 // (marchDayOfYear * 5 + 2) / 153
+    val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
     year += (marchMonth * 3277 >> 15) + adjustYear // year += marchMonth / 10 + adjustYear (reset any negative year and convert march-based values back to january-based)
     val month = marchMonth +
       (if (marchMonth < 10) 3
       else -9)
-    val day = marchDayOfYear - ((marchMonth * 1002762 - 16383) >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
@@ -1589,8 +1589,8 @@ final class JsonWriter private[jsoniter_scala](
     else pos
   }
 
-  private[this] def writeNanos(q0: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val y1 = q0 * 1441151881L // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+  private[this] def writeNanos(q0: Long, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val y1 = q0 * 1441151881 // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     var pos = p
     buf(pos) = '.'
     val y2 = (y1 & 0x1FFFFFFFFFFFFFFL) * 100
@@ -1688,8 +1688,8 @@ final class JsonWriter private[jsoniter_scala](
     pos + 5
   }
 
-  private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val y1 = q0 * 140737489L // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+  private[this] def write8Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val y1 = q0 * 140737489 // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val d1 = ds((y1 >>> 47).toInt)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
@@ -1710,9 +1710,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-    write8Digits((q0 - q1 * 100000000).toInt, {
+    write8Digits(q0 - q1 * 100000000, {
       val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-      write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
+      write8Digits(q1 - q2 * 100000000, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
     }, buf, ds)
   }
 
@@ -1773,11 +1773,11 @@ final class JsonWriter private[jsoniter_scala](
     if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
     else {
       val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-      write8Digits((q0 - q1 * 100000000).toInt, {
+      write8Digits(q0 - q1 * 100000000, {
         if (q1.toInt == q1) writePositiveInt(q1.toInt, pos, buf, ds)
         else {
           val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-          write8Digits((q1 - q2 * 100000000).toInt, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds)
+          write8Digits(q1 - q2 * 100000000, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds)
         }
       }, buf, ds)
     }

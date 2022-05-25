@@ -8,8 +8,6 @@ import java.time._
 import java.util.UUID
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Gen
-
-import java.nio.charset.StandardCharsets
 import scala.jdk.CollectionConverters._
 import scala.util.{Random, Try}
 

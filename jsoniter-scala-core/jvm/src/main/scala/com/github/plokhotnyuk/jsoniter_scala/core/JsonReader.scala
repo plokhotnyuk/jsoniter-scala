@@ -1307,7 +1307,7 @@ final class JsonReader private[jsoniter_scala](
         if (x < -92233720368L || {
           dec = dec * 2561 >> 8
           val mask = 0x000000FF000000FFL
-          x = x * 100000000 - (((dec & mask) * 4294967296000100L + (dec >>> 16 & mask) * 42949672960001L) >>> 32)
+          x = x * 100000000 - ((dec & mask) * 4294967296000100L + (dec >> 16 & mask) * 42949672960001L >> 32)
           x > 0
         }) longOverflowError(pos + 2)
         pos += 8
@@ -1854,13 +1854,13 @@ final class JsonReader private[jsoniter_scala](
       x1 = x1 * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val mask = 0x000000FF000000FFL // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-    var x2 = ({
+    val mask = 0x000000FF000000FFL
+    var x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
       val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
-      ((dec & mask) * 42949672960001000L + (dec >>> 16 & mask) * 429496729600010L) >>> 32
+      (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
     } + buf(pos + 8)) * 1000000000 + {
       val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561 >> 8
-      ((dec & mask) * 42949672960001000L + (dec >>> 16 & mask) * 429496729600010L) >>> 32
+      (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
     } + buf(pos + 17) - 48000000048L
     if (isNeg) {
       x1 = -x1
@@ -1880,7 +1880,7 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val lastWord = ((len * 445861642L) >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
+    val lastWord = (len * 445861642L >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
     var firstWord = lastWord
     val numWords = lastWord + 1
     val magWords = new Array[Int](numWords)
@@ -1888,7 +1888,7 @@ final class JsonReader private[jsoniter_scala](
     while (pos < limit) { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
       x = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
       val mask = 0x000000FF000000FFL
-      x = (((x & mask) * 42949672960001000L + (x >>> 16 & mask) * 429496729600010L) >>> 32) + (buf(pos + 8) - '0')
+      x = ((x & mask) * 42949672960001000L + (x >> 16 & mask) * 429496729600010L >> 32) + (buf(pos + 8) - '0')
       firstWord = Math.max(firstWord - 1, 0)
       var i = lastWord
       while (i >= firstWord) {
@@ -2444,11 +2444,11 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def epochDay(year: Int, month: Int, day: Int): Long =
-    year * 365L + (((year + 3) >> 2) - {
+    year * 365L + ((year + 3 >> 2) - {
       val cp = year * 1374389535L
       if (year < 0) (cp >> 37) - (cp >> 39) // year / 100 - year / 400
       else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
-    }.toInt + ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
+    }.toInt + (month * 1002277 - 988622 >> 15) - // (month * 367 - 362) / 12
       (if (month <= 2) 0
       else if (isLeap(year)) 1
       else 2) + day - 719529) // 719528 == days 0000 to 1970)
