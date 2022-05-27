@@ -14,6 +14,7 @@ class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString2
       toString(b.playJson()) shouldBe b.jsonString1
       toString(b.playJsonJsoniter()) shouldBe b.jsonString2
+      toString(b.smithy4s()) shouldBe b.jsonString2
       toString(b.sprayJson()) shouldBe b.jsonString2
       toString(b.uPickle()) shouldBe b.jsonString2
       toString(b.weePickle()) shouldBe b.jsonString2

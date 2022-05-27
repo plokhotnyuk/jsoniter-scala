@@ -18,6 +18,7 @@ class ExtractFieldsReadingSpec extends BenchmarkSpecBase {
       benchmark.ninnyJson() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
+      benchmark.smithy4s() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
@@ -37,6 +38,7 @@ class ExtractFieldsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.ninnyJson())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
+      intercept[Throwable](b.smithy4s())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())

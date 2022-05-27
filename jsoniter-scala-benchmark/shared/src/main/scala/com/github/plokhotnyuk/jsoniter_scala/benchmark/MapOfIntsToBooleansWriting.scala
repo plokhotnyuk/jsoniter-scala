@@ -49,6 +49,13 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
 
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.serialize(Json.toJson(obj))
+
+  @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    writeToArray(obj)
+  }
 /* FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)

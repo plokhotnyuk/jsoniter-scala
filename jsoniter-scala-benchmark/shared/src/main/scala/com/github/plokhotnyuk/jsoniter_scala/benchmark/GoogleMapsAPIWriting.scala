@@ -65,6 +65,13 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
   def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.serialize(Json.toJson(obj))
 
   @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    writeToArray(obj)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Byte] = {
     import spray.json._
 

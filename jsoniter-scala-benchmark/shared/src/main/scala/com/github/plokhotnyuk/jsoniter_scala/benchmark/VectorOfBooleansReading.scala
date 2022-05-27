@@ -54,6 +54,13 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   def playJsonJsoniter(): Vector[Boolean] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Vector[Boolean]])
 
   @Benchmark
+  def smithy4s(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Vector[Boolean]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Vector[Boolean] = JsonParser(jsonBytes).convertTo[Vector[Boolean]]
 
   @Benchmark

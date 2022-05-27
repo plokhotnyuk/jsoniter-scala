@@ -84,6 +84,13 @@ class ExtractFieldsReading extends CommonParams {
   def playJsonJsoniter(): ExtractFields = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[ExtractFields])
 
   @Benchmark
+  def smithy4s(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[ExtractFields](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): ExtractFields = JsonParser(jsonBytes).convertTo[ExtractFields]
 
   @Benchmark

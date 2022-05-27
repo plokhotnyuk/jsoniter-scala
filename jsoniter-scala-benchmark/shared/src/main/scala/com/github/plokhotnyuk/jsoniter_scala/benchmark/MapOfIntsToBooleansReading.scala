@@ -52,6 +52,13 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   @Benchmark
   def playJsonJsoniter(): Map[Int, Boolean] =
     PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Map[Int, Boolean]])
+
+  @Benchmark
+  def smithy4s(): Map[Int, Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Map[Int, Boolean]](jsonBytes)
+  }
 /* FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
   @Benchmark
   def sprayJson(): Map[Int, Boolean] = JsonParser(jsonBytes).convertTo[Map[Int, Boolean]]
