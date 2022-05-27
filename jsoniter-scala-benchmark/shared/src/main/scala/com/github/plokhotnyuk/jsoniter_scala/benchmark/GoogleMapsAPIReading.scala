@@ -67,6 +67,13 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   def playJsonJsoniter(): DistanceMatrix = PlayJsonJsoniter.deserialize(jsonBytes1).fold(throw _, _.as[DistanceMatrix])
 
   @Benchmark
+  def smithy4s(): DistanceMatrix = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[DistanceMatrix](jsonBytes1)
+  }
+
+  @Benchmark
   def sprayJson(): DistanceMatrix = JsonParser(jsonBytes1).convertTo[DistanceMatrix]
 
   @Benchmark

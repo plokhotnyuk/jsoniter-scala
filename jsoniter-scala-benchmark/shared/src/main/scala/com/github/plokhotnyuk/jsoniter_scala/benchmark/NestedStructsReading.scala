@@ -59,6 +59,13 @@ class NestedStructsReading extends NestedStructsBenchmark {
   def playJsonJsoniter(): NestedStructs = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[NestedStructs])
 
   @Benchmark
+  def smithy4s(): NestedStructs = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[NestedStructs](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): NestedStructs = JsonParser(jsonBytes).convertTo[NestedStructs](nestedStructsJsonFormat)
 
   @Benchmark

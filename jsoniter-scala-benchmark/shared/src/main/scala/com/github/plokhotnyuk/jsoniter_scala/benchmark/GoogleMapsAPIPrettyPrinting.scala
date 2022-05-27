@@ -48,6 +48,13 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   def playJsonJsoniter(): Array[Byte] = writeToArray(Json.toJson(obj), prettyConfig)(PlayJsonJsoniter.jsValueCodec)
 
   @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    writeToArray(obj, prettyConfig)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Byte] = {
     import spray.json._
 

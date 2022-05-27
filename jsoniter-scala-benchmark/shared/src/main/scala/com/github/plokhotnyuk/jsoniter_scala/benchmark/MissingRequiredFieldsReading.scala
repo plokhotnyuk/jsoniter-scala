@@ -24,6 +24,7 @@ import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
+import smithy4s.http.PayloadError
 import spray.json._
 import zio.json.DecoderOps
 
@@ -116,6 +117,16 @@ class MissingRequiredFieldsReading extends CommonParams {
       PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[MissingRequiredFields](missingReqFieldsFormat).toString) // toString shouldn't be called
     } catch {
       case ex: JsResultException => ex.getMessage
+    }
+
+  @Benchmark
+  def smithy4s(): String =
+    try {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+      readFromArray[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
+    } catch {
+      case ex: PayloadError => ex.getMessage
     }
 
   @Benchmark

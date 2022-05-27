@@ -51,6 +51,13 @@ class IntWriting extends IntBenchmark {
   def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.serialize(Json.toJson(obj))
 
   @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    writeToArray(obj)(intJCodec)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark

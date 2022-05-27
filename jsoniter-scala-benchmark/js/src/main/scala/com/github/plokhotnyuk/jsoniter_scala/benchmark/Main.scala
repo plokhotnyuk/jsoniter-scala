@@ -44,6 +44,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -56,6 +57,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -865,6 +867,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -922,6 +925,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -934,6 +938,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -946,6 +951,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -976,6 +982,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -988,6 +995,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -1000,6 +1008,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -1012,6 +1021,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -1023,6 +1033,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -1033,6 +1044,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -1046,6 +1058,7 @@ object Main {
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaWithoutDump")(benchmark.jsoniterScalaWithoutDump()),
       B("jsoniterScalaWithStacktrace")(benchmark.jsoniterScalaWithStacktrace()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -1133,6 +1146,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
@@ -1143,6 +1157,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
@@ -1186,6 +1201,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -1198,6 +1214,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -1210,6 +1227,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -1314,6 +1332,7 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -1326,6 +1345,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
