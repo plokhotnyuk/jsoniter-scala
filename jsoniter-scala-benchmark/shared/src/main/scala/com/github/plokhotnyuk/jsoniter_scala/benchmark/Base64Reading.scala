@@ -19,6 +19,7 @@ import io.circe.Decoder
 import io.circe.parser.decode
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
+import smithy4s.ByteArray
 import spray.json.JsonParser
 import zio.json.DecoderOps
 
@@ -57,6 +58,13 @@ class Base64Reading extends Base64Benchmark {
   @Benchmark
   def playJsonJsoniter(): Array[Byte] =
     PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Byte]](base64Format))
+
+  @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Array[Byte]](jsonBytes, tooLongStringConfig)(base64JCodec)
+  }
 
   @Benchmark
   def sprayJson(): Array[Byte] = JsonParser(jsonBytes).convertTo[Array[Byte]](base64JsonFormat)

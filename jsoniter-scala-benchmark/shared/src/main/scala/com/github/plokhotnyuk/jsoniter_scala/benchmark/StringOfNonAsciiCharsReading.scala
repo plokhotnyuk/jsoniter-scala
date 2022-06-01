@@ -53,6 +53,13 @@ class StringOfNonAsciiCharsReading extends StringOfNonAsciiCharsBenchmark {
   def playJsonJsoniter(): String = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[String])
 
   @Benchmark
+  def smithy4s(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[String](jsonBytes, tooLongStringConfig)(stringJCodec)
+  }
+
+  @Benchmark
   def sprayJson(): String = spray.json.JsonParser(jsonBytes).convertTo[String]
 
   @Benchmark

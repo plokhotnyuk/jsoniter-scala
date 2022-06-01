@@ -50,6 +50,14 @@ class BigDecimalReading extends BigDecimalBenchmark {
   @Benchmark
   def playJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
 */
+/* FIXME: smithy4s: don't know how to tune precision for parsing of BigDecimal values
+  @Benchmark
+  def smithy4s(): BigDecimal = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[BigDecimal](jsonBytes)(bigDecimalJCodec)
+  }
+*/
   @Benchmark
   def sprayJson(): BigDecimal = JsonParser(jsonBytes, jsonParserSettings).convertTo[BigDecimal]
 
