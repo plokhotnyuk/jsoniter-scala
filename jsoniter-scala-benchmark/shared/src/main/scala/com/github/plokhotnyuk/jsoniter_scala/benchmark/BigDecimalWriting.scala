@@ -52,6 +52,13 @@ class BigDecimalWriting extends BigDecimalBenchmark {
   def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.serialize(Json.toJson(obj))
 
   @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    writeToArray(obj)(bigDecimalJCodec)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Byte] = {
     import spray.json._
 

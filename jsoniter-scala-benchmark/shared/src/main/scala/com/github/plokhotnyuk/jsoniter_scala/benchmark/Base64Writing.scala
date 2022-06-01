@@ -18,6 +18,7 @@ import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import org.openjdk.jmh.annotations.Benchmark
 import io.circe.syntax._
 import play.api.libs.json.Json
+import smithy4s.ByteArray
 
 class Base64Writing extends Base64Benchmark {
   @Benchmark
@@ -53,7 +54,14 @@ class Base64Writing extends Base64Benchmark {
 
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.serialize(Json.toJson(obj)(base64Format))
+/* FIXME: smithy4s doesn't pad during serialization to Base64 encoded string
+  @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
 
+    writeToArray(obj)(base64JCodec)
+  }
+*/
   @Benchmark
   def sprayJson(): Array[Byte] = {
     import spray.json._

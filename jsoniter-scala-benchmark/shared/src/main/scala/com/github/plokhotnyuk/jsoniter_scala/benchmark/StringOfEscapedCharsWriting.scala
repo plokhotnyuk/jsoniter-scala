@@ -5,7 +5,7 @@ import com.avsystem.commons.serialization.json._
 import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs.{escapingConfig, _}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
@@ -43,6 +43,13 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
 
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = writeToArray(Json.toJson(obj), escapingConfig)(PlayJsonJsoniter.jsValueCodec)
+
+  @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    writeToArray(obj, escapingConfig)(stringJCodec)
+  }
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj, escapeUnicode = true).getBytes(UTF_8)

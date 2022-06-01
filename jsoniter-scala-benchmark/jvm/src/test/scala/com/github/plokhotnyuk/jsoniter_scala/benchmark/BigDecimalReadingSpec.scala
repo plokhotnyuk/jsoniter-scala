@@ -17,6 +17,8 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
       //FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
       //benchmark.playJson() shouldBe benchmark.sourceObj
+      //FIXME: smithy4s: don't know how to tune precision for parsing of BigDecimal values
+      //benchmark.smithy4s() shouldBe benchmark.sourceObj
       benchmark.sprayJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
       benchmark.weePickle() shouldBe benchmark.sourceObj
