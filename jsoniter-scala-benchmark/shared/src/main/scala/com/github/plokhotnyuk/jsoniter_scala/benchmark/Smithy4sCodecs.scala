@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import smithy4s.http.json._
 import smithy4s.Schema
+import smithy4s.api.Discriminated
 import smithy4s.schema.Schema._
 
 object Smithy4sCodecs {
@@ -11,6 +12,17 @@ object Smithy4sCodecs {
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
+  implicit val adtSchema: Schema[ADTBase] = recursive {
+    val xAlt = struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X")
+    val yAlt = struct(string.required[Y]("b", _.b))(Y.apply).oneOf[ADTBase]("Y")
+    val zAlt = struct(adtSchema.required[Z]("l", _.l), adtSchema.required[Z]("r", _.r))(Z.apply).oneOf[ADTBase]("Z")
+    union(xAlt, yAlt, zAlt) {
+      case x: X => xAlt(x)
+      case y: Y => yAlt(y)
+      case z: Z => zAlt(z)
+    }.addHints(Discriminated("type"))
+  }
+  implicit val adtJCodec: JCodec[ADTBase] = JCodec.deriveJCodecFromSchema(adtSchema)
   val anyValsSchema: Schema[AnyVals] =
     struct(
       byte.required[AnyVals]("b", _.b.a).addHints(smithy.api.Required()),
