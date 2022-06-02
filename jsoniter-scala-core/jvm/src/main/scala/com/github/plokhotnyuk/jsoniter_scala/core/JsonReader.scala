@@ -162,7 +162,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsYearMonth(): YearMonth = {
     nextTokenOrError('"', head)
-    val x = parseYearMonth()
+    val x = parseYearMonth(head)
     nextTokenOrError(':', head)
     x
   }
@@ -356,7 +356,7 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   def readYearMonth(default: YearMonth): YearMonth =
-    if (isNextToken('"', head)) parseYearMonth()
+    if (isNextToken('"', head)) parseYearMonth(head)
     else readNullOrTokenError(default, '"')
 
   def readZonedDateTime(default: ZonedDateTime): ZonedDateTime =
@@ -2316,8 +2316,21 @@ final class JsonReader private[jsoniter_scala](
     Period.of(years, months, days)
   }
 
-  private[this] def parseYearMonth(): YearMonth =
-    YearMonth.of(parseYearWithByte('-', head), parseMonthWithByte('"', head))
+  private[this] def parseYearMonth(pos: Int): YearMonth = {
+    var year, month = 0
+    if (pos + 7 < tail && {
+      val dec = ByteArrayAccess.getLong(buf, pos) - 0x2230302D30303030L
+      val yearMonth = dec * 2561
+      year = (yearMonth.toInt >> 8 & 0xFF00FF) * 6553601 >> 16
+      month = (yearMonth >> 48).toInt & 0xFF
+      ((dec + 0x767E0076767676L | dec) & 0xFF8080FF80808080L) == 0 && month >= 1 && month <= 12 // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+    }) head = pos + 8
+    else {
+      year = parseYearWithByte('-', pos)
+      month = parseMonthWithByte('"', head)
+    }
+    YearMonth.of(year, month)
+  }
 
   private[this] def parseZonedDateTime(): ZonedDateTime = {
     val year = parseYearWithByte('-', head)
