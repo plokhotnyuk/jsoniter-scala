@@ -925,15 +925,15 @@ final class JsonReader private[jsoniter_scala](
       val bs = ByteArrayAccess.getLong(buf, pos)
       hourMinute = ((bs & 0x0F07000F03L) * 2561 >> 8).toInt
       (bs & 0xF0F0FFF0F0L) == 0x30303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-        (bs + 0x060A00060DL & 0xF0F0FFF0F0L) == 0x30303A3030L && (hourMinute & 0x3F) < 24
+        (bs + 0x060A00060DL & 0xF0F0FFF0F0L) == 0x30303A3030L && (hourMinute & 0xFF) < 24
     }) {
       head = pos + 5
       hourMinute
-    } else parseHourWithByte(':', pos) | parseMinute(head) << 24
+    } else parseHourWithColon(pos) | parseMinute(head) << 24
   }
 
   @tailrec
-  private[this] def parseHourWithByte(t: Byte, pos: Int): Int =
+  private[this] def parseHourWithColon(pos: Int): Int =
     if (pos + 2 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
@@ -944,12 +944,12 @@ final class JsonReader private[jsoniter_scala](
       if (b1 < '0' || b1 > '9') digitError(pos)
       if (b2 < '0' || b2 > '9') digitError(pos + 1)
       if (hour > 23) hourError(pos + 1)
-      if (b3 != t) tokenError(t, pos + 2)
+      if (b3 != ':') tokenError(':', pos + 2)
       hour
-    } else parseHourWithByte(t, loadMoreOrError(pos))
+    } else parseHourWithColon(loadMoreOrError(pos))
 
   @tailrec
-  private[this] def parseMinuteWithByte(t: Byte, pos: Int): Int =
+  private[this] def parseMinuteWithColon(pos: Int): Int =
     if (pos + 2 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
@@ -959,9 +959,9 @@ final class JsonReader private[jsoniter_scala](
       if (b1 < '0' || b1 > '9') digitError(pos)
       if (b2 < '0' || b2 > '9') digitError(pos + 1)
       if (b1 > '5') minuteError(pos + 1)
-      if (b3 != t) tokenError(t, pos + 2)
+      if (b3 != ':') tokenError(':', pos + 2)
       b1 * 10 + b2 - 528 // 528 == '0' * 11
-    } else parseMinuteWithByte(t, loadMoreOrError(pos))
+    } else parseMinuteWithColon(loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseMinute(pos: Int): Int =
@@ -2082,7 +2082,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseSecondOfDay(pos: Int): Int =
-    parseHourWithByte(':', pos) * 3600 + parseMinuteWithByte(':', head) * 60 + parseSecond(head)
+    parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)
 
   private[this] def parseLocalDate(): LocalDate = {
     val year = parseYearWithByte('-', head)
