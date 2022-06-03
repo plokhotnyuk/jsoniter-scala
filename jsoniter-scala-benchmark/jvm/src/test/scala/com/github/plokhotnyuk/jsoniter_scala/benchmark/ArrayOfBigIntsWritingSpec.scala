@@ -18,6 +18,7 @@ class ArrayOfBigIntsWritingSpec extends BenchmarkSpecBase {
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       //FIXME: Play-JSON uses BigDecimal with engineering decimal representation to serialize numbers
       //toString(b.playJson()) shouldBe b.jsonString
+      toString(b.smithy4s()) shouldBe b.jsonString
       toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       //FIXME: weePickle writes BigDecimal as JSON strings by default
