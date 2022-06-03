@@ -57,6 +57,13 @@ class GeoJSONReading extends GeoJSONBenchmark {
   def playJsonJsoniter(): GeoJSON = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[GeoJSON](geoJSONFormat))
 
   @Benchmark
+  def smithy4s(): GeoJSON = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[GeoJSON](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): GeoJSON = JsonParser(jsonBytes).convertTo[GeoJSON](geoJSONJsonFormat)
 
   @Benchmark

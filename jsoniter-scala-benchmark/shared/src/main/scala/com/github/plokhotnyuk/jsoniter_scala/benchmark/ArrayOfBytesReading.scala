@@ -55,6 +55,13 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Byte]])
 
   @Benchmark
+  def smithy4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Array[Byte]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Byte] = JsonParser(jsonBytes).convertTo[Array[Byte]]
 
   @Benchmark

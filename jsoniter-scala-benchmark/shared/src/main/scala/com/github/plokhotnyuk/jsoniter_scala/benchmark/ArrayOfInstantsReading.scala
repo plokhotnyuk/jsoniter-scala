@@ -57,6 +57,13 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
   }
 
   @Benchmark
+  def smithy4s(): Array[Instant] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Array[Instant]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Instant] = JsonParser(jsonBytes).convertTo[Array[Instant]]
 
   @Benchmark

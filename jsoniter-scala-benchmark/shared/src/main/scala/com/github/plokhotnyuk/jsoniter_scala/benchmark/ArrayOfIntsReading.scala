@@ -54,6 +54,13 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
   def playJsonJsoniter(): Array[Int] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Int]])
 
   @Benchmark
+  def smithy4s(): Array[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Array[Int]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Int] = JsonParser(jsonBytes).convertTo[Array[Int]]
 
   @Benchmark

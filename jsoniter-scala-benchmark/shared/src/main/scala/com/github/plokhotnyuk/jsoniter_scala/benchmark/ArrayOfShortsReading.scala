@@ -54,6 +54,13 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   def playJsonJsoniter(): Array[Short] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Short]])
 
   @Benchmark
+  def smithy4s(): Array[Short] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Array[Short]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Short] = JsonParser(jsonBytes).convertTo[Array[Short]]
 
   @Benchmark

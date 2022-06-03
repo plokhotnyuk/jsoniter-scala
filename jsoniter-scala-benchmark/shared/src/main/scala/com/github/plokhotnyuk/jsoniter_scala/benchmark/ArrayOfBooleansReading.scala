@@ -54,6 +54,13 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
   def playJsonJsoniter(): Array[Boolean] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Boolean]])
 
   @Benchmark
+  def smithy4s(): Array[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Array[Boolean]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Boolean] = JsonParser(jsonBytes).convertTo[Array[Boolean]]
 
   @Benchmark

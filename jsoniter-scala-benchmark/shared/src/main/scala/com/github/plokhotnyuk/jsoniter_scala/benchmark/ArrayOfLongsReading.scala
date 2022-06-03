@@ -54,6 +54,13 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
   def playJsonJsoniter(): Array[Long] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Long]])
 
   @Benchmark
+  def smithy4s(): Array[Long] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Array[Long]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Long] = JsonParser(jsonBytes).convertTo[Array[Long]]
 
   @Benchmark

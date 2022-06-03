@@ -54,6 +54,13 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   def playJsonJsoniter(): Array[Float] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Float]])
 
   @Benchmark
+  def smithy4s(): Array[Float] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+
+    readFromArray[Array[Float]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Array[Float] = JsonParser(jsonBytes).convertTo[Array[Float]]
 
   @Benchmark
