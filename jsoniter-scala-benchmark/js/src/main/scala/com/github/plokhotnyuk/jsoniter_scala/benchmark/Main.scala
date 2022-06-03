@@ -794,8 +794,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      //FIXME: smithy4s doesn't pad during serialization to Base64 encoded string
-      //B("smithy4s")(benchmark.smithy4s()),
+      B("smithy4s")(benchmark.smithy4s()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
