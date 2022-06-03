@@ -2066,13 +2066,13 @@ final class JsonReader private[jsoniter_scala](
     val year = parseInstantYearWithHyphen(head)
     val monthDay = parseMonthDayWithT(year, head)
     val epochSecond = epochDay(year, monthDay & 0xFF, monthDay >> 24) * 86400 + { // 86400 == seconds per day
-      var secondOfDay = 0
       val pos = head
+      var secondOfDay = 0L
       if (pos + 7 < tail && {
-        var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
-        ((dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-          dec = dec * 2561 >> 8
-          secondOfDay = (((dec & 0x3F00001F) * 506654958582497280L >>> 47) + (dec >> 48)).toInt
+        secondOfDay = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
+        ((secondOfDay + 0x767A00767A00767DL | secondOfDay) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          secondOfDay = secondOfDay * 2561 >> 8
+          secondOfDay = ((secondOfDay & 0x3F00001F) * 506654958582497280L >>> 47) + (secondOfDay >> 48)
           secondOfDay < 86400
         }
       }) {
@@ -2085,7 +2085,7 @@ final class JsonReader private[jsoniter_scala](
     Instant.ofEpochSecond(epochSecond, nano)
   }
 
-  private[this] def parseSecondOfDay(pos: Int): Int =
+  private[this] def parseSecondOfDay(pos: Int): Long =
     parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)
 
   private[this] def parseLocalDate(): LocalDate = {
