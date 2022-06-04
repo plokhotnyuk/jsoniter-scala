@@ -1977,16 +1977,22 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseInstant(): Instant = {
+    val epochDaySeconds = parseEpochDaySeconds()
+    val secondOfDay = parseSecondOfDay(head)
+    val nano = parseOptionalNanoWithByte('Z')
+    nextByteOrError('"', head)
+    Instant.ofEpochSecond(epochDaySeconds + secondOfDay, nano)
+  }
+
+  private[this] def parseEpochDaySeconds(): Long = {
     val year = parseYearWithByte('-', 10, head)
     val month = parseMonthWithByte('-', head)
     val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithColon(head)
-    val minute = parseMinuteWithColon(head)
-    val second = parseSecond(head)
-    val nano = parseOptionalNanoWithByte('Z')
-    nextByteOrError('"', head)
-    Instant.ofEpochSecond(epochDay(year, month, day) * 86400 + (hour * 3600 + minute * 60 + second), nano) // 86400 == seconds per day
+    epochDay(year, month, day) * 86400 // 86400 == seconds per day
   }
+
+  private[this] def parseSecondOfDay(pos: Int): Int =
+    parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)
 
   private[this] def parseLocalDate(): LocalDate = {
     val year = parseYearWithByte('-', 9, head)
