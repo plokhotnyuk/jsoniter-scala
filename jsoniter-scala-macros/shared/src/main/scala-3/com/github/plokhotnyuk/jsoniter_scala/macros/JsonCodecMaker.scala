@@ -980,7 +980,6 @@ object JsonCodecMaker {
         def isTypeParamsList(symbols: List[Symbol]): Boolean = symbols.exists(_.isTypeParam)
 
         ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
-          case typeParams :: Nil if isTypeParamsList(typeParams) => createFieldInfos(Nil, typeParams)
           case params :: Nil => createFieldInfos(params, Nil)
           case typeParams :: params :: Nil if isTypeParamsList(typeParams) => createFieldInfos(params, typeParams)
           case _ => fail(s"'${tpe.show}' hasn't a primary constructor with one parameter list. " +
