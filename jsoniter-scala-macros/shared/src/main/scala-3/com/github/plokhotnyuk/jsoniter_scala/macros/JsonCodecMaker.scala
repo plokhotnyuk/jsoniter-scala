@@ -6,6 +6,7 @@ import java.math.MathContext
 import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CompileTimeEval._
+import java.util.concurrent.atomic.AtomicInteger
 import scala.language.implicitConversions
 import scala.annotation._
 import scala.annotation.meta.field
@@ -861,16 +862,18 @@ object JsonCodecMaker {
         case object NoField extends GetterOrField
       }
 
-      case class ClassInfo(tpe: TypeRepr, primaryConstructor: Symbol, allFields: IndexedSeq[FieldInfo]) {
-        val nonTransientFields: Seq[FieldInfo] = allFields.filter(!_.isTransient)
+      case class ClassInfo(tpe: TypeRepr, primaryConstructor: Symbol, paramLists: List[List[FieldInfo]]) {
+        val fields: Seq[FieldInfo] = paramLists.flatten.filter(!_.isTransient)
 
-        def genNew(args: List[Term]): Term =
+        def genNew(arg: Term): Term = genNew(List(List(arg)))
+
+        def genNew(argss: List[List[Term]]): Term =
           if (!primaryConstructor.isClassConstructor) fail(s"Cannot generate new for ${tpe.show}")
           val constructorNoTypes = Select(New(Inferred(tpe)), primaryConstructor)
           val constructor = typeArgs(tpe) match
             case Nil => constructorNoTypes
             case typeArgs => TypeApply(constructorNoTypes, typeArgs.map(Inferred(_)))
-          Apply(constructor, args)
+          argss.tail.foldLeft(Apply(constructor, argss.head))((acc, args) => Apply(acc, args))
       }
 
       val classInfos = new mutable.LinkedHashMap[TypeRepr, ClassInfo]
@@ -904,9 +907,9 @@ object JsonCodecMaker {
         }.toMap
         val primaryConstructor = getPrimaryConstructor(tpe)
 
-        def createFieldInfos(params: List[Symbol], typeParams: List[Symbol]): IndexedSeq[FieldInfo] = {
-          val fieldInfos = new ArrayBuffer[FieldInfo]
-          var nonTransientFieldIndex = 0
+        def createFieldInfos(params: List[Symbol], typeParams: List[Symbol],
+                             nonTransientFieldIndex: AtomicInteger): List[FieldInfo] = {
+          val fieldInfos = new mutable.ListBuffer[FieldInfo]
           params.zipWithIndex.foreach { case (symbol, i) =>
             val name = symbol.name
             val annotationOption = annotations.get(name)
@@ -971,20 +974,20 @@ object JsonCodecMaker {
                     s"field $symbol of class ${tpe.show} have type ${defaultValue.get.tpe.show} but field type " +
                     s"is ${fieldType.show}")
                 }
-            fieldInfos.addOne(FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, nonTransientFieldIndex))
-            if (!isTransient) nonTransientFieldIndex += 1
+            fieldInfos.addOne(FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient,
+              isStringified, nonTransientFieldIndex.get))
+            if (!isTransient) nonTransientFieldIndex.getAndIncrement()
           }
-          fieldInfos.toIndexedSeq
+          fieldInfos.result()
         }
 
         def isTypeParamsList(symbols: List[Symbol]): Boolean = symbols.exists(_.isTypeParam)
 
+        val nonTransientFieldIndex = new AtomicInteger()
         ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
-          case params :: Nil => createFieldInfos(params, Nil)
-          case typeParams :: params :: Nil if isTypeParamsList(typeParams) => createFieldInfos(params, typeParams)
-          case _ => fail(s"'${tpe.show}' hasn't a primary constructor with one parameter list. " +
-              "Please consider using a custom implicitly accessible codec for this type.\n" +
-              s"primaryConstructor.paramSymss = ${primaryConstructor.paramSymss}\n")
+          case tps :: ps :: Nil if isTypeParamsList(tps) => createFieldInfos(ps, tps, nonTransientFieldIndex) :: Nil
+          case tps :: pss if isTypeParamsList(tps) => pss.map(ps => createFieldInfos(ps, tps, nonTransientFieldIndex))
+          case pss => pss.map(ps => createFieldInfos(ps, Nil, nonTransientFieldIndex))
         })
       })
 
@@ -1004,7 +1007,7 @@ object JsonCodecMaker {
           val vtpe = valueClassValueType(tpe)
           vtpe.asType match
             case '[vt] =>
-              getClassInfo(tpe).genNew(List(genReadKey[vt](vtpe :: types, in).asTerm)).asExprOf[T]
+              getClassInfo(tpe).genNew(genReadKey[vt](vtpe :: types, in).asTerm).asExprOf[T]
         } else if (tpe =:= TypeRepr.of[String]) '{ $in.readKeyAsString() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigInt]) '{ $in.readKeyAsBigInt(${Expr(cfg.bigIntDigitsLimit)}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigDecimal]) {
@@ -1573,7 +1576,7 @@ object JsonCodecMaker {
         else if (tpe <:< TypeRepr.of[AnyVal]) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
-            case '[t1] => getClassInfo(tpe).genNew(List(genNullValue[t1](tpe1 :: types).asTerm)).asExprOf[T]
+            case '[t1] => getClassInfo(tpe).genNew(genNullValue[t1](tpe1 :: types).asTerm).asExprOf[T]
         } else fail(s"Can't deduce null value for ${tpe.show} tree($tpe)")
 
       case class ReadDiscriminator(valDef: ValDef) {
@@ -1697,15 +1700,15 @@ object JsonCodecMaker {
         if (traceFlag) println(s"genReadNonAbstractScalaClass[${tpe.show}]")
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
-          val names = classInfo.nonTransientFields.map(_.mappedName)
+          val names = classInfo.fields.map(_.mappedName)
           if (!useDiscriminator) names
           else names :+ n
         })
-        val required = classInfo.nonTransientFields.collect {
+        val required = classInfo.fields.collect {
           case f if !(f.symbol.flags.is(Flags.HasDefault) || isOption(f.resolvedTpe) ||
             (isCollection(f.resolvedTpe) && !cfg.requireCollectionFields)) => f.mappedName
         }.toSet
-        val paramVarNum = classInfo.nonTransientFields.size
+        val paramVarNum = classInfo.fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVars = (0 to lastParamVarIndex)
@@ -1715,7 +1718,7 @@ object JsonCodecMaker {
           }))))
 
         def checkAndResetFieldPresenceFlag(name: String, l: Expr[Int])(using Quotes): Expr[Unit] =
-          val fi = classInfo.nonTransientFields.find(_.mappedName == name)
+          val fi = classInfo.fields.find(_.mappedName == name)
             .getOrElse(fail(s"Field $name is not found in fields for $classInfo"))
           val n = Ref(paramVars(fi.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
           val m = Expr(1 << fi.nonTransientFieldIndex)
@@ -1727,8 +1730,8 @@ object JsonCodecMaker {
         val checkReqVars =
           if (required.isEmpty) Nil
           else {
-            val nameByIndex = withFieldsByIndexFor(tpe)(classInfo.nonTransientFields.map(_.mappedName))
-            val reqMasks = classInfo.nonTransientFields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) {
+            val nameByIndex = withFieldsByIndexFor(tpe)(classInfo.fields.map(_.mappedName))
+            val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) {
               case (acc, (f, i)) =>
                 if (required(f.mappedName)) acc | (1 << i)
                 else acc
@@ -1742,17 +1745,17 @@ object JsonCodecMaker {
               '{ if (($n & $m) != 0) $in.requiredFieldError(${Apply(nameByIndex, List(fieldName)).asExprOf[String]}) }.asTerm
             }.toList
           }
-        val readVars = classInfo.nonTransientFields.map { f =>
+        val readVars = classInfo.fields.map { f =>
           val sym = symbol("_" + f.symbol.name, f.resolvedTpe, Flags.Mutable)
           f.resolvedTpe.asType match
             case '[ft] =>
               ValDef(sym, Some(f.defaultValue.getOrElse(genNullValue[ft](f.resolvedTpe :: types).asTerm.changeOwner(sym))))
         }
-        val readVarsMap = classInfo.nonTransientFields.zip(readVars).map { case (field, tmpVar) =>
+        val readVarsMap = classInfo.fields.zip(readVars).map { case (field, tmpVar) =>
           (field.symbol.name, tmpVar)
         }.toMap
-        val construct = classInfo.genNew(classInfo.allFields.foldLeft(List.newBuilder[Term]) {
-          var nonTransientFieldIndex = 0
+        var nonTransientFieldIndex = 0
+        val construct = classInfo.genNew(classInfo.paramLists.map(_.foldLeft(List.newBuilder[Term]) {
           (params, fieldInfo) =>
             params.addOne(if (fieldInfo.isTransient) {
               fieldInfo.defaultValue
@@ -1762,12 +1765,12 @@ object JsonCodecMaker {
               nonTransientFieldIndex += 1
               Ref(rv)
             })
-        }.result)
-        val readFields = cfg.discriminatorFieldName.fold(classInfo.nonTransientFields) { n =>
-          if (!useDiscriminator) classInfo.nonTransientFields
-          else classInfo.nonTransientFields :+
+        }.result))
+        val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
+          if (!useDiscriminator) classInfo.fields
+          else classInfo.fields :+
             FieldInfo(Symbol.noSymbol, n, FieldInfo.NoField, None, TypeRepr.of[String], isTransient = false,
-              isStringified = true, classInfo.nonTransientFields.length)
+              isStringified = true, classInfo.fields.length)
         }
 
         def genReadCollisions(fs: collection.Seq[FieldInfo], tmpVars: Map[String, ValDef],
@@ -1989,7 +1992,7 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] =>
               val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
-              getClassInfo(tpe).genNew(List(readVal.asTerm)).asExprOf[T]
+              getClassInfo(tpe).genNew(readVal.asTerm).asExprOf[T]
         } else if (isOption(tpe)) {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -2358,7 +2361,7 @@ object JsonCodecMaker {
         val tpe = types.head
         if (traceFlag) println(s"genWriteNonAbstractScalaClass[${tpe.show}]")
         val classInfo = getClassInfo(tpe)
-        val writeFields = classInfo.nonTransientFields.map { f =>
+        val writeFields = classInfo.fields.map { f =>
           val fDefault =
             if (cfg.transientDefault) f.defaultValue
             else None

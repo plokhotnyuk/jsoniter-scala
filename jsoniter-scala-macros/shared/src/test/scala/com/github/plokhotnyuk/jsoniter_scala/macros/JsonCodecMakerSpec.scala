@@ -2174,21 +2174,27 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         }
       })
     }
-    "don't generate codecs for case classes with multiple parameter lists in a primary constructor" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        """case class MultiListOfArgs(i: Int)(l: Long)
-          |JsonCodecMaker.make[MultiListOfArgs]""".stripMargin
-      }).getMessage.contains {
-        """'MultiListOfArgs' hasn't a primary constructor with one parameter list.
-          |Please consider using a custom implicitly accessible codec for this type.""".stripMargin.replace('\n', ' ')
-      })
+    "generate codecs for case classes with multiple parameter lists in a primary constructor without default values" in {
+      case class MultiListOfArgs(i: Int)(val l: Long)(var s: String)
+
+      val codecOfMultiListOfArgs = make[MultiListOfArgs]
+      verifySerDeser(codecOfMultiListOfArgs, new MultiListOfArgs(1)(2)("VVV"),"{\"i\":1,\"l\":2,\"s\":\"VVV\"}")
+    }
+    "don't generate codecs for case classes with non public parameters of the primary constructor" in {
+      val message = intercept[TestFailedException](assertCompiles {
+        """case class MultiListOfArgsWithNonPublicParam(i: Int)(l: Long)
+          |JsonCodecMaker.make[MultiListOfArgsWithNonPublicParam]""".stripMargin
+      }).getMessage
+      assert(message.contains("'l'"))
+      assert(message.contains("'MultiListOfArgsWithNonPublicParam'"))
+      assert(message.contains("should be defined as 'val' or 'var' in the primary constructor."))
     }
     "don't generate codecs for classes with parameters in a primary constructor that have no accessor for read" in {
       val message = intercept[TestFailedException](assertCompiles {
         """class ParamHasNoAccessor(val i: Int, a: String)
           |JsonCodecMaker.make[ParamHasNoAccessor]""".stripMargin
       }).getMessage
-      assert(message.contains('a'))
+      assert(message.contains("'a'"))
       assert(message.contains("'ParamHasNoAccessor'"))
       assert(message.contains("should be defined as 'val' or 'var' in the primary constructor."))
     }
