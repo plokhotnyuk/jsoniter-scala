@@ -904,7 +904,9 @@ object JsonCodecMaker {
       case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
                            defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
 
-      case class ClassInfo(tpe: Type, fields: Seq[FieldInfo])
+      case class ClassInfo(tpe: Type, paramLists: Seq[Seq[FieldInfo]]) {
+        val fields: Seq[FieldInfo] = paramLists.flatten
+      }
 
       val classInfos = new mutable.LinkedHashMap[Type, ClassInfo]
 
@@ -939,8 +941,10 @@ object JsonCodecMaker {
             val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
-        ClassInfo(tpe, getPrimaryConstructor(tpe).paramLists match {
-          case params :: Nil => params.zipWithIndex.flatMap { case (p, i) =>
+        ClassInfo(tpe, {
+          var i = 0
+          getPrimaryConstructor(tpe).paramLists.map(_.flatMap { p =>
+            i += 1
             val symbol = p.asTerm
             val name = decodeName(symbol)
             val annotationOption = annotations.get(name)
@@ -953,14 +957,12 @@ object JsonCodecMaker {
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
               }
               val defaultValue =
-                if (symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
+                if (symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
                 else None
               val isStringified = annotationOption.exists(_.stringified)
               Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, paramType(tpe, symbol), isStringified))
             }
-          }
-          case _ => fail(s"'$tpe' hasn't a primary constructor with one parameter list. " +
-            "Please consider using a custom implicitly accessible codec for this type.")
+          })
         })
       })
 
@@ -1154,7 +1156,7 @@ object JsonCodecMaker {
               q"if (($n & $m) != 0) in.requiredFieldError($fieldName)"
             }
           }
-        val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
+        val construct = q"new $tpe(...${classInfo.paramLists.map(_.map(f => q"${f.symbol.name} = ${f.tmpName}"))})"
         val readVars = classInfo.fields.map { f =>
           q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(genNullValue(f.resolvedTpe :: types))}"
         }
