@@ -862,7 +862,7 @@ object JsonCodecMaker {
       }
 
       case class ClassInfo(tpe: TypeRepr, primaryConstructor: Symbol, allFields: IndexedSeq[FieldInfo]) {
-        def nonTransientFields: Seq[FieldInfo] = allFields.filter(!_.isTransient)
+        val nonTransientFields: Seq[FieldInfo] = allFields.filter(!_.isTransient)
 
         def genNew(args: List[Term]): Term =
           if (!primaryConstructor.isClassConstructor) fail(s"Cannot generate new for ${tpe.show}")
