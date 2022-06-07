@@ -15,6 +15,7 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
+      benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
@@ -33,6 +34,7 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
+      intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())

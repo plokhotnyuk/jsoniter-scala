@@ -62,6 +62,13 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   def playJsonJsoniter(): Seq[Tweet] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Seq[Tweet]])
 
   @Benchmark
+  def smithy4sJson(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+
+    readFromArray[Seq[Tweet]](jsonBytes)
+  }
+
+  @Benchmark
   def sprayJson(): Seq[Tweet] = JsonParser(jsonBytes).convertTo[Seq[Tweet]]
 
   @Benchmark

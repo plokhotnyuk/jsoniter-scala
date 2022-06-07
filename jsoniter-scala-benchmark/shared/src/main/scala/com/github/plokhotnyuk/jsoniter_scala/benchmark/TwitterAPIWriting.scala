@@ -50,6 +50,12 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
+  @Benchmark
+  def smithy4sJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+
+    writeToArray(obj)
+  }
 /* FIXME: Spray-JSON serializes empty collections
   @Benchmark
   def sprayJson(): Array[Byte] = {
