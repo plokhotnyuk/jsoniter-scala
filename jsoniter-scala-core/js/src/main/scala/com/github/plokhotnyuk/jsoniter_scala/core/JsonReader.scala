@@ -2174,9 +2174,9 @@ final class JsonReader private[jsoniter_scala](
         state = 3
       } else if (b == 'D') {
         val ds = x.toLong + days
-        if (ds != ds.toInt) periodError(pos)
         days = ds.toInt
         state = 4
+        if (ds != days) periodError(pos)
       } else periodError(state, pos)
       b = nextByte(pos + 1)
       b != '"'

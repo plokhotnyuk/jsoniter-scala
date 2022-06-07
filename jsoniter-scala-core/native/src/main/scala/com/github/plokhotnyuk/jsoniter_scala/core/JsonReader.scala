@@ -2179,9 +2179,9 @@ final class JsonReader private[jsoniter_scala](
         state = 3
       } else if (b == 'D') {
         val ds = x.toLong + days
-        if (ds != ds.toInt) periodError(pos)
         days = ds.toInt
         state = 4
+        if (ds != days) periodError(pos)
       } else periodError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
@@ -2312,7 +2312,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && { // (year % 100 != 0 || year % 400 == 0)
     val cp = year * 1374389535L
     val cc = year >> 31
-    ((cp ^ cc) & 0x1FC0000000L) != 0 || (((cp >> 37).toInt - cc) & 0x3) == 0
+    ((cp ^ cc) & 0x1FC0000000L) != 0 || (((cp >> 37) - cc) & 0x3) == 0
   }
 
   private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
