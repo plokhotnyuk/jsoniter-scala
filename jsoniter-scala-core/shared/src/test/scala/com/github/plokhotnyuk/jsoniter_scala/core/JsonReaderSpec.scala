@@ -1275,7 +1275,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("\"2008-01-20T07:24:60Z\"", "illegal second, offset: 0x00000013")
       checkError("\"2008-01-20T07:24:33.+18:10\"", "illegal timezone offset, offset: 0x0000001b")
       checkError("\"2008-01-20T07:24:33.-18:10\"", "illegal timezone offset, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+19:10\"", "illegal timezone offset hour, offset: 0x00000017")
+      checkError("\"2008-01-20T07:24:33.+20:10\"", "illegal timezone offset hour, offset: 0x00000017")
       checkError("\"2008-01-20T07:24:33.+10:60\"", "illegal timezone offset minute, offset: 0x0000001a")
       checkError("\"2008-01-20T07:24:33.+10:10:60\"", "illegal timezone offset second, offset: 0x0000001d")
       forAll(genISO8859Char, minSuccessful(1000)) { ch =>
@@ -1749,7 +1749,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("\"2008-01-20T07:24:33.+10:10:10[UTC]X\"", "expected '\"', offset: 0x00000023")
       checkError("\"2008-01-20T07:24:33.+18:01[UTC]\"", "illegal timezone offset, offset: 0x0000001b")
       checkError("\"2008-01-20T07:24:33.-18:01[UTC]\"", "illegal timezone offset, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+19:10[UTC]\"", "illegal timezone offset hour, offset: 0x00000017")
+      checkError("\"2008-01-20T07:24:33.+20:10[UTC]\"", "illegal timezone offset hour, offset: 0x00000017")
       checkError("\"2008-01-20T07:24:33.+10:60[UTC]\"", "illegal timezone offset minute, offset: 0x0000001a")
       checkError("\"2008-01-20T07:24:33.+10:10:60[UTC]\"", "illegal timezone offset second, offset: 0x0000001d")
       forAll(genISO8859Char, minSuccessful(1000)) { ch =>

@@ -1586,8 +1586,13 @@ final class JsonWriter private[jsoniter_scala](
     else writeYearWithSign(year, pos, buf, ds)
 
   private[this] def writeYearWithSign(year: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val posYear = Math.abs(year)
-    buf(pos) = ((year >>> 31 << 1) + '+').toByte
+    var posYear = year
+    var b: Byte = '+'
+    if (posYear < 0) {
+      posYear = -posYear
+      b = '-'
+    }
+    buf(pos) = b
     if (posYear < 10000) write4Digits(posYear, pos + 1, buf, ds)
     else writePositiveInt(posYear, pos + 1, buf, ds)
   }
