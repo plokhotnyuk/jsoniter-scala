@@ -17,7 +17,7 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME: Play-JSON looses significant digits in BigInt values
       //benchmark.playJson() shouldBe benchmark.obj
-      benchmark.smithy4s() shouldBe benchmark.obj
+      benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
@@ -33,7 +33,7 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
-      intercept[Throwable](b.smithy4s())
+      intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())

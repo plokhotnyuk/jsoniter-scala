@@ -48,8 +48,8 @@ class BigIntWriting extends BigIntBenchmark {
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
   @Benchmark
-  def smithy4s(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     writeToArray(obj)(bigIntJCodec)
   }

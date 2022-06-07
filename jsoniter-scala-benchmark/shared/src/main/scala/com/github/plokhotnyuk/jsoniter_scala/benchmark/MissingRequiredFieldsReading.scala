@@ -120,9 +120,9 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def smithy4s(): String =
+  def smithy4sJson(): String =
     try {
-      import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
       readFromArray[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
     } catch {

@@ -8,7 +8,7 @@ import smithy4s.schema.Schema._
 import java.time.Instant
 import java.util.UUID
 
-object Smithy4sCodecs {
+object Smithy4sJCodecs {
   val adtSchema: Schema[ADTBase] = recursive {
     val xAlt = struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X")
     val yAlt = struct(string.required[Y]("b", _.b))(Y.apply).oneOf[ADTBase]("Y")

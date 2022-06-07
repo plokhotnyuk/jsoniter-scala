@@ -60,8 +60,8 @@ class Base64Reading extends Base64Benchmark {
     PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Byte]](base64Format))
 
   @Benchmark
-  def smithy4s(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[Array[Byte]](jsonBytes, tooLongStringConfig)(base64JCodec)
   }

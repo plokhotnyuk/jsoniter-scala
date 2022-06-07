@@ -45,8 +45,8 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   def playJsonJsoniter(): Array[Byte] = writeToArray(Json.toJson(obj), escapingConfig)(PlayJsonJsoniter.jsValueCodec)
 
   @Benchmark
-  def smithy4s(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     writeToArray(obj, escapingConfig)(stringJCodec)
   }

@@ -62,8 +62,8 @@ class ADTReading extends ADTBenchmark {
   def playJsonJsoniter(): ADTBase = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[ADTBase](adtFormat))
 
   @Benchmark
-  def smithy4s(): ADTBase = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): ADTBase = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[ADTBase](jsonBytes)
   }

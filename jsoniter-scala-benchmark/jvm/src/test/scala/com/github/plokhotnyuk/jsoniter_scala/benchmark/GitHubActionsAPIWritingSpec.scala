@@ -14,7 +14,7 @@ class GitHubActionsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.compactJsonString1
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.compactJsonString1
       toString(b.ninnyJson()) shouldEqual b.compactJsonString3
-      toString(b.smithy4s()) shouldBe b.compactJsonString1
+      toString(b.smithy4sJson()) shouldBe b.compactJsonString1
       toString(b.sprayJson()) shouldBe b.compactJsonString2
       toString(b.uPickle()) shouldBe b.compactJsonString1
       toString(b.weePickle()) shouldBe b.compactJsonString1

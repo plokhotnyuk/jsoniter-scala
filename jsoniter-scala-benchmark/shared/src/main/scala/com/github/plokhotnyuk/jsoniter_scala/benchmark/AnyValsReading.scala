@@ -63,8 +63,8 @@ class AnyValsReading extends AnyValsBenchmark {
   def playJsonJsoniter(): AnyVals = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[AnyVals])
 
   @Benchmark
-  def smithy4s(): AnyVals = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): AnyVals = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[AnyVals](jsonBytes)
   }

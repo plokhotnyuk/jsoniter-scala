@@ -56,8 +56,8 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[GitHubActionsAPI.Response].get
 
   @Benchmark
-  def smithy4s(): GitHubActionsAPI.Response = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[GitHubActionsAPI.Response](jsonBytes)
   }

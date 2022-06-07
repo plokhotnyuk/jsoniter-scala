@@ -54,8 +54,8 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
     PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Map[Int, Boolean]])
 
   @Benchmark
-  def smithy4s(): Map[Int, Boolean] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Map[Int, Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[Map[Int, Boolean]](jsonBytes)
   }

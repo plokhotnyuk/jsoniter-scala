@@ -51,8 +51,8 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
-  def smithy4s(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     writeToArray(obj)
   }

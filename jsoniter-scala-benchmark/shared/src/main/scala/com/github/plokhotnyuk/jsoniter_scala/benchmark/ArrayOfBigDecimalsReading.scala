@@ -59,8 +59,8 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
     PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[BigDecimal]])
 
   @Benchmark
-  def smithy4s(): Array[BigDecimal] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Array[BigDecimal] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[Array[BigDecimal]](jsonBytes)
   }

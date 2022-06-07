@@ -16,7 +16,7 @@ class StringOfEscapedCharsWritingSpec extends BenchmarkSpecBase {
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
       toString(b.playJson()) shouldBe b.jsonString2
       toString(b.playJsonJsoniter()) shouldBe b.jsonString1
-      toString(b.smithy4s()) shouldBe b.jsonString1
+      toString(b.smithy4sJson()) shouldBe b.jsonString1
       toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString2
     }

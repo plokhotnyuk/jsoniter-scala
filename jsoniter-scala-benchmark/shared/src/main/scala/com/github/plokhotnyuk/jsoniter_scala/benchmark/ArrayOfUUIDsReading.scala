@@ -57,8 +57,8 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   def playJsonJsoniter(): Array[UUID] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[UUID]])
 
   @Benchmark
-  def smithy4s(): Array[UUID] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Array[UUID] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[Array[UUID]](jsonBytes)
   }

@@ -53,8 +53,8 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   def playJsonJsoniter(): String = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[String])
 
   @Benchmark
-  def smithy4s(): String = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[String](jsonBytes, tooLongStringConfig)(stringJCodec)
   }

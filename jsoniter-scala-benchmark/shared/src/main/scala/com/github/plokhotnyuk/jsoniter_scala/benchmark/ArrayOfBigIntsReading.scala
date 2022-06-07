@@ -53,8 +53,8 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   def playJson(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]](bigIntArrayFormat)
 */
   @Benchmark
-  def smithy4s(): Array[BigInt] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Array[BigInt] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[Array[BigInt]](jsonBytes)
   }

@@ -51,8 +51,8 @@ class BigIntReading extends BigIntBenchmark {
   def playJson(): BigInt = Json.parse(jsonBytes).as[BigInt]
 */
   @Benchmark
-  def smithy4s(): BigInt = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): BigInt = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[BigInt](jsonBytes)(bigIntJCodec)
   }

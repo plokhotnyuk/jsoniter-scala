@@ -54,8 +54,8 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   def playJsonJsoniter(): Array[Double] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Double]])
 
   @Benchmark
-  def smithy4s(): Array[Double] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._
+  def smithy4sJson(): Array[Double] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
 
     readFromArray[Array[Double]](jsonBytes)
   }

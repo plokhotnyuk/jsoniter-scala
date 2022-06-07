@@ -13,7 +13,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.ninnyJson() shouldBe benchmark.obj
-      benchmark.smithy4s() shouldBe benchmark.obj
+      benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
@@ -30,7 +30,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.ninnyJson())
-      intercept[Throwable](b.smithy4s())
+      intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.uPickle())
