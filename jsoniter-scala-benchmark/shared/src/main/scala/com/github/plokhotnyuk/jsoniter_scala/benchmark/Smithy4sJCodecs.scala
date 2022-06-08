@@ -19,11 +19,9 @@ object Smithy4sJCodecs {
     if (xs.isEmpty) None
     else Some(xs)
 
-  def toList[A](optXs: Option[List[A]]): List[A] =
-    optXs match {
-      case xs: Some[List[A]] => xs.value
-      case _ => Nil
-    }
+  def toOpt[A](x: A, default: A): Option[A] =
+    if (x == default) None
+    else Some(x)
 
   val adtSchema: Schema[ADTBase] = recursive {
     val xAlt = struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X")
@@ -237,6 +235,437 @@ object Smithy4sJCodecs {
   val nestedStructsSchema: Schema[NestedStructs] =
     recursive(struct(nestedStructsSchema.optional[NestedStructs]("n", _.n))(NestedStructs.apply))
   implicit val nestedStructsJCodec: JCodec[NestedStructs] = JCodec.deriveJCodecFromSchema(nestedStructsSchema)
+  implicit val openRTBJCodec: JCodec[OpenRTB.BidRequest] = JCodec.deriveJCodecFromSchema {
+    val metricSchema: Schema[OpenRTB.Metric] =
+      struct(
+        string.required[OpenRTB.Metric]("type", _.`type`),
+        double.required[OpenRTB.Metric]("value", _.value),
+        string.optional[OpenRTB.Metric]("vendor", _.vendor),
+      )(OpenRTB.Metric.apply)
+    val formatSchema: Schema[OpenRTB.Format] =
+      struct(
+        int.optional[OpenRTB.Format]("w", _.w),
+        int.optional[OpenRTB.Format]("h", _.h),
+        int.optional[OpenRTB.Format]("wratio", _.wratio),
+        int.optional[OpenRTB.Format]("hratio", _.hratio),
+        int.optional[OpenRTB.Format]("wmin", _.wmin)
+      )(OpenRTB.Format.apply)
+    val bannerSchema: Schema[OpenRTB.Banner] =
+      struct(
+        formatSchema.optional[OpenRTB.Banner]("format", _.format),
+        int.optional[OpenRTB.Banner]("w", _.w),
+        int.optional[OpenRTB.Banner]("h", _.h),
+        int.optional[OpenRTB.Banner]("wmax", _.wmax),
+        int.optional[OpenRTB.Banner]("hmax", _.hmax),
+        int.optional[OpenRTB.Banner]("wmin", _.wmin),
+        int.optional[OpenRTB.Banner]("hmin", _.hmin),
+        list(int).optional[OpenRTB.Banner]("btype", x => toOptList(x.btype)),
+        list(int).optional[OpenRTB.Banner]("battr", x => toOptList(x.battr)),
+        int.optional[OpenRTB.Banner]("pos", _.pos),
+        list(string).optional[OpenRTB.Banner]("mimes", x => toOptList(x.mimes)),
+        int.optional[OpenRTB.Banner]("topframe", _.topframe),
+        list(int).optional[OpenRTB.Banner]("expdir", x => toOptList(x.expdir)),
+        list(int).optional[OpenRTB.Banner]("api", x => toOptList(x.api)),
+        string.optional[OpenRTB.Banner]("id", _.id),
+        int.optional[OpenRTB.Banner]("vcm", _.vcm),
+      ) { (format, w, h, wmax, hmax, wmin, hmin, btype, battr, pos, mimes, topframe, expdir, api, id, vcm) =>
+        OpenRTB.Banner(format, w, h, wmax, hmax, wmin, hmin, btype.getOrElse(Nil), battr.getOrElse(Nil), pos,
+          mimes.getOrElse(Nil), topframe, expdir.getOrElse(Nil), api.getOrElse(Nil), id, vcm)
+      }
+    val videoSchema: Schema[OpenRTB.Video] =
+      struct.genericArity(
+        list(string).optional[OpenRTB.Video]("mimes", x => toOptList(x.mimes)),
+        int.optional[OpenRTB.Video]("minduration", _.minduration),
+        int.optional[OpenRTB.Video]("maxduration", _.maxduration),
+        list(int).optional[OpenRTB.Video]("protocols", x => toOptList(x.protocols)),
+        int.optional[OpenRTB.Video]("protocol", _.protocol),
+        int.optional[OpenRTB.Video]("w", _.w),
+        int.optional[OpenRTB.Video]("h", _.h),
+        int.optional[OpenRTB.Video]("startdelay", _.startdelay),
+        int.optional[OpenRTB.Video]("placement", _.placement),
+        int.optional[OpenRTB.Video]("linearity", _.linearity),
+        int.optional[OpenRTB.Video]("skip", _.skip),
+        int.optional[OpenRTB.Video]("skipmin", x => toOpt(x.skipmin, 0)),
+        int.optional[OpenRTB.Video]("skipafter", x => toOpt(x.skipafter, 0)),
+        int.optional[OpenRTB.Video]("sequence", _.sequence),
+        list(int).optional[OpenRTB.Video]("battr", x => toOptList(x.battr)),
+        int.optional[OpenRTB.Video]("maxextended", _.maxextended),
+        int.optional[OpenRTB.Video]("minbitrate", _.minbitrate),
+        int.optional[OpenRTB.Video]("maxbitrate", _.maxbitrate),
+        int.optional[OpenRTB.Video]("boxingallowed", x => toOpt(x.boxingallowed, 1)),
+        list(int).optional[OpenRTB.Video]("playbackmethod", x => toOptList(x.playbackmethod)),
+        int.optional[OpenRTB.Video]("playbackend", _.playbackend),
+        list(int).optional[OpenRTB.Video]("delivery", x => toOptList(x.delivery)),
+        int.optional[OpenRTB.Video]("pos", _.pos),
+        list(bannerSchema).optional[OpenRTB.Video]("companionad", x => toOptList(x.companionad)),
+        list(int).optional[OpenRTB.Video]("api", x => toOptList(x.api)),
+        list(int).optional[OpenRTB.Video]("companiontype", x => toOptList(x.companiontype))
+      ) { ps: IndexedSeq[Any] =>
+        OpenRTB.Video(
+          ps(0).asInstanceOf[Option[List[String]]].getOrElse(Nil),
+          ps(1).asInstanceOf[Option[Int]],
+          ps(2).asInstanceOf[Option[Int]],
+          ps(3).asInstanceOf[Option[List[Int]]].getOrElse(Nil),
+          ps(4).asInstanceOf[Option[Int]],
+          ps(5).asInstanceOf[Option[Int]],
+          ps(6).asInstanceOf[Option[Int]],
+          ps(7).asInstanceOf[Option[Int]],
+          ps(8).asInstanceOf[Option[Int]],
+          ps(9).asInstanceOf[Option[Int]],
+          ps(10).asInstanceOf[Option[Int]],
+          ps(11).asInstanceOf[Option[Int]].getOrElse(0),
+          ps(12).asInstanceOf[Option[Int]].getOrElse(0),
+          ps(13).asInstanceOf[Option[Int]],
+          ps(14).asInstanceOf[Option[List[Int]]].getOrElse(Nil),
+          ps(15).asInstanceOf[Option[Int]],
+          ps(16).asInstanceOf[Option[Int]],
+          ps(17).asInstanceOf[Option[Int]],
+          ps(18).asInstanceOf[Option[Int]].getOrElse(1),
+          ps(19).asInstanceOf[Option[List[Int]]].getOrElse(Nil),
+          ps(20).asInstanceOf[Option[Int]],
+          ps(21).asInstanceOf[Option[List[Int]]].getOrElse(Nil),
+          ps(22).asInstanceOf[Option[Int]],
+          ps(23).asInstanceOf[Option[List[OpenRTB.Banner]]].getOrElse(Nil),
+          ps(24).asInstanceOf[Option[List[Int]]].getOrElse(Nil),
+          ps(25).asInstanceOf[Option[List[Int]]].getOrElse(Nil)
+        )
+      }
+    val audioSchema: Schema[OpenRTB.Audio] =
+      struct(
+        list(string).optional[OpenRTB.Audio]("mimes", x => toOptList(x.mimes)),
+        int.optional[OpenRTB.Audio]("minduration", _.minduration),
+        int.optional[OpenRTB.Audio]("maxduration", _.maxduration),
+        list(int).optional[OpenRTB.Audio]("protocols", x => toOptList(x.protocols)),
+        int.optional[OpenRTB.Audio]("startdelay", _.startdelay),
+        int.optional[OpenRTB.Audio]("sequence", _.sequence),
+        list(int).optional[OpenRTB.Audio]("battr", x => toOptList(x.battr)),
+        int.optional[OpenRTB.Audio]("maxextended", _.maxextended),
+        int.optional[OpenRTB.Audio]("minbitrate", _.minbitrate),
+        int.optional[OpenRTB.Audio]("maxbitrate", _.maxbitrate),
+        list(int).optional[OpenRTB.Audio]("delivery", x => toOptList(x.delivery)),
+        list(bannerSchema).optional[OpenRTB.Audio]("companionad", x => toOptList(x.companionad)),
+        list(int).optional[OpenRTB.Audio]("api", x => toOptList(x.api)),
+        list(int).optional[OpenRTB.Audio]("companiontype", x => toOptList(x.companiontype)),
+        int.optional[OpenRTB.Audio]("maxseq", _.maxseq),
+        int.optional[OpenRTB.Audio]("feed", _.feed),
+        int.optional[OpenRTB.Audio]("stitched", _.stitched),
+        int.optional[OpenRTB.Audio]("nvol", _.nvol)
+      ) { (mimes, minduration, maxduration, protocols, startdelay, sequence, battr, maxextended, minbitrate, maxbitrate,
+        delivery, companionad, api, companiontype, maxseq, feed, stitched, nvol) =>
+        OpenRTB.Audio(mimes.getOrElse(Nil), minduration, maxduration, protocols.getOrElse(Nil), startdelay, sequence,
+          battr.getOrElse(Nil), maxextended, minbitrate, maxbitrate, delivery.getOrElse(Nil),
+          companionad.getOrElse(Nil), api.getOrElse(Nil), companiontype.getOrElse(Nil), maxseq, feed, stitched, nvol)
+      }
+    val nativeSchema: Schema[OpenRTB.Native] =
+      struct(
+        string.required[OpenRTB.Native]("request", _.request),
+        string.optional[OpenRTB.Native]("ver", _.ver),
+        list(int).optional[OpenRTB.Native]("api", x => toOptList(x.api)),
+        list(int).optional[OpenRTB.Native]("battr", x => toOptList(x.battr))
+      ) { (request, ver, api, battr) =>
+        OpenRTB.Native(request, ver, api.getOrElse(Nil), battr.getOrElse(Nil))
+      }
+    val dealSchema: Schema[OpenRTB.Deal] =
+      struct(
+        string.required[OpenRTB.Deal]("id", _.id),
+        double.optional[OpenRTB.Deal]("bidfloor", x => toOpt(x.bidfloor, 0.0)),
+        string.optional[OpenRTB.Deal]("bidfloorcur", x => toOpt(x.bidfloorcur, "USD")),
+        int.optional[OpenRTB.Deal]("at", _.at),
+        list(string).optional[OpenRTB.Deal]("wseat", x => toOptList(x.wseat)),
+        list(string).optional[OpenRTB.Deal]("wadomain", x => toOptList(x.wadomain))
+      ) { (id, bidfloor, bidfloorcur, at, wseat, wadomain) =>
+        OpenRTB.Deal(id, bidfloor.getOrElse(0.0), bidfloorcur.getOrElse("USD"), at, wseat.getOrElse(Nil),
+          wadomain.getOrElse(Nil))
+      }
+    val pmpSchema: Schema[OpenRTB.Pmp] =
+      struct(
+        int.optional[OpenRTB.Pmp]("private_auction", x => toOpt(x.private_auction, 0)),
+        list(dealSchema).optional[OpenRTB.Pmp]("deals", x => toOptList(x.deals)),
+      ) { (private_auction, deals) =>
+        OpenRTB.Pmp(private_auction.getOrElse(0), deals.getOrElse(Nil))
+      }
+    val impSchema: Schema[OpenRTB.Imp] =
+      struct(
+        string.required[OpenRTB.Imp]("id", _.id),
+        list(metricSchema).optional[OpenRTB.Imp]("metric", x => toOptList(x.metric)),
+        bannerSchema.optional[OpenRTB.Imp]("banner", _.banner),
+        videoSchema.optional[OpenRTB.Imp]("video", _.video),
+        audioSchema.optional[OpenRTB.Imp]("audio", _.audio),
+        nativeSchema.optional[OpenRTB.Imp]("native", _.native),
+        pmpSchema.optional[OpenRTB.Imp]("pmp", _.pmp),
+        string.optional[OpenRTB.Imp]("displaymanager", _.displaymanager),
+        string.optional[OpenRTB.Imp]("displaymanagerver", _.displaymanagerver),
+        int.optional[OpenRTB.Imp]("instl", x => toOpt(x.instl, 0)),
+        string.optional[OpenRTB.Imp]("tagid", _.tagid),
+        double.optional[OpenRTB.Imp]("bidfloor", x => toOpt(x.bidfloor, 0.0)),
+        string.optional[OpenRTB.Imp]("bidfloorcur", x => toOpt(x.bidfloorcur, "USD")),
+        int.optional[OpenRTB.Imp]("clickbrowser", _.clickbrowser),
+        int.optional[OpenRTB.Imp]("secure", x => toOpt(x.secure, 0)),
+        list(string).optional[OpenRTB.Imp]("iframebuster", x => toOptList(x.iframebuster)),
+        int.optional[OpenRTB.Imp]("exp", _.exp),
+      ) { (id, metric, banner, video, audio, native, pmp, displaymanager, displaymanagerver, instl, tagid, bidfloor,
+           bidfloorcur, clickbrowser, secure, iframebuster, exp) =>
+        OpenRTB.Imp(id, metric.getOrElse(Nil), banner, video, audio, native, pmp, displaymanager, displaymanagerver,
+          instl.getOrElse(0), tagid, bidfloor.getOrElse(0.0), bidfloorcur.getOrElse("USD"), clickbrowser,
+          secure.getOrElse(0), iframebuster.getOrElse(Nil), exp)
+      }
+    val publisherSchema: Schema[OpenRTB.Publisher] =
+      struct(
+        string.optional[OpenRTB.Publisher]("id", _.id),
+        string.optional[OpenRTB.Publisher]("name", _.name),
+        list(string).optional[OpenRTB.Publisher]("cat", x => toOptList(x.cat)),
+        string.optional[OpenRTB.Publisher]("domain", _.domain),
+      ) { (id, name, cat, domain) =>
+        OpenRTB.Publisher(id, name, cat.getOrElse(Nil), domain)
+      }
+    val producerSchema: Schema[OpenRTB.Producer] =
+      struct(
+        string.optional[OpenRTB.Producer]("id", _.id),
+        string.optional[OpenRTB.Producer]("name", _.name),
+        list(string).optional[OpenRTB.Producer]("cat", x => toOptList(x.cat)),
+        string.optional[OpenRTB.Producer]("domain", _.domain),
+      ) { (id, name, cat, domain) =>
+        OpenRTB.Producer(id, name, cat.getOrElse(Nil), domain)
+      }
+    val segmentSchema: Schema[OpenRTB.Segment] =
+      struct(
+        string.optional[OpenRTB.Segment]("id", _.id),
+        string.optional[OpenRTB.Segment]("name", _.name),
+        string.optional[OpenRTB.Segment]("value", _.value),
+      )(OpenRTB.Segment.apply)
+    val dataSchema: Schema[OpenRTB.Data] =
+      struct(
+        string.optional[OpenRTB.Data]("id", _.id),
+        string.optional[OpenRTB.Data]("name", _.name),
+        list(segmentSchema).optional[OpenRTB.Data]("segment", x => toOptList(x.segment)),
+      ) { (id, name, segment) =>
+        OpenRTB.Data(id, name, segment.getOrElse(Nil))
+      }
+    val contentSchema: Schema[OpenRTB.Content] =
+      struct.genericArity(
+        string.optional[OpenRTB.Content]("id", _.id),
+        int.optional[OpenRTB.Content]("episode", _.episode),
+        string.optional[OpenRTB.Content]("title", _.title),
+        string.optional[OpenRTB.Content]("series", _.series),
+        string.optional[OpenRTB.Content]("season", _.season),
+        string.optional[OpenRTB.Content]("artist", _.artist),
+        string.optional[OpenRTB.Content]("genre", _.genre),
+        string.optional[OpenRTB.Content]("album", _.album),
+        string.optional[OpenRTB.Content]("isrc", _.isrc),
+        producerSchema.optional[OpenRTB.Content]("producer", _.producer),
+        string.optional[OpenRTB.Content]("url", _.url),
+        list(string).optional[OpenRTB.Content]("cat", x => toOptList(x.cat)),
+        int.optional[OpenRTB.Content]("prodq", _.prodq),
+        int.optional[OpenRTB.Content]("videoquality", _.videoquality),
+        int.optional[OpenRTB.Content]("context", _.context),
+        string.optional[OpenRTB.Content]("contentrating", _.contentrating),
+        string.optional[OpenRTB.Content]("userrating", _.userrating),
+        int.optional[OpenRTB.Content]("qagmediarating", _.qagmediarating),
+        string.optional[OpenRTB.Content]("keywords", _.keywords),
+        int.optional[OpenRTB.Content]("livestream", _.livestream),
+        int.optional[OpenRTB.Content]("sourcerelationship", _.sourcerelationship),
+        int.optional[OpenRTB.Content]("len", _.len),
+        string.optional[OpenRTB.Content]("language", _.language),
+        int.optional[OpenRTB.Content]("embeddable", _.embeddable),
+        dataSchema.optional[OpenRTB.Content]("data", _.data)
+      ) { ps: IndexedSeq[Any] =>
+        OpenRTB.Content(
+          ps(0).asInstanceOf[Option[String]],
+          ps(1).asInstanceOf[Option[Int]],
+          ps(2).asInstanceOf[Option[String]],
+          ps(3).asInstanceOf[Option[String]],
+          ps(4).asInstanceOf[Option[String]],
+          ps(5).asInstanceOf[Option[String]],
+          ps(6).asInstanceOf[Option[String]],
+          ps(7).asInstanceOf[Option[String]],
+          ps(8).asInstanceOf[Option[String]],
+          ps(9).asInstanceOf[Option[OpenRTB.Producer]],
+          ps(10).asInstanceOf[Option[String]],
+          ps(11).asInstanceOf[Option[List[String]]].getOrElse(Nil),
+          ps(12).asInstanceOf[Option[Int]],
+          ps(13).asInstanceOf[Option[Int]],
+          ps(14).asInstanceOf[Option[Int]],
+          ps(15).asInstanceOf[Option[String]],
+          ps(16).asInstanceOf[Option[String]],
+          ps(17).asInstanceOf[Option[Int]],
+          ps(18).asInstanceOf[Option[String]],
+          ps(19).asInstanceOf[Option[Int]],
+          ps(20).asInstanceOf[Option[Int]],
+          ps(21).asInstanceOf[Option[Int]],
+          ps(22).asInstanceOf[Option[String]],
+          ps(23).asInstanceOf[Option[Int]],
+          ps(22).asInstanceOf[Option[OpenRTB.Data]]
+        )
+      }
+    val siteSchema: Schema[OpenRTB.Site] =
+      struct(
+        string.optional[OpenRTB.Site]("id", _.id),
+        string.optional[OpenRTB.Site]("name", _.name),
+        string.optional[OpenRTB.Site]("domain", _.domain),
+        list(string).optional[OpenRTB.Site]("cat", x => toOptList(x.cat)),
+        list(string).optional[OpenRTB.Site]("sectioncat", x => toOptList(x.sectioncat)),
+        list(string).optional[OpenRTB.Site]("pagecat", x => toOptList(x.pagecat)),
+        string.optional[OpenRTB.Site]("page", _.page),
+        string.optional[OpenRTB.Site]("ref", _.ref),
+        string.optional[OpenRTB.Site]("search", _.search),
+        int.optional[OpenRTB.Site]("mobile", _.mobile),
+        int.optional[OpenRTB.Site]("privacypolicy", _.privacypolicy),
+        publisherSchema.optional[OpenRTB.Site]("publisher", _.publisher),
+        contentSchema.optional[OpenRTB.Site]("content", _.content),
+        string.optional[OpenRTB.Site]("keywords", _.keywords)
+      ) { (id, name, domain, cat, sectioncat, pagecat, page, ref, search, mobile, privacypolicy, publisher, content,
+        keywords) =>
+        OpenRTB.Site(id, name, domain, cat.getOrElse(Nil), sectioncat.getOrElse(Nil), pagecat.getOrElse(Nil), page, ref,
+          search, mobile, privacypolicy, publisher, content, keywords)
+      }
+    val appSchema: Schema[OpenRTB.App] =
+      struct(
+        string.optional[OpenRTB.App]("id", _.id),
+        string.optional[OpenRTB.App]("name", _.name),
+        string.optional[OpenRTB.App]("bundle", _.bundle),
+        string.optional[OpenRTB.App]("domain", _.domain),
+        string.optional[OpenRTB.App]("storeurl", _.storeurl),
+        list(string).optional[OpenRTB.App]("cat", x => toOptList(x.cat)),
+        list(string).optional[OpenRTB.App]("sectioncat", x => toOptList(x.sectioncat)),
+        list(string).optional[OpenRTB.App]("pagecat", x => toOptList(x.pagecat)),
+        string.optional[OpenRTB.App]("ver", _.ver),
+        int.optional[OpenRTB.App]("privacypolicy", _.privacypolicy),
+        int.optional[OpenRTB.App]("paid", _.paid),
+        publisherSchema.optional[OpenRTB.App]("publisher", _.publisher),
+        contentSchema.optional[OpenRTB.App]("content", _.content),
+        string.optional[OpenRTB.App]("keywords", _.keywords)
+      ) { (id, name, bundle, domain, storeurl, cat, sectioncat, pagecat, ver, privacypolicy, paid, publisher, content,
+        keywords) =>
+        OpenRTB.App(id, name, bundle, domain, storeurl, cat.getOrElse(Nil), sectioncat.getOrElse(Nil),
+          pagecat.getOrElse(Nil), ver, privacypolicy, paid, publisher, content, keywords)
+      }
+    val geoSchema: Schema[OpenRTB.Geo] =
+      struct(
+        double.optional[OpenRTB.Geo]("lat", _.lat),
+        double.optional[OpenRTB.Geo]("lon", _.lon),
+        int.optional[OpenRTB.Geo]("type", _.`type`),
+        int.optional[OpenRTB.Geo]("accuracy", _.accuracy),
+        int.optional[OpenRTB.Geo]("lastfix", _.lastfix),
+        int.optional[OpenRTB.Geo]("ipservice", _.ipservice),
+        string.optional[OpenRTB.Geo]("country", _.country),
+        string.optional[OpenRTB.Geo]("region", _.region),
+        string.optional[OpenRTB.Geo]("regionfips104", _.regionfips104),
+        string.optional[OpenRTB.Geo]("metro", _.metro),
+        string.optional[OpenRTB.Geo]("city", _.city),
+        string.optional[OpenRTB.Geo]("zip", _.zip),
+        string.optional[OpenRTB.Geo]("utcoffset", _.utcoffset)
+      )(OpenRTB.Geo.apply)
+    val deviceSchema: Schema[OpenRTB.Device] =
+      struct.genericArity(
+        string.optional[OpenRTB.Device]("ua", _.ua),
+        geoSchema.optional[OpenRTB.Device]("geo", _.geo),
+        int.optional[OpenRTB.Device]("dnt", _.dnt),
+        int.optional[OpenRTB.Device]("lmt", _.lmt),
+        string.optional[OpenRTB.Device]("ip", _.ip),
+        int.optional[OpenRTB.Device]("devicetype", _.devicetype),
+        string.optional[OpenRTB.Device]("make", _.make),
+        string.optional[OpenRTB.Device]("model", _.model),
+        string.optional[OpenRTB.Device]("os", _.os),
+        string.optional[OpenRTB.Device]("osv", _.osv),
+        string.optional[OpenRTB.Device]("hwv", _.hwv),
+        int.optional[OpenRTB.Device]("h", _.h),
+        int.optional[OpenRTB.Device]("w", _.w),
+        int.optional[OpenRTB.Device]("ppi", _.ppi),
+        double.optional[OpenRTB.Device]("pxratio", _.pxratio),
+        int.optional[OpenRTB.Device]("js", _.js),
+        int.optional[OpenRTB.Device]("geofetch", _.geofetch),
+        string.optional[OpenRTB.Device]("flashver", _.flashver),
+        string.optional[OpenRTB.Device]("language", _.language),
+        string.optional[OpenRTB.Device]("carrier", _.carrier),
+        string.optional[OpenRTB.Device]("mccmnc", _.mccmnc),
+        int.optional[OpenRTB.Device]("connectiontype", _.connectiontype),
+        string.optional[OpenRTB.Device]("ifa", _.ifa),
+        string.optional[OpenRTB.Device]("didsha1", _.didsha1),
+        string.optional[OpenRTB.Device]("didmd5", _.didmd5),
+        string.optional[OpenRTB.Device]("dpidsha1", _.dpidsha1),
+        string.optional[OpenRTB.Device]("dpidmd5", _.dpidmd5),
+        string.optional[OpenRTB.Device]("macsha1", _.macsha1),
+        string.optional[OpenRTB.Device]("macmd5", _.macmd5)
+      ) { ps: IndexedSeq[Any] =>
+        OpenRTB.Device(
+          ps(0).asInstanceOf[Option[String]],
+          ps(1).asInstanceOf[Option[OpenRTB.Geo]],
+          ps(2).asInstanceOf[Option[Int]],
+          ps(3).asInstanceOf[Option[Int]],
+          ps(4).asInstanceOf[Option[String]],
+          ps(5).asInstanceOf[Option[Int]],
+          ps(6).asInstanceOf[Option[String]],
+          ps(7).asInstanceOf[Option[String]],
+          ps(8).asInstanceOf[Option[String]],
+          ps(9).asInstanceOf[Option[String]],
+          ps(10).asInstanceOf[Option[String]],
+          ps(11).asInstanceOf[Option[Int]],
+          ps(12).asInstanceOf[Option[Int]],
+          ps(13).asInstanceOf[Option[Int]],
+          ps(14).asInstanceOf[Option[Double]],
+          ps(15).asInstanceOf[Option[Int]],
+          ps(16).asInstanceOf[Option[Int]],
+          ps(17).asInstanceOf[Option[String]],
+          ps(18).asInstanceOf[Option[String]],
+          ps(19).asInstanceOf[Option[String]],
+          ps(20).asInstanceOf[Option[String]],
+          ps(21).asInstanceOf[Option[Int]],
+          ps(22).asInstanceOf[Option[String]],
+          ps(23).asInstanceOf[Option[String]],
+          ps(24).asInstanceOf[Option[String]],
+          ps(25).asInstanceOf[Option[String]],
+          ps(26).asInstanceOf[Option[String]],
+          ps(27).asInstanceOf[Option[String]],
+          ps(28).asInstanceOf[Option[String]]
+        )
+      }
+    val userSchema: Schema[OpenRTB.User] =
+      struct(
+        string.optional[OpenRTB.User]("id", _.id),
+        string.optional[OpenRTB.User]("buyeruid", _.buyeruid),
+        int.optional[OpenRTB.User]("yob", _.yob),
+        string.optional[OpenRTB.User]("gender", _.gender),
+        string.optional[OpenRTB.User]("keywords", _.keywords),
+        string.optional[OpenRTB.User]("customdata", _.customdata),
+        geoSchema.optional[OpenRTB.User]("geo", _.geo),
+        dataSchema.optional[OpenRTB.User]("data", _.data),
+      )(OpenRTB.User.apply)
+    val sourceSchema: Schema[OpenRTB.Source] =
+      struct(
+        int.optional[OpenRTB.Source]("fd", _.fd),
+        string.optional[OpenRTB.Source]("tid", _.tid),
+        string.optional[OpenRTB.Source]("pchain", _.pchain),
+      )(OpenRTB.Source.apply)
+    val reqsSchema: Schema[OpenRTB.Reqs] =
+      struct(
+        int.required[OpenRTB.Reqs]("coppa", _.coppa),
+      )(OpenRTB.Reqs.apply)
+    struct(
+      string.required[OpenRTB.BidRequest]("id", _.id),
+      list(impSchema).optional[OpenRTB.BidRequest]("imp", x => toOptList(x.imp)),
+      siteSchema.optional[OpenRTB.BidRequest]("site", _.site),
+      appSchema.optional[OpenRTB.BidRequest]("app", _.app),
+      deviceSchema.optional[OpenRTB.BidRequest]("device", _.device),
+      userSchema.optional[OpenRTB.BidRequest]("user", _.user),
+      int.optional[OpenRTB.BidRequest]("test", x => toOpt(x.test, 0)),
+      int.optional[OpenRTB.BidRequest]("at", x => toOpt(x.at, 2)),
+      int.optional[OpenRTB.BidRequest]("tmax", _.tmax),
+      list(string).optional[OpenRTB.BidRequest]("wset", x => toOptList(x.wset)),
+      list(string).optional[OpenRTB.BidRequest]("bset", x => toOptList(x.bset)),
+      int.optional[OpenRTB.BidRequest]("allimps", x => toOpt(x.allimps, 0)),
+      list(string).optional[OpenRTB.BidRequest]("cur", x => toOptList(x.cur)),
+      list(string).optional[OpenRTB.BidRequest]("wlang", x => toOptList(x.wlang)),
+      list(string).optional[OpenRTB.BidRequest]("bcat", x => toOptList(x.bcat)),
+      list(string).optional[OpenRTB.BidRequest]("badv", x => toOptList(x.badv)),
+      list(string).optional[OpenRTB.BidRequest]("bapp", x => toOptList(x.bapp)),
+      sourceSchema.optional[OpenRTB.BidRequest]("source", _.source),
+      reqsSchema.optional[OpenRTB.BidRequest]("reqs", _.reqs),
+    ) { (id, imp, site, app, device, user, test, at, tmax, wset, bset, allimps, cur, wlang, bcat, badv, bapp, source, reqs) =>
+      OpenRTB.BidRequest(id, imp.getOrElse(Nil), site, app, device, user, test.getOrElse(0), at.getOrElse(2), tmax,
+        wset.getOrElse(Nil), bset.getOrElse(Nil), allimps.getOrElse(0), cur.getOrElse(Nil), wlang.getOrElse(Nil),
+        bcat.getOrElse(Nil), badv.getOrElse(Nil), bapp.getOrElse(Nil), source, reqs)
+    }
+  }
   implicit val primitivesJCodec: JCodec[Primitives] = JCodec.deriveJCodecFromSchema(struct(
     byte.required[Primitives]("b", _.b),
     short.required[Primitives]("s", _.s),
@@ -259,11 +688,11 @@ object Smithy4sJCodecs {
       string.required[TwitterAPI.Urls]("display_url", _.display_url),
       list(int).optional[TwitterAPI.Urls]("indices", xs => toOptList(xs.indices.toList))
     ) { (url, expanded_url, display_url, indices) =>
-      TwitterAPI.Urls(url, expanded_url, display_url, toList(indices))
+      TwitterAPI.Urls(url, expanded_url, display_url, indices.getOrElse(Nil))
     }
     val urlSchema: Schema[TwitterAPI.Url] = struct(
       list(urlsSchema).optional[TwitterAPI.Url]("urls", xs => toOptList(xs.urls.toList))
-    )(xs => TwitterAPI.Url(toList(xs)))
+    )(xs => TwitterAPI.Url(xs.getOrElse(Nil)))
     val userEntitiesSchema: Schema[TwitterAPI.UserEntities] = struct(
       urlSchema.required[TwitterAPI.UserEntities]("url", _.url),
       urlSchema.required[TwitterAPI.UserEntities]("description", _.description),
@@ -275,7 +704,7 @@ object Smithy4sJCodecs {
       string.required[TwitterAPI.UserMentions]("id_str", _.id_str),
       list(int).optional[TwitterAPI.UserMentions]("indices", xs => toOptList(xs.indices.toList))
     ) { (screen_name, name, id, id_str, indices) =>
-      TwitterAPI.UserMentions(screen_name, name, id, id_str, toList(indices))
+      TwitterAPI.UserMentions(screen_name, name, id, id_str, indices.getOrElse(Nil))
     }
     val entitiesSchema: Schema[TwitterAPI.Entities] = struct(
       list(string).optional[TwitterAPI.Entities]("hashtags", xs => toOptList(xs.hashtags.toList)),
@@ -283,7 +712,7 @@ object Smithy4sJCodecs {
       list(userMentionsSchema).optional[TwitterAPI.Entities]("user_mentions", xs => toOptList(xs.user_mentions.toList)),
       list(urlsSchema).optional[TwitterAPI.Entities]("urls", xs => toOptList(xs.urls.toList))
     ) { (hashtags, symbols, user_mentions, urls) =>
-      TwitterAPI.Entities(toList(hashtags), toList(symbols), toList(user_mentions), toList(urls))
+      TwitterAPI.Entities(hashtags.getOrElse(Nil), symbols.getOrElse(Nil), user_mentions.getOrElse(Nil), urls.getOrElse(Nil))
     }
     val userSchema: Schema[TwitterAPI.User] = struct.genericArity(
       long.required[TwitterAPI.User]("id", _.id),

@@ -52,6 +52,12 @@ class OpenRTBReading extends OpenRTBBenchmark {
   @Benchmark
   def playJson(): BidRequest = Json.parse(jsonBytes).as[BidRequest]
 */
+  @Benchmark
+  def smithy4sJson(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+
+    readFromArray[BidRequest](jsonBytes)
+  }
 /* FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
   @Benchmark
   def sprayJson(): BidRequest = JsonParser(jsonBytes).convertTo[BidRequest]

@@ -17,6 +17,7 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       //FIXME: Play-JSON serializes lists with default values
       //toString(b.playJson()) shouldBe b.jsonString
+      toString(b.smithy4sJson()) shouldBe b.jsonString
       //FIXME: Spray-JSON serializes fields with default values
       //toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString

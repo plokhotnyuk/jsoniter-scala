@@ -43,6 +43,12 @@ class OpenRTBWriting extends OpenRTBBenchmark {
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
+  @Benchmark
+  def smithy4sJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+
+    writeToArray(obj)
+  }
 /* FIXME: Spray-JSON serializes fields with default values
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
