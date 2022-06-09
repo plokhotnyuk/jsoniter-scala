@@ -1001,7 +1001,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(s: String, ws: String): Unit = {
         val x = LocalDateTime.parse(s)
         reader(s"""$ws"$s"""").readLocalDateTime(null) shouldBe x
-        reader(s"""$ws"$s":""").readKeyAsLocalDateTime() shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsLocalDateTime() shouldBe x
       }
 
       forAll(genWhitespaces) { ws =>
@@ -1107,7 +1107,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(s: String, ws: String): Unit = {
         val x = LocalTime.parse(s)
         reader(s"""$ws"$s"""").readLocalTime(null) shouldBe x
-        reader(s"""$ws"$s":""").readKeyAsLocalTime() shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsLocalTime() shouldBe x
       }
 
       forAll(genWhitespaces) { ws =>
@@ -1229,7 +1229,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(s: String, ws: String): Unit = {
         val x = OffsetDateTime.parse(s)
         reader(s"""$ws"$s"""").readOffsetDateTime(null) shouldBe x
-        reader(s"""$ws"$s":""").readKeyAsOffsetDateTime() shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsOffsetDateTime() shouldBe x
       }
 
       forAll(genWhitespaces) { ws =>
@@ -1356,7 +1356,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(s: String, ws: String): Unit = {
         val x = OffsetTime.parse(s)
         reader(s"""$ws"$s"""").readOffsetTime(null) shouldBe x
-        reader(s"""$ws"$s":""").readKeyAsOffsetTime() shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsOffsetTime() shouldBe x
       }
 
       forAll(genWhitespaces) { ws =>
@@ -1696,7 +1696,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(genZonedDateTime, genWhitespaces, minSuccessful(10000))((x, ws) => {
         val s = x.toString
         reader(s"""$ws"$s"""").readZonedDateTime(null) shouldBe x
-        reader(s"""$ws"$s":""").readKeyAsZonedDateTime() shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsZonedDateTime() shouldBe x
       })
     }
     "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
