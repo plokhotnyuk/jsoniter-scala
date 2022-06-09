@@ -18,6 +18,7 @@ serialization performance of jsoniter-scala with [AVSystem's scala-commons](http
 [Jackson with jackson-module-scala](https://github.com/FasterXML/jackson-module-scala), 
 [ninny-json](https://kag0.github.io/ninny-json/USERGUIDE), [Play-JSON](https://github.com/playframework/play-json),
 [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
+[smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
@@ -107,7 +108,7 @@ supports JDK 8+ and native image compilation with earlier versions of GraalVM.
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`,
   `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays, module
   classes, literal types, value classes, and case classes with values/fields having any of types listed here
-- Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
+- Classes should be defined with a primary constructor that hasn't defined default values in non-first parameter lists
 - Non-case Scala classes also supported, but they should have getter accessors for all arguments of a primary
   constructor
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`,
@@ -275,7 +276,7 @@ Other usages of jsoniter-scala:
 - [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
 instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
-- [smithy4s](https://github.com/disneystreaming/smithy4s) - [Smithy](https://awslabs.github.io/smithy/) tooling for Scala
+- [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/) tooling for Scala
 - [scalatest-json](https://github.com/stephennancekivell/scalatest-json) - Scalatest matchers with appropriate equality 
 and descriptive error messages
 - [tapir](https://tapir.softwaremill.com/en/latest/endpoint/json.html#jsoniter-scala) - Typed API descRiptions
@@ -417,8 +418,8 @@ creating pull requests (fixes and improvements to docs, code, and tests are high
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt clean coverage test coverageReport
-sbt clean +test +mimaReportBinaryIssues
+sbt -java-home /usr/lib/jvm/zulu-11 clean coverage test coverageReport
+sbt -java-home /usr/lib/jvm/zulu-11 clean +test +mimaReportBinaryIssues
 ```
 
 BEWARE: jsoniter-scala is included into [Scala Community Build](https://github.com/scala/community-builds)
@@ -559,7 +560,7 @@ Other benchmarks with results for jsoniter-scala:
 
 Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module:
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-17 jsoniter-scala-benchmarkJS/fullOptJS
+sbt -java-home /usr/lib/jvm/zulu-11 jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
