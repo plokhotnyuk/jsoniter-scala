@@ -2108,8 +2108,7 @@ final class JsonReader private[jsoniter_scala](
         second = (dec >> 56).toInt
         (hourMinute & 0xFF) < 24
       } || ((dec + 0x767A00767DL | dec) & 0xFF8080FF8080L) == 0xE80000000000L && {
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+        hourMinute = (dec * 2561 >> 8).toInt
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2137,8 +2136,7 @@ final class JsonReader private[jsoniter_scala](
         second = (dec >> 56).toInt
         (hourMinute & 0xFF) < 24
       } || ((dec + 0x767A00767DL | dec) & 0xFF8080FF8080L) == 0xE80000000000L && {
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+        hourMinute = (dec * 2561 >> 8).toInt
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2204,8 +2202,7 @@ final class JsonReader private[jsoniter_scala](
         second = (dec >> 56).toInt
         (hourMinute & 0xFF) < 24
       } || ((dec + 0x767A00767DL | dec) & 0x8080FF8080L) == 0 && (dec >> 40).toByte != 0 && {
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+        hourMinute = (dec * 2561 >> 8).toInt
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2274,8 +2271,7 @@ final class JsonReader private[jsoniter_scala](
         second = (dec >> 56).toInt
         (hourMinute & 0xFF) < 24
       } || ((dec + 0x767A00767DL | dec) & 0x8080FF8080L) == 0 && (dec >> 40).toByte != 0 && {
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+        hourMinute = (dec * 2561 >> 8).toInt
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2419,8 +2415,7 @@ final class JsonReader private[jsoniter_scala](
         second = (dec >> 56).toInt
         (hourMinute & 0xFF) < 24
       } || ((dec + 0x767A00767DL | dec) & 0x8080FF8080L) == 0 && (dec >> 40).toByte != 0 && {
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+        hourMinute = (dec * 2561 >> 8).toInt
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2740,10 +2735,11 @@ final class JsonReader private[jsoniter_scala](
       m |= bs - 0x2020202020202020L
       charBuf(i + 4) = (bs >> 32 & 0xFF).toChar
       charBuf(i + 5) = (bs >> 40 & 0xFF).toChar
-      val notz = java.lang.Long.numberOfTrailingZeros(m & 0x8080808080808080L)
+      m &= 0x8080808080808080L
       charBuf(i + 6) = (bs >> 48 & 0xFF).toChar
       charBuf(i + 7) = (bs >>> 56).toChar
-      if (notz < 64) {
+      if (m != 0) {
+        val notz = java.lang.Long.numberOfTrailingZeros(m)
         val offset = notz >> 3
         if (bs << ~notz >>> 56 == '"') {
           head = pos + offset + 1
