@@ -150,9 +150,6 @@ trait ZioJSONScalaJsEncoderDecoders {
       }
     }, ClassTag(classOf[SuitEnum])))
 
-  implicit def indexedSeqCodec[A](implicit codec: JsonCodec[A]): JsonCodec[IndexedSeq[A]] =
-    JsonCodec.apply(JsonEncoder.indexedSeq(codec.encoder), JsonDecoder.indexedSeq(codec.decoder))
-
   private[this] def throwError(msg: String, trace: List[JsonError]): Nothing =
     throw UnsafeJson(JsonError.Message(msg) :: trace)
 }
