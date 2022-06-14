@@ -1643,22 +1643,30 @@ final class JsonReader private[jsoniter_scala](
           else oldMark
         mark = newMark
         try {
+          var m, bs = 0L
           while ((pos + 7 < tail || {
             pos = loadMore(pos)
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-            ((bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L) == 0
+            bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+            m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
+            m == 0
           }) pos += 8
-          while ((pos < tail || {
-            pos = loadMore(pos)
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) pos += 1
+          if (m == 0) {
+            while ((pos < tail || {
+              pos = loadMore(pos)
+              buf = this.buf
+              pos < tail
+            }) && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos += 1
+          } else {
+            val notz = java.lang.Long.numberOfTrailingZeros(m)
+            pos += notz >> 3
+            b = (bs >> (notz - 7)).toByte
+          }
           head = pos
           if ((b | 0x20) == 'e' || b == '.') numberError(pos)
           if (mark == 0) from -= newMark
@@ -1811,11 +1819,11 @@ final class JsonReader private[jsoniter_scala](
   // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
   // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
   // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
-  private[this] def toBigDecimal(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                  scale: Int): java.math.BigDecimal = {
-    val len = limit - offset
+    val len = limit - p
     if (len < 19) {
-      var pos = offset
+      var pos = p
       var x: Long = buf(pos) - '0'
       pos += 1
       while (pos < limit) {
@@ -1824,19 +1832,19 @@ final class JsonReader private[jsoniter_scala](
       }
       if (isNeg) x = -x
       java.math.BigDecimal.valueOf(x, scale)
-    } else if (len < 37) toBigDecimal37(buf, offset, limit, isNeg, scale)
-    else if (len < 330) toBigDecimal330(buf, offset, limit, isNeg, scale)
+    } else if (len < 37) toBigDecimal37(buf, p, limit, isNeg, scale)
+    else if (len < 330) toBigDecimal330(buf, p, limit, isNeg, scale)
     else {
       val mid = len >> 1
       val midPos = limit - mid
-      toBigDecimal(buf, offset, midPos, isNeg, scale - mid).add(toBigDecimal(buf, midPos, limit, isNeg, scale))
+      toBigDecimal(buf, p, midPos, isNeg, scale - mid).add(toBigDecimal(buf, midPos, limit, isNeg, scale))
     }
   }
 
-  private[this] def toBigDecimal37(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal37(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                    scale: Int): java.math.BigDecimal = {
     val firstBlockLimit = limit - 18
-    var pos = offset
+    var pos = p
     var x1: Long = buf(pos) - '0'
     pos += 1
     while (pos < firstBlockLimit) {
@@ -1858,51 +1866,52 @@ final class JsonReader private[jsoniter_scala](
     java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
-  private[this] def toBigDecimal330(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal330(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
-    val len = limit - offset
+    val len = limit - p
     var x = 0L
-    val lenD9 = (len * 954437177L >> 33).toInt // divide a positive int by 9
-    val firstBlockLimit = len - (lenD9 << 3) - lenD9 + offset // len % 9 + offset
-    var pos = offset
+    val firstBlockLimit = len % 18 + p
+    var pos = p
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val lastWord = (len * 445861642L >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
-    var firstWord = lastWord
-    val numWords = lastWord + 1
-    val magWords = new Array[Int](numWords)
-    magWords(lastWord) = x.toInt
-    while (pos < limit) { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-      x = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
+    val last = (len * 222930821L >> 32).toInt << 3 // (len * Math.log(10) / Math.log(1L << 64)).toInt * 8
+    var first = last
+    val num = last + 8
+    val magnitude = new Array[Byte](num)
+    ByteArrayAccess.setLong(magnitude, first, x)
+    while (pos < limit) {
       val mask = 0x000000FF000000FFL
-      x = ((x & mask) * 42949672960001000L + (x >> 16 & mask) * 429496729600010L >> 32) + (buf(pos + 8) - '0')
-      firstWord = Math.max(firstWord - 1, 0)
-      var i = lastWord
-      while (i >= firstWord) {
-        val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
-        magWords(i) = p.toInt
-        x = p >>> 32
-        i -= 1
+      x = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
+        (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
+      } + buf(pos + 8)) * 1000000000 + {
+        val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561 >> 8
+        (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
+      } + buf(pos + 17) - 48000000048L
+      pos += 18
+      first = Math.max(first - 8, 0)
+      var i = last
+      while (i >= first) {
+        val m = ByteArrayAccess.getLong(magnitude, i)
+        val p = m * 1000000000000000000L
+        val s = p + x
+        val c = (~s & p) >>> 63
+        x = Math.multiplyHigh(m, 1000000000000000000L) + ((m >> 63) & 1000000000000000000L) + c // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+        ByteArrayAccess.setLong(magnitude, i, s)
+        i -= 8
       }
-      pos += 9
     }
-    val magBytes = new Array[Byte](numWords << 2)
     var i = 0
-    while (i < numWords) {
-      val w = magWords(i)
-      val j = i << 2
-      magBytes(j) = (w >> 24).toByte
-      magBytes(j + 1) = (w >> 16).toByte
-      magBytes(j + 2) = (w >> 8).toByte
-      magBytes(j + 3) = w.toByte
-      i += 1
+    while (i < num) {
+      ByteArrayAccess.setLong(magnitude, i, java.lang.Long.reverseBytes(ByteArrayAccess.getLong(magnitude, i)))
+      i += 8
     }
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale) // FIXME: Use cached arrays with the constructor that has an offset and a len params after dropping of JDK 8 support
+    new java.math.BigDecimal(new java.math.BigInteger(signum, magnitude, 0, num), scale)
   }
 
   @tailrec

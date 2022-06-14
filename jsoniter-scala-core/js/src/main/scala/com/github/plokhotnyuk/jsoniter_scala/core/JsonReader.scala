@@ -1766,11 +1766,11 @@ final class JsonReader private[jsoniter_scala](
   // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
   // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
   // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
-  private[this] def toBigDecimal(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                  scale: Int): java.math.BigDecimal = {
-    val len = limit - offset
+    val len = limit - p
     if (len < 19) {
-      var pos = offset
+      var pos = p
       var x: Long = buf(pos) - '0'
       pos += 1
       while (pos < limit) {
@@ -1779,19 +1779,19 @@ final class JsonReader private[jsoniter_scala](
       }
       if (isNeg) x = -x
       java.math.BigDecimal.valueOf(x, scale)
-    } else if (len < 37) toBigDecimal37(buf, offset, limit, isNeg, scale)
-    else if (len < 300) toBigDecimal300(buf, offset, limit, isNeg, scale)
+    } else if (len < 37) toBigDecimal37(buf, p, limit, isNeg, scale)
+    else if (len < 300) toBigDecimal300(buf, p, limit, isNeg, scale)
     else {
       val mid = len >> 1
       val midPos = limit - mid
-      toBigDecimal(buf, offset, midPos, isNeg, scale - mid).add(toBigDecimal(buf, midPos, limit, isNeg, scale))
+      toBigDecimal(buf, p, midPos, isNeg, scale - mid).add(toBigDecimal(buf, midPos, limit, isNeg, scale))
     }
   }
 
-  private[this] def toBigDecimal37(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal37(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                    scale: Int): java.math.BigDecimal = {
     val firstBlockLimit = limit - 18
-    var pos = offset
+    var pos = p
     var x1: Long = buf(pos) - '0'
     pos += 1
     while (pos < firstBlockLimit) {
@@ -1815,12 +1815,12 @@ final class JsonReader private[jsoniter_scala](
     java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
-  private[this] def toBigDecimal300(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal300(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
-    val len = limit - offset
+    val len = limit - p
     var x = 0L
-    val firstBlockLimit = (len % 9) + offset
-    var pos = offset
+    val firstBlockLimit = (len % 9) + p
+    var pos = p
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
       pos += 1
@@ -1837,6 +1837,7 @@ final class JsonReader private[jsoniter_scala](
             (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
             (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
             buf(pos + 8)) - 5333333328L // 5333333328L == '0' * 111111111L
+      pos += 9
       firstWord = Math.max(firstWord - 1, 0)
       var i = lastWord
       while (i >= firstWord) {
@@ -1845,7 +1846,6 @@ final class JsonReader private[jsoniter_scala](
         x = p >>> 32
         i -= 1
       }
-      pos += 9
     }
     val magBytes = new Array[Byte](numWords << 2)
     var i = 0
