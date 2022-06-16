@@ -21,6 +21,8 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
+  private[this] val magnitude: Array[Byte] = new Array[Byte](128)
+
   def requiredFieldError(reqField: String): Nothing = {
     var i = appendString("missing required field \"", 0)
     i = appendString(reqField, i)
@@ -1832,8 +1834,8 @@ final class JsonReader private[jsoniter_scala](
       }
       if (isNeg) x = -x
       java.math.BigDecimal.valueOf(x, scale)
-    } else if (len < 37) toBigDecimal37(buf, p, limit, isNeg, scale)
-    else if (len < 330) toBigDecimal330(buf, p, limit, isNeg, scale)
+    } else if (len <= 36) toBigDecimal36(buf, p, limit, isNeg, scale)
+    else if (len <= 308) toBigDecimal308(buf, p, limit, isNeg, scale)
     else {
       val mid = len >> 1
       val midPos = limit - mid
@@ -1841,7 +1843,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigDecimal37(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal36(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                    scale: Int): java.math.BigDecimal = {
     val firstBlockLimit = limit - 18
     var pos = p
@@ -1866,7 +1868,7 @@ final class JsonReader private[jsoniter_scala](
     java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
-  private[this] def toBigDecimal330(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - p
     var x = 0L
@@ -1876,11 +1878,15 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
+    val magnitude = this.magnitude
     val last = (len * 222930821L >> 32).toInt << 3 // (len * Math.log(10) / Math.log(1L << 64)).toInt * 8
+    var i = 0
+    while (i < last) {
+      ByteArrayAccess.setLong(magnitude, i, 0L)
+      i += 8
+    }
+    ByteArrayAccess.setLong(magnitude, last, x)
     var first = last
-    val num = last + 8
-    val magnitude = new Array[Byte](num)
-    ByteArrayAccess.setLong(magnitude, first, x)
     while (pos < limit) {
       val mask = 0x000000FF000000FFL
       x = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
@@ -1893,25 +1899,26 @@ final class JsonReader private[jsoniter_scala](
       pos += 18
       first = Math.max(first - 8, 0)
       var i = last
+      val q = 1000000000000000000L
       while (i >= first) {
         val m = ByteArrayAccess.getLong(magnitude, i)
-        val p = m * 1000000000000000000L
+        val p = m * q
         val s = p + x
         val c = (~s & p) >>> 63
-        x = Math.multiplyHigh(m, 1000000000000000000L) + ((m >> 63) & 1000000000000000000L) + c // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+        x = Math.multiplyHigh(m, q) + ((m >> 63) & q) + c // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
         ByteArrayAccess.setLong(magnitude, i, s)
         i -= 8
       }
     }
-    var i = 0
-    while (i < num) {
+    i = 0
+    while (i <= last) {
       ByteArrayAccess.setLong(magnitude, i, java.lang.Long.reverseBytes(ByteArrayAccess.getLong(magnitude, i)))
       i += 8
     }
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, magnitude, 0, num), scale)
+    new java.math.BigDecimal(new java.math.BigInteger(signum, magnitude, 0, last + 8), scale)
   }
 
   @tailrec

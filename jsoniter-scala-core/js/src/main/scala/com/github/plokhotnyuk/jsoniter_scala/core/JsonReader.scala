@@ -21,6 +21,8 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
+  private[this] val magnitude: Array[Int] = new Array[Int](32)
+
   def requiredFieldError(reqField: String): Nothing = {
     var i = appendString("missing required field \"", 0)
     i = appendString(reqField, i)
@@ -1779,8 +1781,8 @@ final class JsonReader private[jsoniter_scala](
       }
       if (isNeg) x = -x
       java.math.BigDecimal.valueOf(x, scale)
-    } else if (len < 37) toBigDecimal37(buf, p, limit, isNeg, scale)
-    else if (len < 300) toBigDecimal300(buf, p, limit, isNeg, scale)
+    } else if (len <= 36) toBigDecimal36(buf, p, limit, isNeg, scale)
+    else if (len <= 308) toBigDecimal308(buf, p, limit, isNeg, scale)
     else {
       val mid = len >> 1
       val midPos = limit - mid
@@ -1788,7 +1790,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigDecimal37(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal36(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                    scale: Int): java.math.BigDecimal = {
     val firstBlockLimit = limit - 18
     var pos = p
@@ -1815,7 +1817,7 @@ final class JsonReader private[jsoniter_scala](
     java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
-  private[this] def toBigDecimal300(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - p
     var x = 0L
@@ -1825,11 +1827,15 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
+    val magWords = magnitude
     val lastWord = ((len * 445861642L) >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
-    var firstWord = lastWord
-    val numWords = lastWord + 1
-    val magWords = new Array[Int](numWords)
+    var i = 0
+    while (i < lastWord) {
+      magWords(i) = 0
+      i += 1
+    }
     magWords(lastWord) = x.toInt
+    var firstWord = lastWord
     while (pos < limit) {
       x =
         (buf(pos) * 10 + buf(pos + 1)) * 10000000L +
@@ -1847,9 +1853,9 @@ final class JsonReader private[jsoniter_scala](
         i -= 1
       }
     }
-    val magBytes = new Array[Byte](numWords << 2)
-    var i = 0
-    while (i < numWords) {
+    val magBytes = new Array[Byte]((lastWord + 1) << 2)
+    i = 0
+    while (i <= lastWord) {
       val w = magWords(i)
       val j = i << 2
       magBytes(j) = (w >> 24).toByte
