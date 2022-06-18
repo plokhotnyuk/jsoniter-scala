@@ -16,7 +16,7 @@ serialization performance of jsoniter-scala with [AVSystem's scala-commons](http
 [Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
 [DSL-JSON](https://github.com/ngs-doo/dsl-json), 
 [Jackson with jackson-module-scala](https://github.com/FasterXML/jackson-module-scala), 
-[ninny-json](https://kag0.github.io/ninny-json/USERGUIDE), [Play-JSON](https://github.com/playframework/play-json),
+[ninny-json](https://github.com/nrktkt/ninny-json), [Play-JSON](https://github.com/playframework/play-json),
 [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
@@ -274,6 +274,7 @@ Samples for integration with different web frameworks and HTTP servers:
 Other usages of jsoniter-scala:
 - [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types.
 - [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
+- [ninny-json](https://github.com/nrktkt/ninny-json) - JSON typeclasses that know the difference between null and absent fields
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
 instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
 - [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/) tooling for Scala
