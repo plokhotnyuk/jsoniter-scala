@@ -318,6 +318,7 @@ separated submodule:
 and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorldController.scala#L12)
 - use `sbt clean compile stage` or `sbt clean test stage` instead of just `sbt clean stage`, like in
 [this repo](https://github.com/hochgi/HTTP-stream-exercise/tree/jsoniter-2nd-round)
+- use `mill clean` if mill's native BSP support is used in IntelliJ IDEA 
 
 4. [Scala 2.12 and 2.13 can throw the following stack overflow exception](https://github.com/scala/bug/issues/11157) on
 `make` call for ADTs with objects if the derivation call and the ADT definition are enclosed in the definition of some 
