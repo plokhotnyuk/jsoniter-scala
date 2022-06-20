@@ -431,6 +431,22 @@ The workaround is using named instances of codecs:
 given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = make
 given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = make
 ```
+or private type aliases with `given` definitions gathered in some trait:
+```scala
+trait DeResultCodecs:
+
+  private type DeResult1 = DeResult[Option[String]]
+  private type DeResult2 = DeResult[RootPathFiles]
+
+  given JsonValueCodec[DeResult1] = make
+  given JsonValueCodec[DeResult2] = make
+
+end DeResultCodecs
+
+object DeResultCodecs extends DeResultCodecs
+
+import DeResultCodecs.given
+```
 
 ## How to develop
 
