@@ -411,6 +411,26 @@ object LocationType extends Enumeration {
 }
 ```
 
+9. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
+```scala
+case class DeResult[T](isSucceed: Boolean, data: T, message: String)
+case class RootPathFiles(files: List[String])
+
+given JsonValueCodec[DeResult[Option[String]]] = make
+given JsonValueCodec[DeResult[RootPathFiles]] = make
+```
+Current 3.1.x versions of scalac fail with the duplicating definition error like this:
+```
+[error] 19 |      given JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
+[error]    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[error]    |given_JsonValueCodec_DeResult is already defined as given instance given_JsonValueCodec_DeResult
+```
+The workaround is using named instances of codecs:
+```scala
+given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = make
+given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = make
+```
+
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 

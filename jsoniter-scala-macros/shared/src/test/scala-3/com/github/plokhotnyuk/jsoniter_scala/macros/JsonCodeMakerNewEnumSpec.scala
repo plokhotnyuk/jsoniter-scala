@@ -129,21 +129,5 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
       verifySerDeser(make[List[FooEnum[Option]]], List(FooEnum.Bar[Option](Some(1)), FooEnum.Baz[Option](Some("VVV"))),
         """[{"type":"Bar","a":1},{"type":"Baz","a":"VVV"}]""")
     }
-    "serialize and deserialize Scala3 enum ADTs defined with `derives` keyword" in {
-      trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
-
-      object DefaultJsonValueCodec {
-        inline def derived[A]: DefaultJsonValueCodec[A] = new DefaultJsonValueCodec[A] {
-          private val impl = JsonCodecMaker.make[A](CodecMakerConfig.withDiscriminatorFieldName(Some("name")))
-          export impl._
-        }
-      }
-
-      enum TestEnum derives DefaultJsonValueCodec:
-        case Value1
-        case Value2(string: String)
-
-      verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"name":"Value2","string":"VVV"}""")
-    }
   }
 }
