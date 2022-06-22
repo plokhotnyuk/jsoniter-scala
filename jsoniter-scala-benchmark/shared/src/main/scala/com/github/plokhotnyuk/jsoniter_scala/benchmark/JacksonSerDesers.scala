@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
-import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, JsonParser}
+import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, JsonParser, StreamReadFeature, StreamWriteFeature}
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
@@ -21,6 +21,8 @@ object JacksonSerDesers {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
       .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
+      .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
+      .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
       .build()
     new ObjectMapper(jsonFactory) with ClassTagExtensions {
       registerModule(DefaultScalaModule)

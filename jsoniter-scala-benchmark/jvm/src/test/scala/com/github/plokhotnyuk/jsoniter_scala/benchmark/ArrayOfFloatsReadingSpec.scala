@@ -27,8 +27,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       //FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.dslJsonScala() shouldBe benchmark.obj
-      //FIXME: Jackson parses 1.199999988079071 as 1.2f instead of 1.1999999f
-      //benchmark.jacksonScala() shouldBe benchmark.obj
+      benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -46,6 +45,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

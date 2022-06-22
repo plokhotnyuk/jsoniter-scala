@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
 import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
@@ -40,10 +41,9 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   @Benchmark
   def dslJsonScala(): Array[Float] = dslJsonDecode[Array[Float]](jsonBytes)
 */
-/* FIXME: Jackson Scala parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def jacksonScala(): Array[Float] = jacksonMapper.readValue[Array[Float]](jsonBytes)
-*/
+
   @Benchmark
   def jsoniterScala(): Array[Float] = readFromArray[Array[Float]](jsonBytes)
 
