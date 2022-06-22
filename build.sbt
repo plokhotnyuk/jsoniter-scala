@@ -109,9 +109,9 @@ lazy val publishSettings = Seq(
       val Array(oldMajor, _, _) = oldVersion.split('.')
       newMajor == oldMajor
     }
-
+    /* FIXME: Uncomment after releasing upgrade to Scala 3.1.3
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
-    else Set()
+    else*/ Set()
   },
   mimaReportSignatureProblems := true
 )
@@ -137,7 +137,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.16"),
+    crossScalaVersions := Seq("3.1.3", "2.13.8", "2.12.16"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0" % Test,
       "org.scalatestplus" %%% "scalacheck-1-16" % "3.2.12.0" % Test,
@@ -171,7 +171,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.16"),
+    crossScalaVersions := Seq("3.1.3", "2.13.8", "2.12.16"),
     libraryDependencies ++= Seq(
       "org.scalatest" %%% "scalatest" % "3.2.12" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0" % Test
@@ -218,7 +218,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.16"),
+    crossScalaVersions := Seq("3.1.3", "2.13.8", "2.12.16"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.2",
       "io.circe" %%% "circe-parser" % "0.14.2" % Test,
