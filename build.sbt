@@ -109,9 +109,8 @@ lazy val publishSettings = Seq(
       val Array(oldMajor, _, _) = oldVersion.split('.')
       newMajor == oldMajor
     }
-    /* FIXME: Uncomment after releasing upgrade to Scala 3.1.3
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
-    else*/ Set()
+    else Set()
   },
   mimaReportSignatureProblems := true
 )
