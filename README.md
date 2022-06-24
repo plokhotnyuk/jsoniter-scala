@@ -1,7 +1,6 @@
-# Jsoniter Scala
+# jsoniter-scala
  
 [![Actions Build](https://github.com/plokhotnyuk/jsoniter-scala/workflows/build/badge.svg)](https://github.com/plokhotnyuk/jsoniter-scala/actions)
-[![Scala Steward](https://img.shields.io/badge/Scala_Steward-helping-brightgreen.svg?style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAMAAAARSr4IAAAAVFBMVEUAAACHjojlOy5NWlrKzcYRKjGFjIbp293YycuLa3pYY2LSqql4f3pCUFTgSjNodYRmcXUsPD/NTTbjRS+2jomhgnzNc223cGvZS0HaSD0XLjbaSjElhIr+AAAAAXRSTlMAQObYZgAAAHlJREFUCNdNyosOwyAIhWHAQS1Vt7a77/3fcxxdmv0xwmckutAR1nkm4ggbyEcg/wWmlGLDAA3oL50xi6fk5ffZ3E2E3QfZDCcCN2YtbEWZt+Drc6u6rlqv7Uk0LdKqqr5rk2UCRXOk0vmQKGfc94nOJyQjouF9H/wCc9gECEYfONoAAAAASUVORK5CYII=)](https://scala-steward.org)
 [![Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.0.0.svg)](https://www.scala-js.org)
 [![Maven Central](https://img.shields.io/badge/maven--central-2.13.32-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
@@ -22,7 +21,7 @@ serialization performance of jsoniter-scala with [AVSystem's scala-commons](http
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
-(max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 22.04, and latest versions of Azul Zulu 11/17, OpenJDK 19[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
+(max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 22.04, and latest versions of Azul Zulu 11/17, OpenJDK 20[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
 and GraalVM CE/EE 22.1 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
@@ -91,7 +90,8 @@ representation of JSON providing a pretty printing option, provide a hex dump in
 view of an error context
 
 The library targets JDK 11+ and GraalVM 22+ (including compilation to native images) without any platform restrictions.
-The [v2.13.5](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5) release is the last version that
+
+The [**v2.13.5**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5) release is the last version that
 supports JDK 8+ and native image compilation with earlier versions of GraalVM.
 
 ## Features and limitations
