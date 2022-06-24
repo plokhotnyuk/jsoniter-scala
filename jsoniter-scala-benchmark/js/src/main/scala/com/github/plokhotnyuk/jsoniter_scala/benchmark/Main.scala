@@ -829,8 +829,6 @@ object Main {
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      //FIXME: smithy4sJson: don't know how to tune precision for parsing of BigDecimal values
-      //B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
