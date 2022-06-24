@@ -277,16 +277,6 @@ final case class Orange(color: Int) extends Fruit[Orange]
 
 case class Basket[T <: Fruit[T]](fruits: List[T])
 
-case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
-
-object HKField {
-  sealed trait Foo[A[_]] extends Product with Serializable
-
-  case class Bar[A[_]](a: A[Int]) extends Foo[A]
-
-  case class Baz[A[_]](a: A[String]) extends Foo[A]
-}
-
 object KingDom {
   sealed trait Human
 
@@ -2119,8 +2109,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         case "a" => "value"
       }), Right("VVV"), """{"type":"Right","value":"VVV"}""")
 
-      //FIXME: dotty bug (see https://github.com/lampepfl/dotty/issues/12508). For now, let's move up:
-      //case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
+      case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
 
       verifySerDeser(make[FirstOrderType[Int, String]],
         FirstOrderType[Int, String](1, "VVV", _root_.scala.Some(1), List("WWW")),
@@ -2164,14 +2153,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
-      /* FIXME: dotty bug (see https://github.com/lampepfl/dotty/issues/12508). For now, let's move up:
       sealed trait Foo[A[_]] extends Product with Serializable
 
       case class Bar[A[_]](a: A[Int]) extends Foo[A]
 
       case class Baz[A[_]](a: A[String]) extends Foo[A]
-      */
-      import HKField._
 
       val codecOfFooForOption = make[Foo[Option]]
       verifySerDeser(codecOfFooForOption, Bar[Option](_root_.scala.Some(1)), """{"type":"Bar","a":1}""")

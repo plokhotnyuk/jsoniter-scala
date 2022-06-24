@@ -292,15 +292,7 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 So if your system is sensitive for that and can accept untrusted input then avoid parsing with `java.io.InputStream` and
 check the input length for other ways of parsing.
 
-2. Earlier versions of Scalac 2.12 and 2.13 have a bug that affects case classes which have 2 fields where the name of 
-one is a prefix for another name that contains a character that should be encoded immediately after the prefix (like 
-`o` and `o-o`). You will get compilation or runtime error, depending on the version of the compiler, see details of 
-the issue [here](https://github.com/scala/bug/issues/11212).
-
-Use latest versions of Scala 2.12 or 2.13 were the issue was fixed or move a definition of the field with encoded chars 
-(`o-o` in our case) to be after the field that is affected by the exception (after the `o` field) like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/df3a3e237ce61991e9f4e6c2c50516eb6e70ac45/jsoniter-scala-macros/shared/src/test/scala-2.11/com.github.plokhotnyuk.jsoniter_scala.macros/JsonCodecMaker211Spec.scala#L10).
-
-3. A configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on other
+2. configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on other
 code that uses a result of the macro's call, otherwise the following compilation error will be reported:
 ```
 [error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on
@@ -320,29 +312,18 @@ and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/micros
 [this repo](https://github.com/hochgi/HTTP-stream-exercise/tree/jsoniter-2nd-round)
 - use `mill clean` if mill's native BSP support is used in IntelliJ IDEA 
 
-4. [Scala 2.12 and 2.13 can throw the following stack overflow exception](https://github.com/scala/bug/issues/11157) on
-`make` call for ADTs with objects if the derivation call and the ADT definition are enclosed in the definition of some 
-outer class:
-```
-java.lang.StackOverflowError
-    ...
-	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
-	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
-	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
-	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
-```
-Also, unexpected compiler errors ([1](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) and [2](https://github.com/lampepfl/dotty/issues/12508))
+3. [Unexpected compiler errors](https://github.com/plokhotnyuk/jsoniter-scala/issues/551)
 can happen during compilation of ADT definitions or their derived codecs if they are nested in some classes or functions
 like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48).
 
 Workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the outer
 _object_ (not a class) instead.
 
-5. Compile-time configuration for `make` calls in Scala 3 has limited support of possible expressions for name mapping.
+4. Compile-time configuration for `make` calls in Scala 3 has limited support of possible expressions for name mapping.
 
 Please use examples of `CodecMakerConfig` usage from [unit tests](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala).   
 
-6. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
+5. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
 ```
 [error] Referring to non-existent class com.github.plokhotnyuk.jsoniter_scala.macros.Level
 [error]   called from private com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.$anonfun$new$24()void
@@ -387,13 +368,13 @@ enum Level extends Enum[Level] {
 }
 ```
 
-7. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
+6. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
 `Some(Some(Some(x: String))))` values can be serialized and then parsed without lost of the info. `Some(None)` and 
 `Some(Some(None))` values will be normalized to `None`.
 
 A workaround could be using of a custom codec, but it cannot be injected precisely for some specified class field yet.  
 
-8. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
+7. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
 ```scala
 object LocationType extends Enumeration {
   type LocationType = Value
@@ -412,7 +393,7 @@ object LocationType extends Enumeration {
 }
 ```
 
-9. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
+8. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
 ```scala
 case class DeResult[T](isSucceed: Boolean, data: T, message: String)
 case class RootPathFiles(files: List[String])
