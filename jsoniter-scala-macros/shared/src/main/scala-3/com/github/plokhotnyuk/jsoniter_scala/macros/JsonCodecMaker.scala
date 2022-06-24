@@ -240,15 +240,6 @@ object CodecMakerConfig extends CodecMakerConfig(
     **/
   class PrintCodec
 
-  /**
-    * Use to print additional debug code during derivation of codecs:
-    *{{{
-    *given CodecMakerConfig.Trace with {}
-    *val codec = JsonCodecMaker.make[MyClass]
-    *}}}
-    **/
-  //class Trace
-
   given FromExpr[CodecMakerConfig] with {
     def extract[X: FromExpr](name: String, x: Expr[X])(using Quotes): X = {
       import quotes.reflect._
@@ -2738,7 +2729,7 @@ object JsonCodecMaker {
         } else if (isConstType(tpe)) getWriteConstType(tpe, m.asTerm, isStringified, out)
         else cannotFindValueCodecError(tpe)
       }
-
+      //FIXME: generate a type class instance using `ClassDef.apply` and `Symbol.newClass` calls after graduating from experimental API: https://www.scala-lang.org/blog/2022/06/21/scala-3.1.3-released.html
       val codecDef = '{
         new JsonValueCodec[A] {
           def nullValue: A = ${genNullValue[A](rootTpe :: Nil)}
@@ -2759,7 +2750,7 @@ object JsonCodecMaker {
           decodeMethodDefs.values ++
           encodeMethodDefs.values
       val codec = Block(needDefs.toList, codecDef).asExprOf[JsonValueCodec[A]]
-      if (//TODO: uncomment after graduating from experimental API: CompilationInfo.XmacroSettings.contains("print-codecs") ||
+      if (//FIXME: uncomment after graduating from experimental API: CompilationInfo.XmacroSettings.contains("print-codecs") ||
         Expr.summon[CodecMakerConfig.PrintCodec].isDefined) {
         report.info(s"Generated JSON codec for type '${rootTpe.show}':\n${codec.show}", Position.ofMacroExpansion)
       }
