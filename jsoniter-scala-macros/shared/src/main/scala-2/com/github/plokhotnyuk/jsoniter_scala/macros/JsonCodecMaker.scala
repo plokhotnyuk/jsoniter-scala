@@ -53,20 +53,33 @@ final class stringified extends StaticAnnotation
   *                               arrays or collections (turned on by default)
   * @param transientNone          a flag that turns on skipping serialization of fields that have empty values of
   *                               options (turned on by default)
-  * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default)
-  * @param bigDecimalScaleLimit   an exclusive limit for accepted scale in 'BigDecimal' values (6178 by default)
+  * @param requireCollectionFields a flag that turn on checking of presence of collection fields and forces
+  *                               serialization when they are empty
+  * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default that is a precision for decimal128,
+  *                               see `java.math.MathContext.DECIMAL128.getPrecision`, don't set too big or infinite
+  *                               precision to avoid attacks from untrusted input)
+  * @param bigDecimalScaleLimit   an exclusive limit for accepted scale in 'BigDecimal' values (6178 by default that is
+  *                               a range for decimal128, don't set too big scale limit to avoid attacks from untrusted
+  *                               input)
   * @param bigDecimalDigitsLimit  an exclusive limit for accepted number of mantissa digits of to be parsed before
-  *                               rounding with the precision specified for 'BigDecimal' values (308 by default)
+  *                               rounding with the precision specified for 'BigDecimal' values (308 by default, don't
+  *                               set too big limit to avoid of OOM errors or attacks from untrusted input)
   * @param bigIntDigitsLimit      an exclusive limit for accepted number of decimal digits in 'BigInt' values
-  *                               (308 by default)
-  * @param bitSetValueLimit       an exclusive limit for accepted numeric values in bit sets (1024 by default)
-  * @param mapMaxInsertNumber     a max number of inserts into maps (1024 by default)
-  * @param setMaxInsertNumber     a max number of inserts into sets excluding bit sets (1024 by default)
-  * @param allowRecursiveTypes    a flag that turns on support of recursive types (turned off by default)
+  *                               (308 by default, don't set too big limit to avoid of OOM errors or attacks from
+  *                               untrusted input)
+  * @param bitSetValueLimit       an exclusive limit for accepted numeric values in bit sets (1024 by default, don't set
+  *                               too big limit to avoid of OOM errors or attacks from untrusted input)
+  * @param mapMaxInsertNumber     a max number of inserts into maps (1024 by default to limit attacks from untrusted
+  *                               input that exploit worst complexity for inserts, see https://github.com/scala/bug/issues/11203 )
+  * @param setMaxInsertNumber     a max number of inserts into sets excluding bit sets (1024 by default to limit attacks
+  *                               from untrusted input that exploit worst complexity for inserts, see https://github.com/scala/bug/issues/11203 )
+  * @param allowRecursiveTypes    a flag that turns on support of recursive types (turned off by default to avoid
+  *                               stack overflow errors with untrusted input)
   * @param requireDiscriminatorFirst a flag that turns off limitation for a position of the discriminator field to be
-  *                               the first field of the JSON object (turned on by default)
+  *                               the first field of the JSON object (turned on by default to avoid CPU overuse when
+  *                               the discriminator appears in the end of JSON objects, especially nested)
   * @param useScalaEnumValueId    a flag that turns on using of ids for parsing and serialization of Scala enumeration
- *                                values
+  *                               values
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -201,15 +214,15 @@ object CodecMakerConfig extends CodecMakerConfig(
   transientEmpty = true,
   transientNone = true,
   requireCollectionFields = false,
-  bigDecimalPrecision = 34, // precision for decimal128: java.math.MathContext.DECIMAL128.getPrecision
-  bigDecimalScaleLimit = 6178, // limit for scale for decimal128: BigDecimal("0." + "0" * 33 + "1e-6143", java.math.MathContext.DECIMAL128).scale + 1
-  bigDecimalDigitsLimit = 308, // 128 bytes: (BigDecimal(BigInt("9" * 307))).underlying.unscaledValue.toByteArray.length
-  bigIntDigitsLimit = 308, // 128 bytes: (BigInt("9" * 307)).underlying.toByteArray.length
-  bitSetValueLimit = 1024, // 128 bytes: collection.mutable.BitSet(1023).toBitMask.length * 8
-  mapMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
-  setMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
-  allowRecursiveTypes = false, // to avoid stack overflow errors with untrusted input
-  requireDiscriminatorFirst = true, // to avoid CPU overuse when the discriminator appears in the end of JSON objects, especially nested
+  bigDecimalPrecision = 34,
+  bigDecimalScaleLimit = 6178,
+  bigDecimalDigitsLimit = 308,
+  bigIntDigitsLimit = 308,
+  bitSetValueLimit = 1024,
+  mapMaxInsertNumber = 1024,
+  setMaxInsertNumber = 1024,
+  allowRecursiveTypes = false,
+  requireDiscriminatorFirst = true,
   useScalaEnumValueId = false) {
 
   /**
