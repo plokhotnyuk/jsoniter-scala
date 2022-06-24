@@ -854,6 +854,42 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         Message("A", "B", RawVal("""{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}"""), "C"),
         """{"param1":"A","param2":"B","payload":{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"},"param3":"C"}""")
     }
+    "serialize and deserialize Nullable to distinguish `null` field values and missing fields using a custom codec" in {
+      sealed trait Nullable[+A]
+
+      case class Value[A](a: A) extends Nullable[A]
+
+      case object Missing extends Nullable[Nothing]
+
+      case object NullValue extends Nullable[Nothing]
+
+      object Nullable {
+        def codec[A](valueCodec: JsonValueCodec[A]): JsonValueCodec[Nullable[A]] = new JsonValueCodec[Nullable[A]] {
+          override def decodeValue(in: JsonReader, default: Nullable[A]): Nullable[A] =
+            if (in.isNextToken('n')) in.readNullOrError(NullValue, "expected `null` value")
+            else {
+              in.rollbackToken()
+              new Value(valueCodec.decodeValue(in, null.asInstanceOf[A]))
+            }
+
+          override def encodeValue(x: Nullable[A], out: JsonWriter): _root_.scala.Unit =
+            x match {
+              case v: Value[A] => valueCodec.encodeValue(v.a, out)
+              case NullValue => out.writeNull()
+              case Missing => out.encodeError("cannot serialize `Missing` out of a class instance")
+            }
+
+          override val nullValue: Nullable[A] = Missing
+        }
+
+        implicit val stringCodec: JsonValueCodec[Nullable[String]] = codec(make[String])
+      }
+
+      case class Model(field1: String, field2: Nullable[String] = Missing)
+
+      verifySerDeser(make[List[Model]], List(Model("VVV", Value("WWW")), Model("VVV", Missing), Model("VVV", NullValue)),
+        """[{"field1":"VVV","field2":"WWW"},{"field1":"VVV"},{"field1":"VVV","field2":null}]""")
+    }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
 
