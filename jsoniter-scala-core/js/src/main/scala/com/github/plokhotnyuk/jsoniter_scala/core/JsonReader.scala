@@ -1867,7 +1867,7 @@ final class JsonReader private[jsoniter_scala](
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale) // FIXME: Use cached arrays with the constructor that has an offset and a len params after dropping of JDK 8 support
+    new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale)
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
