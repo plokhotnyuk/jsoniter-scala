@@ -12,8 +12,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJawn() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
-      //FIXME: Jackson-scala has compilation failure: ambiguous implicit values
-      //benchmark.jacksonScala() shouldBe benchmark.obj
+      benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -27,8 +26,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
-      //FIXME: Jackson-scala has compilation failure: ambiguous implicit values
-      //intercept[Throwable](b.jacksonScala())
+      intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
