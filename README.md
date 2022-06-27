@@ -156,9 +156,10 @@ supports JDK 8+ and native image compilation with earlier versions of GraalVM.
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
 - Support of compilation to a native image by GraalVM
+- Integration with circe for faster parsing/serialization and decoding/encoding to/from circe AST 
 - Releases for different Scala versions: 2.12, 2.13, and 3.1
 - Support of Scala.js 1.0+ for all supported Scala versions
-- Support of Scala Native 0.4+ for Scala 2.12 and 2.13
+- Support of Scala Native 0.4.4+ for all supported Scala versions and all modules except jsoniter-scala-circe
 - Suppressing of all WartRemover warnings of generated codecs for Scala 2.12 and 2.13 
 
 There are configurable options that can be set in compile-time:
