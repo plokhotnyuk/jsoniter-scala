@@ -576,15 +576,13 @@ object JsonCodecMaker {
       val scalaEnumCacheTries = new mutable.LinkedHashMap[Type, Tree]
 
       def withScalaEnumCacheFor(tpe: Type): Tree = {
-        val keyTpe = if (cfg.useScalaEnumValueId) tq"Int" else tq"String"
-        val ec = {
-          if (MacroUtils.isNative) q"new _root_.java.util.HashMap[$keyTpe, $tpe]"
-          else q"new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]"
-        }
+        val keyTpe =
+          if (cfg.useScalaEnumValueId) tq"Int"
+          else tq"String"
+        val ec = q"new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]"
         val enumCacheName = scalaEnumCacheNames.getOrElseUpdate(tpe, TermName("ec" + scalaEnumCacheNames.size))
         scalaEnumCacheTries.getOrElseUpdate(tpe, {
-          if (MacroUtils.isNative) q"private[this] val $enumCacheName: _root_.java.util.HashMap[$keyTpe, $tpe] = $ec"
-          else q"private[this] val $enumCacheName: _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe] = $ec"
+          q"private[this] val $enumCacheName: _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe] = $ec"
         })
         Ident(enumCacheName)
       }

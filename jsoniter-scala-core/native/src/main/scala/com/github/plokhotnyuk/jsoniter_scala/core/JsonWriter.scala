@@ -1390,8 +1390,9 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeLocalTime(x: LocalTime): Unit = count = {
     var pos = ensureBufCapacity(20) // 20 == LocalTime.MAX.toString.length + 2
     val buf = this.buf
+    val ds = digits
     buf(pos) = '"'
-    pos = writeLocalTime(x, pos + 1, buf, digits)
+    pos = writeLocalTime(x, pos + 1, buf, ds)
     buf(pos) = '"'
     pos + 1
   }
@@ -1486,8 +1487,9 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeYearMonth(x: YearMonth): Unit = count = {
     var pos = ensureBufCapacity(15) // 15 == "+999999999-12".length + 2
     val buf = this.buf
+    val ds = digits
     buf(pos) = '"'
-    pos = writeYearMonth(x.getYear, x.getMonthValue, pos + 1, buf, digits)
+    pos = writeYearMonth(x.getYear, x.getMonthValue, pos + 1, buf, ds)
     buf(pos) = '"'
     pos + 1
   }
@@ -1523,8 +1525,9 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeZoneOffset(x: ZoneOffset): Unit = count = {
     var pos = ensureBufCapacity(12) // 12 == "+10:10:10".length + 2
     val buf = this.buf
+    val ds = digits
     buf(pos) = '"'
-    pos = writeOffset(x, pos + 1, buf, digits)
+    pos = writeOffset(x, pos + 1, buf, ds)
     buf(pos) = '"'
     pos + 1
   }
@@ -1724,6 +1727,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeShort(x: Short): Unit = count = {
     var pos = ensureBufCapacity(6) // Short.MinValue.toString.length
     val buf = this.buf
+    val ds = digits
     var q0: Int = x
     if (q0 < 0) {
       buf(pos) = '-'
@@ -1734,11 +1738,11 @@ final class JsonWriter private[jsoniter_scala](
       if (q0 < 10) {
         buf(pos) = (q0 + '0').toByte
         pos + 1
-      } else write2Digits(q0, pos, buf, digits)
+      } else write2Digits(q0, pos, buf, ds)
     } else if (q0 < 10000) {
-      if (q0 < 1000) write3Digits(q0, pos, buf, digits)
-      else write4Digits(q0, pos, buf, digits)
-    } else write5Digits(q0, pos, buf, digits)
+      if (q0 < 1000) write3Digits(q0, pos, buf, ds)
+      else write4Digits(q0, pos, buf, ds)
+    } else write5Digits(q0, pos, buf, ds)
   }
 
   private[this] def writeInt(x: Int): Unit = count = {

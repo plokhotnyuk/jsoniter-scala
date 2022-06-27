@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
@@ -112,7 +113,11 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaReportSignatureProblems := true
+  mimaReportSignatureProblems := true,
+  mimaBinaryIssueFilters := Seq( // internal API to ignore
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.MacroUtils"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.MacroUtils$")
+  )
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
@@ -239,7 +244,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.8"),
-    resolvers += Resolver.sonatypeRepo("snapshots"),
+    resolvers += Resolver.sonatypeOssRepos("snapshots").head,
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.13.6",
       "dev.zio" %%% "zio-json" % "0.3.0-RC9",
@@ -262,7 +267,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.julienrf" %% "play-json-derived-codecs" % "10.0.2",
       "ai.x" %% "play-json-extensions" % "0.42.0",
       "tk.nrktkt" %% "ninny" % "0.7.0",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0",
       "org.openjdk.jmh" % "jmh-core" % "1.35",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.35",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.35",

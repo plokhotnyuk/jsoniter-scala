@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         java:
-          - zulu@1.11 # FIXME: revert to zulu@1.11 after fixing of https://github.com/scala-native/scala-native/issues/2611
+          - zulu@1.17
           - graalvm-ce-java11
         os:
           - macOS-latest # FIXME: restore build on Ubuntu and Windows

@@ -792,12 +792,6 @@ object JsonCodecMaker {
           ValDef(sym, Some('{ new ConcurrentHashMap[K, T] }.asTerm.changeOwner(sym)))
         }).symbol).asExprOf[ConcurrentHashMap[K, T]]
 
-      def withScala2EnumerationSingleThreadCacheFor[K: Type, T: Type](tpe: TypeRepr)(using Quotes): Expr[java.util.HashMap[K, T]] =
-        Ref(scala2EnumerationCaches.getOrElseUpdate(tpe, {
-          val sym = symbol("ec" + scala2EnumerationCaches.size, TypeRepr.of[java.util.HashMap[K, T]])
-          ValDef(sym, Some('{ new java.util.HashMap[K, T] }.asTerm.changeOwner(sym)))
-        }).symbol).asExprOf[java.util.HashMap[K, T]]
-
       case class JavaEnumValueInfo(value: Symbol, name: String, transformed: Boolean)
 
       val javaEnumValueInfos = new mutable.LinkedHashMap[TypeRepr, Seq[JavaEnumValueInfo]]
@@ -1034,9 +1028,7 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[ZoneOffset]) '{ $in.readKeyAsZoneOffset() }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) {
-            val ec =
-              if (MacroUtils.isNative) withScala2EnumerationSingleThreadCacheFor[Int, T & Enumeration#Value](tpe)
-              else withScala2EnumerationConcurrentCacheFor[Int, T & Enumeration#Value](tpe)
+            val ec = withScala2EnumerationConcurrentCacheFor[Int, T & Enumeration#Value](tpe)
             '{
               val i = $in.readKeyAsInt()
               var x = $ec.get(i)
@@ -1047,9 +1039,7 @@ object JsonCodecMaker {
               x
             }.asExprOf[T]
           } else {
-            val ec =
-              if (MacroUtils.isNative) withScala2EnumerationSingleThreadCacheFor[String, T & Enumeration#Value](tpe)
-              else withScala2EnumerationConcurrentCacheFor[String, T & Enumeration#Value](tpe)
+            val ec = withScala2EnumerationConcurrentCacheFor[String, T & Enumeration#Value](tpe)
             '{
               val s = $in.readKeyAsString()
               var x = $ec.get(s)
@@ -2264,9 +2254,7 @@ object JsonCodecMaker {
                 }.asExprOf[Array[t1]], in).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withDecoderFor(methodKey, default, in) { (in, default) =>
           if (cfg.useScalaEnumValueId) {
-            val ec =
-              if (MacroUtils.isNative) withScala2EnumerationSingleThreadCacheFor[Int, T & Enumeration#Value](tpe)
-              else withScala2EnumerationConcurrentCacheFor[Int, T & Enumeration#Value](tpe)
+            val ec = withScala2EnumerationConcurrentCacheFor[Int, T & Enumeration#Value](tpe)
             if (isStringified) '{
               if ($in.isNextToken('"')) {
                 $in.rollbackToken()
@@ -2292,9 +2280,7 @@ object JsonCodecMaker {
               } else $in.readNullOrError($default, "expected digit")
             }
           } else {
-            val ec =
-              if (MacroUtils.isNative) withScala2EnumerationSingleThreadCacheFor[String, T & Enumeration#Value](tpe)
-              else withScala2EnumerationConcurrentCacheFor[String, T & Enumeration#Value](tpe)
+            val ec = withScala2EnumerationConcurrentCacheFor[String, T & Enumeration#Value](tpe)
             '{
               if ($in.isNextToken('"')) {
                 $in.rollbackToken()

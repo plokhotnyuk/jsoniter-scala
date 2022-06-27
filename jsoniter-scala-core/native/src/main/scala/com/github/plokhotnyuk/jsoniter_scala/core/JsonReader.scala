@@ -5,7 +5,7 @@ import java.math.MathContext
 import java.nio.ByteBuffer
 import java.time._
 import java.util.UUID
-import java.util.HashMap
+import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.annotation.{switch, tailrec}
@@ -22,7 +22,6 @@ final class JsonReader private[jsoniter_scala](
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
   private[this] val magnitude: Array[Int] = new Array[Int](32)
-  private[this] var zoneIds: HashMap[Key, ZoneId] = _ // FIXME: use shared concurrent hash map after adding multi-threading support for Scala Native
 
   def requiredFieldError(reqField: String): Nothing = {
     var i = appendString("missing required field \"", 0)
@@ -1054,11 +1053,7 @@ final class JsonReader private[jsoniter_scala](
       head = pos + 1
       if (mark == 0) from -= newMark
       val k = new Key(hash, buf, from, pos)
-      var zoneId =
-        if (zoneIds eq null) {
-          zoneIds = new HashMap[Key, ZoneId]
-          null
-        } else zoneIds.get(k)
+      var zoneId = zoneIds.get(k)
       if ((zoneId eq null) && {
         zoneId = ZoneId.of(k.toString)
         !zoneId.isInstanceOf[ZoneOffset] ||
@@ -2259,11 +2254,12 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseZoneOffset(): ZoneOffset = {
     val b = nextByte(head)
+    val pos = head
     if (b == 'Z') {
-      nextByteOrError('"', head)
+      nextByteOrError('"', pos)
       ZoneOffset.UTC
     } else toZoneOffset(b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'")),
-      parseOffsetTotalWithDoubleQuotes(head))
+      parseOffsetTotalWithDoubleQuotes(pos))
   }
 
   private[this] def parseOffsetTotalWithDoubleQuotes(pos: Int): Int = {
@@ -2295,11 +2291,11 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def epochDay(year: Int, month: Int, day: Int): Long =
-    year * 365L + (((year + 3) >> 2) - {
+    year * 365L + ((year + 3 >> 2) - {
       val cp = year * 1374389535L
       if (year < 0) (cp >> 37) - (cp >> 39) // year / 100 - year / 400
       else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
-    }.toInt + ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
+    }.toInt + (month * 1002277 - 988622 >> 15) - // (month * 367 - 362) / 12
       (if (month <= 2) 0
       else if (isLeap(year)) 1
       else 2) + day - 719529) // 719528 == days 0000 to 1970)
@@ -3307,6 +3303,7 @@ object JsonReader {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
   )
   private final val zoneOffsets: Array[ZoneOffset] = new Array(145)
+  private final val zoneIds: ConcurrentHashMap[Key, ZoneId] = new ConcurrentHashMap(256)
   private final val hexDigits: Array[Char] =
     Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
   /* Use the following code to generate `dumpBorder` in Scala REPL:
