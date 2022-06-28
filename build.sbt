@@ -246,7 +246,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("2.13.8"),
     resolvers += Resolver.sonatypeOssRepos("snapshots").head,
     libraryDependencies ++= Seq(
-      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.13.6",
+      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.13.7",
       "dev.zio" %%% "zio-json" % "0.3.0-RC9",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.10.0",
       "com.rallyhealth" %% "weepickle-v1" % "1.7.2",
