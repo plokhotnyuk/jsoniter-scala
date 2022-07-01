@@ -37,18 +37,18 @@ jobs:
       - name: Configure git
         run: "git config --global core.autocrlf false"
         shell: bash
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 300
       - name: Fetch tags
         run: git fetch --depth=300 origin +refs/tags/*:refs/tags/*
-      - uses: coursier/cache-action@v6.3
+      - uses: coursier/cache-action@v6
       - uses: olafurpg/setup-scala@v13
         with:
           java-version: ${{ matrix.java }}
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: 16
       - name: Compile, test and check binary compatibility
         run: "sbt -batch +test +mimaReportBinaryIssues"
         shell: bash
