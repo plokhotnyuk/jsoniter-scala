@@ -400,8 +400,8 @@ object LocationType extends Enumeration {
 case class DeResult[T](isSucceed: Boolean, data: T, message: String)
 case class RootPathFiles(files: List[String])
 
-given JsonValueCodec[DeResult[Option[String]]] = make
-given JsonValueCodec[DeResult[RootPathFiles]] = make
+given JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
+given JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
 ```
 Current 3.1.x versions of scalac fail with the duplicating definition error like this:
 ```
@@ -411,8 +411,8 @@ Current 3.1.x versions of scalac fail with the duplicating definition error like
 ```
 The workaround is using named instances of codecs:
 ```scala
-given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = make
-given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = make
+given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
+given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
 ```
 or private type aliases with `given` definitions gathered in some trait:
 ```scala
@@ -421,14 +421,50 @@ trait DeResultCodecs:
   private type DeResult1 = DeResult[Option[String]]
   private type DeResult2 = DeResult[RootPathFiles]
 
-  given JsonValueCodec[DeResult1] = make
-  given JsonValueCodec[DeResult2] = make
+  given JsonValueCodec[DeResult1] = JsonCodecMaker.make
+  given JsonValueCodec[DeResult2] = JsonCodecMaker.make
 
 end DeResultCodecs
 
 object DeResultCodecs extends DeResultCodecs
 
 import DeResultCodecs.given
+```
+
+9. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque types.
+The workaround is using a custom codec for the opaque type defined with `implicit val` before the `JsonCodecMaker.make`
+call:
+```scala
+import scala.compiletime.{error, requireConst}
+import scala.language.implicitConversions
+
+opaque type Year = Int
+
+object Year {
+  def apply(x: Int): Option[Year] = if (x > 1900) Some(x) else None
+
+  inline def from(inline x: Int): Year =
+    requireConst(x)
+    inline if x > 1900 then x else error("expected year > 1900")
+
+  given Conversion[Year, Int] with
+    inline def apply(year: Year): Int = year
+}
+
+case class Period(start: Year, end: Year)
+
+implicit val yearCodec: JsonValueCodec[Year] = new JsonValueCodec[Year] {
+  def decodeValue(in: JsonReader, default: Year): Year = Year(in.readInt()) match {
+    case x: Some[Year] => x.value
+    case _ => in.decodeError("expected year > 1900")
+  }
+
+  def encodeValue(x: Year, out: JsonWriter): Unit = out.writeVal(x)
+
+  val nullValue: Year = null.asInstanceOf[Year]
+}
+
+val periodCodec: JsonValueCodec[Period] = JsonCodecMaker.make[Period]
 ```
 
 ## How to develop

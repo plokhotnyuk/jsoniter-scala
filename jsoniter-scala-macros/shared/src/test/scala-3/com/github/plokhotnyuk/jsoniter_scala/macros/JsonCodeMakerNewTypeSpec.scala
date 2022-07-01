@@ -8,34 +8,40 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 import scala.annotation.switch
 import scala.collection.mutable
+import scala.compiletime.{error, requireConst}
 import scala.jdk.CollectionConverters._
+import scala.language.implicitConversions
 import scala.util.hashing.MurmurHash3
 
 opaque type Year = Int
 
 object Year {
-  def apply(value: Int): Year = value
+  def apply(x: Int): Option[Year] = if (x > 1900) Some(x) else None
 
-  def safe(value: Int): Option[Year] = if (value > 1900) Some(value) else None
+  inline def from(inline x: Int): Year =
+    requireConst(x)
+    inline if x > 1900 then x else error("expected year > 1900")
 
-  extension (year: Year) {
-    def value: Int = year
-  }
+  given Conversion[Year, Int] with
+    inline def apply(year: Year): Int = year
 }
 
 class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
-    "serialize and deserialize Scala3 opaque types" in {
+    "serialize and deserialize Scala3 opaque types" in { // FIXME: Add codec derivation for opaque types
       case class Period(start: Year, end: Year)
 
       implicit val yearCodec: JsonValueCodec[Year] = new JsonValueCodec[Year] {
-        def decodeValue(in: JsonReader, default: Year): Year = Year(in.readInt())
+        def decodeValue(in: JsonReader, default: Year): Year = Year(in.readInt()) match {
+          case x: Some[Year] => x.value
+          case _ => in.decodeError("expected year > 1900")
+        }
 
-        def encodeValue(x: Year, out: JsonWriter): Unit = out.writeVal(x.value)
+        def encodeValue(x: Year, out: JsonWriter): Unit = out.writeVal(x)
 
         val nullValue: Year = null.asInstanceOf[Year]
       }
-      verifySerDeser(make[Period], Period(Year(1976), Year(2022)), """{"start":1976,"end":2022}""")
+      verifySerDeser(make[Period], Period(Year.from(1976), Year.from(2022)), """{"start":1976,"end":2022}""")
     }
     "serialize and deserialize Scala3 union types" in {
       type JsonPrimitive = String | Int | Double | Boolean | None.type
