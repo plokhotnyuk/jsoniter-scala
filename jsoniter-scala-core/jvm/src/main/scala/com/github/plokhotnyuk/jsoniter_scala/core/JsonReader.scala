@@ -2475,11 +2475,10 @@ final class JsonReader private[jsoniter_scala](
         var offsetTotal = 0L
         if (pos + 7 < tail && {
           offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-          (offsetTotal & 0xFF0000000000L) != 0x3A0000000000L &&
-            (offsetTotal + 0x060A00060EL & 0xF0F0FFF0F0L) == 0x30303A3030L &&
-            (offsetTotal & 0xF0F0FFF0F0L) == 0x30303A3030L
-        }) {
           b = (offsetTotal >> 40).toByte
+          (offsetTotal + 0x060A00060EL & 0xF0F0FFF0F0L) == 0x30303A3030L &&
+            (offsetTotal & 0xF0F0FFF0F0L) == 0x30303A3030L && b != ':'
+        }) {
           offsetTotal = ((offsetTotal & 0x0F07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           head = pos + 6
         } else {
