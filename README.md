@@ -433,39 +433,7 @@ import DeResultCodecs.given
 
 9. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque types.
 The workaround is using a custom codec for the opaque type defined with `implicit val` before the `JsonCodecMaker.make`
-call:
-```scala
-import scala.compiletime.{error, requireConst}
-import scala.language.implicitConversions
-
-opaque type Year = Int
-
-object Year {
-  def apply(x: Int): Option[Year] = if (x > 1900) Some(x) else None
-
-  inline def from(inline x: Int): Year =
-    requireConst(x)
-    inline if x > 1900 then x else error("expected year > 1900")
-
-  given Conversion[Year, Int] with
-    inline def apply(year: Year): Int = year
-}
-
-case class Period(start: Year, end: Year)
-
-implicit val yearCodec: JsonValueCodec[Year] = new JsonValueCodec[Year] {
-  def decodeValue(in: JsonReader, default: Year): Year = Year(in.readInt()) match {
-    case x: Some[Year] => x.value
-    case _ => in.decodeError("expected year > 1900")
-  }
-
-  def encodeValue(x: Year, out: JsonWriter): Unit = out.writeVal(x)
-
-  val nullValue: Year = null.asInstanceOf[Year]
-}
-
-val periodCodec: JsonValueCodec[Period] = JsonCodecMaker.make[Period]
-```
+call, like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L16-L45).
 
 ## How to develop
 
