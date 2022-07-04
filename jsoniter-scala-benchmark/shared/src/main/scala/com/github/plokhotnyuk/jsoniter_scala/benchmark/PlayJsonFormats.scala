@@ -4,42 +4,22 @@ import java.time._
 import ai.x.play.json.Encoders._
 import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
-import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
-import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 import julienrf.json.derived.flat
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import play.api.libs.json.jackson.PlayJsonModule
 import java.util.Base64
 import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
 import scala.collection.mutable
 import scala.util.Try
 
 object PlayJsonFormats {
-  private[this] val prettyPrintMapper = new ObjectMapper {
-    registerModule(new PlayJsonModule(JsonParserSettings.settings))
-    configure(SerializationFeature.INDENT_OUTPUT, true)
-    setDefaultPrettyPrinter {
-      val indenter = new DefaultIndenter("  ", "\n")
-      new DefaultPrettyPrinter().withObjectIndenter(indenter).withArrayIndenter(indenter)
-    }
-  }
-
-  def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.writeValueAsBytes(jsValue)
-
   def stringFormat[A](name: String)(f: String => A): Format[A] = new Format[A] {
     override def reads(js: JsValue): JsResult[A] =
       Try(JsSuccess(f(js.asInstanceOf[JsString].value))).getOrElse(JsError(s"expected.${name}string"))
 
     override def writes(v: A): JsValue = JsString(v.toString)
   }
-
-  implicit val intKeyReads: KeyReads[Int] =
-    (s: String) => Try(JsSuccess(s.toInt)).getOrElse(JsError("expected.intstring"))
-  implicit val intKeyWrites: KeyWrites[Int] = _.toString
-  implicit val longKeyReads: KeyReads[Long] =
-    (s: String) => Try(JsSuccess(s.toLong)).getOrElse(JsError("expected.longstring"))
 
   implicit def mutableMapReads[A, B](implicit mapReads: Reads[Map[A, B]]): Reads[mutable.Map[A, B]] =
     Reads[mutable.Map[A, B]](js => JsSuccess(js.as[Map[A, B]].foldLeft(mutable.Map.empty[A, B]) {
@@ -190,9 +170,18 @@ object PlayJsonFormats {
     s: String => suite(s)
   }
   implicit val javaEnumFormat: Format[Suit] = stringFormat("suitenum")(Suit.valueOf)
+  implicit val durationFormat: Format[Duration] = stringFormat("instant")(Duration.parse)
+  implicit val instantFormat: Format[Instant] = stringFormat("instant")(Instant.parse)
+  implicit val locaDateTimeFormat: Format[LocalDateTime] = stringFormat("localdatetime")(LocalDateTime.parse)
+  implicit val locaDateFormat: Format[LocalDate] = stringFormat("localdate")(LocalDate.parse)
+  implicit val locaTimeFormat: Format[LocalTime] = stringFormat("localtime")(LocalTime.parse)
   implicit val monthDayFormat: Format[MonthDay] = stringFormat("monthday")(MonthDay.parse)
+  implicit val offsetDateTimeFormat: Format[OffsetDateTime] = stringFormat("offsetdatetime")(OffsetDateTime.parse)
   implicit val offsetTimeFormat: Format[OffsetTime] = stringFormat("offsettime")(OffsetTime.parse)
+  implicit val periodFormat: Format[Period] = stringFormat("period")(Period.parse)
   implicit val yearFormat: Format[Year] = stringFormat("year")(Year.parse)
   implicit val yearMonthFormat: Format[YearMonth] = stringFormat("yearmonth")(YearMonth.parse)
   implicit val zoneOffsetFormat: Format[ZoneOffset] = stringFormat("zoneoffset")(ZoneOffset.of)
+  implicit val zoneIdFormat: Format[ZoneId] = stringFormat("zoneid")(ZoneId.of)
+  implicit val zonedDateTimeFormat: Format[ZonedDateTime] = stringFormat("zoneddatetime")(ZonedDateTime.parse)
 }

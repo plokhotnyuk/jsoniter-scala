@@ -51,7 +51,11 @@ class ArrayOfLocalTimesReading extends ArrayOfLocalTimesBenchmark {
   def jsoniterScala(): Array[LocalTime] = readFromArray[Array[LocalTime]](jsonBytes)
 
   @Benchmark
-  def playJson(): Array[LocalTime] = Json.parse(jsonBytes).as[Array[LocalTime]]
+  def playJson(): Array[LocalTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+
+    Json.parse(jsonBytes).as[Array[LocalTime]]
+  }
 
   @Benchmark
   def playJsonJsoniter(): Array[LocalTime] = {

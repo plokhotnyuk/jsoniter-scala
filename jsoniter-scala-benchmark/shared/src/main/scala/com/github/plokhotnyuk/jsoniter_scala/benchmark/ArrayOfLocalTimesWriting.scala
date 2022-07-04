@@ -48,7 +48,11 @@ class ArrayOfLocalTimesWriting extends ArrayOfLocalTimesBenchmark {
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def playJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+
+    Json.toBytes(Json.toJson(obj))
+  }
 
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = {

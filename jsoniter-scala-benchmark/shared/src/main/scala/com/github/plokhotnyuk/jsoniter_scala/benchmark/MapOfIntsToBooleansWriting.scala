@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlatformUtils._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.rallyhealth.weejson.v1.jackson.ToJson
