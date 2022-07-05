@@ -369,13 +369,7 @@ enum Level extends Enum[Level] {
 }
 ```
 
-6. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
-`Some(Some(Some(x: String))))` values can be serialized and then parsed without lost of the info. `Some(None)` and 
-`Some(Some(None))` values will be normalized to `None`.
-
-A workaround could be using of a custom codec, but it cannot be injected precisely for some specified class field yet.  
-
-7. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
+6. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
 ```scala
 object LocationType extends Enumeration {
   type LocationType = Value
@@ -394,7 +388,7 @@ object LocationType extends Enumeration {
 }
 ```
 
-8. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
+7. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
 ```scala
 case class DeResult[T](isSucceed: Boolean, data: T, message: String)
 case class RootPathFiles(files: List[String])
@@ -430,7 +424,7 @@ object DeResultCodecs extends DeResultCodecs
 import DeResultCodecs.given
 ```
 
-9. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque types.
+8. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque types.
 The workaround is using a custom codec for the opaque type defined with `implicit val` before the `JsonCodecMaker.make`
 call, like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L16-L45).
 

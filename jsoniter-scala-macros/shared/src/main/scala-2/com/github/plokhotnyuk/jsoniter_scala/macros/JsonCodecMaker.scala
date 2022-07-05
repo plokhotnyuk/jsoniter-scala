@@ -513,7 +513,8 @@ object JsonCodecMaker {
         }
       }
 
-      def isOption(tpe: Type): Boolean = tpe <:< typeOf[Option[_]]
+      def isOption(tpe: Type, types: List[Type]): Boolean =
+        tpe <:< typeOf[Option[_]] && !types.headOption.exists(_ <:< typeOf[Option[_]])
 
       def isCollection(tpe: Type): Boolean = tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Array[_]]
 
@@ -1095,7 +1096,7 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"0L"
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
-        else if (isOption(tpe)) q"_root_.scala.None"
+        else if (isOption(tpe, types.tail)) q"_root_.scala.None"
         else if (tpe <:< typeOf[mutable.BitSet]) q"${scalaCollectionCompanion(tpe)}.empty"
         else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty")
         else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
@@ -1137,7 +1138,7 @@ object JsonCodecMaker {
           else names :+ n
         })
         val required: Set[String] = classInfo.fields.collect {
-          case f if !(f.symbol.isParamWithDefault || isOption(f.resolvedTpe) ||
+          case f if !(f.symbol.isParamWithDefault || isOption(f.resolvedTpe, types) ||
             (isCollection(f.resolvedTpe) && !cfg.requireCollectionFields)) => f.mappedName
         }.toSet
         val paramVarNum = classInfo.fields.size
@@ -1256,7 +1257,7 @@ object JsonCodecMaker {
       def genReadVal(types: List[Type], default: Tree, isStringified: Boolean, discriminator: Tree): Tree = {
         val tpe = types.head
         val implCodec = findImplicitCodec(types, isValueCodec = true)
-        val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), discriminator)
+        val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
         val decodeMethodName = decodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.decodeValue(in, $default)"
         else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
@@ -1311,7 +1312,7 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})"
-        } else if (isOption(tpe)) {
+        } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
           q"""if (in.isNextToken('n')) in.readNullOrError($default, "expected value or null")
               else {
@@ -1627,11 +1628,11 @@ object JsonCodecMaker {
                       ..${genWriteConstantKey(f.mappedName)}
                       ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified, EmptyTree)}
                     }"""
-              } else if (isOption(f.resolvedTpe) && cfg.transientNone) {
+              } else if (isOption(f.resolvedTpe, types) && cfg.transientNone) {
                 q"""val v = x.${f.getter}
                     if ((v ne _root_.scala.None) && v != $d) {
                       ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe) :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe) :: f.resolvedTpe :: types, f.isStringified, EmptyTree)}
                     }"""
               } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
                 val cond =
@@ -1657,11 +1658,11 @@ object JsonCodecMaker {
                       ..${genWriteConstantKey(f.mappedName)}
                       ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified, EmptyTree)}
                     }"""
-              } else if (isOption(f.resolvedTpe) && cfg.transientNone) {
+              } else if (isOption(f.resolvedTpe, types) && cfg.transientNone) {
                 q"""val v = x.${f.getter}
                     if (v ne _root_.scala.None) {
                       ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe) :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe) :: f.resolvedTpe :: types, f.isStringified, EmptyTree)}
                     }"""
               } else if (f.resolvedTpe <:< typeOf[Array[_]] && cfg.transientEmpty) {
                 q"""val v = x.${f.getter}
@@ -1713,7 +1714,7 @@ object JsonCodecMaker {
       def genWriteVal(m: Tree, types: List[Type], isStringified: Boolean, discriminator: Tree): Tree = {
         val tpe = types.head
         val implCodec = findImplicitCodec(types, isValueCodec = true)
-        val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), discriminator)
+        val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
         val encodeMethodName = encodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.encodeValue($m, out)"
         else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
@@ -1738,7 +1739,7 @@ object JsonCodecMaker {
           tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeVal($m)"
         else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types, isStringified, EmptyTree)
-        } else if (isOption(tpe)) {
+        } else if (isOption(tpe, types.tail)) {
           q"""$m match {
                 case _root_.scala.Some(x) => ${genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree)}
                 case _root_.scala.None => out.writeNull()
