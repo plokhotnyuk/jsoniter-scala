@@ -880,6 +880,35 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[List[Model]], List(Model("VVV", Value("WWW")), Model("VVV", Missing), Model("VVV", NullValue)),
         """[{"field1":"VVV","field2":"WWW"},{"field1":"VVV"},{"field1":"VVV","field2":null}]""")
     }
+    "serialize and deserialize case classes as JSON arrays using a custom codec" in {
+      case class Obj(keyValuesList: Seq[KeyValue])
+      case class KeyValue(key: String, value: String)
+
+      implicit val codecOfKeyValue = new JsonValueCodec[KeyValue] {
+        override def decodeValue(in: JsonReader, default: KeyValue): KeyValue =
+          if (in.isNextToken('[')) {
+            val x = new KeyValue(
+              in.readString(null),
+              {
+                if (in.isNextToken(',')) in.readString(null)
+                else in.commaError()
+              })
+            if (!in.isNextToken(']')) in.arrayEndError()
+            x
+          } else in.readNullOrTokenError(default, '[')
+
+        override def encodeValue(x: KeyValue, out: JsonWriter): _root_.scala.Unit = {
+          out.writeArrayStart()
+          out.writeVal(x.key)
+          out.writeVal(x.value)
+          out.writeArrayEnd()
+        }
+
+        override def nullValue: KeyValue = null
+      }
+      verifySerDeser(make[Obj], Obj(Seq(KeyValue("a", "1"), KeyValue("b", "2"), KeyValue("c", "3"))),
+        """{"keyValuesList":[["a","1"],["b","2"],["c","3"]]}""")
+    }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
 
