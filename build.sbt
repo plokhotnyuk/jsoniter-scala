@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
@@ -29,11 +28,6 @@ lazy val commonSettings = Seq(
     val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
     if (major == 2) {
       (minor match {
-        case 11 => Seq(
-          "-Ybackend:GenBCode",
-          "-Ydelambdafy:inline",
-          "-language:higherKinds",
-        )
         case 12 => Seq(
           "-language:higherKinds"
         )
@@ -87,6 +81,10 @@ lazy val jsSettings = Seq(
   coverageEnabled := false // FIXME: Too slow coverage test running
 )
 
+lazy val nativeSettings = Seq(
+  coverageEnabled := false
+)
+
 lazy val noPublishSettings = Seq(
   publish / skip := true,
   mimaPreviousArtifacts := Set()
@@ -110,14 +108,11 @@ lazy val publishSettings = Seq(
       val Array(oldMajor, _, _) = oldVersion.split('.')
       newMajor == oldMajor
     }
+
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq( // internal API to ignore
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.MacroUtils"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.MacroUtils$")
-  )
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
@@ -161,12 +156,12 @@ lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   )
 
 lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
+  .settings(nativeSettings)
   .settings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.4.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0"
-    ),
-    coverageEnabled := false
+    )
   )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -176,7 +171,12 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(publishSettings)
   .settings(
     crossScalaVersions := Seq("3.1.3", "2.13.8", "2.12.16"),
-    libraryDependencies ++= Seq(
+    libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq(
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      )
+      case _ => Seq()
+    }) ++ Seq(
       "org.scalatest" %%% "scalatest" % "3.2.12" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0" % Test
     )
@@ -186,7 +186,6 @@ lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
   .settings(
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
         "com.beachape" %%% "enumeratum" % "1.6.1" % Test
       )
       case _ => Seq()
@@ -198,7 +197,6 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
   .settings(
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
         "com.beachape" %%% "enumeratum" % "1.6.1" % Test
       )
       case _ => Seq()
@@ -206,15 +204,7 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
   )
 
 lazy val `jsoniter-scala-macrosNative` = `jsoniter-scala-macros`.native
-  .settings(
-    libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq(
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value
-      )
-      case _ => Seq()
-    }),
-    coverageEnabled := false
-  )
+  .settings(nativeSettings)
 
 lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -262,7 +252,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-generic" % "0.15.0-M1",
       "io.circe" %%% "circe-parser" % "0.15.0-M1",
       "io.circe" %%% "circe-jawn" % "0.15.0-M1",
-      "com.typesafe.play" %% "play-json" % "2.10.0-RC6",
+      "com.typesafe.play" %%% "play-json" % "2.10.0-RC6",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.0",
       "org.julienrf" %%% "play-json-derived-codecs" % "10.0.2",
       "com.github.plokhotnyuk.play-json-extensions" %%% "play-json-extensions" % "0.43.1",
