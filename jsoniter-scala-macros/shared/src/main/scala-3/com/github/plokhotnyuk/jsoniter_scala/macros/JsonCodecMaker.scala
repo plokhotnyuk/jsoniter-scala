@@ -709,8 +709,7 @@ object JsonCodecMaker {
         TypeApply(Select.unique(scalaCollectionCompanion(cTpe), "empty"), List(Inferred(kTpe), Inferred(vTpe)))
 
       def scala2EnumerationObject(tpe: TypeRepr): Expr[Enumeration] = tpe match
-        case TypeRef(ct, _) if ct.isSingleton => Ref(ct.termSymbol).asExprOf[Enumeration]
-        case _ => fail(s"For Scala 2 enum type reference to singleton term is expected, we have ${tpe.show}")
+        case TypeRef(ct, _) => Ref(ct.termSymbol).asExprOf[Enumeration]
 
       def summonOrdering(tpe: TypeRepr): Term = tpe.asType match
         case '[t] => Expr.summon[Ordering[t]].fold(fail(s"Can't summon Ordering[${tpe.show}]"))(_.asTerm)
@@ -1566,15 +1565,14 @@ object JsonCodecMaker {
             case ConstantType(FloatConstant(v)) => Literal(FloatConstant(v)).asExprOf[T]
             case ConstantType(DoubleConstant(v)) => Literal(DoubleConstant(v)).asExprOf[T]
             case _ => cannotFindValueCodecError(tpe)
-        } else if (tpe.isSingleton) Ref(tpe.termSymbol).asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Unit]) '{ () }.asExprOf[T]
+        } else if (isEnumOrModuleValue(tpe)) Ref(tpe.termSymbol).asExprOf[T]
         else if (tpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[AnyRef]) '{ null }.asExprOf[T]
-        else if (tpe <:< TypeRepr.of[AnyVal]) {
+        else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
             case '[t1] => getClassInfo(tpe).genNew(genNullValue[t1](tpe1 :: types).asTerm).asExprOf[T]
-        } else fail(s"Can't deduce null value for ${tpe.show} tree($tpe)")
+        } else '{ null.asInstanceOf[T] }.asExprOf[T]
 
       case class ReadDiscriminator(valDef: ValDef) {
         def skip(in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[Unit] = '{

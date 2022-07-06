@@ -1111,8 +1111,6 @@ object JsonCodecMaker {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
         } else if (tpe <:< typeOf[Iterable[_]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new _root_.scala.Array[${typeArg1(tpe)}](0)")
-        else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
-        else if (tpe <:< typeOf[AnyRef]) q"null"
         else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(v: String)) => q"$v"
@@ -1126,7 +1124,10 @@ object JsonCodecMaker {
             case ConstantType(Constant(v: Double)) => q"$v"
             case _ => cannotFindValueCodecError(tpe)
           }
-        } else q"null.asInstanceOf[$tpe]"
+        } else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
+        else if (tpe <:< typeOf[AnyRef]) q"null"
+        else if (isValueClass(tpe)) q"new $tpe(${genNullValue(valueClassValueType(tpe) :: types)})"
+        else q"null.asInstanceOf[$tpe]"
       }
 
       def genReadNonAbstractScalaClass(types: List[Type], discriminator: Tree): Tree = {
