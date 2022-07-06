@@ -2117,14 +2117,14 @@ final class JsonReader private[jsoniter_scala](
     var hourMinute, second = 0
     if (pos + 7 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
-      ((dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hourMinute = (dec >> 8).toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
         second = (dec >> 56).toInt
         (hourMinute & 0xFF) < 24
-      } || ((dec + 0x767A00767DL | dec) & 0xFF8080FF8080L) == 0xE80000000000L && {
-        hourMinute = (dec * 2561 >> 8).toInt
+      } || m << 16 == 0xE800000000000000L && {
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2145,14 +2145,14 @@ final class JsonReader private[jsoniter_scala](
     var hourMinute, second = 0
     if (pos + 7 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
-      ((dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hourMinute = (dec >> 8).toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
         second = (dec >> 56).toInt
         (hourMinute & 0xFF) < 24
-      } || ((dec + 0x767A00767DL | dec) & 0xFF8080FF8080L) == 0xE80000000000L && {
-        hourMinute = (dec * 2561 >> 8).toInt
+      } || m << 16 == 0xE800000000000000L && {
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2210,15 +2210,15 @@ final class JsonReader private[jsoniter_scala](
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
-      ((dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hourMinute = (dec >> 8).toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
-        nanoDigitWeight = -2
         second = (dec >> 56).toInt
+        nanoDigitWeight = -2
         (hourMinute & 0xFF) < 24
-      } || ((dec + 0x767A00767DL | dec) & 0x8080FF8080L) == 0 && (dec >> 40).toByte != 0 && {
-        hourMinute = (dec * 2561 >> 8).toInt
+      } || m << 24 == 0 && m << 16 != 0 && {
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2279,15 +2279,15 @@ final class JsonReader private[jsoniter_scala](
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
-      ((dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hourMinute = (dec >> 8).toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
-        nanoDigitWeight = -2
         second = (dec >> 56).toInt
+        nanoDigitWeight = -2
         (hourMinute & 0xFF) < 24
-      } || ((dec + 0x767A00767DL | dec) & 0x8080FF8080L) == 0 && (dec >> 40).toByte != 0 && {
-        hourMinute = (dec * 2561 >> 8).toInt
+      } || m << 24 == 0 && m << 16 != 0 && {
         pos += 5
         (hourMinute & 0xFF) < 24
       }
@@ -2423,15 +2423,15 @@ final class JsonReader private[jsoniter_scala](
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
-      ((dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-        dec *= 2561
-        hourMinute = (dec >> 8).toInt
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hourMinute = (dec >> 8).toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
-        nanoDigitWeight = -2
         second = (dec >> 56).toInt
+        nanoDigitWeight = -2
         (hourMinute & 0xFF) < 24
-      } || ((dec + 0x767A00767DL | dec) & 0x8080FF8080L) == 0 && (dec >> 40).toByte != 0 && {
-        hourMinute = (dec * 2561 >> 8).toInt
+      } || m << 24 == 0 && m << 16 != 0 && {
         pos += 5
         (hourMinute & 0xFF) < 24
       }
