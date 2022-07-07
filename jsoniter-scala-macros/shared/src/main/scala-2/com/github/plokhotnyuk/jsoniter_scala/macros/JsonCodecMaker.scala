@@ -531,6 +531,12 @@ object JsonCodecMaker {
       val inferredKeyCodecs = mutable.Map.empty[Type, Tree]
       val inferredValueCodecs = mutable.Map.empty[Type, Tree]
 
+      def isImmutableArraySeq(tpe: Type): Boolean =
+        isScala213 && tpe.typeSymbol.fullName == "scala.collection.immutable.ArraySeq"
+
+      def isMutableArraySeq(tpe: Type): Boolean =
+        isScala213 && tpe.typeSymbol.fullName == "scala.collection.mutable.ArraySeq"
+
       def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
 
       def findImplicitCodec(types: List[Type], isValueCodec: Boolean): Tree = {
@@ -1320,6 +1326,43 @@ object JsonCodecMaker {
                 in.rollbackToken()
                 new _root_.scala.Some(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})
               }"""
+        } else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
+          isMutableArraySeq(tpe)) withDecoderFor(methodKey, default) {
+          val tpe1 = typeArg1(tpe)
+          val growArray =
+            if (tpe1.typeArgs.nonEmpty || isValueClass(tpe1)) {
+              q"""val x1 = new Array[$tpe1](i << 1)
+                  _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
+                  x1"""
+            } else q"_root_.java.util.Arrays.copyOf(x, i << 1)"
+          val shrinkArray =
+            if (tpe1.typeArgs.nonEmpty || isValueClass(tpe1)) {
+              q"""val x1 = new Array[$tpe1](i)
+                  _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
+                  x1"""
+            } else q"_root_.java.util.Arrays.copyOf(x, i)"
+          genReadArray(
+            q"""var x = new Array[$tpe1](16)
+                var i = 0""",
+            q"""if (i == x.length) x = $growArray
+                x(i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)}
+                i += 1""",
+            {
+              if (isImmutableArraySeq(tpe)) {
+                q"""_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1]({
+                      if (i == x.length) x
+                      else $shrinkArray
+                    })"""
+              } else if (isMutableArraySeq(tpe)) {
+                q"""_root_.scala.collection.mutable.ArraySeq.make[$tpe1]({
+                      if (i == x.length) x
+                      else $shrinkArray
+                    })"""
+              } else {
+                q"""if (i == x.length) x
+                    else $shrinkArray"""
+              }
+            })
         } else if (tpe <:< typeOf[immutable.IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
@@ -1434,27 +1477,6 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
-        } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
-          val tpe1 = typeArg1(tpe)
-          val growArray =
-            if (tpe1.typeArgs.nonEmpty || isValueClass(tpe1)) {
-              q"""val x1 = new $tpe(i << 1)
-                  _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
-                  x1"""
-            } else q"_root_.java.util.Arrays.copyOf(x, i << 1)"
-          val shrinkArray =
-            if (tpe1.typeArgs.nonEmpty || isValueClass(tpe1)) {
-              q"""val x1 = new $tpe(i)
-                  _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
-                  x1"""
-            } else q"_root_.java.util.Arrays.copyOf(x, i)"
-          genReadArray(
-            q"""var x = new $tpe(16)
-                var i = 0""",
-            q"""if (i == x.length) x = $growArray
-                x(i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)}
-                i += 1""",
-            q"if (i == x.length) x else $shrinkArray")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           val ec = withScalaEnumCacheFor(tpe)
           if (cfg.useScalaEnumValueId) {
@@ -1745,6 +1767,39 @@ object JsonCodecMaker {
                 case _root_.scala.Some(x) => ${genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree)}
                 case _root_.scala.None => out.writeNull()
               }"""
+        } else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
+          isMutableArraySeq(tpe)) withEncoderFor(methodKey, m) {
+          val tpe1 = typeArg1(tpe)
+          if (isImmutableArraySeq(tpe)) {
+            q"""out.writeArrayStart()
+                val xs = x.unsafeArray.asInstanceOf[Array[$tpe1]]
+                val l = xs.length
+                var i = 0
+                while (i < l) {
+                  ..${genWriteVal(q"xs(i)", tpe1 :: types, isStringified, EmptyTree)}
+                  i += 1
+                }
+                out.writeArrayEnd()"""
+          } else if (isMutableArraySeq(tpe)) {
+            q"""out.writeArrayStart()
+                val xs = x.array.asInstanceOf[Array[$tpe1]]
+                val l = xs.length
+                var i = 0
+                while (i < l) {
+                  ..${genWriteVal(q"xs(i)", tpe1 :: types, isStringified, EmptyTree)}
+                  i += 1
+                }
+                out.writeArrayEnd()"""
+          } else {
+            q"""out.writeArrayStart()
+                val l = x.length
+                var i = 0
+                while (i < l) {
+                  ..${genWriteVal(q"x(i)", tpe1 :: types, isStringified, EmptyTree)}
+                  i += 1
+                }
+                out.writeArrayEnd()"""
+          }
         } else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[immutable.LongMap[_]]) withEncoderFor(methodKey, m) {
           if (isScala213) {
@@ -1802,15 +1857,6 @@ object JsonCodecMaker {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree))
-        } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(methodKey, m) {
-          q"""out.writeArrayStart()
-              val l = x.length
-              var i = 0
-              while (i < l) {
-                ..${genWriteVal(q"x(i)", typeArg1(tpe) :: types, isStringified, EmptyTree)}
-                i += 1
-              }
-              out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           if (cfg.useScalaEnumValueId) {
             if (isStringified) q"out.writeValAsString(x.id)"

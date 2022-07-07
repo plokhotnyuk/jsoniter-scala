@@ -2002,6 +2002,59 @@ object JsonCodecMaker {
                   new Some($readVal1)
                 }
               }.asExprOf[T]
+        } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
+          tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+          val tpe1 = typeArg1(tpe)
+          tpe1.asType match
+            case '[t1] =>
+              val newArrayOnChange = tpe1 match
+                case AppliedType(_, _) => true
+                case _ => isValueClass(tpe1)
+              val t1ClassTag = summonClassTag(tpe1).asExprOf[ClassTag[t1]]
+
+              def growArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
+                if (newArrayOnChange) '{
+                  val x1 = new Array[t1]($i << 1)(using $t1ClassTag)
+                  java.lang.System.arraycopy($x, 0, x1, 0, $i)
+                  x1
+                } else genArraysCopyOf[t1](tpe1, x, '{ $i << 1 })
+
+              def shrinkArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
+                if (newArrayOnChange) '{
+                  val x1 = new Array[t1]($i)(using $t1ClassTag)
+                  java.lang.System.arraycopy($x, 0, x1, 0, $i)
+                  x1
+                } else genArraysCopyOf[t1](tpe1, x, i)
+
+              if (tpe <:< TypeRepr.of[immutable.ArraySeq[_]]) {
+                genReadArray('{ new Array[t1](16)(using $t1ClassTag) },
+                  (x, i) => ConditionalAssignmentAndUpdate('{ ($i == $x.length) }, growArray(x, i).asTerm, '{
+                    $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
+                  }), default.asExprOf[immutable.ArraySeq[t1]], (x, i) => '{
+                    immutable.ArraySeq.unsafeWrapArray[t1]({
+                      if ($i == $x.length) $x
+                      else ${shrinkArray(x, i)}
+                    })
+                  }.asExprOf[immutable.ArraySeq[t1]], in).asExprOf[T]
+              } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) {
+                genReadArray('{ new Array[t1](16)(using $t1ClassTag) },
+                  (x, i) => ConditionalAssignmentAndUpdate('{ ($i == $x.length) }, growArray(x, i).asTerm, '{
+                    $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
+                  }), default.asExprOf[mutable.ArraySeq[t1]], (x, i) => '{
+                    mutable.ArraySeq.make[t1]({
+                      if ($i == $x.length) $x
+                      else ${shrinkArray(x, i)}
+                    })
+                  }.asExprOf[mutable.ArraySeq[t1]], in).asExprOf[T]
+              } else {
+                genReadArray('{ new Array[t1](16)(using $t1ClassTag) },
+                  (x, i) => ConditionalAssignmentAndUpdate('{ ($i == $x.length) }, growArray(x, i).asTerm, '{
+                    $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
+                  }), default.asExprOf[Array[t1]], (x, i) => '{
+                    if ($i == $x.length) $x
+                    else ${shrinkArray(x, i)}
+                  }.asExprOf[Array[t1]], in).asExprOf[T]
+              }
         } else if (tpe <:< TypeRepr.of[immutable.IntMap[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -2224,37 +2277,6 @@ object JsonCodecMaker {
                 else builder
               }.asExprOf[mutable.Builder[t1, T]], (x, _) => Update(genReadValForGrowable(tpe1 :: types, isStringified, x, in)),
                 default, (x, _) => '{ $x.result() }, in)
-        } else if (tpe <:< TypeRepr.of[Array[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val newArrayOnChange = tpe1 match
-                case AppliedType(_, _) => true
-                case _ => isValueClass(tpe1)
-              val t1ClassTag = summonClassTag(tpe1).asExprOf[ClassTag[t1]]
-
-              def growArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
-                if (newArrayOnChange) '{
-                  val x1 = new Array[t1]($i << 1)(using $t1ClassTag)
-                  java.lang.System.arraycopy($x, 0, x1, 0, $i)
-                  x1
-                } else genArraysCopyOf[t1](tpe1, x, '{ $i << 1 })
-
-              def shrinkArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
-                if (newArrayOnChange) '{
-                  val x1 = new Array[t1]($i)(using $t1ClassTag)
-                  java.lang.System.arraycopy($x, 0, x1, 0, $i)
-                  x1
-                } else genArraysCopyOf[t1](tpe1, x, i)
-
-              val tDefault = default.asExprOf[Array[t1]]
-              genReadArray('{ new Array[t1](16)(using $t1ClassTag) },
-                (x, i) => ConditionalAssignmentAndUpdate('{ ($i == $x.length) }, growArray(x, i).asTerm, '{
-                  $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
-                }), tDefault, (x, i) => '{
-                  if ($i == $x.length) $x
-                  else ${shrinkArray(x, i)}
-                }.asExprOf[Array[t1]], in).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withDecoderFor(methodKey, default, in) { (in, default) =>
           if (cfg.useScalaEnumValueId) {
             val ec = withScala2EnumerationConcurrentCacheFor[Int, T & Enumeration#Value](tpe)
@@ -2561,6 +2583,50 @@ object JsonCodecMaker {
                 case Some(x) => ${genWriteVal('x, tpe1 :: types, isStringified, None, out)}
                 case None => $out.writeNull()
             }
+        } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
+          tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+          val tpe1 = typeArg1(tpe)
+          tpe1.asType match
+            case '[t1] =>
+              if (tpe <:< TypeRepr.of[immutable.ArraySeq[_]]) {
+                val tx = x.asExprOf[immutable.ArraySeq[t1]]
+                '{
+                  $out.writeArrayStart()
+                  val xs = $tx.unsafeArray.asInstanceOf[Array[t1]]
+                  val l = xs.length
+                  var i = 0
+                  while (i < l) {
+                    ${genWriteVal('{ xs(i) }, tpe1 :: types, isStringified, None, out)}
+                    i += 1
+                  }
+                  $out.writeArrayEnd()
+                }
+              } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) {
+                val tx = x.asExprOf[mutable.ArraySeq[t1]]
+                '{
+                  $out.writeArrayStart()
+                  val xs = $tx.array.asInstanceOf[Array[t1]]
+                  val l = xs.length
+                  var i = 0
+                  while (i < l) {
+                    ${genWriteVal('{ xs(i) }, tpe1 :: types, isStringified, None, out)}
+                    i += 1
+                  }
+                  $out.writeArrayEnd()
+                }
+              } else {
+                val tx = x.asExprOf[Array[t1]]
+                '{
+                  $out.writeArrayStart()
+                  val l = $tx.length
+                  var i = 0
+                  while (i < l) {
+                    ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
+                    i += 1
+                  }
+                  $out.writeArrayEnd()
+                }
+              }
         } else if (tpe <:< TypeRepr.of[immutable.IntMap[_]] || tpe <:< TypeRepr.of[mutable.LongMap[_]] ||
             tpe <:< TypeRepr.of[immutable.LongMap[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
@@ -2640,21 +2706,6 @@ object JsonCodecMaker {
             case '[t1] =>
               genWriteArray(x.asExprOf[Iterable[t1]],
                 (out, x1) => genWriteVal(x1, tpe1 :: types, isStringified, None, out), out)
-        } else if (tpe <:< TypeRepr.of[Array[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val tx = x.asExprOf[Array[t1]]
-              '{
-                $out.writeArrayStart()
-                val l = $tx.length
-                var i = 0
-                while (i < l) {
-                  ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
-                  i += 1
-                }
-                $out.writeArrayEnd()
-              }
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tx = x.asExprOf[Enumeration#Value]
           if (cfg.useScalaEnumValueId) {
