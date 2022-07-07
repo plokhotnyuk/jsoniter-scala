@@ -900,6 +900,35 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
+    val benchmark = new ArraySeqOfBooleansReading { size = 128; setup() }
+    GS(S("ArrayOfBooleansReading")(
+      B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
+      B("borer")(benchmark.borer()),
+      B("circe")(benchmark.circe()),
+      B("circeJawn")(benchmark.circeJawn()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("playJson")(benchmark.playJson()),
+      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
+    ))
+  }, {
+    val benchmark = new ArraySeqOfBooleansWriting { size = 128; setup() }
+    GS(S("ArrayOfBooleansWriting")(
+      B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
+      B("borer")(benchmark.borer()),
+      B("circe")(benchmark.circe()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("playJson")(benchmark.playJson()),
+      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
+    ))
+  }, {
     val benchmark = new Base16Reading { size = 128; setup() }
     GS(S("Base16Reading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),

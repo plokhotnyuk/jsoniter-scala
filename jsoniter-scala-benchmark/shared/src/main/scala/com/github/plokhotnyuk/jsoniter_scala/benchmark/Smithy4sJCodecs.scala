@@ -6,7 +6,7 @@ import smithy4s.api.Discriminated
 import smithy4s.schema.Schema._
 import java.time.Instant
 import java.util.UUID
-import scala.collection.immutable.Seq
+import scala.collection.immutable.{ArraySeq, Seq}
 
 object Smithy4sJCodecs {
   def toIndexedSeqOfIndexedSeq[A](xs: List[List[A]]): IndexedSeq[IndexedSeq[A]] =
@@ -71,6 +71,9 @@ object Smithy4sJCodecs {
     JCodec.deriveJCodecFromSchema(bijection[List[Short], Array[Short]](list(short), _.toArray, _.toList))
   implicit val arrayOfUUIDsJCodec: JCodec[Array[UUID]] =
     JCodec.deriveJCodecFromSchema(bijection[List[UUID], Array[UUID]](list(uuid), _.toArray, _.toList))
+  implicit val arraySeqOfBooleansJCodec: JCodec[ArraySeq[Boolean]] =
+    JCodec.deriveJCodecFromSchema(bijection[List[Boolean], ArraySeq[Boolean]](list(boolean),
+      x => ArraySeq.unsafeWrapArray(x.toArray), _.toList))
   val base64JCodec: JCodec[Array[Byte]] =
     JCodec.deriveJCodecFromSchema(bijection[ByteArray, Array[Byte]](bytes, _.array, ByteArray.apply))
   val bigDecimalJCodec: JCodec[BigDecimal] = JCodec.deriveJCodecFromSchema(bigdecimal)

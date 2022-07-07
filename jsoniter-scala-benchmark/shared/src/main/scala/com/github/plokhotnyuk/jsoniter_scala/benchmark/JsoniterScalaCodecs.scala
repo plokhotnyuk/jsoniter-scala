@@ -42,6 +42,7 @@ object JsoniterScalaCodecs {
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make
   implicit val booleanArrayBufferCodec: JsonValueCodec[mutable.ArrayBuffer[Boolean]] = make
   implicit val booleanArrayCodec: JsonValueCodec[Array[Boolean]] = make
+  implicit val booleanArraySeqCodec: JsonValueCodec[ArraySeq[Boolean]] = make
   implicit val booleanListCodec: JsonValueCodec[List[Boolean]] = make
   implicit val booleanVectorCodec: JsonValueCodec[Vector[Boolean]] = make
   implicit val byteArrayCodec: JsonValueCodec[Array[Byte]] = make
