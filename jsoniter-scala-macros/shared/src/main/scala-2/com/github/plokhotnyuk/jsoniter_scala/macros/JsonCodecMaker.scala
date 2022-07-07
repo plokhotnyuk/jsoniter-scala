@@ -234,16 +234,6 @@ object CodecMakerConfig extends CodecMakerConfig(
     *}}}
     **/
   class PrintCodec
-
-  /**
-    * Use to print additional debug code during derivation of codecs:
-    *
-    *{{{
-    *implicit val trace: CodecMakerConfig.Trace = new CodecMakerConfig.Trace {}
-    *val codec = JsonCodecMaker.make[MyClass]
-    *}}}
-    **/
-  //class Trace
 }
 
 object JsonCodecMaker {
