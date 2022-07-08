@@ -1567,7 +1567,7 @@ object JsonCodecMaker {
             case _ => cannotFindValueCodecError(tpe)
         } else if (isEnumOrModuleValue(tpe)) Ref(tpe.termSymbol).asExprOf[T]
         else if (tpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[T]
-        else if (tpe <:< TypeRepr.of[AnyRef]) '{ null }.asExprOf[T]
+        else if (TypeRepr.of[Null] <:< tpe) '{ null }.asExprOf[T]
         else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match

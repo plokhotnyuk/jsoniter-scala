@@ -28,6 +28,14 @@ object Year {
 
 class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
+    "don't generate codecs for union types with proper compilation error" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """type ABC = "A" | "B" | "C"
+          |JsonCodecMaker.make[ABC]""".stripMargin
+      }).getMessage.contains {
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for '"A" | "B" | "C"'."""
+      })
+    }
     "serialize and deserialize Scala3 opaque types" in { // FIXME: Add codec derivation for opaque types
       case class Period(start: Year, end: Year)
 
