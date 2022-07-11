@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import org.openjdk.jmh.annotations.{Param, Setup}
-
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.collection.immutable.ArraySeq
 

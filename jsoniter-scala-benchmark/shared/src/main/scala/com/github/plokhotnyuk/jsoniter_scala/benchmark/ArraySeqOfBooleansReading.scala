@@ -2,10 +2,10 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.avsystem.commons.serialization.json._
 import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
@@ -13,9 +13,9 @@ import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-import spray.json._
+//import spray.json._
 import upickle.default._
-import zio.json.DecoderOps
+//import zio.json.DecoderOps
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.collection.immutable.ArraySeq
 

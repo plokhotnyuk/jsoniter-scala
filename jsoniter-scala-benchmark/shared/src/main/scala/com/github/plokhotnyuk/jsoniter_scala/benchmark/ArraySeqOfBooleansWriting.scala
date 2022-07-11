@@ -14,7 +14,6 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import upickle.default._
-
 import java.nio.charset.StandardCharsets.UTF_8
 
 class ArraySeqOfBooleansWriting extends ArrayOfBooleansBenchmark {
