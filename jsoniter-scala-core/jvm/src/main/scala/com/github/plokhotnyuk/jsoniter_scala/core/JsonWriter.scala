@@ -1175,7 +1175,7 @@ final class JsonWriter private[jsoniter_scala](
         pos =
           if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
           else {
-            val q1 = Math.multiplyHigh(hours, 193428131138340668L) >>> 20 // divide a positive long by 100000000
+            val q1 = Math.multiplyHigh(hours, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
             write8Digits(hours - q1 * 100000000, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
           }
         buf(pos) = 'H'
@@ -1582,7 +1582,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = Math.multiplyHigh(q0, 193428131138340668L) >>> 20 // divide a positive long by 100000000
+    val q1 = Math.multiplyHigh(q0, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
     write8Digits(q0 - q1 * 100000000, {
       val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
       write8Digits(q1 - q2 * 100000000, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
@@ -1663,7 +1663,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
     else {
-      val q1 = Math.multiplyHigh(q0, 193428131138340668L) >>> 20 // divide a positive long by 100000000
+      val q1 = Math.multiplyHigh(q0, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
       write8Digits(q0 - q1 * 100000000, {
         if (q1.toInt == q1) writePositiveInt(q1.toInt, pos, buf, ds)
         else {
@@ -1923,7 +1923,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, pos, posLim, buf, ds)
     else {
-      val q1 = Math.multiplyHigh(q0, 193428131138340668L) >>> 20 // divide a positive long by 100000000
+      val q1 = Math.multiplyHigh(q0, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
       val r1 = (q0 - q1 * 100000000).toInt
       if (r1 == 0) writeSignificantFractionDigits(q1.toInt, pos - 8, posLim, buf, ds)
       else {

@@ -478,6 +478,17 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
+      Array(
+        6950401124099999999L,
+        7379897853799999999L,
+        7809394583499999999L,
+        8238891313199999999L,
+        8317344762099999998L,
+        8668388042899999999L,
+        8746841491799999998L,
+        9097884772599999999L,
+        9176338221499999998L
+      ).foreach(check) // See: https://github.com/plokhotnyuk/jsoniter-scala/issues/915
       forAll(arbitrary[Int], minSuccessful(10000))(n => check(n.toLong))
       forAll(arbitrary[Long], minSuccessful(10000))(check)
     }
