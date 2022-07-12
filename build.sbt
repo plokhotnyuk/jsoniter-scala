@@ -239,7 +239,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.13.7",
       "dev.zio" %%% "zio-json" % "0.3.0-RC10",
       "com.rallyhealth" %% "weepickle-v1" % "1.7.2",
-      "io.bullet" %%% "borer-derivation" % "1.7.2",
+      "io.bullet" %%% "borer-derivation" % "1.8.0",
       "pl.iterators" %% "kebs-spray-json" % "1.9.4",
       "io.spray" %% "spray-json" % "1.3.6",
       "com.avsystem.commons" %%% "commons-core" % "2.7.2",
