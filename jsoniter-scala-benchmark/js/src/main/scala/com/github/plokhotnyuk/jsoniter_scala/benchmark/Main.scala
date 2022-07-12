@@ -901,7 +901,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArraySeqOfBooleansReading { size = 128; setup() }
-    GS(S("ArrayOfBooleansReading")(
+    GS(S("ArraySeqOfBooleansReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -915,7 +915,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArraySeqOfBooleansWriting { size = 128; setup() }
-    GS(S("ArrayOfBooleansWriting")(
+    GS(S("ArraySeqOfBooleansWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
