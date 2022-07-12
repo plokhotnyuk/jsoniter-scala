@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -51,7 +50,11 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   def playJson(): Array[Short] = Json.parse(jsonBytes).as[Array[Short]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[Short] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Short]])
+  def playJsonJsoniter(): Array[Short] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Short]]
+  }
 
   @Benchmark
   def smithy4sJson(): Array[Short] = {

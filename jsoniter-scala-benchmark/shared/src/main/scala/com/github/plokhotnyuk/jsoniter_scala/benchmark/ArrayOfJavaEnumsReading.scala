@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
@@ -54,7 +53,11 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
   def playJson(): Array[Suit] = Json.parse(jsonBytes).as[Array[Suit]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[Suit] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Suit]])
+  def playJsonJsoniter(): Array[Suit] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Suit]]
+  }
 
   @Benchmark
   def sprayJson(): Array[Suit] = JsonParser(jsonBytes).convertTo[Array[Suit]]

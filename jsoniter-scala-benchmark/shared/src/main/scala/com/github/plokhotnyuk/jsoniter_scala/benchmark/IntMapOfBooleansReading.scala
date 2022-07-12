@@ -2,14 +2,12 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import io.circe.Decoder
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlatformUtils._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -48,5 +46,9 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
   def playJson(): IntMap[Boolean] = Json.parse(jsonBytes).as[IntMap[Boolean]]
 
   @Benchmark
-  def playJsonJsoniter(): IntMap[Boolean] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[IntMap[Boolean]])
+  def playJsonJsoniter(): IntMap[Boolean] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[IntMap[Boolean]]
+  }
 }

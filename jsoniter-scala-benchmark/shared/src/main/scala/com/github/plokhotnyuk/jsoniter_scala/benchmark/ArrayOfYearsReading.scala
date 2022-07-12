@@ -55,7 +55,7 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
   def playJsonJsoniter(): Array[Year] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[Year]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Year]]
   }
 
   @Benchmark

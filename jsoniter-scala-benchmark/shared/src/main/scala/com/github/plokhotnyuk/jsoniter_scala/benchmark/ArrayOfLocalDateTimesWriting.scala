@@ -58,7 +58,7 @@ class ArrayOfLocalDateTimesWriting extends ArrayOfLocalDateTimesBenchmark {
   def playJsonJsoniter(): Array[Byte] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    serialize(Json.toJson(obj))
+    writeToArray(Json.toJson(obj))
   }
 
   @Benchmark

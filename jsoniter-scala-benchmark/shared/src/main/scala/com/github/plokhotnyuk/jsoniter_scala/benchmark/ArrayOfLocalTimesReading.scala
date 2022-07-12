@@ -61,7 +61,7 @@ class ArrayOfLocalTimesReading extends ArrayOfLocalTimesBenchmark {
   def playJsonJsoniter(): Array[LocalTime] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[LocalTime]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[LocalTime]]
   }
 
   @Benchmark

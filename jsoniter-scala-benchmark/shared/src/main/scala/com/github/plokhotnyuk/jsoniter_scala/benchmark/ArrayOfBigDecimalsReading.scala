@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders.decodingConfig
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
@@ -55,8 +54,11 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   def playJson(): Array[BigDecimal] = Json.parse(jsonBytes).as[Array[BigDecimal]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[BigDecimal] =
-    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[BigDecimal]])
+  def playJsonJsoniter(): Array[BigDecimal] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[BigDecimal]]
+  }
 
   @Benchmark
   def smithy4sJson(): Array[BigDecimal] = {

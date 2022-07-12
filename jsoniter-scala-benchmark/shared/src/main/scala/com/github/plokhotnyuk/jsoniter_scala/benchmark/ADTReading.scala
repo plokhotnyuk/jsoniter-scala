@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -19,7 +18,6 @@ import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.Decoder
 import io.circe.parser._
-import nrktkt.ninny
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
@@ -53,13 +51,21 @@ class ADTReading extends ADTBenchmark {
   def jsoniterScala(): ADTBase = readFromArray[ADTBase](jsonBytes)
 
   @Benchmark
-  def ninnyJson(): ADTBase = ninny.Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ADTBase].get
+  def ninnyJson(): ADTBase = {
+    import nrktkt.ninny.Json
+
+    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ADTBase].get
+  }
 
   @Benchmark
   def playJson(): ADTBase = Json.parse(jsonBytes).as[ADTBase](adtFormat)
 
   @Benchmark
-  def playJsonJsoniter(): ADTBase = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[ADTBase](adtFormat))
+  def playJsonJsoniter(): ADTBase = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[ADTBase](adtFormat)
+  }
 
   @Benchmark
   def smithy4sJson(): ADTBase = {

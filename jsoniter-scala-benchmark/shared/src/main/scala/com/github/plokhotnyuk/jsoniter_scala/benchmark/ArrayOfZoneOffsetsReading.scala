@@ -55,7 +55,7 @@ class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
   def playJsonJsoniter(): Array[ZoneOffset] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[ZoneOffset]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[ZoneOffset]]
   }
 
   @Benchmark

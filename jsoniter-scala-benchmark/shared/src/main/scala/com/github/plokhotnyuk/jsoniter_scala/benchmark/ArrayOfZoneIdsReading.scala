@@ -55,7 +55,7 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
   def playJsonJsoniter(): Array[ZoneId] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[ZoneId]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[ZoneId]]
   }
 
   @Benchmark

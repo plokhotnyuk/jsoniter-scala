@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -51,7 +50,11 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   def playJson(): Array[Float] = Json.parse(jsonBytes).as[Array[Float]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[Float] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Float]])
+  def playJsonJsoniter(): Array[Float] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Float]]
+  }
 
   @Benchmark
   def smithy4sJson(): Array[Float] = {

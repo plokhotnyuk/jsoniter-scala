@@ -59,7 +59,7 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
   def playJsonJsoniter(): Array[ZonedDateTime] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[ZonedDateTime]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[ZonedDateTime]]
   }
 
   @Benchmark

@@ -54,7 +54,7 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
   def playJsonJsoniter(): Array[Instant] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[Instant]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Instant]]
   }
 
   @Benchmark

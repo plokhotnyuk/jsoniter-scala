@@ -55,7 +55,7 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   def playJsonJsoniter(): Array[Period] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[Period]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Period]]
   }
 
   @Benchmark

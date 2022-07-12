@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -50,7 +49,11 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   def playJson(): String = Json.parse(jsonBytes).as[String]
 
   @Benchmark
-  def playJsonJsoniter(): String = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[String])
+  def playJsonJsoniter(): String = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[String]
+  }
 
   @Benchmark
   def smithy4sJson(): String = {

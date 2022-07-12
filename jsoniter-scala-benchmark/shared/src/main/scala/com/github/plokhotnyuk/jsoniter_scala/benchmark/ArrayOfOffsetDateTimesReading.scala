@@ -58,7 +58,7 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
   def playJsonJsoniter(): Array[OffsetDateTime] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[OffsetDateTime]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[OffsetDateTime]]
   }
 
   @Benchmark

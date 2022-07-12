@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -53,8 +52,11 @@ class ArraySeqOfBooleansReading extends ArrayOfBooleansBenchmark {
   def playJson(): ArraySeq[Boolean] = Json.parse(jsonBytes).as[ArraySeq[Boolean]]
 
   @Benchmark
-  def playJsonJsoniter(): ArraySeq[Boolean] =
-    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[ArraySeq[Boolean]])
+  def playJsonJsoniter(): ArraySeq[Boolean] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[ArraySeq[Boolean]]
+  }
 
   @Benchmark
   def smithy4sJson(): ArraySeq[Boolean] = {

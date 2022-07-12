@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -51,7 +50,11 @@ class IntReading extends IntBenchmark {
   def playJson(): Int = Json.parse(jsonBytes).as[Int]
 
   @Benchmark
-  def playJsonJsoniter(): Int = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Int])
+  def playJsonJsoniter(): Int = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Int]
+  }
 
   @Benchmark
   def smithy4sJson(): Int = {

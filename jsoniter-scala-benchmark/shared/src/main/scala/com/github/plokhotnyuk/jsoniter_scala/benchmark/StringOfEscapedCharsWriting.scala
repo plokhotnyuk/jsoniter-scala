@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs.{escapingConfig, _}
@@ -42,7 +41,11 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   def playJson(): Array[Byte] = Json.asciiStringify(Json.toJson(obj)).getBytes
 
   @Benchmark
-  def playJsonJsoniter(): Array[Byte] = writeToArray(Json.toJson(obj), escapingConfig)(PlayJsonJsoniter.jsValueCodec)
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    writeToArray(Json.toJson(obj), escapingConfig)
+  }
 
   @Benchmark
   def smithy4sJson(): Array[Byte] = {

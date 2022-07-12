@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -52,7 +51,11 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
   def playJson(): Set[Int] = Json.parse(jsonBytes).as[Set[Int]]
 
   @Benchmark
-  def playJsonJsoniter(): Set[Int] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Set[Int]])
+  def playJsonJsoniter(): Set[Int] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Set[Int]]
+  }
 
   @Benchmark
   def smithy4sJson(): Set[Int] = {

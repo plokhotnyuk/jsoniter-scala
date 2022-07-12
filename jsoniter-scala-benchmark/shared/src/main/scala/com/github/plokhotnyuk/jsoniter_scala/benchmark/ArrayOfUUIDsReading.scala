@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.UUID
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
@@ -54,7 +53,11 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   def playJson(): Array[UUID] = Json.parse(jsonBytes).as[Array[UUID]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[UUID] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[UUID]])
+  def playJsonJsoniter(): Array[UUID] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[UUID]]
+  }
 
   @Benchmark
   def smithy4sJson(): Array[UUID] = {

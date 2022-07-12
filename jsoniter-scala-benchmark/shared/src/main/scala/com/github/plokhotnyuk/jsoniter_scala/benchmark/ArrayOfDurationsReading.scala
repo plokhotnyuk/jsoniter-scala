@@ -55,7 +55,7 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
   def playJsonJsoniter(): Array[Duration] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
 
-    deserialize(jsonBytes).fold(throw _, _.as[Array[Duration]])
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Duration]]
   }
 
   @Benchmark

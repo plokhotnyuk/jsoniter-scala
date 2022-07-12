@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json.JsonStringInput
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
@@ -19,7 +18,6 @@ import io.circe.Decoder
 import io.circe.parser.decode
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-import smithy4s.ByteArray
 import spray.json.JsonParser
 import zio.json.DecoderOps
 
@@ -56,8 +54,11 @@ class Base64Reading extends Base64Benchmark {
   def playJson(): Array[Byte] = Json.parse(jsonBytes).as[Array[Byte]](base64Format)
 
   @Benchmark
-  def playJsonJsoniter(): Array[Byte] =
-    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Byte]](base64Format))
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Byte]](base64Format)
+  }
 
   @Benchmark
   def smithy4sJson(): Array[Byte] = {

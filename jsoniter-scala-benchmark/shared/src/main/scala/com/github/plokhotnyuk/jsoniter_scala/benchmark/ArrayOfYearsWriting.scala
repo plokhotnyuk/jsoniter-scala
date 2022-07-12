@@ -49,7 +49,8 @@ class ArrayOfYearsWriting extends ArrayOfYearsBenchmark {
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
-  def playJsonJsoniter(): Array[Byte] = com.evolutiongaming.jsonitertool.PlayJsonJsoniter.serialize(Json.toJson(obj))
+  def playJsonJsoniter(): Array[Byte] =
+    writeToArray(Json.toJson(obj))(com.evolutiongaming.jsonitertool.PlayJsonJsoniter.jsValueCodec)
 
   @Benchmark
   def sprayJson(): Array[Byte] = {

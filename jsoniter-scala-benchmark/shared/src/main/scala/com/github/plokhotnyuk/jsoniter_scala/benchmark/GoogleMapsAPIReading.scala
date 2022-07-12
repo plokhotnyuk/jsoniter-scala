@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -25,7 +24,6 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import zio.json.DecoderOps
-import nrktkt.ninny
 import scala.collection.immutable.ArraySeq
 
 class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
@@ -58,13 +56,21 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   def jsoniterScala(): DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes1)
 
   @Benchmark
-  def ninnyJson(): DistanceMatrix = ninny.Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes1)).to[DistanceMatrix].get
+  def ninnyJson(): DistanceMatrix = {
+    import nrktkt.ninny.Json
+
+    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes1)).to[DistanceMatrix].get
+  }
 
   @Benchmark
   def playJson(): DistanceMatrix = Json.parse(jsonBytes1).as[DistanceMatrix]
 
   @Benchmark
-  def playJsonJsoniter(): DistanceMatrix = PlayJsonJsoniter.deserialize(jsonBytes1).fold(throw _, _.as[DistanceMatrix])
+  def playJsonJsoniter(): DistanceMatrix = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes1).fold(throw _, _.as[DistanceMatrix])
+  }
 
   @Benchmark
   def smithy4sJson(): DistanceMatrix = {
