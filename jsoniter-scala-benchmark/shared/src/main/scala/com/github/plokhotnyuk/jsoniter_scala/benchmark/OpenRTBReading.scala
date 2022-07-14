@@ -1,73 +1,114 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json.JsonStringInput
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB.BidRequest
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-//import play.api.libs.json.Json
-//import spray.json.JsonParser
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import zio.json.DecoderOps
 
 class OpenRTBReading extends OpenRTBBenchmark {
   @Benchmark
-  def avSystemGenCodec(): BidRequest = JsonStringInput.read[BidRequest](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): BidRequest = {
+    import com.avsystem.commons.serialization.json.JsonStringInput
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
 
-  @Benchmark
-  def borer(): BidRequest = io.bullet.borer.Json.decode(jsonBytes).to[BidRequest].value
-
-  @Benchmark
-  def circe(): BidRequest = decode[BidRequest](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-
-  @Benchmark
-  def circeJawn(): BidRequest = io.circe.jawn.decodeByteArray[BidRequest](jsonBytes).fold(throw _, identity)
-
-  @Benchmark
-  def circeJsoniter(): BidRequest = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-
-    Decoder[BidRequest].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    JsonStringInput.read[BidRequest](new String(jsonBytes, UTF_8))
   }
 
   @Benchmark
-  def jacksonScala(): BidRequest = jacksonMapper.readValue[BidRequest](jsonBytes)
+  def borer(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[BidRequest].value
+  }
 
   @Benchmark
-  def jsoniterScala(): BidRequest = readFromArray[BidRequest](jsonBytes)
+  def circe(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import java.nio.charset.StandardCharsets.UTF_8
+    import io.circe.parser._
+
+    decode[BidRequest](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJawn(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.jawn._
+
+    decodeByteArray[BidRequest](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[BidRequest].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def jacksonScala(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[BidRequest](jsonBytes)
+  }
+
+  @Benchmark
+  def jsoniterScala(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[BidRequest](jsonBytes)
+  }
 /* FIXME: Play-JSON requires fields for lists with default values
   @Benchmark
-  def playJson(): BidRequest = Json.parse(jsonBytes).as[BidRequest]
+  def playJson(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[BidRequest]
+  }
 */
   @Benchmark
   def smithy4sJson(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[BidRequest](jsonBytes)
   }
 /* FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
   @Benchmark
-  def sprayJson(): BidRequest = JsonParser(jsonBytes).convertTo[BidRequest]
+  def sprayJson(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json.JsonParser
+
+    JsonParser(jsonBytes).convertTo[BidRequest]
+  }
 */
   @Benchmark
-  def uPickle(): BidRequest = read[BidRequest](jsonBytes)
+  def uPickle(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[BidRequest](jsonBytes)
+  }
 
   @Benchmark
-  def weePickle(): BidRequest = FromJson(jsonBytes).transform(ToScala[BidRequest])
+  def weePickle(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[BidRequest])
+  }
 
   @Benchmark
-  def zioJson(): BidRequest = new String(jsonBytes, UTF_8).fromJson[BidRequest].fold(sys.error, identity)
+  def zioJson(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[BidRequest].fold(sys.error, identity)
+  }
 }

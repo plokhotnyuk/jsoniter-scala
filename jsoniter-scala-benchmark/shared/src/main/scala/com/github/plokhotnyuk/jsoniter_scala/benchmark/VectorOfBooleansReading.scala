@@ -1,77 +1,120 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import spray.json._
-import upickle.default._
-import zio.json.DecoderOps
 
 class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   @Benchmark
-  def avSystemGenCodec(): Vector[Boolean] = JsonStringInput.read[Vector[Boolean]](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): Vector[Boolean] = {
+    import com.avsystem.commons.serialization.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    JsonStringInput.read[Vector[Boolean]](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): Vector[Boolean] = io.bullet.borer.Json.decode(jsonBytes).to[Vector[Boolean]].value
+  def borer(): Vector[Boolean] = {
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[Vector[Boolean]].value
+  }
 
   @Benchmark
-  def circe(): Vector[Boolean] = decode[Vector[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): Vector[Boolean] = {
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[Vector[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): Vector[Boolean] = io.circe.jawn.decodeByteArray[Vector[Boolean]](jsonBytes).fold(throw _, identity)
+  def circeJawn(): Vector[Boolean] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Vector[Boolean]](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): Vector[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
-    Decoder[Vector[Boolean]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    Decoder[Vector[Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def dslJsonScala(): Vector[Boolean] = dslJsonDecode[Vector[Boolean]](jsonBytes)
+  def dslJsonScala(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-  @Benchmark
-  def jacksonScala(): Vector[Boolean] = jacksonMapper.readValue[Vector[Boolean]](jsonBytes)
-
-  @Benchmark
-  def jsoniterScala(): Vector[Boolean] = readFromArray[Vector[Boolean]](jsonBytes)
-
-  @Benchmark
-  def playJson(): Vector[Boolean] = Json.parse(jsonBytes).as[Vector[Boolean]]
-
-  @Benchmark
-  def playJsonJsoniter(): Vector[Boolean] = {
-    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Vector[Boolean]]
+    dslJsonDecode[Vector[Boolean]](jsonBytes)
   }
 
   @Benchmark
-  def smithy4sJson(): Vector[Boolean] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+  def jacksonScala(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[Vector[Boolean]](jsonBytes)
+  }
+
+  @Benchmark
+  def jsoniterScala(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[Vector[Boolean]](jsonBytes)
   }
 
   @Benchmark
-  def sprayJson(): Vector[Boolean] = JsonParser(jsonBytes).convertTo[Vector[Boolean]]
+  def playJson(): Vector[Boolean] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Vector[Boolean]]
+  }
 
   @Benchmark
-  def uPickle(): Vector[Boolean] = read[Vector[Boolean]](jsonBytes)
+  def playJsonJsoniter(): Vector[Boolean] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Vector[Boolean]]
+  }
 
   @Benchmark
-  def weePickle(): Vector[Boolean] = FromJson(jsonBytes).transform(ToScala[Vector[Boolean]])
+  def smithy4sJson(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[Vector[Boolean]](jsonBytes)
+  }
 
   @Benchmark
-  def zioJson(): Vector[Boolean] = new String(jsonBytes, UTF_8).fromJson[Vector[Boolean]].fold(sys.error, identity)
+  def sprayJson(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Vector[Boolean]]
+  }
+
+  @Benchmark
+  def uPickle(): Vector[Boolean] = {
+    import upickle.default._
+
+    read[Vector[Boolean]](jsonBytes)
+  }
+
+  @Benchmark
+  def weePickle(): Vector[Boolean] = {
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[Vector[Boolean]])
+  }
+
+  @Benchmark
+  def zioJson(): Vector[Boolean] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Vector[Boolean]].fold(sys.error, identity)
+  }
 }

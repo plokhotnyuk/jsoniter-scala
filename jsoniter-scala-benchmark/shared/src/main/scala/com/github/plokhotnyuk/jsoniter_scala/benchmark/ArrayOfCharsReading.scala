@@ -1,68 +1,108 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import spray.json._
-import upickle.default._
-import zio.json.DecoderOps
 
 class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   @Benchmark
-  def avSystemGenCodec(): Array[Char] = JsonStringInput.read[Array[Char]](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): Array[Char] = {
+    import com.avsystem.commons.serialization.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    JsonStringInput.read[Array[Char]](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): Array[Char] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Char]].value
+  def borer(): Array[Char] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[Array[Char]].value
+  }
 
   @Benchmark
-  def circe(): Array[Char] = decode[Array[Char]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): Array[Char] = {
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[Array[Char]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): Array[Char] = io.circe.jawn.decodeByteArray[Array[Char]](jsonBytes).fold(throw _, identity)
+  def circeJawn(): Array[Char] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Array[Char]](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): Array[Char] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
-    Decoder[Array[Char]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    Decoder[Array[Char]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def jacksonScala(): Array[Char] = jacksonMapper.readValue[Array[Char]](jsonBytes)
+  def jacksonScala(): Array[Char] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[Array[Char]](jsonBytes)
+  }
 
   @Benchmark
-  def jsoniterScala(): Array[Char] = readFromArray[Array[Char]](jsonBytes)
+  def jsoniterScala(): Array[Char] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[Array[Char]](jsonBytes)
+  }
 
   @Benchmark
-  def playJson(): Array[Char] = Json.parse(jsonBytes).as[Array[Char]]
+  def playJson(): Array[Char] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Array[Char]]
+  }
 
   @Benchmark
   def playJsonJsoniter(): Array[Char] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Char]]
+    readFromArray(jsonBytes).as[Array[Char]]
   }
 
   @Benchmark
-  def sprayJson(): Array[Char] = JsonParser(jsonBytes).convertTo[Array[Char]]
+  def sprayJson(): Array[Char] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Char]]
+  }
 
   @Benchmark
-  def uPickle(): Array[Char] = read[Array[Char]](jsonBytes)
+  def uPickle(): Array[Char] = {
+    import upickle.default._
+
+    read[Array[Char]](jsonBytes)
+  }
 
   @Benchmark
-  def weePickle(): Array[Char] = FromJson(jsonBytes).transform(ToScala[Array[Char]])
+  def weePickle(): Array[Char] = {
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[Array[Char]])
+  }
 
   @Benchmark
-  def zioJson(): Array[Char] = new String(jsonBytes, UTF_8).fromJson[Array[Char]].fold(sys.error, identity)
+  def zioJson(): Array[Char] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[Char]].fold(sys.error, identity)
+  }
 }

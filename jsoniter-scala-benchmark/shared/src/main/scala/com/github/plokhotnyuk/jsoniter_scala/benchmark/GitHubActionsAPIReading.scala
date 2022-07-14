@@ -1,58 +1,71 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import spray.json.JsonParser
-import zio.json._
-import scala.collection.immutable.ArraySeq
 
 class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   @Benchmark
-  def avSystemGenCodec(): GitHubActionsAPI.Response =
+  def avSystemGenCodec(): GitHubActionsAPI.Response = {
+    import com.avsystem.commons.serialization.json._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
     JsonStringInput.read[GitHubActionsAPI.Response](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): GitHubActionsAPI.Response = io.bullet.borer.Json.decode(jsonBytes).to[GitHubActionsAPI.Response].value
+  def borer(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[GitHubActionsAPI.Response].value
+  }
 
   @Benchmark
-  def circe(): GitHubActionsAPI.Response =
+  def circe(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
     decode[GitHubActionsAPI.Response](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): GitHubActionsAPI.Response =
-    io.circe.jawn.decodeByteArray[GitHubActionsAPI.Response](jsonBytes).fold(throw _, identity)
+  def circeJawn(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.jawn._
+
+    decodeByteArray[GitHubActionsAPI.Response](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
-    Decoder[GitHubActionsAPI.Response].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    Decoder[GitHubActionsAPI.Response].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def jacksonScala(): GitHubActionsAPI.Response = jacksonMapper.readValue[GitHubActionsAPI.Response](jsonBytes)
+  def jacksonScala(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[GitHubActionsAPI.Response](jsonBytes)
+  }
 
   @Benchmark
-  def jsoniterScala(): GitHubActionsAPI.Response = readFromArray[GitHubActionsAPI.Response](jsonBytes)
+  def jsoniterScala(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[GitHubActionsAPI.Response](jsonBytes)
+  }
 
   @Benchmark
   def ninnyJson(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
     import nrktkt.ninny.Json
+    import scala.collection.immutable.ArraySeq
 
     Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[GitHubActionsAPI.Response].get
   }
@@ -60,12 +73,18 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   @Benchmark
   def smithy4sJson(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[GitHubActionsAPI.Response](jsonBytes)
   }
 
   @Benchmark
-  def sprayJson(): GitHubActionsAPI.Response = JsonParser(jsonBytes).convertTo[GitHubActionsAPI.Response]
+  def sprayJson(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json.JsonParser
+
+    JsonParser(jsonBytes).convertTo[GitHubActionsAPI.Response]
+  }
 
   @Benchmark
   def uPickle(): GitHubActionsAPI.Response = {
@@ -75,9 +94,20 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
-  def weePickle(): GitHubActionsAPI.Response = FromJson(jsonBytes).transform(ToScala[GitHubActionsAPI.Response])
+  def weePickle(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[GitHubActionsAPI.Response])
+  }
 
   @Benchmark
-  def zioJson(): GitHubActionsAPI.Response =
+  def zioJson(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
+    import zio.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
     new String(jsonBytes, UTF_8).fromJson[GitHubActionsAPI.Response].fold(sys.error, identity)
+  }
 }

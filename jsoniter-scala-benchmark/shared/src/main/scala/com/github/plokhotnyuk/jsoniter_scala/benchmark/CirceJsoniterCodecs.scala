@@ -6,12 +6,15 @@ import io.circe._
 import io.circe.generic.extras.semiauto._
 import java.time.Instant
 import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, ReaderConfig, WriterConfig}
 import io.circe.generic.extras.Configuration
 
 object CirceJsoniterCodecs {
   import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
 
+  val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
+  val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
+  val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   implicit val jsonCodec: JsonValueCodec[Json] = JsoniterScalaCodec.jsonCodec(doSerialize = _ ne Json.Null)
   implicit val config: Configuration = Configuration.default.withDefaults.withDiscriminator("type")
   implicit val gitHubActionsAPIC3c: Codec[GitHubActionsAPI.Response] = {

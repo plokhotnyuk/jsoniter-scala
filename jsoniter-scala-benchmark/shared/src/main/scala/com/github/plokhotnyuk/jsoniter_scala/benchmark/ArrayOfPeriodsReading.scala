@@ -1,72 +1,111 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import java.time.Period
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import spray.json._
-import zio.json.DecoderOps
+import java.time.Period
 
 class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   @Benchmark
-  def avSystemGenCodec(): Array[Period] = JsonStringInput.read[Array[Period]](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): Array[Period] = {
+    import com.avsystem.commons.serialization.json._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
 
-  @Benchmark
-  def borer(): Array[Period] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Period]].value
-
-  @Benchmark
-  def circe(): Array[Period] = decode[Array[Period]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-
-  @Benchmark
-  def circeJawn(): Array[Period] = io.circe.jawn.decodeByteArray[Array[Period]](jsonBytes).fold(throw _, identity)
-
-  @Benchmark
-  def circeJsoniter(): Array[Period] = {
-    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-
-    Decoder[Array[Period]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    JsonStringInput.read[Array[Period]](new String(jsonBytes, UTF_8))
   }
 
   @Benchmark
-  def jacksonScala(): Array[Period] = jacksonMapper.readValue[Array[Period]](jsonBytes)
+  def borer(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[Array[Period]].value
+  }
 
   @Benchmark
-  def jsoniterScala(): Array[Period] = readFromArray[Array[Period]](jsonBytes)
+  def circe(): Array[Period] = {
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[Array[Period]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def playJson(): Array[Period] = Json.parse(jsonBytes).as[Array[Period]]
+  def circeJawn(): Array[Period] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Array[Period]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Array[Period]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def jacksonScala(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[Array[Period]](jsonBytes)
+  }
+
+  @Benchmark
+  def jsoniterScala(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[Array[Period]](jsonBytes)
+  }
+
+  @Benchmark
+  def playJson(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Array[Period]]
+  }
 
   @Benchmark
   def playJsonJsoniter(): Array[Period] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Period]]
+    readFromArray(jsonBytes).as[Array[Period]]
   }
 
   @Benchmark
-  def sprayJson(): Array[Period] = JsonParser(jsonBytes).convertTo[Array[Period]]
+  def sprayJson(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Period]]
+  }
 
   @Benchmark
-  def uPickle(): Array[Period] = read[Array[Period]](jsonBytes)
+  def uPickle(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Period]](jsonBytes)
+  }
 
   @Benchmark
-  def weePickle(): Array[Period] = FromJson(jsonBytes).transform(ToScala[Array[Period]])
+  def weePickle(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[Array[Period]])
+  }
 
   @Benchmark
-  def zioJson(): Array[Period] = new String(jsonBytes, UTF_8).fromJson[Array[Period]].fold(sys.error, identity)
+  def zioJson(): Array[Period] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[Period]].fold(sys.error, identity)
+  }
 }

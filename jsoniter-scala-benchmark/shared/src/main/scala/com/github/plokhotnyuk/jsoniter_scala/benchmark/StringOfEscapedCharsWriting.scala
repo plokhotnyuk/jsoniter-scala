@@ -1,48 +1,69 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs.{escapingConfig, _}
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weepickle.v1.WeePickle.FromScala
-import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import upickle.default._
 
 class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   @Benchmark
-  def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, JsonOptions(asciiOutput = true)).getBytes(UTF_8)
+  def avSystemGenCodec(): Array[Byte] = {
+    import com.avsystem.commons.serialization.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    JsonStringOutput.write(obj, JsonOptions(asciiOutput = true)).getBytes(UTF_8)
+  }
 
   @Benchmark
-  def circe(): Array[Byte] = escapingPrinter.print(obj.asJson).getBytes
+  def circe(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.syntax._
+
+    escapingPrinter.print(obj.asJson).getBytes
+  }
 
   @Benchmark
   def circeJsoniter(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.syntax._
 
     writeToArray(obj.asJson, escapingConfig)
   }
 
   @Benchmark
-  def jacksonScala(): Array[Byte] = jacksonEscapeNonAsciiMapper.writeValueAsBytes(obj)
+  def jacksonScala(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonEscapeNonAsciiMapper.writeValueAsBytes(obj)
+  }
 
   @Benchmark
-  def jsoniterScala(): Array[Byte] = writeToArray(obj, escapingConfig)(stringCodec)
+  def jsoniterScala(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    writeToArray(obj, escapingConfig)(stringCodec)
+  }
 
   @Benchmark
-  def jsoniterScalaPrealloc(): Int =
+  def jsoniterScalaPrealloc(): Int = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
     writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, escapingConfig)(stringCodec)
+  }
 
   @Benchmark
-  def playJson(): Array[Byte] = Json.asciiStringify(Json.toJson(obj)).getBytes
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
+
+    Json.asciiStringify(Json.toJson(obj)).getBytes
+  }
 
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonJsoniterConfig._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import play.api.libs.json.Json
 
     writeToArray(Json.toJson(obj), escapingConfig)
   }
@@ -50,13 +71,24 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     writeToArray(obj, escapingConfig)(stringJCodec)
   }
 
   @Benchmark
-  def uPickle(): Array[Byte] = write(obj, escapeUnicode = true).getBytes(UTF_8)
+  def uPickle(): Array[Byte] = {
+    import upickle.default._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    write(obj, escapeUnicode = true).getBytes(UTF_8)
+  }
 
   @Benchmark
-  def weePickle(): Array[Byte] = FromScala(obj).transform(ToEscapedNonAsciiJson.bytes)
+  def weePickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.rallyhealth.weepickle.v1.WeePickle.FromScala
+
+    FromScala(obj).transform(ToEscapedNonAsciiJson.bytes)
+  }
 }

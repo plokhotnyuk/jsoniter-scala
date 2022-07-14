@@ -1,80 +1,123 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.avsystem.commons.serialization.json._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-//import spray.json._
-import upickle.default._
-//import zio.json.DecoderOps
-import java.nio.charset.StandardCharsets.UTF_8
 import scala.collection.immutable.ArraySeq
 
 class ArraySeqOfBooleansReading extends ArrayOfBooleansBenchmark {
   @Benchmark
-  def avSystemGenCodec(): ArraySeq[Boolean] = JsonStringInput.read[ArraySeq[Boolean]](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): ArraySeq[Boolean] = {
+    import com.avsystem.commons.serialization.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    JsonStringInput.read[ArraySeq[Boolean]](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): ArraySeq[Boolean] = io.bullet.borer.Json.decode(jsonBytes).to[ArraySeq[Boolean]].value
+  def borer(): ArraySeq[Boolean] = {
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[ArraySeq[Boolean]].value
+  }
 
   @Benchmark
-  def circe(): ArraySeq[Boolean] = decode[ArraySeq[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): ArraySeq[Boolean] = {
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[ArraySeq[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): ArraySeq[Boolean] = io.circe.jawn.decodeByteArray[ArraySeq[Boolean]](jsonBytes).fold(throw _, identity)
+  def circeJawn(): ArraySeq[Boolean] = {
+    import io.circe.jawn._
+
+    decodeByteArray[ArraySeq[Boolean]](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
-    Decoder[ArraySeq[Boolean]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    Decoder[ArraySeq[Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 /* FIXME: DSL-JSON doesn't support parsing of ArraySeq
   @Benchmark
-  def dslJsonScala(): ArraySeq[Boolean] = dslJsonDecode[ArraySeq[Boolean]](jsonBytes)
+  def dslJsonScala(): ArraySeq[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+    dslJsonDecode[ArraySeq[Boolean]](jsonBytes)
+  }
 */
 /* FIXME: Jackson throws java.lang.ClassCastException: class scala.collection.immutable.Vector2 cannot be cast to class scala.collection.immutable.ArraySeq
   @Benchmark
-  def jacksonScala(): ArraySeq[Boolean] = jacksonMapper.readValue[ArraySeq[Boolean]](jsonBytes)
+  def jacksonScala(): ArraySeq[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[ArraySeq[Boolean]](jsonBytes)
+  }
 */
   @Benchmark
-  def jsoniterScala(): ArraySeq[Boolean] = readFromArray[ArraySeq[Boolean]](jsonBytes)
+  def jsoniterScala(): ArraySeq[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[ArraySeq[Boolean]](jsonBytes)
+  }
 
   @Benchmark
-  def playJson(): ArraySeq[Boolean] = Json.parse(jsonBytes).as[ArraySeq[Boolean]]
+  def playJson(): ArraySeq[Boolean] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[ArraySeq[Boolean]]
+  }
 
   @Benchmark
   def playJsonJsoniter(): ArraySeq[Boolean] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[ArraySeq[Boolean]]
+    readFromArray(jsonBytes).as[ArraySeq[Boolean]]
   }
 
   @Benchmark
   def smithy4sJson(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[ArraySeq[Boolean]](jsonBytes)
   }
 /* FIXME: spray-json doesn't support parsing of ArraySeq
   @Benchmark
-  def sprayJson(): ArraySeq[Boolean] = JsonParser(jsonBytes).convertTo[ArraySeq[Boolean]]
+  def sprayJson(): ArraySeq[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[ArraySeq[Boolean]]
+  }
 */
   @Benchmark
-  def uPickle(): ArraySeq[Boolean] = read[ArraySeq[Boolean]](jsonBytes)
+  def uPickle(): ArraySeq[Boolean] = {
+    import upickle.default._
+
+    read[ArraySeq[Boolean]](jsonBytes)
+  }
 
   @Benchmark
-  def weePickle(): ArraySeq[Boolean] = FromJson(jsonBytes).transform(ToScala[ArraySeq[Boolean]])
+  def weePickle(): ArraySeq[Boolean] = {
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[ArraySeq[Boolean]])
+  }
 /* FIXME: zio-json doesn't support parsing of ArraySeq
   @Benchmark
-  def zioJson(): ArraySeq[Boolean] = new String(jsonBytes, UTF_8).fromJson[ArraySeq[Boolean]].fold(sys.error, identity)
+  def zioJson(): ArraySeq[Boolean] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[ArraySeq[Boolean]].fold(sys.error, identity)
+  }
 */
 }

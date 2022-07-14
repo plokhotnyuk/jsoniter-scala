@@ -1,78 +1,120 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import spray.json._
-import upickle.default._
-import zio.json.DecoderOps
-import scala.collection.immutable.Set
 
 class SetOfIntsReading extends SetOfIntsBenchmark {
   @Benchmark
-  def avSystemGenCodec(): Set[Int] = JsonStringInput.read[Set[Int]](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): Set[Int] = {
+    import java.nio.charset.StandardCharsets.UTF_8
+    import com.avsystem.commons.serialization.json._
+
+    JsonStringInput.read[Set[Int]](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): Set[Int] = io.bullet.borer.Json.decode(jsonBytes).to[Set[Int]].value
+  def borer(): Set[Int] = {
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[Set[Int]].value
+  }
 
   @Benchmark
-  def circe(): Set[Int] = decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): Set[Int] = {
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): Set[Int] = io.circe.jawn.decodeByteArray[Set[Int]](jsonBytes).fold(throw _, identity)
+  def circeJawn(): Set[Int] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Set[Int]](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
     Decoder[Set[Int]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def dslJsonScala(): Set[Int] = dslJsonDecode[Set[Int]](jsonBytes)
+  def dslJsonScala(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-  @Benchmark
-  def jacksonScala(): Set[Int] = jacksonMapper.readValue[Set[Int]](jsonBytes)
-
-  @Benchmark
-  def jsoniterScala(): Set[Int] = readFromArray[Set[Int]](jsonBytes)
-
-  @Benchmark
-  def playJson(): Set[Int] = Json.parse(jsonBytes).as[Set[Int]]
-
-  @Benchmark
-  def playJsonJsoniter(): Set[Int] = {
-    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Set[Int]]
+    dslJsonDecode[Set[Int]](jsonBytes)
   }
 
   @Benchmark
-  def smithy4sJson(): Set[Int] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+  def jacksonScala(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[Set[Int]](jsonBytes)
+  }
+
+  @Benchmark
+  def jsoniterScala(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[Set[Int]](jsonBytes)
   }
 
   @Benchmark
-  def sprayJson(): Set[Int] = JsonParser(jsonBytes).convertTo[Set[Int]]
+  def playJson(): Set[Int] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Set[Int]]
+  }
 
   @Benchmark
-  def uPickle(): Set[Int] = read[Set[Int]](jsonBytes)
+  def playJsonJsoniter(): Set[Int] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Set[Int]]
+  }
 
   @Benchmark
-  def weePickle(): Set[Int] = FromJson(jsonBytes).transform(ToScala[Set[Int]])
+  def smithy4sJson(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[Set[Int]](jsonBytes)
+  }
 
   @Benchmark
-  def zioJson(): Set[Int] = new String(jsonBytes, UTF_8).fromJson[Set[Int]].fold(sys.error, identity)
+  def sprayJson(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Set[Int]]
+  }
+
+  @Benchmark
+  def uPickle(): Set[Int] = {
+    import upickle.default._
+
+    read[Set[Int]](jsonBytes)
+  }
+
+  @Benchmark
+  def weePickle(): Set[Int] = {
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[Set[Int]])
+  }
+
+  @Benchmark
+  def zioJson(): Set[Int] = {
+    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderOps
+
+    new String(jsonBytes, UTF_8).fromJson[Set[Int]].fold(sys.error, identity)
+  }
 }

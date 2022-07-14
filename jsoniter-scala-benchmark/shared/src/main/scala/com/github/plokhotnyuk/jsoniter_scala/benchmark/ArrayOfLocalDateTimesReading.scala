@@ -1,59 +1,77 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import java.time.LocalDateTime
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import spray.json._
-import zio.json.DecoderOps
+import java.time.LocalDateTime
 
 class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   @Benchmark
-  def avSystemGenCodec(): Array[LocalDateTime] =
+  def avSystemGenCodec(): Array[LocalDateTime] = {
+    import com.avsystem.commons.serialization.json._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
     JsonStringInput.read[Array[LocalDateTime]](new String(jsonBytes, UTF_8))
-
-  @Benchmark
-  def borer(): Array[LocalDateTime] = io.bullet.borer.Json.decode(jsonBytes).to[Array[LocalDateTime]].value
-
-  @Benchmark
-  def circe(): Array[LocalDateTime] = decode[Array[LocalDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-
-  @Benchmark
-  def circeJawn(): Array[LocalDateTime] = io.circe.jawn.decodeByteArray[Array[LocalDateTime]](jsonBytes).fold(throw _, identity)
-
-  @Benchmark
-  def circeJsoniter(): Array[LocalDateTime] = {
-    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-
-    Decoder[Array[LocalDateTime]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def dslJsonScala(): Array[LocalDateTime] = dslJsonDecode[Array[LocalDateTime]](jsonBytes)
+  def borer(): Array[LocalDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[Array[LocalDateTime]].value
+  }
 
   @Benchmark
-  def jacksonScala(): Array[LocalDateTime] = jacksonMapper.readValue[Array[LocalDateTime]](jsonBytes)
+  def circe(): Array[LocalDateTime] = {
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[Array[LocalDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def jsoniterScala(): Array[LocalDateTime] = readFromArray[Array[LocalDateTime]](jsonBytes)
+  def circeJawn(): Array[LocalDateTime] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Array[LocalDateTime]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[LocalDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Array[LocalDateTime]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def dslJsonScala(): Array[LocalDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+    dslJsonDecode[Array[LocalDateTime]](jsonBytes)
+  }
+
+  @Benchmark
+  def jacksonScala(): Array[LocalDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[Array[LocalDateTime]](jsonBytes)
+  }
+
+  @Benchmark
+  def jsoniterScala(): Array[LocalDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[Array[LocalDateTime]](jsonBytes)
+  }
 
   @Benchmark
   def playJson(): Array[LocalDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
 
     Json.parse(jsonBytes).as[Array[LocalDateTime]]
   }
@@ -61,20 +79,39 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   @Benchmark
   def playJsonJsoniter(): Array[LocalDateTime] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[LocalDateTime]]
+    readFromArray(jsonBytes).as[Array[LocalDateTime]]
   }
 
   @Benchmark
-  def sprayJson(): Array[LocalDateTime] = JsonParser(jsonBytes).convertTo[Array[LocalDateTime]]
+  def sprayJson(): Array[LocalDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[LocalDateTime]]
+  }
 
   @Benchmark
-  def uPickle(): Array[LocalDateTime] = read[Array[LocalDateTime]](jsonBytes)
+  def uPickle(): Array[LocalDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[LocalDateTime]](jsonBytes)
+  }
 
   @Benchmark
-  def weePickle(): Array[LocalDateTime] = FromJson(jsonBytes).transform(ToScala[Array[LocalDateTime]])
+  def weePickle(): Array[LocalDateTime] = {
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[Array[LocalDateTime]])
+  }
 
   @Benchmark
-  def zioJson(): Array[LocalDateTime] =
+  def zioJson(): Array[LocalDateTime] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
     new String(jsonBytes, UTF_8).fromJson[Array[LocalDateTime]].fold(sys.error, identity)
+  }
 }
