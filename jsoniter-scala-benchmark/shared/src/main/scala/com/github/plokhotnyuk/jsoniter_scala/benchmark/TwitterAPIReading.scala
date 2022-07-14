@@ -1,85 +1,130 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import spray.json._
-import zio.json._
-import scala.collection.immutable.Seq
 
 class TwitterAPIReading extends TwitterAPIBenchmark {
   @Benchmark
-  def avSystemGenCodec(): Seq[Tweet] = JsonStringInput.read[Seq[Tweet]](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): Seq[Tweet] = {
+    import com.avsystem.commons.serialization.json._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    JsonStringInput.read[Seq[Tweet]](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): Seq[Tweet] = io.bullet.borer.Json.decode(jsonBytes).to[Seq[Tweet]].value
+  def borer(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[Seq[Tweet]].value
+  }
 
   @Benchmark
-  def circe(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): Seq[Tweet] = io.circe.jawn.decodeByteArray[Seq[Tweet]](jsonBytes).fold(throw _, identity)
+  def circeJawn(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.jawn._
+
+    decodeByteArray[Seq[Tweet]](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
     Decoder[Seq[Tweet]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def dslJsonScala(): Seq[Tweet] = dslJsonDecode[Seq[Tweet]](jsonBytes)
+  def dslJsonScala(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-  @Benchmark
-  def jacksonScala(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
-
-  @Benchmark
-  def jsoniterScala(): Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
-
-  @Benchmark
-  def playJson(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]]
-
-  @Benchmark
-  def playJsonJsoniter(): Seq[Tweet] = {
-    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Seq[Tweet]]
+    dslJsonDecode[Seq[Tweet]](jsonBytes)
   }
 
   @Benchmark
-  def smithy4sJson(): Seq[Tweet] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+  def jacksonScala(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
+  }
+
+  @Benchmark
+  def jsoniterScala(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[Seq[Tweet]](jsonBytes)
   }
 
   @Benchmark
-  def sprayJson(): Seq[Tweet] = JsonParser(jsonBytes).convertTo[Seq[Tweet]]
+  def playJson(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Seq[Tweet]]
+  }
 
   @Benchmark
-  def uPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
+  def playJsonJsoniter(): Seq[Tweet] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Seq[Tweet]]
+  }
 
   @Benchmark
-  def weePickle(): Seq[Tweet] = FromJson(jsonBytes).transform(ToScala[Seq[Tweet]])
+  def smithy4sJson(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[Seq[Tweet]](jsonBytes)
+  }
 
   @Benchmark
-  def zioJson(): Seq[Tweet] = new String(jsonBytes, UTF_8).fromJson[Seq[Tweet]].fold(sys.error, identity)
+  def sprayJson(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Seq[Tweet]]
+  }
+
+  @Benchmark
+  def uPickle(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Seq[Tweet]](jsonBytes)
+  }
+
+  @Benchmark
+  def weePickle(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[Seq[Tweet]])
+  }
+
+  @Benchmark
+  def zioJson(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+    import zio.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Seq[Tweet]].fold(sys.error, identity)
+  }
 }

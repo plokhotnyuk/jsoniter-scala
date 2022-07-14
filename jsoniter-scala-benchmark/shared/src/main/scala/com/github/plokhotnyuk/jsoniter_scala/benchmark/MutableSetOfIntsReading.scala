@@ -1,62 +1,97 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import upickle.default._
 import scala.collection.mutable
 
 class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   @Benchmark
-  def avSystemGenCodec(): mutable.Set[Int] = JsonStringInput.read[mutable.Set[Int]](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): mutable.Set[Int] = {
+    import com.avsystem.commons.serialization.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    JsonStringInput.read[mutable.Set[Int]](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): mutable.Set[Int] = io.bullet.borer.Json.decode(jsonBytes).to[mutable.Set[Int]].value
+  def borer(): mutable.Set[Int] = {
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[mutable.Set[Int]].value
+  }
 
   @Benchmark
-  def circe(): mutable.Set[Int] = decode[mutable.Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): mutable.Set[Int] = {
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[mutable.Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): mutable.Set[Int] = io.circe.jawn.decodeByteArray[mutable.Set[Int]](jsonBytes).fold(throw _, identity)
+  def circeJawn(): mutable.Set[Int] = {
+    import io.circe.jawn._
+
+    decodeByteArray[mutable.Set[Int]](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): mutable.Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
-    Decoder[mutable.Set[Int]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    Decoder[mutable.Set[Int]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def dslJsonScala(): mutable.Set[Int] = dslJsonDecode[mutable.Set[Int]](jsonBytes)
+  def dslJsonScala(): mutable.Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+    dslJsonDecode[mutable.Set[Int]](jsonBytes)
+  }
 
   @Benchmark
-  def jacksonScala(): mutable.Set[Int] = jacksonMapper.readValue[mutable.Set[Int]](jsonBytes)
+  def jacksonScala(): mutable.Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[mutable.Set[Int]](jsonBytes)
+  }
 
   @Benchmark
-  def jsoniterScala(): mutable.Set[Int] = readFromArray[mutable.Set[Int]](jsonBytes)
+  def jsoniterScala(): mutable.Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[mutable.Set[Int]](jsonBytes)
+  }
 
   @Benchmark
-  def playJson(): mutable.Set[Int] = Json.parse(jsonBytes).as[mutable.Set[Int]]
+  def playJson(): mutable.Set[Int] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[mutable.Set[Int]]
+  }
 
   @Benchmark
   def playJsonJsoniter(): mutable.Set[Int] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[mutable.Set[Int]]
+    readFromArray(jsonBytes).as[mutable.Set[Int]]
   }
 
   @Benchmark
-  def uPickle(): mutable.Set[Int] = read[mutable.Set[Int]](jsonBytes)
+  def uPickle(): mutable.Set[Int] = {
+    import upickle.default._
+
+    read[mutable.Set[Int]](jsonBytes)
+  }
 
   @Benchmark
-  def weePickle(): mutable.Set[Int] = FromJson(jsonBytes).transform(ToScala[mutable.Set[Int]])
+  def weePickle(): mutable.Set[Int] = {
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[mutable.Set[Int]])
+  }
 }

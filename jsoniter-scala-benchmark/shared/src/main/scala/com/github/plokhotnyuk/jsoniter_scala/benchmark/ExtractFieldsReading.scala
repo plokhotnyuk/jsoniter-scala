@@ -1,30 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.HashCodeCollider._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
-import play.api.libs.json.Json
-import spray.json._
-import zio.json.DecoderOps
-import scala.collection.immutable.ArraySeq
 
 class ExtractFieldsReading extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -35,6 +11,10 @@ class ExtractFieldsReading extends CommonParams {
 
   @Setup
   def setup(): Unit = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.HashCodeCollider._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import java.nio.charset.StandardCharsets.UTF_8
+
     val value = """{"number":0.0,"boolean":false,"string":null}"""
     jsonString = zeroHashCodeStrings.map(s => writeToString(s)(JsoniterScalaCodecs.stringCodec)).take(size)
       .mkString("""{"s":"s",""", s""":$value,""", s""":$value,"i":1}""")
@@ -42,66 +22,135 @@ class ExtractFieldsReading extends CommonParams {
   }
 
   @Benchmark
-  def avSystemGenCodec(): ExtractFields = JsonStringInput.read[ExtractFields](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): ExtractFields = {
+    import com.avsystem.commons.serialization.json._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    JsonStringInput.read[ExtractFields](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): ExtractFields = io.bullet.borer.Json.decode(jsonBytes).to[ExtractFields].value
+  def borer(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[ExtractFields].value
+  }
 
   @Benchmark
-  def circe(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): ExtractFields = io.circe.jawn.decodeByteArray[ExtractFields](jsonBytes).fold(throw _, identity)
+  def circeJawn(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.jawn._
+
+    decodeByteArray[ExtractFields](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
-    Decoder[ExtractFields].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    Decoder[ExtractFields].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def dslJsonScala(): ExtractFields = dslJsonDecode[ExtractFields](jsonBytes)
+  def dslJsonScala(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-  @Benchmark
-  def jacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)
-
-  @Benchmark
-  def jsoniterScala(): ExtractFields = readFromArray[ExtractFields](jsonBytes)
-
-  @Benchmark
-  def ninnyJson(): ExtractFields = {
-    import nrktkt.ninny.Json
-
-    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ExtractFields].get
+    dslJsonDecode[ExtractFields](jsonBytes)
   }
 
   @Benchmark
-  def playJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields]
+  def jacksonScala(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-  @Benchmark
-  def playJsonJsoniter(): ExtractFields = {
-    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[ExtractFields]
+    jacksonMapper.readValue[ExtractFields](jsonBytes)
   }
 
   @Benchmark
-  def smithy4sJson(): ExtractFields = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+  def jsoniterScala(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[ExtractFields](jsonBytes)
   }
 
   @Benchmark
-  def sprayJson(): ExtractFields = JsonParser(jsonBytes).convertTo[ExtractFields]
+  def ninnyJson(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
+    import nrktkt.ninny.Json
+    import scala.collection.immutable.ArraySeq
+
+    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ExtractFields].get
+  }
 
   @Benchmark
-  def uPickle(): ExtractFields = read[ExtractFields](jsonBytes)
+  def playJson(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[ExtractFields]
+  }
 
   @Benchmark
-  def weePickle(): ExtractFields = FromJson(jsonBytes).transform(ToScala[ExtractFields])
+  def playJsonJsoniter(): ExtractFields = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[ExtractFields]
+  }
 
   @Benchmark
-  def zioJson(): ExtractFields = new String(jsonBytes, UTF_8).fromJson[ExtractFields].fold(sys.error, identity)
+  def smithy4sJson(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[ExtractFields](jsonBytes)
+  }
+
+  @Benchmark
+  def sprayJson(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[ExtractFields]
+  }
+
+  @Benchmark
+  def uPickle(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[ExtractFields](jsonBytes)
+  }
+
+  @Benchmark
+  def weePickle(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[ExtractFields])
+  }
+
+  @Benchmark
+  def zioJson(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[ExtractFields].fold(sys.error, identity)
+  }
 }

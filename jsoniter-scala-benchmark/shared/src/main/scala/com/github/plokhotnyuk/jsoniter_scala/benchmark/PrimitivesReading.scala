@@ -1,83 +1,129 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.rallyhealth.weejson.v1.jackson.FromJson
-import com.rallyhealth.weepickle.v1.WeePickle.ToScala
-import io.circe.Decoder
-import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import spray.json._
-import zio.json._
 
 class PrimitivesReading extends PrimitivesBenchmark {
   @Benchmark
-  def avSystemGenCodec(): Primitives = JsonStringInput.read[Primitives](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): Primitives = {
+    import com.avsystem.commons.serialization.json._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    JsonStringInput.read[Primitives](new String(jsonBytes, UTF_8))
+  }
 
   @Benchmark
-  def borer(): Primitives = io.bullet.borer.Json.decode(jsonBytes).to[Primitives].value
+  def borer(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[Primitives].value
+  }
 
   @Benchmark
-  def circe(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.parser._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
 
   @Benchmark
-  def circeJawn(): Primitives = io.circe.jawn.decodeByteArray[Primitives](jsonBytes).fold(throw _, identity)
+  def circeJawn(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.jawn._
+
+    decodeByteArray[Primitives](jsonBytes).fold(throw _, identity)
+  }
 
   @Benchmark
   def circeJsoniter(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
-    Decoder[Primitives].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    Decoder[Primitives].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
-  def dslJsonScala(): Primitives = dslJsonDecode[Primitives](jsonBytes)
+  def dslJsonScala(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-  @Benchmark
-  def jacksonScala(): Primitives = jacksonMapper.readValue[Primitives](jsonBytes)
-
-  @Benchmark
-  def jsoniterScala(): Primitives = readFromArray[Primitives](jsonBytes)
-
-  @Benchmark
-  def playJson(): Primitives = Json.parse(jsonBytes).as[Primitives]
-
-  @Benchmark
-  def playJsonJsoniter(): Primitives = {
-    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-
-    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Primitives]
+    dslJsonDecode[Primitives](jsonBytes)
   }
 
   @Benchmark
-  def smithy4sJson(): Primitives = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+  def jacksonScala(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+
+    jacksonMapper.readValue[Primitives](jsonBytes)
+  }
+
+  @Benchmark
+  def jsoniterScala(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[Primitives](jsonBytes)
   }
 
   @Benchmark
-  def sprayJson(): Primitives = JsonParser(jsonBytes).convertTo[Primitives]
+  def playJson(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Primitives]
+  }
 
   @Benchmark
-  def uPickle(): Primitives = read[Primitives](jsonBytes)
+  def playJsonJsoniter(): Primitives = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Primitives]
+  }
 
   @Benchmark
-  def weePickle(): Primitives = FromJson(jsonBytes).transform(ToScala[Primitives])
+  def smithy4sJson(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[Primitives](jsonBytes)
+  }
 
   @Benchmark
-  def zioJson(): Primitives = new String(jsonBytes, UTF_8).fromJson[Primitives].fold(sys.error, identity)
+  def sprayJson(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Primitives]
+  }
+
+  @Benchmark
+  def uPickle(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Primitives](jsonBytes)
+  }
+
+  @Benchmark
+  def weePickle(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+
+    FromJson(jsonBytes).transform(ToScala[Primitives])
+  }
+
+  @Benchmark
+  def zioJson(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
+    import zio.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Primitives].fold(sys.error, identity)
+  }
 }

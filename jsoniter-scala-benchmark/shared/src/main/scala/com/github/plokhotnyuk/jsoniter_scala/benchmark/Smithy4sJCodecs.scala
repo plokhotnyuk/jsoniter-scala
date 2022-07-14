@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import com.github.plokhotnyuk.jsoniter_scala.core.{ReaderConfig, WriterConfig}
 import smithy4s.http.json._
 import smithy4s.{ByteArray, Schema, Timestamp}
 import smithy4s.api.Discriminated
@@ -17,6 +18,9 @@ object Smithy4sJCodecs {
     if (x == default) None
     else Some(x)
 
+  val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
+  val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
+  val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   val adtSchema: Schema[ADTBase] = recursive {
     val xAlt = struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X")
     val yAlt = struct(string.required[Y]("b", _.b))(Y.apply).oneOf[ADTBase]("Y")
