@@ -1417,6 +1417,7 @@ object Main {
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
+      B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
