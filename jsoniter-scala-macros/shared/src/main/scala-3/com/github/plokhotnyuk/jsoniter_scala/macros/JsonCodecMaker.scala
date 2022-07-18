@@ -558,6 +558,7 @@ object JsonCodecMaker {
             else tpe // TypRef have no unapply, hope for the best
           case SuperType(thisTpe, superTpe) => SuperType(substituteMap(thisTpe), substituteMap(superTpe))
           case Refinement(parent, name, info) => Refinement(substituteMap(parent), name, substituteMap(info))
+          case TypeBounds(bound1, bound2) => TypeBounds(substituteMap(bound1), substituteMap(bound2))
           case AppliedType(base, typeArgs) => substituteMap(base).appliedTo(typeArgs.map(substituteMap))
           case AnnotatedType(underlying, annotated) => AnnotatedType(substituteMap(underlying), annotated)
           case AndType(rhs, lhs) => AndType(substituteMap(rhs), substituteMap(lhs))
