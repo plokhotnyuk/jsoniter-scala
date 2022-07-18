@@ -287,6 +287,22 @@ object KingDom {
   }
 }
 
+case class Kind(name: String) extends AnyVal {
+  type ValueType
+}
+
+object Kind {
+  type Aux[V] = Kind { type ValueType = V }
+
+  private[this] val codecOfKind: JsonValueCodec[Kind] = make[Kind]
+
+  def of[V](name: String): Kind.Aux[V] = new Kind(name).asInstanceOf[Kind.Aux[V]]
+
+  implicit def codecOfKindAux[V]: JsonValueCodec[Kind.Aux[V]] = codecOfKind.asInstanceOf[JsonValueCodec[Kind.Aux[V]]]
+}
+
+case class Preference[V](key: String, kind: Kind.Aux[V], value: V)
+
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
 
@@ -908,6 +924,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }
       verifySerDeser(make[Obj], Obj(Seq(KeyValue("a", "1"), KeyValue("b", "2"), KeyValue("c", "3"))),
         """{"keyValuesList":[["a","1"],["b","2"],["c","3"]]}""")
+    }
+    "serialize and deserialize case classes with refined type fields using custom codecs" in {
+      verifySerDeser(make[Preference[LocalDate]],
+        Preference[LocalDate]("VVV", Kind.of[LocalDate]("LocalDate"), LocalDate.of(2022, 7, 18)),
+        """{"key":"VVV","kind":"LocalDate","value":"2022-07-18"}""")
+      verifySerDeser(make[Preference[Double]],
+        Preference[Double]("WWW", Kind.of[Double]("Double"), 1.2),
+        """{"key":"WWW","kind":"Double","value":1.2}""")
     }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
