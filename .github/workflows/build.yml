@@ -49,6 +49,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - name: Compile, test and check binary compatibility
+      - name: Test and Check Binary Compatibility
         run: "sbt -batch +test +mimaReportBinaryIssues"
         shell: bash
