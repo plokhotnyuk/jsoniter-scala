@@ -520,7 +520,7 @@ You will get the profile in the `jsoniter-scala-benchmark/jvm/target/jfr-reports
 To run benchmarks with recordings by [Async profiler](https://github.com/jvm-profiling-tools/async-profiler), extract
 binaries to `/opt/async-profiler` directory and use command like this:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt -java-home /usr/lib/jvm/zulu-17 clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" --p size=128 -wi 5 -i 10 jsoniterScala'
 ```
 Now you can open direct and reverse flame graphs in the `jsoniter-scala-benchmark/jvmtarget/async-reports` directory.
 
