@@ -1607,10 +1607,11 @@ object JsonCodecMaker {
               if (cfg.requireDiscriminatorFirst) {
                 q"""in.setMark()
                     if (in.isNextToken('{')) {
-                      if ($discrFieldName.equals(in.readKeyAsString())) {
-                        val l = in.readStringAsCharBuf()
+                      var l = in.readKeyAsCharBuf()
+                      if (in.isCharBufEqualsTo(l, $discrFieldName)) {
+                        l = in.readStringAsCharBuf()
                         ..${genReadSubclassesBlock(leafClasses)}
-                      } else in.decodeError("expected key: \"" + $discrFieldName + '"')
+                      } else in.decodeError(${"expected key: \"" + discrFieldName + '"'})
                     } else in.readNullOrTokenError(default, '{')"""
               } else {
                 q"""in.setMark()

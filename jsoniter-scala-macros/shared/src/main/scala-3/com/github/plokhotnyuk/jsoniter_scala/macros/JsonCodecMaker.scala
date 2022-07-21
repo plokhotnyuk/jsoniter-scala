@@ -1654,8 +1654,9 @@ object JsonCodecMaker {
               if (cfg.requireDiscriminatorFirst) '{
                 ${setMark}
                 if ($in.isNextToken('{')) {
-                  if (${Expr(discrFieldName)}.equals($in.readKeyAsString())) {
-                    val l = $in.readStringAsCharBuf()
+                  var l = $in.readKeyAsCharBuf()
+                  if ($in.isCharBufEqualsTo(l, ${Expr(discrFieldName)})) {
+                    l = $in.readStringAsCharBuf()
                     ${genReadSubclassesBlock(objClasses, 'l).asExprOf[T]}
                   } else $in.decodeError(${Expr("expected key: \"" + discrFieldName + '"')})
                 } else $in.readNullOrTokenError($default, '{')
