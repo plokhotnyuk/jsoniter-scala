@@ -1983,9 +1983,35 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseInstant(): Instant = {
     val epochDaySeconds = parseEpochDaySeconds()
     val secondOfDay = parseSecondOfDay(head)
-    val nano = parseOptionalNanoWithByte('Z')
-    nextByteOrError('"', head)
-    Instant.ofEpochSecond(epochDaySeconds + secondOfDay, nano)
+    var nano, offsetTotal = 0
+    var nanoDigitWeight = -2
+    var b = nextByte(head)
+    if (b == '.') {
+      nanoDigitWeight = 100000000
+      var pos = head
+      var buf = this.buf
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        pos += 1
+        (b >= '0' && b <= '9') && nanoDigitWeight != 0
+      }) {
+        nano += (b - '0') * nanoDigitWeight
+        nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+      }
+      head = pos
+    }
+    if (b == 'Z') nextByteOrError('"', head)
+    else {
+      val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
+      offsetTotal = parseOffsetTotalWithDoubleQuotes(head)
+      if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
+      if (offsetNeg) offsetTotal = -offsetTotal
+    }
+    Instant.ofEpochSecond(epochDaySeconds + secondOfDay - offsetTotal, nano)
   }
 
   private[this] def parseEpochDaySeconds(): Long = {
@@ -2254,12 +2280,11 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseZoneOffset(): ZoneOffset = {
     val b = nextByte(head)
-    val pos = head
     if (b == 'Z') {
-      nextByteOrError('"', pos)
+      nextByteOrError('"', head)
       ZoneOffset.UTC
     } else toZoneOffset(b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'")),
-      parseOffsetTotalWithDoubleQuotes(pos))
+      parseOffsetTotalWithDoubleQuotes(head))
   }
 
   private[this] def parseOffsetTotalWithDoubleQuotes(pos: Int): Int = {

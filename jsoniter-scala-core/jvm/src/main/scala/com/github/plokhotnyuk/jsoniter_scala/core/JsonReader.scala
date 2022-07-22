@@ -2065,8 +2065,9 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseInstant(): Instant = {
     val epochDaySeconds = parseEpochDaySeconds()
-    val pos = head
-    var secondOfDay = 0L
+    var pos = head
+    var buf = this.buf
+    var secondOfDay, offsetTotal = 0L
     if (pos + 7 < tail && {
       secondOfDay = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       ((secondOfDay + 0x767A00767A00767DL | secondOfDay) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
@@ -2074,11 +2075,50 @@ final class JsonReader private[jsoniter_scala](
         secondOfDay = ((secondOfDay & 0x3F00001F00L) * 1979120931962880L >>> 47) + (secondOfDay >> 56)
         secondOfDay < 86400
       }
-    }) head = pos + 8
-    else secondOfDay = parseSecondOfDay(pos)
-    val nano = parseOptionalNanoWithByte('Z')
-    nextByteOrError('"', head)
-    Instant.ofEpochSecond(epochDaySeconds + secondOfDay, nano)
+    }) pos += 8
+    else {
+      secondOfDay = parseSecondOfDay(pos)
+      pos = head
+      buf = this.buf
+    }
+    var nano = 0
+    var nanoDigitWeight = -2
+    if (pos >= tail) {
+      pos = loadMoreOrError(pos)
+      buf = this.buf
+    }
+    var b = buf(pos)
+    pos += 1
+    if (b == '.') {
+      nanoDigitWeight = 100000000
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        pos += 1
+        (b >= '0' && b <= '9') && nanoDigitWeight != 0
+      }) {
+        nano += (b - '0') * nanoDigitWeight
+        nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+      }
+    }
+    if (b == 'Z') nextByteOrError('"', pos)
+    else {
+      val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+      if (pos + 7 < tail && {
+        offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+        (offsetTotal + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L &&
+          (offsetTotal & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
+      }) {
+        offsetTotal = ((offsetTotal & 0x0F07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+        head = pos + 6
+      } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+      if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
+      if (offsetNeg) offsetTotal = -offsetTotal
+    }
+    Instant.ofEpochSecond(epochDaySeconds + secondOfDay - offsetTotal, nano)
   }
 
   private[this] def parseEpochDaySeconds(): Long = {

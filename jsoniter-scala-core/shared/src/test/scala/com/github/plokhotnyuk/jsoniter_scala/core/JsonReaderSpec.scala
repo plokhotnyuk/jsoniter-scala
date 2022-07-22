@@ -12,6 +12,7 @@ import org.scalacheck.Gen
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import java.time.format.DateTimeParseException
 import scala.collection.AbstractIterator
 import scala.util.Random
 
@@ -803,7 +804,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse Instant from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
-        val x = Instant.parse(s)
+        val x = try  {
+          Instant.parse(s)
+        } catch {
+          case _: DateTimeParseException => OffsetDateTime.parse(s).toInstant
+        }
         reader(s"""$ws"$s"""").readInstant(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsInstant() shouldBe x
       }
@@ -813,11 +818,16 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-999999999-01-01T00:00:00Z", ws)
         check("2008-01-01T07:24:33Z", ws)
         check("2008-01-01T07:24:33.Z", ws)
-        check("2008-01-01T07:24:33.000Z", ws)
-        check("2008-01-01T07:24:33.000000Z", ws)
-        check("2008-01-01T07:24:33.000000000Z", ws)
+        check("2008-01-01T07:24:33.123Z", ws)
+        check("2008-01-01T07:24:33.123456Z", ws)
+        check("2008-01-01T07:24:33.123456789Z", ws)
+        check("2008-01-01T07:24:33.123456789+11:22:33", ws)
+        check("2008-01-01T07:24:33.123456789-11:22:33", ws)
       }
       forAll(genInstant, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genOffsetDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        check((if (x.getSecond == 0) x.plusSeconds(1) else x).toString, ws)
+      }
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
       def checkError(json: String, error: String): Unit = {
@@ -854,17 +864,23 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("\"2008-01-20T24:24:33Z\"", "illegal hour, offset: 0x0000000d")
       checkError("\"2008-01-20T07:60:33Z\"", "illegal minute, offset: 0x00000010")
       checkError("\"2008-01-20T07:24:60Z\"", "illegal second, offset: 0x00000013")
+      checkError("\"2008-01-20T07:24:33.+18:10\"", "illegal timezone offset, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.-18:10\"", "illegal timezone offset, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+20:10\"", "illegal timezone offset hour, offset: 0x00000017")
+      checkError("\"2008-01-20T07:24:33.+10:60\"", "illegal timezone offset minute, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:33.+10:10:60\"", "illegal timezone offset second, offset: 0x0000001d")
       forAll(genISO8859Char, minSuccessful(1000)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
-        val nonDigitOrZ= if (ch >= '0' && ch <= '9' || ch == 'Z') 'X' else ch
+        val nonDigitOrSignOrZ= if (ch >= '0' && ch <= '9' || ch == '+' || ch == '-' || ch == 'Z') 'X' else ch
         val nonDigitOrDash= if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
         val nonDash = if (ch == '-') 'X' else ch
         val nonDoubleQuotes = if (ch == '"') 'X' else ch
         val nonT = if (ch == 'T') 'X' else ch
         val nonColon = if (ch == ':') 'X' else ch
-        val nonDotOrZ = if (ch == '.' || ch == 'Z') 'X' else ch
-        val nonZ = if (ch == 'Z') 'X' else ch
+        val nonDotOrSignOrZ = if (ch == '.' || ch == '+' || ch == '-' || ch == 'Z') 'X' else ch
+        val nonSignOrZ = if (ch == '+' || ch == '-' || ch == 'Z') 'X' else ch
+        val nonColonOrDoubleQuotes = if (ch == ':' || ch == '"') 'X' else ch
         checkError(s""""${nonNumber}008-01-20T07:24:33Z"""", "expected '-' or '+' or digit, offset: 0x00000001")
         checkError(s""""2${nonDigit}08-01-20T07:24:33Z"""", "expected digit, offset: 0x00000002")
         checkError(s""""20${nonDigit}8-01-20T07:24:33Z"""", "expected digit, offset: 0x00000003")
@@ -884,11 +900,21 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkError(s""""2008-01-20T07:24${nonColon}33Z"""", "expected ':', offset: 0x00000011")
         checkError(s""""2008-01-20T07:24:${nonDigit}3Z"""", "expected digit, offset: 0x00000012")
         checkError(s""""2008-01-20T07:24:3${nonDigit}Z"""", "expected digit, offset: 0x00000013")
-        checkError(s""""2008-01-20T07:24:33${nonDotOrZ}"""", "expected '.' or 'Z', offset: 0x00000014")
+        checkError(s""""2008-01-20T07:24:33${nonDotOrSignOrZ}"""", "expected '.' or '+' or '-' or 'Z', offset: 0x00000014")
         checkError(s""""2008-01-20T07:24:33Z${nonDoubleQuotes}"""", "expected '\"', offset: 0x00000015")
-        checkError(s""""2008-01-20T07:24:33.${nonDigitOrZ}"""", "expected 'Z' or digit, offset: 0x00000015")
-        checkError(s""""2008-01-20T07:24:33.000${nonDigitOrZ}"""", "expected 'Z' or digit, offset: 0x00000018")
-        checkError(s""""2008-01-20T07:24:33.123456789${nonZ}"""", "expected 'Z', offset: 0x0000001e")
+        checkError(s""""2008-01-20T07:24:33.${nonDigitOrSignOrZ}"""", "expected '+' or '-' or 'Z' or digit, offset: 0x00000015")
+        checkError(s""""2008-01-20T07:24:33.000${nonDigitOrSignOrZ}"""", "expected '+' or '-' or 'Z' or digit, offset: 0x00000018")
+        checkError(s""""2008-01-20T07:24:33.123456789${nonSignOrZ}"""", "expected '+' or '-' or 'Z', offset: 0x0000001e")
+        checkError(s""""2008-01-20T07:24:33+${nonDigit}0"""", "expected digit, offset: 0x00000015")
+        checkError(s""""2008-01-20T07:24:33-${nonDigit}0"""", "expected digit, offset: 0x00000015")
+        checkError(s""""2008-01-20T07:24:33.+${nonDigit}0"""", "expected digit, offset: 0x00000016")
+        checkError(s""""2008-01-20T07:24:33.+1${nonDigit}"""", "expected digit, offset: 0x00000017")
+        checkError(s""""2008-01-20T07:24:33.+10${nonColonOrDoubleQuotes}"""", "expected ':' or '\"', offset: 0x00000018")
+        checkError(s""""2008-01-20T07:24:33.+10:${nonDigit}0"""", "expected digit, offset: 0x00000019")
+        checkError(s""""2008-01-20T07:24:33.+10:1${nonDigit}"""", "expected digit, offset: 0x0000001a")
+        checkError(s""""2008-01-20T07:24:33.+10:10${nonColonOrDoubleQuotes}10"""", "expected ':' or '\"', offset: 0x0000001b")
+        checkError(s""""2008-01-20T07:24:33.+10:10:${nonDigit}0"""", "expected digit, offset: 0x0000001c")
+        checkError(s""""2008-01-20T07:24:33.+10:10:1${nonDigit}"""", "expected digit, offset: 0x0000001d")
         checkError(s""""+${nonDigit}0000-01-20T07:24:33Z"""", "expected digit, offset: 0x00000002")
         checkError(s""""+1${nonDigit}000-01-20T07:24:33Z"""", "expected digit, offset: 0x00000003")
         checkError(s""""+10${nonDigit}00-01-20T07:24:33Z"""", "expected digit, offset: 0x00000004")
