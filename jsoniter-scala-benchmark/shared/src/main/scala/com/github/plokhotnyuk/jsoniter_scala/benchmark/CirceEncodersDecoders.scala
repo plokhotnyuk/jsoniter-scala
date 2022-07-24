@@ -24,8 +24,8 @@ object CirceEncodersDecoders {
 
     deriveConfiguredCodec[AnyVals]
   }
-  val (base64D5r: Decoder[Array[Byte]], base64E5r: Encoder[Array[Byte]]) =
-    (Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
+  val base64C3c: Codec[Array[Byte]] =
+    Codec.from(Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
       Encoder.encodeString.contramap[Array[Byte]](Base64.getEncoder.encodeToString))
   implicit val bidRequestC3c: Codec[OpenRTB.BidRequest] = {
     import io.circe.generic.extras.auto._
@@ -34,11 +34,11 @@ object CirceEncodersDecoders {
   }
   implicit val bigIntE5r: Encoder[BigInt] = encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
-  implicit val (bitSetD5r: Decoder[BitSet], bitSetE5r: Encoder[BitSet]) =
-    (Decoder.decodeArray[Int].map(arr => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */))),
+  implicit val bitSetC3c: Codec[BitSet] =
+    Codec.from(Decoder.decodeArray[Int].map(arr => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */))),
       Encoder.encodeSet[Int].contramapArray((m: BitSet) => m))
-  implicit val (mutableBitSetD5r: Decoder[mutable.BitSet], mutableBitSetE5r: Encoder[mutable.BitSet]) =
-    (Decoder.decodeArray[Int].map(arr => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */))),
+  implicit val mutableBitSetC3c: Codec[mutable.BitSet] =
+    Codec.from(Decoder.decodeArray[Int].map(arr => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */))),
       Encoder.encodeSeq[Int].contramapArray((m: mutable.BitSet) => m.toVector))
   implicit val distanceMatrixC3c: Codec[GoogleMapsAPI.DistanceMatrix] = {
     import io.circe.generic.auto._
@@ -66,23 +66,21 @@ object CirceEncodersDecoders {
     implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = deriveConfiguredCodec[GeoJSON.SimpleGeoJSON]
     deriveConfiguredCodec[GeoJSON.GeoJSON]
   }
-  implicit val (intMapD5r: Decoder[IntMap[Boolean]], intMapE5r: Encoder[IntMap[Boolean]]) =
-    (Decoder.decodeMap[Int, Boolean].map(_.foldLeft(IntMap.empty[Boolean])((m, p) => m.updated(p._1, p._2))),
+  implicit val intMapC3c: Codec[IntMap[Boolean]] =
+    Codec.from(Decoder.decodeMap[Int, Boolean].map(_.foldLeft(IntMap.empty[Boolean])((m, p) => m.updated(p._1, p._2))),
       Encoder.encodeMap[Int, Boolean].contramapObject((m: IntMap[Boolean]) => m))
-  implicit val (longMapD5r: Decoder[mutable.LongMap[Boolean]], longMapE5r: Encoder[mutable.LongMap[Boolean]]) =
-    (Decoder.decodeMap[Long, Boolean].map(_.foldLeft(new mutable.LongMap[Boolean]) { (m, p) =>
+  implicit val longMapC3c: Codec[mutable.LongMap[Boolean]] =
+    Codec.from(Decoder.decodeMap[Long, Boolean].map(_.foldLeft(new mutable.LongMap[Boolean]) { (m, p) =>
       m.update(p._1, p._2)
       m
-    }),
-      Encoder.encodeMapLike[Long, Boolean, mutable.Map].contramapObject((m: mutable.LongMap[Boolean]) => m))
+    }), Encoder.encodeMapLike[Long, Boolean, mutable.Map].contramapObject((m: mutable.LongMap[Boolean]) => m))
   implicit val missingRequiredFieldsC3c: Codec[MissingRequiredFields] = deriveConfiguredCodec[MissingRequiredFields]
   implicit val nestedStructsC3c: Codec[NestedStructs] = deriveConfiguredCodec[NestedStructs]
-  implicit val (suitD5r: Decoder[Suit], suitE5r: Encoder[Suit]) =
-    (decodeString.emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply)),
+  implicit val suitC3c: Codec[Suit] =
+    Codec.from(decodeString.emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply)),
       encodeString.contramap[Suit](_.name))
   implicit val suitADTC3c: Codec[SuitADT] = deriveEnumerationCodec[SuitADT]
-  implicit val (suitEnumDecoder: Decoder[SuitEnum.Value], suitEnumEncoder: Encoder[SuitEnum.Value]) =
-    (decodeEnumeration(SuitEnum), encodeEnumeration(SuitEnum))
+  implicit val suitEnumC3c: Codec[SuitEnum.Value] = Codec.from(decodeEnumeration(SuitEnum), encodeEnumeration(SuitEnum))
   implicit val primitivesC3c: Codec[Primitives] = deriveConfiguredCodec[Primitives]
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {
     import io.circe.generic.auto._

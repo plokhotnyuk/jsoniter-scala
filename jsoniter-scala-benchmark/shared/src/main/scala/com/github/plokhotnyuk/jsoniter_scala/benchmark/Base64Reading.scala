@@ -25,7 +25,7 @@ class Base64Reading extends Base64Benchmark {
     import io.circe.parser._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    decode[Array[Byte]](new String(jsonBytes, UTF_8))(base64D5r).fold(throw _, identity)
+    decode[Array[Byte]](new String(jsonBytes, UTF_8))(base64C3c).fold(throw _, identity)
   }
 
   @Benchmark
@@ -33,7 +33,7 @@ class Base64Reading extends Base64Benchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[Array[Byte]](jsonBytes)(base64D5r).fold(throw _, identity)
+    decodeByteArray[Array[Byte]](jsonBytes)(base64C3c).fold(throw _, identity)
   }
 
   @Benchmark
@@ -43,7 +43,7 @@ class Base64Reading extends Base64Benchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[Byte]](base64D5r).decodeJson(readFromArray(jsonBytes, tooLongStringConfig)).fold(throw _, identity)
+    Decoder[Array[Byte]](base64C3c).decodeJson(readFromArray(jsonBytes, tooLongStringConfig)).fold(throw _, identity)
   }
 
   @Benchmark
