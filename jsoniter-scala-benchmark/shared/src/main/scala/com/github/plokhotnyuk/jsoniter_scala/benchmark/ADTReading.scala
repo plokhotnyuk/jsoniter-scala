@@ -66,6 +66,7 @@ class ADTReading extends ADTBenchmark {
   def ninnyJson(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
     import nrktkt.ninny.Json
+    import nrktkt.ninny.HopefullyJsonSyntax
     import scala.collection.immutable.ArraySeq
 
     Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ADTBase].get

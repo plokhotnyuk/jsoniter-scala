@@ -130,24 +130,24 @@ object Smithy4sJCodecs {
     val multiPointSchema: Schema[GeoJSON.MultiPoint] =
       struct(
         indexedSeq(coordinatesSchema).required[GeoJSON.MultiPoint]("coordinates", _.coordinates),
-      )(GeoJSON.MultiPoint)
+      )(GeoJSON.MultiPoint.apply)
     val lineStringSchema: Schema[GeoJSON.LineString] =
       struct(
         indexedSeq(coordinatesSchema).required[GeoJSON.LineString]("coordinates", _.coordinates),
-      )(GeoJSON.LineString)
+      )(GeoJSON.LineString.apply)
     val multiLineStringSchema: Schema[GeoJSON.MultiLineString] =
       struct(
         indexedSeq(indexedSeq(coordinatesSchema)).required[GeoJSON.MultiLineString]("coordinates", _.coordinates),
-      )(GeoJSON.MultiLineString)
+      )(GeoJSON.MultiLineString.apply)
     val polygonSchema: Schema[GeoJSON.Polygon] =
       struct(
         indexedSeq(indexedSeq(coordinatesSchema)).required[GeoJSON.Polygon]("coordinates", _.coordinates),
-      )(GeoJSON.Polygon)
+      )(GeoJSON.Polygon.apply)
     val multiPolygonSchema: Schema[GeoJSON.MultiPolygon] =
       struct(
         indexedSeq(indexedSeq(indexedSeq(coordinatesSchema)))
           .required[GeoJSON.MultiPolygon]("coordinates", _.coordinates),
-      )(GeoJSON.MultiPolygon)
+      )(GeoJSON.MultiPolygon.apply)
     val simpleGeometrySchema: Schema[GeoJSON.SimpleGeometry] =  {
       val pointAlt = pointSchema.oneOf[GeoJSON.SimpleGeometry]("Point")
       val multiPointAlt = multiPointSchema.oneOf[GeoJSON.SimpleGeometry]("MultiPoint")
@@ -167,7 +167,7 @@ object Smithy4sJCodecs {
     val geometryCollectionSchema: Schema[GeoJSON.GeometryCollection] =
       struct(
         indexedSeq(simpleGeometrySchema).required[GeoJSON.GeometryCollection]("geometries", _.geometries),
-      )(GeoJSON.GeometryCollection)
+      )(GeoJSON.GeometryCollection.apply)
     val geometrySchema: Schema[GeoJSON.Geometry] = {
       val pointAlt = pointSchema.oneOf[GeoJSON.Geometry]("Point")
       val multiPointAlt = multiPointSchema.oneOf[GeoJSON.Geometry]("MultiPoint")
@@ -202,7 +202,7 @@ object Smithy4sJCodecs {
       struct(
         indexedSeq(simpleGeoJSONSchema).required[GeoJSON.FeatureCollection]("features", _.features),
         bboxSchema.optional[GeoJSON.FeatureCollection]("bbox", _.bbox)
-      )(GeoJSON.FeatureCollection)
+      )(GeoJSON.FeatureCollection.apply)
     val featureAlt = featureSchema.oneOf[GeoJSON.GeoJSON]("Feature")
     val featureCollectionAlt = featureCollectionSchema.oneOf[GeoJSON.GeoJSON]("FeatureCollection")
     union(featureAlt, featureCollectionAlt) {
@@ -247,13 +247,13 @@ object Smithy4sJCodecs {
     val rowsSchema: Schema[GoogleMapsAPI.Rows] =
       struct(
         indexedSeq(elementsSchema).required[GoogleMapsAPI.Rows]("elements", _.elements)
-      )(GoogleMapsAPI.Rows)
+      )(GoogleMapsAPI.Rows.apply)
     struct(
       indexedSeq(string).required[GoogleMapsAPI.DistanceMatrix]("destination_addresses", _.destination_addresses),
       indexedSeq(string).required[GoogleMapsAPI.DistanceMatrix]("origin_addresses", _.origin_addresses),
       indexedSeq(rowsSchema).required[GoogleMapsAPI.DistanceMatrix]("rows", _.rows),
       string.required[GoogleMapsAPI.DistanceMatrix]("status", _.status)
-    )(GoogleMapsAPI.DistanceMatrix)
+    )(GoogleMapsAPI.DistanceMatrix.apply)
   })
   val intJCodec: JCodec[Int] = JCodec.deriveJCodecFromSchema(int)
   implicit val listOfBooleansJCodec: JCodec[List[Boolean]] = JCodec.deriveJCodecFromSchema(list(boolean))
@@ -331,7 +331,7 @@ object Smithy4sJCodecs {
         list(bannerSchema).optional[OpenRTB.Video]("companionad", x => toOptList(x.companionad)),
         list(int).optional[OpenRTB.Video]("api", x => toOptList(x.api)),
         list(int).optional[OpenRTB.Video]("companiontype", x => toOptList(x.companiontype))
-      ) { ps: IndexedSeq[Any] =>
+      ) { (ps: IndexedSeq[Any]) =>
         OpenRTB.Video(
           ps(0).asInstanceOf[Option[List[String]]].getOrElse(Nil),
           ps(1).asInstanceOf[Option[Int]],
@@ -499,7 +499,7 @@ object Smithy4sJCodecs {
         string.optional[OpenRTB.Content]("language", _.language),
         int.optional[OpenRTB.Content]("embeddable", _.embeddable),
         dataSchema.optional[OpenRTB.Content]("data", _.data)
-      ) { ps: IndexedSeq[Any] =>
+      ) { (ps: IndexedSeq[Any]) =>
         OpenRTB.Content(
           ps(0).asInstanceOf[Option[String]],
           ps(1).asInstanceOf[Option[Int]],
@@ -617,7 +617,7 @@ object Smithy4sJCodecs {
         string.optional[OpenRTB.Device]("dpidmd5", _.dpidmd5),
         string.optional[OpenRTB.Device]("macsha1", _.macsha1),
         string.optional[OpenRTB.Device]("macmd5", _.macmd5)
-      ) { ps: IndexedSeq[Any] =>
+      ) { (ps: IndexedSeq[Any]) =>
         OpenRTB.Device(
           ps(0).asInstanceOf[Option[String]],
           ps(1).asInstanceOf[Option[OpenRTB.Geo]],
@@ -788,7 +788,7 @@ object Smithy4sJCodecs {
       boolean.required[TwitterAPI.User]("follow_request_sent", _.follow_request_sent),
       boolean.required[TwitterAPI.User]("notifications", _.notifications),
       string.required[TwitterAPI.User]("translator_type", _.translator_type),
-    ) { ps: IndexedSeq[Any] =>
+    ) { (ps: IndexedSeq[Any]) =>
       TwitterAPI.User(
         ps(0).asInstanceOf[Long],
         ps(1).asInstanceOf[String],
@@ -859,7 +859,7 @@ object Smithy4sJCodecs {
       boolean.required[TwitterAPI.RetweetedStatus]("retweeted", _.retweeted),
       boolean.required[TwitterAPI.RetweetedStatus]("possibly_sensitive", _.possibly_sensitive),
       string.required[TwitterAPI.RetweetedStatus]("lang", _.lang)
-    ) { ps: IndexedSeq[Any] =>
+    ) { (ps: IndexedSeq[Any]) =>
       TwitterAPI.RetweetedStatus(
         ps(0).asInstanceOf[String],
         ps(1).asInstanceOf[Long],
@@ -913,7 +913,7 @@ object Smithy4sJCodecs {
       boolean.required[TwitterAPI.Tweet]("retweeted", _.retweeted),
       boolean.required[TwitterAPI.Tweet]("possibly_sensitive", _.possibly_sensitive),
       string.required[TwitterAPI.Tweet]("lang", _.lang)
-    ) { ps: IndexedSeq[Any] =>
+    ) { (ps: IndexedSeq[Any]) =>
       TwitterAPI.Tweet(
         ps(0).asInstanceOf[String],
         ps(1).asInstanceOf[Long],

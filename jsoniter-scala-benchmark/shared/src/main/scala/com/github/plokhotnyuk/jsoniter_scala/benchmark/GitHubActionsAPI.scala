@@ -13,7 +13,7 @@ object GitHubActionsAPI {
     size_in_bytes: Long,
     url: String,
     archive_download_url: String,
-    @JsonSerialize(using = classOf[StringifiedBooleanSerializer]) @stringified expired: Boolean,
+    @JsonSerialize(`using` = classOf[StringifiedBooleanSerializer]) @stringified expired: Boolean,
     created_at: Instant,
     expires_at: Instant)
 

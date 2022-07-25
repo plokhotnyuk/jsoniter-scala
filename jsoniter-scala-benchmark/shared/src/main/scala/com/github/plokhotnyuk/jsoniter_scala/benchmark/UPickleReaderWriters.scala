@@ -10,8 +10,10 @@ import scala.reflect.ClassTag
 
 object UPickleReaderWriters extends AttributeTagged {
   override val tagName: String = "type"
-  implicit val (bigDecimalReader, bigDecimalWriter) = (numReader(s => BigDecimal(s.toString)), numWriter[BigDecimal])
-  implicit val (bigIntReader, bigIntWriter) = (numReader(s => BigInt(s.toString)), numWriter[BigInt])
+  implicit val (bigDecimalReader: Reader[BigDecimal], bigDecimalWriter: Writer[BigDecimal]) =
+    (numReader(s => BigDecimal(s.toString)), numWriter[BigDecimal])
+  implicit val (bigIntReader: Reader[BigInt], bigIntWriter: Writer[BigInt]) =
+    (numReader(s => BigInt(s.toString)), numWriter[BigInt])
   implicit val doubleWriter: Writer[Double] = numWriter[Double]
   implicit val floatWriter: Writer[Float] = numWriter[Float]
   implicit val longWriter: Writer[Long] = numWriter[Long]
@@ -56,14 +58,22 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val nestedStructsReadWriter: ReadWriter[NestedStructs] = macroRW
   implicit val missingRequiredFieldsReadWriter: ReadWriter[MissingRequiredFields] = macroRW
   implicit val primitivesReadWriter: ReadWriter[Primitives] = macroRW
-  implicit val (durationReader, durationWriter) = (strReader(Duration.parse), strWriter[Duration])
-  implicit val (instantReader, instantWriter) = (strReader(Instant.parse), strWriter[Instant])
-  implicit val (localDateReader, localDateWriter) = (strReader(LocalDate.parse), strWriter[LocalDate])
-  implicit val (localDateTimeReader, localDateTimeWriter) = (strReader(LocalDateTime.parse), strWriter[LocalDateTime])
-  implicit val (localTimeReader, localTimeWriter) = (strReader(LocalTime.parse), strWriter[LocalTime])
-  implicit val (monthDayReader, monthDayWriter) = (strReader(MonthDay.parse), strWriter[MonthDay])
-  implicit val (offsetDateTimeReader, offsetDateTimeWriter) = (strReader(OffsetDateTime.parse), strWriter[OffsetDateTime])
-  implicit val (offsetTimeReader, offsetTimeWriter) = (strReader(OffsetTime.parse), strWriter[OffsetTime])
+  implicit val (durationReader: Reader[Duration], durationWriter: Writer[Duration]) =
+    (strReader(Duration.parse), strWriter[Duration])
+  implicit val (instantReader: Reader[Instant], instantWriter: Writer[Instant]) =
+    (strReader(Instant.parse), strWriter[Instant])
+  implicit val (localDateReader: Reader[LocalDate], localDateWriter: Writer[LocalDate]) =
+    (strReader(LocalDate.parse), strWriter[LocalDate])
+  implicit val (localDateTimeReader: Reader[LocalDateTime], localDateTimeWriter: Writer[LocalDateTime]) =
+    (strReader(LocalDateTime.parse), strWriter[LocalDateTime])
+  implicit val (localTimeReader: Reader[LocalTime], localTimeWriter: Writer[LocalTime]) =
+    (strReader(LocalTime.parse), strWriter[LocalTime])
+  implicit val (monthDayReader: Reader[MonthDay], monthDayWriter: Writer[MonthDay]) =
+    (strReader(MonthDay.parse), strWriter[MonthDay])
+  implicit val (offsetDateTimeReader: Reader[OffsetDateTime], offsetDateTimeWriter: Writer[OffsetDateTime]) =
+    (strReader(OffsetDateTime.parse), strWriter[OffsetDateTime])
+  implicit val (offsetTimeReader: Reader[OffsetTime], offsetTimeWriter: Writer[OffsetTime]) =
+    (strReader(OffsetTime.parse), strWriter[OffsetTime])
   implicit val openRTBReadWriter: ReadWriter[OpenRTB.BidRequest] = {
     implicit val v1: ReadWriter[OpenRTB.Segment] = macroRW
     implicit val v2: ReadWriter[OpenRTB.Format] = macroRW
@@ -88,7 +98,8 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v21: ReadWriter[OpenRTB.Reqs] = macroRW
     macroRW
   }
-  implicit val (periodReader, periodWriter) = (strReader(Period.parse), strWriter[Period])
+  implicit val (periodReader: Reader[Period], periodWriter: Writer[Period]) =
+    (strReader(Period.parse), strWriter[Period])
   implicit val (suiteADTReader: Reader[SuitADT], suiteADTWriter: Writer[SuitADT]) = (strReader {
     val suite = Map(
       "Hearts" -> Hearts,
@@ -97,7 +108,7 @@ object UPickleReaderWriters extends AttributeTagged {
       "Clubs" -> Clubs)
     s => suite.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))
   }, strWriter[SuitADT])
-  implicit val (suitEnumReader: SimpleReader[SuitEnum], suitEnumWriter: Writer[SuitEnum]) = (strReader[SuitEnum]({
+  implicit val (suitEnumReader: Reader[SuitEnum], suitEnumWriter: Writer[SuitEnum]) = (strReader[SuitEnum]({
     val ec = new ConcurrentHashMap[String, SuitEnum]
     (cs: CharSequence) => {
       val s = cs.toString
@@ -109,12 +120,18 @@ object UPickleReaderWriters extends AttributeTagged {
       x
     }
   }), strWriter[SuitEnum])
-  implicit val (suitReader, suitWriter) = (strReader(s => Suit.valueOf(s.toString)), strWriter[Suit])
-  implicit val (yearReader, yearWriter) = (strReader(Year.parse), strWriter[Year])
-  implicit val (yearMonthReader, yearMonthWriter) = (strReader(YearMonth.parse), strWriter[YearMonth])
-  implicit val (zonedDateTimeReader, zonedDateTimeWriter) = (strReader(ZonedDateTime.parse), strWriter[ZonedDateTime])
-  implicit val (zonedIdReader, zonedIdWriter) = (strReader(s => ZoneId.of(s.toString)), strWriter[ZoneId])
-  implicit val (zonedOffsetReader, zonedOffsetWriter) = (strReader(s => ZoneOffset.of(s.toString)), strWriter[ZoneOffset])
+  implicit val (suitReader: Reader[Suit], suitWriter: Writer[Suit]) =
+    (strReader(s => Suit.valueOf(s.toString)), strWriter[Suit])
+  implicit val (yearReader: Reader[Year], yearWriter: Writer[Year]) =
+    (strReader(Year.parse), strWriter[Year])
+  implicit val (yearMonthReader: Reader[YearMonth], yearMonthWriter: Writer[YearMonth]) =
+    (strReader(YearMonth.parse), strWriter[YearMonth])
+  implicit val (zonedDateTimeReader: Reader[ZonedDateTime], zonedDateTimeWriter: Writer[ZonedDateTime]) =
+    (strReader(ZonedDateTime.parse), strWriter[ZonedDateTime])
+  implicit val (zonedIdReader: Reader[ZoneId], zonedIdWriter: Writer[ZoneId]) =
+    (strReader(s => ZoneId.of(s.toString)), strWriter[ZoneId])
+  implicit val (zonedOffsetReader: Reader[ZoneOffset], zonedOffsetWriter: Writer[ZoneOffset]) =
+    (strReader(s => ZoneOffset.of(s.toString)), strWriter[ZoneOffset])
   implicit val twitterAPIReadWriter: ReadWriter[TwitterAPI.Tweet] = {
     implicit val v1: ReadWriter[TwitterAPI.Urls] = macroRW
     implicit val v2: ReadWriter[TwitterAPI.Url] = macroRW

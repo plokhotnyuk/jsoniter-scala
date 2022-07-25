@@ -40,7 +40,7 @@ class BigIntWriting extends BigIntBenchmark {
   def dslJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonEncode(obj)(bigIntgEncoder)
+    dslJsonEncode(obj)(bigIntEncoder)
   }
 
   @Benchmark

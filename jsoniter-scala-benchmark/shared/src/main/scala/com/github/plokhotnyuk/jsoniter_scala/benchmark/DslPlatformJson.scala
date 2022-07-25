@@ -32,50 +32,88 @@ object DslPlatformJson {
     override def initialValue(): JsonReader[_] = dslJson.newReader
   }
 
-  val (stringEncoder, stringDecoder) = codec[String]
-  implicit val (anyValsEncoder, anyValsDecoder) = codec[AnyVals]
-  implicit val (arrayBufferOfBooleansEncoder, arrayBufferOfBooleansDecoder) = codec[mutable.ArrayBuffer[Boolean]]
-  implicit val (arrayOfBigDecimalsEncoder, arrayOfBigDecimalsDecoder) = codec[Array[BigDecimal]]
-  implicit val (arrayOfBigIntsEncoder, arrayOfBigIntsDecoder) = codec[Array[BigInt]]
-  implicit val (arrayOfBooleansEncoder, arrayOfBooleansDecoder) = codec[Array[Boolean]]
-  implicit val (arrayOfDoublesEncoder, arrayOfDoublesDecoder) = codec[Array[Double]]
-  implicit val (arrayOfEnumADTsEncoder, arrayOfEnumADTsDecoder) = codec[Array[SuitADT]]
-  implicit val (arrayOfFloatsEncoder, arrayOfFloatsDecoder) = codec[Array[Float]]
-  implicit val (arrayOfIntsEncoder, arrayOfIntsDecoder) = codec[Array[Int]]
-  implicit val (arrayOfJavaEnumsEncoder, arrayOfJavaEnumsDecoder) = codec[Array[Suit]]
-  implicit val (arrayOfLocalDatesEncoder, arrayOfLocalDatesDecoder) = codec[Array[LocalDate]]
-  implicit val (arrayOfLocalDateTimesEncoder, arrayOfLocalDateTimesDecoder) = codec[Array[LocalDateTime]]
-  implicit val (arrayOfLocalTimesEncoder, arrayOfLocalTimesDecoder) = codec[Array[LocalTime]]
-  implicit val (arrayOfLongsEncoder, arrayOfLongsDecoder) = codec[Array[Long]]
-  implicit val (arrayOfOffsetDateTimesEncoder, arrayOfOffsetDateTimesDecoder) = codec[Array[OffsetDateTime]]
-  implicit val (arrayOfOffsetTimesEncoder, arrayOfOffsetTimesDecoder) = codec[Array[OffsetTime]]
-  implicit val (arrayOfShortsEncoder, arrayOfShortsDecoder) = codec[Array[Short]]
-  implicit val (arrayOfUUIDsEncoder, arrayOfUUIDsDecoder) = codec[Array[UUID]]
-  implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = codec[Array[ZonedDateTime]]
-  implicit val (base64Encoder, base64Decoder) = codec[Array[Byte]]
-  implicit val (bigIntgEncoder, bigIntgDecoder) = codec[BigInt]
-  implicit val (bigDecimalEncoder, bigDecimalDecoder) = codec[BigDecimal]
-  implicit val (bitSetEncoder, bitSetDecoder) = codec[BitSet]
-  implicit val (extractFieldsEncoder, extractFieldsDecoder) = codec[ExtractFields]
-  implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = codec[GoogleMapsAPI.DistanceMatrix]
-  implicit val (intEncoder, intDecoder) = codec[Int]
+  val (stringEncoder: JsonWriter.WriteObject[String],
+    stringDecoder: JsonReader.ReadObject[String]) = codec[String]
+  implicit val (anyValsEncoder: JsonWriter.WriteObject[AnyVals],
+    anyValsDecoder: JsonReader.ReadObject[AnyVals]) = codec[AnyVals]
+  implicit val (arrayBufferOfBooleansEncoder: JsonWriter.WriteObject[mutable.ArrayBuffer[Boolean]],
+    arrayBufferOfBooleansDecoder: JsonReader.ReadObject[mutable.ArrayBuffer[Boolean]]) = codec[mutable.ArrayBuffer[Boolean]]
+  implicit val (arrayOfBigDecimalsEncoder: JsonWriter.WriteObject[Array[BigDecimal]],
+    arrayOfBigDecimalsDecoder: JsonReader.ReadObject[Array[BigDecimal]]) = codec[Array[BigDecimal]]
+  implicit val (arrayOfBigIntsEncoder: JsonWriter.WriteObject[Array[BigInt]],
+    arrayOfBigIntsDecoder: JsonReader.ReadObject[Array[BigInt]]) = codec[Array[BigInt]]
+  implicit val (arrayOfBooleansEncoder: JsonWriter.WriteObject[Array[Boolean]],
+    arrayOfBooleansDecoder: JsonReader.ReadObject[Array[Boolean]]) = codec[Array[Boolean]]
+  implicit val (arrayOfDoublesEncoder: JsonWriter.WriteObject[Array[Double]],
+    arrayOfDoublesDecoder: JsonReader.ReadObject[Array[Double]]) = codec[Array[Double]]
+  implicit val (arrayOfEnumADTsEncoder: JsonWriter.WriteObject[Array[SuitADT]],
+    arrayOfEnumADTsDecoder: JsonReader.ReadObject[Array[SuitADT]]) = codec[Array[SuitADT]]
+  implicit val (arrayOfFloatsEncoder: JsonWriter.WriteObject[Array[Float]],
+    arrayOfFloatsDecoder: JsonReader.ReadObject[Array[Float]]) = codec[Array[Float]]
+  implicit val (arrayOfIntsEncoder: JsonWriter.WriteObject[Array[Int]],
+    arrayOfIntsDecoder: JsonReader.ReadObject[Array[Int]]) = codec[Array[Int]]
+  implicit val (arrayOfJavaEnumsEncoder: JsonWriter.WriteObject[Array[Suit]],
+    arrayOfJavaEnumsDecoder: JsonReader.ReadObject[Array[Suit]]) = codec[Array[Suit]]
+  implicit val (arrayOfLocalDatesEncoder: JsonWriter.WriteObject[Array[LocalDate]],
+    arrayOfLocalDatesDecoder: JsonReader.ReadObject[Array[LocalDate]]) = codec[Array[LocalDate]]
+  implicit val (arrayOfLocalDateTimesEncoder: JsonWriter.WriteObject[Array[LocalDateTime]],
+    arrayOfLocalDateTimesDecoder: JsonReader.ReadObject[Array[LocalDateTime]]) = codec[Array[LocalDateTime]]
+  implicit val (arrayOfLocalTimesEncoder: JsonWriter.WriteObject[Array[LocalTime]],
+    arrayOfLocalTimesDecoder: JsonReader.ReadObject[Array[LocalTime]]) = codec[Array[LocalTime]]
+  implicit val (arrayOfLongsEncoder: JsonWriter.WriteObject[Array[Long]],
+    arrayOfLongsDecoder: JsonReader.ReadObject[Array[Long]]) = codec[Array[Long]]
+  implicit val (arrayOfOffsetDateTimesEncoder: JsonWriter.WriteObject[Array[OffsetDateTime]],
+    arrayOfOffsetDateTimesDecoder: JsonReader.ReadObject[Array[OffsetDateTime]]) = codec[Array[OffsetDateTime]]
+  implicit val (arrayOfOffsetTimesEncoder: JsonWriter.WriteObject[Array[OffsetTime]],
+    arrayOfOffsetTimesDecoder: JsonReader.ReadObject[Array[OffsetTime]]) = codec[Array[OffsetTime]]
+  implicit val (arrayOfShortsEncoder: JsonWriter.WriteObject[Array[Short]],
+    arrayOfShortsDecoder: JsonReader.ReadObject[Array[Short]]) = codec[Array[Short]]
+  implicit val (arrayOfUUIDsEncoder: JsonWriter.WriteObject[Array[UUID]],
+    arrayOfUUIDsDecoder: JsonReader.ReadObject[Array[UUID]]) = codec[Array[UUID]]
+  implicit val (arrayOfZonedDateTimesEncoder: JsonWriter.WriteObject[Array[ZonedDateTime]],
+    arrayOfZonedDateTimesDecoder: JsonReader.ReadObject[Array[ZonedDateTime]]) = codec[Array[ZonedDateTime]]
+  implicit val (base64Encoder: JsonWriter.WriteObject[Array[Byte]],
+    base64Decoder: JsonReader.ReadObject[Array[Byte]]) = codec[Array[Byte]]
+  implicit val (bigIntEncoder: JsonWriter.WriteObject[BigInt],
+    bigIntDecoder: JsonReader.ReadObject[BigInt]) = codec[BigInt]
+  implicit val (bigDecimalEncoder: JsonWriter.WriteObject[BigDecimal],
+    bigDecimalDecoder: JsonReader.ReadObject[BigDecimal]) = codec[BigDecimal]
+  implicit val (bitSetEncoder: JsonWriter.WriteObject[BitSet],
+    bitSetDecoder: JsonReader.ReadObject[BitSet]) = codec[BitSet]
+  implicit val (extractFieldsEncoder: JsonWriter.WriteObject[ExtractFields],
+    extractFieldsDecoder: JsonReader.ReadObject[ExtractFields]) = codec[ExtractFields]
+  implicit val (googleMapsAPIEncoder: JsonWriter.WriteObject[GoogleMapsAPI.DistanceMatrix],
+    googleMapsAPIDecoder: JsonReader.ReadObject[GoogleMapsAPI.DistanceMatrix]) = codec[GoogleMapsAPI.DistanceMatrix]
+  implicit val (intEncoder: JsonWriter.WriteObject[Int], intDecoder: JsonReader.ReadObject[Int]) = codec[Int]
 /* FIXME: DSL-JSON doesn't support immutable.IntMap
-  implicit val (intMapOfBooleansEncoder, intMapOfBooleansDecoder) = codec[IntMap[Boolean]]
+  implicit val (intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]],
+    intMapOfBooleansDecoder: JsonReader.ReadObject[IntMap[Boolean]]) = codec[IntMap[Boolean]]
 */
-  implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = codec[List[Boolean]]
-  implicit val (mapOfIntsToBooleansEncoder, mapOfIntsToBooleansDecoder) = codec[Map[Int, Boolean]]
-  implicit val (mutableBitSetEncoder, mutablebitSetDecoder) = codec[mutable.BitSet]
+  implicit val (listOfBooleansEncoder: JsonWriter.WriteObject[List[Boolean]],
+    listOfBooleansDecoder: JsonReader.ReadObject[List[Boolean]]) = codec[List[Boolean]]
+  implicit val (mapOfIntsToBooleansEncoder: JsonWriter.WriteObject[Map[Int, Boolean]],
+    mapOfIntsToBooleansDecoder: JsonReader.ReadObject[Map[Int, Boolean]]) = codec[Map[Int, Boolean]]
+  implicit val (mutableBitSetEncoder: JsonWriter.WriteObject[mutable.BitSet],
+    mutableBitSetDecoder: JsonReader.ReadObject[mutable.BitSet]) = codec[mutable.BitSet]
 /* FIXME: DSL-JSON doesn't support mutable.LongMap
-  implicit val (mutableLongMapOfBooleansEncoder, mutableLongMapOfBooleansDecoder) = codec[mutable.LongMap[Boolean]]
+  implicit val (mutableLongMapOfBooleansEncoder: JsonWriter.WriteObject[mutable.LongMap[Boolean]], mutableLongMapOfBooleansDecoder: JsonReader.ReadObject[mutable.LongMap[Boolean]]) = codec[mutable.LongMap[Boolean]]
 */
-  implicit val (mutableMapOfIntsToBooleansEncoder, mutableMapOfIntsToBooleansDecoder) = codec[mutable.Map[Int, Boolean]]
-  implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = codec[mutable.Set[Int]]
-  implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = codec[MissingRequiredFields]
-  implicit val (nestedStructsEncoder, nestedStructsDecoder) = codec[NestedStructs]
-  implicit val (primitivesEncoder, primitivesDecoder) = codec[Primitives]
-  implicit val (seqOfTweetEncoder, seqOfTweetDecoder) = codec[Seq[TwitterAPI.Tweet]]
-  implicit val (setOfIntsEncoder, setOfIntsDecoder) = codec[Set[Int]]
-  implicit val (vectorOfBooleansEncoder, vectorOfBooleansDecoder) = codec[Vector[Boolean]]
+  implicit val (mutableMapOfIntsToBooleansEncoder: JsonWriter.WriteObject[mutable.Map[Int, Boolean]],
+    mutableMapOfIntsToBooleansDecoder: JsonReader.ReadObject[mutable.Map[Int, Boolean]]) = codec[mutable.Map[Int, Boolean]]
+  implicit val (mutableSetOfIntsEncoder: JsonWriter.WriteObject[mutable.Set[Int]],
+    mutableSetOfIntsDecoder: JsonReader.ReadObject[mutable.Set[Int]]) = codec[mutable.Set[Int]]
+  implicit val (missingReqFieldsEncoder: JsonWriter.WriteObject[MissingRequiredFields],
+    missingReqFieldsDecoder: JsonReader.ReadObject[MissingRequiredFields]) = codec[MissingRequiredFields]
+  implicit val (nestedStructsEncoder: JsonWriter.WriteObject[NestedStructs],
+    nestedStructsDecoder: JsonReader.ReadObject[NestedStructs]) = codec[NestedStructs]
+  implicit val (primitivesEncoder: JsonWriter.WriteObject[Primitives],
+    primitivesDecoder: JsonReader.ReadObject[Primitives]) = codec[Primitives]
+  implicit val (seqOfTweetEncoder: JsonWriter.WriteObject[Seq[TwitterAPI.Tweet]],
+    seqOfTweetDecoder: JsonReader.ReadObject[Seq[TwitterAPI.Tweet]]) = codec[Seq[TwitterAPI.Tweet]]
+  implicit val (setOfIntsEncoder: JsonWriter.WriteObject[Set[Int]],
+    setOfIntsDecoder: JsonReader.ReadObject[Set[Int]]) = codec[Set[Int]]
+  implicit val (vectorOfBooleansEncoder: JsonWriter.WriteObject[Vector[Boolean]],
+    vectorOfBooleansDecoder: JsonReader.ReadObject[Vector[Boolean]]) = codec[Vector[Boolean]]
 
   def dslJsonDecode[T](bytes: Array[Byte])(implicit decoder: JsonReader.ReadObject[T]): T = {
     val reader = threadLocalJsonReader.get().process(bytes, bytes.length)

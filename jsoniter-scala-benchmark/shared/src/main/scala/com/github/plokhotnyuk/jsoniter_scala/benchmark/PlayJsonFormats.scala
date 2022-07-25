@@ -167,14 +167,15 @@ object PlayJsonFormats {
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    s: String => suite(s)
+    (s: String) => suite(s)
   }
   implicit val javaEnumFormat: Format[Suit] = stringFormat("suitenum")(Suit.valueOf)
+  // FIXME: Some `Format` instances for `java.time._` types are required only during compilation of Scala.js benchmarks
   implicit val durationFormat: Format[Duration] = stringFormat("instant")(Duration.parse)
   implicit val instantFormat: Format[Instant] = stringFormat("instant")(Instant.parse)
-  implicit val locaDateTimeFormat: Format[LocalDateTime] = stringFormat("localdatetime")(LocalDateTime.parse)
-  implicit val locaDateFormat: Format[LocalDate] = stringFormat("localdate")(LocalDate.parse)
-  implicit val locaTimeFormat: Format[LocalTime] = stringFormat("localtime")(LocalTime.parse)
+  implicit val localDateTimeFormat: Format[LocalDateTime] = stringFormat("localdatetime")(LocalDateTime.parse)
+  implicit val localDateFormat: Format[LocalDate] = stringFormat("localdate")(LocalDate.parse)
+  implicit val localTimeFormat: Format[LocalTime] = stringFormat("localtime")(LocalTime.parse)
   implicit val monthDayFormat: Format[MonthDay] = stringFormat("monthday")(MonthDay.parse)
   implicit val offsetDateTimeFormat: Format[OffsetDateTime] = stringFormat("offsetdatetime")(OffsetDateTime.parse)
   implicit val offsetTimeFormat: Format[OffsetTime] = stringFormat("offsettime")(OffsetTime.parse)
