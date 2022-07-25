@@ -828,7 +828,7 @@ final class JsonReader private[jsoniter_scala](
     throw new IllegalStateException("expected preceding call of 'setMark()'")
 
   @tailrec
-  private[this] def parseInstantYearWithHyphen(pos: Int): Int =
+  private[this] def parseInstantYearWithDash(pos: Int): Int =
     if (pos + 4 < tail) {
       val buf = this.buf
       var year = ByteArrayAccess.getInt(buf, pos) - 0x30303030
@@ -837,7 +837,7 @@ final class JsonReader private[jsoniter_scala](
         head = pos + 5
         year
       } else parseNon4DigitYearWithByte('-', 10, year + 0x30303030, pos)
-    } else parseInstantYearWithHyphen(loadMoreOrError(pos))
+    } else parseInstantYearWithDash(loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseYearWithByte(t: Byte, pos: Int): Int =
@@ -2122,7 +2122,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseEpochDaySeconds(): Long = {
-    val year = parseInstantYearWithHyphen(head)
+    val year = parseInstantYearWithDash(head)
     val monthDay = parseMonthDayWithT(year, head)
     epochDay(year, monthDay & 0xFF, monthDay >> 24) * 86400 // 86400 == seconds per day
   }
