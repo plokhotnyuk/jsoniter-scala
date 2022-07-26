@@ -493,8 +493,7 @@ final class JsonReader private[jsoniter_scala](
             default
           } else decodeError(msg, bs, pos)
         } else if (buf(pos - 1) == 'n') {
-          loadMoreOrError(pos - 1)
-          head = pos
+          head = loadMoreOrError(pos - 1) + 1
           readNullOrError(default, msg)
         } else decodeError(msg, pos - 1)
       } else illegalTokenOperation()
@@ -512,8 +511,7 @@ final class JsonReader private[jsoniter_scala](
             default
           } else tokenOrNullError(t, bs, pos)
         } else if (buf(pos - 1) == 'n') {
-          loadMoreOrError(pos - 1)
-          head = pos
+          head = loadMoreOrError(pos - 1) + 1
           readNullOrTokenError(default, t)
         } else tokenOrNullError(t)
       } else illegalTokenOperation()
@@ -711,8 +709,8 @@ final class JsonReader private[jsoniter_scala](
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
-  private[jsoniter_scala] def endOfInputOrError(): Boolean =
-    skipWhitespaces() && decodeError("expected end of input", head)
+  private[jsoniter_scala] def endOfInputOrError(): Unit =
+    if (skipWhitespaces()) decodeError("expected end of input", head)
 
   private[jsoniter_scala] def skipWhitespaces(): Boolean = {
     var pos = head
@@ -1101,7 +1099,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def appendChar(ch: Char, i: Int): Int = {
-    if (i >= charBuf.length) growCharBuf(i + 1)
+    ensureCharBufCapacity(i + 1)
     charBuf(i) = ch
     i + 1
   }
@@ -1109,7 +1107,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def appendChars(cs: Array[Char], i: Int): Int = {
     val len = cs.length
     val required = i + len
-    if (required > charBuf.length) growCharBuf(required)
+    ensureCharBufCapacity(required)
     System.arraycopy(cs, 0, charBuf, i, len)
     required
   }
@@ -1117,7 +1115,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def appendString(s: String, i: Int): Int = {
     val len = s.length
     val required = i + len
-    if (required > charBuf.length) growCharBuf(required)
+    ensureCharBufCapacity(required)
     s.getChars(0, len, charBuf, i)
     required
   }
@@ -1125,7 +1123,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def prependString(s: String, i: Int): Int = {
     val len = s.length
     val required = i + len
-    if (required > charBuf.length) growCharBuf(required)
+    ensureCharBufCapacity(required)
     var i1 = required - 1
     var i2 = i1 - len
     while (i2 >= 0) {
@@ -2999,7 +2997,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b != '"') {
         if (ns(b & 0xFF) < 0) decodeError("expected '\"' or hex digit")
-        nextByte(head)
+        b = nextByte(head)
         decodeError("expected hex digit")
       }
       bs = new Array[Byte](bLen + 1)
@@ -3199,7 +3197,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def appendHexOffset(d: Long, i: Int): Int = {
-    if (i + 16 >= charBuf.length) growCharBuf(i + 16)
+    ensureCharBufCapacity(i + 16)
     val ds = hexDigits
     var j = i
     if (d.toInt != d) {
@@ -3215,7 +3213,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def appendHexByte(b: Byte, i: Int, ds: Array[Char]): Int = {
-    if (i + 2 >= charBuf.length) growCharBuf(i + 2)
+    ensureCharBufCapacity(i + 2)
     charBuf(i) = ds((b >> 4) & 0xF)
     charBuf(i + 1) = ds(b & 0xF)
     i + 2
@@ -3236,6 +3234,13 @@ final class JsonReader private[jsoniter_scala](
     val newLim = (-1 >>> Integer.numberOfLeadingZeros(charBuf.length | required)) + 1
     charBuf = java.util.Arrays.copyOf(charBuf, newLim)
     newLim
+  }
+
+  private[this] def ensureCharBufCapacity(required: Int): Unit = {
+    val len = charBuf.length
+    if (required > len) {
+      charBuf = java.util.Arrays.copyOf(charBuf, (-1 >>> Integer.numberOfLeadingZeros(len | required)) + 1)
+    }
   }
 
   @tailrec
