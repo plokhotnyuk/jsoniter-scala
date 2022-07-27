@@ -751,7 +751,7 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     var offset = 0
     while (offset < lenM1) {
-      val offsetLim = Math.min(((posLim - pos + 1) >> 1) + offset, lenM1)
+      val offsetLim = Math.min((posLim - pos + 1 >> 1) + offset, lenM1)
       while (offset < offsetLim) {
         val d1 = ds(bs(offset) & 0xFF)
         val d2 = ds(bs(offset + 1) & 0xFF)
@@ -791,7 +791,7 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     var offset = 0
     while (offset < lenM2) {
-      val offsetLim = Math.min(((posLim - pos + 3) >> 2) * 3 + offset, lenM2)
+      val offsetLim = Math.min((posLim - pos + 3 >> 2) * 3 + offset, lenM2)
       while (offset < offsetLim) {
         val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
         buf(pos) = ds(p >> 18)
@@ -1369,12 +1369,12 @@ final class JsonWriter private[jsoniter_scala](
       year -= 1
       marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
     }
-    val marchMonth = (marchDayOfYear * 17135 + 6854) >> 19 // (marchDayOfYear * 5 + 2) / 153
+    val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
     year += (marchMonth * 3277 >> 15) + adjustYear // year += marchMonth / 10 + adjustYear (reset any negative year and convert march-based values back to january-based)
     val month = marchMonth +
       (if (marchMonth < 10) 3
       else -9)
-    val day = marchDayOfYear - ((marchMonth * 1002762 - 16383) >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
@@ -2076,23 +2076,23 @@ final class JsonWriter private[jsoniter_scala](
     val x1 = x >>> 32
     val y1 = y >>> 32
     val a = x1 * y1
-    (((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a) >>> 32) + a
+    ((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a >>> 32) + a
   }
 
   private[this] def digitCount(q0: Long): Int =
     if (q0.toInt == q0) digitCount(q0.toInt)
-    else if (q0 < 10000000000L) ((999999999 - q0) >>> 63).toInt + 9
-    else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63).toInt + 11
-    else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63).toInt + 13
-    else if (q0 < 10000000000000000L) ((999999999999999L - q0) >>> 63).toInt + 15
-    else ((99999999999999999L - q0) >>> 63).toInt + 17
+    else if (q0 < 10000000000L) (999999999 - q0 >>> 63).toInt + 9
+    else if (q0 < 1000000000000L) (99999999999L - q0 >>> 63).toInt + 11
+    else if (q0 < 100000000000000L) (9999999999999L - q0 >>> 63).toInt + 13
+    else if (q0 < 10000000000000000L) (999999999999999L - q0 >>> 63).toInt + 15
+    else (99999999999999999L - q0 >>> 63).toInt + 17
 
   private[this] def digitCount(q0: Int): Int =
-    if (q0 < 100) ((9 - q0) >>> 31) + 1
-    else if (q0 < 10000) ((999 - q0) >>> 31) + 3
-    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 5
-    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 7
-    else ((999999999 - q0) >>> 31) + 9
+    if (q0 < 100) (9 - q0 >>> 31) + 1
+    else if (q0 < 10000) (999 - q0 >>> 31) + 3
+    else if (q0 < 1000000) (99999 - q0 >>> 31) + 5
+    else if (q0 < 100000000) (9999999 - q0 >>> 31) + 7
+    else (999999999 - q0 >>> 31) + 9
 
   private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, pos, posLim, buf, ds)

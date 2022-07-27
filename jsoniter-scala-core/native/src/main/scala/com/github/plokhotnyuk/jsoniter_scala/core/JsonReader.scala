@@ -1445,7 +1445,7 @@ final class JsonReader private[jsoniter_scala](
         }
         if (e2 == -1074) m2
         else if (e2 >= 972) 0x7FF0000000000000L
-        else (e2 + 1075L) << 52 | m2 & 0x000FFFFFFFFFFFFFL
+        else e2 + 1075L << 52 | m2 & 0x000FFFFFFFFFFFFFL
       } else {
         var offset = from
         if (mark == 0) offset -= newMark
@@ -1584,7 +1584,7 @@ final class JsonReader private[jsoniter_scala](
         }
         if (e2 == -149) mf
         else if (e2 >= 105) 0x7F800000
-        else (e2 + 150) << 23 | mf & 0x007FFFFF
+        else e2 + 150 << 23 | mf & 0x007FFFFF
       } else {
         var offset = from
         if (mark == 0) offset -= newMark
@@ -1826,7 +1826,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     val magWords = magnitude
-    val lastWord = ((len * 445861642L) >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
+    val lastWord = (len * 445861642L >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
     var i = 0
     while (i < lastWord) {
       magWords(i) = 0
@@ -1851,7 +1851,7 @@ final class JsonReader private[jsoniter_scala](
         i -= 1
       }
     }
-    val magBytes = new Array[Byte]((lastWord + 1) << 2)
+    val magBytes = new Array[Byte](lastWord + 1 << 2)
     i = 0
     while (i <= lastWord) {
       val w = magWords(i)
@@ -2673,7 +2673,7 @@ final class JsonReader private[jsoniter_scala](
         len = growCharBuf(i + 1)
         charBuf = this.charBuf
       }
-      val posLim = Math.min(tail - 3, ((len - i) << 2) + pos)
+      val posLim = Math.min(tail - 3, (len - i << 2) + pos)
       while (pos < posLim && {
         bits =
           ns(buf(pos) & 0xFF) << 12 |
@@ -2733,7 +2733,7 @@ final class JsonReader private[jsoniter_scala](
         lenM1 = growCharBuf(i + 1) - 1
         charBuf = this.charBuf
       }
-      val posLim = Math.min(tail - 3, ((lenM1 - i) << 1) + pos)
+      val posLim = Math.min(tail - 3, (lenM1 - i << 1) + pos)
       while (pos < posLim && {
         bits =
           ds(buf(pos) & 0xFF) << 18 |

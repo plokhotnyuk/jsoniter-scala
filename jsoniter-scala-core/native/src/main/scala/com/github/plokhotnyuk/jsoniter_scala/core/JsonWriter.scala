@@ -709,7 +709,7 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     var offset = 0
     while (offset < lenM1) {
-      val offsetLim = Math.min(((posLim - pos + 1) >> 1) + offset, lenM1)
+      val offsetLim = Math.min((posLim - pos + 1 >> 1) + offset, lenM1)
       while (offset < offsetLim) {
         val d1 = ds(bs(offset) & 0xFF)
         val d2 = ds(bs(offset + 1) & 0xFF)
@@ -749,7 +749,7 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     var offset = 0
     while (offset < lenM2) {
-      val offsetLim = Math.min(((posLim - pos + 3) >> 2) * 3 + offset, lenM2)
+      val offsetLim = Math.min((posLim - pos + 3 >> 2) * 3 + offset, lenM2)
       while (offset < offsetLim) {
         val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
         buf(pos) = ds(p >> 18)
@@ -2055,7 +2055,7 @@ final class JsonWriter private[jsoniter_scala](
     val x1 = x >>> 32
     val y1 = y >>> 32
     val a = x1 * y1
-    (((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a) >>> 32) + a
+    ((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a >>> 32) + a
   }
 
   // Adoption of a nice trick from Daniel Lemire's blog that works for numbers up to 10^18:

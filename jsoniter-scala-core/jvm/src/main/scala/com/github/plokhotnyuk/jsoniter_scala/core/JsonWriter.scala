@@ -683,7 +683,7 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     var offset = 0
     while (offset < lenM1) {
-      val offsetLim = Math.min(((posLim - pos + 1) >> 1) + offset, lenM1)
+      val offsetLim = Math.min((posLim - pos + 1 >> 1) + offset, lenM1)
       while (offset < offsetLim) {
         val d1 = ds(bs(offset) & 0xFF)
         val d2 = ds(bs(offset + 1) & 0xFF) << 16
@@ -718,7 +718,7 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     var offset = 0
     while (offset < lenM2) {
-      val offsetLim = Math.min(((posLim - pos + 3) >> 2) * 3 + offset, lenM2)
+      val offsetLim = Math.min((posLim - pos + 3 >> 2) * 3 + offset, lenM2)
       while (offset < offsetLim) {
         val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
         buf(pos) = ds(p >> 18)

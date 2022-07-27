@@ -1607,9 +1607,8 @@ object JsonCodecMaker {
               if (cfg.requireDiscriminatorFirst) {
                 q"""in.setMark()
                     if (in.isNextToken('{')) {
-                      var l = in.readKeyAsCharBuf()
-                      if (in.isCharBufEqualsTo(l, $discrFieldName)) {
-                        l = in.readStringAsCharBuf()
+                      if (in.isCharBufEqualsTo(in.readKeyAsCharBuf(), $discrFieldName)) {
+                        val l = in.readStringAsCharBuf()
                         ..${genReadSubclassesBlock(leafClasses)}
                       } else in.decodeError(${"expected key: \"" + discrFieldName + '"'})
                     } else in.readNullOrTokenError(default, '{')"""
