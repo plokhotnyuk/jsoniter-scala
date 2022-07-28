@@ -2694,10 +2694,16 @@ object JsonCodecMaker {
               '{
                 $out.writeArrayStart()
                 val l = $tx.size
-                var i = 0
-                while (i < l) {
-                  ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
-                  i += 1
+                if (l <= 32) {
+                  var i = 0
+                  while (i < l) {
+                    ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
+                    i += 1
+                  }
+                } else {
+                  $tx.foreach { x =>
+                    ${genWriteVal('x, tpe1 :: types, isStringified, None, out)}
+                  }
                 }
                 $out.writeArrayEnd()
               }

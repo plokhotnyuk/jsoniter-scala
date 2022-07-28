@@ -1839,10 +1839,16 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[IndexedSeq[_]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()
               val l = x.size
-              var i = 0
-              while (i < l) {
-                ..${genWriteVal(q"x(i)", typeArg1(tpe) :: types, isStringified, EmptyTree)}
-                i += 1
+              if (l <= 32) {
+                var i = 0
+                while (i < l) {
+                  ..${genWriteVal(q"x(i)", typeArg1(tpe) :: types, isStringified, EmptyTree)}
+                  i += 1
+                }
+              } else {
+                x.foreach { x =>
+                  ..${genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree)}
+                }
               }
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(methodKey, m) {
