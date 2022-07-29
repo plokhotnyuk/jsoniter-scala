@@ -1159,10 +1159,17 @@ object JsonCodecMaker {
             })
             paramVarNames.zipWithIndex.map { case (n, i) =>
               val m = reqMasks(i)
-              val fieldName =
-                if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m))"
-                else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m) + ${i << 5})"
-              q"if (($n & $m) != 0) in.requiredFieldError($fieldName)"
+              if (m == -1 || (i == lastParamVarIndex && m == lastParamVarBits)) {
+                val fieldName =
+                  if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n))"
+                  else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n) + ${i << 5})"
+                q"if ($n != 0) in.requiredFieldError($fieldName)"
+              } else {
+                val fieldName =
+                  if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m))"
+                  else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m) + ${i << 5})"
+                q"if (($n & $m) != 0) in.requiredFieldError($fieldName)"
+              }
             }
           }
         val construct = q"new $tpe(...${classInfo.paramLists.map(_.map(f => q"${f.symbol.name} = ${f.tmpName}"))})"

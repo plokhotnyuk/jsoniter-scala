@@ -1736,11 +1736,19 @@ object JsonCodecMaker {
             })
             paramVars.zipWithIndex.map { case (nValDef, i) =>
               val n = Ref(nValDef.symbol).asExprOf[Int]
-              val m = Expr(reqMasks(i))
-              val fieldName =
-                if (i == 0) '{ java.lang.Integer.numberOfTrailingZeros($n & $m) }.asTerm
-                else '{ java.lang.Integer.numberOfTrailingZeros($n & $m) + ${Expr(i << 5)} }.asTerm
-              '{ if (($n & $m) != 0) $in.requiredFieldError(${Apply(nameByIndex, List(fieldName)).asExprOf[String]}) }.asTerm
+              val reqMask = reqMasks(i)
+              if (reqMask == -1 || (i == lastParamVarIndex && reqMask == lastParamVarBits)) {
+                val fieldName =
+                  if (i == 0) '{ java.lang.Integer.numberOfTrailingZeros($n) }.asTerm
+                  else '{ java.lang.Integer.numberOfTrailingZeros($n) + ${Expr(i << 5)} }.asTerm
+                '{ if ($n != 0) $in.requiredFieldError(${Apply(nameByIndex, List(fieldName)).asExprOf[String]}) }.asTerm
+              } else {
+                val m = Expr(reqMask)
+                val fieldName =
+                  if (i == 0) '{ java.lang.Integer.numberOfTrailingZeros($n & $m) }.asTerm
+                  else '{ java.lang.Integer.numberOfTrailingZeros($n & $m) + ${Expr(i << 5)} }.asTerm
+                '{ if (($n & $m) != 0) $in.requiredFieldError(${Apply(nameByIndex, List(fieldName)).asExprOf[String]}) }.asTerm
+              }
             }.toList
           }
         val readVars = classInfo.fields.map { f =>
