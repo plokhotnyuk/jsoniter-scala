@@ -753,8 +753,8 @@ final class JsonWriter private[jsoniter_scala](
       while (offset < offsetLim) {
         val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
         buf(pos) = ds(p >> 18)
-        buf(pos + 1) = ds((p >> 12) & 0x3F)
-        buf(pos + 2) = ds((p >> 6) & 0x3F)
+        buf(pos + 1) = ds(p >> 12 & 0x3F)
+        buf(pos + 2) = ds(p >> 6 & 0x3F)
         buf(pos + 3) = ds(p & 0x3F)
         pos += 4
         offset += 3
@@ -768,7 +768,7 @@ final class JsonWriter private[jsoniter_scala](
     if (offset == lenM2) {
       val p = (bs(offset) & 0xFF) << 10 | (bs(offset + 1) & 0xFF) << 2
       buf(pos) = ds(p >> 12)
-      buf(pos + 1) = ds((p >> 6) & 0x3F)
+      buf(pos + 1) = ds(p >> 6 & 0x3F)
       buf(pos + 2) = ds(p & 0x3F)
       pos += 3
       if (doPadding) {
@@ -778,7 +778,7 @@ final class JsonWriter private[jsoniter_scala](
     } else if (offset == lenM2 + 1) {
       val p = bs(offset) & 0xFF
       buf(pos) = ds(p >> 2)
-      buf(pos + 1) = ds((p << 4) & 0x3F)
+      buf(pos + 1) = ds(p << 4 & 0x3F)
       pos += 2
       if (doPadding) {
         buf(pos) = '='
@@ -869,10 +869,10 @@ final class JsonWriter private[jsoniter_scala](
     val d1 = ds(mostSigBits1 >>> 24)
     buf(pos + 1) = d1.toByte
     buf(pos + 2) = (d1 >> 8).toByte
-    val d2 = ds((mostSigBits1 >> 16) & 0xFF)
+    val d2 = ds(mostSigBits1 >> 16 & 0xFF)
     buf(pos + 3) = d2.toByte
     buf(pos + 4) = (d2 >> 8).toByte
-    val d3 = ds((mostSigBits1 >> 8) & 0xFF)
+    val d3 = ds(mostSigBits1 >> 8 & 0xFF)
     buf(pos + 5) = d3.toByte
     buf(pos + 6) = (d3 >> 8).toByte
     val d4 = ds(mostSigBits1 & 0xFF)
@@ -883,11 +883,11 @@ final class JsonWriter private[jsoniter_scala](
     val d5 = ds(mostSigBits2 >>> 24)
     buf(pos + 10) = d5.toByte
     buf(pos + 11) = (d5 >> 8).toByte
-    val d6 = ds((mostSigBits2 >> 16) & 0xFF)
+    val d6 = ds(mostSigBits2 >> 16 & 0xFF)
     buf(pos + 12) = d6.toByte
     buf(pos + 13) = (d6 >> 8).toByte
     buf(pos + 14) = '-'
-    val d7 = ds((mostSigBits2 >> 8) & 0xFF)
+    val d7 = ds(mostSigBits2 >> 8 & 0xFF)
     buf(pos + 15) = d7.toByte
     buf(pos + 16) = (d7 >> 8).toByte
     val d8 = ds(mostSigBits2 & 0xFF)
@@ -898,11 +898,11 @@ final class JsonWriter private[jsoniter_scala](
     val d9 = ds(leastSigBits1 >>> 24)
     buf(pos + 20) = d9.toByte
     buf(pos + 21) = (d9 >> 8).toByte
-    val d10 = ds((leastSigBits1 >> 16) & 0xFF)
+    val d10 = ds(leastSigBits1 >> 16 & 0xFF)
     buf(pos + 22) = d10.toByte
     buf(pos + 23) = (d10 >> 8).toByte
     buf(pos + 24) = '-'
-    val d11 = ds((leastSigBits1 >> 8) & 0xFF)
+    val d11 = ds(leastSigBits1 >> 8 & 0xFF)
     buf(pos + 25) = d11.toByte
     buf(pos + 26) = (d11 >> 8).toByte
     val d12 = ds(leastSigBits1 & 0xFF)
@@ -912,10 +912,10 @@ final class JsonWriter private[jsoniter_scala](
     val d13 = ds(leastSigBits2 >>> 24)
     buf(pos + 29) = d13.toByte
     buf(pos + 30) = (d13 >> 8).toByte
-    val d14 = ds((leastSigBits2 >> 16) & 0xFF)
+    val d14 = ds(leastSigBits2 >> 16 & 0xFF)
     buf(pos + 31) = d14.toByte
     buf(pos + 32) = (d14 >> 8).toByte
-    val d15 = ds((leastSigBits2 >> 8) & 0xFF)
+    val d15 = ds(leastSigBits2 >> 8 & 0xFF)
     buf(pos + 33) = d15.toByte
     buf(pos + 34) = (d15 >> 8).toByte
     val d16 = ds(leastSigBits2 & 0xFF)
@@ -979,23 +979,23 @@ final class JsonWriter private[jsoniter_scala](
           writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
         } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
       } else if (ch1 < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
-        buf(pos) = (0xC0 | (ch1 >> 6)).toByte
-        buf(pos + 1) = (0x80 | (ch1 & 0x3F)).toByte
+        buf(pos) = (ch1 >> 6 | 0xC0).toByte
+        buf(pos + 1) = (ch1 & 0x3F | 0x80).toByte
         writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
       } else if (ch1 < 0xD800 || ch1 > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
-        buf(pos) = (0xE0 | (ch1 >> 12)).toByte
-        buf(pos + 1) = (0x80 | ((ch1 >> 6) & 0x3F)).toByte
-        buf(pos + 2) = (0x80 | (ch1 & 0x3F)).toByte
+        buf(pos) = (ch1 >> 12 | 0xE0).toByte
+        buf(pos + 1) = (ch1 >> 6 & 0x3F | 0x80).toByte
+        buf(pos + 2) = (ch1 & 0x3F | 0x80).toByte
         writeEncodedString(s, from + 1, to, pos + 3, posLim, escapedChars)
       } else { // 110110uuuuccccbb 110111bbbbaaaaaa (UTF-16 chars) -> 11110ddd 10ddcccc 10bbbbbb 10aaaaaa (UTF-8 bytes), where ddddd = uuuu + 1
         if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
         val ch2 = s.charAt(from + 1)
         if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
         val cp = (ch1 << 10) + (ch2 - 56613888) // -56613888 == 0x010000 - (0xD800 << 10) - 0xDC00
-        buf(pos) = (0xF0 | (cp >> 18)).toByte
-        buf(pos + 1) = (0x80 | ((cp >> 12) & 0x3F)).toByte
-        buf(pos + 2) = (0x80 | ((cp >> 6) & 0x3F)).toByte
-        buf(pos + 3) = (0x80 | (cp & 0x3F)).toByte
+        buf(pos) = (cp >> 18 | 0xF0).toByte
+        buf(pos + 1) = (cp >> 12 & 0x3F | 0x80).toByte
+        buf(pos + 2) = (cp >> 6 & 0x3F | 0x80).toByte
+        buf(pos + 3) = (cp & 0x3F | 0x80).toByte
         writeEncodedString(s, from + 2, to, pos + 4, posLim, escapedChars)
       }
     }
@@ -1045,13 +1045,13 @@ final class JsonWriter private[jsoniter_scala](
       if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
       pos = writeEscapedUnicode(ch, pos, buf)
     } else if (ch < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
-      buf(pos) = (0xC0 | (ch >> 6)).toByte
-      buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
+      buf(pos) = (ch >> 6 | 0xC0).toByte
+      buf(pos + 1) = (ch & 0x3F | 0x80).toByte
       pos += 2
     } else if (ch < 0xD800 || ch > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
-      buf(pos) = (0xE0 | (ch >> 12)).toByte
-      buf(pos + 1) = (0x80 | ((ch >> 6) & 0x3F)).toByte
-      buf(pos + 2) = (0x80 | (ch & 0x3F)).toByte
+      buf(pos) = (ch >> 12 | 0xE0).toByte
+      buf(pos + 1) = (ch >> 6 & 0x3F | 0x80).toByte
+      buf(pos + 2) = (ch & 0x3F | 0x80).toByte
       pos += 3
     } else illegalSurrogateError()
     buf(pos) = '"'
@@ -1815,7 +1815,7 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos + 2) = '0'
       pos + 3
     } else {
-      val ieeeExponent = (bits >> 23) & 0xFF
+      val ieeeExponent = bits >> 23 & 0xFF
       val ieeeMantissa = bits & 0x7FFFFF
       var e = ieeeExponent - 150
       var m = ieeeMantissa | 0x800000
@@ -1850,7 +1850,7 @@ final class JsonWriter private[jsoniter_scala](
           dv = (s * 3435973837L >> 35).toInt // divide a positive int by 10
           val sp40 = dv * 40
           val upin = vbls - sp40
-          ((sp40 + vbrd + 40) ^ upin) >= 0 || {
+          (sp40 + vbrd + 40 ^ upin) >= 0 || {
             dv += ~upin >>> 31
             exp += 1
             false
@@ -1859,7 +1859,7 @@ final class JsonWriter private[jsoniter_scala](
           val s4 = s << 2
           val uin = vbls - s4
           dv = (~{
-            if (((s4 + vbrd + 4) ^ uin) < 0) uin
+            if ((s4 + vbrd + 4 ^ uin) < 0) uin
             else (vb & 0x3) + (s & 0x1) - 3
           } >>> 31) + s
           exp -= expShift
@@ -1976,7 +1976,7 @@ final class JsonWriter private[jsoniter_scala](
           dv = s / 10 // FIXME: Use Math.multiplyHigh(s, 1844674407370955168L) instead after dropping of JDK 8 support
           val sp40 = dv * 40
           val upin = (vbls - sp40).toInt
-          (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
+          ((sp40 + vbrd).toInt + 40 ^ upin) >= 0 || {
             dv += ~upin >>> 31
             exp += 1
             false
@@ -1985,7 +1985,7 @@ final class JsonWriter private[jsoniter_scala](
           val s4 = s << 2
           val uin = (vbls - s4).toInt
           dv = (~{
-            if ((((s4 + vbrd).toInt + 4) ^ uin) < 0) uin
+            if (((s4 + vbrd).toInt + 4 ^ uin) < 0) uin
             else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
           } >>> 31) + s
           exp -= expShift

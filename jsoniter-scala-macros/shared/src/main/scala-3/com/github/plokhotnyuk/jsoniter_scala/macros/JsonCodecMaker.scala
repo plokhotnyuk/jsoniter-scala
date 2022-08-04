@@ -1731,7 +1731,7 @@ object JsonCodecMaker {
             val nameByIndex = withFieldsByIndexFor(tpe)(classInfo.fields.map(_.mappedName))
             val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) {
               case (acc, (f, i)) =>
-                if (required(f.mappedName)) acc | (1 << i)
+                if (required(f.mappedName)) acc | 1 << i
                 else acc
             })
             paramVars.zipWithIndex.map { case (nValDef, i) =>

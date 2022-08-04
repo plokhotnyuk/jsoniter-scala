@@ -2326,18 +2326,18 @@ final class JsonReader private[jsoniter_scala](
       else 2) + day - 719529) // 719528 == days 0000 to 1970)
 
   private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
-    if (month != 2) ((month >> 3) ^ (month & 0x1)) + 30
+    if (month != 2) (month >> 3 ^ (month & 0x1)) + 30
     else if (isLeap(year)) 29
     else 28
 
   private[this] def maxDayForMonth(month: Int): Int =
-    if (month != 2) ((month >> 3) ^ (month & 0x1)) + 30
+    if (month != 2) (month >> 3 ^ (month & 0x1)) + 30
     else 29
 
   private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && { // (year % 100 != 0 || year % 400 == 0)
     val cp = year * 1374389535L
     val cc = year >> 31
-    ((cp ^ cc) & 0x1FC0000000L) != 0 || (((cp >> 37) - cc) & 0x3) == 0
+    ((cp ^ cc) & 0x1FC0000000L) != 0 || ((cp >> 37) - cc & 0x3) == 0
   }
 
   private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
@@ -2422,55 +2422,55 @@ final class JsonReader private[jsoniter_scala](
       val ns = nibbles
       val buf = this.buf
       val mostSigBits1 =
-        (ns(buf(pos) & 0xFF).toLong << 28) |
-          ((ns(buf(pos + 1) & 0xFF) << 24) |
-            (ns(buf(pos + 2) & 0xFF) << 20) |
-            (ns(buf(pos + 3) & 0xFF) << 16) |
-            (ns(buf(pos + 4) & 0xFF) << 12) |
-            (ns(buf(pos + 5) & 0xFF) << 8) |
-            (ns(buf(pos + 6) & 0xFF) << 4) |
+        ns(buf(pos) & 0xFF).toLong << 28 |
+          (ns(buf(pos + 1) & 0xFF) << 24 |
+            ns(buf(pos + 2) & 0xFF) << 20 |
+            ns(buf(pos + 3) & 0xFF) << 16 |
+            ns(buf(pos + 4) & 0xFF) << 12 |
+            ns(buf(pos + 5) & 0xFF) << 8 |
+            ns(buf(pos + 6) & 0xFF) << 4 |
             ns(buf(pos + 7) & 0xFF))
       if (mostSigBits1 < 0) hexDigitError(pos)
       if (buf(pos + 8) != '-') tokenError('-', pos + 8)
       val mostSigBits2 =
-        (ns(buf(pos + 9) & 0xFF) << 12) |
-          (ns(buf(pos + 10) & 0xFF) << 8) |
-          (ns(buf(pos + 11) & 0xFF) << 4) |
+        ns(buf(pos + 9) & 0xFF) << 12 |
+          ns(buf(pos + 10) & 0xFF) << 8 |
+          ns(buf(pos + 11) & 0xFF) << 4 |
           ns(buf(pos + 12) & 0xFF)
       if (mostSigBits2 < 0) hexDigitError(pos + 9)
       if (buf(pos + 13) != '-') tokenError('-', pos + 13)
       val mostSigBits3 =
-        (ns(buf(pos + 14) & 0xFF) << 12) |
-          (ns(buf(pos + 15) & 0xFF) << 8) |
-          (ns(buf(pos + 16) & 0xFF) << 4) |
+        ns(buf(pos + 14) & 0xFF) << 12 |
+          ns(buf(pos + 15) & 0xFF) << 8 |
+          ns(buf(pos + 16) & 0xFF) << 4 |
           ns(buf(pos + 17) & 0xFF)
       if (mostSigBits3 < 0) hexDigitError(pos + 14)
       if (buf(pos + 18) != '-') tokenError('-', pos + 18)
       val leastSigBits1 =
-        (ns(buf(pos + 19) & 0xFF) << 12) |
-          (ns(buf(pos + 20) & 0xFF) << 8) |
-          (ns(buf(pos + 21) & 0xFF) << 4) |
+        ns(buf(pos + 19) & 0xFF) << 12 |
+          ns(buf(pos + 20) & 0xFF) << 8 |
+          ns(buf(pos + 21) & 0xFF) << 4 |
           ns(buf(pos + 22) & 0xFF)
       if (leastSigBits1 < 0) hexDigitError(pos + 19)
       if (buf(pos + 23) != '-') tokenError('-', pos + 23)
       val leastSigBits2 =
-        ((ns(buf(pos + 24) & 0xFF) << 16) |
-          (ns(buf(pos + 25) & 0xFF) << 12) |
-          (ns(buf(pos + 26) & 0xFF) << 8) |
-          (ns(buf(pos + 27) & 0xFF) << 4) |
+        (ns(buf(pos + 24) & 0xFF) << 16 |
+          ns(buf(pos + 25) & 0xFF) << 12 |
+          ns(buf(pos + 26) & 0xFF) << 8 |
+          ns(buf(pos + 27) & 0xFF) << 4 |
           ns(buf(pos + 28) & 0xFF)).toLong << 28 |
-          ((ns(buf(pos + 29) & 0xFF) << 24) |
-            (ns(buf(pos + 30) & 0xFF) << 20) |
-            (ns(buf(pos + 31) & 0xFF) << 16) |
-            (ns(buf(pos + 32) & 0xFF) << 12) |
-            (ns(buf(pos + 33) & 0xFF) << 8) |
-            (ns(buf(pos + 34) & 0xFF) << 4) |
+          (ns(buf(pos + 29) & 0xFF) << 24 |
+            ns(buf(pos + 30) & 0xFF) << 20 |
+            ns(buf(pos + 31) & 0xFF) << 16 |
+            ns(buf(pos + 32) & 0xFF) << 12 |
+            ns(buf(pos + 33) & 0xFF) << 8 |
+            ns(buf(pos + 34) & 0xFF) << 4 |
             ns(buf(pos + 35) & 0xFF))
       if (leastSigBits2 < 0) hexDigitError(pos + 24)
       if (buf(pos + 36) != '"') tokenError('"', pos + 36)
       head = pos + 37
-      new UUID((mostSigBits1 << 32) | (mostSigBits2.toLong << 16) | mostSigBits3,
-        (leastSigBits1.toLong << 48) | leastSigBits2)
+      new UUID(mostSigBits1 << 32 | mostSigBits2.toLong << 16 | mostSigBits3,
+        leastSigBits1.toLong << 48 | leastSigBits2)
     } else parseUUID(loadMoreOrError(pos))
 
   @tailrec
@@ -2488,19 +2488,19 @@ final class JsonReader private[jsoniter_scala](
       if (b1 == '"') {
         head = pos + 1
         i
-      } else if (((b1 - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      } else if ((b1 - 32 ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
       else if (b2 == '"') {
         head = pos + 2
         i + 1
-      } else if (((b2 - 32) ^ 60) <= 0) parseEncodedString(i + 1, charBuf.length - 1, charBuf, pos + 1)
+      } else if ((b2 - 32 ^ 60) <= 0) parseEncodedString(i + 1, charBuf.length - 1, charBuf, pos + 1)
       else if (b3 == '"') {
         head = pos + 3
         i + 2
-      } else if (((b3 - 32) ^ 60) <= 0) parseEncodedString(i + 2, charBuf.length - 1, charBuf, pos + 2)
+      } else if ((b3 - 32 ^ 60) <= 0) parseEncodedString(i + 2, charBuf.length - 1, charBuf, pos + 2)
       else if (b4 == '"') {
         head = pos + 4
         i + 3
-      } else if (((b4 - 32) ^ 60) <= 0) parseEncodedString(i + 3, charBuf.length - 1, charBuf, pos + 3)
+      } else if ((b4 - 32 ^ 60) <= 0) parseEncodedString(i + 3, charBuf.length - 1, charBuf, pos + 3)
       else parseString(i + 4, minLim, charBuf, pos + 4)
     } else if (i < minLim) {
       val b = buf(pos)
@@ -2508,7 +2508,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == '"') {
         head = pos + 1
         i
-      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      } else if ((b - 32 ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
       else parseString(i + 1, minLim, charBuf, pos + 1)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
@@ -2562,15 +2562,15 @@ final class JsonReader private[jsoniter_scala](
           if (remaining > 1) {
             val b2 = buf(pos + 1)
             if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
-            charBuf(i) = ((b1 << 6) ^ (b2 ^ 0xF80)).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+            charBuf(i) = (b1 << 6 ^ b2 ^ 0xF80).toChar // 0xF80 == 0xC0.toByte << 6 ^ 0x80.toByte
             parseEncodedString(i + 1, lim, charBuf, pos + 2)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else if ((b1 >> 4) == -2) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
           if (remaining > 2) {
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
-            val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-            if ((b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
+            val ch = (b1 << 12 ^ b2 << 6 ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == 0xE0.toByte << 12 ^ 0x80.toByte << 6 ^ 0x80.toByte
+            if ((b1 == -32 && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
               (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
             charBuf(i) = ch
             parseEncodedString(i + 1, lim, charBuf, pos + 3)
@@ -2580,7 +2580,7 @@ final class JsonReader private[jsoniter_scala](
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
             val b4 = buf(pos + 3)
-            val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+            val cp = b1 << 18 ^ b2 << 12 ^ b3 << 6 ^ b4 ^ 0x381F80 // 0x381F80 == 0xF0.toByte << 18 ^ 0x80.toByte << 12 ^ 0x80.toByte << 6 ^ 0x80.toByte
             if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80 ||
               cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
             charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
@@ -2630,14 +2630,14 @@ final class JsonReader private[jsoniter_scala](
           val b2 = buf(pos + 1)
           if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
           head = pos + 2
-          ((b1 << 6) ^ (b2 ^ 0xF80)).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+          (b1 << 6 ^ b2 ^ 0xF80).toChar // 0xF80 == 0xC0.toByte << 6 ^ 0x80.toByte
         } else parseChar(loadMoreOrError(pos))
       } else if ((b1 >> 4) == -2) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
         if (remaining > 2) {
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
-          val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-          if ((b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
+          val ch = (b1 << 12 ^ b2 << 6 ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == 0xE0.toByte << 12 ^ 0x80.toByte << 6 ^ 0x80.toByte
+          if ((b1 == -32 && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
             (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
           head = pos + 3
           ch
@@ -2650,9 +2650,9 @@ final class JsonReader private[jsoniter_scala](
   private[this] def readEscapedUnicode(pos: Int, buf: Array[Byte]): Char = {
     val ns = nibbles
     val x =
-      (ns(buf(pos) & 0xFF) << 12) |
-        (ns(buf(pos + 1) & 0xFF) << 8) |
-        (ns(buf(pos + 2) & 0xFF) << 4) |
+      ns(buf(pos) & 0xFF) << 12 |
+        ns(buf(pos + 1) & 0xFF) << 8 |
+        ns(buf(pos + 2) & 0xFF) << 4 |
         ns(buf(pos + 3) & 0xFF)
     if (x < 0) hexDigitError(pos)
     x.toChar
@@ -2695,7 +2695,7 @@ final class JsonReader private[jsoniter_scala](
       bits = ns(b & 0xFF)
       if (bits < 0) decodeError("expected '\"' or hex digit")
       b = nextByte(head)
-      bits = (bits << 4) | ns(b & 0xFF)
+      bits = bits << 4 | ns(b & 0xFF)
       if (bits < 0) decodeError("expected hex digit")
       b = nextByte(head)
       if (b != '"') {
@@ -2756,7 +2756,7 @@ final class JsonReader private[jsoniter_scala](
       bits = ds(b & 0xFF)
       if (bits < 0) decodeError("expected '\"' or base64 digit")
       b = nextByte(head)
-      bits = (bits << 6) | ds(b & 0xFF)
+      bits = bits << 6 | ds(b & 0xFF)
       if (bits < 0) decodeError("expected base64 digit")
       b = nextByte(head)
       if (b == '"' || b == '=') {
@@ -2767,7 +2767,7 @@ final class JsonReader private[jsoniter_scala](
         bs = new Array[Byte](bLen + 1)
         bs(bLen) = (bits >> 4).toByte
       } else {
-        bits = (bits << 6) | ds(b & 0xFF)
+        bits = bits << 6 | ds(b & 0xFF)
         if (bits < 0) decodeError("expected '\"' or '=' or base64 digit")
         b = nextByte(head)
         if (b == '=') nextByteOrError('"', head)
@@ -2841,10 +2841,10 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def appendHexDump(pos: Int, offset: Int, from: Int): Int = {
     val hexDumpSizeInBytes = config.hexDumpSize << 4
-    val start = Math.max((pos - hexDumpSizeInBytes) & 0xFFFFFFF0, 0)
-    val end = Math.min((pos + hexDumpSizeInBytes + 16) & 0xFFFFFFF0, tail)
-    val alignedAbsFrom = (start + offset) & 0xFFFFFFF0
-    val alignedAbsTo = (end + offset + 15) & 0xFFFFFFF0
+    val start = Math.max(pos - hexDumpSizeInBytes & 0xFFFFFFF0, 0)
+    val end = Math.min(pos + hexDumpSizeInBytes + 16 & 0xFFFFFFF0, tail)
+    val alignedAbsFrom = start + offset & 0xFFFFFFF0
+    val alignedAbsTo = end + offset + 15 & 0xFFFFFFF0
     val len = alignedAbsTo - alignedAbsFrom
     val bufOffset = alignedAbsFrom - offset
     var i = appendChars(dumpBorder, from)
@@ -2875,7 +2875,7 @@ final class JsonReader private[jsoniter_scala](
       charBuf(i + 50 - (linePos << 1)) =
         if (pos >= start && pos < end) {
           val b = buf(pos)
-          charBuf(i) = ds((b >> 4) & 0xF)
+          charBuf(i) = ds(b >> 4 & 0xF)
           charBuf(i + 1) = ds(b & 0xF)
           charBuf(i + 2) = ' '
           if (b <= 31 || b >= 127) '.'
@@ -2904,7 +2904,7 @@ final class JsonReader private[jsoniter_scala](
     val ds = hexDigits
     var j = i
     if (d.toInt != d) {
-      var shift = (64 - java.lang.Long.numberOfLeadingZeros(d)) & 0x3C
+      var shift = 64 - java.lang.Long.numberOfLeadingZeros(d) & 0x3C
       while (shift >= 32) {
         charBuf(j) = ds((d >> shift).toInt & 0xF)
         shift -= 4
@@ -2917,19 +2917,19 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def appendHexByte(b: Byte, i: Int, ds: Array[Char]): Int = {
     ensureCharBufCapacity(i + 2)
-    charBuf(i) = ds((b >> 4) & 0xF)
+    charBuf(i) = ds(b >> 4 & 0xF)
     charBuf(i + 1) = ds(b & 0xF)
     i + 2
   }
 
   private[this] def putHexInt(d: Int, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
     charBuf(i) = ds(d >>> 28)
-    charBuf(i + 1) = ds((d >> 24) & 0xF)
-    charBuf(i + 2) = ds((d >> 20) & 0xF)
-    charBuf(i + 3) = ds((d >> 16) & 0xF)
-    charBuf(i + 4) = ds((d >> 12) & 0xF)
-    charBuf(i + 5) = ds((d >> 8) & 0xF)
-    charBuf(i + 6) = ds((d >> 4) & 0xF)
+    charBuf(i + 1) = ds(d >> 24 & 0xF)
+    charBuf(i + 2) = ds(d >> 20 & 0xF)
+    charBuf(i + 3) = ds(d >> 16 & 0xF)
+    charBuf(i + 4) = ds(d >> 12 & 0xF)
+    charBuf(i + 5) = ds(d >> 8 & 0xF)
+    charBuf(i + 6) = ds(d >> 4 & 0xF)
     charBuf(i + 7) = ds(d & 0xF)
   }
 

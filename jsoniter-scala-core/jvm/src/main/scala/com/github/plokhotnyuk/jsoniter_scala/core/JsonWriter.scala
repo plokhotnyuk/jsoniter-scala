@@ -828,27 +828,27 @@ final class JsonWriter private[jsoniter_scala](
     val ds = lowerCaseHexDigits
     val mostSigBits1 = (mostSigBits >> 32).toInt
     val d1 = ds(mostSigBits1 >>> 24) << 8
-    val d2 = ds((mostSigBits1 >> 16) & 0xFF).toLong << 24
-    val d3 = ds((mostSigBits1 >> 8) & 0xFF).toLong << 40
+    val d2 = ds(mostSigBits1 >> 16 & 0xFF).toLong << 24
+    val d3 = ds(mostSigBits1 >> 8 & 0xFF).toLong << 40
     val d4 = ds(mostSigBits1 & 0xFF)
     ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3 | d4.toLong << 56 | 0x22)
     val mostSigBits2 = mostSigBits.toInt
     val d5 = ds(mostSigBits2 >>> 24) << 16
-    val d6 = ds((mostSigBits2 >> 16) & 0xFF).toLong << 32
-    val d7 = ds((mostSigBits2 >> 8) & 0xFF)
+    val d6 = ds(mostSigBits2 >> 16 & 0xFF).toLong << 32
+    val d7 = ds(mostSigBits2 >> 8 & 0xFF)
     ByteArrayAccess.setLong(buf, pos + 8, d4 >> 8 | d5 | d6 | d7.toLong << 56 | 0x2D000000002D00L)
     val d8 = ds(mostSigBits2 & 0xFF) << 8
     val leastSigBits1 = (leastSigBits >> 32).toInt
     val d9 = ds(leastSigBits1 >>> 24).toLong << 32
-    val d10 = ds((leastSigBits1 >> 16) & 0xFF).toLong << 48
+    val d10 = ds(leastSigBits1 >> 16 & 0xFF).toLong << 48
     ByteArrayAccess.setLong(buf, pos + 16, d7 >> 8 | d8 | d9 | d10 | 0x2D000000)
-    val d11 = ds((leastSigBits1 >> 8) & 0xFF) << 8
+    val d11 = ds(leastSigBits1 >> 8 & 0xFF) << 8
     val d12 = ds(leastSigBits1 & 0xFF).toLong << 24
     val leastSigBits2 = leastSigBits.toInt
     val d13 = ds(leastSigBits2 >>> 24).toLong << 40
-    val d14 = ds((leastSigBits2 >> 16) & 0xFF)
+    val d14 = ds(leastSigBits2 >> 16 & 0xFF)
     ByteArrayAccess.setLong(buf, pos + 24, d11 | d12| d13 | d14.toLong << 56 | 0x2D)
-    val d15 = ds((leastSigBits2 >> 8) & 0xFF) << 8
+    val d15 = ds(leastSigBits2 >> 8 & 0xFF) << 8
     val d16 = ds(leastSigBits2 & 0xFF).toLong << 24
     ByteArrayAccess.setLong(buf, pos + 32, d14 >> 8 | d15 | d16 | 0x220000000000L)
     pos + 38
@@ -1689,7 +1689,7 @@ final class JsonWriter private[jsoniter_scala](
       ByteArrayAccess.setInt(buf, pos, 0x302E30)
       pos + 3
     } else {
-      val ieeeExponent = (bits >> 23) & 0xFF
+      val ieeeExponent = bits >> 23 & 0xFF
       val ieeeMantissa = bits & 0x7FFFFF
       var e = ieeeExponent - 150
       var m = ieeeMantissa | 0x800000
@@ -1724,7 +1724,7 @@ final class JsonWriter private[jsoniter_scala](
           dv = (s * 3435973837L >> 35).toInt // divide a positive int by 10
           val sp40 = dv * 40
           val upin = vbls - sp40
-          ((sp40 + vbrd + 40) ^ upin) >= 0 || {
+          (sp40 + vbrd + 40 ^ upin) >= 0 || {
             dv += ~upin >>> 31
             exp += 1
             false
@@ -1733,7 +1733,7 @@ final class JsonWriter private[jsoniter_scala](
           val s4 = s << 2
           val uin = vbls - s4
           dv = (~{
-            if (((s4 + vbrd + 4) ^ uin) < 0) uin
+            if ((s4 + vbrd + 4 ^ uin) < 0) uin
             else (vb & 0x3) + (s & 0x1) - 3
           } >>> 31) + s
           exp -= expShift
@@ -1843,7 +1843,7 @@ final class JsonWriter private[jsoniter_scala](
           dv = Math.multiplyHigh(s, 1844674407370955168L) // divide a positive long by 10
           val sp40 = dv * 40
           val upin = (vbls - sp40).toInt
-          (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
+          ((sp40 + vbrd).toInt + 40 ^ upin) >= 0 || {
             dv += ~upin >>> 31
             exp += 1
             false
@@ -1852,7 +1852,7 @@ final class JsonWriter private[jsoniter_scala](
           val s4 = s << 2
           val uin = (vbls - s4).toInt
           dv = (~{
-            if ((((s4 + vbrd).toInt + 4) ^ uin) < 0) uin
+            if (((s4 + vbrd).toInt + 4 ^ uin) < 0) uin
             else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
           } >>> 31) + s
           exp -= expShift
