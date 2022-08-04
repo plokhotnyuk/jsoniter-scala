@@ -3,34 +3,29 @@
 [![Actions Build](https://github.com/plokhotnyuk/jsoniter-scala/workflows/build/badge.svg)](https://github.com/plokhotnyuk/jsoniter-scala/actions)
 [![Scala Steward](https://img.shields.io/badge/Scala_Steward-helping-brightgreen.svg?style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAMAAAARSr4IAAAAVFBMVEUAAACHjojlOy5NWlrKzcYRKjGFjIbp293YycuLa3pYY2LSqql4f3pCUFTgSjNodYRmcXUsPD/NTTbjRS+2jomhgnzNc223cGvZS0HaSD0XLjbaSjElhIr+AAAAAXRSTlMAQObYZgAAAHlJREFUCNdNyosOwyAIhWHAQS1Vt7a77/3fcxxdmv0xwmckutAR1nkm4ggbyEcg/wWmlGLDAA3oL50xi6fk5ffZ3E2E3QfZDCcCN2YtbEWZt+Drc6u6rlqv7Uk0LdKqqr5rk2UCRXOk0vmQKGfc94nOJyQjouF9H/wCc9gECEYfONoAAAAASUVORK5CYII=)](https://scala-steward.org)
 [![Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Maven Central](https://img.shields.io/badge/maven--central-2.13.38-blue.svg)](https://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/)
+[![Maven Central](https://img.shields.io/badge/maven--central-2.14.0-blue.svg)](https://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/)
 
 Scala macros that generate codecs for case classes, standard types, and collections to get maximum performance of JSON 
 parsing and serialization.
 
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
-serialization performance of jsoniter-scala with:
-- [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons)
-- [Borer](https://github.com/sirthias/borer)
-- [Circe](https://github.com/circe/circe)
-- [Circe with jawn parser](https://github.com/circe/circe/tree/main/modules/jawn)
-- [Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe)
-- [DSL-JSON](https://github.com/ngs-doo/dsl-json)
-- [Jackson with jackson-module-scala](https://github.com/FasterXML/jackson-module-scala)
-- [ninny-json](https://github.com/nrktkt/ninny-json)
-- [Play-JSON](https://github.com/playframework/play-json)
-- [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter)
-- [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json)
-- [Spray-JSON](https://github.com/spray/spray-json)
-- [uPickle](https://github.com/lihaoyi/upickle)
-- [weePickle](https://github.com/rallyhealth/weePickle) 
-- [zio-json](https://github.com/zio/zio-json)
+serialization performance of jsoniter-scala with: [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons),
+[Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), 
+[Circe with jawn parser](https://github.com/circe/circe/tree/main/modules/jawn),
+[Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe)
+[DSL-JSON](https://github.com/ngs-doo/dsl-json),
+[Jackson with jackson-module-scala](https://github.com/FasterXML/jackson-module-scala), 
+[ninny-json](https://github.com/nrktkt/ninny-json), [Play-JSON](https://github.com/playframework/play-json),
+[play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter)
+[smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
+[Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle)
+[weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
 (max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 22.04, and latest versions of Azul Zulu 11/17, OpenJDK 20[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
 and GraalVM CE/EE 22.2 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares the libraries which supports Scala.js on the same environment compiled by Scala.js 1.10.0 to ES 2015 with
+compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.10.1 to ES 2015 with
 GCC v20220202 optimizations applied.
 
 ## Contents
