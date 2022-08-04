@@ -706,7 +706,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeBase64Bytes(bs: Array[Byte], ds: Array[Byte], doPadding: Boolean): Unit = count = {
-    val lenM2 = bs.length - 2
+    val lenM3 = bs.length - 3
     var posLim = limit - 6
     var pos = count
     if (pos >= posLim) {
@@ -717,14 +717,12 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     var offset = 0
-    while (offset < lenM2) {
-      val offsetLim = Math.min((posLim - pos + 3 >> 2) * 3 + offset, lenM2)
+    while (offset < lenM3) {
+      val offsetLim = Math.min((posLim - pos + 3 >> 2) * 3 + offset, lenM3)
       while (offset < offsetLim) {
-        val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
-        buf(pos) = ds(p >> 18)
-        buf(pos + 1) = ds((p >> 12) & 0x3F)
-        buf(pos + 2) = ds((p >> 6) & 0x3F)
-        buf(pos + 3) = ds(p & 0x3F)
+        val p = ByteArrayAccess.getIntReversed(bs, offset)
+        ByteArrayAccess.setInt(buf, pos,
+          ds(p >> 8 & 0x3F) << 24 | ds(p >> 14 & 0x3F) << 16 | ds(p >> 20 & 0x3F) << 8 | ds(p >>> 26))
         pos += 4
         offset += 3
       }
@@ -734,25 +732,21 @@ final class JsonWriter private[jsoniter_scala](
         posLim = limit - 5
       }
     }
-    if (offset == lenM2) {
+    if (offset == lenM3) {
+      val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
+      ByteArrayAccess.setInt(buf, pos,
+        ds(p & 0x3F) << 24 | ds(p >> 6 & 0x3F) << 16 | ds(p >> 12 & 0x3F) << 8 | ds(p >> 18))
+      pos += 4
+    } else if (offset == lenM3 + 1) {
       val p = (bs(offset) & 0xFF) << 10 | (bs(offset + 1) & 0xFF) << 2
-      buf(pos) = ds(p >> 12)
-      buf(pos + 1) = ds((p >> 6) & 0x3F)
-      buf(pos + 2) = ds(p & 0x3F)
+      ByteArrayAccess.setInt(buf, pos, ds(p & 0x3F) << 16 | ds(p >> 6 & 0x3F) << 8 | ds(p >> 12) | 0x3D000000)
       pos += 3
-      if (doPadding) {
-        buf(pos) = '='
-        pos += 1
-      }
-    } else if (offset == lenM2 + 1) {
-      val p = bs(offset) & 0xFF
-      buf(pos) = ds(p >> 2)
-      buf(pos + 1) = ds((p << 4) & 0x3F)
+      if (doPadding) pos += 1
+    } else if (offset == lenM3 + 2) {
+      val p = bs(offset)
+      ByteArrayAccess.setInt(buf, pos, ds(p << 4 & 0x3F) << 8 | ds(p >> 2 & 0x3F) | 0x3D3D0000)
       pos += 2
-      if (doPadding) {
-        ByteArrayAccess.setShort(buf, pos, 0x3D3D)
-        pos += 2
-      }
+      if (doPadding) pos += 2
     }
     buf(pos) = '"'
     pos + 1
