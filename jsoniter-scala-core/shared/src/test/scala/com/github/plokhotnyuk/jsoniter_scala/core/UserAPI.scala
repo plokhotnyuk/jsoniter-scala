@@ -231,4 +231,13 @@ object UserAPI {
       case 1 => "model"
     }
   }
+  val reentrantCodec: JsonValueCodec[User] = new JsonValueCodec[User] {
+    override def decodeValue(in: JsonReader, default: User): User =
+      readFromArrayReentrant(in.readRawValAsBytes())(codec)
+
+    override def encodeValue(x: User, out: JsonWriter): Unit =
+      out.writeRawVal(writeToArrayReentrant(x)(codec))
+
+    override def nullValue: User = null
+  }
 }
