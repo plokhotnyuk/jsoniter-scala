@@ -14,8 +14,7 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       //FIXME: DSL-JSON doesn't support parsing of ArraySeq
       //benchmark.dslJsonScala() shouldBe benchmark.obj
-      //FIXME: jackson throws java.lang.ClassCastException: class scala.collection.immutable.Vector2 cannot be cast to class scala.collection.immutable.ArraySeq
-      //benchmark.jacksonScala() shouldBe benchmark.obj
+      benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -36,8 +35,7 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       //FIXME: DSL-JSON doesn't support parsing of ArraySeq
       //intercept[Throwable](b.dslJsonScala())
-      //FIXME: jackson throws java.lang.ClassCastException: class scala.collection.immutable.Vector2 cannot be cast to class scala.collection.immutable.ArraySeq
-      //intercept[Throwable](b.jacksonScala())
+      intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
