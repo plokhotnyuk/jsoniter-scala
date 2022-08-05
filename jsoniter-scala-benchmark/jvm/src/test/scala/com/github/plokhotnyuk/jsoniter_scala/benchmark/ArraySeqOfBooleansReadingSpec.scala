@@ -24,8 +24,7 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       //benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
-      //FIXME: zio-json doesn't support parsing of ArraySeq
-      //benchmark.zioJson() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -47,8 +46,7 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       //intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
-      //FIXME: zio-json doesn't support parsing of ArraySeq
-      //intercept[Throwable](b.zioJson())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

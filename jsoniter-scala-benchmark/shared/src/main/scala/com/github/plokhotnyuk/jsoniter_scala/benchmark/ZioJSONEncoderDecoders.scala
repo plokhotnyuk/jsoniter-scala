@@ -6,6 +6,7 @@ import zio.json._
 import zio.json.internal._
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
+import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
 object ZioJSONEncoderDecoders extends ZioJSONScalaJsEncoderDecoders {
@@ -149,6 +150,19 @@ trait ZioJSONScalaJsEncoderDecoders {
         v
       }
     }, ClassTag(classOf[SuitEnum])))
+  implicit val arraySeqOfBooleansD5r: JsonDecoder[ArraySeq[Boolean]] = arraySeqDecoder[Boolean]
+
+  private[this] def arraySeqDecoder[A](implicit decoder: JsonDecoder[A], classTag: ClassTag[A]): JsonDecoder[ArraySeq[A]] =
+    (trace: List[JsonError], in: RetractReader) => {
+      val builder = ArraySeq.newBuilder[A]
+      Lexer.char(trace, in, '[')
+      var i: Int = 0
+      if (Lexer.firstArrayElement(in)) do {
+        builder += decoder.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in)
+        i += 1
+      } while (Lexer.nextArrayElement(trace, in))
+      builder.result()
+    }
 
   private[this] def throwError(msg: String, trace: List[JsonError]): Nothing =
     throw UnsafeJson(JsonError.Message(msg) :: trace)
