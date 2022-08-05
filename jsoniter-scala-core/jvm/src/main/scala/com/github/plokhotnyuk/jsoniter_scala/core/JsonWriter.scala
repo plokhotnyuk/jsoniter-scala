@@ -97,7 +97,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeKey(x: String): Unit = count = {
     val indention = this.indention
-    var pos = ensureBufCapacity(indention + 3)
+    var pos = ensureBufCapacity(indention + 10)
     val buf = this.buf
     if (comma) {
       comma = false
@@ -117,7 +117,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeNonEscapedAsciiKey(x: String): Unit = {
     val len = x.length
     val indention = this.indention
-    val required = indention + len + 7
+    val required = indention + len + 10
     if (required <= config.preferredBufSize) {
       var pos = ensureBufCapacity(required)
       val buf = this.buf
@@ -245,7 +245,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: String): Unit = count = {
     val indention = this.indention
-    var pos = ensureBufCapacity(indention + 4)
+    var pos = ensureBufCapacity(indention + 10)
     if (comma) {
       buf(pos) = ','
       pos += 1
@@ -261,7 +261,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeNonEscapedAsciiVal(x: String): Unit = {
     val len = x.length
     val indention = this.indention
-    val required = indention + len + 4
+    val required = indention + len + 10
     if (required <= config.preferredBufSize) {
       var pos = ensureBufCapacity(required)
       val buf = this.buf
@@ -633,7 +633,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeIndention(): Unit = count = {
     val n = indention
-    val pos = ensureBufCapacity(n + 1)
+    val pos = ensureBufCapacity(n + 8)
     writeIndention(buf, pos, n)
   }
 
@@ -643,10 +643,10 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     val posLim = pos + n
     while (pos < posLim) {
-      buf(pos) = ' '
-      pos += 1
+      ByteArrayAccess.setLong(buf, pos, 0x2020202020202020L)
+      pos += 8
     }
-    pos
+    posLim
   }
 
   private[this] def writeParenthesesWithColon(): Unit = count = {

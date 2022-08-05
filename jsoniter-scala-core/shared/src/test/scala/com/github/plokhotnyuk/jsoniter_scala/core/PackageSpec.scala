@@ -566,7 +566,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
   }
   "writeToSubArray and writeToSubArrayReentrant" should {
-    val buf = new Array[Byte](150)
+    val buf = new Array[Byte](160)
 
     "serialize an object to the provided byte array from specified position" in {
       def check(f: (User, Array[Byte], Int, Int, WriterConfig) => Int): Unit = {
@@ -612,8 +612,8 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     "serialize an object to the provided direct byte buffer from the current position" in {
       def check(f: (User, ByteBuffer, WriterConfig) => Unit): Unit =
         (1 to 99).foreach { preferredBufSize =>
-          val buf = new Array[Byte](150)
-          val bbuf = ByteBuffer.allocateDirect(150)
+          val buf = new Array[Byte](160)
+          val bbuf = ByteBuffer.allocateDirect(160)
           val from = 10
           bbuf.position(from)
           f(user, bbuf, WriterConfig.withPreferredBufSize(preferredBufSize))
@@ -621,7 +621,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
           bbuf.position(from)
           bbuf.get(buf, from, to - from)
           new String(buf, from, to - from, UTF_8) shouldBe toString(compactJson)
-          bbuf.limit() shouldBe 150
+          bbuf.limit() shouldBe 160
         }
 
       check(writeToByteBuffer(_, _, _)(codec))
