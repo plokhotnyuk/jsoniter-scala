@@ -50,14 +50,12 @@ class ArraySeqOfBooleansReading extends ArrayOfBooleansBenchmark {
     dslJsonDecode[ArraySeq[Boolean]](jsonBytes)
   }
 */
-/* FIXME: Jackson throws java.lang.ClassCastException: class scala.collection.immutable.Vector2 cannot be cast to class scala.collection.immutable.ArraySeq
   @Benchmark
   def jacksonScala(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     jacksonMapper.readValue[ArraySeq[Boolean]](jsonBytes)
   }
-*/
   @Benchmark
   def jsoniterScala(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
