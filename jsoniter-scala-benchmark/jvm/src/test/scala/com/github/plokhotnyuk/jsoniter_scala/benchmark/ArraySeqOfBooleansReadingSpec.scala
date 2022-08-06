@@ -19,8 +19,7 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
-      //FIXME: spray-json doesn't support parsing of ArraySeq
-      //benchmark.sprayJson() shouldBe benchmark.obj
+      benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
@@ -40,8 +39,7 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
-      //FIXME: spray-json doesn't support parsing of ArraySeq
-      //intercept[Throwable](b.sprayJson())
+      intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())

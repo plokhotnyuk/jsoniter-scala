@@ -6,8 +6,9 @@ import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import pl.iterators.kebs.json.KebsSpray
 import spray.json._
-import scala.collection.immutable.Map
+import scala.collection.immutable.{ArraySeq, Map}
 import scala.collection.mutable
+import scala.reflect.ClassTag
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -268,6 +269,25 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
         val vs = Vector.newBuilder[JsValue]
         vs.sizeHint(buf.size)
         buf.foreach(x => vs += x.toJson)
+        JsArray(vs.result())
+      }
+    }
+
+  implicit def arraySeqJsonFormat[T : JsonFormat : ClassTag]: RootJsonFormat[ArraySeq[T]] =
+    new RootJsonFormat[ArraySeq[T]] {
+      def read(json: JsValue): ArraySeq[T] =
+        if (!json.isInstanceOf[JsArray]) deserializationError(s"Expected JSON array, but got $json")
+        else {
+          val es = json.asInstanceOf[JsArray].elements
+          val b = ArraySeq.newBuilder[T]
+          es.foreach(e => b += e.convertTo[T])
+          b.result()
+        }
+
+      def write(as: ArraySeq[T]): JsValue = {
+        val vs = Vector.newBuilder[JsValue]
+        vs.sizeHint(as.size)
+        as.foreach(x => vs += x.toJson)
         JsArray(vs.result())
       }
     }
