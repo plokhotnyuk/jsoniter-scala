@@ -234,7 +234,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.8"),
-    resolvers += Resolver.sonatypeOssRepos("snapshots").head,
+    resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.14.2",
       "dev.zio" %%% "zio-json" % "0.3.0-RC10",
@@ -245,9 +245,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.avsystem.commons" %%% "commons-core" % "2.7.3",
       "com.lihaoyi" %%% "upickle" % "2.0.0",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.9",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.14.0-SNAPSHOT",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.0-SNAPSHOT",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.14.0-SNAPSHOT",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.14.0-SNAPSHOT" changing(),
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.0-SNAPSHOT" changing(),
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.14.0-SNAPSHOT" changing(),
       "io.circe" %%% "circe-generic-extras" % "0.14.2",
       "io.circe" %%% "circe-generic" % "0.15.0-M1",
       "io.circe" %%% "circe-parser" % "0.15.0-M1",

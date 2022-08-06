@@ -47,14 +47,13 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
     dslJsonDecode[mutable.BitSet](jsonBytes)
   }
 */
-/* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 1 type parameter for collection like types (scala.collection.immutable.BitSet)
   @Benchmark
   def jacksonScala(): mutable.BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     jacksonMapper.readValue[mutable.BitSet](jsonBytes)
   }
-*/
+
   @Benchmark
   def jsoniterScala(): mutable.BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

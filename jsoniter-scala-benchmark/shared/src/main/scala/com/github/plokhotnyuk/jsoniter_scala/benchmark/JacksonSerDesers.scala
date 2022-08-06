@@ -11,8 +11,11 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule
-import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
+import com.fasterxml.jackson.module.scala.deser.{ImmutableBitSetDeserializer, MutableBitSetDeserializer}
+import com.fasterxml.jackson.module.scala.{BitSetDeserializerModule, ClassTagExtensions, DefaultScalaModule}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
+import scala.collection.immutable.BitSet
+import scala.collection.mutable
 import scala.util.Try
 
 object JacksonSerDesers {
@@ -26,7 +29,10 @@ object JacksonSerDesers {
       .build()
     new ObjectMapper(jsonFactory) with ClassTagExtensions {
       registerModule(DefaultScalaModule)
+      registerModule(BitSetDeserializerModule)
       registerModule(new SimpleModule()
+        .addDeserializer(classOf[BitSet], ImmutableBitSetDeserializer)
+        .addDeserializer(classOf[mutable.BitSet], MutableBitSetDeserializer)
         .addSerializer(classOf[SuitADT], new SuitADTSerializer)
         .addSerializer(classOf[SuitEnum], new EnumSerializer(SuitEnum))
         .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)

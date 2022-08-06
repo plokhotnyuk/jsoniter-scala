@@ -47,14 +47,13 @@ class BitSetReading extends BitSetBenchmark {
     dslJsonDecode[BitSet](jsonBytes)
   }
 */
-/* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 1 type parameter for collection like types (scala.collection.immutable.BitSet)
   @Benchmark
   def jacksonScala(): BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     jacksonMapper.readValue[BitSet](jsonBytes)
   }
-*/
+
   @Benchmark
   def jsoniterScala(): BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
