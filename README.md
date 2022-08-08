@@ -211,9 +211,9 @@ list of dependencies:
 ```sbt
 libraryDependencies ++= Seq(
   // Use the %%% operator instead of %% for Scala.js and Scala Native 
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.13.38",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.14.1",
   // Use the "provided" scope instead when the "compile-internal" scope is not supported  
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.13.38" % "compile-internal"
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.14.1" % "compile-internal"
 )
 ```
 
@@ -455,7 +455,7 @@ echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governo
 ```
 
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check
-[Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](https://openjdk.java.net/projects/code-tools/jmh/
+[Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](https://openjdk.java.net/projects/code-tools/jmh/)
 
 Learn how to write benchmarks in [JMH samples](https://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/)
  and JMH articles posted in [Aleksey Shipilёv’s](https://shipilev.net/) and [Nitsan Wakart’s](https://psy-lob-saw.blogspot.com/p/jmh-related-posts.html)
