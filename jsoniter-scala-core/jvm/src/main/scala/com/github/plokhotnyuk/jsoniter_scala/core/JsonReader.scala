@@ -21,7 +21,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
-  private[this] val magnitude: Array[Byte] = new Array[Byte](128)
+  private[this] var magnitude: Array[Byte] = _
 
   def requiredFieldError(reqField: String): Nothing = {
     var i = appendString("missing required field \"", 0)
@@ -1869,19 +1869,24 @@ final class JsonReader private[jsoniter_scala](
   private[this] def toBigDecimal308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - p
+    val last = (len * 222930821L >> 32).toInt << 3 // (len * Math.log(10) / Math.log(1L << 64)).toInt * 8
+    var magnitude = this.magnitude
+    if (magnitude eq null) {
+      magnitude = new Array[Byte](128)
+      this.magnitude = magnitude
+    } else {
+      var i = 0
+      while (i < last) {
+        ByteArrayAccess.setLong(magnitude, i, 0L)
+        i += 8
+      }
+    }
     var x = 0L
     val firstBlockLimit = len % 18 + p
     var pos = p
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
       pos += 1
-    }
-    val magnitude = this.magnitude
-    val last = (len * 222930821L >> 32).toInt << 3 // (len * Math.log(10) / Math.log(1L << 64)).toInt * 8
-    var i = 0
-    while (i < last) {
-      ByteArrayAccess.setLong(magnitude, i, 0L)
-      i += 8
     }
     ByteArrayAccess.setLong(magnitude, last, x)
     var first = last
@@ -1908,7 +1913,7 @@ final class JsonReader private[jsoniter_scala](
         i -= 8
       }
     }
-    i = 0
+    var i = 0
     while (i <= last) {
       ByteArrayAccess.setLong(magnitude, i, java.lang.Long.reverseBytes(ByteArrayAccess.getLong(magnitude, i)))
       i += 8

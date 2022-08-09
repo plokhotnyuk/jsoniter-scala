@@ -21,7 +21,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
-  private[this] val magnitude: Array[Int] = new Array[Int](32)
+  private[this] var magnitude: Array[Int] = _
 
   def requiredFieldError(reqField: String): Nothing = {
     var i = appendString("missing required field \"", 0)
@@ -1820,6 +1820,18 @@ final class JsonReader private[jsoniter_scala](
   private[this] def toBigDecimal308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - p
+    val last = (len * 0.10381025296523008).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
+    var magnitude = this.magnitude
+    if (magnitude eq null) {
+      magnitude = new Array[Int](32)
+      this.magnitude = magnitude
+    } else {
+      var i = 0
+      while (i < last) {
+        magnitude(i) = 0
+        i += 1
+      }
+    }
     var x = 0L
     val firstBlockLimit = len % 9 + p
     var pos = p
@@ -1827,15 +1839,8 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val magWords = magnitude
-    val lastWord = (len * 445861642L >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
-    var i = 0
-    while (i < lastWord) {
-      magWords(i) = 0
-      i += 1
-    }
-    magWords(lastWord) = x.toInt
-    var firstWord = lastWord
+    magnitude(last) = x.toInt
+    var first = last
     while (pos < limit) {
       x =
         (buf(pos) * 10 + buf(pos + 1)) * 10000000L +
@@ -1844,30 +1849,30 @@ final class JsonReader private[jsoniter_scala](
             (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
             buf(pos + 8)) - 5333333328L // 5333333328L == '0' * 111111111L
       pos += 9
-      firstWord = Math.max(firstWord - 1, 0)
-      var i = lastWord
-      while (i >= firstWord) {
-        val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
-        magWords(i) = p.toInt
+      first = Math.max(first - 1, 0)
+      var i = last
+      while (i >= first) {
+        val p = (magnitude(i) & 0xFFFFFFFFL) * 1000000000 + x
+        magnitude(i) = p.toInt
         x = p >>> 32
         i -= 1
       }
     }
-    val magBytes = new Array[Byte](lastWord + 1 << 2)
-    i = 0
-    while (i <= lastWord) {
-      val w = magWords(i)
+    val bs = new Array[Byte](last + 1 << 2)
+    var i = 0
+    while (i <= last) {
+      val w = magnitude(i)
       val j = i << 2
-      magBytes(j) = (w >> 24).toByte
-      magBytes(j + 1) = (w >> 16).toByte
-      magBytes(j + 2) = (w >> 8).toByte
-      magBytes(j + 3) = w.toByte
+      bs(j) = (w >> 24).toByte
+      bs(j + 1) = (w >> 16).toByte
+      bs(j + 2) = (w >> 8).toByte
+      bs(j + 3) = w.toByte
       i += 1
     }
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale)
+    new java.math.BigDecimal(new java.math.BigInteger(signum, bs), scale)
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
