@@ -106,6 +106,7 @@ object GenUtils {
   } yield YearMonth.of(year.getValue, month)
   val genZoneId: Gen[ZoneId] = Gen.oneOf(
     genZoneOffset,
+    genZoneOffset.map(zo => ZoneId.of(zo.toString.replace(":", ""))),
     genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
     genZoneOffset.map(zo => ZoneId.ofOffset("UTC", zo)),
     genZoneOffset.map(zo => ZoneId.ofOffset("GMT", zo)),
