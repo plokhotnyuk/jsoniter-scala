@@ -29,7 +29,7 @@ object GenUtils {
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
-  val genWhitespaces: Gen[String] = Gen.choose(0, 99).map(whitespaces)
+  val genWhitespaces: Gen[String] = Gen.oneOf(whitespaces)
   val genSize: Gen[Int] = Gen.frequency((9, Gen.choose(1, 10)), (3, Gen.choose(1, 100)),
     (1, Gen.choose(1, 1000)))
   val genMathContext: Gen[MathContext] = for {
