@@ -89,7 +89,7 @@ final class stringified extends StaticAnnotation
   *                               allow using `Option[Option[_]]` field values to distinguish `null` and missing field
   *                               cases
   */
-class CodecMakerConfig(
+class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
     val javaEnumValueNameMapper: NameMapper,
     val adtLeafClassNameMapper: NameMapper,
@@ -169,7 +169,7 @@ class CodecMakerConfig(
   def withSkipNestedOptions(skipNestedOptions: Boolean): CodecMakerConfig =
     copy(skipNestedOptions = skipNestedOptions)
 
-  def copy(fieldNameMapper: NameMapper = fieldNameMapper,
+  private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
            javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
            adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
            discriminatorFieldName: Option[String] = discriminatorFieldName,
@@ -249,7 +249,7 @@ object CodecMakerConfig extends CodecMakerConfig(
     **/
   class PrintCodec
 
-  given FromExpr[CodecMakerConfig] with {
+  private[macros] given FromExpr[CodecMakerConfig] with {
     def extract[X: FromExpr](name: String, x: Expr[X])(using Quotes): X = {
       import quotes.reflect._
 

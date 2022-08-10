@@ -114,8 +114,8 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq( // ignore source compatible changes in Macros API that are used in compile-time only
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
+  mimaBinaryIssueFilters := Seq( // ignore source compatible fixes in Macros API for Scala 3 that are used in the compile-time only
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.*")
   )
 )
 
