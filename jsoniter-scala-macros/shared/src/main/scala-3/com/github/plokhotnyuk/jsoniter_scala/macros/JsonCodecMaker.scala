@@ -52,7 +52,7 @@ final class stringified extends StaticAnnotation
   *                               and decoding of keys (turned off by default)
   * @param skipUnexpectedFields   a flag that turns on skipping of unexpected fields or in other case a parse exception
   *                               will be thrown (turned on by default)
-  * @param transientDefault       (always OFF in scala3)  a flag that turns on skipping serialization of fields that have same values as
+  * @param transientDefault       a flag that turns on skipping serialization of fields that have same values as
   *                               default values defined for them in the primary constructor (turned on by default)
   * @param transientEmpty         a flag that turns on skipping serialization of fields that have empty values of
   *                               arrays or collections (turned on by default)
@@ -85,6 +85,9 @@ final class stringified extends StaticAnnotation
   *                               the discriminator appears in the end of JSON objects, especially nested)
   * @param useScalaEnumValueId    a flag that turns on using of ids for parsing and serialization of Scala enumeration
   *                               values
+  * @param skipNestedOptions      a flag that turns on skipping of some values for nested more than 2-times options and
+  *                               allow using `Option[Option[_]]` field values to distinguish `null` and missing field
+  *                               cases
   */
 class CodecMakerConfig(
     val fieldNameMapper: NameMapper,
@@ -107,8 +110,8 @@ class CodecMakerConfig(
     val setMaxInsertNumber: Int,
     val allowRecursiveTypes: Boolean,
     val requireDiscriminatorFirst: Boolean,
-    val useScalaEnumValueId: Boolean) {
-
+    val useScalaEnumValueId: Boolean,
+    val skipNestedOptions: Boolean) {
   @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodec.make functions")
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
 
@@ -163,6 +166,9 @@ class CodecMakerConfig(
   def withUseScalaEnumValueId(useScalaEnumValueId: Boolean): CodecMakerConfig =
     copy(useScalaEnumValueId = useScalaEnumValueId)
 
+  def withSkipNestedOptions(skipNestedOptions: Boolean): CodecMakerConfig =
+    copy(skipNestedOptions = skipNestedOptions)
+
   def copy(fieldNameMapper: NameMapper = fieldNameMapper,
            javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
            adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -183,7 +189,8 @@ class CodecMakerConfig(
            setMaxInsertNumber: Int = setMaxInsertNumber,
            allowRecursiveTypes: Boolean = allowRecursiveTypes,
            requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
-           useScalaEnumValueId: Boolean = useScalaEnumValueId): CodecMakerConfig =
+           useScalaEnumValueId: Boolean = useScalaEnumValueId,
+           skipNestedOptions: Boolean = skipNestedOptions): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -205,7 +212,8 @@ class CodecMakerConfig(
       setMaxInsertNumber = setMaxInsertNumber,
       allowRecursiveTypes = allowRecursiveTypes,
       requireDiscriminatorFirst = requireDiscriminatorFirst,
-      useScalaEnumValueId = useScalaEnumValueId)
+      useScalaEnumValueId = useScalaEnumValueId,
+      skipNestedOptions = skipNestedOptions)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -229,7 +237,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   setMaxInsertNumber = 1024,
   allowRecursiveTypes = false,
   requireDiscriminatorFirst = true,
-  useScalaEnumValueId = false) {
+  useScalaEnumValueId = false,
+  skipNestedOptions = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -273,7 +282,8 @@ object CodecMakerConfig extends CodecMakerConfig(
             $exprSetMaxInsertNumber,
             $exprAllowRecursiveTypes,
             $exprRequireDiscriminatorFirst,
-            $exprUseScalaEnumValueId)
+            $exprUseScalaEnumValueId,
+            $skipNestedOptions)
         } =>
           try {
             Some(CodecMakerConfig(
@@ -297,7 +307,8 @@ object CodecMakerConfig extends CodecMakerConfig(
               extract("setMaxInsertNumber", exprSetMaxInsertNumber),
               extract("allowRecursiveTypes", exprAllowRecursiveTypes),
               extract("requireDiscriminatorFirst", exprRequireDiscriminatorFirst),
-              extract("useScalaEnumValueId", exprUseScalaEnumValueId)))
+              extract("useScalaEnumValueId", exprUseScalaEnumValueId),
+              extract("skipNestedOptions", skipNestedOptions)))
           } catch {
             case FromExprException(message, expr) =>
               report.warning(message, expr)
@@ -325,6 +336,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withBitSetValueLimit($v) } => Some(x.valueOrAbort.withBitSetValueLimit(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withMapMaxInsertNumber($v) } => Some(x.valueOrAbort.withMapMaxInsertNumber(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withSetMaxInsertNumber($v) } => Some(x.valueOrAbort.withSetMaxInsertNumber(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withSkipNestedOptions($v) } => Some(x.valueOrAbort.withSkipNestedOptions(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -693,7 +705,7 @@ object JsonCodecMaker {
       def companion(tpe: TypeRepr): Symbol = tpe.typeSymbol.moduleClass
 
       def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean =
-        tpe <:< TypeRepr.of[Option[_]] && !types.headOption.exists(_ <:< TypeRepr.of[Option[_]])
+        tpe <:< TypeRepr.of[Option[_]] && (cfg.skipNestedOptions || !types.headOption.exists(_ <:< TypeRepr.of[Option[_]]))
 
       def isCollection(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Array[_]]
 
@@ -2001,11 +2013,14 @@ object JsonCodecMaker {
               getClassInfo(tpe).genNew(readVal.asTerm).asExprOf[T]
         } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
+          val nullValue =
+            if (cfg.skipNestedOptions && tpe <:< TypeRepr.of[Option[Option[_]]]) '{ new Some(None) }.asExprOf[T]
+            else default
           tpe1.asType match
             case '[t1] =>
               val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
               '{
-                if ($in.isNextToken('n')) $in.readNullOrError($default, "expected value or null")
+                if ($in.isNextToken('n')) $in.readNullOrError($nullValue, "expected value or null")
                 else {
                   $in.rollbackToken()
                   new Some($readVal1)

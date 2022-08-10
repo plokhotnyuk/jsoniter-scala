@@ -182,6 +182,7 @@ There are configurable options that can be set in compile-time:
 - Throwing of a compilation error for recursive data structures can be turned off
 - Throwing of a runtime error when the discriminator is not the first field can be turned off
 - Ability to parse/serialize Scala enumeration from/to id numbers
+- Ability to derive codecs that can distinguish `null` field values and missing fields as `Some(None)` and `None` values of `Option[Option[_]]`
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible

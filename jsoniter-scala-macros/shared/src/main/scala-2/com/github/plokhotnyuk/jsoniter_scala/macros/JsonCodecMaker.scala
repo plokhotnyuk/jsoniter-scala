@@ -80,6 +80,9 @@ final class stringified extends StaticAnnotation
   *                               the discriminator appears in the end of JSON objects, especially nested)
   * @param useScalaEnumValueId    a flag that turns on using of ids for parsing and serialization of Scala enumeration
   *                               values
+  * @param skipNestedOptions      a flag that turns on skipping of some values for nested more than 2-times options and
+  *                               allow using `Option[Option[_]]` field values to distinguish `null` and missing field
+  *                               cases
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -102,7 +105,8 @@ class CodecMakerConfig private (
     val setMaxInsertNumber: Int,
     val allowRecursiveTypes: Boolean,
     val requireDiscriminatorFirst: Boolean,
-    val useScalaEnumValueId: Boolean) {
+    val useScalaEnumValueId: Boolean,
+    val skipNestedOptions: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -157,6 +161,9 @@ class CodecMakerConfig private (
   def withUseScalaEnumValueId(useScalaEnumValueId: Boolean): CodecMakerConfig =
     copy(useScalaEnumValueId = useScalaEnumValueId)
 
+  def withSkipNestedOptions(skipNestedOptions: Boolean): CodecMakerConfig =
+    copy(skipNestedOptions = skipNestedOptions)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -177,7 +184,8 @@ class CodecMakerConfig private (
                          setMaxInsertNumber: Int = setMaxInsertNumber,
                          allowRecursiveTypes: Boolean = allowRecursiveTypes,
                          requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
-                         useScalaEnumValueId: Boolean = useScalaEnumValueId): CodecMakerConfig =
+                         useScalaEnumValueId: Boolean = useScalaEnumValueId,
+                         skipNestedOptions: Boolean = skipNestedOptions): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -199,7 +207,8 @@ class CodecMakerConfig private (
       setMaxInsertNumber = setMaxInsertNumber,
       allowRecursiveTypes = allowRecursiveTypes,
       requireDiscriminatorFirst = requireDiscriminatorFirst,
-      useScalaEnumValueId = useScalaEnumValueId)
+      useScalaEnumValueId = useScalaEnumValueId,
+      skipNestedOptions = skipNestedOptions)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -223,11 +232,11 @@ object CodecMakerConfig extends CodecMakerConfig(
   setMaxInsertNumber = 1024,
   allowRecursiveTypes = false,
   requireDiscriminatorFirst = true,
-  useScalaEnumValueId = false) {
+  useScalaEnumValueId = false,
+  skipNestedOptions = false) {
 
   /**
     * Use to enable printing of codec during compilation:
-    *
     *{{{
     *implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}
     *val codec = JsonCodecMaker.make[MyClass]
@@ -504,7 +513,7 @@ object JsonCodecMaker {
       }
 
       def isOption(tpe: Type, types: List[Type]): Boolean =
-        tpe <:< typeOf[Option[_]] && !types.headOption.exists(_ <:< typeOf[Option[_]])
+        tpe <:< typeOf[Option[_]] && (cfg.skipNestedOptions || !types.headOption.exists(_ <:< typeOf[Option[_]]))
 
       def isCollection(tpe: Type): Boolean = tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Array[_]]
 
@@ -1318,7 +1327,10 @@ object JsonCodecMaker {
           q"new $tpe(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})"
         } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
-          q"""if (in.isNextToken('n')) in.readNullOrError($default, "expected value or null")
+          val nullValue =
+            if (cfg.skipNestedOptions && tpe <:< typeOf[Option[Option[_]]]) q"new _root_.scala.Some(_root_.scala.None)"
+            else default
+          q"""if (in.isNextToken('n')) in.readNullOrError($nullValue, "expected value or null")
               else {
                 in.rollbackToken()
                 new _root_.scala.Some(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})
