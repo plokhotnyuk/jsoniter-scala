@@ -869,7 +869,7 @@ final class JsonReader private[jsoniter_scala](
     pos += 5
     while ({
       if (pos >= tail) {
-        pos = loadMoreOrError(pos)
+        pos = loadMoreOrError(pos - 1) + 1
         buf = this.buf
       }
       b = buf(pos)
@@ -1184,7 +1184,7 @@ final class JsonReader private[jsoniter_scala](
       var pos = head
       var buf = this.buf
       while ((pos < tail || {
-        pos = loadMore(pos)
+        pos = loadMore(pos - 1) + 1
         buf = this.buf
         pos < tail
       }) && {
@@ -1216,7 +1216,7 @@ final class JsonReader private[jsoniter_scala](
       var pos = head
       var buf = this.buf
       while ((pos < tail || {
-        pos = loadMore(pos)
+        pos = loadMore(pos - 1) + 1
         buf = this.buf
         pos < tail
       }) && {
@@ -1248,7 +1248,7 @@ final class JsonReader private[jsoniter_scala](
       var pos = head
       var buf = this.buf
       while ((pos < tail || {
-        pos = loadMore(pos)
+        pos = loadMore(pos - 1) + 1
         buf = this.buf
         pos < tail
       }) && {
@@ -1302,7 +1302,7 @@ final class JsonReader private[jsoniter_scala](
         pos += 8
       }
       while ((pos < tail || {
-        pos = loadMore(pos)
+        pos = loadMore(pos - 1) + 1
         buf = this.buf
         pos < tail
       }) && {
@@ -1328,7 +1328,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def ensureNotLeadingZero(): Unit = {
     var pos = head
     if ((pos < tail || {
-      pos = loadMore(pos)
+      pos = loadMore(pos - 1) + 1
       pos < tail
     }) && {
       val b = buf(pos)
