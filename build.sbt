@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
@@ -35,7 +34,6 @@ lazy val commonSettings = Seq(
         case 13 => Seq()
       }) ++ Seq(
         "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
-        //"-Xmacro-settings:print-codecs"
       )
     } else Seq(
       "-Xcheck-macros",
@@ -113,10 +111,7 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq( // ignore source compatible fixes in Macros API for Scala 3 that are used in the compile-time only
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.*")
-  )
+  mimaReportSignatureProblems := true
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
