@@ -1595,7 +1595,7 @@ final class JsonReader private[jsoniter_scala](
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
   // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
   // https://doc.lagout.org/security/Hackers%20Delight.pdf
-  private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long = { // FIXME: Use Math.multiplyHigh(x, y) + ((x >> 63) & y) + ((y >> 63) & x) after dropping of JDK 8 support
+  private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long = { // FIXME: Use Math.multiplyHigh(x, y) + x + y here after dropping of JDK 8 support
     val xl = x & 0xFFFFFFFFL
     val xh = x >>> 32
     val yl = y & 0xFFFFFFFFL

@@ -36,7 +36,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for '"A" | "B" | "C"'."""
       })
     }
-    "serialize and deserialize Scala3 opaque types" in { // FIXME: Add codec derivation for opaque types
+    "serialize and deserialize Scala3 opaque types" in {
       case class Period(start: Year, end: Year)
 
       implicit val yearCodec: JsonValueCodec[Year] = new JsonValueCodec[Year] {
