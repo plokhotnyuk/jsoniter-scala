@@ -876,7 +876,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize Option[Option[_]] to distinguish `null` field values and missing fields" in {
       case class Model(field1: String, field2: Option[Option[String]])
 
-      verifySerDeser(make[List[Model]](CodecMakerConfig.withSkipNestedOptions(true)),
+      verifySerDeser(make[List[Model]](CodecMakerConfig.withSkipNestedOptionValues(true)),
         List(Model("VVV", _root_.scala.Some(_root_.scala.Some("WWW"))), Model("VVV", _root_.scala.None), Model("VVV", _root_.scala.Some(_root_.scala.None))),
         """[{"field1":"VVV","field2":"WWW"},{"field1":"VVV"},{"field1":"VVV","field2":null}]""")
     }
