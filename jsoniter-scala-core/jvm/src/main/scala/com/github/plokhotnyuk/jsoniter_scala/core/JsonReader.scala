@@ -1663,9 +1663,9 @@ final class JsonReader private[jsoniter_scala](
               b >= '0' && b <= '9'
             }) pos += 1
           } else {
-            val notz = java.lang.Long.numberOfTrailingZeros(m)
-            pos += notz >> 3
-            b = (bs >> (notz - 7)).toByte
+            val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+            pos += offset
+            b = (bs >> (offset << 3)).toByte
           }
           head = pos
           if ((b | 0x20) == 'e' || b == '.') numberError(pos)
@@ -2797,9 +2797,8 @@ final class JsonReader private[jsoniter_scala](
       charBuf(i + 6) = (bs >> 48 & 0xFF).toChar
       charBuf(i + 7) = (bs >>> 56).toChar
       if (m != 0) {
-        val notz = java.lang.Long.numberOfTrailingZeros(m)
-        val offset = notz >> 3
-        if (bs << ~notz >>> 56 == '"') {
+        val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+        if ((bs >> (offset << 3)).toByte == '"') {
           head = pos + offset + 1
           i + offset
         } else parseEncodedString(i + offset, charBuf.length - 1, charBuf, pos + offset)
