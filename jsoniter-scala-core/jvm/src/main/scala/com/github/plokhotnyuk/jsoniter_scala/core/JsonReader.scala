@@ -2070,7 +2070,7 @@ final class JsonReader private[jsoniter_scala](
     val epochDaySeconds = parseEpochDaySeconds()
     var pos = head
     var buf = this.buf
-    var secondOfDay, offsetTotal = 0L
+    var secondOfDay = 0L
     if (pos + 7 < tail && {
       secondOfDay = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       ((secondOfDay + 0x767A00767A00767DL | secondOfDay) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
@@ -2110,6 +2110,7 @@ final class JsonReader private[jsoniter_scala](
     if (b == 'Z') nextByteOrError('"', pos)
     else {
       val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+      var offsetTotal = 0L
       if (pos + 7 < tail && {
         offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         (offsetTotal + 0x00060A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L &&
@@ -2120,8 +2121,9 @@ final class JsonReader private[jsoniter_scala](
       } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
       if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
       if (offsetNeg) offsetTotal = -offsetTotal
+      secondOfDay -= offsetTotal
     }
-    Instant.ofEpochSecond(epochDaySeconds + secondOfDay - offsetTotal, nano)
+    Instant.ofEpochSecond(epochDaySeconds + secondOfDay, nano)
   }
 
   private[this] def parseEpochDaySeconds(): Long = {

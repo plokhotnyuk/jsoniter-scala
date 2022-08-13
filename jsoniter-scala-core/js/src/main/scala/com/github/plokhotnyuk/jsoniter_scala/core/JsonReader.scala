@@ -1988,9 +1988,8 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseInstant(): Instant = {
-    val epochDaySeconds = parseEpochDaySeconds()
-    val secondOfDay = parseSecondOfDay(head)
-    var nano, offsetTotal = 0
+    var epochSecond = parseEpochSecond()
+    var nano = 0
     var nanoDigitWeight = -2
     var b = nextByte(head)
     if (b == '.') {
@@ -2014,22 +2013,21 @@ final class JsonReader private[jsoniter_scala](
     if (b == 'Z') nextByteOrError('"', head)
     else {
       val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
-      offsetTotal = parseOffsetTotalWithDoubleQuotes(head)
+      var offsetTotal = parseOffsetTotalWithDoubleQuotes(head)
       if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
       if (offsetNeg) offsetTotal = -offsetTotal
+      epochSecond -= offsetTotal
     }
-    Instant.ofEpochSecond(epochDaySeconds + secondOfDay - offsetTotal, nano)
+    Instant.ofEpochSecond(epochSecond, nano)
   }
 
-  private[this] def parseEpochDaySeconds(): Long = {
+  private[this] def parseEpochSecond(): Long = {
     val year = parseYearWithByte('-', 10, head)
     val month = parseMonthWithByte('-', head)
     val day = parseDayWithByte(year, month, 'T', head)
-    epochDay(year, month, day) * 86400 // 86400 == seconds per day
+    epochDay(year, month, day) * 86400 + // 86400 == seconds per day
+      parseHourWithColon(head) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)
   }
-
-  private[this] def parseSecondOfDay(pos: Int): Int =
-    parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)
 
   private[this] def parseLocalDate(): LocalDate = {
     val year = parseYearWithByte('-', 9, head)
