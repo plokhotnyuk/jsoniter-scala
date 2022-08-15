@@ -29,12 +29,10 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
     "serialize and deserialize Scala3 enum ADTs defined with `derives` keyword" in {
       trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
 
-      object DefaultJsonValueCodec {
-        inline def derived[A]: DefaultJsonValueCodec[A] = new DefaultJsonValueCodec[A] {
+      object DefaultJsonValueCodec:
+        inline def derived[A]: DefaultJsonValueCodec[A] = new:
           private val impl = JsonCodecMaker.make[A](CodecMakerConfig.withDiscriminatorFieldName(Some("name")))
           export impl._
-        }
-      }
 
       enum TestEnum derives DefaultJsonValueCodec:
         case Value1

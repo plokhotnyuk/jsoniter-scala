@@ -116,10 +116,9 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
     "serialize and deserialize enum ADTs with self-recursive (aka F-bounded) types" in {
       val oneFruit: FruitEnumBasket[FruitEnum.Apple] = FruitEnumBasket(List(FruitEnum.Apple("golden")))
       val twoFruits: FruitEnumBasket[FruitEnum.Apple] = oneFruit.copy(fruits = oneFruit.fruits :+ FruitEnum.Apple("red"))
-      val message = intercept[TestFailedException](assertCompiles {
+      assert(intercept[TestFailedException](assertCompiles {
         """oneFruit.copy(fruits = oneFruit.fruits :+ FruitEnum.Orange(0))"""
-      }).getMessage
-      assert(message.contains("Found:    com.github.plokhotnyuk.jsoniter_scala.macros.FruitEnum.Orange\nRequired: com.github.plokhotnyuk.jsoniter_scala.macros.FruitEnum.Apple"))
+      }).getMessage.contains("Found:    com.github.plokhotnyuk.jsoniter_scala.macros.FruitEnum.Orange\nRequired: com.github.plokhotnyuk.jsoniter_scala.macros.FruitEnum.Apple"))
       verifySerDeser(make[FruitEnumBasket[FruitEnum.Apple]], twoFruits,
         """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
       verifySerDeser(make[FruitEnumBasket[FruitEnum.Orange]], FruitEnumBasket(List(FruitEnum.Orange(1), FruitEnum.Orange(2))),

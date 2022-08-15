@@ -661,7 +661,7 @@ object JsonCodecMaker {
                 val ctArgs = names.map { name =>
                   tpBinding.get(name)
                     .getOrElse(fail(s"Type parameter $name of $sym can't be deduced from type arguments of " +
-                      s"${tpe.show}. Please provide a custom implicitly accessible codec for if"))
+                      s"${tpe.show}. Please provide a custom implicitly accessible codec for it."))
                 }
                 val polyRes = resPolyTp match
                   case MethodType(_, _, resTp) => resTp

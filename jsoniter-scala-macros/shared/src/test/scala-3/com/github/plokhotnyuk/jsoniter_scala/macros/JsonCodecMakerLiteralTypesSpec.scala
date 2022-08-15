@@ -7,8 +7,6 @@ case class LiteralTypes(s: "VVV", b: true, c: '1', i: 2, l: 3L, f: 4.0f, d: 5.0)
 case class LiteralAnyVal(v: 7) extends AnyVal
 
 class JsonCodecMakerLiteralTypesSpec extends VerifyingSpec {
-  import NamespacePollutions._
-
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize case class with literal types" in {
       verifySerDeser(make[LiteralTypes],
