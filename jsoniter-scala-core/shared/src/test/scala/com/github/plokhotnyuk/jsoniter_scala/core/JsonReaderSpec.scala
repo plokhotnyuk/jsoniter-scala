@@ -439,7 +439,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("n", "unexpected end of input, offset: 0x00000001")
       checkError("nu", "unexpected end of input, offset: 0x00000002")
       checkError("nul", "unexpected end of input, offset: 0x00000003")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonU = if (ch == 'u') 'X' else ch
         val nonL = if (ch == 'l') 'X' else ch
         checkError(s"n${nonU}ll", """expected null, offset: 0x00000001""")
@@ -471,7 +471,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("n", "unexpected end of input, offset: 0x00000001")
       checkError("nu", "unexpected end of input, offset: 0x00000002")
       checkError("nul", "unexpected end of input, offset: 0x00000003")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonU = if (ch == 'u') 'X' else ch
         val nonL = if (ch == 'l') 'X' else ch
         checkError(s"n${nonU}ll", """expected '"' or null, offset: 0x00000001""")
@@ -521,7 +521,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "throw parsing exception for empty input and illegal or broken value" in {
       checkError("tru", "unexpected end of input, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
       checkError("fals", "unexpected end of input, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonTorForWhitespace = if (ch == 't' || ch == 'f' || ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') 'X' else ch
         val nonR = if (ch == 'r') 'X' else ch
         val nonU = if (ch == 'u') 'X' else ch
@@ -580,7 +580,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""""", "unexpected end of input, offset: 0x00000001")
       checkError("""""""", "unexpected end of input, offset: 0x00000002")
       checkError(""""00000000-0000-0000-0000-000000000000""", "unexpected end of input, offset: 0x00000025")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonHexDigit = if (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'F' || ch >= 'a' && ch <= 'f') 'X' else ch
         val nonDash = if (ch == '-') 'X' else ch
         val nonDoubleQuotes = if (ch == '"') 'X' else ch
@@ -634,12 +634,25 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readBase16AsBytes(default) shouldBe default
     }
     "parse Base16 representation according to format that defined in RFC4648" in {
+      val toHex: Array[Char] = "0123456789abcdef".toCharArray
+
+      def toBase16(bs: Array[Byte]): String = {
+        val sb = (new StringBuilder).append('"')
+        var i = 0
+        while (i < bs.length) {
+          val b = bs(i)
+          sb.append(toHex(b >> 4 & 0xF)).append(toHex(b & 0xF))
+          i += 1
+        }
+        sb.append('"').toString
+      }
+
       def check(s: String, ws: String): Unit = {
         val bs = s.getBytes(UTF_8)
-        val base16LowerCase = bs.map(TestUtils.toHex).mkString(""""""", "", """"""")
+        val base16LowerCase = toBase16(bs)
         val base16UpperCase = base16LowerCase.toUpperCase
-        reader(ws + base16LowerCase).readBase16AsBytes(null).map(TestUtils.toHex).mkString(""""""", "", """"""") shouldBe base16LowerCase
-        reader(ws + base16UpperCase).readBase16AsBytes(null).map(TestUtils.toHex).mkString(""""""", "", """"""") shouldBe base16LowerCase
+        toBase16(reader(ws + base16LowerCase).readBase16AsBytes(null)) shouldBe base16LowerCase
+        toBase16(reader(ws + base16UpperCase).readBase16AsBytes(null)) shouldBe base16LowerCase
       }
 
       forAll(arbitrary[String], genWhitespaces, minSuccessful(10000))(check)
@@ -654,7 +667,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""00""", "unexpected end of input, offset: 0x00000003")
       checkError(""""000""", "unexpected end of input, offset: 0x00000004")
       checkError(""""0000""", "unexpected end of input, offset: 0x00000005")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonHexDigit = if (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'F' || ch >= 'a' && ch <= 'f') 'X' else ch
         val nonHexDigitOrDoubleQuotes = if (nonHexDigit == '"') 'X' else nonHexDigit
         checkError(s""""${nonHexDigitOrDoubleQuotes}000"""", """expected '"' or hex digit, offset: 0x00000001""")
@@ -868,7 +881,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""2008-01-20T07:24:33.+10:10:60"""", "illegal timezone offset second, offset: 0x0000001d")
       checkError(""""2008-01-20T07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x0000001e")
       checkError(""""2008-01-20T07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x0000001e")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDigitOrSignOrZ= if (ch >= '0' && ch <= '9' || ch == '+' || ch == '-' || ch == 'Z') 'X' else ch
@@ -980,7 +993,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""2008-10-32"""", "illegal day, offset: 0x0000000a")
       checkError(""""2008-11-31"""", "illegal day, offset: 0x0000000a")
       checkError(""""2008-12-32"""", "illegal day, offset: 0x0000000a")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
@@ -1070,7 +1083,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""2008-01-20T24:24:33"""", "illegal hour, offset: 0x0000000d")
       checkError(""""2008-01-20T07:60:33"""", "illegal minute, offset: 0x00000010")
       checkError(""""2008-01-20T07:24:60"""", "illegal second, offset: 0x00000013")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
@@ -1157,7 +1170,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""24:24:33"""", "illegal hour, offset: 0x00000002")
       checkError(""""07:60:33"""", "illegal minute, offset: 0x00000005")
       checkError(""""07:24:60"""", "illegal second, offset: 0x00000008")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDigitOrDoubleQuotes = if (ch >= '0' && ch <= '9' || ch == '"') 'X' else ch
         val nonColon = if (ch == ':') 'X' else ch
@@ -1226,7 +1239,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""--10-32"""", "illegal day, offset: 0x00000007")
       checkError(""""--11-31"""", "illegal day, offset: 0x00000007")
       checkError(""""--12-32"""", "illegal day, offset: 0x00000007")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDash = if (ch == '-') 'X' else ch
         val nonDoubleQuotes = if (ch == '"') 'X' else ch
@@ -1303,7 +1316,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""2008-01-20T07:24:33.+10:10:60"""", "illegal timezone offset second, offset: 0x0000001d")
       checkError(""""2008-01-20T07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x0000001e")
       checkError(""""2008-01-20T07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x0000001e")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonNumberOrZ = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
@@ -1411,7 +1424,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""07:24:33.+10:10:60"""", "illegal timezone offset second, offset: 0x00000012")
       checkError(""""07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x00000013")
       checkError(""""07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x00000013")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumberOrZ = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
         val nonSignOrZ = if (ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
@@ -1466,8 +1479,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(genWhitespaces) { ws =>
         check("P0D", ws)
       }
-      forAll(genPeriod, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
-      forAll(arbitrary[Int], arbitrary[Int], genWhitespaces, minSuccessful(10000)) { (x, y, ws) =>
+      forAll(genPeriod, genWhitespaces, minSuccessful(1000))((x, ws) => check(x.toString, ws))
+      forAll(arbitrary[Int], arbitrary[Int], genWhitespaces, minSuccessful(1000)) { (x, y, ws) =>
         check(s"P${x}Y", ws)
         check(s"P${x}M", ws)
         check(s"P${x}D", ws)
@@ -1475,12 +1488,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check(s"P${x}M${y}D", ws)
         check(s"P${x}Y${y}D", ws)
       }
-      forAll(Gen.choose(-1000000, 1000000), genWhitespaces, minSuccessful(10000)) { (w, ws) =>
+      forAll(Gen.choose(-1000000, 1000000), genWhitespaces, minSuccessful(1000)) { (w, ws) =>
         check(s"P${w}W", ws)
         check(s"P1Y${w}W", ws)
         check(s"P1Y1M${w}W", ws)
       }
-      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), genWhitespaces, minSuccessful(10000)) { (w, d, ws) =>
+      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), genWhitespaces, minSuccessful(1000)) { (w, d, ws) =>
         check(s"P${w}W${d}D", ws)
         check(s"P1Y${w}W${d}D", ws)
         check(s"P1Y1M${w}W${d}D", ws)
@@ -1582,7 +1595,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""+1000000000"""", """expected '"', offset: 0x0000000b""")
       checkError(""""-1000000000"""", """expected '"', offset: 0x0000000b""")
       checkError(""""-0000"""", "illegal year, offset: 0x00000005")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDigitOrDoubleQuotes = if (ch >= '0' && ch <= '9' || ch == '"') 'X' else ch
@@ -1648,7 +1661,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""-0000-01"""", "illegal year, offset: 0x00000005")
       checkError(""""2008-00"""", "illegal month, offset: 0x00000007")
       checkError(""""2008-13"""", "illegal month, offset: 0x00000007")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
@@ -1777,7 +1790,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""2008-01-20T07:24:33.+20:10[UTC]"""", "illegal timezone offset hour, offset: 0x00000017")
       checkError(""""2008-01-20T07:24:33.+10:60[UTC]"""", "illegal timezone offset minute, offset: 0x0000001a")
       checkError(""""2008-01-20T07:24:33.+10:10:60[UTC]"""", "illegal timezone offset second, offset: 0x0000001d")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
@@ -1934,7 +1947,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""+10:10:60"""", "illegal timezone offset second, offset: 0x00000009")
       checkError(""""+18:00:01"""", "illegal timezone offset, offset: 0x0000000a")
       checkError(""""-18:00:01"""", "illegal timezone offset, offset: 0x0000000a")
-      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonColonOrDoubleQuotes = if (ch == ':' || ch == '"') 'X' else ch
         val nonDoubleQuotes = if (ch == '"') 'X' else ch
@@ -2057,7 +2070,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "throw parsing exception for control chars that must be escaped" in {
-      forAll(genControlChar, minSuccessful(1000)) { ch =>
+      forAll(genControlChar, minSuccessful(100)) { ch =>
         checkError(s""""${ch.toString}"""", "unescaped control character, offset: 0x00000001")
       }
     }
@@ -2194,7 +2207,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "throw parsing exception for string with length > 1" in {
-      forAll(genChar, minSuccessful(10000)) { ch =>
+      forAll(genChar, minSuccessful(100)) { ch =>
         whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           checkError(s""""$ch$ch"""", """expected '"'""") // offset can differs for non-ASCII characters
         }
@@ -2206,7 +2219,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         assert(intercept[JsonReaderException](reader2(bytes).readKeyAsChar()).getMessage.startsWith(error))
       }
 
-      forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
+      forAll(genControlChar, minSuccessful(100)) { (ch: Char) =>
         checkError(Array('"', ch.toByte, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
@@ -2286,7 +2299,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse valid byte values" in {
-      forAll(arbitrary[Byte], genWhitespaces, minSuccessful(1000))(check)
+      forAll(arbitrary[Byte], genWhitespaces, minSuccessful(10000))(check)
     }
     "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
       checkError("123.0", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")

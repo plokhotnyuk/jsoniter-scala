@@ -386,11 +386,11 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           .getMessage.startsWith("illegal char sequence of surrogate pair"))
       }
 
-      forAll(genSurrogateChar, Gen.oneOf(true, false), minSuccessful(10000)) { (ch, escapeUnicode) =>
+      forAll(genSurrogateChar, Gen.oneOf(true, false), minSuccessful(100)) { (ch, escapeUnicode) =>
         checkError(ch.toString, escapeUnicode)
         checkError(ch.toString + ch.toString, escapeUnicode)
       }
-      forAll(genLowSurrogateChar, genHighSurrogateChar, Gen.oneOf(true, false), minSuccessful(10000)) {
+      forAll(genLowSurrogateChar, genHighSurrogateChar, Gen.oneOf(true, false), minSuccessful(100)) {
         (ch1, ch2, escapeUnicode) => checkError(ch1.toString + ch2.toString, escapeUnicode)
       }
     }
@@ -759,9 +759,22 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       intercept[NullPointerException](withWriter(_.writeBase16Val(null.asInstanceOf[Array[Byte]], lowerCase = false)))
     }
     "write bytes as Base16 string according to format that defined in RFC4648" in {
+      val toHex: Array[Char] = "0123456789abcdef".toCharArray
+
+      def toBase16(bs: Array[Byte]): String = {
+        val sb = (new StringBuilder).append('"')
+        var i = 0
+        while (i < bs.length) {
+          val b = bs(i)
+          sb.append(toHex(b >> 4 & 0xF)).append(toHex(b & 0xF))
+          i += 1
+        }
+        sb.append('"').toString
+      }
+
       def check(s: String): Unit = {
         val bs = s.getBytes
-        val base16LowerCase = bs.map(TestUtils.toHex).mkString("\"", "", "\"")
+        val base16LowerCase = toBase16(bs)
         val base16UpperCase = base16LowerCase.toUpperCase
         withWriter(_.writeBase16Val(bs, lowerCase = true)) shouldBe base16LowerCase
         withWriter(_.writeBase16Val(bs, lowerCase = false)) shouldBe base16UpperCase
