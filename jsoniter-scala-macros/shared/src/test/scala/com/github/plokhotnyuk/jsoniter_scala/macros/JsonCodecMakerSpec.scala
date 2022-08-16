@@ -15,6 +15,7 @@ case class OrderId(value: Int) extends AnyVal
 
 object Alias {
   type I = Int
+
   type S = String
 
   case class UserId(id: S) extends AnyVal
@@ -24,9 +25,11 @@ object Alias {
 
 object UserId2 {
   type Opaque = Base with Tag
+
   type Base = Any {
     type Hack
   }
+
   trait Tag
 
   object Opaque {

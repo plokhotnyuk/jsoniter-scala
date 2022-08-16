@@ -9,8 +9,7 @@ case class LiteralAnyVal(v: 7) extends AnyVal
 class JsonCodecMakerLiteralTypesSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize case class with literal types" in {
-      verifySerDeser(make[LiteralTypes],
-        LiteralTypes("VVV", true, '1', 2, 3L, 4.0f, 5.0),
+      verifySerDeser(make[LiteralTypes], LiteralTypes("VVV", true, '1', 2, 3L, 4.0f, 5.0),
         """{"s":"VVV","b":true,"c":"1","i":2,"l":3,"f":4.0,"d":5.0}""")
     }
     "serialize and deserialize any val with a literal type" in {
