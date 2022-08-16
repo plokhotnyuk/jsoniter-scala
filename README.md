@@ -5,20 +5,19 @@
 [![Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://img.shields.io/badge/maven--central-2.15.0-blue.svg)](https://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/)
 
-Scala macros that generate codecs for case classes, standard types, and collections to get maximum performance of JSON 
-parsing and serialization.
+Scala macros for compile-time generation of safe and ultra-fast JSON codecs.
 
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
 serialization performance of jsoniter-scala with: [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons),
 [Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), 
 [Circe with jawn parser](https://github.com/circe/circe/tree/main/modules/jawn),
-[Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe)
+[Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
 [DSL-JSON](https://github.com/ngs-doo/dsl-json),
-[Jackson with jackson-module-scala](https://github.com/FasterXML/jackson-module-scala), 
+[jackson-module-scala](https://github.com/FasterXML/jackson-module-scala), 
 [ninny-json](https://github.com/nrktkt/ninny-json), [Play-JSON](https://github.com/playframework/play-json),
-[play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter)
+[play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
-[Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle)
+[Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
 (max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 22.04, and latest versions of Azul Zulu 11/17, OpenJDK 20[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
@@ -296,8 +295,8 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 So if your system is sensitive for that and can accept untrusted input then avoid parsing with `java.io.InputStream` and
 check the input length for other ways of parsing.
 
-2. configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on other
-code that uses a result of the macro's call, otherwise the following compilation error will be reported:
+2. The configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on 
+other code that uses a result of the macro's call, otherwise the following compilation error will be reported:
 ```
 [error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on
         code from the same compilation module where the 'make' macro is called. Use a separated submodule of the project
@@ -314,20 +313,37 @@ separated submodule:
 and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorldController.scala#L12)
 - use `sbt clean compile stage` or `sbt clean test stage` instead of just `sbt clean stage`, like in
 [this repo](https://github.com/hochgi/HTTP-stream-exercise/tree/jsoniter-2nd-round)
-- use `mill clean` if mill's native BSP support is used in IntelliJ IDEA 
+- use `mill clean` if mill's native BSP support is used in IntelliJ IDEA
 
 3. [Unexpected compiler errors](https://github.com/plokhotnyuk/jsoniter-scala/issues/551)
 can happen during compilation of ADT definitions or their derived codecs if they are nested in some classes or functions
 like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48).
 
-Workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the outer
-_object_ (not a class) instead.
+The workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the
+outer _object_ (not a class) instead.
 
 4. Compile-time configuration for `make` calls in Scala 3 has limited support of possible expressions for name mapping.
 
 Please use examples of `CodecMakerConfig` usage from [unit tests](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala).   
 
-5. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
+5. [Unexpected parsing or serialization errors](https://github.com/plokhotnyuk/jsoniter-scala/issues/923)
+   can happen for nested parsing or serialization routines when the same instance of `JsonReader` or `JsonWriter` is
+   reused:
+```scala
+scanJsonValuesFromStream[String](in) { s =>
+  readFromString[String](s)
+}
+```
+
+The workaround is using reentrant parsing or serialization routines for all except the most nested call. That will
+create a new instance of `JsonReader` or `JsonWriter` on each reentrant call:
+```scala
+scanJsonValuesFromStreamReentrant[String](in) { s =>
+  readFromString[String](s)
+}
+```
+
+6. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
 ```
 [error] Referring to non-existent class com.github.plokhotnyuk.jsoniter_scala.macros.Level
 [error]   called from private com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.$anonfun$new$24()void
@@ -372,7 +388,7 @@ enum Level extends Enum[Level] {
 }
 ```
 
-6. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
+7. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
 ```scala
 object LocationType extends Enumeration {
   type LocationType = Value
@@ -391,7 +407,7 @@ object LocationType extends Enumeration {
 }
 ```
 
-7. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
+8. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
 ```scala
 case class DeResult[T](isSucceed: Boolean, data: T, message: String)
 case class RootPathFiles(files: List[String])
@@ -427,7 +443,7 @@ object DeResultCodecs extends DeResultCodecs
 import DeResultCodecs.given
 ```
 
-8. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque types.
+9. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque types.
 The workaround is using a custom codec for the opaque type defined with `implicit val` before the `JsonCodecMaker.make`
 call, like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L16-L45).
 
