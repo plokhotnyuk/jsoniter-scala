@@ -362,8 +362,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(s: String): Unit = {
         withWriter(_.writeVal(s)) shouldBe s""""$s""""
         withWriter(_.writeKey(s)) shouldBe s""""$s":"""
-        withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(s)) shouldBe s""""${s.flatMap(toEscaped(_))}""""
-        withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(s)) shouldBe s""""${s.flatMap(toEscaped(_))}":"""
+        withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(s)) shouldBe s""""${s.flatMap(toEscaped)}""""
+        withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(s)) shouldBe s""""${s.flatMap(toEscaped)}":"""
       }
 
       forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(10000)) { (ch1, ch2) =>
@@ -780,10 +780,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "write bytes as Base64 string according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
         val bs = s.getBytes(UTF_8)
-        withWriter(_.writeBase64Val(bs, doPadding = true)) shouldBe "\"" + Base64.getEncoder.encodeToString(bs) + "\""
-        withWriter(_.writeBase64UrlVal(bs, doPadding = true)) shouldBe "\"" + Base64.getUrlEncoder.encodeToString(bs) + "\""
-        withWriter(_.writeBase64Val(bs, doPadding = false)) shouldBe "\"" + Base64.getEncoder.withoutPadding.encodeToString(bs) + "\""
-        withWriter(_.writeBase64UrlVal(bs, doPadding = false)) shouldBe "\"" + Base64.getUrlEncoder.withoutPadding.encodeToString(bs) + "\""
+        withWriter(_.writeBase64Val(bs, doPadding = true)) shouldBe s""""${Base64.getEncoder.encodeToString(bs)}""""
+        withWriter(_.writeBase64UrlVal(bs, doPadding = true)) shouldBe s""""${Base64.getUrlEncoder.encodeToString(bs)}""""
+        withWriter(_.writeBase64Val(bs, doPadding = false)) shouldBe s""""${Base64.getEncoder.withoutPadding.encodeToString(bs)}""""
+        withWriter(_.writeBase64UrlVal(bs, doPadding = false)) shouldBe s""""${Base64.getUrlEncoder.withoutPadding.encodeToString(bs)}""""
       }
 
       forAll(arbitrary[String], minSuccessful(10000))(check)
@@ -820,7 +820,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         w.writeValAsString(true)
         w.writeRawVal(Array[Byte](51))
         w.writeArrayEnd()
-      } shouldBe "[1,\"VVV\",\"2\",\"true\",3]"
+      } shouldBe """[1,"VVV","2","true",3]"""
     }
     "allow to write a prettified JSON array with values separated by comma" in {
       withWriter(WriterConfig.withIndentionStep(2)) { w =>
@@ -860,7 +860,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         w.writeNonEscapedAsciiKey("2")
         w.writeRawVal(Array[Byte](51))
         w.writeObjectEnd()
-      } shouldBe "{\"1\":\"VVV\",\"true\":\"WWW\",\"2\":3}"
+      } shouldBe """{"1":"VVV","true":"WWW","2":3}"""
     }
     "allow to write a prettified JSON array with key/value pairs separated by comma" in {
       withWriter(WriterConfig.withIndentionStep(2)) { w =>
