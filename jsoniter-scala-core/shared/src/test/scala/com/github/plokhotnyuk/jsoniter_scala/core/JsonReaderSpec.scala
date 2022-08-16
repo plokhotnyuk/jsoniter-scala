@@ -435,10 +435,17 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         }.getMessage.startsWith(error))
       }
 
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("n", "unexpected end of input, offset: 0x00000001")
+      checkError("nu", "unexpected end of input, offset: 0x00000002")
       checkError("nul", "unexpected end of input, offset: 0x00000003")
-      checkError("nxll", "expected null, offset: 0x00000001")
-      checkError("nuxl", "expected null, offset: 0x00000002")
-      checkError("nulx", "expected null, offset: 0x00000003")
+      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+        val nonU = if (ch == 'u') 'X' else ch
+        val nonL = if (ch == 'l') 'X' else ch
+        checkError(s"n${nonU}ll", """expected null, offset: 0x00000001""")
+        checkError(s"nu${nonL}l", """expected null, offset: 0x00000002""")
+        checkError(s"nul${nonL}", """expected null, offset: 0x00000003""")
+      }
     }
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
       assert(intercept[IllegalStateException](reader("null").readNullOrError("default", "error"))
@@ -455,15 +462,22 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def checkError(s: String, error: String): Unit = {
         assert(intercept[JsonReaderException] {
           val r = reader(s)
-          r.isNextToken('n') shouldBe true
+          val _ = r.isNextToken('n')
           r.readNullOrTokenError("default", '\"')
         }.getMessage.startsWith(error))
       }
 
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("n", "unexpected end of input, offset: 0x00000001")
+      checkError("nu", "unexpected end of input, offset: 0x00000002")
       checkError("nul", "unexpected end of input, offset: 0x00000003")
-      checkError("nxll", """expected '"' or null, offset: 0x00000001""")
-      checkError("nuxl", """expected '"' or null, offset: 0x00000002""")
-      checkError("nulx", """expected '"' or null, offset: 0x00000003""")
+      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+        val nonU = if (ch == 'u') 'X' else ch
+        val nonL = if (ch == 'l') 'X' else ch
+        checkError(s"n${nonU}ll", """expected '"' or null, offset: 0x00000001""")
+        checkError(s"nu${nonL}l", """expected '"' or null, offset: 0x00000002""")
+        checkError(s"nul${nonL}", """expected '"' or null, offset: 0x00000003""")
+      }
     }
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
       assert(intercept[IllegalStateException](reader("null").readNullOrError("default", "error"))
@@ -505,17 +519,26 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "throw parsing exception for empty input and illegal or broken value" in {
-      checkError("xrue", "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
-      checkError("txue", "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
-      checkError("trxe", "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
-      checkError("trux", "illegal boolean, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
-      checkError("xalse", "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
-      checkError("fxlse", "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
-      checkError("faxse", "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
-      checkError("falxe", "illegal boolean, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
-      checkError("falsx", "illegal boolean, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
       checkError("tru", "unexpected end of input, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
       checkError("fals", "unexpected end of input, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
+      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+        val nonTorForWhitespace = if (ch == 't' || ch == 'f' || ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') 'X' else ch
+        val nonR = if (ch == 'r') 'X' else ch
+        val nonU = if (ch == 'u') 'X' else ch
+        val nonE = if (ch == 'e') 'X' else ch
+        val nonA = if (ch == 'a') 'X' else ch
+        val nonL = if (ch == 'l') 'X' else ch
+        val nonS = if (ch == 's') 'X' else ch
+        checkError(s"${nonTorForWhitespace}rue", "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
+        checkError(s"t${nonR}ue", "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
+        checkError(s"tr${nonU}e", "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
+        checkError(s"tru${nonE}", "illegal boolean, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
+        checkError(s"${nonTorForWhitespace}alse", "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
+        checkError(s"f${nonA}lse", "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
+        checkError(s"fa${nonL}se", "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
+        checkError(s"fal${nonS}e", "illegal boolean, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
+        checkError(s"fals${nonE}", "illegal boolean, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
+      }
     }
   }
   "JsonReader.readKeyAsUUID" should {
@@ -557,79 +580,48 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""""", "unexpected end of input, offset: 0x00000001")
       checkError("""""""", "unexpected end of input, offset: 0x00000002")
       checkError(""""00000000-0000-0000-0000-000000000000""", "unexpected end of input, offset: 0x00000025")
-      checkError(""""Z0000000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000001")
-      checkError(""""0Z000000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000002")
-      checkError(""""00Z00000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000003")
-      checkError(""""000Z0000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000004")
-      checkError(""""0000Z000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000005")
-      checkError(""""00000Z00-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000006")
-      checkError(""""000000Z0-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000007")
-      checkError(""""0000000Z-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000008")
-      checkError(""""00000000=0000-0000-0000-000000000000"""", "expected '-', offset: 0x00000009")
-      checkError(""""00000000-Z000-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000a")
-      checkError(""""00000000-0Z00-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000b")
-      checkError(""""00000000-00Z0-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000c")
-      checkError(""""00000000-000Z-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000d")
-      checkError(""""00000000-0000=0000-0000-000000000000"""", "expected '-', offset: 0x0000000e")
-      checkError(""""00000000-0000-Z000-0000-000000000000"""", "expected hex digit, offset: 0x0000000f")
-      checkError(""""00000000-0000-0Z00-0000-000000000000"""", "expected hex digit, offset: 0x00000010")
-      checkError(""""00000000-0000-00Z0-0000-000000000000"""", "expected hex digit, offset: 0x00000011")
-      checkError(""""00000000-0000-000Z-0000-000000000000"""", "expected hex digit, offset: 0x00000012")
-      checkError(""""00000000-0000-0000=0000-000000000000"""", "expected '-', offset: 0x00000013")
-      checkError(""""00000000-0000-0000-Z000-000000000000"""", "expected hex digit, offset: 0x00000014")
-      checkError(""""00000000-0000-0000-0Z00-000000000000"""", "expected hex digit, offset: 0x00000015")
-      checkError(""""00000000-0000-0000-00Z0-000000000000"""", "expected hex digit, offset: 0x00000016")
-      checkError(""""00000000-0000-0000-000Z-000000000000"""", "expected hex digit, offset: 0x00000017")
-      checkError(""""00000000-0000-0000-0000=000000000000"""", "expected '-', offset: 0x00000018")
-      checkError(""""00000000-0000-0000-0000-Z00000000000"""", "expected hex digit, offset: 0x00000019")
-      checkError(""""00000000-0000-0000-0000-0Z0000000000"""", "expected hex digit, offset: 0x0000001a")
-      checkError(""""00000000-0000-0000-0000-00Z000000000"""", "expected hex digit, offset: 0x0000001b")
-      checkError(""""00000000-0000-0000-0000-000Z00000000"""", "expected hex digit, offset: 0x0000001c")
-      checkError(""""00000000-0000-0000-0000-0000Z0000000"""", "expected hex digit, offset: 0x0000001d")
-      checkError(""""00000000-0000-0000-0000-00000Z000000"""", "expected hex digit, offset: 0x0000001e")
-      checkError(""""00000000-0000-0000-0000-000000Z00000"""", "expected hex digit, offset: 0x0000001f")
-      checkError(""""00000000-0000-0000-0000-0000000Z0000"""", "expected hex digit, offset: 0x00000020")
-      checkError(""""00000000-0000-0000-0000-00000000Z000"""", "expected hex digit, offset: 0x00000021")
-      checkError(""""00000000-0000-0000-0000-000000000Z00"""", "expected hex digit, offset: 0x00000022")
-      checkError(""""00000000-0000-0000-0000-0000000000Z0"""", "expected hex digit, offset: 0x00000023")
-      checkError(""""00000000-0000-0000-0000-00000000000Z"""", "expected hex digit, offset: 0x00000024")
-      checkError(""""×0000000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000001")
-      checkError(""""0×000000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000002")
-      checkError(""""00×00000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000003")
-      checkError(""""000×0000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000004")
-      checkError(""""0000×000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000005")
-      checkError(""""00000×00-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000006")
-      checkError(""""000000×0-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000007")
-      checkError(""""0000000×-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000008")
-      checkError(""""00000000÷0000-0000-0000-000000000000"""", "expected '-', offset: 0x00000009")
-      checkError(""""00000000-×000-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000a")
-      checkError(""""00000000-0×00-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000b")
-      checkError(""""00000000-00×0-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000c")
-      checkError(""""00000000-000×-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000d")
-      checkError(""""00000000-0000÷0000-0000-000000000000"""", "expected '-', offset: 0x0000000e")
-      checkError(""""00000000-0000-×000-0000-000000000000"""", "expected hex digit, offset: 0x0000000f")
-      checkError(""""00000000-0000-0×00-0000-000000000000"""", "expected hex digit, offset: 0x00000010")
-      checkError(""""00000000-0000-00×0-0000-000000000000"""", "expected hex digit, offset: 0x00000011")
-      checkError(""""00000000-0000-000×-0000-000000000000"""", "expected hex digit, offset: 0x00000012")
-      checkError(""""00000000-0000-0000÷0000-000000000000"""", "expected '-', offset: 0x00000013")
-      checkError(""""00000000-0000-0000-×000-000000000000"""", "expected hex digit, offset: 0x00000014")
-      checkError(""""00000000-0000-0000-0×00-000000000000"""", "expected hex digit, offset: 0x00000015")
-      checkError(""""00000000-0000-0000-00×0-000000000000"""", "expected hex digit, offset: 0x00000016")
-      checkError(""""00000000-0000-0000-000×-000000000000"""", "expected hex digit, offset: 0x00000017")
-      checkError(""""00000000-0000-0000-0000÷000000000000"""", "expected '-', offset: 0x00000018")
-      checkError(""""00000000-0000-0000-0000-×00000000000"""", "expected hex digit, offset: 0x00000019")
-      checkError(""""00000000-0000-0000-0000-0×0000000000"""", "expected hex digit, offset: 0x0000001a")
-      checkError(""""00000000-0000-0000-0000-00×000000000"""", "expected hex digit, offset: 0x0000001b")
-      checkError(""""00000000-0000-0000-0000-000×00000000"""", "expected hex digit, offset: 0x0000001c")
-      checkError(""""00000000-0000-0000-0000-0000×0000000"""", "expected hex digit, offset: 0x0000001d")
-      checkError(""""00000000-0000-0000-0000-00000×000000"""", "expected hex digit, offset: 0x0000001e")
-      checkError(""""00000000-0000-0000-0000-000000×00000"""", "expected hex digit, offset: 0x0000001f")
-      checkError(""""00000000-0000-0000-0000-0000000×0000"""", "expected hex digit, offset: 0x00000020")
-      checkError(""""00000000-0000-0000-0000-00000000×000"""", "expected hex digit, offset: 0x00000021")
-      checkError(""""00000000-0000-0000-0000-000000000×00"""", "expected hex digit, offset: 0x00000022")
-      checkError(""""00000000-0000-0000-0000-0000000000×0"""", "expected hex digit, offset: 0x00000023")
-      checkError(""""00000000-0000-0000-0000-00000000000×"""", "expected hex digit, offset: 0x00000024")
-      checkError(""""00000000-0000-0000-0000-000000000000x""", """expected '"', offset: 0x00000025""")
+      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+        val nonHexDigit = if (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'F' || ch >= 'a' && ch <= 'f') 'X' else ch
+        val nonDash = if (ch == '-') 'X' else ch
+        val nonDoubleQuotes = if (ch == '"') 'X' else ch
+        checkError(s""""${nonHexDigit}0000000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000001")
+        checkError(s""""0${nonHexDigit}000000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000002")
+        checkError(s""""00${nonHexDigit}00000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000003")
+        checkError(s""""000${nonHexDigit}0000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000004")
+        checkError(s""""0000${nonHexDigit}000-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000005")
+        checkError(s""""00000${nonHexDigit}00-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000006")
+        checkError(s""""000000${nonHexDigit}0-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000007")
+        checkError(s""""0000000${nonHexDigit}-0000-0000-0000-000000000000"""", "expected hex digit, offset: 0x00000008")
+        checkError(s""""00000000${nonDash}0000-0000-0000-000000000000"""", "expected '-', offset: 0x00000009")
+        checkError(s""""00000000-${nonHexDigit}000-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000a")
+        checkError(s""""00000000-0${nonHexDigit}00-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000b")
+        checkError(s""""00000000-00${nonHexDigit}0-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000c")
+        checkError(s""""00000000-000${nonHexDigit}-0000-0000-000000000000"""", "expected hex digit, offset: 0x0000000d")
+        checkError(s""""00000000-0000${nonDash}0000-0000-000000000000"""", "expected '-', offset: 0x0000000e")
+        checkError(s""""00000000-0000-${nonHexDigit}000-0000-000000000000"""", "expected hex digit, offset: 0x0000000f")
+        checkError(s""""00000000-0000-0${nonHexDigit}00-0000-000000000000"""", "expected hex digit, offset: 0x00000010")
+        checkError(s""""00000000-0000-00${nonHexDigit}0-0000-000000000000"""", "expected hex digit, offset: 0x00000011")
+        checkError(s""""00000000-0000-000${nonHexDigit}-0000-000000000000"""", "expected hex digit, offset: 0x00000012")
+        checkError(s""""00000000-0000-0000${nonDash}0000-000000000000"""", "expected '-', offset: 0x00000013")
+        checkError(s""""00000000-0000-0000-${nonHexDigit}000-000000000000"""", "expected hex digit, offset: 0x00000014")
+        checkError(s""""00000000-0000-0000-0${nonHexDigit}00-000000000000"""", "expected hex digit, offset: 0x00000015")
+        checkError(s""""00000000-0000-0000-00${nonHexDigit}0-000000000000"""", "expected hex digit, offset: 0x00000016")
+        checkError(s""""00000000-0000-0000-000${nonHexDigit}-000000000000"""", "expected hex digit, offset: 0x00000017")
+        checkError(s""""00000000-0000-0000-0000${nonDash}000000000000"""", "expected '-', offset: 0x00000018")
+        checkError(s""""00000000-0000-0000-0000-${nonHexDigit}00000000000"""", "expected hex digit, offset: 0x00000019")
+        checkError(s""""00000000-0000-0000-0000-0${nonHexDigit}0000000000"""", "expected hex digit, offset: 0x0000001a")
+        checkError(s""""00000000-0000-0000-0000-00${nonHexDigit}000000000"""", "expected hex digit, offset: 0x0000001b")
+        checkError(s""""00000000-0000-0000-0000-000${nonHexDigit}00000000"""", "expected hex digit, offset: 0x0000001c")
+        checkError(s""""00000000-0000-0000-0000-0000${nonHexDigit}0000000"""", "expected hex digit, offset: 0x0000001d")
+        checkError(s""""00000000-0000-0000-0000-00000${nonHexDigit}000000"""", "expected hex digit, offset: 0x0000001e")
+        checkError(s""""00000000-0000-0000-0000-000000${nonHexDigit}00000"""", "expected hex digit, offset: 0x0000001f")
+        checkError(s""""00000000-0000-0000-0000-0000000${nonHexDigit}0000"""", "expected hex digit, offset: 0x00000020")
+        checkError(s""""00000000-0000-0000-0000-00000000${nonHexDigit}000"""", "expected hex digit, offset: 0x00000021")
+        checkError(s""""00000000-0000-0000-0000-000000000${nonHexDigit}00"""", "expected hex digit, offset: 0x00000022")
+        checkError(s""""00000000-0000-0000-0000-0000000000${nonHexDigit}0"""", "expected hex digit, offset: 0x00000023")
+        checkError(s""""00000000-0000-0000-0000-00000000000${nonHexDigit}"""", "expected hex digit, offset: 0x00000024")
+        checkError(s""""00000000-0000-0000-0000-000000000000${nonDoubleQuotes}""", """expected '"', offset: 0x00000025""")
+      }
     }
   }
   "JsonReader.readBase16AsBytes" should {
@@ -662,10 +654,14 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""00""", "unexpected end of input, offset: 0x00000003")
       checkError(""""000""", "unexpected end of input, offset: 0x00000004")
       checkError(""""0000""", "unexpected end of input, offset: 0x00000005")
-      checkError(""""!000"""", """expected '"' or hex digit, offset: 0x00000001""")
-      checkError(""""0!00"""", "expected hex digit, offset: 0x00000002")
-      checkError(""""00!0"""", """expected '"' or hex digit, offset: 0x00000003""")
-      checkError(""""000!"""", "expected hex digit, offset: 0x00000004")
+      forAll(genISO8859Char, minSuccessful(1000)) { ch =>
+        val nonHexDigit = if (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'F' || ch >= 'a' && ch <= 'f') 'X' else ch
+        val nonHexDigitOrDoubleQuotes = if (nonHexDigit == '"') 'X' else nonHexDigit
+        checkError(s""""${nonHexDigitOrDoubleQuotes}000"""", """expected '"' or hex digit, offset: 0x00000001""")
+        checkError(s""""0${nonHexDigit}00"""", "expected hex digit, offset: 0x00000002")
+        checkError(s""""00${nonHexDigitOrDoubleQuotes}0"""", """expected '"' or hex digit, offset: 0x00000003""")
+        checkError(s""""000${nonHexDigit}"""", "expected hex digit, offset: 0x00000004")
+      }
     }
   }
   "JsonReader.readBase64AsBytes and JsonReader.readBase64UrlAsBytes" should {
