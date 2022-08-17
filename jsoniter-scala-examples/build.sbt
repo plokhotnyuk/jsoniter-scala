@@ -22,7 +22,7 @@ val `jsoniter-scala-examples` = crossProject(JVMPlatform, NativePlatform)
 lazy val `jsoniter-scala-examplesJVM` = `jsoniter-scala-examples`.jvm
   .enablePlugins(NativeImagePlugin)
   .settings(
-    nativeImageOptions ++= List("--no-fallback"),
+    nativeImageOptions ++= List("--no-fallback", "--initialize-at-build-time", "--diagnostics-mode"),
     nativeImageVersion := "22",
   )
 
