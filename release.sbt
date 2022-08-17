@@ -7,16 +7,21 @@ lazy val ensureJDK11: ReleaseStep = { st: State =>
   st
 }
 
-lazy val updateVersionInReadme: ReleaseStep = { st: State =>
+lazy val updateVersionInReadmeAndExamples: ReleaseStep = { st: State =>
   val extracted = Project.extract(st)
   val newVersion = extracted.get(version)
   val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
-  val readme = "README.md"
-  val oldContent = IO.read(file(readme))
-  val newContent = oldContent.replaceAll('"' + oldVersion + '"', '"' + newVersion + '"')
-    .replaceAll('-' + oldVersion + '-', '-' + newVersion + '-')
-  IO.write(file(readme), newContent)
-  s"git add $readme" !! st.log
+
+  def updateFile(path: String): Unit = {
+    val oldContent = IO.read(file(path))
+    val newContent = oldContent.replaceAll('"' + oldVersion + '"', '"' + newVersion + '"')
+      .replaceAll('-' + oldVersion + '-', '-' + newVersion + '-')
+    IO.write(file(path), newContent)
+    s"git add $path" !! st.log
+  }
+
+  updateFile("README.md")
+  updateFile("jsoniter-scala-examples/build.sbt")
   st
 }
 
@@ -31,7 +36,7 @@ releaseProcess := Seq[ReleaseStep](
   releaseStepCommandAndRemaining("+test"),
   setReleaseVersion,
   releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
-  updateVersionInReadme,
+  updateVersionInReadmeAndExamples,
   commitReleaseVersion,
   tagRelease,
   releaseStepCommandAndRemaining("+publishSigned"),
