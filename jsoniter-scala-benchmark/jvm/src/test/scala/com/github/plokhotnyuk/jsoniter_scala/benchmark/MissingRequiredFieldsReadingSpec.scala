@@ -37,7 +37,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+""".stripMargin
       b.playJson() should include("JsResultException")
       b.playJsonJsoniter() should include("JsResultException")
-      b.smithy4sJson() shouldBe "Missing required field"
+      b.smithy4sJson() shouldBe "Missing required field (path: .s)"
       b.sprayJson() shouldBe "Object is missing required member 's'"
       b.uPickle() shouldBe "missing keys in dictionary: s, i at index 1"
       b.weePickle() shouldBe "Parser or Visitor failure jsonPointer= index=2 line=1 col=3 token=END_OBJECT"

@@ -71,7 +71,7 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import play.api.libs.json.Json
 
-    Json.parse(jsonBytes).as[Array[BigInt]](bigIntArrayFormat)
+    Json.parse(jsonBytes).as[Array[BigInt]]
   }
 */
   @Benchmark
