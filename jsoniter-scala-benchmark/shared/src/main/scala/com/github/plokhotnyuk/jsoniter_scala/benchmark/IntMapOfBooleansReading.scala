@@ -47,14 +47,13 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
     dslJsonDecode[IntMap[Boolean]](jsonBytes)
   }
 */
-/* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 2 type parameters for map like types (scala.collection.immutable.IntMap)
   @Benchmark
   def jacksonScala(): IntMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     jacksonMapper.readValue[IntMap[Boolean]](jsonBytes)
   }
-*/
+
   @Benchmark
   def jsoniterScala(): IntMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

@@ -47,14 +47,13 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
     dslJsonDecode[mutable.LongMap[Boolean]](jsonBytes)
   }
 */
-/* FIXME: Jackson throws Need exactly 2 type parameters for map like types (scala.collection.mutable.LongMap)
   @Benchmark
   def jacksonScala(): mutable.LongMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     jacksonMapper.readValue[mutable.LongMap[Boolean]](jsonBytes)
   }
-*/
+
   @Benchmark
   def jsoniterScala(): mutable.LongMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
