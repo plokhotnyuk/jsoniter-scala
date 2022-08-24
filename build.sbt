@@ -102,25 +102,8 @@ lazy val noPublishSettings = Seq(
 
 lazy val publishSettings = Seq(
   packageOptions += Package.ManifestAttributes("Automatic-Module-Name" -> moduleName.value),
-  mimaCheckDirection := {
-    def isPatch: Boolean = {
-      val Array(newMajor, newMinor, _) = version.value.split('.')
-      val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
-      newMajor == oldMajor && newMinor == oldMinor
-    }
-
-    if (isPatch) "both" else "backward"
-  },
-  mimaPreviousArtifacts := {
-    def isCheckingRequired: Boolean = {
-      val Array(newMajor, _, _) = version.value.split('.')
-      val Array(oldMajor, _, _) = oldVersion.split('.')
-      newMajor == oldMajor
-    }
-
-    if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
-    else Set()
-  },
+  mimaCheckDirection := "both",
+  mimaPreviousArtifacts := Set(),
   mimaBinaryIssueFilters := Seq( // migrated diagnostic API
     ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings"),
     ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings$"),
@@ -139,9 +122,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-circeJVM`,
     `jsoniter-scala-circeJS`,
     `jsoniter-scala-macrosJVM`,
-    `jsoniter-scala-macrosJS`,
-    `jsoniter-scala-benchmarkJVM`,
-    `jsoniter-scala-benchmarkJS`
+    `jsoniter-scala-macrosJS`
   )
 
 lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
