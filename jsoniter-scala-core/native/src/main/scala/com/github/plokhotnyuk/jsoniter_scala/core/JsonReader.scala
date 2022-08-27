@@ -2997,7 +2997,13 @@ final class JsonReader private[jsoniter_scala](
       if (mark > 0) mark = 0
       tail = remaining
       head = newPos
-    } else buf = java.util.Arrays.copyOf(buf, buf.length << 1)
+    } else {
+      var bufLen = buf.length
+      if (bufLen < 1073741824) bufLen <<= 1
+      else if (bufLen < 2147483647) bufLen = 2147483647
+      else tooLongInputError()
+      buf = java.util.Arrays.copyOf(buf, bufLen)
+    }
     var len = buf.length - tail
     if (bbuf ne null) {
       len = Math.min(bbuf.remaining, len)
@@ -3008,6 +3014,8 @@ final class JsonReader private[jsoniter_scala](
     totalRead += len
     newPos
   }
+
+  private[this] def tooLongInputError(): Nothing = decodeError("too long input", tail)
 
   private[this] def endOfInputError(): Nothing = decodeError("unexpected end of input", tail)
 
