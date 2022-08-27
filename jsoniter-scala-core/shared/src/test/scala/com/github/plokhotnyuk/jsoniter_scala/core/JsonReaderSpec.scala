@@ -694,7 +694,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         i += 1
       }
       sb.append('"')
-      checkError(sb.toString, "too long string exceeded 'maxCharBufSize', offset: 0x01000006")
+      checkError(sb.toString, "too long string exceeded 'maxCharBufSize'")
     }
   }
   "JsonReader.readBase64AsBytes and JsonReader.readBase64UrlAsBytes" should {
@@ -2189,7 +2189,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         i += 1
       }
       sb.append('"')
-      checkError(sb.toString, """too long string exceeded 'maxCharBufSize', offset: 0x00400002""")
+      checkError(sb.toString, """too long string exceeded 'maxCharBufSize'""")
     }
   }
   "JsonReader.readKeyAsChar" should {
