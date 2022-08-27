@@ -2676,7 +2676,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b != '"') {
         if (ns(b & 0xFF) < 0) decodeError("expected '\"' or hex digit")
-        nextByte(head)
+        b = nextByte(head)
         decodeError("expected hex digit")
       }
       bs = new Array[Byte](bLen + 1)
@@ -2910,17 +2910,19 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def growCharBuf(required: Int): Int = {
-    val newLim = (-1 >>> Integer.numberOfLeadingZeros(charBuf.length | required)) + 1
-    charBuf = java.util.Arrays.copyOf(charBuf, newLim)
-    newLim
+    var charBufLen = charBuf.length
+    val maxCharBufSize = config.maxCharBufSize
+    if (charBufLen == maxCharBufSize) tooLongStringError()
+    charBufLen = (-1 >>> Integer.numberOfLeadingZeros(charBufLen | required)) + 1
+    if (Integer.compareUnsigned(charBufLen, maxCharBufSize) > 0) charBufLen = maxCharBufSize
+    charBuf = java.util.Arrays.copyOf(charBuf, charBufLen)
+    charBufLen
   }
 
-  private[this] def ensureCharBufCapacity(required: Int): Unit = {
-    val len = charBuf.length
-    if (required > len) {
-      charBuf = java.util.Arrays.copyOf(charBuf, (-1 >>> Integer.numberOfLeadingZeros(len | required)) + 1)
+  private[this] def ensureCharBufCapacity(required: Int): Unit =
+    if (charBuf.length < required) {
+      val _ = growCharBuf(required)
     }
-  }
 
   @tailrec
   private[this] def skipString(evenBackSlashes: Boolean, pos: Int): Int =
@@ -3000,7 +3002,7 @@ final class JsonReader private[jsoniter_scala](
       if (mark > 0) mark = 0
       tail = remaining
       head = newPos
-    } else buf = java.util.Arrays.copyOf(buf, buf.length << 1)
+    } else growBuf()
     var len = buf.length - tail
     if (bbuf ne null) {
       len = Math.min(bbuf.remaining, len)
@@ -3011,6 +3013,19 @@ final class JsonReader private[jsoniter_scala](
     totalRead += len
     newPos
   }
+
+  private[this] def growBuf(): Unit = {
+    var bufLen = buf.length
+    val maxBufSize = config.maxBufSize
+    if (bufLen == maxBufSize) tooLongInputError()
+    bufLen <<= 1
+    if (Integer.compareUnsigned(bufLen, maxBufSize) > 0) bufLen = maxBufSize
+    buf = java.util.Arrays.copyOf(buf, bufLen)
+  }
+
+  private[this] def tooLongInputError(): Nothing = decodeError("too long part of input exceeded 'maxBufSize'", tail)
+
+  private[this] def tooLongStringError(): Nothing = decodeError("too long string exceeded 'maxCharBufSize'", tail)
 
   private[this] def endOfInputError(): Nothing = decodeError("unexpected end of input", tail)
 

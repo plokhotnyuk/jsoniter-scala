@@ -21,17 +21,29 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "have safe and handy defaults" in {
       ReaderConfig.throwReaderExceptionWithStackTrace shouldBe false
       ReaderConfig.appendHexDumpToParseException shouldBe true
+      ReaderConfig.maxBufSize shouldBe 33554432
+      ReaderConfig.maxCharBufSize shouldBe 4194304
       ReaderConfig.preferredBufSize shouldBe 32768
       ReaderConfig.preferredCharBufSize shouldBe 4096
       ReaderConfig.hexDumpSize shouldBe 2
     }
     "throw exception in case for unsupported values of params" in {
+      ReaderConfig.withMaxBufSize(32768)
+      assert(intercept[IllegalArgumentException](ReaderConfig.withMaxBufSize(32767))
+        .getMessage.startsWith("'maxBufSize' should be not less than 'preferredBufSize'"))
+      ReaderConfig.withMaxCharBufSize(4096)
+      assert(intercept[IllegalArgumentException](ReaderConfig.withMaxCharBufSize(4095))
+        .getMessage.startsWith("'maxCharBufSize' should be not less than 'preferredCharBufSize'"))
       ReaderConfig.withPreferredBufSize(12)
       assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredBufSize(11))
         .getMessage.startsWith("'preferredBufSize' should be not less than 12"))
+      assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredBufSize(33554433))
+        .getMessage.startsWith("'preferredBufSize' should be not greater than 'maxBufSize'"))
       ReaderConfig.withPreferredCharBufSize(0)
       assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredCharBufSize(-1))
         .getMessage.startsWith("'preferredCharBufSize' should be not less than 0"))
+      assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredCharBufSize(4194305))
+        .getMessage.startsWith("'preferredCharBufSize' should be not greater than 'maxCharBufSize'"))
       ReaderConfig.withHexDumpSize(5)
       assert(intercept[IllegalArgumentException](ReaderConfig.withHexDumpSize(0))
         .getMessage.startsWith("'hexDumpSize' should be not less than 1"))
@@ -657,10 +669,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       forAll(arbitrary[String], genWhitespaces, minSuccessful(10000))(check)
     }
-    "throw parsing exception for empty input and illegal or broken Base16 string" in {
-      def checkError(json: String, error: String): Unit = {
+    "throw parsing exception for empty input and illegal or too long Base16 string" in {
+      def checkError(json: String, error: String): Unit =
         assert(intercept[JsonReaderException](reader(json).readBase16AsBytes(null)).getMessage.startsWith(error))
-      }
 
       checkError(""""""", "unexpected end of input, offset: 0x00000001")
       checkError(""""0""", "unexpected end of input, offset: 0x00000002")
@@ -675,6 +686,15 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkError(s""""00${nonHexDigitOrDoubleQuotes}0"""", """expected '"' or hex digit, offset: 0x00000003""")
         checkError(s""""000${nonHexDigit}"""", "expected hex digit, offset: 0x00000004")
       }
+      val sb = new StringBuilder
+      sb.append('"')
+      var i = 0
+      while (i < (ReaderConfig.maxCharBufSize + 1) * 4) {
+        sb.append('1')
+        i += 1
+      }
+      sb.append('"')
+      checkError(sb.toString, "too long string exceeded 'maxCharBufSize', offset: 0x01000006")
     }
   }
   "JsonReader.readBase64AsBytes and JsonReader.readBase64UrlAsBytes" should {
@@ -704,7 +724,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       forAll(arbitrary[String], genWhitespaces, minSuccessful(10000))(check)
     }
-    "throw parsing exception for empty input and illegal or broken base64 string" in {
+    "throw parsing exception for empty input and illegal or too long base64 string" in {
       def checkError(json: String, error: String): Unit = {
         assert(intercept[JsonReaderException](reader(json).readBase64AsBytes(null)).getMessage.startsWith(error))
         assert(intercept[JsonReaderException](reader(json).readBase64UrlAsBytes(null)).getMessage.startsWith(error))
@@ -722,6 +742,15 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""00=!"""", "expected '=', offset: 0x00000004")
       checkError(""""00==!""", """expected '"', offset: 0x00000005""")
       checkError(""""000=!""", """expected '"', offset: 0x00000005""")
+      val sb = new StringBuilder
+      sb.append('"')
+      var i = 0
+      while (i < (ReaderConfig.maxCharBufSize + 1) * 3) {
+        sb.append('1')
+        i += 1
+      }
+      sb.append('"')
+      checkError(sb.toString, "too long string exceeded 'maxCharBufSize'")
     }
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {
@@ -2151,6 +2180,17 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte),
         "malformed byte(s): 0xf0, 0x9d, 0x84, 0x0e, offset: 0x00000004")
     }
+    "throw parsing exception for too long strings" in {
+      val sb = new StringBuilder
+      sb.append('"')
+      var i = 0
+      while (i < ReaderConfig.maxCharBufSize) {
+        sb.append(' ')
+        i += 1
+      }
+      sb.append('"')
+      checkError(sb.toString, """too long string exceeded 'maxCharBufSize', offset: 0x00400002""")
+    }
   }
   "JsonReader.readKeyAsChar" should {
     "throw parsing exception for missing ':' in the end" in {
@@ -2611,6 +2651,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000")
       checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
+    "throw parsing exception on too long input" in {
+      checkError(tooLongNumber, """too long part of input exceeded 'maxBufSize', offset: 0x02000000""",
+        """too long part of input exceeded 'maxBufSize', offset: 0x02000001""")
+    }
   }
   "JsonReader.readDouble, JsonReader.readKeyAsDouble and JsonReader.readStringAsDouble" should {
     def check(s: String, n: Double, ws: String): Unit = {
@@ -2740,6 +2784,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000")
       checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
+    "throw parsing exception on too long input" in {
+      checkError(tooLongNumber, """too long part of input exceeded 'maxBufSize', offset: 0x02000000""",
+       """too long part of input exceeded 'maxBufSize', offset: 0x02000001""")
+    }
   }
   "JsonReader.readBigInt and JsonReader.readStringAsBigInt" should {
     "don't parse null value" in {
@@ -2809,6 +2857,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
       checkError("012345", "illegal number with leading zero, offset: 0x00000000")
       checkError("-012345", "illegal number with leading zero, offset: 0x00000001")
+    }
+    "throw parsing exception on too long input" in {
+      checkError(tooLongNumber, """too long part of input exceeded 'maxBufSize', offset: 0x02000000""",
+        """too long part of input exceeded 'maxBufSize', offset: 0x02000001""")
     }
   }
   "JsonReader.readBigDecimal and JsonReader.readStringAsBigDecimal" should {
@@ -2949,6 +3001,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
       checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000")
       checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
+    }
+    "throw parsing exception on too long input" in {
+      checkError(tooLongNumber, """too long part of input exceeded 'maxBufSize', offset: 0x02000000""",
+        """too long part of input exceeded 'maxBufSize', offset: 0x02000001""")
     }
   }
   "JsonReader.setMark and JsonReader.rollbackToMark" should {
@@ -3118,4 +3174,14 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     .withPreferredBufSize(Random.nextInt(20) + 12) // 12 is a minimal allowed length to test resizing of the buffer
     .withPreferredCharBufSize(Random.nextInt(32))
     .withThrowReaderExceptionWithStackTrace(true)
+
+  def tooLongNumber: String = {
+    val sb = new StringBuilder
+    var i = 0
+    while (i < ReaderConfig.maxBufSize) {
+      sb.append('1')
+      i += 1
+    }
+    sb.toString
+  }
 }

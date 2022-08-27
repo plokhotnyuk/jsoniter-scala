@@ -24,8 +24,12 @@ package com.github.plokhotnyuk.jsoniter_scala.core
   *                                           development
   * @param appendHexDumpToParseException a flag that allows to turn off hex dumping of affected by error part of
   *                                      an internal byte buffer
+  * @param maxBufSize a max size (in bytes) of an internal byte buffer when parsing from [[java.io.InputStream]] or
+  *                   [[java.nio.DirectByteBuffer]]
+  * @param maxCharBufSize a max size (in chars) of an internal char buffer for parsing of string values including
+  *                       those one which use Base16 or Base64 encodings
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when parsing from
-  *                         [[java.io.InputStream]]
+  *                         [[java.io.InputStream]] or [[java.nio.DirectByteBuffer]]
   * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
   * @param checkForEndOfInput a flag to check and raise an error if some non whitespace bytes will be detected after
   *                           successful parsing of the value
@@ -34,6 +38,8 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 class ReaderConfig private (
                              val throwReaderExceptionWithStackTrace: Boolean,
                              val appendHexDumpToParseException: Boolean,
+                             val maxBufSize: Int,
+                             val maxCharBufSize: Int,
                              val preferredBufSize: Int,
                              val preferredCharBufSize: Int,
                              val checkForEndOfInput: Boolean,
@@ -44,13 +50,25 @@ class ReaderConfig private (
   def withAppendHexDumpToParseException(appendHexDumpToParseException: Boolean): ReaderConfig =
     copy(appendHexDumpToParseException = appendHexDumpToParseException)
 
+  def withMaxBufSize(maxBufSize: Int): ReaderConfig = {
+    if (maxBufSize < preferredBufSize) throw new IllegalArgumentException("'maxBufSize' should be not less than 'preferredBufSize'")
+    copy(maxBufSize = maxBufSize)
+  }
+
+  def withMaxCharBufSize(maxCharBufSize: Int): ReaderConfig = {
+    if (maxCharBufSize < preferredCharBufSize) throw new IllegalArgumentException("'maxCharBufSize' should be not less than 'preferredCharBufSize'")
+    copy(maxCharBufSize = maxCharBufSize)
+  }
+
   def withPreferredBufSize(preferredBufSize: Int): ReaderConfig = {
     if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
+    if (preferredBufSize > maxBufSize) throw new IllegalArgumentException("'preferredBufSize' should be not greater than 'maxBufSize'")
     copy(preferredBufSize = preferredBufSize)
   }
 
   def withPreferredCharBufSize(preferredCharBufSize: Int): ReaderConfig = {
     if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
+    if (preferredCharBufSize > maxCharBufSize) throw new IllegalArgumentException("'preferredCharBufSize' should be not greater than 'maxCharBufSize'")
     copy(preferredCharBufSize = preferredCharBufSize)
   }
 
@@ -64,6 +82,8 @@ class ReaderConfig private (
 
   private[this] def copy(throwReaderExceptionWithStackTrace: Boolean = throwReaderExceptionWithStackTrace,
                          appendHexDumpToParseException: Boolean = appendHexDumpToParseException,
+                         maxBufSize: Int = maxBufSize,
+                         maxCharBufSize: Int = maxCharBufSize,
                          preferredBufSize: Int = preferredBufSize,
                          preferredCharBufSize: Int = preferredCharBufSize,
                          checkForEndOfInput: Boolean = checkForEndOfInput,
@@ -71,6 +91,8 @@ class ReaderConfig private (
     new ReaderConfig(
       throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace,
       appendHexDumpToParseException = appendHexDumpToParseException,
+      maxBufSize = maxBufSize,
+      maxCharBufSize = maxCharBufSize,
       preferredBufSize = preferredBufSize,
       preferredCharBufSize = preferredCharBufSize,
       checkForEndOfInput = checkForEndOfInput,
@@ -80,6 +102,8 @@ class ReaderConfig private (
 object ReaderConfig extends ReaderConfig(
   throwReaderExceptionWithStackTrace = false,
   appendHexDumpToParseException = true,
+  maxBufSize = 33554432,
+  maxCharBufSize = 4194304,
   preferredBufSize = 32768,
   preferredCharBufSize = 4096,
   checkForEndOfInput = true,

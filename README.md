@@ -190,8 +190,10 @@ List of options that change parsing and serialization in runtime:
   can be turned on in development for debugging
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
 - Size of the hex dump can be adjusted for bigger or smaller number of 16-byte lines
+- Max size of internal input buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
 - Preferred size of internal input buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
 - Preferred size of internal output buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
+- Max size of char buffers when parsing string values
 - Preferred size of char buffers when parsing string values
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master)
@@ -292,8 +294,11 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 
 1. There is no validation for the length of JSON representation during parsing.
 
-So if your system is sensitive for that and can accept untrusted input then avoid parsing with `java.io.InputStream` and
-check the input length for other ways of parsing.
+So if your system is sensitive for that and can accept untrusted input then avoid parsing with `readFromStream` and
+check the input length for other `read...` calls.
+
+If you have an untrusted input that is an array of values or white-space separate values then consider parsing it by
+`scanJsonArrayFromInputStream` or `scanJsonValuesFromInputStream` instead of `readFromStream`.
 
 2. The configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on 
 other code that uses a result of the macro's call, otherwise the following compilation error will be reported:
