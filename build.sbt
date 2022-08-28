@@ -114,7 +114,8 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq( // ignore internal API changes
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.ReaderConfig.this")
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.github.plokhotnyuk.jsoniter_scala.core.ReaderConfig.this"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.github.plokhotnyuk.jsoniter_scala.core.WriterConfig.this")
   )
 )
 

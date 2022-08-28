@@ -21,11 +21,8 @@ package com.github.plokhotnyuk.jsoniter_scala.core
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when writing to
   *                         [[java.io.OutputStream]] or [[java.nio.DirectByteBuffer]]
   */
-class WriterConfig private (
-                             val throwWriterExceptionWithStackTrace: Boolean,
-                             val indentionStep: Int,
-                             val escapeUnicode: Boolean,
-                             val preferredBufSize: Int) extends Serializable {
+class WriterConfig private (val indentionStep: Int, val preferredBufSize: Int, val escapeUnicode: Boolean,
+                            val throwWriterExceptionWithStackTrace: Boolean) extends Serializable {
   def withThrowWriterExceptionWithStackTrace(throwWriterExceptionWithStackTrace: Boolean): WriterConfig =
     copy(throwWriterExceptionWithStackTrace = throwWriterExceptionWithStackTrace)
 
@@ -42,19 +39,15 @@ class WriterConfig private (
     copy(preferredBufSize = preferredBufSize)
   }
 
-  private[this] def copy(throwWriterExceptionWithStackTrace: Boolean = throwWriterExceptionWithStackTrace,
-                         indentionStep: Int = indentionStep,
-                         escapeUnicode: Boolean = escapeUnicode,
-                         preferredBufSize: Int = preferredBufSize): WriterConfig =
+  private[this] def copy(indentionStep: Int = indentionStep, preferredBufSize: Int = preferredBufSize,
+                         throwWriterExceptionWithStackTrace: Boolean = throwWriterExceptionWithStackTrace,
+                         escapeUnicode: Boolean = escapeUnicode): WriterConfig =
     new WriterConfig(
-      throwWriterExceptionWithStackTrace = throwWriterExceptionWithStackTrace,
       indentionStep = indentionStep,
+      preferredBufSize = preferredBufSize,
       escapeUnicode = escapeUnicode,
-      preferredBufSize = preferredBufSize)
+      throwWriterExceptionWithStackTrace = throwWriterExceptionWithStackTrace)
 }
 
-object WriterConfig extends WriterConfig(
-  throwWriterExceptionWithStackTrace = false,
-  indentionStep = 0,
-  escapeUnicode = false,
-  preferredBufSize = 32768)
+object WriterConfig extends WriterConfig(indentionStep = 0, preferredBufSize = 32768, escapeUnicode = false,
+  throwWriterExceptionWithStackTrace = false)
