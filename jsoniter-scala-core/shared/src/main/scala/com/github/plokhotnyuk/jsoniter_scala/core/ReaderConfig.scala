@@ -47,11 +47,13 @@ class ReaderConfig private (val preferredBufSize: Int, val preferredCharBufSize:
 
   def withMaxBufSize(maxBufSize: Int): ReaderConfig = {
     if (maxBufSize < preferredBufSize) throw new IllegalArgumentException("'maxBufSize' should be not less than 'preferredBufSize'")
+    if (maxBufSize > 2147483645) throw new IllegalArgumentException("'maxBufSize' should be not greater than 2147483645")
     copy(maxBufSize = maxBufSize)
   }
 
   def withMaxCharBufSize(maxCharBufSize: Int): ReaderConfig = {
     if (maxCharBufSize < preferredCharBufSize) throw new IllegalArgumentException("'maxCharBufSize' should be not less than 'preferredCharBufSize'")
+    if (maxCharBufSize > 2147483645) throw new IllegalArgumentException("'maxCharBufSize' should be not greater than 2147483645")
     copy(maxCharBufSize = maxCharBufSize)
   }
 
