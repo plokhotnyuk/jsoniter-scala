@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import io.bullet.borer.Json
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 
 class ExtractFieldsReading extends CommonParams {
@@ -45,6 +46,14 @@ class ExtractFieldsReading extends CommonParams {
     import java.nio.charset.StandardCharsets.UTF_8
 
     decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeBorer(): ExtractFields = {
+    import io.bullet.borer.compat.circe._ // the borer codec for the circe AST
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+
+    Json.decode(jsonBytes).to[ExtractFields].value
   }
 
   @Benchmark
