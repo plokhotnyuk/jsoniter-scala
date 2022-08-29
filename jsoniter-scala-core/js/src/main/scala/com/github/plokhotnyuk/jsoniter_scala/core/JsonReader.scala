@@ -2989,7 +2989,7 @@ final class JsonReader private[jsoniter_scala](
     } else {
       var bufLen = buf.length
       if (bufLen < 1073741824) bufLen <<= 1
-      else if (bufLen < 2147483647) bufLen = 2147483647
+      else if (bufLen < 2147483645) bufLen = 2147483645
       else tooLongInputError()
       buf = java.util.Arrays.copyOf(buf, bufLen)
     }
