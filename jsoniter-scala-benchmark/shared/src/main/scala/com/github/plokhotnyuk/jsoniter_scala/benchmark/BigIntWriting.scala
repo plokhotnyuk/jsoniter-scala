@@ -74,6 +74,15 @@ class BigIntWriting extends BigIntBenchmark {
   }
 */
   @Benchmark
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import play.api.libs.json.Json
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    writeToArray(Json.toJson(obj))
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

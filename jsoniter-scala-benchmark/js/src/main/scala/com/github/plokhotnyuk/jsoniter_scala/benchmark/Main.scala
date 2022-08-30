@@ -149,6 +149,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
@@ -1021,6 +1022,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
