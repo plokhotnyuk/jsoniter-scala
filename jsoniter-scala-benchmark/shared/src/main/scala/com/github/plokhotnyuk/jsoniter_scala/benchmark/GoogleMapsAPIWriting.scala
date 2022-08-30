@@ -115,9 +115,8 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
   @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    write(obj).getBytes(UTF_8)
+    writeToByteArray(obj)
   }
 
   @Benchmark

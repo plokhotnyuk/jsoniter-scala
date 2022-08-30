@@ -79,9 +79,8 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   @Benchmark
   def uPickle(): Array[Byte] = {
     import upickle.default._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    write(obj, escapeUnicode = true).getBytes(UTF_8)
+    writeToByteArray(obj, escapeUnicode = true)
   }
 
   @Benchmark

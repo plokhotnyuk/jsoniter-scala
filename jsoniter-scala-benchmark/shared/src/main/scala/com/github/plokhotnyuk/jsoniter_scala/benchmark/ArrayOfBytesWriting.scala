@@ -102,10 +102,9 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
 
   @Benchmark
   def uPickle(): Array[Byte] = {
-    import upickle.default._
-    import java.nio.charset.StandardCharsets.UTF_8
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    write(obj).getBytes(UTF_8)
+    writeToByteArray(obj)
   }
 
   @Benchmark

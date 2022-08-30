@@ -106,9 +106,8 @@ class Base64Writing extends Base64Benchmark {
   @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    write(obj)(base64ReadWriter).getBytes(UTF_8)
+    writeToByteArray(obj)(base64ReadWriter)
   }
 
   @Benchmark

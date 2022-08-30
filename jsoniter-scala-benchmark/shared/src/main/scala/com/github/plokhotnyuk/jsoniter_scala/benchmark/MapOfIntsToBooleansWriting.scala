@@ -94,9 +94,9 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
 /* FIXME: uPickle serializes maps as JSON arrays
   @Benchmark
   def uPickle(): Array[Byte] = {
-    import upickle.default._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    write(obj).getBytes(UTF_8)
+    writeToByteArray(obj)
   }
 */
   @Benchmark

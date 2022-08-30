@@ -100,9 +100,8 @@ class StringOfNonAsciiCharsWriting extends StringOfNonAsciiCharsBenchmark {
   @Benchmark
   def uPickle(): Array[Byte] = {
     import upickle.default._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    write(obj).getBytes(UTF_8)
+    writeToByteArray(obj)
   }
 
   @Benchmark

@@ -94,9 +94,8 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    write(obj, 2).getBytes(UTF_8)
+    writeToByteArray(obj, 2)
   }
 
   @Benchmark
