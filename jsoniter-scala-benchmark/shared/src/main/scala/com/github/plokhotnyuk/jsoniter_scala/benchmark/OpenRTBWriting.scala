@@ -86,7 +86,6 @@ class OpenRTBWriting extends OpenRTBBenchmark {
   @Benchmark
   def weePickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-    import com.rallyhealth.weejson.v1.jackson.ToJson
     import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 
     FromScala(obj).transform(ToJson.bytes)

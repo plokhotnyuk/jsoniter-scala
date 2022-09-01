@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.core.json.JsonWriteFeature
-import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator}
+import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, StreamReadFeature, StreamWriteFeature}
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
@@ -9,10 +9,17 @@ import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrin
 import com.rallyhealth.weejson.v1.jackson.JsonGeneratorOps
 import com.rallyhealth.weepickle.v1.WeePickle._
 import com.rallyhealth.weepickle.v1.core.Visitor
+
 import java.time._
 
 object WeePickleFromTos {
-  object ToPrettyJson extends JsonGeneratorOps {
+  def defaultJsonFactoryBuilder: JsonFactoryBuilder = JsonFactory.builder().asInstanceOf[JsonFactoryBuilder]
+    .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
+    .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
+
+  object ToJson extends JsonGeneratorOps(defaultJsonFactoryBuilder.build())
+
+  object ToPrettyJson extends JsonGeneratorOps(defaultJsonFactoryBuilder.build()) {
     override protected def wrapGenerator(g: JsonGenerator): JsonGenerator =
       g.setPrettyPrinter(new FieldSepPrettyPrinter({
         val indenter = new DefaultIndenter("  ", "\n")
@@ -21,7 +28,7 @@ object WeePickleFromTos {
   }
 
   object ToEscapedNonAsciiJson extends JsonGeneratorOps(
-    JsonFactory.builder().asInstanceOf[JsonFactoryBuilder]
+    defaultJsonFactoryBuilder
       .enable(JsonWriteFeature.ESCAPE_NON_ASCII)
       .build()
   )
