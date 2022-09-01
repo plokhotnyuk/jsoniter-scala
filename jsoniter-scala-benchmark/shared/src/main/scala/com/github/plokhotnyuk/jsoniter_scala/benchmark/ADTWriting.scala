@@ -40,15 +40,6 @@ class ADTWriting extends ADTBenchmark {
   }
 
   @Benchmark
-  def ninnyJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-    import nrktkt.ninny.{AnySyntax, Json}
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    Json.render(obj.toSomeJson).getBytes(UTF_8)
-  }
-
-  @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

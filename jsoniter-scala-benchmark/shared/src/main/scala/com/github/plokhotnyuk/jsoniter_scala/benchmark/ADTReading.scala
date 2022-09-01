@@ -63,16 +63,6 @@ class ADTReading extends ADTBenchmark {
   }
 
   @Benchmark
-  def ninnyJson(): ADTBase = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-    import nrktkt.ninny.Json
-    import nrktkt.ninny.HopefullyJsonSyntax
-    import scala.collection.immutable.ArraySeq
-
-    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ADTBase].get
-  }
-
-  @Benchmark
   def playJson(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import play.api.libs.json.Json

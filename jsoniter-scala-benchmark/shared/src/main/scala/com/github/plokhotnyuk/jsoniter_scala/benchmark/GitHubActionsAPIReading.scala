@@ -62,15 +62,6 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
-  def ninnyJson(): GitHubActionsAPI.Response = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-    import nrktkt.ninny.Json
-    import scala.collection.immutable.ArraySeq
-
-    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[GitHubActionsAPI.Response].get
-  }
-
-  @Benchmark
   def smithy4sJson(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

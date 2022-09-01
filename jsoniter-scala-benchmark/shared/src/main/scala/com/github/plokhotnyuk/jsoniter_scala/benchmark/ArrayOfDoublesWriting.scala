@@ -67,14 +67,6 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
   }
 
   @Benchmark
-  def ninnyJson(): Array[Byte] = {
-    import nrktkt.ninny.{AnySyntax, Json}
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    Json.render(obj.toSomeJson).getBytes(UTF_8)
-  }
-
-  @Benchmark
   def playJson(): Array[Byte] = {
     import play.api.libs.json.Json
 

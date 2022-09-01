@@ -88,15 +88,6 @@ class ExtractFieldsReading extends CommonParams {
   }
 
   @Benchmark
-  def ninnyJson(): ExtractFields = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-    import nrktkt.ninny.Json
-    import scala.collection.immutable.ArraySeq
-
-    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ExtractFields].get
-  }
-
-  @Benchmark
   def playJson(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import play.api.libs.json.Json

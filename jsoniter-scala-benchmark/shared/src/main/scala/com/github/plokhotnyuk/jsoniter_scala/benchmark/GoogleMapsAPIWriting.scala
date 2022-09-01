@@ -69,15 +69,6 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
-  def ninnyJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-    import nrktkt.ninny.{AnySyntax, Json}
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    Json.render(obj.toSomeJson).getBytes(UTF_8)
-  }
-
-  @Benchmark
   def playJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import play.api.libs.json.Json

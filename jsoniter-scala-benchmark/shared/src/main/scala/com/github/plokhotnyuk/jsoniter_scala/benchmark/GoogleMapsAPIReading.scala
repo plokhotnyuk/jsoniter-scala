@@ -71,15 +71,6 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
-  def ninnyJson(): DistanceMatrix = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-    import nrktkt.ninny.Json
-    import scala.collection.immutable.ArraySeq
-
-    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes1)).to[DistanceMatrix].get
-  }
-
-  @Benchmark
   def playJson(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import play.api.libs.json.Json

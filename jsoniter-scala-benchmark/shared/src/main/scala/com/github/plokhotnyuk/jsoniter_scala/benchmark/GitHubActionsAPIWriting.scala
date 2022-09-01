@@ -62,15 +62,6 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
-  def ninnyJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
-    import nrktkt.ninny.{AnySyntax, Json}
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    Json.render(obj.toSomeJson).getBytes(UTF_8)
-  }
-
-  @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
