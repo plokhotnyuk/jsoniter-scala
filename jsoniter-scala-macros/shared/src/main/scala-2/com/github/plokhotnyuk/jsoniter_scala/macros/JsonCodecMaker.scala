@@ -539,27 +539,25 @@ object JsonCodecMaker {
       def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
 
       def findImplicitCodec(types: List[Type], isValueCodec: Boolean): Tree = {
-        val tpe :: nestedTypes = types
-        if (nestedTypes.isEmpty) EmptyTree
-        else {
-          val recursiveIdx =
-            if (cfg.allowRecursiveTypes) -1
-            else nestedTypes.indexOf(tpe)
-          if (recursiveIdx < 0) {
-            if (tpe =:= rootTpe) EmptyTree
-            else if (isValueCodec) {
-              inferredValueCodecs.getOrElseUpdate(tpe,
-                inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]"))
-            } else {
-              inferredKeyCodecs.getOrElseUpdate(tpe,
-                inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]"))
-            }
+        val tpe = types.head
+        val nestedTypes = types.tail
+        val recursiveIdx =
+          if (cfg.allowRecursiveTypes) -1
+          else nestedTypes.indexOf(tpe)
+        if (recursiveIdx < 0) {
+          if (tpe =:= rootTpe) EmptyTree
+          else if (isValueCodec) {
+            inferredValueCodecs.getOrElseUpdate(tpe,
+              inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]"))
           } else {
-            fail(s"Recursive type(s) detected: ${nestedTypes.take(recursiveIdx + 1).reverse.mkString("'", "', '", "'")}. " +
-              "Please consider using a custom implicitly accessible codec for this type to control the level of " +
-              s"recursion or turn on the '${typeOf[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
-              "will not exceed the thread stack size.")
+            inferredKeyCodecs.getOrElseUpdate(tpe,
+              inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]"))
           }
+        } else {
+          fail(s"Recursive type(s) detected: ${nestedTypes.take(recursiveIdx + 1).reverse.mkString("'", "', '", "'")}. " +
+            "Please consider using a custom implicitly accessible codec for this type to control the level of " +
+            s"recursion or turn on the '${typeOf[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
+            "will not exceed the thread stack size.")
         }
       }
 

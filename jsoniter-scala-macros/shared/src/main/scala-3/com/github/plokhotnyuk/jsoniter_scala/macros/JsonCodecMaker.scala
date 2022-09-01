@@ -170,27 +170,27 @@ class CodecMakerConfig private[macros] (
     copy(skipNestedOptionValues = skipNestedOptionValues)
 
   private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
-           javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
-           adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
-           discriminatorFieldName: Option[String] = discriminatorFieldName,
-           isStringified: Boolean = isStringified,
-           mapAsArray: Boolean = mapAsArray,
-           skipUnexpectedFields: Boolean = skipUnexpectedFields,
-           transientDefault: Boolean = transientDefault,
-           transientEmpty: Boolean = transientEmpty,
-           transientNone: Boolean = transientNone,
-           requireCollectionFields: Boolean = requireCollectionFields,
-           bigDecimalPrecision: Int = bigDecimalPrecision,
-           bigDecimalScaleLimit: Int = bigDecimalScaleLimit,
-           bigDecimalDigitsLimit: Int = bigDecimalDigitsLimit,
-           bigIntDigitsLimit: Int = bigIntDigitsLimit,
-           bitSetValueLimit: Int = bitSetValueLimit,
-           mapMaxInsertNumber: Int = mapMaxInsertNumber,
-           setMaxInsertNumber: Int = setMaxInsertNumber,
-           allowRecursiveTypes: Boolean = allowRecursiveTypes,
-           requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
-           useScalaEnumValueId: Boolean = useScalaEnumValueId,
-           skipNestedOptionValues: Boolean = skipNestedOptionValues): CodecMakerConfig =
+                         javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
+                         adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
+                         discriminatorFieldName: Option[String] = discriminatorFieldName,
+                         isStringified: Boolean = isStringified,
+                         mapAsArray: Boolean = mapAsArray,
+                         skipUnexpectedFields: Boolean = skipUnexpectedFields,
+                         transientDefault: Boolean = transientDefault,
+                         transientEmpty: Boolean = transientEmpty,
+                         transientNone: Boolean = transientNone,
+                         requireCollectionFields: Boolean = requireCollectionFields,
+                         bigDecimalPrecision: Int = bigDecimalPrecision,
+                         bigDecimalScaleLimit: Int = bigDecimalScaleLimit,
+                         bigDecimalDigitsLimit: Int = bigDecimalDigitsLimit,
+                         bigIntDigitsLimit: Int = bigIntDigitsLimit,
+                         bitSetValueLimit: Int = bitSetValueLimit,
+                         mapMaxInsertNumber: Int = mapMaxInsertNumber,
+                         setMaxInsertNumber: Int = setMaxInsertNumber,
+                         allowRecursiveTypes: Boolean = allowRecursiveTypes,
+                         requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
+                         useScalaEnumValueId: Boolean = useScalaEnumValueId,
+                         skipNestedOptionValues: Boolean = skipNestedOptionValues): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -749,11 +749,12 @@ object JsonCodecMaker {
 
       def checkRecursionInTypes(types: List[TypeRepr]): Unit =
         if (!cfg.allowRecursiveTypes) {
-          val tpe :: nested = types
+          val tpe = types.head
+          val nestedTypes = types.tail
           if (!tpe.typeSymbol.flags.is(Flags.Enum)) {
-            val recursiveIdx = nested.indexOf(tpe)
+            val recursiveIdx = nestedTypes.indexOf(tpe)
             if (recursiveIdx >= 0) {
-              val recTypes = nested.take(recursiveIdx + 1).map(_.show).reverse.mkString("'", "', '", "'")
+              val recTypes = nestedTypes.take(recursiveIdx + 1).map(_.show).reverse.mkString("'", "', '", "'")
               fail(s"Recursive type(s) detected: $recTypes. Please consider using a custom implicitly " +
                 s"accessible codec for this type to control the level of recursion or turn on the " +
                 s"'${Type.show[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
@@ -763,26 +764,20 @@ object JsonCodecMaker {
         }
 
       def findImplicitKeyCodec(types: List[TypeRepr]): Option[Expr[JsonKeyCodec[_]]] =
-        val tpe :: nestedTypes = types
-        if (nestedTypes.isEmpty) None
-        else {
-          checkRecursionInTypes(types)
-          if (tpe =:= rootTpe) None
-          else inferredKeyCodecs.getOrElseUpdate(tpe, {
-            inferImplicitValue(TypeRepr.of[JsonKeyCodec].appliedTo(tpe)).map(_.asExprOf[JsonKeyCodec[_]])
-          })
-        }
+        checkRecursionInTypes(types)
+        val tpe = types.head
+        if (tpe =:= rootTpe) None
+        else inferredKeyCodecs.getOrElseUpdate(tpe, {
+          inferImplicitValue(TypeRepr.of[JsonKeyCodec].appliedTo(tpe)).map(_.asExprOf[JsonKeyCodec[_]])
+        })
 
       def findImplicitValueCodec(types: List[TypeRepr]): Option[Expr[JsonValueCodec[_]]] =
-        val tpe :: nestedTypes = types
-        if (nestedTypes.isEmpty) None
-        else {
-          checkRecursionInTypes(types)
-          if (tpe =:= rootTpe) None
-          else inferredValueCodecs.getOrElseUpdate(tpe, {
-            inferImplicitValue(TypeRepr.of[JsonValueCodec].appliedTo(tpe)).map(_.asExprOf[JsonValueCodec[_]])
-          })
-        }
+        checkRecursionInTypes(types)
+        val tpe = types.head
+        if (tpe =:= rootTpe) None
+        else inferredValueCodecs.getOrElseUpdate(tpe, {
+          inferImplicitValue(TypeRepr.of[JsonValueCodec].appliedTo(tpe)).map(_.asExprOf[JsonValueCodec[_]])
+        })
 
       val mathContexts = new mutable.LinkedHashMap[Int, ValDef]
 
@@ -1005,9 +1000,9 @@ object JsonCodecMaker {
       def genReadKey[T: Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] = {
         val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(types)
-        if (!implKeyCodec.isEmpty)  '{ ${implKeyCodec.get}.decodeKey($in) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Boolean] || tpe =:= TypeRepr.of[java.lang.Boolean])  '{ $in.readKeyAsBoolean() }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Byte] || tpe =:= TypeRepr.of[java.lang.Byte])  '{ $in.readKeyAsByte() }.asExprOf[T]
+        if (!implKeyCodec.isEmpty) '{ ${implKeyCodec.get}.decodeKey($in) }.asExprOf[T]
+        else if (tpe =:= TypeRepr.of[Boolean] || tpe =:= TypeRepr.of[java.lang.Boolean]) '{ $in.readKeyAsBoolean() }.asExprOf[T]
+        else if (tpe =:= TypeRepr.of[Byte] || tpe =:= TypeRepr.of[java.lang.Byte]) '{ $in.readKeyAsByte() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Char] || tpe =:= TypeRepr.of[java.lang.Character]) '{ $in.readKeyAsChar() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Short] || tpe =:= TypeRepr.of[java.lang.Short]) '{ $in.readKeyAsShort() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Int] || tpe =:= TypeRepr.of[java.lang.Integer]) '{ $in.readKeyAsInt() }.asExprOf[T]
@@ -2189,7 +2184,9 @@ object JsonCodecMaker {
                   readKV, (b) => '{ $b.result() }, in, default.asExprOf[T & collection.Map[t1, t2]]).asExprOf[T]
               }
         } else if (tpe <:< TypeRepr.of[BitSet]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val readVal = if (isStringified) '{ $in.readStringAsInt() }  else '{ $in.readInt() }
+          val readVal =
+            if (isStringified) '{ $in.readStringAsInt() }
+            else '{ $in.readInt() }
           '{
             if ($in.isNextToken('[')) {
               if ($in.isNextToken(']')) $default

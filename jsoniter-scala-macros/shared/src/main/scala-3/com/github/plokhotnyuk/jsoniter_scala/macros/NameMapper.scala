@@ -58,10 +58,10 @@ private[macros] object CompileTimeEval {
     def evalApplyStringMap(m: Expr[Map[String, String]], input: String): Option[String] = m match
       case '{ Map(${Varargs(args)}) } =>
         args.foreach { a =>
-          if (a.asTerm.tpe <:<  TypeRepr.of[(String, String)]) {
+          if (a.asTerm.tpe <:< TypeRepr.of[(String, String)]) {
             summon[FromExpr[(String, String)]].unapply(a.asExprOf[(String, String)]) match
               case Some((k, v)) => if (k == input) return Some(v)
-              case None => throw  CompileTimeEvalException(s"Can't eval ${a.show} at compile time", a)
+              case None => throw CompileTimeEvalException(s"Can't eval ${a.show} at compile time", a)
           } else throw CompileTimeEvalException(s"Can't case ${a.show} to (String, String)", a)
         }
         None
@@ -83,18 +83,18 @@ private[macros] object CompileTimeEval {
                 throw CompileTimeEvalException(s"Expected that partial function have one parameter ${ft.show}", ft.asExpr)
             case _ =>
               if (ft.tpe <:< TypeRepr.of[PartialFunction[_, _]]) {
-                 val isDefinedTerm =
-                   try Apply(Select.unique(ft, "isDefinedAt"), List(inputLiteral)) catch {
-                     case ex: Throwable =>
+                val isDefinedTerm =
+                  try Apply(Select.unique(ft, "isDefinedAt"), List(inputLiteral)) catch {
+                    case ex: Throwable =>
                       throw CompileTimeEvalException(s"Can't create isDefinedAt call for $ft: ${ex.getMessage}", ft.asExpr, ex)
-                   }
-                 val applyTerm =
-                   try Apply(Select.unique(ft, "apply"), List(inputLiteral)) catch {
-                     case ex: Throwable =>
-                       throw CompileTimeEvalException(s"Can't create apply call for $ft: ${ex.getMessage}", ft.asExpr, ex)
-                   }
-                 if (evalCondition(isDefinedTerm, bindings)) evalTerm(applyTerm, bindings, None)
-                 else nullTerm
+                  }
+                val applyTerm =
+                  try Apply(Select.unique(ft, "apply"), List(inputLiteral)) catch {
+                    case ex: Throwable =>
+                      throw CompileTimeEvalException(s"Can't create apply call for $ft: ${ex.getMessage}", ft.asExpr, ex)
+                  }
+                if (evalCondition(isDefinedTerm, bindings)) evalTerm(applyTerm, bindings, None)
+                else nullTerm
               } else if (ft.tpe <:< TypeRepr.of[Function[_, _]]) {
                 val applyTerm =
                   try Apply(Select.unique(ft, "apply"), List(inputLiteral)) catch {
@@ -151,7 +151,7 @@ private[macros] object CompileTimeEval {
       }
 
     private def evalCaseDefPattern(m: Term, pattern: Tree, scrutinee: Term,
-                                   bindings: Map[Symbol, Term]):  Option[Map[Symbol, Term]] =
+                                   bindings: Map[Symbol, Term]): Option[Map[Symbol, Term]] =
       pattern match
         case TypedOrTest(v, tpt) =>
           evalCaseDefPattern(m, v, scrutinee, bindings).flatMap { newBinding =>
@@ -350,7 +350,7 @@ private[macros] object CompileTimeEval {
       }
 
     private def retrieveRuntimeModule(applyTerm: Term, sym: Symbol): AnyRef =
-      val className = sym.fullName + "$"  // assume that java and scala encoding are same.
+      val className = sym.fullName + "$" // assume that java and scala encoding are same.
       val moduleField =
         try java.lang.Class.forName(className).getField("MODULE$") catch {
           case ex: Exception =>
@@ -453,8 +453,8 @@ private[macros] object CompileTimeEval {
           throw CompileTimeEvalException(ex.getMessage, term.asExpr, ex.getCause)
       }
 
-    private def  prepareJvmReflectionMethodCall(t: Term, x: AnyRef,  name: String,
-                                                args: Array[AnyRef]): JvmReflectionMethodCall = name match
+    private def prepareJvmReflectionMethodCall(t: Term, x: AnyRef, name: String,
+                                               args: Array[AnyRef]): JvmReflectionMethodCall = name match
       case "+" =>
         if (x.isInstanceOf[java.lang.String]) {
           StringConcatJvmReflectionMethodCall(x.asInstanceOf[java.lang.String], args)

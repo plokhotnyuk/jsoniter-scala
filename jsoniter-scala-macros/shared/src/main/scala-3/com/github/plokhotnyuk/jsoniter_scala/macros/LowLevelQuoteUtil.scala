@@ -95,7 +95,7 @@ private[macros] object LowLevelQuoteUtil {
           if (!foundInvalidOwner) traverseTreeChildren(tree)(owner)
         } catch {
           case ex: IllegalStateException =>
-            if (traceFlag) println(s"in tree:  $tree\n")
+            if (traceFlag) println(s"in tree: $tree\n")
             if (throwFlag) throw ex
         }
      }
