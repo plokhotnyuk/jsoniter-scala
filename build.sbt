@@ -113,10 +113,7 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq( // ignore internal API changes
-    ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.github.plokhotnyuk.jsoniter_scala.core.ReaderConfig.this"),
-    ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.github.plokhotnyuk.jsoniter_scala.core.WriterConfig.this")
-  )
+  mimaBinaryIssueFilters := Seq()
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
