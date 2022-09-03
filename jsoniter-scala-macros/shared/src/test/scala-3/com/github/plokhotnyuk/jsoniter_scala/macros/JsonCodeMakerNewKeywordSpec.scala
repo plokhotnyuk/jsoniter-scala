@@ -7,10 +7,11 @@ case class DeResult[A](isSucceed: Boolean, data: A, message: String)
 
 case class RootPathFiles(files: List[String])
 
-case class GenDoc[A, B](opt: Option[A], list: List[B])
+case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
 
 object GenDoc:
-  given [A, B](using JsonValueCodec[A], JsonValueCodec[B]): JsonValueCodec[GenDoc[A, B]] = JsonCodecMaker.make
+  given [A, B, C](using JsonValueCodec[A], JsonValueCodec[B], JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] =
+    JsonCodecMaker.make
 
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
@@ -33,11 +34,12 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         """{"isSucceed":false,"data":"VVV","message":"WWW"}""")
     }
     "serialize and deserialize generic classes using a given function" in {
-      implicit val aCodec: JsonValueCodec[String] = JsonCodecMaker.make
-      implicit val bCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+      implicit val aCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
+      implicit val bCodec: JsonValueCodec[String] = JsonCodecMaker.make
+      implicit val cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
 
-      verifySerDeser(summon[JsonValueCodec[GenDoc[String, Int]]],
-        GenDoc(Some("VVV"), List(1, 2, 3)), """{"opt":"VVV","list":[1,2,3]}""")
+      verifySerDeser(summon[JsonValueCodec[GenDoc[Boolean, String, Int]]],
+        GenDoc(true, Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
     }
     "serialize and deserialize Scala3 enum ADTs defined with `derives` keyword" in {
       trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]

@@ -971,11 +971,7 @@ object JsonCodecMaker {
               case TypeBounds(_, _) => fail(s"Type bounds are not supported for type '${tpe.show}' with field " +
                   s"type for $name '${fieldType.show}'")
               case _ =>
-                if (fieldType.typeSymbol.isTypeParam) {
-                  fail(s"Field type ${fieldType.show} isTypeParam, probaly error in substitution\n" +
-                    s"tpe: ${tpe.show} ($tpe), originFieldType: ${originFieldType.show} (${originFieldType}), " +
-                    s"typeParams: $typeParams")
-                } else if (defaultValue.isDefined && !(defaultValue.get.tpe <:< fieldType)) {
+                if (defaultValue.isDefined && !(defaultValue.get.tpe <:< fieldType)) {
                   fail("Polymorphic expression cannot be instantiated to expected type: default value for " +
                     s"field $symbol of class ${tpe.show} have type ${defaultValue.get.tpe.show} but field type " +
                     s"is ${fieldType.show}")
