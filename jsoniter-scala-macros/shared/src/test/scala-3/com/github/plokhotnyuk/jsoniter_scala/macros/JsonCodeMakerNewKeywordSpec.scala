@@ -3,12 +3,18 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import org.scalatest.exceptions.TestFailedException
 
-case class DeResult[T](isSucceed: Boolean, data: T, message: String)
+case class DeResult[A](isSucceed: Boolean, data: A, message: String)
+
 case class RootPathFiles(files: List[String])
+
+case class GenDoc[A, B](opt: Option[A], list: List[B])
+
+object GenDoc:
+  given [A, B](using JsonValueCodec[A], JsonValueCodec[B]): JsonValueCodec[GenDoc[A, B]] = JsonCodecMaker.make
 
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
-    "serialize and deserialize generic classes" in {
+    "serialize and deserialize generic classes using given constants" in {
       assert(intercept[TestFailedException](assertCompiles {
         """given JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
           |given JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make""".stripMargin
@@ -25,6 +31,13 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       verifySerDeser(summon[JsonValueCodec[DeResult[Option[String]]]],
         DeResult[Option[String]](false, Option("VVV"), "WWW"),
         """{"isSucceed":false,"data":"VVV","message":"WWW"}""")
+    }
+    "serialize and deserialize generic classes using a given function" in {
+      implicit val aCodec: JsonValueCodec[String] = JsonCodecMaker.make
+      implicit val bCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+
+      verifySerDeser(summon[JsonValueCodec[GenDoc[String, Int]]],
+        GenDoc(Some("VVV"), List(1, 2, 3)), """{"opt":"VVV","list":[1,2,3]}""")
     }
     "serialize and deserialize Scala3 enum ADTs defined with `derives` keyword" in {
       trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
