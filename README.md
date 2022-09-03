@@ -296,7 +296,7 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 So if your system is sensitive for that and can accept untrusted input then avoid parsing with `readFromStream` and
 check the input length for other `read...` calls.
 
-If you have an untrusted input that is an array of values or white-space separate values then consider parsing it by
+If you have an input that is an array of values or white-space separate values then consider parsing it by
 `scanJsonArrayFromInputStream` or `scanJsonValuesFromInputStream` instead of `readFromStream`.
 
 2. The configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on 
@@ -323,8 +323,8 @@ and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/micros
 can happen during compilation of ADT definitions or their derived codecs if they are nested in some classes or functions
 like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48).
 
-The workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the
-outer _object_ (not a class) instead.
+The workaround is the same for both cases: don't enclose ADT definitions into outer _classes_, _traits_ or _functions_,
+use the outer _object_ (not a class) instead.
 
 4. Compile-time configuration for `make` calls in Scala 3 has limited support of possible expressions for name mapping.
 
@@ -635,9 +635,9 @@ sbt clean +publishM2
 For version numbering use [Recommended Versioning Scheme](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
-Double-check binary and source compatibility, including behavior, and release using the following command:
+Double-check binary and source compatibility, including behavior, and release using the following command on the enironment with 16+GB of RAM:
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-11 -J-Xmx10g release
+sbt -java-home /usr/lib/jvm/zulu-11 -J-Xmx8g release
 ```
 
 Do not push changes to GitHub until promoted artifacts for the new version are not available for downloading on
