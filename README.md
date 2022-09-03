@@ -90,8 +90,11 @@ view of an error context
 
 The library targets JDK 11+ and GraalVM 22+ (including compilation to native images) without any platform restrictions.
 
-The [**v2.13.5**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5) release is the last version that
+The [**v2.13.5.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2) release is the last version that
 supports JDK 8+ and native image compilation with earlier versions of GraalVM.
+
+The [**v2.13.3.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2) release is the last version that
+supports Scala 2.11.
 
 ## Features and limitations
 
