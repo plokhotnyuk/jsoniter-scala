@@ -804,7 +804,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(customCodecOfStandardTypes, StandardTypes("VVV", 1, 1.1), """{"s":"VVV","bi":1,"bd":1.1}""")
       verifySerDeser(customCodecOfStandardTypes, StandardTypes("XXX", 1, 1.1), """"{\"s\":\"XXX\",\"bi\":1,\"bd\":1.1}"""")
     }
-    "serialize and deserialize sequences of tuples as JSON object with duplicated keys using a custom codec" in {
+    "serialize and deserialize sequences of tuples as JSON object with duplicated keys using a custom value codec" in {
       val codecOfSeqOfTuples: JsonValueCodec[Seq[(String, Int)]] = new JsonValueCodec[Seq[(String, Int)]] {
         override def decodeValue(in: JsonReader, default: Seq[(String, Int)]): Seq[(String, Int)] =
           if (in.isNextToken('{')) {
@@ -883,7 +883,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         List(Model("VVV", _root_.scala.Some(_root_.scala.Some("WWW"))), Model("VVV", _root_.scala.None), Model("VVV", _root_.scala.Some(_root_.scala.None))),
         """[{"field1":"VVV","field2":"WWW"},{"field1":"VVV"},{"field1":"VVV","field2":null}]""")
     }
-    "serialize and deserialize Nullable[_] to distinguish `null` field values and missing fields using a custom codec" in {
+    "serialize and deserialize Nullable[_] to distinguish `null` field values and missing fields using a custom value codec" in {
       sealed trait Nullable[+A]
 
       case class Value[A](a: A) extends Nullable[A]
@@ -919,7 +919,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[List[Model]], List(Model("VVV", Value("WWW")), Model("VVV", Missing), Model("VVV", NullValue)),
         """[{"field1":"VVV","field2":"WWW"},{"field1":"VVV"},{"field1":"VVV","field2":null}]""")
     }
-    "serialize and deserialize case classes as JSON arrays using a custom codec" in {
+    "serialize and deserialize case classes as JSON arrays using a custom value codec" in {
       case class Obj(keyValues: Seq[KeyValue])
 
       case class KeyValue(key: String, value: String)
@@ -946,7 +946,70 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Obj], Obj(Seq(KeyValue("a", "1"), KeyValue("b", "2"), KeyValue("c", "3"))),
         """{"keyValues":[["a","1"],["b","2"],["c","3"]]}""")
     }
-    "serialize and deserialize case classes with refined type fields using custom codecs" in {
+    "serialize and deserialize JSON objects to case classes with maps using a custom value codec" in {
+      case class Lang(id: String, content: String)
+
+      case class Doc(id: String, tags: List[String], langs: Map[String, Lang])
+
+      def customDocCodec(supportedLangs: Set[String]): JsonValueCodec[Doc] = new JsonValueCodec[Doc] {
+        private[this] val langCodec: JsonValueCodec[Lang] = JsonCodecMaker.make
+        private[this] val listOfStringCodec: JsonValueCodec[List[String]] = JsonCodecMaker.make
+
+        override def decodeValue(in: JsonReader, default: Doc): Doc =  if (in.isNextToken('{')) {
+          var _id: String = null
+          var _tags: List[String] = _root_.scala.Nil
+          var _langs: Map[String, Lang] = Map.empty
+          var p0 = 0x3
+          if (!in.isNextToken('}')) {
+            in.rollbackToken()
+            var s: String = null
+            while ((s eq null) || in.isNextToken(',')) {
+              s = in.readKeyAsString()
+              if (s == "id") {
+                if ((p0 & 0x1) != 0) p0 ^= 0x1
+                else duplicatedKeyError(in, s)
+                _id = in.readString(_id)
+              } else if (s == "tags") {
+                if ((p0 & 0x2) != 0) p0 ^= 0x2
+                else duplicatedKeyError(in, s)
+                _tags = listOfStringCodec.decodeValue(in, _tags)
+              } else if (supportedLangs.contains(s)) {
+                if (_langs.contains(s)) duplicatedKeyError(in, s)
+                _langs = _langs.updated(s, langCodec.decodeValue(in, langCodec.nullValue))
+              } else in.skip()
+            }
+            if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
+          }
+          if ((p0 & 0x1) != 0) in.requiredFieldError("id")
+          new Doc(id = _id, tags = _tags, langs = _langs)
+        } else in.readNullOrTokenError(default, '{')
+
+        override def encodeValue(x: Doc, out: JsonWriter): _root_.scala.Unit = {
+          out.writeObjectStart()
+          out.writeNonEscapedAsciiKey("id")
+          out.writeVal(x.id)
+          out.writeNonEscapedAsciiKey("tags")
+          listOfStringCodec.encodeValue(x.tags, out)
+          x.langs.foreach { kv =>
+            out.writeNonEscapedAsciiKey(kv._1)
+            langCodec.encodeValue(kv._2, out)
+          }
+          out.writeObjectEnd()
+        }
+
+        override def nullValue: Doc = null
+
+        private[this] def duplicatedKeyError(in: JsonReader, fieldName: String): Throwable =
+          in.decodeError("duplicated field \"" + fieldName + "\" ")
+      }
+
+      val json = """{"id":"1","tags":["a","b"],"en":{"id":"en-1","content":"English text"},"de":{"id":"de-1","content":"German text"}}"""
+
+      verifySerDeser(customDocCodec(Set("en", "de")),
+        Doc("1", List("a", "b"), Map("en" -> Lang("en-1", "English text"), "de" -> Lang("de-1", "German text"))),
+        json)
+    }
+    "serialize and deserialize case classes with refined type fields" in {
       verifySerDeser(make[Preference[LocalDate]],
         Preference[LocalDate]("VVV", Kind.of[LocalDate]("LocalDate"), LocalDate.of(2022, 7, 18)),
         """{"key":"VVV","kind":"LocalDate","value":"2022-07-18"}""")
