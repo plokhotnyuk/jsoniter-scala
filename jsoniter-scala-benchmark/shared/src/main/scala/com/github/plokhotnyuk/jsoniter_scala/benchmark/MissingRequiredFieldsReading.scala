@@ -2,14 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import org.openjdk.jmh.annotations.Benchmark
 
-class MissingRequiredFieldsReading extends CommonParams {
-  var jsonString: String = """{}"""
-  var jsonBytes: Array[Byte] = {
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    jsonString.getBytes(UTF_8)
-  }
-
+class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   @Benchmark
   def avSystemGenCodec(): String = {
     import com.avsystem.commons.serialization.GenCodec.ReadFailure
