@@ -57,14 +57,8 @@ private[macros] object CompileTimeEval {
 
     def evalApplyStringMap(m: Expr[Map[String, String]], input: String): Option[String] = m match
       case '{ Map(${Varargs(args)}) } =>
-        args.foreach { a =>
-          if (a.asTerm.tpe <:< TypeRepr.of[(String, String)]) {
-            summon[FromExpr[(String, String)]].unapply(a.asExprOf[(String, String)]) match
-              case Some((k, v)) => if (k == input) return Some(v)
-              case None => throw CompileTimeEvalException(s"Can't eval ${a.show} at compile time", a)
-          } else throw CompileTimeEvalException(s"Can't case ${a.show} to (String, String)", a)
-        }
-        None
+        args.map(a => summon[FromExpr[(String, String)]].unapply(a.asExprOf[(String, String)]))
+          .collectFirst { case Some((k, v)) if (k == input) => v }
       case _ => throw CompileTimeEvalException(s"Map ${m.show} should be a constrictoor literal, we have ${m.asTerm}", m)
 
     def evalExpr[T: Type](expr: Expr[T]): Expr[T] = evalTerm(expr.asTerm, Map.empty, None).asExprOf[T]
