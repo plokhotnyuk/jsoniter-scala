@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 import scala.annotation.switch
@@ -107,8 +108,8 @@ object LocationType extends Enumeration {
 
   //FIXME: With Dotty + ScalaJS the `LocationType.GPS.toString` call returns "<Unknown name for enum field #1 of class class scala.Enumeration$Val>":
   //val IP, GPS: LocationType = Value
-  val IP = Value("IP")
-  val GPS = Value("GPS")
+  val IP: Value = Value("IP")
+  val GPS: Value = Value("GPS")
 
   def extra(name: String): LocationType = Value(nextId, name)
 }
@@ -581,7 +582,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize and deserialize outer types using custom value codecs for primitive types" in {
       implicit val customCodecOfLong: JsonValueCodec[Long] = new JsonValueCodec[Long] {
-        val nullValue: Long = 0
+        def nullValue: Long = 0
 
         def decodeValue(in: JsonReader, default: Long): Long =
           if (in.isNextToken('"')) {
@@ -602,7 +603,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codecOfLongList, List(1L, 9007199254740992L, 9007199254740993L),
         """[1,9007199254740992,"9007199254740993"]""")
       implicit val customCodecOfBoolean: JsonValueCodec[_root_.scala.Boolean] = new JsonValueCodec[_root_.scala.Boolean] {
-        val nullValue: _root_.scala.Boolean = false
+        def nullValue: _root_.scala.Boolean = false
 
         def decodeValue(in: JsonReader, default: _root_.scala.Boolean): _root_.scala.Boolean =
           if (in.isNextToken('"')) {
@@ -628,7 +629,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfFlags, """{"f1":"XALSE","f2":true}""", "illegal boolean, offset: 0x0000000c")
       verifyDeserError(codecOfFlags, """{"f1":xalse,"f2":true}""", "illegal boolean, offset: 0x00000006")
       implicit val customCodecOfDouble: JsonValueCodec[Double] = new JsonValueCodec[Double] {
-        val nullValue: Double = 0.0f
+        def nullValue: Double = 0.0f
 
         def decodeValue(in: JsonReader, default: Double): Double =
           if (in.isNextToken('"')) {
@@ -660,7 +661,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       implicit val customCodecOfZonedDateTime: JsonValueCodec[ZonedDateTime] = new JsonValueCodec[ZonedDateTime] {
         private[this] val standardCodec: JsonValueCodec[ZonedDateTime] = JsonCodecMaker.make[ZonedDateTime]
 
-        val nullValue: ZonedDateTime = null
+        def nullValue: ZonedDateTime = null
 
         def decodeValue(in: JsonReader, default: ZonedDateTime): ZonedDateTime = in.readZonedDateTime(default)
 
@@ -690,7 +691,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       case class Baz(bar: Bar)
 
       implicit val customCodecOfBar: JsonValueCodec[Bar] = new JsonValueCodec[Bar] {
-        val nullValue: Bar = null.asInstanceOf[Bar]
+        def nullValue: Bar = null.asInstanceOf[Bar]
 
         def encodeValue(x: Bar, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.asInstanceOf[Int])
 
@@ -701,14 +702,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       case class OpaqueTypes(uid: UserId2.Opaque, oid: OrderId2.Opaque)
 
       implicit val customCodecOfUserId2: JsonValueCodec[UserId2.Opaque] = new JsonValueCodec[UserId2.Opaque] {
-        val nullValue: UserId2.Opaque = null.asInstanceOf[UserId2.Opaque]
+        def nullValue: UserId2.Opaque = null.asInstanceOf[UserId2.Opaque]
 
         def encodeValue(x: UserId2.Opaque, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.value)
 
         def decodeValue(in: JsonReader, default: UserId2.Opaque): UserId2.Opaque = UserId2.Opaque(in.readString(default.value))
       }
       implicit val customCodecOfOrderId2: JsonValueCodec[OrderId2.Opaque] = new JsonValueCodec[OrderId2.Opaque] {
-        val nullValue: OrderId2.Opaque = null.asInstanceOf[OrderId2.Opaque]
+        def nullValue: OrderId2.Opaque = null.asInstanceOf[OrderId2.Opaque]
 
         def encodeValue(x: OrderId2.Opaque, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.value)
 
@@ -720,7 +721,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize outer types using custom value codecs for nested types" in {
       implicit val customCodecOfEither1: JsonValueCodec[Either[String, Int]] =
         new JsonValueCodec[Either[String, Int]] {
-          val nullValue: Either[String, Int] = null
+          def nullValue: Either[String, Int] = null
 
           def decodeValue(in: JsonReader, default: Either[String, Int]): Either[String, Int] = {
             val t = in.nextToken()
@@ -738,7 +739,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfEitherList, List(Right(1), Left("VVV")), """[1,"VVV"]""")
       implicit val customCodecOfEither2: JsonValueCodec[Either[String, StandardTypes]] =
         new JsonValueCodec[Either[String, StandardTypes]] {
-          val nullValue: Either[String, StandardTypes] = null
+          def nullValue: Either[String, StandardTypes] = null
 
           def decodeValue(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
             (in.nextToken(): @switch) match {
@@ -765,7 +766,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfOuterTypes, OuterTypes("X", Left("error")), """{"s":"X"}""") // st matches with default value
       verifySerDeser(codecOfOuterTypes, OuterTypes("X"), """{"s":"X"}""")
       implicit object codecOfLocationType extends JsonValueCodec[LocationType.LocationType] {
-        val nullValue: LocationType.LocationType = null
+        def nullValue: LocationType.LocationType = null
 
         def decodeValue(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType = {
           val v = in.readInt()
@@ -783,7 +784,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize types as a JSON object or a JSON string using custom value codecs" in {
       val customCodecOfStandardTypes: JsonValueCodec[StandardTypes] =
         new JsonValueCodec[StandardTypes] {
-          val nullValue: StandardTypes = null
+          def nullValue: StandardTypes = null
 
           def decodeValue(in: JsonReader, default: StandardTypes): StandardTypes = (in.nextToken(): @switch) match {
             case '{' =>
@@ -908,7 +909,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
               case Missing => out.encodeError("cannot serialize `Missing` out of a class instance")
             }
 
-          override val nullValue: Nullable[A] = Missing
+          override def nullValue: Nullable[A] = Missing
         }
 
         implicit val stringCodec: JsonValueCodec[Nullable[String]] = codec(make[String])
@@ -924,7 +925,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       case class KeyValue(key: String, value: String)
 
-      implicit val codecOfKeyValue = new JsonValueCodec[KeyValue] {
+      implicit val codecOfKeyValue: JsonValueCodec[KeyValue] = new JsonValueCodec[KeyValue] {
         override def decodeValue(in: JsonReader, default: KeyValue): KeyValue =
           if (in.isNextToken('[')) {
             val k = in.readString(null)
