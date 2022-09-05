@@ -106,7 +106,8 @@ class OpenRTBReading extends OpenRTBBenchmark {
   @Benchmark
   def zioJson(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-    import zio.json.DecoderOps
+    import zio.json._
+    import zio.json.JsonEncoder._
     import java.nio.charset.StandardCharsets.UTF_8
 
     new String(jsonBytes, UTF_8).fromJson[BidRequest].fold(sys.error, identity)

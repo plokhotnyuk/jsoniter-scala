@@ -120,7 +120,8 @@ class NestedStructsReading extends NestedStructsBenchmark {
 /* FIXME: zio-json throws java.lang.NullPointerException: Cannot invoke "zio.json.JsonDecoder.unsafeDecode(scala.collection.immutable.List, zio.json.internal.RetractReader)" because "this.A$1" is null
   @Benchmark
   def zioJson(): NestedStructs = {
-     import zio.json.DecoderOps
+     import zio.json._
+     import zio.json.JsonDecoder._
      import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
      import java.nio.charset.StandardCharsets.UTF_8
 

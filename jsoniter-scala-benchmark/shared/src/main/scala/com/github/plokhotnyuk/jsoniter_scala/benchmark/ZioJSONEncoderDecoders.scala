@@ -10,22 +10,15 @@ import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
 object ZioJSONEncoderDecoders extends ZioJSONScalaJsEncoderDecoders {
-  implicit val (adtE5r: JsonEncoder[ADTBase], adtD5r: JsonDecoder[ADTBase]) = {
-    implicit val c1: JsonCodec[ADTBase] = DeriveJsonCodec.gen
-    (c1.encoder, c1.decoder)
-  }
-  implicit val (geoJsonE5r: JsonEncoder[GeoJSON.GeoJSON], geoJsonD5r: JsonDecoder[GeoJSON.GeoJSON]) = {
+  implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
+  implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[GeoJSON.Geometry] = DeriveJsonCodec.gen
     implicit val c3: JsonCodec[GeoJSON.SimpleGeoJSON] = DeriveJsonCodec.gen
-    implicit val c4: JsonCodec[GeoJSON.GeoJSON] = DeriveJsonCodec.gen
-    (c4.encoder, c4.decoder)
+    DeriveJsonCodec.gen
   }
-  implicit val (nestedStructsE5r: JsonEncoder[NestedStructs], nestedStructsD5r: JsonDecoder[NestedStructs]) = {
-    implicit lazy val c1: JsonCodec[NestedStructs] = DeriveJsonCodec.gen
-    (c1.encoder, c1.decoder)
-  }
-  implicit val (openRTBBidRequestE5r: JsonEncoder[OpenRTB.BidRequest], openRTBBidRequestD5r: JsonDecoder[OpenRTB.BidRequest]) = {
+  implicit lazy val nestedStructsC3c: JsonCodec[NestedStructs] = DeriveJsonCodec.gen
+  implicit val openRTBBidRequestC3c: JsonCodec[OpenRTB.BidRequest] = {
     implicit val c1: JsonCodec[OpenRTB.Segment] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[OpenRTB.Format] = DeriveJsonCodec.gen
     implicit val c3: JsonCodec[OpenRTB.Deal] = DeriveJsonCodec.gen
@@ -47,10 +40,9 @@ object ZioJSONEncoderDecoders extends ZioJSONScalaJsEncoderDecoders {
     implicit val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
     implicit val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
     implicit val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
-    val c22: JsonCodec[OpenRTB.BidRequest] = DeriveJsonCodec.gen
-    (c22.encoder, c22.decoder)
+    DeriveJsonCodec.gen
   }
-  implicit val (twitterAPIE5r: JsonEncoder[TwitterAPI.Tweet], twitterAPID5r: JsonDecoder[TwitterAPI.Tweet]) = {
+  implicit val twitterAPIC3c: JsonCodec[TwitterAPI.Tweet] = {
     implicit val c1: JsonCodec[TwitterAPI.UserMentions] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[TwitterAPI.Urls] = DeriveJsonCodec.gen
     implicit val c3: JsonCodec[TwitterAPI.Entities] = DeriveJsonCodec.gen
@@ -58,15 +50,14 @@ object ZioJSONEncoderDecoders extends ZioJSONScalaJsEncoderDecoders {
     implicit val c5: JsonCodec[TwitterAPI.UserEntities] = DeriveJsonCodec.gen
     implicit val c6: JsonCodec[TwitterAPI.User] = DeriveJsonCodec.gen
     implicit val c7: JsonCodec[TwitterAPI.RetweetedStatus] = DeriveJsonCodec.gen
-    val c8: JsonCodec[TwitterAPI.Tweet] = DeriveJsonCodec.gen
-    (c8.encoder, c8.decoder)
+    DeriveJsonCodec.gen
   }
 }
 
 object ZioJSONScalaJsEncoderDecoders extends ZioJSONScalaJsEncoderDecoders
 
 trait ZioJSONScalaJsEncoderDecoders {
-  implicit val (anyValsE5r: JsonEncoder[AnyVals], anyValsD5r: JsonDecoder[AnyVals]) = {
+  implicit val anyValsC3cr: JsonCodec[AnyVals] = {
     implicit val c1: JsonCodec[ByteVal] = JsonCodec.byte.transform(ByteVal.apply, _.a)
     implicit val c2: JsonCodec[ShortVal] = JsonCodec.short.transform(ShortVal.apply, _.a)
     implicit val c3: JsonCodec[IntVal] = JsonCodec.int.transform(IntVal.apply, _.a)
@@ -75,8 +66,7 @@ trait ZioJSONScalaJsEncoderDecoders {
     implicit val c6: JsonCodec[CharVal] = JsonCodec.char.transform(CharVal.apply, _.a)
     implicit val c7: JsonCodec[DoubleVal] = JsonCodec.double.transform(DoubleVal.apply, _.a)
     implicit val c8: JsonCodec[FloatVal] = JsonCodec.float.transform(FloatVal.apply, _.a)
-    val c9: JsonCodec[AnyVals] = DeriveJsonCodec.gen
-    (c9.encoder, c9.decoder)
+    DeriveJsonCodec.gen
   }
   val base64C3c: JsonCodec[Array[Byte]] = new JsonCodec[Array[Byte]](
     (a: Array[Byte], _: Option[Int], out: Write) => {
@@ -85,11 +75,8 @@ trait ZioJSONScalaJsEncoderDecoders {
       out.write('"')
     },
     (trace: List[JsonError], in: RetractReader) => Base64.getDecoder.decode(Lexer.string(trace, in).toString))
-  implicit val (extractFieldsE5r: JsonEncoder[ExtractFields], extractFieldsD5r: JsonDecoder[ExtractFields]) = {
-    val c1: JsonCodec[ExtractFields] = DeriveJsonCodec.gen
-    (c1.encoder, c1.decoder)
-  }
-  implicit val (gitHubActionsAPIE5r: JsonEncoder[GitHubActionsAPI.Response], gitHubActionsAPID5r: JsonDecoder[GitHubActionsAPI.Response]) = {
+  implicit val extractFieldsC3c: JsonCodec[ExtractFields] = DeriveJsonCodec.gen
+  implicit val gitHubActionsAPIC3c: JsonCodec[GitHubActionsAPI.Response] = {
     implicit val e1: JsonEncoder[Boolean] = (a: Boolean, _: Option[Int], out: Write) =>
       out.write(if (a) "\"true\"" else "\"false\"")
     implicit val d1: JsonDecoder[Boolean] = (trace: List[JsonError], in: RetractReader) => {
@@ -99,26 +86,18 @@ trait ZioJSONScalaJsEncoderDecoders {
       x
     }
     implicit val c2: JsonCodec[GitHubActionsAPI.Artifact] = DeriveJsonCodec.gen
-    val c3: JsonCodec[GitHubActionsAPI.Response] = DeriveJsonCodec.gen
-    (c3.encoder, c3.decoder)
+    DeriveJsonCodec.gen
   }
-  implicit val (googleMapsAPIE5r: JsonEncoder[GoogleMapsAPI.DistanceMatrix], googleMapsAPID5r: JsonDecoder[GoogleMapsAPI.DistanceMatrix]) = {
+  implicit val googleMapsAPIC3c: JsonCodec[GoogleMapsAPI.DistanceMatrix] = {
     implicit val c1: JsonCodec[GoogleMapsAPI.Value] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[GoogleMapsAPI.Elements] = DeriveJsonCodec.gen
     implicit val c3: JsonCodec[GoogleMapsAPI.Rows] = DeriveJsonCodec.gen
-    val c4: JsonCodec[GoogleMapsAPI.DistanceMatrix] = DeriveJsonCodec.gen
-    (c4.encoder, c4.decoder)
+    DeriveJsonCodec.gen
   }
-  implicit val (missingRequiredFieldsE5r: JsonEncoder[MissingRequiredFields], missingRequiredFieldsD5r: JsonDecoder[MissingRequiredFields]) = {
-    val c1: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
-    (c1.encoder, c1.decoder)
-  }
-  implicit val (primitivesE5r: JsonEncoder[Primitives], primitivesD5r: JsonDecoder[Primitives]) = {
-    val c1: JsonCodec[Primitives] = DeriveJsonCodec.gen
-    (c1.encoder, c1.decoder)
-  }
-  implicit val (arrayOfEnumADTsE5r: JsonEncoder[Array[SuitADT]], arrayOfEnumADTsD5r: JsonDecoder[Array[SuitADT]]) =
-    (JsonEncoder.array[SuitADT]({ (a: SuitADT, _: Option[Int], out: Write) =>
+  implicit val missingRequiredFieldsC3c: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
+  implicit val primitivesC3c: JsonCodec[Primitives] = DeriveJsonCodec.gen
+  implicit val arrayOfEnumADTsC3c: JsonCodec[Array[SuitADT]] = new JsonCodec(
+    JsonEncoder.array[SuitADT]({ (a: SuitADT, _: Option[Int], out: Write) =>
       out.write('"')
       out.write(a.toString)
       out.write('"')
@@ -132,8 +111,8 @@ trait ZioJSONScalaJsEncoderDecoders {
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT =
         suite.getOrElse(Lexer.string(trace, in).toString, throwError("SuitADT", trace))
     }, ClassTag(classOf[SuitADT])))
-  implicit val (arrayOfEnumsE5r: JsonEncoder[Array[SuitEnum]], arrayOfEnumsD5r: JsonDecoder[Array[SuitEnum]]) =
-    (JsonEncoder.array[SuitEnum]({ (a: SuitEnum, _: Option[Int], out: Write) =>
+  implicit val arrayOfEnumsC3c: JsonCodec[Array[SuitEnum]] = new JsonCodec(
+    JsonEncoder.array[SuitEnum]({ (a: SuitEnum, _: Option[Int], out: Write) =>
       out.write('"')
       out.write(a.toString)
       out.write('"')

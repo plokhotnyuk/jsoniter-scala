@@ -121,7 +121,8 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
   @Benchmark
   def zioJson(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
-    import zio.json.DecoderOps
+    import zio.json._
+    import zio.json.JsonDecoder._
     import java.nio.charset.StandardCharsets.UTF_8
 
     new String(jsonBytes, UTF_8).fromJson[ExtractFields].fold(sys.error, identity)

@@ -95,6 +95,7 @@ class OpenRTBWriting extends OpenRTBBenchmark {
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
     import zio.json._
+    import zio.json.JsonEncoder._
     import java.nio.charset.StandardCharsets.UTF_8
 
     obj.toJson.getBytes(UTF_8)
