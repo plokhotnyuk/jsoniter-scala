@@ -563,7 +563,8 @@ object Main {
     GS(S("ArrayOfLongsReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      // FIXME: circe parses 697125858266480539 as 697125858266480500
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
