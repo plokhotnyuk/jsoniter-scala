@@ -36,7 +36,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for '"A" | "B" | "C"'."""
       })
     }
-    "serialize and deserialize Scala3 opaque types" in {
+    "serialize and deserialize Scala3 opaque types using custom value codecs" in {
       case class Period(start: Year, end: Year)
 
       implicit val yearCodec: JsonValueCodec[Year] = new JsonValueCodec[Year] {
@@ -51,7 +51,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       }
       verifySerDeser(make[Period], Period(Year.from(1976), Year.from(2022)), """{"start":1976,"end":2022}""")
     }
-    "serialize and deserialize Scala3 union types" in {
+    "serialize and deserialize Scala3 union types using custom value codecs" in {
       type JsonPrimitive = String | Int | Double | Boolean | None.type
 
       type Rec[JA[_], JO[_], A] = A match { // FIXME: remove this workaround after adding support of recursive types

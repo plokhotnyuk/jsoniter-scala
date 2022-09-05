@@ -3,19 +3,24 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import org.scalatest.exceptions.TestFailedException
 
-case class DeResult[A](isSucceed: Boolean, data: A, message: String)
-
-case class RootPathFiles(files: List[String])
-
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
-    "serialize and deserialize generic classes using given constants" in {
+    "don't generate codecs for generic classes using anonymous given constants" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """given JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
+        """case class DeResult[A](isSucceed: Boolean, data: A, message: String)
+          |
+          |case class RootPathFiles(files: List[String])
+          |
+          |given JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
           |given JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make""".stripMargin
       }).getMessage.contains {
         "given_JsonValueCodec_DeResult is already defined as given instance given_JsonValueCodec_DeResult"
       })
+    }
+    "serialize and deserialize generic classes using named given constants" in {
+      case class DeResult[A](isSucceed: Boolean, data: A, message: String)
+
+      case class RootPathFiles(files: List[String])
 
       given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
       given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
