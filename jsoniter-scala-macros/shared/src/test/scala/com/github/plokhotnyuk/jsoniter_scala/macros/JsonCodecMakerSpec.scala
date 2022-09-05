@@ -1033,6 +1033,21 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(implicitly[JsonValueCodec[GenDoc[_root_.scala.Boolean, String, Int]]],
         GenDoc(true, _root_.scala.Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
     }
+    "don't generate codecs for generic classes and an implicit function with a missing codec" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
+          |
+          |object GenDoc {
+          |  implicit def make[A, B, C](implicit bCodec: JsonValueCodec[B],
+          |                             cCodec: JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] = JsonCodecMaker.make
+          |}
+          |""".stripMargin
+      }).getMessage.contains(if (ScalaVersionCheck.isScala2) {
+        "Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'A' or provide a custom implicitly accessible codec for it."
+      } else {
+        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for 'A'."
+      }))
+    }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
 

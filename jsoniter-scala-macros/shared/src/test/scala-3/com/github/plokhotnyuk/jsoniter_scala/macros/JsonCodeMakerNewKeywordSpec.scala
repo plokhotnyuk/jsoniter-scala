@@ -7,12 +7,6 @@ case class DeResult[A](isSucceed: Boolean, data: A, message: String)
 
 case class RootPathFiles(files: List[String])
 
-case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
-
-object GenDoc:
-  given [A, B, C](using JsonValueCodec[A], JsonValueCodec[B], JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] =
-    JsonCodecMaker.make
-
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize generic classes using given constants" in {
@@ -34,12 +28,30 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         """{"isSucceed":false,"data":"VVV","message":"WWW"}""")
     }
     "serialize and deserialize generic classes using a given function" in {
+      case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
+
+      object GenDoc:
+        given [A, B, C](using JsonValueCodec[A], JsonValueCodec[B], JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] =
+          JsonCodecMaker.make
+
       implicit val aCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
       implicit val bCodec: JsonValueCodec[String] = JsonCodecMaker.make
       implicit val cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
 
       verifySerDeser(summon[JsonValueCodec[GenDoc[Boolean, String, Int]]],
         GenDoc(true, Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
+    }
+    "don't generate codecs for generic classes and a `given` function with a missing codec" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
+          |
+          |object GenDoc:
+          |  given [A, B, C](using JsonValueCodec[B], JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] =
+          |    JsonCodecMaker.make
+          |""".stripMargin
+      }).getMessage.contains {
+        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for 'A'."
+      })
     }
     "serialize and deserialize Scala3 enum ADTs defined with `derives` keyword" in {
       trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
