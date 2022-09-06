@@ -120,6 +120,15 @@ object PlayJsonFormats {
     implicit lazy val v13: Format[GeoJSON.GeoJSON] = flat.oformat((__ \ "type").format[String])
     v13
   }
+  implicit val gitHubActionsAPIFormat: Format[GitHubActionsAPI.Response] = {
+    implicit val v1: Format[Boolean] = stringFormat[Boolean]("boolean") { s =>
+      if (s == "true") true
+      else if (s == "false") false
+      else sys.error("")
+    }
+    implicit val v2: Format[GitHubActionsAPI.Artifact] = Jsonx.formatCaseClass
+    Json.format
+  }
   implicit val googleMapsAPIFormat: Format[GoogleMapsAPI.DistanceMatrix] = {
     implicit val v1: Format[GoogleMapsAPI.Value] = Json.format
     implicit val v2: Format[GoogleMapsAPI.Elements] = Json.format
