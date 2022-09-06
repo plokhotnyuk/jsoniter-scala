@@ -9,11 +9,13 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.borer() shouldBe benchmark.sourceObj
-      benchmark.circe() shouldBe benchmark.sourceObj
+      //FIXME circe parses 42667970104045.735577865 as 42667970104045.734
+      //benchmark.circe() shouldBe benchmark.sourceObj
       benchmark.circeJawn() shouldBe benchmark.sourceObj
       benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
-      benchmark.playJson() shouldBe benchmark.sourceObj
+      //FIXME play-json parses 42667970104045.735577865 as 42667970104045.734
+      //benchmark.playJson() shouldBe benchmark.sourceObj
       benchmark.playJsonJsoniter() shouldBe benchmark.sourceObj
       benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
