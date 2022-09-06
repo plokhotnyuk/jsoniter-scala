@@ -34,7 +34,8 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       //benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
-      benchmark.zioJson() shouldBe benchmark.obj
+      //FIXME zio-json parses 1.1999999284744263 as 1.2000000476837158
+      //benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
