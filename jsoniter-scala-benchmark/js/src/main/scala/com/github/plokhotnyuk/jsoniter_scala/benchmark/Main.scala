@@ -102,11 +102,13 @@ object Main {
     GS(S("ArrayOfBigDecimalsReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      //FIXME circe parses 42667970104045.735577865 as 42667970104045.734
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
+      //FIXME play-json parses 42667970104045.735577865 as 42667970104045.734
+      //B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
@@ -145,7 +147,8 @@ object Main {
     GS(S("ArrayOfBigIntsWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      //FIXME: circe parses 42667970104045735577865 as 42667970104045735000000,
+      //B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
@@ -361,15 +364,20 @@ object Main {
     GS(S("ArrayOfFloatsReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      //FIXME circe parses 1.1999999284744263 as 1.2000000476837158
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
+      //FIXME jsoniter-scala-circe parses 1.1999999284744263 as 1.2000000476837158
+      //B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
+      //FIXME play-json parses 1.1999999284744263 as 1.2000000476837158
+      //B("playJson")(benchmark.playJson()),
+      //FIXME play-json-jsoniter parses 1.1999999284744263 as 1.2000000476837158
+      //B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      //FIXME zio-json parses 1.1999999284744263 as 1.2000000476837158
+      //B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new ArrayOfFloatsWriting { size = 128; setup() }
@@ -563,11 +571,13 @@ object Main {
     GS(S("ArrayOfLongsReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      // FIXME: circe parses 697125858266480539 as 697125858266480500
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
+      // FIXME: play-json parses 697125858266480539 as 697125858266480500
+      //B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
@@ -980,7 +990,8 @@ object Main {
     GS(S("BigDecimalReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      //FIXME: circe parses 123456789012345678901234567890 as 1.2345678901234568E+29
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1006,9 +1017,11 @@ object Main {
     GS(S("BigIntReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      //FIXME: circe parses 123456789012345678901234567890 as 123456789012345680000000000000
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle())
@@ -1126,6 +1139,9 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      //FIXME: play-json throws scala.NotImplementedError: an implementation is missing
+      //B("playJson")(benchmark.playJson()),
+      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
@@ -1562,11 +1578,13 @@ object Main {
     GS(S("TwitterAPIReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      //FIXME: circe parses 850007368138018817 as 850007368138018800
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
+      //FIXME: play-json parses 850007368138018817 as 850007368138018800
+      //B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle())

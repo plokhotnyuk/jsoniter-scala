@@ -52,6 +52,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())
     }
   }
