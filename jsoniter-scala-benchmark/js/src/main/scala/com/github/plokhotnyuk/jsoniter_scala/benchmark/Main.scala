@@ -376,7 +376,8 @@ object Main {
       //B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      //FIXME zio-json parses 1.1999999284744263 as 1.2000000476837158
+      //B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new ArrayOfFloatsWriting { size = 128; setup() }
@@ -1016,9 +1017,11 @@ object Main {
     GS(S("BigIntReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      //FIXME: circe parses 123456789012345678901234567890 as 123456789012345680000000000000
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle())
@@ -1572,11 +1575,13 @@ object Main {
     GS(S("TwitterAPIReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
+      //FIXME: circe parses 850007368138018817 as 850007368138018800
+      //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
+      //FIXME: play-json parses 850007368138018817 as 850007368138018800
+      //B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle())
