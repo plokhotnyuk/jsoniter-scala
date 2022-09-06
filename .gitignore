@@ -13,7 +13,6 @@ target
 .project
 .classpath
 .settings
-.scala_dependencies
 
 # Scala-IDE specific
 .scala_dependencies
@@ -31,4 +30,5 @@ TAGS
 .bloop
 .vscode/settings.json
 
-metals.sbt
+# npm
+package-lock.json
