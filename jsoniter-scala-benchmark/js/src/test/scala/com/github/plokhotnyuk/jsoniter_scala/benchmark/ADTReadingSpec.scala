@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ADTReadingSpec extends BenchmarkSpecBase {
-  def benchmark = new ADTReading
+  def benchmark: ADTReading = new ADTReading {
+    setup()
+  }
 
   "ADTReading" should {
     "read properly" in {

@@ -5,12 +5,12 @@ import org.openjdk.jmh.annotations.{Param, Setup}
 import scala.collection.immutable.IntMap
 
 abstract class IntMapOfBooleansBenchmark extends CommonParams {
+  var obj: IntMap[Boolean] = _
+  var jsonBytes: Array[Byte] = _
+  var jsonString: String = _
+  var preallocatedBuf: Array[Byte] = _
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 1000
-  var obj: IntMap[Boolean] = _
-  var jsonString: String = _
-  var jsonBytes: Array[Byte] = _
-  var preallocatedBuf: Array[Byte] = _
 
   @Setup
   def setup(): Unit = {

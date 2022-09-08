@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class AnyValsReadingSpec extends BenchmarkSpecBase {
-  def benchmark = new AnyValsReading
+  def benchmark: AnyValsReading = new AnyValsReading {
+    setup()
+  }
 
   "AnyValsReading" should {
     "read properly" in {

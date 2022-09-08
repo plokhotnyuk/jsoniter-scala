@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ADTWritingSpec extends BenchmarkSpecBase {
-  def benchmark = new ADTWriting
+  def benchmark: ADTWriting = new ADTWriting {
+    setup()
+  }
 
   "ADTWriting" should {
     "write properly" in {

@@ -14,7 +14,7 @@ object Main {
     batchModeFormats = Map(JmhJson -> On, JmhText -> Off, CSV(8) -> Off),
     bmResultFormats = ctx => Vector(BRF.OpsPerSec, BRF.chooseTimePerOp(ctx))
   ))({
-    val benchmark = new ADTReading
+    val benchmark = new ADTReading { setup() }
     GS(S("ADTReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -28,7 +28,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new ADTWriting
+    val benchmark = new ADTWriting { setup() }
     GS(S("ADTWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -42,7 +42,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new AnyValsReading
+    val benchmark = new AnyValsReading { setup() }
     GS(S("AnyValsReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -57,7 +57,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new AnyValsWriting
+    val benchmark = new AnyValsWriting { setup() }
     GS(S("AnyValsWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1078,7 +1078,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new GeoJSONReading
+    val benchmark = new GeoJSONReading { setup() }
     GS(S("GeoJSONReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1092,7 +1092,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new GeoJSONWriting
+    val benchmark = new GeoJSONWriting { setup() }
     GS(S("GeoJSONWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1106,7 +1106,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new GitHubActionsAPIReading
+    val benchmark = new GitHubActionsAPIReading { setup() }
     GS(S("GitHubActionsAPIReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1121,7 +1121,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new GitHubActionsAPIWriting
+    val benchmark = new GitHubActionsAPIWriting { setup() }
     GS(S("GitHubActionsAPIWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1136,7 +1136,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new GoogleMapsAPIPrettyPrinting
+    val benchmark = new GoogleMapsAPIPrettyPrinting { setup() }
     GS(S("GoogleMapsAPIPrettyPrinting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("circe")(benchmark.circe()),
@@ -1151,7 +1151,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new GoogleMapsAPIReading
+    val benchmark = new GoogleMapsAPIReading { setup() }
     GS(S("GoogleMapsAPIReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1166,7 +1166,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new GoogleMapsAPIWriting
+    val benchmark = new GoogleMapsAPIWriting { setup() }
     GS(S("GoogleMapsAPIWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1199,7 +1199,7 @@ object Main {
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
     ))
   }, {
-    val benchmark = new IntReading
+    val benchmark = new IntReading { setup() }
     GS(S("IntReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1214,7 +1214,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new IntWriting
+    val benchmark = new IntWriting { setup() }
     GS(S("IntWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1281,7 +1281,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new MissingRequiredFieldsReading
+    val benchmark = new MissingRequiredFieldsReading { setup() }
     GS(S("MissingRequiredFieldsReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1408,7 +1408,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new OpenRTBReading
+    val benchmark = new OpenRTBReading { setup() }
     GS(S("OpenRTBReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1420,7 +1420,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new OpenRTBWriting
+    val benchmark = new OpenRTBWriting { setup() }
     GS(S("OpenRTBWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1430,7 +1430,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new PrimitivesReading
+    val benchmark = new PrimitivesReading { setup() }
     GS(S("PrimitivesReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1445,7 +1445,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new PrimitivesWriting
+    val benchmark = new PrimitivesWriting { setup() }
     GS(S("PrimitivesWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1578,7 +1578,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new TwitterAPIReading
+    val benchmark = new TwitterAPIReading { setup() }
     GS(S("TwitterAPIReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
@@ -1594,7 +1594,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new TwitterAPIWriting
+    val benchmark = new TwitterAPIWriting { setup() }
     GS(S("TwitterAPIWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),

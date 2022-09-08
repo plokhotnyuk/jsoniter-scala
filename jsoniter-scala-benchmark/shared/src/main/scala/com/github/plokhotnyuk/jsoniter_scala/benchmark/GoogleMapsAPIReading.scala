@@ -10,7 +10,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    JsonStringInput.read[DistanceMatrix](new String(jsonBytes1, UTF_8))
+    JsonStringInput.read[DistanceMatrix](new String(jsonBytes, UTF_8))
   }
 
   @Benchmark
@@ -18,7 +18,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
     import io.bullet.borer.Json
 
-    Json.decode(jsonBytes1).to[DistanceMatrix].value
+    Json.decode(jsonBytes).to[DistanceMatrix].value
   }
 
   @Benchmark
@@ -27,7 +27,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import io.circe.parser._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    decode[DistanceMatrix](new String(jsonBytes1, UTF_8)).fold(throw _, identity)
+    decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, identity)
   }
 
   @Benchmark
@@ -35,7 +35,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[DistanceMatrix](jsonBytes1).fold(throw _, identity)
+    decodeByteArray[DistanceMatrix](jsonBytes).fold(throw _, identity)
   }
 
   @Benchmark
@@ -45,21 +45,21 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[DistanceMatrix].decodeJson(readFromArray(jsonBytes1)).fold(throw _, identity)
+    Decoder[DistanceMatrix].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 
   @Benchmark
   def dslJsonScala(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonDecode[DistanceMatrix](jsonBytes1)
+    dslJsonDecode[DistanceMatrix](jsonBytes)
   }
 
   @Benchmark
   def jacksonScala(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[DistanceMatrix](jsonBytes1)
+    jacksonMapper.readValue[DistanceMatrix](jsonBytes)
   }
 
   @Benchmark
@@ -67,7 +67,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray[DistanceMatrix](jsonBytes1)
+    readFromArray[DistanceMatrix](jsonBytes)
   }
 
   @Benchmark
@@ -75,7 +75,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import play.api.libs.json.Json
 
-    Json.parse(jsonBytes1).as[DistanceMatrix]
+    Json.parse(jsonBytes).as[DistanceMatrix]
   }
 
   @Benchmark
@@ -84,7 +84,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray(jsonBytes1).as[DistanceMatrix]
+    readFromArray(jsonBytes).as[DistanceMatrix]
   }
 
   @Benchmark
@@ -92,7 +92,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray[DistanceMatrix](jsonBytes1)
+    readFromArray[DistanceMatrix](jsonBytes)
   }
 
   @Benchmark
@@ -100,14 +100,14 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._
 
-    JsonParser(jsonBytes1).convertTo[DistanceMatrix]
+    JsonParser(jsonBytes).convertTo[DistanceMatrix]
   }
 
   @Benchmark
   def uPickle(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[DistanceMatrix](jsonBytes1)
+    read[DistanceMatrix](jsonBytes)
   }
 
   @Benchmark
@@ -116,7 +116,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 
-    FromJson(jsonBytes1).transform(ToScala[DistanceMatrix])
+    FromJson(jsonBytes).transform(ToScala[DistanceMatrix])
   }
 
   @Benchmark
@@ -126,6 +126,6 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import zio.json.JsonDecoder._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes1, UTF_8).fromJson[DistanceMatrix].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[DistanceMatrix].fold(sys.error, identity)
   }
 }

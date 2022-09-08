@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class IntReadingSpec extends BenchmarkSpecBase {
-  def benchmark = new IntReading
+  def benchmark: IntReading = new IntReading {
+    setup()
+  }
 
   "IntReading" should {
     "read properly" in {

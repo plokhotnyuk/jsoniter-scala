@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class TwitterAPIReadingSpec extends BenchmarkSpecBase {
-  def benchmark = new TwitterAPIReading
+  def benchmark: TwitterAPIReading = new TwitterAPIReading {
+    setup()
+  }
 
   "TwitterAPIReading" should {
     "read properly" in {

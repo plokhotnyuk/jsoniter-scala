@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class OpenRTBWritingSpec extends BenchmarkSpecBase {
-  def benchmark = new OpenRTBWriting
+  def benchmark: OpenRTBWriting = new OpenRTBWriting {
+    setup()
+  }
 
   "OpenRTBWriting" should {
     "write properly" in {

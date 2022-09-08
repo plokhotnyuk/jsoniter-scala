@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class OpenRTBReadingSpec extends BenchmarkSpecBase {
-  def benchmark = new OpenRTBReading
+  def benchmark: OpenRTBReading = new OpenRTBReading {
+    setup()
+  }
 
   "OpenRTBReading" should {
     "read properly" in {
