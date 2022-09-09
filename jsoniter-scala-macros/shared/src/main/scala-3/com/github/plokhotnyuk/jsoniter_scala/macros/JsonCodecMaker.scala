@@ -608,8 +608,9 @@ object JsonCodecMaker {
         case ConstantType(_) => true
         case _ => false
 
-      def isEnumOrModuleValue(tpe: TypeRepr): Boolean =
-        tpe.isSingleton && (tpe.typeSymbol.flags.is(Flags.Enum) || tpe.typeSymbol.flags.is(Flags.Module))
+      def isEnumOrModuleValue(tpe: TypeRepr): Boolean = tpe.isSingleton &&
+        (tpe.typeSymbol.flags.is(Flags.Enum) || tpe.typeSymbol.flags.is(Flags.Module) ||
+          tpe.typeSymbol.flags.is(Flags.EmptyFlags) && !isConstType(tpe)) // FIXME: Remove after fix in Dotty: https://github.com/lampepfl/dotty/issues/16008
 
       def getEnclosingClass(sym: Symbol): Symbol =
         if (sym.isClassDef) sym

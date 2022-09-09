@@ -61,6 +61,15 @@ enum FooEnum[A[_]]:
   case Bar[A[_]](a: A[Int]) extends FooEnum[A]
   case Baz[A[_]](a: A[String]) extends FooEnum[A]
 
+trait MyMarker
+
+enum MyEnum(val value: String):
+  case Marked extends MyEnum("item1") with MyMarker
+  case Simple extends MyEnum("item2")
+
+object MyEnum:
+  implicit val codec: JsonValueCodec[MyEnum] = JsonCodecMaker.make // FIXME: Remove after fix in Dotty: https://github.com/lampepfl/dotty/issues/16008
+
 class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize Scala3 enums" in {
