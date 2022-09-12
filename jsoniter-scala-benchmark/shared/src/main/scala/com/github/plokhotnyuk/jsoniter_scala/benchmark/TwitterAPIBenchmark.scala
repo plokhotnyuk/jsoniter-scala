@@ -446,6 +446,6 @@ abstract class TwitterAPIBenchmark extends CommonParams {
   def setup(): Unit = {
     jsonBytes = jsonString.getBytes(UTF_8)
     obj = readFromArray[Seq[TwitterAPI.Tweet]](jsonBytes)
-    preallocatedBuf = new Array(compactJsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(compactJsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 }

@@ -16,6 +16,6 @@ abstract class BitSetBenchmark extends CommonParams {
     obj = BitSet(0 until size: _*)
     jsonString = obj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes("UTF-8")
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 }

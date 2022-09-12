@@ -17,6 +17,6 @@ abstract class ArrayOfLocalDatesBenchmark extends CommonParams {
     obj = (1 to size).map(i => LocalDate.ofEpochDay(i)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 }

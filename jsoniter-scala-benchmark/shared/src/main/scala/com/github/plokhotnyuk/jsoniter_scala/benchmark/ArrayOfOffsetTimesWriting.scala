@@ -66,7 +66,7 @@ class ArrayOfOffsetTimesWriting extends ArrayOfOffsetTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
+    writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
 
   @Benchmark

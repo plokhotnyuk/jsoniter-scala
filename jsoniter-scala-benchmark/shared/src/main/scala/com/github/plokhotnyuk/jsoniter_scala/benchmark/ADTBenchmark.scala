@@ -14,6 +14,6 @@ abstract class ADTBenchmark extends CommonParams {
   def setup(): Unit = {
     obj = Z(X(1), Y("VVV"))
     jsonBytes = jsonString1.getBytes(UTF_8)
-    preallocatedBuf = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 }

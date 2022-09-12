@@ -16,7 +16,7 @@ abstract class BigDecimalBenchmark extends CommonParams {
     jsonBytes = (1 to size).map(i => ((i % 10) + '0').toByte).toArray
     jsonString = new String(jsonBytes)
     sourceObj = BigDecimal(jsonString, MathContext.UNLIMITED)
-    preallocatedBuf = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 
   private[benchmark] def obj: BigDecimal = {

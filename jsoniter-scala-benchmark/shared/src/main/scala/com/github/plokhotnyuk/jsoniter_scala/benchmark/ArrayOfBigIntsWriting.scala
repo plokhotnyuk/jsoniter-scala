@@ -64,7 +64,7 @@ class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
+    writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
 /* FIXME: Play-JSON uses BigDecimal with engineering decimal representation to serialize numbers
   @Benchmark

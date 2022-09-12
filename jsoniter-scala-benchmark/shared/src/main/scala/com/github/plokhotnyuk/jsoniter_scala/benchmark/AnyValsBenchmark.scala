@@ -36,6 +36,6 @@ abstract class AnyValsBenchmark extends CommonParams {
   def setup(): Unit = {
     obj = AnyVals(ByteVal(1), ShortVal(2), IntVal(3), LongVal(4), BooleanVal(true), CharVal('x'), DoubleVal(5), FloatVal(6))
     jsonBytes = jsonString1.getBytes(UTF_8)
-    preallocatedBuf = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 }

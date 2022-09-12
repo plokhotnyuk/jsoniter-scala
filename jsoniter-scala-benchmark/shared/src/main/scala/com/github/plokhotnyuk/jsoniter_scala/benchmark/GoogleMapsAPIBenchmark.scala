@@ -2358,6 +2358,6 @@ abstract class GoogleMapsAPIBenchmark extends CommonParams {
   def setup(): Unit = {
     jsonBytes = jsonString1.getBytes(UTF_8)
     obj = readFromArray[GoogleMapsAPI.DistanceMatrix](jsonBytes)
-    preallocatedBuf = new Array(jsonBytes.length + 100 /*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128 /*to avoid possible out of bounds error*/)
   }
 }

@@ -63,7 +63,7 @@ class IntWriting extends IntBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(intCodec)
+    writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)(intCodec)
   }
 
   @Benchmark

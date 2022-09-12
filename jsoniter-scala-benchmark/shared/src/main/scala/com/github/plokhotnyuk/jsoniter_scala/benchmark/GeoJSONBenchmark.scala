@@ -18,6 +18,6 @@ abstract class GeoJSONBenchmark extends CommonParams {
   def setup(): Unit = {
     jsonBytes = jsonString1.getBytes(UTF_8)
     obj = readFromArray[GeoJSON.GeoJSON](jsonBytes)
-    preallocatedBuf = new Array(jsonBytes.length + 100 /*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128 /*to avoid possible out of bounds error*/)
   }
 }

@@ -48,7 +48,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, escapingConfig)(stringCodec)
+    writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length, escapingConfig)(stringCodec)
   }
 
   @Benchmark

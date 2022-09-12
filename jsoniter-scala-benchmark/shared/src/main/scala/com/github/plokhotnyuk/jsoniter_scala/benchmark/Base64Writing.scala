@@ -65,7 +65,7 @@ class Base64Writing extends Base64Benchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(base64Codec)
+    writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)(base64Codec)
   }
 
   @Benchmark

@@ -18,6 +18,6 @@ class PrimitivesBenchmark extends CommonParams {
   def setup(): Unit = {
     obj = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 5, 6)
     jsonBytes = writeToArray(obj)
-    preallocatedBuf = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 }

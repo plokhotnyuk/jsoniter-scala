@@ -17,6 +17,6 @@ abstract class ArrayOfYearsBenchmark extends CommonParams {
     obj = (1 to size).map(i => Year.of(i % 1000 + 2000)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 }

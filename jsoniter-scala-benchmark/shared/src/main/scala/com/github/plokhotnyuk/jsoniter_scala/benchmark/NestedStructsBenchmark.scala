@@ -16,6 +16,6 @@ abstract class NestedStructsBenchmark extends CommonParams {
     obj = (1 until size).foldLeft(NestedStructs(None))((n, _) => NestedStructs(Some(n)))
     jsonString = "{" + "\"n\":{" * (size - 1) + "}" * (size - 1) + "}"
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out of bounds error*/)
   }
 }
