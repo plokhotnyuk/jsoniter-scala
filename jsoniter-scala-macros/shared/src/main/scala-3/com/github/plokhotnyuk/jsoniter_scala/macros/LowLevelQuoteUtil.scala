@@ -11,17 +11,10 @@ private[macros] object LowLevelQuoteUtil {
     * We call deepChangeOwner when all val-s which defined in term is not used outside term
     * and over
     **/
-  def deepChangeOwner(using Quotes)(tree: quotes.reflect.Tree, owner: quotes.reflect.Symbol, traceFlag: Boolean): quotes.reflect.Tree = {
+  def deepChangeOwner(using Quotes)(tree: quotes.reflect.Tree, owner: quotes.reflect.Symbol): quotes.reflect.Tree = {
     import quotes.reflect._
 
     val mapper = new TreeMap {
-      override def transformTree(tree: Tree)(owner: Symbol): Tree =
-        try super.transformTree(tree)(owner) catch {
-          case ex: IllegalStateException =>
-            if (traceFlag) println(s"${ex.getMessage()}\ntree=$tree")
-            throw ex
-        }
-
       override def transformStatement(tree: Statement)(owner: Symbol): Statement = tree match {
         case d: Definition =>
           if (d.symbol.owner != owner) throw new IllegalStateException("Invalid owner in definition.")
@@ -45,10 +38,8 @@ private[macros] object LowLevelQuoteUtil {
             case other =>
           }
           val r =
-            if (needTopLevelChange) {
-               if (traceFlag) print(s"fixing owners for ${incorrectSymbols.mkString(",")}")
-               bl.changeOwner(owner)
-            } else bl
+            if (needTopLevelChange) bl.changeOwner(owner)
+            else bl
           val nStatements = r.statements.map {
             case t: Term => transformTerm(t)(owner)
             case other => other
@@ -63,12 +54,12 @@ private[macros] object LowLevelQuoteUtil {
 
       override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree = tree // don't navigate over types.
 
-      def checkInvalidOwner(term: Term, owner: Symbol): Boolean = checkOwner(term, owner, traceFlag, false, true)
+      def checkInvalidOwner(term: Term, owner: Symbol): Boolean = checkOwner(term, owner, false, true)
     }
     mapper.transformTree(tree)(owner)
    }
 
-  def checkOwner(using Quotes)(term: quotes.reflect.Term, ownerToCheck: quotes.reflect.Symbol, traceFlag: Boolean = true, throwFlag: Boolean = true, onlyFirst: Boolean = false): Boolean = {
+  def checkOwner(using Quotes)(term: quotes.reflect.Term, ownerToCheck: quotes.reflect.Symbol, throwFlag: Boolean = true, onlyFirst: Boolean = false): Boolean = {
     import quotes.reflect._
 
     var topLevelFound = false
@@ -83,7 +74,6 @@ private[macros] object LowLevelQuoteUtil {
             if (tree.symbol.owner != owner) {
               foundInvalidOwner = true
               topLevelFound = true
-              if (traceFlag) println(s"checkOwner: owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}")
               if (!wasException) {
                 wasException = true
                 throw new IllegalStateException(s"invlid owner, expected: ${owner}, have ${tree.symbol.owner}")
@@ -95,7 +85,6 @@ private[macros] object LowLevelQuoteUtil {
           if (!foundInvalidOwner) traverseTreeChildren(tree)(owner)
         } catch {
           case ex: IllegalStateException =>
-            if (traceFlag) println(s"in tree: $tree\n")
             if (throwFlag) throw ex
         }
      }

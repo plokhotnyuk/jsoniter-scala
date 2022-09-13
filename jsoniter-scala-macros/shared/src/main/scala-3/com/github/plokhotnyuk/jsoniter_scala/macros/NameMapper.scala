@@ -236,27 +236,14 @@ private[macros] object CompileTimeEval {
             throw new CompileTimeEvalException(s"expected that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
           }
         case other =>
-          try {
-            jvmToTerm(posTerm, javaReflectionCall(posTerm, evalQualJvm(qual, bindings), memberName, args))
-          } catch {
-            case ex: Throwable =>
-              // TODO: introduce some tracing flag
-              println(s"Exception during reflectionCall, retrace, qual=$qual")
-              val ref = evalQualJvm(qual, bindings, true)
-              println(s"ref = $ref")
-              throw ex;
-          }
+          jvmToTerm(posTerm, javaReflectionCall(posTerm, evalQualJvm(qual, bindings), memberName, args))
     }
 
-    private def evalQualJvm(qual: Term, bindings: Map[Symbol, Term], trace: Boolean = false): AnyRef = {
-      if (trace) println(s"evalQualJvn, qual=$qual")
-      if (qual.symbol.flags.is(Flags.Module)) {
-        if (trace) println("evalQualJvm: module")
-        retrieveRuntimeModule(qual, qual.symbol)
-      } else {
+    private def evalQualJvm(qual: Term, bindings: Map[Symbol, Term]): AnyRef =
+      if (qual.symbol.flags.is(Flags.Module)) retrieveRuntimeModule(qual, qual.symbol)
+      else {
         qual match
           case Inlined(_, inlineBindings, body) =>
-            if (trace) println("inlined")
             evalQualJvm(body, addBindings(body, bindings, inlineBindings))
           case id@Ident(_) =>
             bindings.get(id.symbol) match
@@ -265,27 +252,15 @@ private[macros] object CompileTimeEval {
               case None =>
                 throw new CompileTimeEvalException(s"Can't interpret '${id.show}' as constant expression", qual.asExpr)
           case Select(qual1, name) =>
-            val ref1 = evalQualJvm(qual1, bindings)
-            retrieveRuntimeField(qual, ref1, name)
+            retrieveRuntimeField(qual, evalQualJvm(qual1, bindings), name)
           case Apply(Select(qual1, name), args) =>
-            if (trace) println(s"evalQualJvm: reduceApply. qual1=$qual1")
-            val ref1 = evalQualJvm(qual1, bindings, trace)
-            if (trace) println(s"evalQualJvm: after reduceApply. ref1=$ref1 (class ${ref1.getClass})")
-            val r = javaReflectionCall(qual, ref1, name, args)
-            if (trace) println(s"After javaReflectionCall, r=$r")
-            r
+            javaReflectionCall(qual, evalQualJvm(qual1, bindings), name, args)
           case If(cond, ifTrue, ifFalse) =>
             if (evalCondition(cond, bindings)) evalQualJvm(ifTrue, bindings)
             else evalQualJvm(ifFalse, bindings)
-          case _ =>
-            // this can be constant expression
-            val t = evalTerm(qual, bindings, None)
-            if (trace) println(s"Before termToJvm, t=$t")
-            val r = termToJvm(t)
-            if (trace) println(s"After termToJvm, r=$r (class = ${r.getClass})")
-            r
+          case _ => // this can be constant expression
+            termToJvm(evalTerm(qual, bindings, None))
       }
-    }
 
     private def evalCondition(term: Term, bindings: Map[Symbol, Term]): Boolean = evalTerm(term, bindings, None) match
       case Literal(BooleanConstant(v)) => v

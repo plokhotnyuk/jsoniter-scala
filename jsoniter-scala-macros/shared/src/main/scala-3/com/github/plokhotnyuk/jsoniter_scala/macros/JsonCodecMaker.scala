@@ -519,21 +519,12 @@ object JsonCodecMaker {
       import quotes.reflect._
 
       try make[A](cfg) catch {
-        case ex: quoted.runtime.StopMacroExpansion => throw ex
         case ex: CompileTimeEvalException => report.errorAndAbort("Can't evaluate compile-time expression", ex.expr)
-        case NonFatal(ex) =>
-          if (false) {
-            println(s"Catched exception during macro expansion: $ex: msg=${ex.getMessage}")
-            ex.printStackTrace()
-          }
-          throw ex
       }
     }
 
     private[this] def make[A: Type](cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
-
-      val traceFlag: Boolean = false
 
       def fail(msg: String): Nothing = report.errorAndAbort(msg, Position.ofMacroExpansion)
 
@@ -1424,12 +1415,9 @@ object JsonCodecMaker {
           decodeMethodDefs.update(methodKey, {
             DefDef(sym, params => {
               val List(List(in, default)) = params
-              val defaultExpr = default.asExprOf[T]
-              val res = f(in.asExprOf[JsonReader], defaultExpr).asTerm.asInstanceOf[quotes.reflect.Term]
-              val sym1 = sym.asInstanceOf[quotes.reflect.Symbol]
-              val res1 = LowLevelQuoteUtil.deepChangeOwner(res, sym1, false /* TODO: rewise the flag */).asInstanceOf[Term]
-              if (traceFlag) LowLevelQuoteUtil.checkOwner(res1.asInstanceOf[quotes.reflect.Term], sym1)
-              Some(res1)
+              Some(LowLevelQuoteUtil.deepChangeOwner(
+                f(in.asExprOf[JsonReader], default.asExprOf[T]).asTerm.asInstanceOf[quotes.reflect.Term],
+                sym.asInstanceOf[quotes.reflect.Symbol]).asInstanceOf[Term])
             })
           })
           sym
@@ -1545,7 +1533,6 @@ object JsonCodecMaker {
       def genReadSealedClass[T: Type](types: List[TypeRepr], in: Expr[JsonReader], default: Expr[T],
                                       isStringified: Boolean)(using Quotes): Expr[T] = {
         val tpe = types.head
-        if (traceFlag) println(s"genReadSealedClass[${tpe.show}], discriminatorFieldName=${cfg.discriminatorFieldName}")
         val leafClasses = adtLeafClasses(tpe)
         val currentDiscriminator = cfg.discriminatorFieldName
         val discriminatorError =
@@ -1653,7 +1640,6 @@ object JsonCodecMaker {
       def genReadNonAbstractScalaClass[T: Type](types: List[TypeRepr], useDiscriminator: Boolean, in: Expr[JsonReader],
                                                 default: Expr[T])(using Quotes): Expr[T] = {
         val tpe = types.head
-        if (traceFlag) println(s"genReadNonAbstractScalaClass[${tpe.show}]")
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
           val names = classInfo.fields.map(_.mappedName)
@@ -1866,7 +1852,6 @@ object JsonCodecMaker {
       def genReadVal[T: Type](types: List[TypeRepr], default: Expr[T], isStringified: Boolean,
                               useDiscriminator: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] = {
         val tpe = types.head
-        if (traceFlag) println(s"genReadVal, tpe=${tpe.show}, useDiscriminator=$useDiscriminator")
         val implCodec = findImplicitValueCodec(types)
         val methodKey = DecoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), useDiscriminator)
         val decodeMethodSym = decodeMethodSyms.get(methodKey)
@@ -2354,7 +2339,6 @@ object JsonCodecMaker {
                                                  optDiscriminator: Option[WriteDiscriminator],
                                                  out: Expr[JsonWriter])(using Quotes): Expr[Unit] = {
         val tpe = types.head
-        if (traceFlag) println(s"genWriteNonAbstractScalaClass[${tpe.show}]")
         val classInfo = getClassInfo(tpe)
         val writeFields = classInfo.fields.map { f =>
           val fDefault =
@@ -2471,7 +2455,6 @@ object JsonCodecMaker {
                                optWriteDiscriminator: Option[WriteDiscriminator],
                                out: Expr[JsonWriter])(using Quotes): Expr[Unit]= {
         val tpe = types.head
-        if (traceFlag) println(s"genWriteVal(${tpe.show})")
         val implCodec = findImplicitValueCodec(types)
         val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)),
             optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
