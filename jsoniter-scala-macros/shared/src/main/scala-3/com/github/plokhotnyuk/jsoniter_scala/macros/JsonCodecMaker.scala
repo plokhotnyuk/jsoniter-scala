@@ -1392,6 +1392,8 @@ object JsonCodecMaker {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Short]]}, ${x2t.asExprOf[Array[Short]]}) }
         } else if (tpe1 <:< TypeRepr.of[Int]) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Int]]}, ${x2t.asExprOf[Array[Int]]}) }
+        } else if (tpe1 <:< TypeRepr.of[Long]) {
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Long]]}, ${x2t.asExprOf[Array[Long]]}) }
         } else if (tpe1 <:< TypeRepr.of[Float]) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Float]]}, ${x2t.asExprOf[Array[Float]]}) }
         } else if (tpe1 <:< TypeRepr.of[Double]) {

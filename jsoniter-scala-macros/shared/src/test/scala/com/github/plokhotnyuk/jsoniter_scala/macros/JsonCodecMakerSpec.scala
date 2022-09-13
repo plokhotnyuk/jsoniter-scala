@@ -200,7 +200,7 @@ case class Defaults(
   bi: BigInt = -1,
   oc: Option[Char] = Some('X'),
   l: List[Int] = collection.immutable.List(0),
-  a: Array[Array[Int]] = Array(Array(1, 2), Array(3, 4)),
+  a: Array[Array[Long]] = Array(Array(1L, 2L), Array(3L, 4L)),
   ab: collection.mutable.ArrayBuffer[Int] = collection.mutable.ArrayBuffer(1, 2),
   m: Map[Int, Boolean] = Map(1 -> true),
   mm: collection.mutable.Map[String, Int] = collection.mutable.Map("VVV" -> 1),
