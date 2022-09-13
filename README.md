@@ -159,7 +159,7 @@ supports Scala 2.11.
 - Patch versions are backward and forward compatible, minor versions are backward compatible
 - Support of compilation to a native image by GraalVM
 - Integration with circe for faster parsing/serialization and decoding/encoding to/from circe AST 
-- Releases for different Scala versions: 2.12, 2.13, and 3.1
+- Releases for different Scala versions: 2.12, 2.13, and 3.2
 - Support of Scala.js 1.0+ for all supported Scala versions
 - Support of Scala Native 0.4.4+ for all supported Scala versions and all modules except jsoniter-scala-circe
 - Suppressing of all WartRemover warnings of generated codecs for Scala 2.12 and 2.13 
@@ -422,7 +422,7 @@ case class RootPathFiles(files: List[String])
 given JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
 given JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
 ```
-Current 3.1.x versions of scalac fail with the duplicating definition error like this:
+Current 3.2.x versions of scalac fail with the duplicating definition error like this:
 ```
 [error] 19 |      given JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
 [error]    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

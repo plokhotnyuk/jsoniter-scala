@@ -553,48 +553,6 @@ object JsonCodecMaker {
 
       def valueClassValue(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers(0)
 
-      def substituteTypes(tpe: TypeRepr, from: List[Symbol], to: List[TypeRepr]): TypeRepr = {
-        // origin substitute-types in @experimantal annotations
-        // this will be enabled when feature will no longer experimental (scala 3.2 ?)
-        // import scala.language.experimental
-        // try tpe.substituteTypes(from, to) catch { case NonFatal(_) =>
-        //   fail(s"Cannot resolve generic type(s) for `$tpe`. Please provide a custom implicitly accessible codec for it.")
-        // }
-        val symTypeMap = from.zip(to).toMap
-
-        def substituteMap(tpe: TypeRepr): TypeRepr = tpe match
-          case ConstantType(_) => tpe
-          case TermRef(repr, name) => TermRef(substituteMap(repr), name)
-          case ti@TypeRef(_, _) =>
-            if (ti.typeSymbol.isTypeParam) symTypeMap.get(ti.typeSymbol).getOrElse(tpe)
-            else tpe // TypRef have no unapply, hope for the best
-          case SuperType(thisTpe, superTpe) => SuperType(substituteMap(thisTpe), substituteMap(superTpe))
-          case Refinement(parent, name, info) => Refinement(substituteMap(parent), name, substituteMap(info))
-          case TypeBounds(bound1, bound2) => TypeBounds(substituteMap(bound1), substituteMap(bound2))
-          case AppliedType(base, typeArgs) => substituteMap(base).appliedTo(typeArgs.map(substituteMap))
-          case AnnotatedType(underlying, annotated) => AnnotatedType(substituteMap(underlying), annotated)
-          case AndType(rhs, lhs) => AndType(substituteMap(rhs), substituteMap(lhs))
-          case OrType(rhs, lhs) => OrType(substituteMap(rhs), substituteMap(lhs))
-          case MatchType(bound, scrutinee, cases) =>
-            MatchType(substituteMap(bound), substituteMap(scrutinee), cases.map(substituteMap))
-          case ByNameType(underlying) => ByNameType(substituteMap(underlying))
-          case tl@TypeLambda(names, bounds, body) =>
-            var paramValues = Map.empty[Symbol, TypeRepr]
-            names.zipWithIndex.foreach { case (n, i) =>
-              val isym = tl.param(i).typeSymbol
-              symTypeMap.get(isym).foreach(tree => paramValues = paramValues.updated(isym, tree))
-            }
-            if (paramValues.size == names.size) substituteMap(body)
-            else if (paramValues.isEmpty) TypeLambda(names, _ => bounds, _ => substituteMap(body))
-            else fail(s"Partial type lambda applications are not suported for type: ${tpe.show}")
-          case r: RecursiveType => fail(s"Recurive types are not supported, use a custom implicitly accessible " +
-              s"codec (${r.show} during transform of ${tpe.show})")
-          case l: LambdaType => fail(s"Lambda types are not supported, use a custom implicitly accessible codec " +
-              s"(${l.show} during transform of ${tpe.show})")
-
-        substituteMap(tpe)
-      }
-
       def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(tpe.typeSymbol.fieldMembers(0)).dealias
 
       def isNonAbstractScalaClass(tpe: TypeRepr): Boolean = tpe.classSymbol.fold(false) { sym =>
@@ -960,11 +918,7 @@ object JsonCodecMaker {
             val originFieldType = tpe.memberType(symbol).dealias
             val fieldType = typeArgs(tpe) match
               case Nil => originFieldType
-              case typeArgs =>
-                if (typeArgs.length != typeParams.length) // FIXME: here we assume that type-params for the primary constructor are the same as class type params
-                  fail("Length of type-parameters of an aplied type and type parameters of primiary " +
-                    s"constructors are different for ${tpe.show}")
-                substituteTypes(originFieldType, typeParams, typeArgs)
+              case typeArgs => originFieldType.substituteTypes(typeParams, typeArgs)
             fieldType match
               case tl@TypeLambda(_, _, _) => fail(s"Hight-kinded types are not supported for type ${tpe.show} " +
                   s"with field type for '$name' (symbol=$symbol) : ${fieldType.show}, originFieldType=" +
