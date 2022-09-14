@@ -25,17 +25,14 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       //FIXME circe parses 1.1999999284744263 as 1.2000000476837158
       //benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJawn() shouldBe benchmark.obj
-      //FIXME jsoniter-scala-circe parses 1.1999999284744263 as 1.2000000476837158
-      //benchmark.circeJsoniter() shouldBe benchmark.obj
+      benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME play-json parses 1.1999999284744263 as 1.2000000476837158
       //benchmark.playJson() shouldBe benchmark.obj
-      //FIXME play-json-jsoniter parses 1.1999999284744263 as 1.2000000476837158
-      //benchmark.playJsonJsoniter() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
-      //FIXME zio-json parses 1.1999999284744263 as 1.2000000476837158
-      //benchmark.zioJson() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark

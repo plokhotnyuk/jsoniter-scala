@@ -367,17 +367,14 @@ object Main {
       //FIXME circe parses 1.1999999284744263 as 1.2000000476837158
       //B("circe")(benchmark.circe()),
       B("circeJawn")(benchmark.circeJawn()),
-      //FIXME jsoniter-scala-circe parses 1.1999999284744263 as 1.2000000476837158
-      //B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       //FIXME play-json parses 1.1999999284744263 as 1.2000000476837158
       //B("playJson")(benchmark.playJson()),
-      //FIXME play-json-jsoniter parses 1.1999999284744263 as 1.2000000476837158
-      //B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
+      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      //FIXME zio-json parses 1.1999999284744263 as 1.2000000476837158
-      //B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new ArrayOfFloatsWriting { size = 128; setup() }

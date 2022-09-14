@@ -24,7 +24,7 @@ libraries using different JDK and GraalVM versions on the following environment:
 and GraalVM CE/EE 22.2 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.10.1 to ES 2015 with
+compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.11.0 to ES 2015 with
 GCC v20220202 optimizations applied.
 
 ## Contents
