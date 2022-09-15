@@ -17,6 +17,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       //benchmark.playJson() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -29,6 +30,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

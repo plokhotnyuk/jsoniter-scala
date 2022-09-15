@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
-object ZioJSONEncoderDecoders extends ZioJSONScalaJsEncoderDecoders {
+object ZioJSONEncoderDecoders extends ZioJSONEncoderDecoders2 {
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
@@ -54,9 +54,7 @@ object ZioJSONEncoderDecoders extends ZioJSONScalaJsEncoderDecoders {
   }
 }
 
-object ZioJSONScalaJsEncoderDecoders extends ZioJSONScalaJsEncoderDecoders
-
-trait ZioJSONScalaJsEncoderDecoders {
+trait ZioJSONEncoderDecoders2 {
   implicit val anyValsC3cr: JsonCodec[AnyVals] = {
     implicit val c1: JsonCodec[ByteVal] = JsonCodec.byte.transform(ByteVal.apply, _.a)
     implicit val c2: JsonCodec[ShortVal] = JsonCodec.short.transform(ShortVal.apply, _.a)

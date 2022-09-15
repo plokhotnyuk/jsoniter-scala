@@ -106,7 +106,7 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
 
   @Benchmark
   def zioJson(): Array[SuitEnum] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
     import zio.json._
     import zio.json.JsonDecoder._
     import java.nio.charset.StandardCharsets.UTF_8
