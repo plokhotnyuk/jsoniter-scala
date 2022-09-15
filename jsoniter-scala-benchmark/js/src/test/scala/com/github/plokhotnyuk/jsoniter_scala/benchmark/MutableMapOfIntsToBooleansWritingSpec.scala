@@ -15,6 +15,7 @@ class MutableMapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       toString(b.playJson()) shouldBe b.jsonString
       toString(b.playJsonJsoniter()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }

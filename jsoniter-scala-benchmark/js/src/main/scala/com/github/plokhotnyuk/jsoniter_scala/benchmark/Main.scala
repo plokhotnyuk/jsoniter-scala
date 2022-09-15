@@ -95,7 +95,8 @@ object Main {
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new ArrayOfBigDecimalsReading { size = 128; setup() }
@@ -1350,7 +1351,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new MutableSetOfIntsReading { size = 128; setup() }
@@ -1376,7 +1378,8 @@ object Main {
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new NestedStructsReading { size = 128; setup() }

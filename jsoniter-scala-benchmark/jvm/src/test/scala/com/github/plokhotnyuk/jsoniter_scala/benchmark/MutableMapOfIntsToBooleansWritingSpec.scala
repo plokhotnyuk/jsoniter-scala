@@ -18,6 +18,7 @@ class MutableMapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.playJson()) shouldBe b.jsonString
       toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.weePickle()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }
