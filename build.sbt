@@ -238,7 +238,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.15.3",
-      "dev.zio" %%% "zio-json" % "0.3.0-RC11",
+      "dev.zio" %%% "zio-json" % "0.3.0",
       "com.rallyhealth" %% "weepickle-v1" % "1.8.0",
       "io.bullet" %%% "borer-derivation" % "1.8.0",
       "pl.iterators" %% "kebs-spray-json" % "1.9.4",

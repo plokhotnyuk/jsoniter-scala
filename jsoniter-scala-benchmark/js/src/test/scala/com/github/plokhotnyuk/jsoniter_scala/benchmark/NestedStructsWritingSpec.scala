@@ -19,8 +19,6 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
-      //FIXME: zio-json throws java.lang.NullPointerException: Cannot invoke "zio.json.JsonEncoder.isNothing(Object)" because "this.A$1" is null
-      //toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }

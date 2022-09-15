@@ -118,7 +118,7 @@ class NestedStructsWriting extends NestedStructsBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: zio-json throws java.lang.NullPointerException: Cannot invoke "zio.json.JsonEncoder.isNothing(Object)" because "this.A$1" is null
+
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
@@ -128,5 +128,4 @@ class NestedStructsWriting extends NestedStructsBenchmark {
 
     obj.toJson.getBytes(UTF_8)
   }
-*/
 }
