@@ -14,9 +14,9 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
         "Cannot read com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields, field s is missing in decoded data"
       b.borer() shouldBe
         "Cannot decode `MissingRequiredFields` instance due to missing map keys \"s\" and \"i\" (input position 1)"
-      b.circe() shouldBe "Attempt to decode value on failed cursor: DownField(s)"
-      b.circeJawn() shouldBe "Attempt to decode value on failed cursor: DownField(s)"
-      b.circeJsoniter() shouldBe "Attempt to decode value on failed cursor: DownField(s)"
+      b.circe() shouldBe "Missing required field: DownField(s)"
+      b.circeJawn() shouldBe "Missing required field: DownField(s)"
+      b.circeJsoniter() shouldBe "Missing required field: DownField(s)"
       b.dslJsonScala() shouldBe
         "Mandatory properties (s, i) not found at position: 1, following: `{`, before: `}`"
       b.jacksonScala() shouldBe

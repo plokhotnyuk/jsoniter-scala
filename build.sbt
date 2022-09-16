@@ -125,6 +125,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-coreNative`,
     `jsoniter-scala-circeJVM`,
     `jsoniter-scala-circeJS`,
+    `jsoniter-scala-circeNative`,
     `jsoniter-scala-macrosJVM`,
     `jsoniter-scala-macrosJS`,
     `jsoniter-scala-macrosNative`,
@@ -207,7 +208,7 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
 lazy val `jsoniter-scala-macrosNative` = `jsoniter-scala-macros`.native
   .settings(nativeSettings)
 
-lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
+lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .dependsOn(`jsoniter-scala-core`)
   .settings(commonSettings)
@@ -215,8 +216,8 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     crossScalaVersions := Seq("3.2.0", "2.13.8", "2.12.17"),
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.2",
-      "io.circe" %%% "circe-parser" % "0.14.2" % Test,
+      "io.circe" %%% "circe-core" % "0.14.3",
+      "io.circe" %%% "circe-parser" % "0.14.3" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.13" % Test
     )
   )
@@ -225,6 +226,9 @@ lazy val `jsoniter-scala-circeJVM` = `jsoniter-scala-circe`.jvm
 
 lazy val `jsoniter-scala-circeJS` = `jsoniter-scala-circe`.js
   .settings(jsSettings)
+
+lazy val `jsoniter-scala-circeNative` = `jsoniter-scala-circe`.native
+  .settings(nativeSettings)
 
 lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -250,9 +254,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.0-SNAPSHOT" changing(),
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.14.0-SNAPSHOT" changing(),
       "io.circe" %%% "circe-generic-extras" % "0.14.2",
-      "io.circe" %%% "circe-generic" % "0.15.0-M1",
-      "io.circe" %%% "circe-parser" % "0.15.0-M1",
-      "io.circe" %%% "circe-jawn" % "0.15.0-M1",
+      "io.circe" %%% "circe-generic" % "0.14.3",
+      "io.circe" %%% "circe-parser" % "0.14.3",
+      "io.circe" %%% "circe-jawn" % "0.14.3",
       "com.typesafe.play" %%% "play-json" % "2.10.0-RC6",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.0",
       "org.julienrf" %%% "play-json-derived-codecs" % "10.1.0",
