@@ -40,6 +40,15 @@ class ADTWriting extends ADTBenchmark {
   }
 
   @Benchmark
+  def fabric(): Array[Byte] = {
+    import FabricRW._
+    import _root_.fabric.rw._
+    import _root_.fabric.io._
+
+    JsonFormatter.Compact(obj.json).getBytes("UTF-8")
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
