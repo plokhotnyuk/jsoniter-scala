@@ -48,6 +48,16 @@ class ADTReading extends ADTBenchmark {
   }
 
   @Benchmark
+  def fabric(): ADTBase = {
+    import FabricRW._
+    import _root_.fabric.io._
+    import _root_.fabric.rw._
+
+    val json = JsonParser(new String(jsonBytes, "UTF-8"), Format.Json)
+    json.as[ADTBase]
+  }
+
+  @Benchmark
   def jacksonScala(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
