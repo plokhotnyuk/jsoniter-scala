@@ -12,6 +12,7 @@ class ADTWritingSpec extends BenchmarkSpecBase {
       toString(b.borer()) shouldBe b.jsonString1
       toString(b.circe()) shouldBe b.jsonString2
       toString(b.circeJsoniter()) shouldBe b.jsonString2
+      toString(b.fabric()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString1
       toString(b.jsoniterScala()) shouldBe b.jsonString1
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1

@@ -12,6 +12,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJawn() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
+      benchmark.fabric() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -29,6 +30,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.fabric())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
