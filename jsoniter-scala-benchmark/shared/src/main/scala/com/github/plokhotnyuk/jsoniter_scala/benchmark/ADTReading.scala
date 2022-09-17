@@ -53,8 +53,7 @@ class ADTReading extends ADTBenchmark {
     import _root_.fabric.io._
     import _root_.fabric.rw._
 
-    val json = JsonParser(new String(jsonBytes, "UTF-8"), Format.Json)
-    json.as[ADTBase]
+    jsonBytes.as[ADTBase](Format.Json)
   }
 
   @Benchmark
