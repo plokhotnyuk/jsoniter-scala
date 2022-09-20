@@ -8,7 +8,7 @@ val `jsoniter-scala-examples` = crossProject(JVMPlatform, NativePlatform)
   .settings(
     scalaVersion := "2.13.9",
     scalacOptions ++= Seq("-Xmacro-settings:print-codecs"),
-    crossScalaVersions := Seq("3.1.3", "2.13.9", "2.12.16"),
+    crossScalaVersions := Seq("3.2.0", "2.13.9", "2.12.17"),
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
     assembly / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
     libraryDependencySchemes += "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "always",
