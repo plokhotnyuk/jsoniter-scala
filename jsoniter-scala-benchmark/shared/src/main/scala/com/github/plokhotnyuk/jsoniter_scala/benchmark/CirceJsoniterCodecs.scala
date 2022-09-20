@@ -3,11 +3,10 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import io.circe.Decoder._
 import io.circe.Encoder._
 import io.circe._
-import io.circe.generic.extras.semiauto._
+import io.circe.generic.semiauto._
 import java.time.Instant
 import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, ReaderConfig, WriterConfig}
-import io.circe.generic.extras.Configuration
 
 object CirceJsoniterCodecs {
   import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
@@ -16,7 +15,6 @@ object CirceJsoniterCodecs {
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   implicit val jsonCodec: JsonValueCodec[Json] = JsoniterScalaCodec.jsonCodec(doSerialize = _ ne Json.Null)
-  implicit val config: Configuration = Configuration.default.withDefaults.withDiscriminator("type")
   implicit val gitHubActionsAPIC3c: Codec[GitHubActionsAPI.Response] = {
     implicit val c1: Codec[GitHubActionsAPI.Artifact] =
       Codec.forProduct9("id", "node_id", "name", "size_in_bytes", "url", "archive_download_url",
@@ -29,6 +27,6 @@ object CirceJsoniterCodecs {
         (a.id, a.node_id, a.name, a.size_in_bytes, a.url, a.archive_download_url,
         a.expired.toString, a.created_at, a.expires_at)
       }
-    deriveConfiguredCodec[GitHubActionsAPI.Response]
+    deriveCodec[GitHubActionsAPI.Response]
   }
 }
