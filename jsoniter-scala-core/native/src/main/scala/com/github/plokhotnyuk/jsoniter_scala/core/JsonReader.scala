@@ -1850,9 +1850,9 @@ final class JsonReader private[jsoniter_scala](
       first = Math.max(first - 1, 0)
       var i = last
       while (i >= first) {
-        val p = (magnitude(i) & 0xFFFFFFFFL) * 1000000000 + x
-        magnitude(i) = p.toInt
-        x = p >>> 32
+        x += (magnitude(i) & 0xFFFFFFFFL) * 1000000000
+        magnitude(i) = x.toInt
+        x >>>= 32
         i -= 1
       }
     }
