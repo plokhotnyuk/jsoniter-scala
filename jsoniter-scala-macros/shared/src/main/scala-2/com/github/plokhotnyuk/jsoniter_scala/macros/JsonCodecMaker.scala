@@ -1020,32 +1020,37 @@ object JsonCodecMaker {
       val nullValueNames = new mutable.LinkedHashMap[Type, TermName]
       val nullValueTrees = new mutable.LinkedHashMap[Type, Tree]
 
-      def withNullValueFor(tpe: Type)(f: => Tree): Tree = {
-        val nullValueName = nullValueNames.getOrElseUpdate(tpe, TermName("c" + nullValueNames.size))
-        nullValueTrees.getOrElseUpdate(tpe, q"private[this] val $nullValueName: $tpe = $f")
-        Ident(nullValueName)
-      }
+      def withNullValueFor(tpe: Type)(f: => Tree): Tree = Ident(nullValueNames.get(tpe).getOrElse{
+        val name = TermName("c" + nullValueNames.size)
+        nullValueNames.update(tpe, name)
+        nullValueTrees.update(tpe, q"private[this] val $name: $tpe = $f")
+        name
+      })
 
       val fieldNames = new mutable.LinkedHashMap[Type, TermName]
       val fieldTrees = new mutable.LinkedHashMap[Type, Tree]
 
-      def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
-        val fieldName = fieldNames.getOrElseUpdate(tpe, TermName("f" + fieldNames.size))
-        fieldTrees.getOrElseUpdate(tpe,
-          q"""private[this] def $fieldName(i: Int): String =
-                (i: @_root_.scala.annotation.switch @_root_.scala.unchecked) match {
-                  case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n" }}
-                }""")
-        Ident(fieldName)
-      }
+      def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = Ident(fieldNames.get(tpe).getOrElse {
+        val name = TermName("f" + fieldNames.size)
+        fieldNames.update(tpe, name)
+        fieldTrees.update(tpe,
+          q"""private[this] def $name(i: Int): String =
+              (i: @_root_.scala.annotation.switch @_root_.scala.unchecked) match {
+                case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n" }}
+              }""")
+        name
+      })
 
       val equalsMethodNames = new mutable.LinkedHashMap[Type, TermName]
       val equalsMethodTrees = new mutable.LinkedHashMap[Type, Tree]
 
       def withEqualsFor(tpe: Type, arg1: Tree, arg2: Tree)(f: => Tree): Tree = {
-        val equalsMethodName = equalsMethodNames.getOrElseUpdate(tpe, TermName("q" + equalsMethodNames.size))
-        equalsMethodTrees.getOrElseUpdate(tpe,
-          q"private[this] def $equalsMethodName(x1: $tpe, x2: $tpe): _root_.scala.Boolean = $f")
+        val equalsMethodName = equalsMethodNames.get(tpe).getOrElse{
+          val name = TermName("q" + equalsMethodNames.size)
+          equalsMethodNames.update(tpe, name)
+          equalsMethodTrees.update(tpe, q"private[this] def $name(x1: $tpe, x2: $tpe): _root_.scala.Boolean = $f")
+          name
+        }
         q"$equalsMethodName($arg1, $arg2)"
       }
 
@@ -1071,9 +1076,14 @@ object JsonCodecMaker {
       val decodeMethodTrees = new mutable.LinkedHashMap[MethodKey, Tree]
 
       def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
-        val decodeMethodName = decodeMethodNames.getOrElseUpdate(methodKey, TermName("d" + decodeMethodNames.size))
-        decodeMethodTrees.getOrElseUpdate(methodKey,
-          q"private[this] def $decodeMethodName(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: ${methodKey.tpe}): ${methodKey.tpe} = $f")
+        val decodeMethodName = decodeMethodNames.get(methodKey).getOrElse {
+          val name = TermName("d" + decodeMethodNames.size)
+          val mtpe = methodKey.tpe
+          decodeMethodNames.update(methodKey, name)
+          decodeMethodTrees.update(methodKey,
+            q"private[this] def $name(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $mtpe): $mtpe = $f")
+          name
+        }
         q"$decodeMethodName(in, $arg)"
       }
 
@@ -1081,9 +1091,13 @@ object JsonCodecMaker {
       val encodeMethodTrees = new mutable.LinkedHashMap[MethodKey, Tree]
 
       def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
-        val encodeMethodName = encodeMethodNames.getOrElseUpdate(methodKey, TermName("e" + encodeMethodNames.size))
-        encodeMethodTrees.getOrElseUpdate(methodKey,
-          q"private[this] def $encodeMethodName(x: ${methodKey.tpe}, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = $f")
+        val encodeMethodName = encodeMethodNames.get(methodKey).getOrElse {
+          val name = TermName("e" + encodeMethodNames.size)
+          encodeMethodNames.update(methodKey, name)
+          encodeMethodTrees.update(methodKey,
+            q"private[this] def $name(x: ${methodKey.tpe}, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = $f")
+          name
+        }
         q"$encodeMethodName($arg, out)"
       }
 
