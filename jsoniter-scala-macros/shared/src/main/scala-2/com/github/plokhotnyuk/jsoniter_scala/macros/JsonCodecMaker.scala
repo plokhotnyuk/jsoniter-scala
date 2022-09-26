@@ -569,27 +569,27 @@ object JsonCodecMaker {
         else if (precision == java.math.MathContext.DECIMAL64.getPrecision) q"_root_.java.math.MathContext.DECIMAL64"
         else if (precision == java.math.MathContext.DECIMAL32.getPrecision) q"_root_.java.math.MathContext.DECIMAL32"
         else if (precision == java.math.MathContext.UNLIMITED.getPrecision) q"_root_.java.math.MathContext.UNLIMITED"
-        else {
-          val mc = q"new _root_.java.math.MathContext(${cfg.bigDecimalPrecision}, _root_.java.math.RoundingMode.HALF_EVEN)"
-          val mathContextName = mathContextNames.getOrElseUpdate(precision, TermName("mc" + mathContextNames.size))
-          mathContextTrees.getOrElseUpdate(precision, q"private[this] val $mathContextName: _root_.java.math.MathContext = $mc")
-          Ident(mathContextName)
-        }
+        else Ident(mathContextNames.get(precision).getOrElse {
+          val name = TermName("mc" + mathContextNames.size)
+          mathContextNames.update(precision, name)
+          mathContextTrees.update(precision,
+            q"private[this] val $name = new _root_.java.math.MathContext(${cfg.bigDecimalPrecision}, _root_.java.math.RoundingMode.HALF_EVEN)")
+          name
+        })
 
       val scalaEnumCacheNames = new mutable.LinkedHashMap[Type, TermName]
       val scalaEnumCacheTries = new mutable.LinkedHashMap[Type, Tree]
 
-      def withScalaEnumCacheFor(tpe: Type): Tree = {
+      def withScalaEnumCacheFor(tpe: Type): Tree = Ident(scalaEnumCacheNames.get(tpe).getOrElse {
+        val name = TermName("ec" + scalaEnumCacheNames.size)
         val keyTpe =
           if (cfg.useScalaEnumValueId) tq"Int"
           else tq"String"
-        val ec = q"new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]"
-        val enumCacheName = scalaEnumCacheNames.getOrElseUpdate(tpe, TermName("ec" + scalaEnumCacheNames.size))
-        scalaEnumCacheTries.getOrElseUpdate(tpe, {
-          q"private[this] val $enumCacheName: _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe] = $ec"
-        })
-        Ident(enumCacheName)
-      }
+        scalaEnumCacheNames.update(tpe, name)
+        scalaEnumCacheTries.update(tpe,
+          q"private[this] val $name = new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]")
+        name
+      })
 
       case class EnumValueInfo(value: Tree, name: String, transformed: Boolean)
 
@@ -933,7 +933,7 @@ object JsonCodecMaker {
         }.getOrElse(fail(s"Cannot find a primary constructor for '$tpe'"))
 
         def hasSupportedAnnotation(m: TermSymbol): Boolean = {
-          m.info // to enforce the type information completeness and availability of annotations
+          m.info: Unit // to enforce the type information completeness and availability of annotations
           m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
             a.tree.tpe =:= typeOf[stringified])
         }
