@@ -20,7 +20,7 @@ object CirceEncodersDecoders {
   implicit val adtC3c: Codec[ADTBase] = {
     import io.circe.generic.extras.semiauto._
 
-    deriveConfiguredCodec[ADTBase]
+    deriveConfiguredCodec
   }
   implicit val anyValsC3c: Codec[AnyVals] = {
     implicit val c1: Codec[ByteVal] = Codec.from(decodeByte.map(ByteVal.apply), encodeByte.contramap(_.a))
@@ -31,7 +31,7 @@ object CirceEncodersDecoders {
     implicit val c6: Codec[CharVal] = Codec.from(decodeChar.map(CharVal.apply), encodeChar.contramap(_.a))
     implicit val c7: Codec[DoubleVal] = Codec.from(decodeDouble.map(DoubleVal.apply), encodeDouble.contramap(_.a))
     implicit val c8: Codec[FloatVal] = Codec.from(decodeFloat.map(FloatVal.apply), encodeFloat.contramap(_.a))
-    deriveCodec[AnyVals]
+    deriveCodec
   }
   val base64C3c: Codec[Array[Byte]] =
     Codec.from(Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
@@ -40,7 +40,7 @@ object CirceEncodersDecoders {
     import io.circe.generic.extras.semiauto._
     import io.circe.generic.extras.auto._
 
-    deriveConfiguredCodec[OpenRTB.BidRequest]
+    deriveConfiguredCodec
   }
   implicit val bigIntE5r: Encoder[BigInt] = encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
@@ -53,7 +53,7 @@ object CirceEncodersDecoders {
   implicit val distanceMatrixC3c: Codec[GoogleMapsAPI.DistanceMatrix] = {
     import io.circe.generic.auto._
 
-    deriveCodec[GoogleMapsAPI.DistanceMatrix]
+    deriveCodec
   }
   implicit val gitHubActionsAPIC3c: Codec[GitHubActionsAPI.Response] = {
     implicit val c1: Codec[GitHubActionsAPI.Artifact] =
@@ -67,16 +67,16 @@ object CirceEncodersDecoders {
         (a.id, a.node_id, a.name, a.size_in_bytes, a.url, a.archive_download_url,
         a.expired.toString, a.created_at, a.expires_at)
       }
-    deriveCodec[GitHubActionsAPI.Response]
+    deriveCodec
   }
-  implicit val extractFieldsC3c: Codec[ExtractFields] = deriveCodec[ExtractFields]
+  implicit val extractFieldsC3c: Codec[ExtractFields] = deriveCodec
   implicit val geoJSONC3c: Codec[GeoJSON.GeoJSON] = {
     import io.circe.generic.extras.semiauto._
 
-    implicit val c1: Codec[GeoJSON.SimpleGeometry] = deriveConfiguredCodec[GeoJSON.SimpleGeometry]
-    implicit val c2: Codec[GeoJSON.Geometry] = deriveConfiguredCodec[GeoJSON.Geometry]
-    implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = deriveConfiguredCodec[GeoJSON.SimpleGeoJSON]
-    deriveConfiguredCodec[GeoJSON.GeoJSON]
+    implicit val c1: Codec[GeoJSON.SimpleGeometry] = deriveConfiguredCodec
+    implicit val c2: Codec[GeoJSON.Geometry] = deriveConfiguredCodec
+    implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = deriveConfiguredCodec
+    deriveConfiguredCodec
   }
   implicit val intMapC3c: Codec[IntMap[Boolean]] =
     Codec.from(Decoder.decodeMap[Int, Boolean].map(_.foldLeft(IntMap.empty[Boolean])((m, p) => m.updated(p._1, p._2))),
@@ -86,8 +86,8 @@ object CirceEncodersDecoders {
       m.update(p._1, p._2)
       m
     }), Encoder.encodeMapLike[Long, Boolean, mutable.Map].contramapObject((m: mutable.LongMap[Boolean]) => m))
-  implicit val missingRequiredFieldsC3c: Codec[MissingRequiredFields] = deriveCodec[MissingRequiredFields]
-  implicit val nestedStructsC3c: Codec[NestedStructs] = deriveCodec[NestedStructs]
+  implicit val missingRequiredFieldsC3c: Codec[MissingRequiredFields] = deriveCodec
+  implicit val nestedStructsC3c: Codec[NestedStructs] = deriveCodec
   implicit val suitC3c: Codec[Suit] =
     Codec.from(decodeString.emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply)),
       encodeString.contramap[Suit](_.name))
@@ -100,10 +100,10 @@ object CirceEncodersDecoders {
     s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }, encodeString.contramap(_.toString))
   implicit val suitEnumC3c: Codec[SuitEnum.Value] = Codec.from(decodeEnumeration(SuitEnum), encodeEnumeration(SuitEnum))
-  implicit val primitivesC3c: Codec[Primitives] = deriveCodec[Primitives]
+  implicit val primitivesC3c: Codec[Primitives] = deriveCodec
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {
     import io.circe.generic.auto._
 
-    deriveCodec[TwitterAPI.Tweet]
+    deriveCodec
   }
 }
