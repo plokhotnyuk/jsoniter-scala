@@ -29,8 +29,7 @@ releaseCrossBuild := false
 
 releaseProcess := Seq[ReleaseStep](
   ensureJDK11,
-  // FIXME: Uncomment after using a stable version of jackson libraries for benchmarks
-  //checkSnapshotDependencies,
+  checkSnapshotDependencies,
   inquireVersions,
   runClean,
   releaseStepCommandAndRemaining("+test"),
