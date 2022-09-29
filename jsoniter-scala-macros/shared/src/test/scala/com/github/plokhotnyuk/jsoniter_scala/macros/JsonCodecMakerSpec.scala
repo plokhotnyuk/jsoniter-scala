@@ -1018,6 +1018,19 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         Preference[Double]("WWW", Kind.of[Double]("Double"), 1.2),
         """{"key":"WWW","kind":"Double","value":1.2}""")
     }
+    "serialize and deserialize generic options using an implicit function" in {
+      implicit def make[A](implicit aCodec: JsonValueCodec[A]): JsonValueCodec[Option[A]] = JsonCodecMaker.make
+
+      implicit val aCodec: JsonValueCodec[String] = JsonCodecMaker.make
+      verifySerDeser(implicitly[JsonValueCodec[Option[String]]], Option("VVV"), """"VVV"""")
+      verifySerDeser(implicitly[JsonValueCodec[Option[String]]], _root_.scala.None, """null""")
+    }
+    "serialize and deserialize generic lists using an implicit function" in {
+      implicit def make[A](implicit aCodec: JsonValueCodec[A]): JsonValueCodec[List[A]] = JsonCodecMaker.make
+
+      implicit val aCodec: JsonValueCodec[String] = JsonCodecMaker.make
+      verifySerDeser(implicitly[JsonValueCodec[List[String]]], List("VVV", "WWW"), """["VVV","WWW"]""")
+    }
     "serialize and deserialize generic classes using an implicit function" in {
       case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
 
@@ -1029,7 +1042,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       implicit val aCodec: JsonValueCodec[_root_.scala.Boolean] = JsonCodecMaker.make
       implicit val bCodec: JsonValueCodec[String] = JsonCodecMaker.make
       implicit val cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
-
       verifySerDeser(implicitly[JsonValueCodec[GenDoc[_root_.scala.Boolean, String, Int]]],
         GenDoc(true, _root_.scala.Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
     }
