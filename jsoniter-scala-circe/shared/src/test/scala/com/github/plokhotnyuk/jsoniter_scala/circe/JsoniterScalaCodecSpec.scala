@@ -33,7 +33,6 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       implicit val jsonCodec: JsonValueCodec[Json] =
         com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
           .jsonCodec(numberParser = in => Json.fromDoubleOrNull(in.readDouble())) // compatible with JS and faster than the default one
-
       val jsonStr = """{"n":null,"s":"VVV","n1":1.0,"n2":2,"a":[null,"WWW",[],{}],"o":{"a":[]}}"""
       val json = parse(jsonStr).getOrElse(null)
       readFromString(jsonStr) shouldBe json
@@ -62,7 +61,6 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
     "allow filtering for key-value serialization" in {
       implicit val jsonCodec: JsonValueCodec[Json] =
         com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec.jsonCodec(doSerialize = _ ne Json.Null)
-
       val jsonStr = """{"n":null,"s":"VVV","n1":1.0,"n2":2,"a":[null,"WWW",[],{}],"o":{"a":[]}}"""
       val jsonStrExpected = """{"s":"VVV","n1":1.0,"n2":2,"a":[null,"WWW",[],{}],"o":{"a":[]}}"""
       val json = readFromString(jsonStr)

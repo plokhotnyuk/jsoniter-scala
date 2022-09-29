@@ -24,7 +24,6 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
 
       given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
       given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
-
       verifySerDeser(summon[JsonValueCodec[DeResult[RootPathFiles]]],
         DeResult[RootPathFiles](true, RootPathFiles(List("VVV")), "WWW"),
         """{"isSucceed":true,"data":{"files":["VVV"]},"message":"WWW"}""")
@@ -42,7 +41,6 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       implicit val aCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
       implicit val bCodec: JsonValueCodec[String] = JsonCodecMaker.make
       implicit val cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
-
       verifySerDeser(summon[JsonValueCodec[GenDoc[Boolean, String, Int]]],
         GenDoc(true, Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
     }

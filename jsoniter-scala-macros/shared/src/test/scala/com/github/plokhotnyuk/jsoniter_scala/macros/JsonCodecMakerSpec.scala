@@ -312,7 +312,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
   //given CodecMakerConfig.PrintCodec with {}
   //implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}
-
   val codecOfPrimitives: JsonValueCodec[Primitives] = make
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make
   val codecOfJavaEnums: JsonValueCodec[JavaEnums] = make
@@ -1005,7 +1004,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }
 
       val json = """{"id":"1","tags":["a","b"],"en":{"id":"en-1","content":"English text"},"de":{"id":"de-1","content":"German text"}}"""
-
       verifySerDeser(customDocCodec(Set("en", "de")),
         Doc("1", List("a", "b"), Map("en" -> Lang("en-1", "English text"), "de" -> Lang("de-1", "German text"))),
         json)

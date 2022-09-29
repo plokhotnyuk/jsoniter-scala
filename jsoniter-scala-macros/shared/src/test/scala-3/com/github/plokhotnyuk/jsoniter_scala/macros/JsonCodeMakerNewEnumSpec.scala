@@ -107,7 +107,6 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
 
         override def encodeValue(x: MediaType, out: JsonWriter): Unit = out.writeVal(x.ordinal)
       }
-
       verifySerDeser[List[MediaType]](make[List[MediaType]],
         List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[0,1,2]""")
     }
