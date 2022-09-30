@@ -47,7 +47,7 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
     "not serialize invalid json" in {
       import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec._
 
-      val json1 = parse(""""\ud800"""").getOrElse(null)
+      val json1 = parse("\"\ud800\"").getOrElse(null)
       assert(intercept[Throwable](writeToString(json1)).getMessage.contains("illegal char sequence of surrogate pair"))
     }
     "not serialize deeply nested json" in {
