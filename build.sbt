@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
@@ -24,26 +23,17 @@ lazy val commonSettings = Seq(
     "-deprecation",
     "-encoding", "UTF-8",
     "-feature",
-    "-unchecked"
-  ) ++ {
-    val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
-    if (major == 2) {
-      (minor match {
-        case 12 => Seq(
-          "-language:higherKinds"
-        )
-        case 13 => Seq()
-      }) ++ Seq(
-        "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
-      )
-    } else Seq(
-      "-Xcheck-macros",
-      //"-Ycheck:all",
-      //"-Yprint-syms",
-      //"-Ydebug-error", // many stack traces, really many stack traces.
-      //"--explain"
+    "-unchecked",
+    "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
+  ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 12)) => Seq(
+      "-language:higherKinds"
     )
-  },
+    case Some((3, _)) => Seq(
+      "-Xcheck-macros"
+    )
+    case _ => Seq()
+  }),
   compileOrder := CompileOrder.JavaThenScala,
   Compile / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toSeq.map(f => file(f.getPath + "-2"))
@@ -79,11 +69,11 @@ lazy val jsSettings = Seq(
       .withESFeatures(_.withESVersion(ESVersion.ES2015))
       .withModuleKind(ModuleKind.CommonJSModule)
   },
-  coverageEnabled := false // FIXME: Too slow coverage test running
+  coverageEnabled := false // FIXME: Unexpected crash of scalac
 )
 
 lazy val nativeSettings = Seq(
-  coverageEnabled := false
+  coverageEnabled := false // FIXME: Unexpected linking error
 )
 
 lazy val noPublishSettings = Seq(
