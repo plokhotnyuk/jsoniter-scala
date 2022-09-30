@@ -450,9 +450,10 @@ object DeResultCodecs extends DeResultCodecs
 import DeResultCodecs.given
 ```
 
-9. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque types.
-The workaround is using a custom codec for the opaque type defined with `implicit val` before the `JsonCodecMaker.make`
-call, like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L16-L45).
+9. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque and union types.
+The workaround is using a custom codec for these types defined with `implicit val` before the `JsonCodecMaker.make`
+call, like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L16-L45)
+and [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L47-L137).
 
 ## How to develop
 
