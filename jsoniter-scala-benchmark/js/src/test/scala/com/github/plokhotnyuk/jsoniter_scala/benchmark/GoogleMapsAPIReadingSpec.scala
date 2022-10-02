@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class GoogleMapsAPIReadingSpec extends BenchmarkSpecBase {
   def benchmark: GoogleMapsAPIReading = new GoogleMapsAPIReading {
     setup()
@@ -21,7 +23,7 @@ class GoogleMapsAPIReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes = "[]".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

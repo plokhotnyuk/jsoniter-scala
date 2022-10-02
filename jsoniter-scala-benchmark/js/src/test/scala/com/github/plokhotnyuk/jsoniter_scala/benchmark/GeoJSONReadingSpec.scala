@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class GeoJSONReadingSpec extends BenchmarkSpecBase {
   def benchmark: GeoJSONReading = new GeoJSONReading {
     setup()
@@ -21,10 +23,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(42) = '{'.toByte
-      b.jsonBytes(43) = '}'.toByte
-      b.jsonBytes(44) = ','.toByte
-      b.jsonBytes(45) = '['.toByte
+      b.jsonBytes = "[]".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

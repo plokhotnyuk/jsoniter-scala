@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class ArrayOfLocalDateTimesReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfLocalDateTimesReading = new ArrayOfLocalDateTimesReading {
     setup()
@@ -24,7 +26,7 @@ class ArrayOfLocalDateTimesReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes = "[true]".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

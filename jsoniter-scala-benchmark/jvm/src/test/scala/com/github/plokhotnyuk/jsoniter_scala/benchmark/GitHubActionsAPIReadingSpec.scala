@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
   def benchmark: GitHubActionsAPIReading = new GitHubActionsAPIReading {
     setup()
@@ -24,7 +26,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes = "[]".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
@@ -36,8 +38,8 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
-      intercept[Throwable](b.weePickle())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())
     }
   }

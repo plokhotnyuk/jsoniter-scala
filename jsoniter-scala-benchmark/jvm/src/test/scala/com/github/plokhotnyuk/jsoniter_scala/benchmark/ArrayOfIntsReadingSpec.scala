@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class ArrayOfIntsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfIntsReading = new ArrayOfIntsReading {
     setup()
@@ -25,12 +27,13 @@ class ArrayOfIntsReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes = "[true]".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())

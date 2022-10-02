@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class ArrayOfEnumADTsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfEnumADTsReading = new ArrayOfEnumADTsReading {
     setup()
@@ -23,24 +25,22 @@ class ArrayOfEnumADTsReadingSpec extends BenchmarkSpecBase {
       benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
-      (0 to 2).foreach { i =>
-        val b = benchmark
-        b.jsonBytes(i) = 'x'.toByte
-        intercept[Throwable](b.avSystemGenCodec())
-        intercept[Throwable](b.borer())
-        intercept[Throwable](b.circe())
-        intercept[Throwable](b.circeJawn())
-        intercept[Throwable](b.circeJsoniter())
-        intercept[Throwable](b.dslJsonScala())
-        intercept[Throwable](b.jacksonScala())
-        intercept[Throwable](b.jsoniterScala())
-        intercept[Throwable](b.playJson())
-        intercept[Throwable](b.playJsonJsoniter())
-        intercept[Throwable](b.sprayJson())
-        intercept[Throwable](b.uPickle())
-        intercept[Throwable](b.weePickle())
-        intercept[Throwable](b.zioJson())
-      }
+      val b = benchmark
+      b.jsonBytes = "{}".getBytes(UTF_8)
+      intercept[Throwable](b.avSystemGenCodec())
+      intercept[Throwable](b.borer())
+      intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJawn())
+      intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.dslJsonScala())
+      intercept[Throwable](b.jacksonScala())
+      intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
+      intercept[Throwable](b.sprayJson())
+      intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.weePickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

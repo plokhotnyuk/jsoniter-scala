@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets._
+import java.nio.charset.StandardCharsets.UTF_8
 
 class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
   def benchmark: MissingRequiredFieldsReading = new MissingRequiredFieldsReading {

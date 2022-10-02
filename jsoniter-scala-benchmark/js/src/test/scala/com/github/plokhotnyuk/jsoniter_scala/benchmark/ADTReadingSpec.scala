@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class ADTReadingSpec extends BenchmarkSpecBase {
   def benchmark: ADTReading = new ADTReading {
     setup()
@@ -21,9 +23,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(8) = '1'.toByte
-      b.jsonBytes(9) = '1'.toByte
-      b.jsonBytes(10) = '1'.toByte
+      b.jsonBytes = "{}".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

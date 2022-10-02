@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class ArrayOfJavaEnumsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfJavaEnumsReading = new ArrayOfJavaEnumsReading {
     setup()
@@ -17,18 +19,16 @@ class ArrayOfJavaEnumsReadingSpec extends BenchmarkSpecBase {
       benchmark.uPickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
-      (0 to 2).foreach { i =>
-        val b = benchmark
-        b.jsonBytes(i) = 'x'.toByte
-        intercept[Throwable](b.borer())
-        intercept[Throwable](b.circe())
-        intercept[Throwable](b.circeJawn())
-        intercept[Throwable](b.circeJsoniter())
-        intercept[Throwable](b.jsoniterScala())
-        intercept[Throwable](b.playJson())
-        intercept[Throwable](b.playJsonJsoniter())
-        intercept[Throwable](b.uPickle())
-      }
+      val b = benchmark
+      b.jsonBytes = "{}".getBytes(UTF_8)
+      intercept[Throwable](b.borer())
+      intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJawn())
+      intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
+      intercept[Throwable](b.uPickle())
     }
   }
 }

@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class Base64ReadingSpec extends BenchmarkSpecBase {
   def benchmark: Base64Reading = new Base64Reading {
     setup()
@@ -25,7 +27,7 @@ class Base64ReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes = "{}".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

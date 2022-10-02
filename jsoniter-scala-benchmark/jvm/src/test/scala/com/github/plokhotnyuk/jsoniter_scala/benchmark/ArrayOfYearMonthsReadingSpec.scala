@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class ArrayOfYearMonthsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfYearMonthsReading = new ArrayOfYearMonthsReading {
     setup()
@@ -23,10 +25,7 @@ class ArrayOfYearMonthsReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(1) = '{'.toByte
-      b.jsonBytes(2) = '}'.toByte
-      b.jsonBytes(3) = ','.toByte
-      b.jsonBytes(4) = '"'.toByte
+      b.jsonBytes = "[true]".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
