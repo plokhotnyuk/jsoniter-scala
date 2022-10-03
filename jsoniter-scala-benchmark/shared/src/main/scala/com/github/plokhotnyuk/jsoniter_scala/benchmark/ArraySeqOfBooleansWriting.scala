@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import org.openjdk.jmh.annotations.Benchmark
 
-class ArraySeqOfBooleansWriting extends ArrayOfBooleansBenchmark {
+class ArraySeqOfBooleansWriting extends ArraySeqOfBooleansBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Byte] = {
     import com.avsystem.commons.serialization.json._
@@ -35,14 +35,14 @@ class ArraySeqOfBooleansWriting extends ArrayOfBooleansBenchmark {
 
     writeToArray(obj.asJson)
   }
-
+/* FIXME: DSL-JSON doesn't support serialization of ArraySeq
   @Benchmark
   def dslJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
     dslJsonEncode(obj)
   }
-
+*/
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

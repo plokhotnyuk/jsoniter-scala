@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import org.openjdk.jmh.annotations.Benchmark
 import scala.collection.immutable.ArraySeq
 
-class ArraySeqOfBooleansReading extends ArrayOfBooleansBenchmark {
+class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   @Benchmark
   def avSystemGenCodec(): ArraySeq[Boolean] = {
     import com.avsystem.commons.serialization.json._
