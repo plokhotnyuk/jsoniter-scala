@@ -1151,12 +1151,14 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -exp
         }
-      count =
-        if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
+      count = {
+        val q0i = q0.toInt
+        if (q0i == q0) writePositiveInt(q0i, pos, buf, ds)
         else {
           val q1 = (q0 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
           write8Digits((q0 - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
         }
+      }
     }
   }
 
@@ -1307,12 +1309,14 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '-'
           pos += 1
         }
-        pos =
-          if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
+        pos = {
+          val hi = hours.toInt
+          if (hi == hours) writePositiveInt(hi, pos, buf, ds)
           else {
             val q1 = hours / 100000000
             write8Digits((hours - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
           }
+        }
         buf(pos) = 'H'
         pos += 1
       }
@@ -1784,27 +1788,29 @@ final class JsonWriter private[jsoniter_scala](
     writePositiveInt(q0, pos, buf, digits)
   }
 
-  private[this] def writeLong(x: Long): Unit = count = {
-    var pos = ensureBufCapacity(20) // Long.MinValue.toString.length
-    val buf = this.buf
-    val ds = digits
-    val q0 =
-      if (x >= 0) x
-      else if (x != -9223372036854775808L) {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      } else {
-        buf(pos) = '-'
-        buf(pos + 1) = '9'
-        pos += 2
-        223372036854775808L
-      }
-    if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
+  private[this] def writeLong(x: Long): Unit = {
+    val xi = x.toInt
+    if (xi == x) writeInt(xi)
     else {
+      var pos = ensureBufCapacity(20) // Long.MinValue.toString.length
+      val buf = this.buf
+      val ds = digits
+      val q0 =
+        if (x >= 0) x
+        else if (x != -9223372036854775808L) {
+          buf(pos) = '-'
+          pos += 1
+          -x
+        } else {
+          buf(pos) = '-'
+          buf(pos + 1) = '9'
+          pos += 2
+          223372036854775808L
+        }
       val q1 = q0 / 100000000
-      write8Digits((q0 - q1 * 100000000).toInt, {
-        if (q1.toInt == q1) writePositiveInt(q1.toInt, pos, buf, ds)
+      count = write8Digits((q0 - q1 * 100000000).toInt, {
+        val q1i = q1.toInt
+        if (q1i == q1) writePositiveInt(q1i, pos, buf, ds)
         else {
           val q2 = q1 / 100000000
           write8Digits((q1 - q2 * 100000000).toInt, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds)
@@ -1945,121 +1951,125 @@ final class JsonWriter private[jsoniter_scala](
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
-  private[this] def writeDouble(x: Double): Unit = count = {
-    val bits = java.lang.Double.doubleToLongBits(x)
-    var pos = ensureBufCapacity(24)
-    val buf = this.buf
-    if (bits < 0) {
-      buf(pos) = '-'
-      pos += 1
-    }
-    if (x == 0.0) {
-      buf(pos) = '0'
-      buf(pos + 1) = '.'
-      buf(pos + 2) = '0'
-      pos + 3
-    } else {
-      val ieeeExponent = (bits >> 52).toInt & 0x7FF
-      val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
-      var e = ieeeExponent - 1075
-      var m = ieeeMantissa | 0x10000000000000L
-      var dv = 0L
-      var exp = 0
-      if (e == 0) dv = m
-      else if (e >= -52 && e < 0 && m << e == 0) dv = m >> -e
-      else {
-        var expShift, expCorr = 0
-        var cblShift = 2
-        if (ieeeExponent == 0) {
-          e = -1074
-          m = ieeeMantissa
-          if (ieeeMantissa < 3) {
-            m *= 10
-            expShift = 1
-          }
-        } else if (ieeeExponent == 2047) illegalNumberError(x)
-        if (ieeeMantissa == 0 && ieeeExponent > 1) {
-          expCorr = 131007
-          cblShift = 1
-        }
-        exp = e * 315653 - expCorr >> 20
-        val i = exp + 324 << 1
-        val g1 = gs(i)
-        val g0 = gs(i + 1)
-        val h = (-exp * 108853 >> 15) + e + 2
-        val cb = m << 2
-        val outm1 = (m.toInt & 0x1) - 1
-        val vb = rop(g1, g0, cb << h)
-        val vbls = rop(g1, g0, cb - cblShift << h) + outm1
-        val vbrd = outm1 - rop(g1, g0, cb + 2 << h)
-        val s = vb >> 2
-        if (s < 100 || {
-          dv = s / 10
-          val sp40 = dv * 40
-          val upin = (vbls - sp40).toInt
-          ((sp40 + vbrd).toInt + 40 ^ upin) >= 0 || {
-            dv += ~upin >>> 31
-            exp += 1
-            false
-          }
-        }) {
-          val s4 = s << 2
-          val uin = (vbls - s4).toInt
-          dv = (~{
-            if (((s4 + vbrd).toInt + 4 ^ uin) < 0) uin
-            else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
-          } >>> 31) + s
-          exp -= expShift
-        }
-      }
-      val ds = digits
-      val len = digitCount(dv)
-      exp += len - 1
-      if (exp < -3 || exp >= 7) {
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
-        buf(pos) = buf(pos + 1)
-        buf(pos + 1) = '.'
-        pos =
-          if (lastPos < pos + 3) {
-            buf(lastPos) = '0'
-            lastPos + 1
-          } else lastPos
-        buf(pos) = 'E'
+  private[this] def writeDouble(x: Double): Unit = {
+    val xf = x.toFloat
+    if (xf == x) writeFloat(xf)
+    else count = {
+      val bits = java.lang.Double.doubleToLongBits(x)
+      var pos = ensureBufCapacity(24)
+      val buf = this.buf
+      if (bits < 0) {
+        buf(pos) = '-'
         pos += 1
-        if (exp < 0) {
-          buf(pos) = '-'
-          pos += 1
-          exp = -exp
-        }
-        if (exp < 10) {
-          buf(pos) = (exp + '0').toByte
-          pos + 1
-        } else if (exp < 100) write2Digits(exp, pos, buf, ds)
-        else write3Digits(exp, pos, buf, ds)
-      } else if (exp < 0) {
-        val dotPos = pos + 1
+      }
+      if (x == 0.0) {
         buf(pos) = '0'
+        buf(pos + 1) = '.'
         buf(pos + 2) = '0'
-        buf(pos + 3) = '0'
-        pos -= exp
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
-        buf(dotPos) = '.'
-        lastPos
-      } else if (exp < len - 1) {
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
-        val beforeDotPos = pos + exp
-        while (pos <= beforeDotPos) {
-          buf(pos) = buf(pos + 1)
-          pos += 1
-        }
-        buf(pos) = '.'
-        lastPos
+        pos + 3
       } else {
-        pos += len
-        writePositiveIntDigits(dv.toInt, pos - 1, buf, ds)
-        buf(pos) = '.'
-        buf(pos + 1) = '0'
-        pos + 2
+        val ieeeExponent = (bits >> 52).toInt & 0x7FF
+        val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
+        var e = ieeeExponent - 1075
+        var m = ieeeMantissa | 0x10000000000000L
+        var dv = 0L
+        var exp = 0
+        if (e == 0) dv = m
+        else if (e >= -52 && e < 0 && m << e == 0) dv = m >> -e
+        else {
+          var expShift, expCorr = 0
+          var cblShift = 2
+          if (ieeeExponent == 0) {
+            e = -1074
+            m = ieeeMantissa
+            if (ieeeMantissa < 3) {
+              m *= 10
+              expShift = 1
+            }
+          } else if (ieeeExponent == 2047) illegalNumberError(x)
+          if (ieeeMantissa == 0 && ieeeExponent > 1) {
+            expCorr = 131007
+            cblShift = 1
+          }
+          exp = e * 315653 - expCorr >> 20
+          val i = exp + 324 << 1
+          val g1 = gs(i)
+          val g0 = gs(i + 1)
+          val h = (-exp * 108853 >> 15) + e + 2
+          val cb = m << 2
+          val outm1 = (m.toInt & 0x1) - 1
+          val vb = rop(g1, g0, cb << h)
+          val vbls = rop(g1, g0, cb - cblShift << h) + outm1
+          val vbrd = outm1 - rop(g1, g0, cb + 2 << h)
+          val s = vb >> 2
+          if (s < 100 || {
+            dv = s / 10
+            val sp40 = dv * 40
+            val upin = (vbls - sp40).toInt
+            ((sp40 + vbrd).toInt + 40 ^ upin) >= 0 || {
+              dv += ~upin >>> 31
+              exp += 1
+              false
+            }
+          }) {
+            val s4 = s << 2
+            val uin = (vbls - s4).toInt
+            dv = (~ {
+              if (((s4 + vbrd).toInt + 4 ^ uin) < 0) uin
+              else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
+            } >>> 31) + s
+            exp -= expShift
+          }
+        }
+        val ds = digits
+        val len = digitCount(dv)
+        exp += len - 1
+        if (exp < -3 || exp >= 7) {
+          val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
+          buf(pos) = buf(pos + 1)
+          buf(pos + 1) = '.'
+          pos =
+            if (lastPos < pos + 3) {
+              buf(lastPos) = '0'
+              lastPos + 1
+            } else lastPos
+          buf(pos) = 'E'
+          pos += 1
+          if (exp < 0) {
+            buf(pos) = '-'
+            pos += 1
+            exp = -exp
+          }
+          if (exp < 10) {
+            buf(pos) = (exp + '0').toByte
+            pos + 1
+          } else if (exp < 100) write2Digits(exp, pos, buf, ds)
+          else write3Digits(exp, pos, buf, ds)
+        } else if (exp < 0) {
+          val dotPos = pos + 1
+          buf(pos) = '0'
+          buf(pos + 2) = '0'
+          buf(pos + 3) = '0'
+          pos -= exp
+          val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
+          buf(dotPos) = '.'
+          lastPos
+        } else if (exp < len - 1) {
+          val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
+          val beforeDotPos = pos + exp
+          while (pos <= beforeDotPos) {
+            buf(pos) = buf(pos + 1)
+            pos += 1
+          }
+          buf(pos) = '.'
+          lastPos
+        } else {
+          pos += len
+          writePositiveIntDigits(dv.toInt, pos - 1, buf, ds)
+          buf(pos) = '.'
+          buf(pos + 1) = '0'
+          pos + 2
+        }
       }
     }
   }
@@ -2079,13 +2089,15 @@ final class JsonWriter private[jsoniter_scala](
     ((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a >>> 32) + a
   }
 
-  private[this] def digitCount(q0: Long): Int =
-    if (q0.toInt == q0) digitCount(q0.toInt)
+  private[this] def digitCount(q0: Long): Int = {
+    val q0i = q0.toInt
+    if (q0i == q0) digitCount(q0i)
     else if (q0 < 10000000000L) (999999999 - q0 >>> 63).toInt + 9
     else if (q0 < 1000000000000L) (99999999999L - q0 >>> 63).toInt + 11
     else if (q0 < 100000000000000L) (9999999999999L - q0 >>> 63).toInt + 13
     else if (q0 < 10000000000000000L) (999999999999999L - q0 >>> 63).toInt + 15
     else (99999999999999999L - q0 >>> 63).toInt + 17
+  }
 
   private[this] def digitCount(q0: Int): Int =
     if (q0 < 100) (9 - q0 >>> 31) + 1
@@ -2094,8 +2106,9 @@ final class JsonWriter private[jsoniter_scala](
     else if (q0 < 100000000) (9999999 - q0 >>> 31) + 7
     else (999999999 - q0 >>> 31) + 9
 
-  private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, pos, posLim, buf, ds)
+  private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q0i = q0.toInt
+    if (q0i == q0) writeSignificantFractionDigits(q0i, pos, posLim, buf, ds)
     else {
       val q1 = q0 / 100000000
       val r1 = (q0 - q1 * 100000000).toInt
@@ -2106,6 +2119,7 @@ final class JsonWriter private[jsoniter_scala](
         lastPos
       }
     }
+  }
 
   private[this] def writeSignificantFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var q0 = q
