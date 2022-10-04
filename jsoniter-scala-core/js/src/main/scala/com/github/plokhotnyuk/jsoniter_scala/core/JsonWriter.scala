@@ -1154,7 +1154,7 @@ final class JsonWriter private[jsoniter_scala](
       count =
         if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
         else {
-          val q1 = (q0 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
+          val q1 = q0 / 100000000
           write8Digits((q0 - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
         }
     }
@@ -1166,7 +1166,8 @@ final class JsonWriter private[jsoniter_scala](
       val pos = ensureBufCapacity(28) // Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
       count = pos
       writeLong(v)
-      val blockLen = (v >> 63).toInt + count - pos
+      var blockLen = count - pos
+      if (v < 0) blockLen -= 1
       val dotOff = scale.toLong - blockScale
       val exp = (blockLen - 1) - dotOff
       if (scale >= 0 && exp >= -6) {
@@ -1201,7 +1202,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
-    val m = Math.max((x.bitLength * 71828554L >> 32).toInt - 1, 1) // Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
+    val m = Math.max((x.bitLength * 0.016723888647998956).toInt - 1, 1) // Math.max((x.bitLength * Math.log(2) / Math.log(1e18)).toInt - 1, 1)
     31 - java.lang.Integer.numberOfLeadingZeros(m)
   }
 

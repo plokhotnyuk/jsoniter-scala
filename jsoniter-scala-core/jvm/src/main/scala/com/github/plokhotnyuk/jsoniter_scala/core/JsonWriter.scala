@@ -1076,7 +1076,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
-    val m = Math.max((x.bitLength * 71828554L >> 32).toInt - 1, 1) // Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
+    val m = Math.max((x.bitLength * 71828554L >> 32).toInt - 1, 1) // Math.max((x.bitLength * Math.log(2) / Math.log(1e18)).toInt - 1, 1)
     31 - java.lang.Integer.numberOfLeadingZeros(m)
   }
 
