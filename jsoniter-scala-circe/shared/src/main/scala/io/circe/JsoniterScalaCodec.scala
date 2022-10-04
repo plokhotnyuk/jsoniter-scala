@@ -19,11 +19,14 @@ object JsoniterScalaCodec {
       }
     } catch {
       case _: JsonReaderException => // ignore the end of input error for now
-    } finally in.rollbackToMark()
+    }
+    in.rollbackToMark()
     new JNumber({
       if ((b | 0x20) != 'e' && b != '.') {
-        if (digits < 19) new JsonLong(in.readLong())
-        else {
+        if (digits < 19) new JsonLong({
+          if (digits < 10) in.readInt()
+          else in.readLong()
+        }) else {
           val x = in.readBigInt(null)
           if (x.bitLength < 64) new JsonLong(x.longValue)
           else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
