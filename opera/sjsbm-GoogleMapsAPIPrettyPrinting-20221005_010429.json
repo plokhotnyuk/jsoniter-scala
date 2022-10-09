@@ -1,0 +1,326 @@
+[
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.avSystemGenCodec",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 2338.8385972129518,
+      "scoreError" : 13.481402207353444,
+      "scoreConfidence" : [
+        2325.3571950055984,
+        2352.319999420305
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          2343.53128905519,
+          2341.063572230106,
+          2337.7662233777232,
+          2337.2988080203563,
+          2334.533093381383
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.circe",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 2334.2866019246494,
+      "scoreError" : 5.972983283762875,
+      "scoreConfidence" : [
+        2328.3136186408865,
+        2340.2595852084123
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          2335.7664093445246,
+          2335.766428028786,
+          2332.067175461939,
+          2333.766621004189,
+          2334.0663757838092
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.circeJsoniter",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 3634.636942061261,
+      "scoreError" : 64.79409056055032,
+      "scoreConfidence" : [
+        3569.84285150071,
+        3699.43103262181
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          3648.6351364864217,
+          3646.635318235072,
+          3643.9999817800817,
+          3623.2753413085347,
+          3610.6389324961924
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.jsoniterScala",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 19489.635789526426,
+      "scoreError" : 1153.960191446637,
+      "scoreConfidence" : [
+        18335.67559807979,
+        20643.595980973063
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          19843.01575795021,
+          19590.999941224,
+          19642.99999999701,
+          19097.09044372948,
+          19274.072804731415
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.jsoniterScalaPrealloc",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 23187.275204377762,
+      "scoreError" : 406.320256767866,
+      "scoreConfidence" : [
+        22780.954947609895,
+        23593.59546114563
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          23338.99981328437,
+          23111.688923550784,
+          23101.999815180396,
+          23256.99997673939,
+          23126.68749313387
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.playJsonJsoniter",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 1543.0753318427771,
+      "scoreError" : 12.828898790044816,
+      "scoreConfidence" : [
+        1530.246433052732,
+        1555.9042306328217
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          1540.6918616276407,
+          1545.845415458421,
+          1542.5372388283165,
+          1547.0717584919428,
+          1539.230384807564
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.smithy4sJson",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 12779.378896999511,
+      "scoreError" : 222.78941156235172,
+      "scoreConfidence" : [
+        12556.58948543716,
+        13002.168308561862
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          12841.99994863015,
+          12800.719979203115,
+          12769.72307876917,
+          12797.720189586025,
+          12686.731288809087
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.uPickle",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 5212.667444678914,
+      "scoreError" : 1208.8557608447359,
+      "scoreConfidence" : [
+        4003.811683834178,
+        6421.52320552365
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          5400.999978395622,
+          5417.458205421938,
+          5409.377186843556,
+          5145.970805838463,
+          4689.531046894992
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "GoogleMapsAPIPrettyPrinting.zioJson",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 2894.079111117979,
+      "scoreError" : 6.161672786723912,
+      "scoreConfidence" : [
+        2887.9174383312557,
+        2900.2407839047037
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          2894.1317633652325,
+          2896.710323174383,
+          2892.421515696977,
+          2893.421321522656,
+          2893.7106318306473
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  }
+]

@@ -1,0 +1,218 @@
+[
+  {
+    "benchmark" : "MutableMapOfIntsToBooleansWriting.avSystemGenCodec",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 40444.96438650031,
+      "scoreError" : 264.4723811349293,
+      "scoreConfidence" : [
+        40180.49200536537,
+        40709.436767635234
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          40448.95550893225,
+          40442.95594705662,
+          40546.94599469217,
+          40431.999676537605,
+          40353.964805282885
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "MutableMapOfIntsToBooleansWriting.circe",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 9201.256700176993,
+      "scoreError" : 559.1481209454731,
+      "scoreConfidence" : [
+        8642.10857923152,
+        9760.404821122465
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          9277.072237112643,
+          9286.999944276771,
+          9248.999953753784,
+          8943.211393492966,
+          9249.999972248797
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "MutableMapOfIntsToBooleansWriting.circeJsoniter",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 10253.979746215133,
+      "scoreError" : 170.74242104275856,
+      "scoreConfidence" : [
+        10083.237325172375,
+        10424.72216725789
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          10281.971823380181,
+          10307.969244306041,
+          10194.980461172554,
+          10227.977222732283,
+          10256.999979484604
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "MutableMapOfIntsToBooleansWriting.jsoniterScala",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 162399.4059378605,
+      "scoreError" : 12461.634474067781,
+      "scoreConfidence" : [
+        149937.77146379274,
+        174861.0404119283
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          163895.6109305677,
+          162541.74875085035,
+          165342.99900791555,
+          163307.6742950824,
+          156908.99670488646
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "MutableMapOfIntsToBooleansWriting.jsoniterScalaPrealloc",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 190835.17567796208,
+      "scoreError" : 2461.8461343013955,
+      "scoreConfidence" : [
+        188373.32954366066,
+        193297.02181226344
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          191107.99694224147,
+          191360.86429626145,
+          189834.01963535039,
+          191297.9982782874,
+          190574.99923766952
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  },
+  {
+    "benchmark" : "MutableMapOfIntsToBooleansWriting.zioJson",
+    "mode" : "thrpt",
+    "threads" : 1,
+    "forks" : 1,
+    "jdkVersion" : "1.8",
+    "vmName" : "Scala.JS",
+    "vmVersion" : "1.11.0",
+    "userAgent" : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 OPR/91.0.4516.20",
+    "warmupIterations" : 5,
+    "warmupTime" : "1 s",
+    "warmupBatchSize" : 1,
+    "measurementIterations" : 5,
+    "measurementTime" : "1 s",
+    "measurementBatchSize" : 1,
+    "primaryMetric" : {
+      "score" : 38549.82797874682,
+      "scoreError" : 236.0906604203253,
+      "scoreConfidence" : [
+        38313.73731832649,
+        38785.91863916715
+      ],
+      "scoreUnit" : "ops/s",
+      "rawData" : [
+        [
+          38526.9999614669,
+          38475.9999999939,
+          38625.99992274187,
+          38599.14039474752,
+          38520.999614783905
+        ]
+      ]
+    },
+    "secondaryMetrics" : {
+    }
+  }
+]
