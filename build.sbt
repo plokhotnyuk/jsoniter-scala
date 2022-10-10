@@ -18,7 +18,7 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  scalaVersion := "2.13.8",
+  scalaVersion := "2.13.10",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -129,7 +129,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.2.0", "2.13.8", "2.12.17"),
+    crossScalaVersions := Seq("3.2.0", "2.13.10", "2.12.17"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.8.1" % Test,
       "org.scalatestplus" %%% "scalacheck-1-16" % "3.2.14.0" % Test,
@@ -163,7 +163,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.2.0", "2.13.8", "2.12.17"),
+    crossScalaVersions := Seq("3.2.0", "2.13.10", "2.12.17"),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
@@ -205,7 +205,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.2.0", "2.13.8", "2.12.17"),
+    crossScalaVersions := Seq("3.2.0", "2.13.10", "2.12.17"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.3",
       "io.circe" %%% "circe-parser" % "0.14.3" % Test,
@@ -229,7 +229,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(noPublishSettings)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    crossScalaVersions := Seq("2.13.8"),
+    crossScalaVersions := Seq("2.13.10"),
     resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.16.3",
