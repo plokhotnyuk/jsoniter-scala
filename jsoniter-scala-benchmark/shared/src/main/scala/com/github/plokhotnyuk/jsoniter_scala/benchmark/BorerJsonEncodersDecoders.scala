@@ -140,7 +140,7 @@ object BorerJsonEncodersDecoders {
         var v = ec.get(s)
         if (v eq null) {
           v = e.values.iterator.find(_.toString == s)
-            .getOrElse(throw new InvalidInputData(r.position, s"Expected [String] from enum $e, but got $s"))
+            .getOrElse(throw new InvalidInputData(r.position, s"Expected [String] from enum $e"))
           ec.put(s, v)
         }
         v

@@ -9,22 +9,27 @@ import spray.json._
 import scala.collection.immutable.{ArraySeq, Map}
 import scala.collection.mutable
 import scala.reflect.ClassTag
-import scala.util.Try
 import scala.util.control.NonFatal
 
 // Based on the code found: https://github.com/spray/spray-json/issues/200
 case class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
   private[this] val ec = new ConcurrentHashMap[String, T#Value]
 
-  override def read(json: JsValue): T#Value = Try {
-    val s = json.asInstanceOf[JsString].value
-    var x = ec.get(s)
-    if (x eq null) {
-      x = e.values.iterator.find(_.toString == s).get
-      ec.put(s, x)
+  override def read(json: JsValue): T#Value = {
+    var x: T#Value = null
+    json match {
+      case jss: JsString =>
+        val s = jss.value
+        x = ec.get(s)
+        if (x eq null) {
+          x = e.values.iterator.find(_.toString == s).orNull
+          ec.put(s, x)
+        }
+      case _ =>
     }
+    if (x eq null) deserializationError(s"Expected JSON string of value from enum $e")
     x
-  }.getOrElse(deserializationError(s"Expected JSON string of value from enum $e, but got $json"))
+  }
 
   override def write(ev: T#Value): JsValue = new JsString(ev.toString)
 }
@@ -85,12 +90,10 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     jf4
   }
   val base64JsonFormat: RootJsonFormat[Array[Byte]] = new RootJsonFormat[Array[Byte]] {
-    def read(json: JsValue): Array[Byte] =
-      if (!json.isInstanceOf[JsString]) deserializationError(s"Expected JSON string, but got $json")
-      else {
-        val s = json.asInstanceOf[JsString].value
-        try Base64.getDecoder.decode(s) catch { case NonFatal(e) => deserializationError(s"Illegal value: $json", e) }
-      }
+    def read(json: JsValue): Array[Byte] = json match {
+      case js: JsString => Base64.getDecoder.decode(js.value)
+      case _ => deserializationError(s"Expected JSON string")
+    }
 
     def write(obj: Array[Byte]): JsValue = new JsString(Base64.getEncoder.encodeToString(obj))
   }
@@ -232,10 +235,10 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   // Based on the Cat/Dog sample: https://gist.github.com/jrudolph/f2d0825aac74ed81c92a
   def readADT[T](json: JsValue)(pf: PartialFunction[String, T]): T = {
     val t = json.asJsObject.fields("type")
-    if (!t.isInstanceOf[JsString]) deserializationError(s"Expected JSON string, but got $json")
+    if (!t.isInstanceOf[JsString]) deserializationError(s"Expected JSON string")
     else {
       val v = t.asInstanceOf[JsString].value
-      pf.applyOrElse(v, (x: String) => deserializationError(s"Expected a name of ADT base subclass, but got $x"))
+      pf.applyOrElse(v, (x: String) => deserializationError(s"Expected a name of ADT base subclass"))
     }
   }
 
@@ -244,12 +247,10 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
       .asJsObject.fields.updated("type", new JsString(obj.productPrefix)))
 
   def stringJsonFormat[T](construct: String => T): RootJsonFormat[T] = new RootJsonFormat[T] {
-    def read(json: JsValue): T =
-      if (!json.isInstanceOf[JsString]) deserializationError(s"Expected JSON string, but got $json")
-      else {
-        val s = json.asInstanceOf[JsString].value
-        try construct(s) catch { case NonFatal(e) => deserializationError(s"Illegal value: $json", e) }
-      }
+    def read(json: JsValue): T = json match {
+      case js: JsString => construct(js.value)
+      case _ => deserializationError(s"Expected JSON string")
+    }
 
     def write(obj: T): JsValue = new JsString(obj.toString)
   }
@@ -257,7 +258,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   implicit def arrayBufferJsonFormat[T : JsonFormat]: RootJsonFormat[mutable.ArrayBuffer[T]] =
     new RootJsonFormat[mutable.ArrayBuffer[T]] {
       def read(json: JsValue): mutable.ArrayBuffer[T] =
-        if (!json.isInstanceOf[JsArray]) deserializationError(s"Expected JSON array, but got $json")
+        if (!json.isInstanceOf[JsArray]) deserializationError(s"Expected JSON array")
         else {
           val es = json.asInstanceOf[JsArray].elements
           val buf = new mutable.ArrayBuffer[T](es.size)
@@ -275,14 +276,13 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
 
   implicit def arraySeqJsonFormat[T : JsonFormat : ClassTag]: RootJsonFormat[ArraySeq[T]] =
     new RootJsonFormat[ArraySeq[T]] {
-      def read(json: JsValue): ArraySeq[T] =
-        if (!json.isInstanceOf[JsArray]) deserializationError(s"Expected JSON array, but got $json")
-        else {
-          val es = json.asInstanceOf[JsArray].elements
+      def read(json: JsValue): ArraySeq[T] = json match {
+        case ja: JsArray =>
           val b = ArraySeq.newBuilder[T]
-          es.foreach(e => b += e.convertTo[T])
+          ja.elements.foreach(e => b += e.convertTo[T])
           b.result()
-        }
+        case _ => deserializationError(s"Expected JSON array")
+      }
 
       def write(as: ArraySeq[T]): JsValue = {
         val vs = Vector.newBuilder[JsValue]

@@ -16,7 +16,6 @@ import com.fasterxml.jackson.module.scala.{BitSetDeserializerModule, ClassTagExt
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import scala.collection.immutable.BitSet
 import scala.collection.mutable
-import scala.util.Try
 
 object JacksonSerDesers {
   def createJacksonMapper(escapeNonAscii: Boolean = false,
@@ -89,15 +88,19 @@ class EnumSerializer[T <: scala.Enumeration](e: T) extends JsonSerializer[T#Valu
 class EnumDeserializer[T <: scala.Enumeration](e: T) extends JsonDeserializer[T#Value] {
   private[this] val ec = new ConcurrentHashMap[String, T#Value]
 
-  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): T#Value = Try {
+  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): T#Value = {
     val s = jp.getValueAsString
-    var x = ec.get(s)
-    if (x eq null) {
-      x = e.values.iterator.find(_.toString == s).get
-      ec.put(s, x)
+    var x: T#Value = null
+    if (s ne null) {
+      x = ec.get(s)
+      if (x eq null) {
+        x = e.values.iterator.find(_.toString == s).orNull
+        ec.put(s, x)
+      }
     }
+    if (x eq null) ctxt.handleUnexpectedToken(classOf[T#Value], jp)
     x
-  }.getOrElse(ctxt.handleUnexpectedToken(classOf[T#Value], jp).asInstanceOf[T#Value])
+  }
 }
 
 class SuitADTSerializer extends JsonSerializer[SuitADT] {
@@ -112,5 +115,8 @@ class SuitADTDeserializer extends JsonDeserializer[SuitADT] {
     "Clubs" -> Clubs)
 
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitADT =
-    Try(suite(jp.getValueAsString)).getOrElse(ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT])
+    suite.get(jp.getValueAsString) match {
+      case s: Some[SuitADT] => s.value
+      case _ => ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]
+    }
 }
