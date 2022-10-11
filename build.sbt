@@ -26,12 +26,9 @@ lazy val commonSettings = Seq(
     "-unchecked",
     "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => Seq(
-      "-language:higherKinds"
-    )
-    case Some((3, _)) => Seq(
-      "-Xcheck-macros"
-    )
+    case Some((2, 12)) => Seq("-language:higherKinds")
+    case Some((2, 13)) => Seq("-Wnonunit-statement")
+    case Some((3, _)) => Seq("-Xcheck-macros")
     case _ => Seq()
   }),
   compileOrder := CompileOrder.JavaThenScala,
