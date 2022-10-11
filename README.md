@@ -230,7 +230,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make
 ```
 
-That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec`.
+That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec` for the
+whole nested data structure. No need to derive intemendiate codecs if you use the default or same derivation
+configuration for them.
 
 Now use it for parsing and serialization:
 ```scala
