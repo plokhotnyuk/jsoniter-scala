@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule
 import com.fasterxml.jackson.module.scala.deser.{ImmutableBitSetDeserializer, MutableBitSetDeserializer}
 import com.fasterxml.jackson.module.scala.{BitSetDeserializerModule, ClassTagExtensions, DefaultScalaModule}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
@@ -39,7 +39,7 @@ object JacksonSerDesers {
         .addDeserializer(classOf[SuitEnum], new EnumDeserializer(SuitEnum)))
       registerModule(new JavaTimeModule)
       registerModule(new Jdk8Module)
-      registerModule(new AfterburnerModule)
+      registerModule(new BlackbirdModule)
       configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
       configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
       configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
