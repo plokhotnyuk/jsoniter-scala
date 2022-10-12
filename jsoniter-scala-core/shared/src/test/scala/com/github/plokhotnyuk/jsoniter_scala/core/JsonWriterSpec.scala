@@ -20,10 +20,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       WriterConfig.preferredBufSize shouldBe 32768
     }
     "throw exception in case for unsupported values of params" in {
-      WriterConfig.withIndentionStep(0)
+      WriterConfig.withIndentionStep(0).indentionStep shouldBe 0
       assert(intercept[IllegalArgumentException](WriterConfig.withIndentionStep(-1))
         .getMessage.startsWith("'indentionStep' should be not less than 0"))
-      WriterConfig.withPreferredBufSize(1)
+      WriterConfig.withPreferredBufSize(1).preferredBufSize shouldBe 1
       assert(intercept[IllegalArgumentException](WriterConfig.withPreferredBufSize(0))
         .getMessage.startsWith("'preferredBufSize' should be not less than 1"))
     }

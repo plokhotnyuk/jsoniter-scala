@@ -28,27 +28,27 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       ReaderConfig.hexDumpSize shouldBe 2
     }
     "throw exception in case for unsupported values of params" in {
-      ReaderConfig.withMaxBufSize(32768)
+      ReaderConfig.withMaxBufSize(32768).maxBufSize shouldBe 32768
       assert(intercept[IllegalArgumentException](ReaderConfig.withMaxBufSize(32767))
         .getMessage.startsWith("'maxBufSize' should be not less than 'preferredBufSize'"))
       assert(intercept[IllegalArgumentException](ReaderConfig.withMaxBufSize(2147483646))
         .getMessage.startsWith("'maxBufSize' should be not greater than 2147483645"))
-      ReaderConfig.withMaxCharBufSize(4096)
+      ReaderConfig.withMaxCharBufSize(4096).maxCharBufSize shouldBe 4096
       assert(intercept[IllegalArgumentException](ReaderConfig.withMaxCharBufSize(4095))
         .getMessage.startsWith("'maxCharBufSize' should be not less than 'preferredCharBufSize'"))
       assert(intercept[IllegalArgumentException](ReaderConfig.withMaxCharBufSize(2147483646))
         .getMessage.startsWith("'maxCharBufSize' should be not greater than 2147483645"))
-      ReaderConfig.withPreferredBufSize(12)
+      ReaderConfig.withPreferredBufSize(12).preferredBufSize shouldBe 12
       assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredBufSize(11))
         .getMessage.startsWith("'preferredBufSize' should be not less than 12"))
       assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredBufSize(33554433))
         .getMessage.startsWith("'preferredBufSize' should be not greater than 'maxBufSize'"))
-      ReaderConfig.withPreferredCharBufSize(0)
+      ReaderConfig.withPreferredCharBufSize(0).preferredCharBufSize shouldBe 0
       assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredCharBufSize(-1))
         .getMessage.startsWith("'preferredCharBufSize' should be not less than 0"))
       assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredCharBufSize(4194305))
         .getMessage.startsWith("'preferredCharBufSize' should be not greater than 'maxCharBufSize'"))
-      ReaderConfig.withHexDumpSize(5)
+      ReaderConfig.withHexDumpSize(5).hexDumpSize shouldBe 5
       assert(intercept[IllegalArgumentException](ReaderConfig.withHexDumpSize(0))
         .getMessage.startsWith("'hexDumpSize' should be not less than 1"))
     }
