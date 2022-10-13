@@ -97,7 +97,7 @@ lazy val publishSettings = Seq(
       newMajor == oldMajor
     }
 
-    if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
+    if (isCheckingRequired) Set(organization.value %%% moduleName.value % oldVersion)
     else Set()
   },
   mimaReportSignatureProblems := true,
