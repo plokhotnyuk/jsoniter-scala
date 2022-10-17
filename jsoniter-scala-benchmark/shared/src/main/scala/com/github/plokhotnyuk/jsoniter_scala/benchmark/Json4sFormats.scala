@@ -8,11 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.reflect.ClassTag
 
 object Json4sFormats {
-  implicit val customFormats: Formats =
-    new DefaultFormats  {
-      override val typeHints: TypeHints =
-        ShortTypeHints(List(classOf[ADTBase], classOf[GeoJSON.GeoJSON], classOf[GeoJSON.SimpleGeoJSON]), "type")
-    }.skippingEmptyValues +
+  implicit val customFormats: Formats = DefaultFormats +
     StringifiedFormats.stringified[Char](x => if (x.length == 1) x.charAt(0) else sys.error("char")) +
     StringifiedFormats.stringified[Duration](Duration.parse) +
     StringifiedFormats.stringified[Instant](Instant.parse) +
@@ -48,11 +44,18 @@ object Json4sFormats {
         }
         v
       }
-    } + new CustomSerializer[Tuple2[Double, Double]](_ => ({
-      case JArray(JDouble(x) :: JDouble(y) :: Nil) => new Tuple2[Double, Double](x, y)
-    }, {
-      case x: Tuple2[Double, Double] => JArray(JDouble(x._1) :: JDouble(x._2) :: Nil)
-    })) + new CustomSerializer[ByteVal](_ => ({
+    }
+}
+
+object ADTJson4sFormats {
+  implicit val adtFormats: Formats = new DefaultFormats {
+    override val typeHints: TypeHints = new SimpleTypeHints(List(classOf[X], classOf[Y], classOf[Z]))
+  }
+}
+
+object AnyValsJson4sFormats {
+  implicit val anyValsFormats: Formats = Json4sFormats.customFormats +
+    new CustomSerializer[ByteVal](_ => ({
       case JInt(x) if x.isValidByte => new ByteVal(x.toByte)
     }, {
       case x: ByteVal => JInt(x.a)
@@ -83,6 +86,19 @@ object Json4sFormats {
     }))
 }
 
+object GeoJsonJson4sFormats {
+  implicit val geoJsonFormats: Formats = new DefaultFormats {
+    override val typeHints: TypeHints = new SimpleTypeHints(List(
+        classOf[GeoJSON.Point], classOf[GeoJSON.MultiPoint], classOf[GeoJSON.LineString],
+        classOf[GeoJSON.MultiLineString], classOf[GeoJSON.Polygon], classOf[GeoJSON.MultiPolygon],
+        classOf[GeoJSON.GeometryCollection], classOf[GeoJSON.Feature], classOf[GeoJSON.FeatureCollection]))
+  } + new CustomSerializer[Tuple2[Double, Double]](_ => ({
+    case JArray(JDouble(x) :: JDouble(y) :: Nil) => new Tuple2[Double, Double](x, y)
+  }, {
+    case x: Tuple2[Double, Double] => JArray(JDouble(x._1) :: JDouble(x._2) :: Nil)
+  }))
+}
+
 object GitHubActionsAPIJson4sFormats {
   implicit val gitHubActionsAPIFormats: Formats = Json4sFormats.customFormats +
     StringifiedFormats.stringified[Boolean](java.lang.Boolean.parseBoolean)
@@ -100,8 +116,16 @@ object EscapeUnicodeJson4sFormats {
 object StringifiedFormats {
   def stringified[A: ClassTag](f: String => A, g: A => String = (x: A) => x.toString): CustomSerializer[A] =
     new CustomSerializer[A](_ => ({
-      case JString(s) => f(s)
+      case js: JString => f(js.s)
     }, {
-      case x: A => JString(g(x))
+      case x: A => new JString(g(x))
     }))
+}
+
+class SimpleTypeHints(override val hints: List[Class[_]], override val typeHintFieldName: String = "type") extends TypeHints {
+  override def hintFor(clazz: Class[_]): Option[String] = new Some(clazz.getSimpleName)
+
+  override def classFor(hint: String, parent: Class[_]): Option[Class[_]] = hints.collectFirst {
+    case clazz if clazz.getSimpleName == hint => clazz
+  }
 }

@@ -65,7 +65,7 @@ class AnyValsReading extends AnyValsBenchmark {
   def json4sJackson(): AnyVals = {
     import org.json4s._
     import org.json4s.jackson.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyValsJson4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
     parse(new String(jsonBytes, UTF_8)).extract[AnyVals]
@@ -75,7 +75,7 @@ class AnyValsReading extends AnyValsBenchmark {
   def json4sNative(): AnyVals = {
     import org.json4s._
     import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyValsJson4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
     parse(new String(jsonBytes, UTF_8)).extract[AnyVals]

@@ -53,28 +53,27 @@ class GeoJSONReading extends GeoJSONBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
     jacksonMapper.readValue[GeoJSON](jsonBytes)
   }
-/* FIXME: json4s.jackson throws org.json4s.MappingException: No constructor for type GeoJSON
+
   @Benchmark
   def json4sJackson(): GeoJSON = {
     import org.json4s._
     import org.json4s.jackson.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.GitHubActionsAPIJson4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJsonJson4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
     parse(new String(jsonBytes, UTF_8)).extract[GeoJSON]
   }
-*/
-/* FIXME: json4s.native throws org.json4s.MappingException: No constructor for type GeoJSON
+
   @Benchmark
   def json4sNative(): GeoJSON = {
     import org.json4s._
     import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.GitHubActionsAPIJson4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJsonJson4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
     parse(new String(jsonBytes, UTF_8)).extract[GeoJSON]
   }
-*/
+
   @Benchmark
   def jsoniterScala(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

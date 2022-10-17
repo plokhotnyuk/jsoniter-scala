@@ -53,28 +53,27 @@ class ADTReading extends ADTBenchmark {
 
     jacksonMapper.readValue[ADTBase](jsonBytes)
   }
-/* FIXME: json4s.jackson throws org.json4s.MappingException: No constructor for type ADTBase
+
   @Benchmark
   def json4sJackson(): ADTBase = {
     import org.json4s._
     import org.json4s.jackson.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ADTJson4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
     parse(new String(jsonBytes, UTF_8)).extract[ADTBase]
   }
-*/
-/* FIXME: json4s.native throws org.json4s.MappingException: No constructor for type ADTBase
+
   @Benchmark
   def json4sNative(): ADTBase = {
     import org.json4s._
     import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ADTJson4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
     parse(new String(jsonBytes, UTF_8)).extract[ADTBase]
   }
-*/
+
   @Benchmark
   def jsoniterScala(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
