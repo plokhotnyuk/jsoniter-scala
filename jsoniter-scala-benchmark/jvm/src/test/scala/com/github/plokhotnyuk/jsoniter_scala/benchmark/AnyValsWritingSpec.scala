@@ -15,6 +15,8 @@ class AnyValsWritingSpec extends BenchmarkSpecBase {
       //FIXME: DSL-JSON wraps AnyVal values
       //toString(b.dslJsonScala()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString1
+      toString(b.json4sJackson()) shouldBe b.jsonString1
+      toString(b.json4sNative()) shouldBe b.jsonString1
       toString(b.jsoniterScala()) shouldBe b.jsonString1
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
       toString(b.playJson()) shouldBe b.jsonString3

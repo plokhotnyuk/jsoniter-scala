@@ -16,6 +16,10 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.dslJsonScala() shouldBe benchmark.sourceObj
       benchmark.jacksonScala() shouldBe benchmark.sourceObj
+      //FIXME: json4s.jackson rounds parsed numbers to double
+      //benchmark.json4sJackson() shouldBe benchmark.sourceObj
+      //FIXME: json4s.native rounds parsed numbers to double
+      //benchmark.json4sNative() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
       benchmark.playJson() shouldBe benchmark.sourceObj
       benchmark.playJsonJsoniter() shouldBe benchmark.sourceObj
@@ -35,6 +39,10 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
+      //FIXME: json4s.jackson rounds parsed numbers to double
+      //intercept[Throwable](b.json4sJackson())
+      //FIXME: json4s.native rounds parsed numbers to double
+      //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

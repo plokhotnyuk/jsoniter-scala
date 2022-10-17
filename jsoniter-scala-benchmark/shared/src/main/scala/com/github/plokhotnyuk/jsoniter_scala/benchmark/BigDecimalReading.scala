@@ -59,6 +59,26 @@ class BigDecimalReading extends BigDecimalBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): BigDecimal = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[BigDecimal]
+  }
+/* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
+  @Benchmark
+  def json4sNative(): BigDecimal = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[BigDecimal]
+  }
+*/
+  @Benchmark
   def jsoniterScala(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

@@ -54,7 +54,28 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
 
     jacksonMapper.readValue[Array[Float]](jsonBytes)
   }
+/* FIXME: json4s.jackson parses 1.199999988079071 as 1.2f instead of 1.1999999f
+  @Benchmark
+  def json4sJackson(): Array[Float] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
 
+    parse(new String(jsonBytes, UTF_8)).extract[Array[Float]]
+  }
+*/
+/* FIXME: json4s.native parses 1.199999988079071 as 1.2f instead of 1.1999999f
+  @Benchmark
+  def json4sNative(): Array[Float] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[Float]]
+  }
+*/
   @Benchmark
   def jsoniterScala(): Array[Float] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

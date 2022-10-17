@@ -50,6 +50,26 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): Map[Int, Boolean] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Map[Int, Boolean]]
+  }
+
+  @Benchmark
+  def json4sNative(): Map[Int, Boolean] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Map[Int, Boolean]]
+  }
+
+  @Benchmark
   def jsoniterScala(): Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

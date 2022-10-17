@@ -12,6 +12,10 @@ class StringOfEscapedCharsWritingSpec extends BenchmarkSpecBase {
       toString(b.circe()) shouldBe b.jsonString1
       toString(b.circeJsoniter()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString2
+      //FIXME: json4s.jackson doesn't escape unicode
+      //toString(b.json4sJackson()) shouldBe b.jsonString1
+      //FIXME: json4s.native doesn't escape unicode
+      //toString(b.json4sNative()) shouldBe b.jsonString1
       toString(b.jsoniterScala()) shouldBe b.jsonString1
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
       toString(b.playJson()) shouldBe b.jsonString2

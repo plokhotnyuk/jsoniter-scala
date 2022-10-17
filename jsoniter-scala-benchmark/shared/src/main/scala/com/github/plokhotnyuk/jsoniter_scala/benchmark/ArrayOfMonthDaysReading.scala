@@ -54,6 +54,26 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): Array[MonthDay] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[MonthDay]]
+  }
+
+  @Benchmark
+  def json4sNative(): Array[MonthDay] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[MonthDay]]
+  }
+
+  @Benchmark
   def jsoniterScala(): Array[MonthDay] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

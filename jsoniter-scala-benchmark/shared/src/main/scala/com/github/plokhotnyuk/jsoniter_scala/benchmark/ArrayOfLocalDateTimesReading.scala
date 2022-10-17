@@ -61,6 +61,26 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): Array[LocalDateTime] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[LocalDateTime]]
+  }
+
+  @Benchmark
+  def json4sNative(): Array[LocalDateTime] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[LocalDateTime]]
+  }
+
+  @Benchmark
   def jsoniterScala(): Array[LocalDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

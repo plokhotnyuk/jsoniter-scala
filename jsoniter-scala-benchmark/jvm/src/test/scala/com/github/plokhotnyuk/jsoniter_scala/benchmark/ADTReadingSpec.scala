@@ -15,6 +15,10 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJawn() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
+      //FIXME: json4s.jackson throws org.json4s.MappingException: No constructor for type ADTBase
+      //benchmark.json4sJackson() shouldBe benchmark.obj
+      //FIXME: json4s.native throws org.json4s.MappingException: No constructor for type ADTBase
+      //benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -33,6 +37,10 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
+      //FIXME: json4s.jackson throws org.json4s.MappingException: No constructor for type ADTBase
+      //intercept[Throwable](b.json4sJackson())
+      //FIXME: json4s.native throws org.json4s.MappingException: No constructor for type ADTBase
+      //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

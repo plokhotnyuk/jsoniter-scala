@@ -60,6 +60,26 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): Array[UUID] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[UUID]]
+  }
+
+  @Benchmark
+  def json4sNative(): Array[UUID] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[UUID]]
+  }
+
+  @Benchmark
   def jsoniterScala(): Array[UUID] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
