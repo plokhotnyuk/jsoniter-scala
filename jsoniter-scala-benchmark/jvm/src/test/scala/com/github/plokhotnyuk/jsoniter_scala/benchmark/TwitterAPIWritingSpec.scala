@@ -15,6 +15,10 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
       //FIXME: DSL-JSON serializes empty collections
       //toString(b.dslJsonScala()) shouldBe b.compactJsonString
       toString(b.jacksonScala()) shouldBe b.compactJsonString
+      //FIXME: json4s.jackson serializes empty collections
+      //toString(b.json4sJackson()) shouldBe b.compactJsonString
+      //FIXME: json4s.native serializes empty collections
+      //toString(b.json4sNative()) shouldBe b.compactJsonString
       toString(b.jsoniterScala()) shouldBe b.compactJsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.compactJsonString
       //FIXME: Play-JSON serializes empty collections

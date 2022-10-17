@@ -49,7 +49,28 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
 
     jacksonMapper.readValue[Array[Char]](jsonBytes)
   }
+/* FIXME: json4s.jackson throws org.json4s.MappingException: Do not know how to convert JString(3) into byte
+  @Benchmark
+  def json4sJackson(): Array[Byte] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
 
+    parse(new String(jsonBytes, UTF_8)).extract[Array[Byte]]
+  }
+*/
+/* FIXME: json4s.native throws org.json4s.MappingException: Do not know how to convert JString(3) into byte
+  @Benchmark
+  def json4sNative(): Array[Byte] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[Byte]]
+  }
+*/
   @Benchmark
   def jsoniterScala(): Array[Char] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

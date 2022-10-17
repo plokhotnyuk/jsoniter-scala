@@ -15,6 +15,8 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJawn() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
+      benchmark.json4sJackson() shouldBe benchmark.obj
+      benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME: Play-JSON requires fields for lists with default values
       //benchmark.playJson() shouldBe benchmark.obj
@@ -34,6 +36,8 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
+      intercept[Throwable](b.json4sJackson())
+      intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())

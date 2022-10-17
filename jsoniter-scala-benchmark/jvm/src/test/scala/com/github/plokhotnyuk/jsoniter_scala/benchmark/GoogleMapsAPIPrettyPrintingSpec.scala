@@ -12,6 +12,9 @@ class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
       toString(b.circe()) shouldBe b.jsonString1
       toString(b.circeJsoniter()) shouldBe b.jsonString2
       toString(b.jacksonScala()) shouldBe b.jsonString1
+      //FIXME: json4s.jackson pretty prints array elements in the same line
+      //toString(b.json4sJackson()) shouldBe b.jsonString1
+      toString(b.json4sNative()) shouldBe b.jsonString3
       toString(b.jsoniterScala()) shouldBe b.jsonString2
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString2
       toString(b.playJson()) shouldBe b.jsonString1

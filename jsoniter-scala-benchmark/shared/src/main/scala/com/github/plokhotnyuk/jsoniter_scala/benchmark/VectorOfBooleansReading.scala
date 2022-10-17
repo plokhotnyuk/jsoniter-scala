@@ -57,6 +57,26 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): Vector[Boolean] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Vector[Boolean]]
+  }
+
+  @Benchmark
+  def json4sNative(): Vector[Boolean] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Vector[Boolean]]
+  }
+
+  @Benchmark
   def jsoniterScala(): Vector[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

@@ -22,6 +22,12 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.jacksonScala() shouldBe
         """Missing required creator property 's' (index 0)
           | at [Source: (byte[])"{}"; line: 1, column: 2] (through reference chain: com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields["s"])""".stripMargin
+      b.json4sJackson() shouldBe
+        """No usable value for s
+          |Did not find value which can be converted into java.lang.String""".stripMargin
+      b.json4sNative() shouldBe
+        """No usable value for s
+          |Did not find value which can be converted into java.lang.String""".stripMargin
       b.jsoniterScala() shouldBe
         """missing required field "s", offset: 0x00000001, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -54,6 +60,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.circeJawn() shouldBe "MissingRequiredFields(VVV,1)"
       b.dslJsonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.jacksonScala() shouldBe "MissingRequiredFields(VVV,1)"
+      b.json4sJackson() shouldBe "MissingRequiredFields(VVV,1)"
+      b.json4sNative() shouldBe "MissingRequiredFields(VVV,1)"
       b.jsoniterScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.jsoniterScalaWithoutDump() shouldBe "MissingRequiredFields(VVV,1)"
       b.jsoniterScalaWithStacktrace() shouldBe "MissingRequiredFields(VVV,1)"

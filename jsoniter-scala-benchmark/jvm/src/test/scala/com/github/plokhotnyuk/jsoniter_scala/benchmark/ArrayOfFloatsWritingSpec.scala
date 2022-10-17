@@ -14,6 +14,8 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
       check(toString(b.circeJsoniter()), b.jsonString)
       check(toString(b.dslJsonScala()), b.jsonString)
       check(toString(b.jacksonScala()), b.jsonString)
+      check(toString(b.json4sJackson()), b.jsonString)
+      check(toString(b.json4sNative()), b.jsonString)
       check(toString(b.jsoniterScala()), b.jsonString)
       check(toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()), b.jsonString)
       check(toString(b.playJson()), b.jsonString)

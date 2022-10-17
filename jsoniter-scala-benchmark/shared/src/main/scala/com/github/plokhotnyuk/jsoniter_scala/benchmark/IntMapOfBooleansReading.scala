@@ -53,7 +53,28 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
 
     jacksonMapper.readValue[IntMap[Boolean]](jsonBytes)
   }
+/* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+  @Benchmark
+  def json4sJackson(): IntMap[Boolean] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
 
+    parse(new String(jsonBytes, UTF_8)).extract[IntMap[Boolean]]
+  }
+*/
+/* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+  @Benchmark
+  def json4sNative(): IntMap[Boolean] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[IntMap[Boolean]]
+  }
+*/
   @Benchmark
   def jsoniterScala(): IntMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

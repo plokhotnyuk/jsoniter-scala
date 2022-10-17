@@ -56,6 +56,26 @@ class OpenRTBReading extends OpenRTBBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): BidRequest = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[BidRequest]
+  }
+
+  @Benchmark
+  def json4sNative(): BidRequest = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[BidRequest]
+  }
+
+  @Benchmark
   def jsoniterScala(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

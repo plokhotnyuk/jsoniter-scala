@@ -16,6 +16,9 @@ class StringOfNonAsciiCharsReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
+      benchmark.json4sJackson() shouldBe benchmark.obj
+      //FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
+      //benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -35,6 +38,9 @@ class StringOfNonAsciiCharsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
+      intercept[Throwable](b.json4sJackson())
+      //FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
+      //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

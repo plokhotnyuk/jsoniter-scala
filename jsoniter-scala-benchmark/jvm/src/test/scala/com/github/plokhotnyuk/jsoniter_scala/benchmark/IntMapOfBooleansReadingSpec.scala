@@ -16,6 +16,10 @@ class IntMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
       //benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
+      //FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+      //benchmark.json4sJackson() shouldBe benchmark.obj
+      //FIXME: json4s.native throws org.json4s.MappingException: unknown error
+      //benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -30,6 +34,10 @@ class IntMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
+      //FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+      //intercept[Throwable](b.json4sJackson())
+      //FIXME: json4s.native throws org.json4s.MappingException: unknown error
+      //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

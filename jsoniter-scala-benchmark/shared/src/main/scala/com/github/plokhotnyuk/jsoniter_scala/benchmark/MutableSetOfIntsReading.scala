@@ -58,6 +58,26 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): mutable.Set[Int] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[mutable.Set[Int]]
+  }
+
+  @Benchmark
+  def json4sNative(): mutable.Set[Int] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[mutable.Set[Int]]
+  }
+
+  @Benchmark
   def jsoniterScala(): mutable.Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

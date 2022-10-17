@@ -54,6 +54,26 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
   }
 
   @Benchmark
+  def json4sJackson(): Array[Duration] = {
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[Duration]]
+  }
+
+  @Benchmark
+  def json4sNative(): Array[Duration] = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    parse(new String(jsonBytes, UTF_8)).extract[Array[Duration]]
+  }
+
+  @Benchmark
   def jsoniterScala(): Array[Duration] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
