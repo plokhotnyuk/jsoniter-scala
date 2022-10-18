@@ -2048,7 +2048,7 @@ final class JsonWriter private[jsoniter_scala](
     multiplyHigh(g1, cp) + (z >>> 63) | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63 // FIXME: Use Math.multiplyHigh after dropping of JDK 8 support
   }
 
-  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Karatsuba technique for two positive ints
+  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Karatsuba technique for two positive longs
     val x2 = x & 0xFFFFFFFFL
     val y2 = y & 0xFFFFFFFFL
     val b = x2 * y2
