@@ -42,8 +42,9 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
     import org.json4s._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    Json4sJacksonPrettyMapper.mapper.writeValueAsBytes(Extraction.decompose(obj))
+    prettyPrintMapper.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark

@@ -53,10 +53,10 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   @Benchmark
   def json4sJackson(): Array[BigInt] = {
     import org.json4s._
-    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[BigInt]]
+    bigNumberMapper.readValue(jsonBytes, classOf[JValue]).extract[Array[BigInt]]
   }
 
   @Benchmark

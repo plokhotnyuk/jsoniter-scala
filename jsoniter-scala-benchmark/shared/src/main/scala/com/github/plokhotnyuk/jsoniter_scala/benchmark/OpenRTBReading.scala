@@ -49,7 +49,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
   @Benchmark
   def json4sJackson(): BidRequest = {
     import org.json4s._
-    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
     mapper.readValue(jsonBytes, classOf[JValue]).extract[BidRequest]

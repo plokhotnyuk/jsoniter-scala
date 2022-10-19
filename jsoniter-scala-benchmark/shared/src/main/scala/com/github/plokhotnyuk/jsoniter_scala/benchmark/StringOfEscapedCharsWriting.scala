@@ -34,16 +34,15 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
 
     jacksonEscapeNonAsciiMapper.writeValueAsBytes(obj)
   }
-/* FIXME: json4s.jackson doesn't escape unicode
+
   @Benchmark
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.EscapeUnicodeJson4sFormats._
     import org.json4s._
-    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    mapper.writeValueAsBytes(Extraction.decompose(obj))
+   escapeNonAsciiMapper.writeValueAsBytes(Extraction.decompose(obj))
   }
-*/
 /*  FIXME: json4s.native doesn't escape unicode
   @Benchmark
   def json4sNative(): Array[Byte] = {

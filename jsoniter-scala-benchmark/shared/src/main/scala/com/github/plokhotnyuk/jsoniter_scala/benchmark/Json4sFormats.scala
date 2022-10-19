@@ -1,9 +1,11 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
+import com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import org.json4s._
+
 import java.time._
 import java.util.{Base64, UUID}
 import java.util.concurrent.ConcurrentHashMap
@@ -132,14 +134,31 @@ class SimpleTypeHints(override val hints: List[Class[_]], override val typeHintF
   }
 }
 
-object Json4sJacksonPrettyMapper {
-  import com.fasterxml.jackson.databind.SerializationFeature
-  import org.json4s.jackson.JsonMethods
+object Json4sJacksonMappers {
+  private[this] def mapper(indentOutput: Boolean = false, escapeNonAscii: Boolean = false, useBigIntegerForInts: Boolean = false): ObjectMapper = {
+    import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
+    import com.fasterxml.jackson.core.json.JsonWriteFeature
+    import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, StreamReadFeature, StreamWriteFeature}
+    import org.json4s.jackson.Json4sScalaModule
 
-  val mapper: ObjectMapper = JsonMethods.mapper.copy()
-    .configure(SerializationFeature.INDENT_OUTPUT, true)
-    .setDefaultPrettyPrinter {
-      val indenter = new DefaultIndenter("  ", "\n")
-      new DefaultPrettyPrinter().withObjectIndenter(indenter).withArrayIndenter(indenter)
-    }
+    val jsonFactory = new JsonFactoryBuilder()
+      .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
+      .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
+      .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
+      .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
+      .build()
+    new ObjectMapper(jsonFactory)
+      .registerModule(new Json4sScalaModule)
+      .configure(USE_BIG_INTEGER_FOR_INTS, useBigIntegerForInts)
+      .configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
+      .setDefaultPrettyPrinter {
+        val indenter = new DefaultIndenter("  ", "\n")
+        new DefaultPrettyPrinter().withObjectIndenter(indenter).withArrayIndenter(indenter)
+      }
+  }
+
+  val mapper: ObjectMapper = mapper()
+  val bigNumberMapper: ObjectMapper = mapper(useBigIntegerForInts = true)
+  val prettyPrintMapper: ObjectMapper = mapper(indentOutput = true)
+  val escapeNonAsciiMapper: ObjectMapper = mapper(escapeNonAscii = true)
 }

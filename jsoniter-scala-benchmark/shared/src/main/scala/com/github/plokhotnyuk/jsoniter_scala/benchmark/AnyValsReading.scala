@@ -55,7 +55,7 @@ class AnyValsReading extends AnyValsBenchmark {
   @Benchmark
   def json4sJackson(): AnyVals = {
     import org.json4s._
-    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyValsJson4sFormats._
 
     mapper.readValue(jsonBytes, classOf[JValue]).extract[AnyVals]

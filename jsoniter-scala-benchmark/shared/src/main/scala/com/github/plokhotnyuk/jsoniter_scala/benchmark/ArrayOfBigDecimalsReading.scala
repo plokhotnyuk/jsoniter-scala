@@ -49,17 +49,16 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
 
     jacksonMapper.readValue[Array[BigDecimal]](jsonBytes)
   }
-/* FIXME: json4s.jackson rounds parsed numbers to double
+
   @Benchmark
   def json4sJackson(): Array[BigDecimal] = {
     import org.json4s._
-    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
     mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[BigDecimal]]
   }
-*/
-/* FIXME: json4s.native rounds parsed numbers to double
+
   @Benchmark
   def json4sNative(): Array[BigDecimal] = {
     import org.json4s._
@@ -67,9 +66,9 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    parse(new String(jsonBytes, UTF_8)).extract[Array[BigDecimal]]
+    parse(new String(jsonBytes, UTF_8), useBigDecimalForDouble = true).extract[Array[BigDecimal]]
   }
-*/
+
   @Benchmark
   def jsoniterScala(): Array[BigDecimal] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

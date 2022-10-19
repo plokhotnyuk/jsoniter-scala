@@ -53,10 +53,10 @@ class BigDecimalReading extends BigDecimalBenchmark {
   @Benchmark
   def json4sJackson(): BigDecimal = {
     import org.json4s._
-    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[BigDecimal]
+    bigNumberMapper.readValue(jsonBytes, classOf[JValue]).extract[BigDecimal]
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark

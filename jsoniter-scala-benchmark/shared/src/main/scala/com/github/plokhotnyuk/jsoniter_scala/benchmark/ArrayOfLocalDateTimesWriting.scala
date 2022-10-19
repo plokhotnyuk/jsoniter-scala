@@ -57,7 +57,7 @@ class ArrayOfLocalDateTimesWriting extends ArrayOfLocalDateTimesBenchmark {
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
     import org.json4s._
-    import org.json4s.jackson.JsonMethods._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
     mapper.writeValueAsBytes(Extraction.decompose(obj))
   }
