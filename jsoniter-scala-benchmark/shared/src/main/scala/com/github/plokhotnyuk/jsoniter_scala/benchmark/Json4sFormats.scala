@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import org.json4s._
 import java.time._
@@ -128,4 +130,16 @@ class SimpleTypeHints(override val hints: List[Class[_]], override val typeHintF
   override def classFor(hint: String, parent: Class[_]): Option[Class[_]] = hints.collectFirst {
     case clazz if clazz.getSimpleName == hint => clazz
   }
+}
+
+object Json4sJacksonPrettyMapper {
+  import com.fasterxml.jackson.databind.SerializationFeature
+  import org.json4s.jackson.JsonMethods
+
+  val mapper: ObjectMapper = JsonMethods.mapper.copy()
+    .configure(SerializationFeature.INDENT_OUTPUT, true)
+    .setDefaultPrettyPrinter {
+      val indenter = new DefaultIndenter("  ", "\n")
+      new DefaultPrettyPrinter().withObjectIndenter(indenter).withArrayIndenter(indenter)
+    }
 }
