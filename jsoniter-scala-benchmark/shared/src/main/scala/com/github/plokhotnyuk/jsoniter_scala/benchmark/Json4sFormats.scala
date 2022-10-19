@@ -1,11 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
-import com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS
-import com.fasterxml.jackson.databind.{JavaType, ObjectMapper}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import org.json4s._
-
 import java.time._
 import java.util.{Base64, UUID}
 import java.util.concurrent.ConcurrentHashMap
@@ -135,11 +131,13 @@ class SimpleTypeHints(override val hints: List[Class[_]], override val typeHintF
 }
 
 object Json4sJacksonMappers {
+  import com.fasterxml.jackson.core._
+  import com.fasterxml.jackson.core.util._
+  import com.fasterxml.jackson.core.json.JsonWriteFeature
+  import com.fasterxml.jackson.databind._
+  import org.json4s.jackson.Json4sScalaModule
+
   private[this] def mapper(indentOutput: Boolean = false, escapeNonAscii: Boolean = false, useBigIntegerForInts: Boolean = false): ObjectMapper = {
-    import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
-    import com.fasterxml.jackson.core.json.JsonWriteFeature
-    import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, StreamReadFeature, StreamWriteFeature}
-    import org.json4s.jackson.Json4sScalaModule
 
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
@@ -149,7 +147,7 @@ object Json4sJacksonMappers {
       .build()
     new ObjectMapper(jsonFactory)
       .registerModule(new Json4sScalaModule)
-      .configure(USE_BIG_INTEGER_FOR_INTS, useBigIntegerForInts)
+      .configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, useBigIntegerForInts)
       .configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
       .setDefaultPrettyPrinter {
         val indenter = new DefaultIndenter("  ", "\n")
