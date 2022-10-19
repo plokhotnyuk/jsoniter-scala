@@ -10,21 +10,7 @@ import scala.reflect.ClassTag
 object Json4sFormats {
   implicit val customFormats: Formats = DefaultFormats +
     StringifiedFormats.stringified[Char](x => if (x.length == 1) x.charAt(0) else sys.error("char")) +
-    StringifiedFormats.stringified[Duration](Duration.parse) +
-    StringifiedFormats.stringified[Instant](Instant.parse) +
-    StringifiedFormats.stringified[LocalDate](LocalDate.parse) +
-    StringifiedFormats.stringified[LocalDateTime](LocalDateTime.parse) +
-    StringifiedFormats.stringified[LocalTime](LocalTime.parse) +
-    StringifiedFormats.stringified[MonthDay](MonthDay.parse) +
-    StringifiedFormats.stringified[OffsetDateTime](OffsetDateTime.parse) +
-    StringifiedFormats.stringified[OffsetTime](OffsetTime.parse) +
-    StringifiedFormats.stringified[Period](Period.parse) +
     StringifiedFormats.stringified[UUID](UUID.fromString) +
-    StringifiedFormats.stringified[Year](Year.parse) +
-    StringifiedFormats.stringified[YearMonth](YearMonth.parse) +
-    StringifiedFormats.stringified[ZonedDateTime](ZonedDateTime.parse) +
-    StringifiedFormats.stringified[ZoneId](ZoneId.of) +
-    StringifiedFormats.stringified[ZoneOffset](ZoneOffset.of) +
     StringifiedFormats.stringified[Suit](Suit.valueOf) +
     StringifiedFormats.stringified[SuitADT] {
       val suite = Map(
@@ -86,6 +72,24 @@ object AnyValsJson4sFormats {
     }))
 }
 
+object JavaTimeJson4sFormats {
+  implicit val javaTimeFormats: Formats = DefaultFormats +
+    StringifiedFormats.stringified[Duration](Duration.parse) +
+    StringifiedFormats.stringified[Instant](Instant.parse) +
+    StringifiedFormats.stringified[LocalDate](LocalDate.parse) +
+    StringifiedFormats.stringified[LocalDateTime](LocalDateTime.parse) +
+    StringifiedFormats.stringified[LocalTime](LocalTime.parse) +
+    StringifiedFormats.stringified[MonthDay](MonthDay.parse) +
+    StringifiedFormats.stringified[OffsetDateTime](OffsetDateTime.parse) +
+    StringifiedFormats.stringified[OffsetTime](OffsetTime.parse) +
+    StringifiedFormats.stringified[Period](Period.parse) +
+    StringifiedFormats.stringified[Year](Year.parse) +
+    StringifiedFormats.stringified[YearMonth](YearMonth.parse) +
+    StringifiedFormats.stringified[ZonedDateTime](ZonedDateTime.parse) +
+    StringifiedFormats.stringified[ZoneId](ZoneId.of) +
+    StringifiedFormats.stringified[ZoneOffset](ZoneOffset.of)
+}
+
 object GeoJsonJson4sFormats {
   implicit val geoJsonFormats: Formats = new DefaultFormats {
     override val typeHints: TypeHints = new SimpleTypeHints(List(
@@ -101,6 +105,7 @@ object GeoJsonJson4sFormats {
 
 object GitHubActionsAPIJson4sFormats {
   implicit val gitHubActionsAPIFormats: Formats = Json4sFormats.customFormats +
+    StringifiedFormats.stringified[Instant](Instant.parse) +
     StringifiedFormats.stringified[Boolean](java.lang.Boolean.parseBoolean)
 }
 
