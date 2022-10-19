@@ -22,14 +22,6 @@ class BigDecimalReading extends BigDecimalBenchmark {
 
   @Benchmark
   def circe(): BigDecimal = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): BigDecimal = {
     import io.circe.jawn._
 
     decodeByteArray[BigDecimal](jsonBytes).fold(throw _, identity)

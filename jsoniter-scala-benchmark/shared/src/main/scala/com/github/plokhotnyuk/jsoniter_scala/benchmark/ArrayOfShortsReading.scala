@@ -20,14 +20,6 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
 
   @Benchmark
   def circe(): Array[Short] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[Short]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[Short] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[Short]](jsonBytes).fold(throw _, identity)

@@ -18,14 +18,6 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
 
   @Benchmark
   def circe(): List[Boolean] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[List[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): List[Boolean] = {
     import io.circe.jawn._
 
     decodeByteArray[List[Boolean]](jsonBytes).fold(throw _, identity)

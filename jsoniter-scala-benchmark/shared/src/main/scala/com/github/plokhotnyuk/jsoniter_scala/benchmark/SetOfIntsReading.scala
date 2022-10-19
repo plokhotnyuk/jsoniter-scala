@@ -20,14 +20,6 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
   @Benchmark
   def circe(): Set[Int] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Set[Int] = {
     import io.circe.jawn._
 
     decodeByteArray[Set[Int]](jsonBytes).fold(throw _, identity)

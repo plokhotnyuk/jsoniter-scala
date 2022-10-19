@@ -33,15 +33,6 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   @Benchmark
   def circe(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[MissingRequiredFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _.toString) // toString shouldn't be called
-  }
-
-  @Benchmark
-  def circeJawn(): String = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
     decodeByteArray[MissingRequiredFields](jsonBytes).fold(_.getMessage, _.toString) // toString shouldn't be called

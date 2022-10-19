@@ -21,14 +21,6 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
 
   @Benchmark
   def circe(): Array[Float] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[Float] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[Float]](jsonBytes).fold(throw _, identity)

@@ -11,9 +11,7 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
-      //FIXME: circe parses 123456789012345678901234567890 as 123456789012345680000000000000
-      //benchmark.circe() shouldBe benchmark.obj
-      benchmark.circeJawn() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME: Play-JSON looses significant digits in BigInt values
@@ -27,7 +25,6 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())

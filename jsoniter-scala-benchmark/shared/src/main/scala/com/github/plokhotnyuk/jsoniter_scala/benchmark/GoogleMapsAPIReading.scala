@@ -24,15 +24,6 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   @Benchmark
   def circe(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): DistanceMatrix = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
     decodeByteArray[DistanceMatrix](jsonBytes).fold(throw _, identity)

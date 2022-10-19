@@ -23,15 +23,6 @@ class AnyValsReading extends AnyValsBenchmark {
   @Benchmark
   def circe(): AnyVals = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): AnyVals = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
     decodeByteArray[AnyVals](jsonBytes).fold(throw _, identity)

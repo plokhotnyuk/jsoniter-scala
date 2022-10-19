@@ -20,14 +20,6 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
 
   @Benchmark
   def circe(): Vector[Boolean] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Vector[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Vector[Boolean] = {
     import io.circe.jawn._
 
     decodeByteArray[Vector[Boolean]](jsonBytes).fold(throw _, identity)

@@ -23,14 +23,6 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
 
   @Benchmark
   def circe(): Array[LocalDate] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[LocalDate]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[LocalDate] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[LocalDate]](jsonBytes).fold(throw _, identity)

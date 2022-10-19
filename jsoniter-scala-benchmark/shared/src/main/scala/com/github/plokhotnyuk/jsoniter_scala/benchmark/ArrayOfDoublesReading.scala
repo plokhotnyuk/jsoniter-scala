@@ -20,14 +20,6 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
 
   @Benchmark
   def circe(): Array[Double] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[Double] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[Double]](jsonBytes).fold(throw _, identity)

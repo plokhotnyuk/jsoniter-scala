@@ -12,7 +12,6 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       benchmark.avSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.borer() shouldBe benchmark.sourceObj
       benchmark.circe() shouldBe benchmark.sourceObj
-      benchmark.circeJawn() shouldBe benchmark.sourceObj
       benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.dslJsonScala() shouldBe benchmark.sourceObj
       benchmark.jacksonScala() shouldBe benchmark.sourceObj
@@ -34,7 +33,6 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())

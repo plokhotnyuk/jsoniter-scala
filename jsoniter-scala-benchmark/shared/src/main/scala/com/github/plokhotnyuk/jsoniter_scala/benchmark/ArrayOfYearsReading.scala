@@ -23,14 +23,6 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
 
   @Benchmark
   def circe(): Array[Year] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[Year]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[Year] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[Year]](jsonBytes).fold(throw _, identity)

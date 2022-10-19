@@ -11,9 +11,7 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
-      //FIXME: circe parses 850007368138018817 as 850007368138018800
-      //benchmark.circe() shouldBe benchmark.obj
-      benchmark.circeJawn() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME: play-json parses 850007368138018817 as 850007368138018800
@@ -29,7 +27,6 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())

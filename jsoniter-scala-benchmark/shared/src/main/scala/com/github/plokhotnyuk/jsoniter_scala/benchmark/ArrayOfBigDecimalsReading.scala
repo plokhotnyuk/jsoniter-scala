@@ -22,14 +22,6 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
 
   @Benchmark
   def circe(): Array[BigDecimal] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[BigDecimal] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[BigDecimal]](jsonBytes).fold(throw _, identity)

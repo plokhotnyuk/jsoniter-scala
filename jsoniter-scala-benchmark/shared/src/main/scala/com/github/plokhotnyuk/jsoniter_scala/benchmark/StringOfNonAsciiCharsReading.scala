@@ -20,14 +20,6 @@ class StringOfNonAsciiCharsReading extends StringOfNonAsciiCharsBenchmark {
 
   @Benchmark
   def circe(): String = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): String = {
     import io.circe.jawn._
 
     decodeByteArray[String](jsonBytes).fold(throw _, identity)

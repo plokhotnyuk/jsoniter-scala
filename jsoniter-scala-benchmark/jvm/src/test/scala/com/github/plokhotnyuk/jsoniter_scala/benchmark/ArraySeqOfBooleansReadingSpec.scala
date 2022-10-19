@@ -12,7 +12,6 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
-      benchmark.circeJawn() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       //FIXME: DSL-JSON doesn't support parsing of ArraySeq
       //benchmark.dslJsonScala() shouldBe benchmark.obj
@@ -36,7 +35,6 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       //FIXME: DSL-JSON doesn't support parsing of ArraySeq
       //intercept[Throwable](b.dslJsonScala())

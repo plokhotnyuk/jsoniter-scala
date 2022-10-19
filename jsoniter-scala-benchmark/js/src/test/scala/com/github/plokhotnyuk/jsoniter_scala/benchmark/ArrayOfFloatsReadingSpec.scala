@@ -22,9 +22,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
-      //FIXME circe parses 1.1999999284744263 as 1.2000000476837158
-      //benchmark.circe() shouldBe benchmark.obj
-      benchmark.circeJawn() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME play-json parses 1.1999999284744263 as 1.2000000476837158
@@ -40,7 +38,6 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      intercept[Throwable](b.circeJawn())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())

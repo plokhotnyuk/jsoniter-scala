@@ -24,14 +24,6 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
 
   @Benchmark
   def circe(): mutable.ArrayBuffer[Boolean] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[mutable.ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): mutable.ArrayBuffer[Boolean] = {
     import io.circe.jawn._
 
     decodeByteArray[mutable.ArrayBuffer[Boolean]](jsonBytes).fold(throw _, identity)

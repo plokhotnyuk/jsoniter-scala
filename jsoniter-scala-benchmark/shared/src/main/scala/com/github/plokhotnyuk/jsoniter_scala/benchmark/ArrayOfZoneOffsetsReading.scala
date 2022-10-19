@@ -23,14 +23,6 @@ class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
 
   @Benchmark
   def circe(): Array[ZoneOffset] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[ZoneOffset]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[ZoneOffset] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[ZoneOffset]](jsonBytes).fold(throw _, identity)

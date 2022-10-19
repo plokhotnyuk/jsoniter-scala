@@ -23,14 +23,6 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
 
   @Benchmark
   def circe(): Array[MonthDay] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[MonthDay]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[MonthDay] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[MonthDay]](jsonBytes).fold(throw _, identity)

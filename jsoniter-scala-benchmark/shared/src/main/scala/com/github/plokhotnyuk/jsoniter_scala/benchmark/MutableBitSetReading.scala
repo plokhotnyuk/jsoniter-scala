@@ -16,15 +16,6 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
   @Benchmark
   def circe(): mutable.BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[mutable.BitSet](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): mutable.BitSet = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
     decodeByteArray[mutable.BitSet](jsonBytes).fold(throw _, identity)

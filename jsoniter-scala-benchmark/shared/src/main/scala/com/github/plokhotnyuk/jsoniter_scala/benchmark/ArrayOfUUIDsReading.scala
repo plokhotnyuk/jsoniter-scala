@@ -23,14 +23,6 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
 
   @Benchmark
   def circe(): Array[UUID] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[UUID]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[UUID] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[UUID]](jsonBytes).fold(throw _, identity)

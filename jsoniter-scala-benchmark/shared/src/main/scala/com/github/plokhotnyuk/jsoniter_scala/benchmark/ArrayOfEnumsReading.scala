@@ -24,15 +24,6 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
   @Benchmark
   def circe(): Array[SuitEnum] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[SuitEnum]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[SuitEnum] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
     decodeByteArray[Array[SuitEnum]](jsonBytes).fold(throw _, identity)

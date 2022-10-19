@@ -18,14 +18,6 @@ class IntReading extends IntBenchmark {
 
   @Benchmark
   def circe(): Int = {
-    import java.nio.charset.StandardCharsets.UTF_8
-    import io.circe.parser._
-
-    decode[Int](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Int = {
     io.circe.jawn.decodeByteArray[Int](jsonBytes).fold(throw _, identity)
   }
 

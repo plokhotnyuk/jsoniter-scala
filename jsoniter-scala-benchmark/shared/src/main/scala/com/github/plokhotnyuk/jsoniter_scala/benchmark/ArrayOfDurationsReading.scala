@@ -23,14 +23,6 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
 
   @Benchmark
   def circe(): Array[Duration] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[Duration]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[Duration] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[Duration]](jsonBytes).fold(throw _, identity)

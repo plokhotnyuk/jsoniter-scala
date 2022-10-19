@@ -16,15 +16,6 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
   @Benchmark
   def circe(): IntMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[IntMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): IntMap[Boolean] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
     decodeByteArray[IntMap[Boolean]](jsonBytes).fold(throw _, identity)

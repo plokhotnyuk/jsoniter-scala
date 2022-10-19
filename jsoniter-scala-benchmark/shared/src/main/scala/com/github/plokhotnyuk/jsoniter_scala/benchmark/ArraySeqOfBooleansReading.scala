@@ -21,14 +21,6 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
 
   @Benchmark
   def circe(): ArraySeq[Boolean] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[ArraySeq[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): ArraySeq[Boolean] = {
     import io.circe.jawn._
 
     decodeByteArray[ArraySeq[Boolean]](jsonBytes).fold(throw _, identity)

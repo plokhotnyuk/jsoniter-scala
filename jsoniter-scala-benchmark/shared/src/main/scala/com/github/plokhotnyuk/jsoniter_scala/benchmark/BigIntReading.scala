@@ -21,14 +21,6 @@ class BigIntReading extends BigIntBenchmark {
 
   @Benchmark
   def circe(): BigInt = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[BigInt](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): BigInt = {
     import io.circe.jawn._
 
     decodeByteArray[BigInt](jsonBytes).fold(throw _, identity)

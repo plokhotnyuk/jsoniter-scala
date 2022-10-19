@@ -13,14 +13,6 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
 
   @Benchmark
   def circe(): Map[Int, Boolean] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Map[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Map[Int, Boolean] = {
     import io.circe.jawn._
 
     decodeByteArray[Map[Int, Boolean]](jsonBytes).fold(throw _, identity)

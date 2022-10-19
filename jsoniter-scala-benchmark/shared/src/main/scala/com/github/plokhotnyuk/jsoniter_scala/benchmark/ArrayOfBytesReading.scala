@@ -21,14 +21,6 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = {
-    import io.circe.parser._
-    import java.nio.charset.StandardCharsets.UTF_8
-
-    decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-  }
-
-  @Benchmark
-  def circeJawn(): Array[Byte] = {
     import io.circe.jawn._
 
     decodeByteArray[Array[Byte]](jsonBytes).fold(throw _, identity)
