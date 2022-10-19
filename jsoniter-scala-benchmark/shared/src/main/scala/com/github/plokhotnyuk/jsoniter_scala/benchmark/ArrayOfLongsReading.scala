@@ -54,7 +54,7 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
     import org.json4s.jackson.JsonMethods._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, classOf[JValue]).extract[Array[Long]]
+    mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[Long]]
   }
 
   @Benchmark

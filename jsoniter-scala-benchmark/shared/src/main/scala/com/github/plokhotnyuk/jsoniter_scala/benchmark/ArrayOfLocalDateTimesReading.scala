@@ -58,7 +58,7 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
     import org.json4s.jackson.JsonMethods._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, classOf[JValue]).extract[Array[LocalDateTime]]
+    mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[LocalDateTime]]
   }
 
   @Benchmark

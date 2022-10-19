@@ -57,7 +57,7 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
     import org.json4s.jackson.JsonMethods._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, classOf[JValue]).extract[Array[UUID]]
+    mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[UUID]]
   }
 
   @Benchmark

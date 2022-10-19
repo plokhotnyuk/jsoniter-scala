@@ -54,7 +54,7 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
     import org.json4s.jackson.JsonMethods._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, classOf[JValue]).extract[Vector[Boolean]]
+    mapper.readValue(jsonBytes, classOf[JValue]).extract[Vector[Boolean]]
   }
 
   @Benchmark
