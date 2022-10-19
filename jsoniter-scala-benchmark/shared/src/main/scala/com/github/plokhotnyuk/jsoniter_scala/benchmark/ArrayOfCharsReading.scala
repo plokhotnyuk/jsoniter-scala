@@ -48,7 +48,7 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[Byte]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[Byte]]
   }
 */
 /* FIXME: json4s.native throws org.json4s.MappingException: Do not know how to convert JString(3) into byte

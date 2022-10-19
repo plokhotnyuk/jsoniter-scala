@@ -51,7 +51,7 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[MonthDay]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[MonthDay]]
   }
 
   @Benchmark

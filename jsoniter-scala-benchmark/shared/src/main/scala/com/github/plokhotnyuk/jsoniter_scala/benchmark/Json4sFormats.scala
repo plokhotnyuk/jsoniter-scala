@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.{JavaType, ObjectMapper}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import org.json4s._
 
@@ -161,4 +161,5 @@ object Json4sJacksonMappers {
   val bigNumberMapper: ObjectMapper = mapper(useBigIntegerForInts = true)
   val prettyPrintMapper: ObjectMapper = mapper(indentOutput = true)
   val escapeNonAsciiMapper: ObjectMapper = mapper(escapeNonAscii = true)
+  val jValueType: JavaType = mapper.constructType(classOf[JValue])
 }

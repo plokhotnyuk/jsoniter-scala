@@ -56,7 +56,7 @@ class BigIntReading extends BigIntBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    bigNumberMapper.readValue(jsonBytes, classOf[JValue]).extract[BigInt]
+    bigNumberMapper.readValue[JValue](jsonBytes, jValueType).extract[BigInt]
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark

@@ -54,7 +54,7 @@ class StringOfNonAsciiCharsReading extends StringOfNonAsciiCharsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[String]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[String]
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark

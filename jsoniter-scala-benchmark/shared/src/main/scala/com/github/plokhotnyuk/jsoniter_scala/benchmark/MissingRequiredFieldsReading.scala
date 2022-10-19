@@ -80,7 +80,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
     import java.nio.charset.StandardCharsets.UTF_8
 
     try {
-      mapper.readValue(jsonBytes, classOf[JValue]).extract[MissingRequiredFields].toString// toString shouldn't be called
+      mapper.readValue[JValue](jsonBytes, jValueType).extract[MissingRequiredFields].toString// toString shouldn't be called
     } catch {
       case ex: MappingException => ex.getMessage
     }

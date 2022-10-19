@@ -58,7 +58,7 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[SuitADT]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[SuitADT]]
   }
 
   @Benchmark

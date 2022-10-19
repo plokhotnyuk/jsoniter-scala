@@ -52,7 +52,7 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[List[Boolean]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[List[Boolean]]
   }
 
   @Benchmark

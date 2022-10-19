@@ -51,7 +51,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJsonJson4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[GeoJSON]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[GeoJSON]
   }
 
   @Benchmark

@@ -52,7 +52,7 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.GitHubActionsAPIJson4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[GitHubActionsAPI.Response]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[GitHubActionsAPI.Response]
   }
 
   @Benchmark

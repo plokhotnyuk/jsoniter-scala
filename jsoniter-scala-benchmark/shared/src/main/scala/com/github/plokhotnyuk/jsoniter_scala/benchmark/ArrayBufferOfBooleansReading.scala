@@ -58,7 +58,7 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[mutable.ArrayBuffer[Boolean]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[mutable.ArrayBuffer[Boolean]]
   }
 
   @Benchmark

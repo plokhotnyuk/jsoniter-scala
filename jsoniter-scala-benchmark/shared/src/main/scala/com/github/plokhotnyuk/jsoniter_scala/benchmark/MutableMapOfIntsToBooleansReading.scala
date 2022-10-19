@@ -47,7 +47,7 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[mutable.Map[Int, Boolean]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[mutable.Map[Int, Boolean]]
   }
 
   @Benchmark

@@ -56,7 +56,7 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    bigNumberMapper.readValue(jsonBytes, classOf[JValue]).extract[Array[BigInt]]
+    bigNumberMapper.readValue[JValue](jsonBytes, jValueType).extract[Array[BigInt]]
   }
 
   @Benchmark

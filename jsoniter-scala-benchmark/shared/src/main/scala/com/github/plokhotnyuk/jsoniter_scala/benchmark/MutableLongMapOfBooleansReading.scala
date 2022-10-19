@@ -51,7 +51,7 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[mutable.LongMap[Boolean]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[mutable.LongMap[Boolean]]
   }
 */
 /* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error

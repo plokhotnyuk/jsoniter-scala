@@ -55,7 +55,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[Array[Float]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[Float]]
   }
 */
 /* FIXME: json4s.native parses 1.199999988079071 as 1.2f instead of 1.1999999f

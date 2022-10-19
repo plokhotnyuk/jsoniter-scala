@@ -54,7 +54,7 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue(jsonBytes, classOf[JValue]).extract[Set[Int]]
+    mapper.readValue[JValue](jsonBytes, jValueType).extract[Set[Int]]
   }
 
   @Benchmark
