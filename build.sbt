@@ -227,11 +227,11 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.10"),
-    resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
+    resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Resolver.sonatypeOssRepos("staging"),
     libraryDependencies ++= Seq(
       "org.json4s" %% "json4s-jackson" % "4.1.0-M2",
       "org.json4s" %% "json4s-native" % "4.1.0-M2",
-      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.16.4",
+      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.16.5",
       "dev.zio" %%% "zio-json" % "0.3.0",
       "com.rallyhealth" %% "weepickle-v1" % "1.8.0",
       "io.bullet" %%% "borer-derivation" % "1.8.0",
