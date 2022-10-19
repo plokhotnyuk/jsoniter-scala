@@ -53,9 +53,8 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
     import org.json4s._
     import org.json4s.jackson.JsonMethods._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    parse(new String(jsonBytes, UTF_8)).extract[String]
+    mapper.readValue[JValue](jsonBytes, classOf[JValue]).extract[String]
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark

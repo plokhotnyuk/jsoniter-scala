@@ -50,9 +50,8 @@ class ADTReading extends ADTBenchmark {
     import org.json4s._
     import org.json4s.jackson.JsonMethods._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ADTJson4sFormats._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    parse(new String(jsonBytes, UTF_8)).extract[ADTBase]
+    mapper.readValue[JValue](jsonBytes, classOf[JValue]).extract[ADTBase]
   }
 
   @Benchmark

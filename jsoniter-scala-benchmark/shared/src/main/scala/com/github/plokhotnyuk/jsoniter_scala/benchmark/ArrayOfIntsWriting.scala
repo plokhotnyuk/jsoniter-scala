@@ -53,10 +53,10 @@ class ArrayOfIntsWriting extends ArrayOfIntsBenchmark {
   @Benchmark
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
-    import org.json4s.jackson.Serialization._
-    import java.nio.charset.StandardCharsets.UTF_8
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
 
-    write(obj).getBytes(UTF_8)
+    mapper.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark
