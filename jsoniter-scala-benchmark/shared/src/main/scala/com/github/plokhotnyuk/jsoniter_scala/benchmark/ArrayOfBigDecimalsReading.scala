@@ -49,16 +49,16 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
 
     jacksonMapper.readValue[Array[BigDecimal]](jsonBytes)
   }
-
+/* FIXME: json4s.jackson rounds parsed numbers to double
   @Benchmark
   def json4sJackson(): Array[BigDecimal] = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[BigDecimal]]
+    bigNumberMapper.readValue[JValue](jsonBytes, jValueType).extract[Array[BigDecimal]]
   }
-
+*/
   @Benchmark
   def json4sNative(): Array[BigDecimal] = {
     import org.json4s._

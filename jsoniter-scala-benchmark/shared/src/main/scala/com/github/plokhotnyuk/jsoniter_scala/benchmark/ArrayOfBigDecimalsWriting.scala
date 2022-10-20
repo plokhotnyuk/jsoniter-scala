@@ -49,7 +49,7 @@ class ArrayOfBigDecimalsWriting extends ArrayOfBigDecimalsBenchmark {
 
     jacksonMapper.writeValueAsBytes(obj)
   }
-
+/* FIXME: json4s.jackson rounding to double
   @Benchmark
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
@@ -58,7 +58,7 @@ class ArrayOfBigDecimalsWriting extends ArrayOfBigDecimalsBenchmark {
 
     bigNumberMapper.writeValueAsBytes(Extraction.decompose(obj))
   }
-
+*/
   @Benchmark
   def json4sNative(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
