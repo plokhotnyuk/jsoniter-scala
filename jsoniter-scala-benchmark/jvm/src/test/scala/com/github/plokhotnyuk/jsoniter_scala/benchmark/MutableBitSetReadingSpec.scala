@@ -15,6 +15,8 @@ class MutableBitSetReadingSpec extends BenchmarkSpecBase {
       //FIXME: DSL-JSON throws scala.collection.mutable.HashSet cannot be cast to scala.collection.mutable.BitSet
       //benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
+      benchmark.json4sJackson() shouldBe benchmark.obj
+      benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
