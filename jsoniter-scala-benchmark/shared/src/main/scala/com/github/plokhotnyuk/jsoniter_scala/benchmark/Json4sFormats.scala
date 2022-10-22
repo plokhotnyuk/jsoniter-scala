@@ -1,10 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import org.json4s._
 import java.time._
 import java.util.{Base64, UUID}
-import java.util.concurrent.ConcurrentHashMap
 import scala.reflect.ClassTag
 
 object Json4sFormats {
@@ -20,8 +18,8 @@ object Json4sFormats {
         "Clubs" -> Clubs)
       x => suite(x)
     } +
-    StringifiedFormats.stringified[SuitEnum] {
-      val ec = new ConcurrentHashMap[String, SuitEnum]
+    StringifiedFormats.stringified[SuitEnum.SuitEnum] {
+      val ec = new java.util.concurrent.ConcurrentHashMap[String, SuitEnum.SuitEnum]
       x => {
         var v = ec.get(x)
         if (v eq null) {
@@ -127,7 +125,8 @@ object StringifiedFormats {
     }))
 }
 
-class SimpleTypeHints(override val hints: List[Class[_]], override val typeHintFieldName: String = "type") extends TypeHints {
+class SimpleTypeHints(override val hints: List[Class[_]],
+                      override val typeHintFieldName: String = "type") extends TypeHints {
   override def hintFor(clazz: Class[_]): Option[String] = new Some(clazz.getSimpleName)
 
   override def classFor(hint: String, parent: Class[_]): Option[Class[_]] = hints.collectFirst {
@@ -142,8 +141,8 @@ object Json4sJacksonMappers {
   import com.fasterxml.jackson.databind._
   import org.json4s.jackson.Json4sScalaModule
 
-  private[this] def mapper(indentOutput: Boolean = false, escapeNonAscii: Boolean = false, useBigIntegerForInts: Boolean = false): ObjectMapper = {
-
+  private[this] def mapper(indentOutput: Boolean = false, escapeNonAscii: Boolean = false,
+                           useBigIntegerForInts: Boolean = false): ObjectMapper = {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
       .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
