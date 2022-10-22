@@ -142,7 +142,7 @@ object Json4sJacksonMappers {
   import org.json4s.jackson.Json4sScalaModule
 
   private[this] def mapper(indentOutput: Boolean = false, escapeNonAscii: Boolean = false,
-                           useBigIntegerForInts: Boolean = false): ObjectMapper = {
+                           useBigNumber: Boolean = false): ObjectMapper = {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
       .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
@@ -151,7 +151,8 @@ object Json4sJacksonMappers {
       .build()
     new ObjectMapper(jsonFactory)
       .registerModule(new Json4sScalaModule)
-      .configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, useBigIntegerForInts)
+      .configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, useBigNumber)
+      .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, useBigNumber)
       .configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
       .setDefaultPrettyPrinter {
         val indenter = new DefaultIndenter("  ", "\n")
@@ -160,7 +161,7 @@ object Json4sJacksonMappers {
   }
 
   val mapper: ObjectMapper = mapper()
-  val bigNumberMapper: ObjectMapper = mapper(useBigIntegerForInts = true)
+  val bigNumberMapper: ObjectMapper = mapper(useBigNumber = true)
   val prettyPrintMapper: ObjectMapper = mapper(indentOutput = true)
   val escapeNonAsciiMapper: ObjectMapper = mapper(escapeNonAscii = true)
   val jValueType: JavaType = mapper.constructType(classOf[JValue])
