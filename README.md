@@ -10,10 +10,11 @@ Scala macros for compile-time generation of safe and ultra-fast JSON codecs.
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
 serialization performance of jsoniter-scala with: [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons),
 [Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), 
-[Circe with jawn parser](https://github.com/circe/circe/tree/main/modules/jawn),
 [Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
 [DSL-JSON](https://github.com/ngs-doo/dsl-json),
-[jackson-module-scala](https://github.com/FasterXML/jackson-module-scala), 
+[jackson-module-scala](https://github.com/FasterXML/jackson-module-scala),
+[json4s.jackson](https://github.com/json4s/json4s/tree/master/jackson),
+[json4s.native](https://github.com/json4s/json4s/tree/master/native),
 [Play-JSON](https://github.com/playframework/play-json),
 [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
