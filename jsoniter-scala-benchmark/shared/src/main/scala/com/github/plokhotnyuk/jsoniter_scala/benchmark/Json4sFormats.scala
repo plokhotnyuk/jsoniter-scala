@@ -31,6 +31,10 @@ object Json4sFormats {
     }
 }
 
+object BigDecimalJson4sFormat {
+  implicit val bigDecimalFormats: Formats = DefaultFormats.withBigDecimal.withBigInt
+}
+
 object ADTJson4sFormats {
   implicit val adtFormats: Formats = new DefaultFormats {
     override val typeHints: TypeHints = new SimpleTypeHints(List(classOf[X], classOf[Y], classOf[Z]))

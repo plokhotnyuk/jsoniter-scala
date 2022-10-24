@@ -54,7 +54,7 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
     mapper.readValue[JValue](jsonBytes, jValueType).extract[mutable.LongMap[Boolean]]
   }
 */
-/* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+/* FIXME: json4s.native throws org.json4s.MappingException: unknown error
   @Benchmark
   def json4sNative(): mutable.LongMap[Boolean] = {
     import org.json4s._
