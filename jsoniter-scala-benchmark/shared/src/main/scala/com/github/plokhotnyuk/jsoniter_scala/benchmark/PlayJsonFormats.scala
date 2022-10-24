@@ -179,7 +179,6 @@ object PlayJsonFormats {
     (s: String) => suite(s)
   }
   implicit val javaEnumFormat: Format[Suit] = stringFormat("suitenum")(Suit.valueOf)
-  // FIXME: Some `Format` instances for `java.time._` types are required only during compilation of Scala.js benchmarks
   implicit val durationFormat: Format[Duration] = stringFormat("instant")(Duration.parse)
   implicit val instantFormat: Format[Instant] = stringFormat("instant")(Instant.parse)
   implicit val localDateTimeFormat: Format[LocalDateTime] = stringFormat("localdatetime")(LocalDateTime.parse)
