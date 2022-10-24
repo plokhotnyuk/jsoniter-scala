@@ -144,8 +144,7 @@ object Main {
     GS(S("ArrayOfBigIntsWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      //FIXME: circe parses 42667970104045735577865 as 42667970104045735000000,
-      //B("circe")(benchmark.circe()),
+      B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
