@@ -5,8 +5,8 @@ import java.time._
 import java.util.{Base64, UUID}
 import scala.reflect.ClassTag
 
-object Json4sFormats {
-  implicit val customFormats: Formats = DefaultFormats +
+object CommonJson4sFormats {
+  implicit val commonFormats: Formats = DefaultFormats +
     StringifiedFormats.stringified[Char](x => if (x.length == 1) x.charAt(0) else sys.error("char")) +
     StringifiedFormats.stringified[UUID](UUID.fromString) +
     StringifiedFormats.stringified[Suit](Suit.valueOf) +
@@ -42,32 +42,39 @@ object ADTJson4sFormats {
 }
 
 object AnyValsJson4sFormats {
-  implicit val anyValsFormats: Formats = Json4sFormats.customFormats +
+  implicit val anyValsFormats: Formats = DefaultFormats +
+    StringifiedFormats.stringified[Char](x => if (x.length == 1) x.charAt(0) else sys.error("char")) +
     new CustomSerializer[ByteVal](_ => ({
       case JInt(x) if x.isValidByte => new ByteVal(x.toByte)
     }, {
       case x: ByteVal => JInt(x.a)
-    })) + new CustomSerializer[ShortVal](_ => ({
+    })) +
+    new CustomSerializer[ShortVal](_ => ({
       case JInt(x) if x.isValidShort => new ShortVal(x.toShort)
     }, {
       case x: ShortVal => JInt(x.a)
-    })) + new CustomSerializer[IntVal](_ => ({
+    })) +
+    new CustomSerializer[IntVal](_ => ({
       case JInt(x) if x.isValidInt => new IntVal(x.toInt)
     }, {
       case x: IntVal => JInt(x.a)
-    })) + new CustomSerializer[LongVal](_ => ({
+    })) +
+    new CustomSerializer[LongVal](_ => ({
       case JInt(x) if x.isValidLong => new LongVal(x.toInt)
     }, {
       case x: LongVal => JInt(x.a)
-    })) + new CustomSerializer[FloatVal](_ => ({
+    })) +
+    new CustomSerializer[FloatVal](_ => ({
       case JDecimal(x) => new FloatVal(x.toFloat)
     }, {
       case x: FloatVal => JDecimal(x.a)
-    })) + new CustomSerializer[DoubleVal](_ => ({
+    })) +
+    new CustomSerializer[DoubleVal](_ => ({
       case JDouble(x) => new DoubleVal(x.toFloat)
     }, {
       case x: DoubleVal => JDecimal(x.a)
-    })) + new CustomSerializer[CharVal](_ => ({
+    })) +
+    new CustomSerializer[CharVal](_ => ({
       case JString(x) if x.length == 1 => new CharVal(x.charAt(0))
     }, {
       case x: CharVal => JString(x.a.toString)
@@ -98,15 +105,16 @@ object GeoJsonJson4sFormats {
         classOf[GeoJSON.Point], classOf[GeoJSON.MultiPoint], classOf[GeoJSON.LineString],
         classOf[GeoJSON.MultiLineString], classOf[GeoJSON.Polygon], classOf[GeoJSON.MultiPolygon],
         classOf[GeoJSON.GeometryCollection], classOf[GeoJSON.Feature], classOf[GeoJSON.FeatureCollection]))
-  } + new CustomSerializer[Tuple2[Double, Double]](_ => ({
-    case JArray(JDouble(x) :: JDouble(y) :: Nil) => new Tuple2[Double, Double](x, y)
-  }, {
-    case (x: Double, y: Double) => JArray(JDouble(x) :: JDouble(y) :: Nil)
-  }))
+  } +
+    new CustomSerializer[Tuple2[Double, Double]](_ => ({
+      case JArray(JDouble(x) :: JDouble(y) :: Nil) => new Tuple2[Double, Double](x, y)
+    }, {
+      case (x: Double, y: Double) => JArray(JDouble(x) :: JDouble(y) :: Nil)
+    }))
 }
 
 object GitHubActionsAPIJson4sFormats {
-  implicit val gitHubActionsAPIFormats: Formats = Json4sFormats.customFormats +
+  implicit val gitHubActionsAPIFormats: Formats = DefaultFormats +
     StringifiedFormats.stringified[Instant](Instant.parse) +
     StringifiedFormats.stringified[Boolean](java.lang.Boolean.parseBoolean)
 }

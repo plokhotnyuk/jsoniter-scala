@@ -57,7 +57,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   def json4sJackson(): DistanceMatrix = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
     mapper.readValue[JValue](jsonBytes, jValueType).extract[DistanceMatrix]
   }
@@ -66,7 +66,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   def json4sNative(): DistanceMatrix = {
     import org.json4s._
     import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
     parse(new String(jsonBytes, UTF_8)).extract[DistanceMatrix]

@@ -50,7 +50,7 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
   def json4sJackson(): Array[SuitEnum] = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
     mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[SuitEnum]]
   }
@@ -59,7 +59,7 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
   def json4sNative(): Array[SuitEnum] = {
     import org.json4s._
     import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
     import java.nio.charset.StandardCharsets.UTF_8
 
     parse(new String(jsonBytes, UTF_8)).extract[Array[SuitEnum]]
