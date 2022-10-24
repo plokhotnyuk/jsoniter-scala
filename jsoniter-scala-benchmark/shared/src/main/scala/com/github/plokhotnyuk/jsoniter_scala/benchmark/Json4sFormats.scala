@@ -101,7 +101,7 @@ object GeoJsonJson4sFormats {
   } + new CustomSerializer[Tuple2[Double, Double]](_ => ({
     case JArray(JDouble(x) :: JDouble(y) :: Nil) => new Tuple2[Double, Double](x, y)
   }, {
-    case x: Tuple2[Double, Double] => JArray(JDouble(x._1) :: JDouble(x._2) :: Nil)
+    case (x: Double, y: Double) => JArray(JDouble(x) :: JDouble(y) :: Nil)
   }))
 }
 
