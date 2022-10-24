@@ -239,7 +239,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         .getMessage.startsWith("illegal number with leading zero, offset: 0x00000000"))
     }
   }
-  "JsonReader.isNextToken, JsonReader.isCurrentToken, JsonReader.readNullOrTokenError, JsonReader.endOfInputOrError" should {
+  "JsonReader.endOfInputOrError" should {
     "be visible in the jsoniter_scala package" in {
       def toJsonArrayIteratorFromStream[A](in: InputStream, config: ReaderConfig = ReaderConfig)
                                            (implicit codec: JsonValueCodec[A]): Iterator[A] =
@@ -436,7 +436,34 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         .getMessage.startsWith("unexpected end of input, offset: 0x00000002"))
     }
   }
-  "JsonReader.readNullOrError" should {
+  "JsonReader.isNextToken" should {
+    "return true in case of the next parsed token matches with provided one" in {
+      val jsonReader = reader("{\n}")
+      jsonReader.isNextToken('{') shouldBe true
+      jsonReader.isNextToken('}') shouldBe true
+    }
+    "throw parse exception in case of end of input" in {
+      val r = reader("{}")
+      r.skip()
+      assert(intercept[JsonReaderException](r.isNextToken('{'))
+        .getMessage.startsWith("unexpected end of input, offset: 0x00000002"))
+    }
+  }
+  "JsonReader.isCurrentToken" should {
+    "return true in case of the recently parsed token matches with provided one" in {
+      val jsonReader = reader("{\n}")
+      jsonReader.nextToken()
+      jsonReader.isCurrentToken('{') shouldBe true
+      jsonReader.isNextToken('}')
+      jsonReader.isCurrentToken('}') shouldBe true
+    }
+    "throw exception in case of isCurrentToken was called before nextToken or isNextToken" in {
+      val jsonReader = reader("{\n}")
+      assert(intercept[IllegalStateException](jsonReader.isCurrentToken('{'))
+        .getMessage.startsWith("expected preceding call of 'nextToken()' or 'isNextToken()'"))
+    }
+  }
+  "JsonReader.readANullOrError" should {
     "parse null value" in {
       val r = reader("null")
       r.isNextToken('n') shouldBe true
@@ -855,7 +882,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           case _: DateTimeParseException => OffsetDateTime.parse(s).toInstant
         }
         reader(s"""$ws"$s"""").readInstant(null) shouldBe x
-        reader(s"""$ws"$s":""").readKeyAsInstant() shouldBe x
+        reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe x
       }
 
       forAll(genWhitespaces) { ws =>
@@ -1625,6 +1652,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       checkError(""""""", "unexpected end of input, offset: 0x00000001")
       checkError(""""2008""", "unexpected end of input, offset: 0x00000005")
+      checkError(""""+2008"""", "expected digit, offset: 0x00000006")
       checkError(""""+1000000000"""", """expected '"', offset: 0x0000000b""")
       checkError(""""-1000000000"""", """expected '"', offset: 0x0000000b""")
       checkError(""""-0000"""", "illegal year, offset: 0x00000005")
