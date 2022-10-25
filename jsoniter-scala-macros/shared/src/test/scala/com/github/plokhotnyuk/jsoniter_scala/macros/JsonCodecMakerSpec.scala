@@ -1017,14 +1017,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"key":"WWW","kind":"Double","value":1.2}""")
     }
     "serialize and deserialize generic options using an implicit function" in {
-      implicit def make[A](implicit aCodec: JsonValueCodec[A]): JsonValueCodec[Option[A]] = JsonCodecMaker.make
+      implicit def make[A : JsonValueCodec]: JsonValueCodec[Option[A]] = JsonCodecMaker.make
 
       implicit val aCodec: JsonValueCodec[String] = JsonCodecMaker.make
       verifySerDeser(implicitly[JsonValueCodec[Option[String]]], Option("VVV"), """"VVV"""")
       verifySerDeser(implicitly[JsonValueCodec[Option[String]]], _root_.scala.None, """null""")
     }
     "serialize and deserialize generic lists using an implicit function" in {
-      implicit def make[A](implicit aCodec: JsonValueCodec[A]): JsonValueCodec[List[A]] = JsonCodecMaker.make
+      implicit def make[A : JsonValueCodec]: JsonValueCodec[List[A]] = JsonCodecMaker.make
 
       implicit val aCodec: JsonValueCodec[String] = JsonCodecMaker.make
       verifySerDeser(implicitly[JsonValueCodec[List[String]]], List("VVV", "WWW"), """["VVV","WWW"]""")
@@ -1033,8 +1033,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
 
       object GenDoc {
-        implicit def make[A, B, C](implicit aCodec: JsonValueCodec[A], bCodec: JsonValueCodec[B],
-                                   cCodec: JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] = JsonCodecMaker.make
+        implicit def make[A : JsonValueCodec, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] =
+          JsonCodecMaker.make
       }
 
       implicit val aCodec: JsonValueCodec[_root_.scala.Boolean] = JsonCodecMaker.make
@@ -1048,8 +1048,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
           |
           |object GenDoc {
-          |  implicit def make[A, B, C](implicit bCodec: JsonValueCodec[B],
-          |                             cCodec: JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] = JsonCodecMaker.make
+          |  implicit def make[A, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] =
+          |    JsonCodecMaker.make
           |}
           |""".stripMargin
       }).getMessage.contains(if (ScalaVersionCheck.isScala2) {

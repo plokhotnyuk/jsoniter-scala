@@ -35,7 +35,7 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
 
       object GenDoc:
-        given [A, B, C](using JsonValueCodec[A], JsonValueCodec[B], JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] =
+        given [A : JsonValueCodec, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] =
           JsonCodecMaker.make
 
       implicit val aCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
@@ -49,8 +49,7 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         """case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
           |
           |object GenDoc:
-          |  given [A, B, C](using JsonValueCodec[B], JsonValueCodec[C]): JsonValueCodec[GenDoc[A, B, C]] =
-          |    JsonCodecMaker.make
+          |  given [A, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] = JsonCodecMaker.make
           |""".stripMargin
       }).getMessage.contains {
         "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for 'A'."
