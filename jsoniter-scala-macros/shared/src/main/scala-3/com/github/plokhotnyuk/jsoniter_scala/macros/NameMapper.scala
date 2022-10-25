@@ -3,18 +3,18 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import scala.quoted._
 import scala.util._
 
-sealed trait NameMapper:
+private[macros] sealed trait NameMapper:
   def apply(input: String)(using Quotes): Option[String]
 
-class PartialFunctionWrapper(fun: PartialFunction[String, String]) extends NameMapper:
+private[macros] class PartialFunctionWrapper(fun: PartialFunction[String, String]) extends NameMapper:
   def apply(input: String)(using Quotes): Option[String] = fun.lift(input)
 
-class ExprPartialFunctionWrapper(fun: Expr[PartialFunction[String, String]]) extends NameMapper:
+private[macros] class ExprPartialFunctionWrapper(fun: Expr[PartialFunction[String, String]]) extends NameMapper:
   def apply(input: String)(using Quotes): Option[String] = CompileTimeEval.evalApplyString(fun, input)
 
-case class FromExprException(name: String, expr: Expr[Any]) extends RuntimeException
+private[macros] case class FromExprException(name: String, expr: Expr[Any]) extends RuntimeException
 
-object NameMapper {
+private[macros] object NameMapper {
   inline given Conversion[PartialFunction[String, String], NameMapper] = PartialFunctionWrapper(_)
 
   inline given Conversion[Function[String, String], NameMapper] = f => PartialFunctionWrapper({ case x => f(x) })
@@ -32,7 +32,7 @@ object NameMapper {
   }
 }
 
-object PartialFunctionWrapper {
+private[macros] object PartialFunctionWrapper {
   def toExprWrapper(x: Expr[PartialFunctionWrapper])(using Quotes): Option[ExprPartialFunctionWrapper] = x match
     case '{ PartialFunctionWrapper($fun) } => Some(ExprPartialFunctionWrapper(fun))
     case _ => throw new FromExprException("FieldNameExpr", x)
