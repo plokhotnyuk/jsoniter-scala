@@ -23,7 +23,8 @@ lazy val `jsoniter-scala-examplesJVM` = `jsoniter-scala-examples`.jvm
   .enablePlugins(NativeImagePlugin)
   .settings(
     nativeImageOptions ++= List("--no-fallback", "--initialize-at-build-time", "--diagnostics-mode"),
-    nativeImageVersion := "22",
+    nativeImageVersion := "22.3.0",
+    nativeImageJvm := "graalvm-java17"
   )
 
 lazy val `jsoniter-scala-examplesNative` = `jsoniter-scala-examples`.native
