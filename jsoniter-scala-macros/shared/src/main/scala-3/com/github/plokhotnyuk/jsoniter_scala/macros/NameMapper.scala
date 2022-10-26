@@ -342,9 +342,6 @@ private[macros] object CompileTimeEval {
     private def applyJavaReflectModule(applyTerm: Term, funSym: Symbol, args: List[Term]): Term =
       applyJavaReflectedModuleField(applyTerm, funSym, "apply", args)
 
-    private def applyPrimitiveOrStringField(applyTerm: Term, qual: Term, memberName: String, args: List[Term]): Term =
-      jvmToTerm(applyTerm, javaReflectionCall(applyTerm, termToJvm(qual), memberName, args))
-
     class JvmReflectionMethodCallException(msg: String, ex: Exception) extends RuntimeException(msg, ex)
 
     sealed trait JvmReflectionMethodCall {
@@ -415,9 +412,7 @@ private[macros] object CompileTimeEval {
     }
 
     private def javaReflectionCall(term: Term, qual: AnyRef, name: String, args: List[Term]): AnyRef =
-      val preparedArgs = args.map(t => termToJvm(t)).toArray
-      val call = prepareJvmReflectionMethodCall(term, qual, name, preparedArgs)
-      try call.process() catch {
+      try prepareJvmReflectionMethodCall(term, qual, name, args.map(t => termToJvm(t)).toArray).process() catch {
         case ex: JvmReflectionMethodCallException =>
           throw CompileTimeEvalException(ex.getMessage, term.asExpr, ex.getCause)
       }
@@ -434,28 +429,20 @@ private[macros] object CompileTimeEval {
         }
       case _ => DirectJvmReflectionMethodCall(x, name, args)
 
-    private def jvmToTerm(applyTerm: Term, obj: AnyRef): Term =
-      if (obj.isInstanceOf[String]) {
-        Literal(StringConstant(obj.asInstanceOf[String]))
-      } else if (obj.asInstanceOf[java.lang.Boolean]) {
-        Literal(BooleanConstant(obj.asInstanceOf[java.lang.Boolean].booleanValue()))
-      } else if (obj.isInstanceOf[java.lang.Character]) {
-        Literal(CharConstant(obj.asInstanceOf[java.lang.Character].charValue()))
-      } else if (obj.isInstanceOf[java.lang.Byte]) {
-        Literal(ByteConstant(obj.asInstanceOf[java.lang.Byte].byteValue()))
-      } else if (obj.isInstanceOf[java.lang.Short]) {
-        Literal(ShortConstant(obj.asInstanceOf[java.lang.Short].shortValue()))
-      } else if (obj.isInstanceOf[java.lang.Integer]) {
-        Literal(IntConstant(obj.asInstanceOf[java.lang.Integer].intValue()))
-      } else if (obj.isInstanceOf[java.lang.Long]) {
-        Literal(LongConstant(obj.asInstanceOf[java.lang.Long].intValue()))
-      } else if (obj.isInstanceOf[java.lang.Float]) {
-        Literal(FloatConstant(obj.asInstanceOf[java.lang.Float].floatValue()))
-      } else if (obj.isInstanceOf[java.lang.Double]) {
-        Literal(DoubleConstant(obj.asInstanceOf[java.lang.Double].floatValue()))
-      } else {
+    private def jvmToTerm(applyTerm: Term, obj: AnyRef): Term = Literal {
+      if (obj.isInstanceOf[String]) StringConstant(obj.asInstanceOf[String])
+      else if (obj.asInstanceOf[java.lang.Boolean]) BooleanConstant(obj.asInstanceOf[java.lang.Boolean].booleanValue())
+      else if (obj.isInstanceOf[java.lang.Character]) CharConstant(obj.asInstanceOf[java.lang.Character].charValue())
+      else if (obj.isInstanceOf[java.lang.Byte]) ByteConstant(obj.asInstanceOf[java.lang.Byte].byteValue())
+      else if (obj.isInstanceOf[java.lang.Short]) ShortConstant(obj.asInstanceOf[java.lang.Short].shortValue())
+      else if (obj.isInstanceOf[java.lang.Integer]) IntConstant(obj.asInstanceOf[java.lang.Integer].intValue())
+      else if (obj.isInstanceOf[java.lang.Long]) LongConstant(obj.asInstanceOf[java.lang.Long].intValue())
+      else if (obj.isInstanceOf[java.lang.Float]) FloatConstant(obj.asInstanceOf[java.lang.Float].floatValue())
+      else if (obj.isInstanceOf[java.lang.Double]) DoubleConstant(obj.asInstanceOf[java.lang.Double].floatValue())
+      else {
         throw CompileTimeEvalException(s"Return value of an external function ($obj) is not primitive or string", applyTerm.asExpr)
       }
+    }
 
     private def termToJvm(x: Term): AnyRef = x match
       case Literal(StringConstant(v)) => v
@@ -467,7 +454,7 @@ private[macros] object CompileTimeEval {
       case Literal(LongConstant(v)) => java.lang.Long.valueOf(v)
       case Literal(FloatConstant(v)) => java.lang.Float.valueOf(v)
       case Literal(DoubleConstant(v)) => java.lang.Double.valueOf(v)
-      case id@Ident(_) if (id.symbol.flags.is(Flags.Module)) => retrieveRuntimeModule(x, id.symbol)
+      case id: Ident if (id.symbol.flags.is(Flags.Module)) => retrieveRuntimeModule(x, id.symbol)
       case _ => throw CompileTimeEvalException(s"Can't interpret $x as primitive (type ${x.tpe.widen.show})", x.asExpr)
 
     private def termToOptString(x: Term): Option[String] = x match
@@ -478,12 +465,5 @@ private[macros] object CompileTimeEval {
     private def termToString(x: quotes.reflect.Term): String = x match
       case Literal(StringConstant(v)) => v
       case _ => throw CompileTimeEvalException(s"Term should return string, we have $x", x.asExpr)
-
-    private def isPrimitiveOrString(term: Term): Boolean =
-      val tpe = term.tpe.widen
-      tpe =:= TypeRepr.of[String] || tpe =:= TypeRepr.of[Byte] || tpe =:= TypeRepr.of[Short] ||
-      tpe =:= TypeRepr.of[Int] || tpe =:= TypeRepr.of[Long] || tpe =:= TypeRepr.of[Float] ||
-      tpe =:= TypeRepr.of[Double] || tpe =:= TypeRepr.of[Char] || tpe =:= TypeRepr.of[Boolean] ||
-      tpe =:= TypeRepr.of[Unit]
   }
 }

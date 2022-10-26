@@ -1414,14 +1414,10 @@ object JsonCodecMaker {
           val mt = MethodType(List("in", "defaultValue"))(_ => List(TypeRepr.of[JsonReader], methodKey.tpe), _ => TypeRepr.of[T])
           val sym = Symbol.newMethod(Symbol.spliceOwner, "d" + decodeMethodSyms.size, mt)
           decodeMethodSyms.update(methodKey, sym)
-          decodeMethodDefs.update(methodKey, {
-            DefDef(sym, params => {
-              val List(List(in, default)) = params
-              Some(LowLevelQuoteUtil.deepChangeOwner(
-                f(in.asExprOf[JsonReader], default.asExprOf[T]).asTerm.asInstanceOf[quotes.reflect.Term],
-                sym.asInstanceOf[quotes.reflect.Symbol]).asInstanceOf[Term])
-            })
-          })
+          decodeMethodDefs.update(methodKey, DefDef(sym, params => {
+            val List(List(in, default)) = params
+            Some(f(in.asExprOf[JsonReader], default.asExprOf[T]).asTerm.changeOwner(sym))
+          }))
           sym
         }), List(in.asTerm, arg.asTerm)).asExprOf[T]
 
@@ -1443,12 +1439,10 @@ object JsonCodecMaker {
           val mt = MethodType(List("x", "out"))(_ => List(TypeRepr.of[T], TypeRepr.of[JsonWriter]), _ => TypeRepr.of[Unit])
           val sym = Symbol.newMethod(Symbol.spliceOwner, "e" + encodeMethodSyms.size, mt)
           encodeMethodSyms.update(methodKey, sym)
-          encodeMethodDefs.update(methodKey, {
-            DefDef(sym, params => {
-              val List(List(x, out)) = params
-              Some(f(out.asExprOf[JsonWriter], x.asExprOf[T]).asTerm.changeOwner(sym))
-            })
-          })
+          encodeMethodDefs.update(methodKey, DefDef(sym, params => {
+            val List(List(x, out)) = params
+            Some(f(out.asExprOf[JsonWriter], x.asExprOf[T]).asTerm.changeOwner(sym))
+          }))
           sym
         }), List(arg.asTerm, out.asTerm)).asExprOf[Unit]
 
