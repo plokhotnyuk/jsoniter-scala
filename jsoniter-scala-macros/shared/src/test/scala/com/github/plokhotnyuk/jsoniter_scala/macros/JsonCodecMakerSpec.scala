@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 import scala.annotation.switch
@@ -76,28 +75,7 @@ object Weapon {
 
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
-case class BoxedPrimitives(
-  b: java.lang.Byte,
-  s: java.lang.Short,
-  i: java.lang.Integer,
-  l: java.lang.Long,
-  bl: java.lang.Boolean,
-  ch: java.lang.Character,
-  dbl: java.lang.Double,
-  f: java.lang.Float)
-
 case class StandardTypes(s: String, bi: BigInt, bd: BigDecimal)
-
-class NonCaseClass(val id: Int, var name: String) {
-  override def hashCode(): Int = id * 31 + Objects.hashCode(name)
-
-  override def equals(obj: Any): Boolean = obj match {
-    case c: NonCaseClass => id == c.id && Objects.equals(name, c.name)
-    case _ => false
-  }
-
-  override def toString: String = s"NonCaseClass(id=$id,name=$name)"
-}
 
 case class JavaEnums(l: Level, il: Levels.InnerLevel)
 
@@ -114,8 +92,6 @@ object LocationType extends Enumeration {
 case class Enums(lt: LocationType.LocationType)
 
 case class Enums2(@stringified lt: LocationType.LocationType)
-
-case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
 case class Options(
   os: Option[String],
@@ -141,11 +117,6 @@ case class ImmutableMaps(
 
 case class EmptyMaps(im: collection.immutable.Map[String, Int], mm: collection.mutable.Map[Long, Int])
 
-case class GenericIterables(
-  s: collection.Set[collection.SortedSet[String]],
-  is: collection.IndexedSeq[collection.Seq[Float]],
-  i: collection.Iterable[Int])
-
 case class MutableIterables(
   ml: collection.mutable.Seq[collection.mutable.SortedSet[String]],
   ab: collection.mutable.ArrayBuffer[collection.mutable.Set[BigInt]],
@@ -155,21 +126,7 @@ case class MutableIterables(
   is: collection.mutable.IndexedSeq[collection.mutable.ArrayStack[Float]],
   ub: collection.mutable.UnrolledBuffer[collection.mutable.Iterable[Short]])
 
-case class ImmutableIterables(
-  l: List[collection.immutable.ListSet[String]],
-  nl: ::[::[Int]],
-  q: collection.immutable.Queue[Set[BigInt]],
-  is: IndexedSeq[collection.immutable.SortedSet[Int]],
-  s: Stream[collection.immutable.TreeSet[Double]],
-  v: Vector[Iterable[Long]])
-
 case class EmptyIterables(l: List[String], a: collection.mutable.ArrayBuffer[Int])
-
-case class MutableLongMaps(lm1: collection.mutable.LongMap[Double], lm2: collection.mutable.LongMap[String])
-
-case class ImmutableIntLongMaps(im: collection.immutable.IntMap[Double], lm: collection.immutable.LongMap[String])
-
-case class BitSets(bs: collection.BitSet, ibs: collection.immutable.BitSet, mbs: collection.mutable.BitSet)
 
 case class CamelPascalSnakeKebabCases(
   camelCase: Int,
@@ -182,8 +139,6 @@ case class CamelPascalSnakeKebabCases(
   `kebab-1`: Int)
 
 case class Recursive(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Recursive])
-
-case class UTF8KeysAndValues(გასაღები: String)
 
 case class Stringified(
   @stringified i: Int,
@@ -226,24 +181,6 @@ case class Defaults2(
 
 case class PolymorphicDefaults[A, B](i: A = 1, cs: List[B] = Nil)
 
-case class JavaTimeTypes(
-  dow: DayOfWeek,
-  d: Duration,
-  i: Instant,
-  ld: LocalDate,
-  ldt: LocalDateTime,
-  lt: LocalTime,
-  m: Month,
-  md: MonthDay,
-  odt: OffsetDateTime,
-  ot: OffsetTime,
-  p: Period,
-  y: Year,
-  ym: YearMonth,
-  zdt: ZonedDateTime,
-  zi: ZoneId,
-  zo: ZoneOffset)
-
 sealed trait AdtBase extends Product with Serializable
 
 sealed abstract class Inner extends AdtBase {
@@ -276,8 +213,6 @@ final case class Apple(family: String) extends Fruit[Apple]
 
 final case class Orange(color: Int) extends Fruit[Orange]
 
-case class Basket[T <: Fruit[T]](fruits: List[T])
-
 object KingDom {
   sealed trait Human
 
@@ -302,8 +237,6 @@ object Kind {
   implicit def codecOfKindAux[V]: JsonValueCodec[Kind.Aux[V]] = codecOfKind.asInstanceOf[JsonValueCodec[Kind.Aux[V]]]
 }
 
-case class Preference[V](key: String, kind: Kind.Aux[V], value: V)
-
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
 
@@ -323,7 +256,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   val codecOfImmutableMaps: JsonValueCodec[ImmutableMaps] = make
   val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make
   val codecOfRecursive: JsonValueCodec[Recursive] = make(CodecMakerConfig.withAllowRecursiveTypes(true))
-  val codecOfUTF8KeysAndValues: JsonValueCodec[UTF8KeysAndValues] = make
   val codecOfStringified: JsonValueCodec[Stringified] = make
   val codecOfADTList1: JsonValueCodec[List[AdtBase]] = make
   val codecOfADTList2: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None))
@@ -373,6 +305,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """unexpected end of input, offset: 0x00000068""".stripMargin)
     }
     "serialize and deserialize case classes with boxed primitives" in {
+      case class BoxedPrimitives(
+        b: _root_.java.lang.Byte,
+        s: _root_.java.lang.Short,
+        i: _root_.java.lang.Integer,
+        l: _root_.java.lang.Long,
+        bl: _root_.java.lang.Boolean,
+        ch: _root_.java.lang.Character,
+        dbl: _root_.java.lang.Double,
+        f: _root_.java.lang.Float)
+
       verifySerDeser(make[BoxedPrimitives],
         BoxedPrimitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""")
@@ -451,6 +393,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfStandardTypes, """{"s":"VVV","bi":1,"bd":2,}""", """expected '"', offset: 0x00000019""")
     }
     "serialize and deserialize Scala classes which has a primary constructor with 'var' or 'var' parameters only" in {
+      class NonCaseClass(val id: Int, var name: String) {
+        override def hashCode(): Int = id * 31 + Objects.hashCode(name)
+
+        override def equals(obj: Any): _root_.scala.Boolean = obj match {
+          case c: NonCaseClass => id == c.id && Objects.equals(name, c.name)
+          case _ => false
+        }
+
+        override def toString: String = s"NonCaseClass(id=$id,name=$name)"
+      }
+
       verifySerDeser(make[NonCaseClass], new NonCaseClass(1, "VVV"), """{"id":1,"name":"VVV"}""")
     }
     "serialize and deserialize Java types" in {
@@ -755,6 +708,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
               case Right(st) => codecOfStandardTypes.encodeValue(st, out)
             }
         }
+
+      case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
+
       val codecOfOuterTypes = make[OuterTypes]
       verifySerDeser(codecOfOuterTypes, OuterTypes("X", Right(StandardTypes("VVV", 1, 1.1))),
         """{"s":"X","st":{"s":"VVV","bi":1,"bd":1.1}}""")
@@ -1006,6 +962,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         json)
     }
     "serialize and deserialize case classes with refined type fields" in {
+      case class Preference[V](key: String, kind: Kind.Aux[V], value: V)
+
       verifySerDeser(make[Preference[LocalDate]],
         Preference[LocalDate]("VVV", Kind.of[LocalDate]("LocalDate"), LocalDate.of(2022, 7, 18)),
         """{"key":"VVV","kind":"LocalDate","value":"2022-07-18"}""")
@@ -1219,6 +1177,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfArrays, """{"aa":[[1,2,3,]],"a":[]}""", "illegal number, offset: 0x0000000e")
     }
     "serialize and deserialize case classes with generic Iterables" in {
+      case class GenericIterables(
+        s: _root_.scala.collection.Set[_root_.scala.collection.SortedSet[String]],
+        is: _root_.scala.collection.IndexedSeq[_root_.scala.collection.Seq[Float]],
+        i: _root_.scala.collection.Iterable[Int])
+
       val codecOfGenericIterables = make[GenericIterables]
       verifySerDeser(codecOfGenericIterables,
         GenericIterables(_root_.scala.collection.Set(_root_.scala.collection.SortedSet("1", "2", "3")),
@@ -1251,6 +1214,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]]}""")
     }
     "serialize and deserialize case classes with immutable Iterables" in {
+      case class ImmutableIterables(
+        l: List[_root_.scala.collection.immutable.ListSet[String]],
+        nl: ::[::[Int]],
+        q: _root_.scala.collection.immutable.Queue[Set[BigInt]],
+        is: IndexedSeq[_root_.scala.collection.immutable.SortedSet[Int]],
+        s: Stream[_root_.scala.collection.immutable.TreeSet[Double]],
+        v: Vector[Iterable[Long]])
+
       val codecOfImmutableIterables = make[ImmutableIterables]
       verifySerDeser(codecOfImmutableIterables,
         ImmutableIterables(List(_root_.scala.collection.immutable.ListSet("1")),
@@ -1427,16 +1398,29 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfMutableMaps, """{"m":{"1.1":{"null":"2"}}""", "illegal number, offset: 0x0000000e")
     }
     "serialize and deserialize case classes with mutable long maps" in {
+      case class MutableLongMaps(
+        lm1: _root_.scala.collection.mutable.LongMap[Double],
+        lm2: _root_.scala.collection.mutable.LongMap[String])
+
       verifySerDeser(make[MutableLongMaps],
         MutableLongMaps(_root_.scala.collection.mutable.LongMap(1L -> 1.1),
           _root_.scala.collection.mutable.LongMap(3L -> "33")), """{"lm1":{"1":1.1},"lm2":{"3":"33"}}""")
     }
     "serialize and deserialize case classes with immutable int and long maps" in {
+      case class ImmutableIntLongMaps(
+        im: _root_.scala.collection.immutable.IntMap[Double],
+        lm: _root_.scala.collection.immutable.LongMap[String])
+
       verifySerDeser(make[ImmutableIntLongMaps],
         ImmutableIntLongMaps(_root_.scala.collection.immutable.IntMap(1 -> 1.1, 2 -> 2.2),
           _root_.scala.collection.immutable.LongMap(3L -> "33")), """{"im":{"1":1.1,"2":2.2},"lm":{"3":"33"}}""")
     }
     "serialize and deserialize case classes with mutable & immutable bitsets" in {
+      case class BitSets(
+        bs: _root_.scala.collection.BitSet,
+        ibs: _root_.scala.collection.immutable.BitSet,
+        mbs: _root_.scala.collection.mutable.BitSet)
+
       verifySerDeser(make[BitSets],
         BitSets(_root_.scala.collection.BitSet(0), _root_.scala.collection.immutable.BitSet(1, 2, 3),
           _root_.scala.collection.mutable.BitSet(4, 5, 6)), """{"bs":[0],"ibs":[1,2,3],"mbs":[4,5,6]}""")
@@ -1687,10 +1671,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       TestUtils.assertStackOverflow(verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
       TestUtils.assertStackOverflow(verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
     }
-    "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
+    "serialize and deserialize UTF-8 keys and values of case classes with and without hex encoding" in {
+      case class UTF8KeysAndValues(გასაღები: String)
+
+      val codecOfUTF8KeysAndValues: JsonValueCodec[UTF8KeysAndValues] = make
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"), """{"გასაღები":"ვვვ"}""")
-    }
-    "serialize and deserialize UTF-8 keys and values of case classes with hex encoding" in {
       verifyDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t\\/\"}")
       verifySer(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
@@ -2109,6 +2094,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "serialize and deserialize ADTs with self-recursive (aka F-bounded) types without discriminators" in {
+      case class Basket[T <: Fruit[T]](fruits: List[T])
+
       val oneFruit: Basket[Apple] = Basket(List(Apple("golden")))
       val twoFruits: Basket[Apple] = oneFruit.copy(fruits = oneFruit.fruits :+ Apple("red"))
       val message = intercept[TestFailedException](assertCompiles {
@@ -2133,6 +2120,24 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       implicit lazy val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig.withIsStringified(true))
     }
     "serialize and deserialize case classes with Java time types" in {
+      case class JavaTimeTypes(
+        dow: DayOfWeek,
+        d: Duration,
+        i: Instant,
+        ld: LocalDate,
+        ldt: LocalDateTime,
+        lt: LocalTime,
+        m: Month,
+        md: MonthDay,
+        odt: OffsetDateTime,
+        ot: OffsetTime,
+        p: Period,
+        y: Year,
+        ym: YearMonth,
+        zdt: ZonedDateTime,
+        zi: ZoneId,
+        zo: ZoneOffset)
+
       verifySerDeser(make[JavaTimeTypes],
         obj = JavaTimeTypes(
           dow = DayOfWeek.FRIDAY,
