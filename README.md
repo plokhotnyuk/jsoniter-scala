@@ -398,26 +398,7 @@ enum Level extends Enum[Level] {
 }
 ```
 
-7. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
-```scala
-object LocationType extends Enumeration {
-  type LocationType = Value
-
-  val IP, GPS: LocationType = Value
-}
-```
-
-Workaround is to redefine enums with explicit names (see: https://github.com/lampepfl/dotty/issues/14488):
-```scala
-object LocationType extends Enumeration {
-  type LocationType = Value
-
-  val IP = Value("IP")
-  val GPS = Value("GPS")
-}
-```
-
-8. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
+7. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
 ```scala
 case class DeResult[T](isSucceed: Boolean, data: T, message: String)
 case class RootPathFiles(files: List[String])
@@ -453,7 +434,7 @@ object DeResultCodecs extends DeResultCodecs
 import DeResultCodecs.given
 ```
 
-9. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque and union types.
+8. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque and union types.
 The workaround is using a custom codec for these types defined with `implicit val` before the `JsonCodecMaker.make`
 call, like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L16-L45)
 and [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L47-L137).
