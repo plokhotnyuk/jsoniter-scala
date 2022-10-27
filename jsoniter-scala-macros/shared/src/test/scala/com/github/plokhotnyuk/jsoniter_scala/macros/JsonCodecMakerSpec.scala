@@ -106,10 +106,7 @@ case class JavaTypes(uuid: UUID)
 object LocationType extends Enumeration {
   type LocationType = Value
 
-  //FIXME: With Dotty + ScalaJS the `LocationType.GPS.toString` call returns "<Unknown name for enum field #1 of class class scala.Enumeration$Val>":
-  //val IP, GPS: LocationType = Value
-  val IP: Value = Value("IP")
-  val GPS: Value = Value("GPS")
+  val IP, GPS: LocationType = Value
 
   def extra(name: String): LocationType = Value(nextId, name)
 }
