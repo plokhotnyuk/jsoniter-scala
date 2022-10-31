@@ -103,7 +103,13 @@ lazy val publishSettings = Seq(
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
     ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.LowLevelQuoteUtil"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.LowLevelQuoteUtil$")
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.LowLevelQuoteUtil$"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$Field"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$Field$"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$Getter"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$Getter$"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$GetterOrField"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$NoField$")
   )
 )
 

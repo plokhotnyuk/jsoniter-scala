@@ -591,18 +591,18 @@ object JsonCodecMaker {
         name
       })
 
-      case class EnumValueInfo(value: Tree, name: String, transformed: Boolean)
+      case class JavaEnumValueInfo(value: Tree, name: String, transformed: Boolean)
 
-      val enumValueInfos = new mutable.LinkedHashMap[Type, Seq[EnumValueInfo]]
+      val enumValueInfos = new mutable.LinkedHashMap[Type, Seq[JavaEnumValueInfo]]
 
       def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[_]]
 
-      def javaEnumValues(tpe: Type): Seq[EnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
+      def javaEnumValues(tpe: Type): Seq[JavaEnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
         val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
         var values = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
           val name = s.name.toString
           val transformedName = javaEnumValueNameMapper(name)
-          EnumValueInfo(q"$s", transformedName, name != transformedName)
+          JavaEnumValueInfo(q"$s", transformedName, name != transformedName)
         }
         if (values.isEmpty) {
           val comp = companion(tpe)
@@ -610,7 +610,7 @@ object JsonCodecMaker {
             comp.typeSignature.members.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
               val name = decodeName(m)
               val transformedName = javaEnumValueNameMapper(name)
-              EnumValueInfo(q"$comp.${TermName(name)}", transformedName, name != transformedName)
+              JavaEnumValueInfo(q"$comp.${TermName(name)}", transformedName, name != transformedName)
             }.toSeq
         }
         val nameCollisions = duplicated(values.map(_.name))
@@ -623,15 +623,15 @@ object JsonCodecMaker {
         values
       })
 
-      def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
-        def genReadCollisions(es: collection.Seq[EnumValueInfo]): Tree =
+      def genReadEnumValue(enumValues: Seq[JavaEnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
+        def genReadCollisions(es: collection.Seq[JavaEnumValueInfo]): Tree =
           es.foldRight(unexpectedEnumValueHandler) { case (e, acc) =>
             q"if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value} else $acc"
           }
 
         if (enumValues.size <= 8 && enumValues.foldLeft(0)(_ + _.name.length) <= 64) genReadCollisions(enumValues)
         else {
-          val hashCode = (e: EnumValueInfo) => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
+          val hashCode = (e: JavaEnumValueInfo) => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
           val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
             cq"$hash => ${genReadCollisions(fs)}"
           } :+ cq"_ => $unexpectedEnumValueHandler"
@@ -822,8 +822,8 @@ object JsonCodecMaker {
           if (es.exists(_.transformed)) {
             val cases = es.map(e => cq"${e.value} => ${e.name}") :+
               cq"""_ => out.encodeError("illegal enum value: " + $x)"""
-            if (encodingRequired) q"out.writeKey($x match { case ..$cases})"
-            else q"out.writeNonEscapedAsciiKey($x match { case ..$cases})"
+            if (encodingRequired) q"out.writeKey($x match { case ..$cases })"
+            else q"out.writeNonEscapedAsciiKey($x match { case ..$cases })"
           } else {
             if (encodingRequired) q"out.writeKey($x.name)"
             else q"out.writeNonEscapedAsciiKey($x.name)"
@@ -1059,12 +1059,11 @@ object JsonCodecMaker {
         if (tpe1 <:< typeOf[Array[_]]) {
           val equals = withEqualsFor(tpe1, q"x1(i)", q"x2(i)")(genArrayEquals(tpe1))
           q"""(x1 eq x2) || ((x1 ne null) && (x2 ne null) && {
-                val l1 = x1.length
-                val l2 = x2.length
-                (l1 == l2) && {
+                val l = x1.length
+                (x2.length == l) && {
                   var i = 0
-                  while (i < l1 && $equals) i += 1
-                  i == l1
+                  while (i < l && $equals) i += 1
+                  i == l
                 }
               })"""
         } else q"_root_.java.util.Arrays.equals(x1, x2)"
@@ -1895,8 +1894,8 @@ object JsonCodecMaker {
           if (es.exists(_.transformed)) {
             val cases = es.map(e => cq"${e.value} => ${e.name}") :+
               cq"""_ => out.encodeError("illegal enum value: " + x)"""
-            if (encodingRequired) q"out.writeVal(x match { case ..$cases})"
-            else q"out.writeNonEscapedAsciiVal(x match { case ..$cases})"
+            if (encodingRequired) q"out.writeVal(x match { case ..$cases })"
+            else q"out.writeNonEscapedAsciiVal(x match { case ..$cases })"
           } else {
             if (encodingRequired) q"out.writeVal(x.name)"
             else q"out.writeNonEscapedAsciiVal(x.name)"
