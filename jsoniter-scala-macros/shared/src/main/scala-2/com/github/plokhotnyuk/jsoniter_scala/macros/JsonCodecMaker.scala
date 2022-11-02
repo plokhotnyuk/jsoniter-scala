@@ -1364,22 +1364,22 @@ object JsonCodecMaker {
           genReadArray(
             q"""var x = new Array[$tpe1](16)
                 var i = 0""",
-            q"""if (i == x.length) x = $growArray
+            q"""if (x.length == i) x = $growArray
                 x(i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)}
                 i += 1""",
             {
               if (isImmutableArraySeq(tpe)) {
                 q"""_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1]({
-                      if (i == x.length) x
+                      if (x.length == i) x
                       else $shrinkArray
                     })"""
               } else if (isMutableArraySeq(tpe)) {
                 q"""_root_.scala.collection.mutable.ArraySeq.make[$tpe1]({
-                      if (i == x.length) x
+                      if (x.length == i) x
                       else $shrinkArray
                     })"""
               } else {
-                q"""if (i == x.length) x
+                q"""if (x.length == i) x
                     else $shrinkArray"""
               }
             })
