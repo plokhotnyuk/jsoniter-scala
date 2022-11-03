@@ -1351,10 +1351,14 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           val growArray =
             if (tpe1.typeArgs.nonEmpty || isValueClass(tpe1)) {
-              q"""val x1 = new Array[$tpe1](i << 1)
+              q"""l <<= 1
+                  val x1 = new Array[$tpe1](l)
                   _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
                   x1"""
-            } else q"_root_.java.util.Arrays.copyOf(x, i << 1)"
+            } else {
+              q"""l <<= 1
+                  _root_.java.util.Arrays.copyOf(x, l)"""
+            }
           val shrinkArray =
             if (tpe1.typeArgs.nonEmpty || isValueClass(tpe1)) {
               q"""val x1 = new Array[$tpe1](i)
@@ -1362,24 +1366,25 @@ object JsonCodecMaker {
                   x1"""
             } else q"_root_.java.util.Arrays.copyOf(x, i)"
           genReadArray(
-            q"""var x = new Array[$tpe1](16)
+            q"""var l = 16
+                var x = new Array[$tpe1](l)
                 var i = 0""",
-            q"""if (x.length == i) x = $growArray
+            q"""if (i == l) x = $growArray
                 x(i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)}
                 i += 1""",
             {
               if (isImmutableArraySeq(tpe)) {
                 q"""_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1]({
-                      if (x.length == i) x
+                      if (i == l) x
                       else $shrinkArray
                     })"""
               } else if (isMutableArraySeq(tpe)) {
                 q"""_root_.scala.collection.mutable.ArraySeq.make[$tpe1]({
-                      if (x.length == i) x
+                      if (i == l) x
                       else $shrinkArray
                     })"""
               } else {
-                q"""if (x.length == i) x
+                q"""if (i == l) x
                     else $shrinkArray"""
               }
             })
