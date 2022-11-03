@@ -995,21 +995,23 @@ object JsonCodecMaker {
             case _ => cannotFindKeyCodecError(tpe)
         } else cannotFindKeyCodecError(tpe)
 
-      def genReadArray[B: Type, C: Type](newBuilder: Expr[B], readVal: Quotes ?=> (Expr[B], Expr[Int]) => Expr[Unit],
-                                         default: Expr[C], result: Quotes ?=> (Expr[B], Expr[Int]) => Expr[C],
+      def genReadArray[B: Type, C: Type](newBuilder: Quotes ?=> Expr[Int] => Expr[B],
+                                         readVal: Quotes ?=> (Expr[B], Expr[Int], Expr[Int]) => Expr[Unit],
+                                         default: Expr[C], result: Quotes ?=> (Expr[B], Expr[Int], Expr[Int]) => Expr[C],
                                          in: Expr[JsonReader])(using Quotes): Expr[C] = '{
         if ($in.isNextToken('[')) {
           if ($in.isNextToken(']')) $default
           else {
             $in.rollbackToken()
-            var x = $newBuilder
+            var l = 16
+            var x = ${newBuilder('l)}
             var i = 0
             while ({
-              ${readVal('x, 'i)}
+              ${readVal('x, 'i, 'l)}
               i += 1
               $in.isNextToken(',')
             }) ()
-            if ($in.isCurrentToken(']')) ${result('x, 'i)}
+            if ($in.isCurrentToken(']')) ${result('x, 'i, 'l)}
             else $in.arrayEndOrCommaError()
           }
         } else $in.readNullOrTokenError($default, '[')
@@ -1905,12 +1907,12 @@ object JsonCodecMaker {
                 case _ => isValueClass(tpe1)
               val t1ClassTag = summonClassTag(tpe1).asExprOf[ClassTag[t1]]
 
-              def growArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
+              def growArray(x: Expr[Array[t1]], i: Expr[Int], l: Expr[Int])(using Quotes): Expr[Array[t1]] =
                 if (newArrayOnChange) '{
-                  val x1 = new Array[t1]($i << 1)(using $t1ClassTag)
+                  val x1 = new Array[t1]($l)(using $t1ClassTag)
                   java.lang.System.arraycopy($x, 0, x1, 0, $i)
                   x1
-                } else genArraysCopyOf[t1](tpe1, x, '{ $i << 1 })
+                } else genArraysCopyOf[t1](tpe1, x, l)
 
               def shrinkArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
                 if (newArrayOnChange) '{
@@ -1920,31 +1922,40 @@ object JsonCodecMaker {
                 } else genArraysCopyOf[t1](tpe1, x, i)
 
               if (tpe <:< TypeRepr.of[immutable.ArraySeq[_]]) {
-                genReadArray('{ new Array[t1](16)(using $t1ClassTag) }, (x, i) => '{
-                  if ($x.length == $i) ${Assign(x.asTerm, growArray(x, i).asTerm).asExprOf[Unit]}
+                genReadArray(l => '{ new Array[t1]($l)(using $t1ClassTag) }, (x, i, l) => '{
+                  if ($i == $l) {
+                    ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
+                    ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
+                  }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
-                }, default.asExprOf[immutable.ArraySeq[t1]], (x, i) => '{
+                }, default.asExprOf[immutable.ArraySeq[t1]], (x, i, l) => '{
                   immutable.ArraySeq.unsafeWrapArray[t1]({
-                    if ($x.length == $i) $x
+                    if ($i == $l) $x
                     else ${shrinkArray(x, i)}
                   })
                 }.asExprOf[immutable.ArraySeq[t1]], in).asExprOf[T]
               } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) {
-                genReadArray('{ new Array[t1](16)(using $t1ClassTag) }, (x, i) => '{
-                  if ($x.length == $i) ${Assign(x.asTerm, growArray(x, i).asTerm).asExprOf[Unit]}
+                genReadArray(l => '{ new Array[t1]($l)(using $t1ClassTag) }, (x, i, l) => '{
+                  if ($i == $l) {
+                    ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
+                    ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
+                  }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
-                }, default.asExprOf[mutable.ArraySeq[t1]], (x, i) => '{
+                }, default.asExprOf[mutable.ArraySeq[t1]], (x, i, l) => '{
                   mutable.ArraySeq.make[t1]({
-                    if ($x.length == $i) $x
+                    if ($i == $l) $x
                     else ${shrinkArray(x, i)}
                   })
                 }.asExprOf[mutable.ArraySeq[t1]], in).asExprOf[T]
               } else {
-                genReadArray('{ new Array[t1](16)(using $t1ClassTag) }, (x, i) => '{
-                  if ($x.length == $i) ${Assign(x.asTerm, growArray(x, i).asTerm).asExprOf[Unit]}
+                genReadArray(l => '{ new Array[t1]($l)(using $t1ClassTag) }, (x, i, l) => '{
+                  if ($i == $l) {
+                    ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
+                    ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
+                  }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
-                }, default.asExprOf[Array[t1]], (x, i) => '{
-                  if ($x.length == $i) $x
+                }, default.asExprOf[Array[t1]], (x, i, l) => '{
+                  if ($i == $l) $x
                   else ${shrinkArray(x, i)}
                 }.asExprOf[Array[t1]], in).asExprOf[T]
               }
