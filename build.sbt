@@ -32,11 +32,11 @@ lazy val commonSettings = Seq(
     case _ => Seq()
   }),
   compileOrder := CompileOrder.JavaThenScala,
-  Compile / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+  Compile / managedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toSeq.map(f => file(f.getPath + "-2"))
     case _ => Seq()
   }),
-  Test / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+  Test / managedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
     case _ => Seq()
   }),
