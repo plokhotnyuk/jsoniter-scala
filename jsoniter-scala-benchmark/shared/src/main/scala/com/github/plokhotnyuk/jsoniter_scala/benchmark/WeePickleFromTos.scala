@@ -12,7 +12,7 @@ import com.rallyhealth.weepickle.v1.core.Visitor
 
 import java.time._
 
-object WeePickleFromTos {
+object WeePickleFromTos extends WeePickleFromTos2 {
   def defaultJsonFactoryBuilder: JsonFactoryBuilder = JsonFactory.builder().asInstanceOf[JsonFactoryBuilder]
     .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
     .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
@@ -94,6 +94,9 @@ object WeePickleFromTos {
   implicit val monthDayFromTo: FromTo[MonthDay] = fromTo[String].bimap(_.toString, MonthDay.parse)
   implicit val nestedStructsFromTos: FromTo[NestedStructs] = macroFromTo
   implicit val offsetTimeFromTo: FromTo[OffsetTime] = fromTo[String].bimap(_.toString, OffsetTime.parse)
+}
+
+trait WeePickleFromTos2 {
   implicit val openRTBBidRequestFromTos: FromTo[OpenRTB.BidRequest] = {
     implicit val ft1: FromTo[OpenRTB.Segment] = macroFromTo
     implicit val ft2: FromTo[OpenRTB.Format] = macroFromTo

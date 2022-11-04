@@ -101,16 +101,7 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.LowLevelQuoteUtil"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.LowLevelQuoteUtil$"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$Field"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$Field$"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$Getter"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$Getter$"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$GetterOrField"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$FieldInfo$3$NoField$")
-  )
+  mimaBinaryIssueFilters := Seq()
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
@@ -235,37 +226,49 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(noPublishSettings)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    crossScalaVersions := Seq("2.13.10"),
+    crossScalaVersions := Seq("3.2.1", "2.13.10"),
     resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Resolver.sonatypeOssRepos("staging"),
     libraryDependencies ++= Seq(
+      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.16.7",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M2",
       "org.json4s" %% "json4s-native" % "4.1.0-M2",
-      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.16.6",
-      "dev.zio" %%% "zio-json" % "0.3.0",
       "com.rallyhealth" %% "weepickle-v1" % "1.8.0",
-      "io.bullet" %%% "borer-derivation" % "1.8.0",
-      "pl.iterators" %% "kebs-spray-json" % "1.9.5",
-      "io.spray" %% "spray-json" % "1.3.6",
-      "com.avsystem.commons" %%% "commons-core" % "2.7.5",
-      "com.lihaoyi" %%% "upickle" % "2.0.0",
-      "com.dslplatform" %% "dsl-json-scala" % "1.9.9",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.14.0-rc3",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.0-rc3",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.14.0-rc3",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.14.0-rc3",
       "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.14.0-rc3",
-      "io.circe" %%% "circe-generic-extras" % "0.14.3",
-      "io.circe" %%% "circe-generic" % "0.14.3",
-      "io.circe" %%% "circe-parser" % "0.14.3",
-      "io.circe" %%% "circe-jawn" % "0.14.3",
-      "com.typesafe.play" %%% "play-json" % "2.10.0-RC7",
-      "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.2",
-      "org.julienrf" %%% "play-json-derived-codecs" % "10.1.0",
-      "com.github.plokhotnyuk.play-json-extensions" %%% "play-json-extensions" % "0.43.1",
       "org.openjdk.jmh" % "jmh-core" % "1.35",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.35",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.35",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.35",
       "org.scalatest" %%% "scalatest" % "3.2.14" % Test
-    )
+    ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq(
+        "com.lihaoyi" %%% "upickle" % "2.0.0",
+        "dev.zio" %%% "zio-json" % "0.3.0",
+        "io.bullet" %%% "borer-derivation" % "1.8.0",
+        "com.avsystem.commons" %%% "commons-core" % "2.7.5",
+        "io.circe" %%% "circe-generic-extras" % "0.14.3",
+        "io.circe" %%% "circe-generic" % "0.14.3",
+        "io.circe" %%% "circe-parser" % "0.14.3",
+        "io.circe" %%% "circe-jawn" % "0.14.3",
+        "com.typesafe.play" %%% "play-json" % "2.10.0-RC7",
+        "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.2",
+        "org.julienrf" %%% "play-json-derived-codecs" % "10.1.0",
+        "com.github.plokhotnyuk.play-json-extensions" %%% "play-json-extensions" % "0.43.1",
+        "pl.iterators" %% "kebs-spray-json" % "1.9.5",
+        "io.spray" %% "spray-json" % "1.3.6",
+        "com.dslplatform" %% "dsl-json-scala" % "1.9.9"
+      )
+      case Some((3, _)) => Seq(
+        "io.bullet" %%% "borer-derivation" % "1.10.1"
+      )
+      case _ => Seq()
+    }),
+    Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _)) => Seq("-Xmax-inlines:100")
+      case _ => Seq()
+    })
   )
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm

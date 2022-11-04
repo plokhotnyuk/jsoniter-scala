@@ -1,9 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import org.openjdk.jmh.annotations.Benchmark
-import play.api.libs.json.Json
-import upickle.default._
-
 import scala.collection.mutable
 
 class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
@@ -80,7 +77,11 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   }
 
   @Benchmark
-  def playJson(): mutable.ArrayBuffer[Boolean] = Json.parse(jsonBytes).as[mutable.ArrayBuffer[Boolean]]
+  def playJson(): mutable.ArrayBuffer[Boolean] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[mutable.ArrayBuffer[Boolean]]
+  }
 
   @Benchmark
   def playJsonJsoniter(): mutable.ArrayBuffer[Boolean] = {
@@ -99,7 +100,11 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   }
 
   @Benchmark
-  def uPickle(): mutable.ArrayBuffer[Boolean] = read[mutable.ArrayBuffer[Boolean]](jsonBytes)
+  def uPickle(): mutable.ArrayBuffer[Boolean] = {
+    import upickle.default._
+
+    read[mutable.ArrayBuffer[Boolean]](jsonBytes)
+  }
 
   @Benchmark
   def weePickle(): mutable.ArrayBuffer[Boolean] = {

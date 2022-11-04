@@ -13,12 +13,16 @@ class IntReading extends IntBenchmark {
 
   @Benchmark
   def borer(): Int = {
-    io.bullet.borer.Json.decode(jsonBytes).to[Int].value
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[Int].value
   }
 
   @Benchmark
   def circe(): Int = {
-    io.circe.jawn.decodeByteArray[Int](jsonBytes).fold(throw _, identity)
+    import io.circe.jawn._
+
+    decodeByteArray[Int](jsonBytes).fold(throw _, identity)
   }
 
   @Benchmark

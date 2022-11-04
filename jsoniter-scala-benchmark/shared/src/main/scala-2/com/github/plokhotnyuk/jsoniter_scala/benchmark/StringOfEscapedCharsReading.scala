@@ -20,7 +20,9 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
 
   @Benchmark
   def circe(): String = {
-    io.circe.jawn.decodeByteArray[String](jsonBytes).fold(throw _, identity)
+    import io.circe.jawn._
+
+    decodeByteArray[String](jsonBytes).fold(throw _, identity)
   }
 
   @Benchmark

@@ -47,12 +47,12 @@ object AnyValsJson4sFormats {
     new CustomSerializer[ByteVal](_ => ({
       case JInt(x) if x.isValidByte => new ByteVal(x.toByte)
     }, {
-      case x: ByteVal => JInt(x.a)
+      case x: ByteVal => JInt(BigInt(x.a))
     })) +
     new CustomSerializer[ShortVal](_ => ({
       case JInt(x) if x.isValidShort => new ShortVal(x.toShort)
     }, {
-      case x: ShortVal => JInt(x.a)
+      case x: ShortVal => JInt(BigInt(x.a))
     })) +
     new CustomSerializer[IntVal](_ => ({
       case JInt(x) if x.isValidInt => new IntVal(x.toInt)
@@ -67,7 +67,7 @@ object AnyValsJson4sFormats {
     new CustomSerializer[FloatVal](_ => ({
       case JDecimal(x) => new FloatVal(x.toFloat)
     }, {
-      case x: FloatVal => JDecimal(x.a)
+      case x: FloatVal => JDecimal(BigDecimal(x.a))
     })) +
     new CustomSerializer[DoubleVal](_ => ({
       case JDouble(x) => new DoubleVal(x.toFloat)

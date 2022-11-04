@@ -33,9 +33,9 @@ object JacksonSerDesers {
         .addDeserializer(classOf[BitSet], ImmutableBitSetDeserializer)
         .addDeserializer(classOf[mutable.BitSet], MutableBitSetDeserializer)
         .addSerializer(classOf[SuitADT], new SuitADTSerializer)
-        .addSerializer(classOf[SuitEnum], new EnumSerializer(SuitEnum))
+        .addSerializer(classOf[SuitEnum], new SuiteEnumSerializer)
         .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
-        .addDeserializer(classOf[SuitEnum], new EnumDeserializer(SuitEnum)))
+        .addDeserializer(classOf[SuitEnum], new SuiteEnumDeserializer))
       registerModule(new JavaTimeModule)
       registerModule(new Jdk8Module)
       registerModule(new BlackbirdModule)
@@ -81,24 +81,24 @@ class StringifiedBooleanSerializer extends JsonSerializer[Boolean] {
   override def serialize(x: Boolean, jgen: JsonGenerator, spro: SerializerProvider): Unit = jgen.writeString(x.toString)
 }
 
-class EnumSerializer[T <: scala.Enumeration](e: T) extends JsonSerializer[T#Value] {
-  override def serialize(x: T#Value, jg: JsonGenerator, spro: SerializerProvider): Unit = jg.writeString(x.toString)
+class SuiteEnumSerializer extends JsonSerializer[SuitEnum] {
+  override def serialize(x: SuitEnum, jg: JsonGenerator, spro: SerializerProvider): Unit = jg.writeString(x.toString)
 }
 
-class EnumDeserializer[T <: scala.Enumeration](e: T) extends JsonDeserializer[T#Value] {
-  private[this] val ec = new ConcurrentHashMap[String, T#Value]
+class SuiteEnumDeserializer extends JsonDeserializer[SuitEnum] {
+  private[this] val ec = new ConcurrentHashMap[String, SuitEnum]
 
-  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): T#Value = {
+  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum = {
     val s = jp.getValueAsString
-    var x: T#Value = null
+    var x: SuitEnum = null
     if (s ne null) {
       x = ec.get(s)
       if (x eq null) {
-        x = e.values.iterator.find(_.toString == s).orNull
+        x = SuitEnum.values.iterator.find(_.toString == s).orNull
         ec.put(s, x)
       }
     }
-    if (x eq null) ctxt.handleUnexpectedToken(classOf[T#Value], jp)
+    if (x eq null) ctxt.handleUnexpectedToken(classOf[SuitEnum], jp)
     x
   }
 }
