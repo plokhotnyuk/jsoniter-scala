@@ -1439,10 +1439,8 @@ object JsonCodecMaker {
         else if (tpe <:< TypeRepr.of[collection.SortedSet[_]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1))).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]] || tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
-          val tpe1 = typeArg1(tpe)
-          Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1))).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[immutable.ArraySeq[_]]) withNullValueFor(tpe) {
+        } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
+            tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.IntMap[_]] || tpe <:< TypeRepr.of[immutable.LongMap[_]] ||
@@ -2177,7 +2175,7 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] =>
               val emptyCollection = {
-                if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]] || tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
+                if (tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
                   Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1)))
                 } else scalaCollectionEmptyNoArgs(tpe, tpe1)
               }.asExprOf[T & mutable.Growable[t1]]
@@ -2191,11 +2189,8 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] =>
               val builder = TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1]))
-              genReadCollection({
-                if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) Apply(builder, List(summonClassTag(tpe1)))
-                else builder
-              }.asExprOf[mutable.Builder[t1, T]], x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
-                default, x => '{ $x.result() }, in)
+              genReadCollection(builder.asExprOf[mutable.Builder[t1, T]],
+                x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, x => '{ $x.result() }, in)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withDecoderFor(methodKey, default, in) { (in, default) =>
           if (cfg.useScalaEnumValueId) {
             val ec = withScalaEnumCacheFor[Int, T & Enumeration#Value](tpe)
