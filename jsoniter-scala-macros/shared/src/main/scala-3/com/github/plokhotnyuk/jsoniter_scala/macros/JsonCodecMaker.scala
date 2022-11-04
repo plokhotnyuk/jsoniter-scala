@@ -670,19 +670,23 @@ object JsonCodecMaker {
 
       val rootTpe = TypeRepr.of[A].dealias
       val inferredOrderings = mutable.Map.empty[TypeRepr, Term]
-      val inferredClassTags = mutable.Map.empty[TypeRepr, Term]
       val inferredKeyCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonKeyCodec[_]]]]
       val inferredValueCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonValueCodec[_]]]]
+      val classTags = mutable.Map.empty[TypeRepr, ValDef]
 
       def summonOrdering(tpe: TypeRepr): Term = inferredOrderings.getOrElseUpdate(tpe, {
         tpe.asType match
           case '[t] => Expr.summon[Ordering[t]].fold(fail(s"Can't summon Ordering[${tpe.show}]"))(_.asTerm)
       })
 
-      def summonClassTag(tpe: TypeRepr): Term = inferredClassTags.getOrElseUpdate(tpe, {
-        tpe.asType match
-          case '[t] => Expr.summon[ClassTag[t]].fold(fail(s"Can't summon ClassTag[${tpe.show}]"))(_.asTerm)
-      })
+      def summonClassTag(tpe: TypeRepr): Term =
+        Ref(classTags.getOrElseUpdate(tpe, {
+          tpe.asType match
+            case '[t] =>
+              val sym = symbol("ct" + classTags.size, TypeRepr.of[ClassTag[t]])
+              val ct = Expr.summon[ClassTag[t]].getOrElse(fail(s"Can't summon ClassTag[${tpe.show}]"))
+              ValDef(sym, Some(ct.asTerm.changeOwner(sym)))
+        }).symbol)
 
       def newArray[T: Type](size: Expr[Int])(using Quotes): Expr[Array[T]] =
         val tpe = TypeRepr.of[T]
@@ -2701,7 +2705,8 @@ object JsonCodecMaker {
         }
       }.asTerm
       val needDefs =
-        mathContexts.values ++
+        classTags.values ++
+          mathContexts.values ++
           nullValues.values ++
           equalsMethods.values ++
           scalaEnumCaches.values ++
