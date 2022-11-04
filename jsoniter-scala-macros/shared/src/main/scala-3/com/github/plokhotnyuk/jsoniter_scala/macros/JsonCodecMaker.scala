@@ -673,6 +673,19 @@ object JsonCodecMaker {
       def findScala2EnumerationByName[C <: AnyRef: Type](tpe: TypeRepr, name: Expr[String])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.toString == $name) }.asExprOf[Option[C]]
 
+      def newArray[T: Type](size: Expr[Int])(using Quotes): Expr[Array[T]] =
+        val tpe = TypeRepr.of[T]
+        tpe.asType match
+          case '[Boolean] => '{ new Array[Boolean]($size) }.asExprOf[Array[T]]
+          case '[Byte] => '{ new Array[Byte]($size) }.asExprOf[Array[T]]
+          case '[Short] => '{ new Array[Short]($size) }.asExprOf[Array[T]]
+          case '[Char] => '{ new Array[Char]($size) }.asExprOf[Array[T]]
+          case '[Int] => '{ new Array[Int]($size) }.asExprOf[Array[T]]
+          case '[Float] => '{ new Array[Float]($size) }.asExprOf[Array[T]]
+          case '[Long] => '{ new Array[Long]($size) }.asExprOf[Array[T]]
+          case '[Double] => '{ new Array[Double]($size) }.asExprOf[Array[T]]
+          case _ => '{ new Array[T]($size)(using ${summonClassTag(tpe).asExprOf[ClassTag[T]]}) }
+
       val rootTpe = TypeRepr.of[A].dealias
       val inferredKeyCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonKeyCodec[_]]]]
       val inferredValueCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonValueCodec[_]]]]
@@ -1437,13 +1450,10 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) {
           scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[Iterable[_]]) scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
-        else if (tpe <:< TypeRepr.of[Array[_]])
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val t1ClassTag = summonClassTag(tpe1).asExprOf[ClassTag[t1]]
-              withNullValueFor(tpe)('{ new Array[t1](0)(using $t1ClassTag) }).asExprOf[T]
-        else if (isConstType(tpe)) {
+        else if (tpe <:< TypeRepr.of[Array[_]]) withNullValueFor(tpe) {
+          typeArg1(tpe).asType match
+            case '[t1] => newArray[t1]('{ 0 }).asExprOf[T]
+        } else if (isConstType(tpe)) {
           tpe match
             case ConstantType(StringConstant(v)) => Literal(StringConstant(v)).asExprOf[T]
             case ConstantType(BooleanConstant(v)) => Literal(BooleanConstant(v)).asExprOf[T]
@@ -1908,24 +1918,23 @@ object JsonCodecMaker {
               val newArrayOnChange = tpe1 match
                 case AppliedType(_, _) => true
                 case _ => isValueClass(tpe1)
-              val t1ClassTag = summonClassTag(tpe1).asExprOf[ClassTag[t1]]
 
               def growArray(x: Expr[Array[t1]], i: Expr[Int], l: Expr[Int])(using Quotes): Expr[Array[t1]] =
                 if (newArrayOnChange) '{
-                  val x1 = new Array[t1]($l)(using $t1ClassTag)
+                  val x1 = ${newArray[t1](l)}
                   java.lang.System.arraycopy($x, 0, x1, 0, $i)
                   x1
                 } else genArraysCopyOf[t1](tpe1, x, l)
 
               def shrinkArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
                 if (newArrayOnChange) '{
-                  val x1 = new Array[t1]($i)(using $t1ClassTag)
+                  val x1 = ${newArray[t1](i)}
                   java.lang.System.arraycopy($x, 0, x1, 0, $i)
                   x1
                 } else genArraysCopyOf[t1](tpe1, x, i)
 
               if (tpe <:< TypeRepr.of[immutable.ArraySeq[_]]) {
-                genReadArray(l => '{ new Array[t1]($l)(using $t1ClassTag) }, (x, i, l) => '{
+                genReadArray(l => newArray[t1](l), (x, i, l) => '{
                   if ($i == $l) {
                     ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
                     ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
@@ -1938,7 +1947,7 @@ object JsonCodecMaker {
                   })
                 }.asExprOf[immutable.ArraySeq[t1]], in).asExprOf[T]
               } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) {
-                genReadArray(l => '{ new Array[t1]($l)(using $t1ClassTag) }, (x, i, l) => '{
+                genReadArray(l => newArray[t1](l), (x, i, l) => '{
                   if ($i == $l) {
                     ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
                     ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
@@ -1951,7 +1960,7 @@ object JsonCodecMaker {
                   })
                 }.asExprOf[mutable.ArraySeq[t1]], in).asExprOf[T]
               } else {
-                genReadArray(l => '{ new Array[t1]($l)(using $t1ClassTag) }, (x, i, l) => '{
+                genReadArray(l => newArray[t1](l), (x, i, l) => '{
                   if ($i == $l) {
                     ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
                     ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
