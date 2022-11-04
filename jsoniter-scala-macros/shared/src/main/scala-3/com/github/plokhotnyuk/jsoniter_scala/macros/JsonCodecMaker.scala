@@ -667,6 +667,9 @@ object JsonCodecMaker {
       def findScala2EnumerationByName[C <: AnyRef: Type](tpe: TypeRepr, name: Expr[String])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.toString == $name) }.asExprOf[Option[C]]
 
+      def newArray[T: Type](size: Expr[Int])(using Quotes): Expr[Array[T]] =
+        Apply(TypeApply(Select(New(TypeIdent(defn.ArrayClass)), defn.ArrayClass.primaryConstructor), List(TypeTree.of[T])),
+          List(size.asTerm)).asExprOf[Array[T]]
 
       val rootTpe = TypeRepr.of[A].dealias
       val inferredOrderings = mutable.Map.empty[TypeRepr, Term]
@@ -687,19 +690,6 @@ object JsonCodecMaker {
               val ct = Expr.summon[ClassTag[t]].getOrElse(fail(s"Can't summon ClassTag[${tpe.show}]"))
               ValDef(sym, Some(ct.asTerm.changeOwner(sym)))
         }).symbol)
-
-      def newArray[T: Type](size: Expr[Int])(using Quotes): Expr[Array[T]] =
-        val tpe = TypeRepr.of[T]
-        tpe.asType match
-          case '[Boolean] => '{ new Array[Boolean]($size) }.asExprOf[Array[T]]
-          case '[Byte] => '{ new Array[Byte]($size) }.asExprOf[Array[T]]
-          case '[Short] => '{ new Array[Short]($size) }.asExprOf[Array[T]]
-          case '[Char] => '{ new Array[Char]($size) }.asExprOf[Array[T]]
-          case '[Int] => '{ new Array[Int]($size) }.asExprOf[Array[T]]
-          case '[Float] => '{ new Array[Float]($size) }.asExprOf[Array[T]]
-          case '[Long] => '{ new Array[Long]($size) }.asExprOf[Array[T]]
-          case '[Double] => '{ new Array[Double]($size) }.asExprOf[Array[T]]
-          case _ => '{ ${summonClassTag(tpe).asExprOf[ClassTag[T]]}.newArray($size) }
 
       def inferImplicitValue[T: Type](typeToSearch: TypeRepr): Option[Expr[T]] = Implicits.search(typeToSearch) match
         case v: ImplicitSearchSuccess => Some(v.tree.asExprOf[T])
