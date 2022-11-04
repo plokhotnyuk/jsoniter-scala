@@ -1419,6 +1419,12 @@ object JsonCodecMaker {
         else if (tpe <:< TypeRepr.of[collection.SortedSet[_]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1))).asExprOf[T]
+        } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]] || tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1))).asExprOf[T]
+        } else if (tpe <:< TypeRepr.of[immutable.ArraySeq[_]]) withNullValueFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.IntMap[_]] || tpe <:< TypeRepr.of[immutable.LongMap[_]] ||
             tpe <:< TypeRepr.of[mutable.LongMap[_]] || tpe <:< TypeRepr.of[immutable.Seq[_]] ||
             tpe <:< TypeRepr.of[Set[_]]) withNullValueFor(tpe) {
@@ -1430,9 +1436,6 @@ object JsonCodecMaker {
           scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) {
           scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]] || tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
-          val tpe1 = typeArg1(tpe)
-          Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[Iterable[_]]) scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
         else if (tpe <:< TypeRepr.of[Array[_]])
           val tpe1 = typeArg1(tpe)
@@ -2363,7 +2366,7 @@ object JsonCodecMaker {
           }
         }
         val allWriteFields = optDiscriminator.fold(writeFields)(_.write(out) +: writeFields)
-        Block('{ $out.writeObjectStart() }.asTerm :: allWriteFields.toList.map(_.asTerm),
+        Block('{ $out.writeObjectStart() }.asTerm :: allWriteFields.toList.map(_.asTerm.changeOwner(Symbol.spliceOwner)),
           '{ $out.writeObjectEnd() }.asTerm).asExprOf[Unit]
 
       def getWriteConstType(tpe: TypeRepr, isStringified: Boolean, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
