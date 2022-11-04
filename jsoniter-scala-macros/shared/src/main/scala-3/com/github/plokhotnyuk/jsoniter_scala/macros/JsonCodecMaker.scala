@@ -661,17 +661,28 @@ object JsonCodecMaker {
       def scala2EnumerationObject(tpe: TypeRepr): Expr[Enumeration] = tpe match
         case TypeRef(ct, _) => Ref(ct.termSymbol).asExprOf[Enumeration]
 
-      def summonOrdering(tpe: TypeRepr): Term = tpe.asType match
-        case '[t] => Expr.summon[Ordering[t]].fold(fail(s"Can't summon Ordering[${tpe.show}]"))(_.asTerm)
-
-      def summonClassTag(tpe: TypeRepr): Term = tpe.asType match
-        case '[t] => Expr.summon[ClassTag[t]].fold(fail(s"Can't summon ClassTag[${tpe.show}]"))(_.asTerm)
-
       def findScala2EnumerationById[C <: AnyRef: Type](tpe: TypeRepr, i: Expr[Int])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.id == $i) }.asExprOf[Option[C]]
 
       def findScala2EnumerationByName[C <: AnyRef: Type](tpe: TypeRepr, name: Expr[String])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.toString == $name) }.asExprOf[Option[C]]
+
+
+      val rootTpe = TypeRepr.of[A].dealias
+      val inferredOrderings = mutable.Map.empty[TypeRepr, Term]
+      val inferredClassTags = mutable.Map.empty[TypeRepr, Term]
+      val inferredKeyCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonKeyCodec[_]]]]
+      val inferredValueCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonValueCodec[_]]]]
+
+      def summonOrdering(tpe: TypeRepr): Term = inferredOrderings.getOrElseUpdate(tpe, {
+        tpe.asType match
+          case '[t] => Expr.summon[Ordering[t]].fold(fail(s"Can't summon Ordering[${tpe.show}]"))(_.asTerm)
+      })
+
+      def summonClassTag(tpe: TypeRepr): Term = inferredClassTags.getOrElseUpdate(tpe, {
+        tpe.asType match
+          case '[t] => Expr.summon[ClassTag[t]].fold(fail(s"Can't summon ClassTag[${tpe.show}]"))(_.asTerm)
+      })
 
       def newArray[T: Type](size: Expr[Int])(using Quotes): Expr[Array[T]] =
         val tpe = TypeRepr.of[T]
@@ -685,10 +696,6 @@ object JsonCodecMaker {
           case '[Long] => '{ new Array[Long]($size) }.asExprOf[Array[T]]
           case '[Double] => '{ new Array[Double]($size) }.asExprOf[Array[T]]
           case _ => '{ ${summonClassTag(tpe).asExprOf[ClassTag[T]]}.newArray($size) }
-
-      val rootTpe = TypeRepr.of[A].dealias
-      val inferredKeyCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonKeyCodec[_]]]]
-      val inferredValueCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonValueCodec[_]]]]
 
       def inferImplicitValue[T: Type](typeToSearch: TypeRepr): Option[Expr[T]] = Implicits.search(typeToSearch) match
         case v: ImplicitSearchSuccess => Some(v.tree.asExprOf[T])
