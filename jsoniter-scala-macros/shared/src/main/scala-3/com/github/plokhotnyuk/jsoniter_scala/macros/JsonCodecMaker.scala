@@ -690,8 +690,8 @@ object JsonCodecMaker {
       val inferredKeyCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonKeyCodec[_]]]]
       val inferredValueCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonValueCodec[_]]]]
 
-      def inferImplicitValue(typeToSearch: TypeRepr): Option[Term] = Implicits.search(typeToSearch) match
-        case v: ImplicitSearchSuccess => Some(v.tree)
+      def inferImplicitValue[T: Type](typeToSearch: TypeRepr): Option[Expr[T]] = Implicits.search(typeToSearch) match
+        case v: ImplicitSearchSuccess => Some(v.tree.asExprOf[T])
         case _ => None
 
       def symbol(name: String, tpe: TypeRepr, flags: Flags = Flags.EmptyFlags): Symbol =
@@ -718,7 +718,7 @@ object JsonCodecMaker {
         val tpe = types.head
         if (tpe =:= rootTpe) None
         else inferredKeyCodecs.getOrElseUpdate(tpe, {
-          inferImplicitValue(TypeRepr.of[JsonKeyCodec].appliedTo(tpe)).map(_.asExprOf[JsonKeyCodec[_]])
+          inferImplicitValue[JsonKeyCodec[_]](TypeRepr.of[JsonKeyCodec].appliedTo(tpe))
         })
 
       def findImplicitValueCodec(types: List[TypeRepr]): Option[Expr[JsonValueCodec[_]]] =
@@ -726,7 +726,7 @@ object JsonCodecMaker {
         val tpe = types.head
         if (tpe =:= rootTpe) None
         else inferredValueCodecs.getOrElseUpdate(tpe, {
-          inferImplicitValue(TypeRepr.of[JsonValueCodec].appliedTo(tpe)).map(_.asExprOf[JsonValueCodec[_]])
+          inferImplicitValue[JsonValueCodec[_]](TypeRepr.of[JsonValueCodec].appliedTo(tpe))
         })
 
       val mathContexts = new mutable.LinkedHashMap[Int, ValDef]
