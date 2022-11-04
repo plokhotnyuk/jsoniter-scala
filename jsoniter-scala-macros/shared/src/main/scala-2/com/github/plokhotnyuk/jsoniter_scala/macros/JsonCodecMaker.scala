@@ -1366,7 +1366,7 @@ object JsonCodecMaker {
                   x1"""
             } else q"_root_.java.util.Arrays.copyOf(x, i)"
           genReadArray(
-            q"""var l = 16
+            q"""var l = 8
                 var x = new Array[$tpe1](l)
                 var i = 0""",
             q"""if (i == l) x = $growArray
