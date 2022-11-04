@@ -1027,7 +1027,7 @@ object JsonCodecMaker {
           if ($in.isNextToken(']')) $default
           else {
             $in.rollbackToken()
-            var l = 16
+            var l = 8
             var x = ${newBuilder('l)}
             var i = 0
             while ({
