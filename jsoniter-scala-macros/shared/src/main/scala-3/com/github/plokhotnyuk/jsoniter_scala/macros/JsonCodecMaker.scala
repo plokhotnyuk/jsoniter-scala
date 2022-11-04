@@ -684,7 +684,7 @@ object JsonCodecMaker {
           case '[Float] => '{ new Array[Float]($size) }.asExprOf[Array[T]]
           case '[Long] => '{ new Array[Long]($size) }.asExprOf[Array[T]]
           case '[Double] => '{ new Array[Double]($size) }.asExprOf[Array[T]]
-          case _ => '{ new Array[T]($size)(using ${summonClassTag(tpe).asExprOf[ClassTag[T]]}) }
+          case _ => '{ ${summonClassTag(tpe).asExprOf[ClassTag[T]]}.newArray($size) }
 
       val rootTpe = TypeRepr.of[A].dealias
       val inferredKeyCodecs = mutable.Map.empty[TypeRepr, Option[Expr[JsonKeyCodec[_]]]]
