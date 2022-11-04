@@ -41,7 +41,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-   escapeNonAsciiMapper.writeValueAsBytes(Extraction.decompose(obj))
+    escapeNonAsciiMapper.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark

@@ -56,6 +56,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.avSystemGenCodec() shouldBe "MissingRequiredFields(VVV,1)"
       b.borer() shouldBe "MissingRequiredFields(VVV,1)"
       b.circe() shouldBe "MissingRequiredFields(VVV,1)"
+      b.circeJsoniter() shouldBe "MissingRequiredFields(VVV,1)"
       b.dslJsonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.jacksonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.json4sJackson() shouldBe "MissingRequiredFields(VVV,1)"

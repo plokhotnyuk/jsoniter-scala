@@ -89,18 +89,18 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   }
 
   @Benchmark
-  def uPickle(): Array[MonthDay] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-
-    read[Array[MonthDay]](jsonBytes)
-  }
-
-  @Benchmark
   def sprayJson(): Array[MonthDay] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._
 
     JsonParser(jsonBytes).convertTo[Array[MonthDay]]
+  }
+
+  @Benchmark
+  def uPickle(): Array[MonthDay] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[MonthDay]](jsonBytes)
   }
 
   @Benchmark

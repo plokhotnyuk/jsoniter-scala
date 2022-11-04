@@ -117,7 +117,20 @@ object BorerJsonEncodersDecoders {
     s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val Codec(suitEnc: Encoder[Suit], suitDec: Decoder[Suit]) = stringCodec(Suit.valueOf)
-  implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = enumCodec(SuitEnum)
+  implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = Codec(
+    (w: Writer, value: SuitEnum) => w.writeString(value.toString), {
+      val ec = new ConcurrentHashMap[String, SuitEnum]
+      (r: Reader) => {
+        val s = r.readString()
+        var v = ec.get(s)
+        if (v eq null) {
+          v = SuitEnum.values.iterator.find(_.toString == s)
+            .getOrElse(throw new InvalidInputData(r.position, "Expected [String] from SuitEnum"))
+          ec.put(s, v)
+        }
+        v
+      }
+    })
   implicit val Codec(twitterAPIEnc: Encoder[TwitterAPI.Tweet], twitterAPIDec: Decoder[TwitterAPI.Tweet]) = {
     import io.bullet.borer.NullOptions._
 
@@ -131,21 +144,6 @@ object BorerJsonEncodersDecoders {
     deriveCodec[TwitterAPI.Tweet]
   }
   implicit val Codec(uuidEnc: Encoder[UUID], uuidDec: Decoder[UUID]) = stringCodec(UUID.fromString)
-
-  def enumCodec[T <: scala.Enumeration](e: T): Codec[T#Value] = Codec(
-    (w: Writer, value: T#Value) => w.writeString(value.toString), {
-      val ec = new ConcurrentHashMap[String, T#Value]
-      (r: Reader) => {
-        val s = r.readString()
-        var v = ec.get(s)
-        if (v eq null) {
-          v = e.values.iterator.find(_.toString == s)
-            .getOrElse(throw new InvalidInputData(r.position, s"Expected [String] from enum $e"))
-          ec.put(s, v)
-        }
-        v
-      }
-    })
 
   def stringCodec[T](f: String => T): Codec[T] =
     Codec((w: Writer, value: T) => w.writeString(value.toString), (r: Reader) => f(r.readString()))

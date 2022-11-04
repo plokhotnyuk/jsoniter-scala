@@ -13,7 +13,9 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
 
   @Benchmark
   def borer(): List[Boolean] = {
-    io.bullet.borer.Json.decode(jsonBytes).to[List[Boolean]].value
+    import io.bullet.borer.Json
+
+    Json.decode(jsonBytes).to[List[Boolean]].value
   }
 
   @Benchmark
