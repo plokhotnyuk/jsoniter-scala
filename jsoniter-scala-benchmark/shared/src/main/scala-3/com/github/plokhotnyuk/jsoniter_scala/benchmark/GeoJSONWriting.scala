@@ -37,7 +37,6 @@ class GeoJSONWriting extends GeoJSONBenchmark {
     write(obj).getBytes(UTF_8)
   }
 */
-/* FIXME: jsoniter-scala serializes `properties: Map[String, String] = Map.empty` as `Iterable`
   @Benchmark
   def jsoniterScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -53,7 +52,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
-*/
+
   @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._

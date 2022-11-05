@@ -2298,16 +2298,12 @@ object JsonCodecMaker {
             case '[ft] =>
               fDefault match {
                 case Some(d) =>
-                  if (f.resolvedTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) {
-                    val tpe1 = typeArg1(f.resolvedTpe.baseType(TypeRepr.of[Iterable[_]].typeSymbol))
-                    tpe1.asType match
-                      case '[t1] => '{
-                        val v = ${Select(x.asTerm, f.getterOrField).asExprOf[Iterable[t1]]}
-                        if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
-                          ${genWriteConstantKey(f.mappedName, out)}
-                          ${genWriteVal('v, TypeRepr.of[Iterable[t1]] :: types, f.isStringified, None, out)}
-                        }
-                      }
+                  if (f.resolvedTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) '{
+                    val v = ${Select(x.asTerm, f.getterOrField).asExprOf[ft & Iterable[_]]}
+                    if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
+                      ${genWriteConstantKey(f.mappedName, out)}
+                      ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
+                    }
                   } else if (isOption(f.resolvedTpe, types) && cfg.transientNone) {
                     val tpe1 = typeArg1(f.resolvedTpe)
                     tpe1.asType match
