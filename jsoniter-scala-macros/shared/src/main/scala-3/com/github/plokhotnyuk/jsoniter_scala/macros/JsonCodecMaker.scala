@@ -667,7 +667,7 @@ object JsonCodecMaker {
       def findScala2EnumerationByName[C <: AnyRef: Type](tpe: TypeRepr, name: Expr[String])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.toString == $name) }.asExprOf[Option[C]]
 
-      def newArray[T: Type](size: Expr[Int])(using Quotes): Expr[Array[T]] =
+      def genNewArray[T: Type](size: Expr[Int])(using Quotes): Expr[Array[T]] =
         Apply(TypeApply(Select(New(TypeIdent(defn.ArrayClass)), defn.ArrayClass.primaryConstructor), List(TypeTree.of[T])),
           List(size.asTerm)).asExprOf[Array[T]]
 
@@ -1451,18 +1451,10 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[Iterable[_]]) scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
         else if (tpe <:< TypeRepr.of[Array[_]]) withNullValueFor(tpe) {
           typeArg1(tpe).asType match
-            case '[t1] => newArray[t1]('{ 0 }).asExprOf[T]
+            case '[t1] => genNewArray[t1]('{ 0 }).asExprOf[T]
         } else if (isConstType(tpe)) {
           tpe match
-            case ConstantType(StringConstant(v)) => Literal(StringConstant(v)).asExprOf[T]
-            case ConstantType(BooleanConstant(v)) => Literal(BooleanConstant(v)).asExprOf[T]
-            case ConstantType(ByteConstant(v)) => Literal(ByteConstant(v)).asExprOf[T]
-            case ConstantType(CharConstant(v)) => Literal(CharConstant(v)).asExprOf[T]
-            case ConstantType(ShortConstant(v)) => Literal(ShortConstant(v)).asExprOf[T]
-            case ConstantType(IntConstant(v)) => Literal(IntConstant(v)).asExprOf[T]
-            case ConstantType(LongConstant(v)) => Literal(LongConstant(v)).asExprOf[T]
-            case ConstantType(FloatConstant(v)) => Literal(FloatConstant(v)).asExprOf[T]
-            case ConstantType(DoubleConstant(v)) => Literal(DoubleConstant(v)).asExprOf[T]
+            case ConstantType(c) => Literal(c).asExprOf[T]
             case _ => cannotFindValueCodecError(tpe)
         } else if (isEnumOrModuleValue(tpe)) Ref(tpe.termSymbol).asExprOf[T]
         else if (tpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[T]
@@ -1920,20 +1912,20 @@ object JsonCodecMaker {
 
               def growArray(x: Expr[Array[t1]], i: Expr[Int], l: Expr[Int])(using Quotes): Expr[Array[t1]] =
                 if (newArrayOnChange) '{
-                  val x1 = ${newArray[t1](l)}
+                  val x1 = ${genNewArray[t1](l)}
                   java.lang.System.arraycopy($x, 0, x1, 0, $i)
                   x1
                 } else genArraysCopyOf[t1](tpe1, x, l)
 
               def shrinkArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
                 if (newArrayOnChange) '{
-                  val x1 = ${newArray[t1](i)}
+                  val x1 = ${genNewArray[t1](i)}
                   java.lang.System.arraycopy($x, 0, x1, 0, $i)
                   x1
                 } else genArraysCopyOf[t1](tpe1, x, i)
 
               if (tpe <:< TypeRepr.of[immutable.ArraySeq[_]]) {
-                genReadArray(l => newArray[t1](l), (x, i, l) => '{
+                genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
                   if ($i == $l) {
                     ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
                     ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
@@ -1946,7 +1938,7 @@ object JsonCodecMaker {
                   })
                 }.asExprOf[immutable.ArraySeq[t1]], in).asExprOf[T]
               } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) {
-                genReadArray(l => newArray[t1](l), (x, i, l) => '{
+                genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
                   if ($i == $l) {
                     ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
                     ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
@@ -1959,7 +1951,7 @@ object JsonCodecMaker {
                   })
                 }.asExprOf[mutable.ArraySeq[t1]], in).asExprOf[T]
               } else {
-                genReadArray(l => newArray[t1](l), (x, i, l) => '{
+                genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
                   if ($i == $l) {
                     ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
                     ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
