@@ -868,7 +868,7 @@ final class JsonWriter private[jsoniter_scala](
         val ech3 = escapedChars(ch3)
         val ech4 = escapedChars(ch4)
         (ech1 | ech2 | ech3 | ech4) != 0
-        }) writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      }) writeEscapedOrEncodedString(s, from, pos, escapedChars)
       else writeString(s, from + 4, pos + 4, minLim, escapedChars)
     } else if (pos < minLim) {
       val ch = s.charAt(from)
