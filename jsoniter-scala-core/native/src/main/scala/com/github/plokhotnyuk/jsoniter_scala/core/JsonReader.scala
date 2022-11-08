@@ -1921,7 +1921,7 @@ final class JsonReader private[jsoniter_scala](
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, util.Arrays.copyOf(magnitude, last + 8)), scale)
+    new java.math.BigDecimal(new java.math.BigInteger(signum, java.util.Arrays.copyOf(magnitude, last + 8)), scale)
   }
 
   @tailrec
