@@ -10,19 +10,19 @@ private object ByteArrayAccess {
     buf.asInstanceOf[ByteArray].at(0)
 
   @inline def setLong(buf: Array[Byte], pos: Int, value: Long): Unit =
-    toPtr(buf).asInstanceOf[Ptr[Long]](pos) = value
+    !((toPtr(buf) + pos).asInstanceOf[Ptr[Long]]) = value
 
   @inline def getLong(buf: Array[Byte], pos: Int): Long =
-    toPtr(buf).asInstanceOf[Ptr[Long]](pos)
+    !((toPtr(buf) + pos).asInstanceOf[Ptr[Long]])
 
   @inline def setInt(buf: Array[Byte], pos: Int, value: Int): Unit =
-    toPtr(buf).asInstanceOf[Ptr[Long]](pos) = value
+    !((toPtr(buf) + pos).asInstanceOf[Ptr[Int]]) = value
 
   @inline def getInt(buf: Array[Byte], pos: Int): Int =
-    toPtr(buf).asInstanceOf[Ptr[Int]](pos)
+    !((toPtr(buf) + pos).asInstanceOf[Ptr[Int]])
 
   @inline def setShort(buf: Array[Byte], pos: Int, value: Short): Unit =
-    toPtr(buf).asInstanceOf[Ptr[Short]](pos) = value
+    !((toPtr(buf) + pos).asInstanceOf[Ptr[Short]]) = value
 
   @inline def getIntReversed(buf: Array[Byte], pos: Int): Int =
     `llvm.bswap.i32`(getInt(buf, pos))
