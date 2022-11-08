@@ -1447,7 +1447,7 @@ final class JsonReader private[jsoniter_scala](
     else if (e10 >= 310) Double.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2 = unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var m2 = NativeMath.unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343))
       var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -1586,7 +1586,7 @@ final class JsonReader private[jsoniter_scala](
     else if (e10 >= 39) Float.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2 = unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var m2 = NativeMath.unsignedMultiplyHigh(m10 << shift, pow10Mantissas(e10 + 343))
       var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -1617,9 +1617,6 @@ final class JsonReader private[jsoniter_scala](
         java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
       }
     }
-
-  private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
-    NativeMath.multiplyHigh(x, y) + x + y // Use implementation that works only when both params are negative
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
@@ -1908,7 +1905,7 @@ final class JsonReader private[jsoniter_scala](
         val p = m * q
         val s = p + x
         val c = (~s & p) >>> 63
-        x = NativeMath.multiplyHigh(m, q) + (m >> 63 & q) + c // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+        x = NativeMath.unsignedMultiplyHigh(m, q) + c
         ByteArrayAccess.setLong(magnitude, i, s)
         i -= 8
       }
