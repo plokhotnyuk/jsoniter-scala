@@ -11,15 +11,15 @@ import scala.annotation.tailrec
 import scala.{specialized => sp}
 
 final class JsonWriter private[jsoniter_scala](
-                                                private[this] var buf: Array[Byte] = new Array[Byte](32768),
-                                                private[this] var count: Int = 0,
-                                                private[this] var limit: Int = 32768,
-                                                private[this] var indention: Int = 0,
-                                                private[this] var comma: Boolean = false,
-                                                private[this] var disableBufGrowing: Boolean = false,
-                                                private[this] var bbuf: ByteBuffer = null,
-                                                private[this] var out: OutputStream = null,
-                                                private[this] var config: WriterConfig = null) {
+    private[this] var buf: Array[Byte] = new Array[Byte](32768),
+    private[this] var count: Int = 0,
+    private[this] var limit: Int = 32768,
+    private[this] var indention: Int = 0,
+    private[this] var comma: Boolean = false,
+    private[this] var disableBufGrowing: Boolean = false,
+    private[this] var bbuf: ByteBuffer = null,
+    private[this] var out: OutputStream = null,
+    private[this] var config: WriterConfig = null) {
   def writeKey(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')

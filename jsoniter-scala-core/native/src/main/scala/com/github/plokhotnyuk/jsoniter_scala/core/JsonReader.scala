@@ -8,20 +8,19 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 import java.nio.charset.StandardCharsets.UTF_8
-import java.util
 import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
 
 final class JsonReader private[jsoniter_scala](
-                                                private[this] var buf: Array[Byte] = new Array[Byte](32768),
-                                                private[this] var head: Int = 0,
-                                                private[this] var tail: Int = 0,
-                                                private[this] var mark: Int = -1,
-                                                private[this] var charBuf: Array[Char] = new Array[Char](4096),
-                                                private[this] var bbuf: ByteBuffer = null,
-                                                private[this] var in: InputStream = null,
-                                                private[this] var totalRead: Long = 0,
-                                                private[this] var config: ReaderConfig = null) {
+    private[this] var buf: Array[Byte] = new Array[Byte](32768),
+    private[this] var head: Int = 0,
+    private[this] var tail: Int = 0,
+    private[this] var mark: Int = -1,
+    private[this] var charBuf: Array[Char] = new Array[Char](4096),
+    private[this] var bbuf: ByteBuffer = null,
+    private[this] var in: InputStream = null,
+    private[this] var totalRead: Long = 0,
+    private[this] var config: ReaderConfig = null) {
   private[this] var magnitude: Array[Byte] = _
 
   def requiredFieldError(reqField: String): Nothing = {
