@@ -70,6 +70,8 @@ lazy val jsSettings = Seq(
 )
 
 lazy val nativeSettings = Seq(
+  //nativeMode := "release-full", // Uncomment and test with these options
+  //nativeLTO := "thin",
   coverageEnabled := false // FIXME: Unexpected linking error
 )
 
@@ -101,7 +103,12 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq()
+  mimaBinaryIssueFilters := Seq( // Skip the internal API changes for Scala Native implementation
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.ByteArrayAccess"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.ByteArrayAccess$"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.NativeMath"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.NativeMath$")
+  )
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
