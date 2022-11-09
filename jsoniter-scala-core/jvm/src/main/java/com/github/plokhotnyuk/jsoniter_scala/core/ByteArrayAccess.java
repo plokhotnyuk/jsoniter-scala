@@ -11,6 +11,8 @@ class ByteArrayAccess { // FIXME: Use Java wrapper as w/a for missing support of
             MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
     private static final VarHandle VH_SHORT =
             MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN);
+    private static final VarHandle VH_LONG_REVERSED =
+            MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.BIG_ENDIAN);
     private static final VarHandle VH_INT_REVERSED =
             MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.BIG_ENDIAN);
 
@@ -32,6 +34,10 @@ class ByteArrayAccess { // FIXME: Use Java wrapper as w/a for missing support of
 
     static void setShort(byte[] buf, int pos, short value) {
         VH_SHORT.set(buf, pos, value);
+    }
+
+    static long getLongReversed(byte[] buf, int pos) {
+        return (long) VH_LONG_REVERSED.get(buf, pos);
     }
 
     static int getIntReversed(byte[] buf, int pos) {

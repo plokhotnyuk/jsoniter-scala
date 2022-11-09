@@ -1912,7 +1912,7 @@ final class JsonReader private[jsoniter_scala](
     }
     var i = 0
     while (i <= last) {
-      ByteArrayAccess.setLong(magnitude, i, java.lang.Long.reverseBytes(ByteArrayAccess.getLong(magnitude, i)))
+      ByteArrayAccess.setLong(magnitude, i, ByteArrayAccess.getLongReversed(magnitude, i))
       i += 8
     }
     val signum =
