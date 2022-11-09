@@ -254,7 +254,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "com.lihaoyi" %%% "upickle" % "2.0.0",
         "dev.zio" %%% "zio-json" % "0.3.0",
         "io.bullet" %%% "borer-derivation" % "1.8.0",
-        "com.avsystem.commons" %%% "commons-core" % "2.7.5",
+        "com.avsystem.commons" %%% "commons-core" % "2.7.6",
         "io.circe" %%% "circe-generic-extras" % "0.14.3",
         "io.circe" %%% "circe-generic" % "0.14.3",
         "io.circe" %%% "circe-parser" % "0.14.3",
