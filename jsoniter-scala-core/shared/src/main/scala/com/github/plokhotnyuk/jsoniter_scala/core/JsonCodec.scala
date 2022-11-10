@@ -4,6 +4,13 @@ import scala.{specialized => sp}
 
 /**
   * A `JsonCodec[A]` instance is a universal codec for JSON values and keys.
+  *
+  * BEWARE: Minimize usage of `JsonCodec[A]` due to possible creation of the scalability limit on the JDK level,
+  * for more info see:
+  *
+  *   - [[https://bugs.openjdk.org/browse/JDK-8180450]]
+  *   - [[https://github.com/netty/netty/search?q=JDK-8180450&type=issues]]
+  *   - [[https://netflixtechblog.com/seeing-through-hardware-counters-a-journey-to-threefold-performance-increase-2721924a2822]]
   */
 trait JsonCodec[@sp A] extends JsonValueCodec[A] with JsonKeyCodec[A]
 
