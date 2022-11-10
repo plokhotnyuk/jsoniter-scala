@@ -1835,6 +1835,24 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[CCC], CCC(1, "VVV"), """{"a":1,"b":"VVV"}""")
       verifySerDeser(make[DDD.type], DDD, """{}""")
     }
+    "deserialize ADTs with extra fields" in {
+      sealed trait Base
+
+      case class A(x: Int) extends Base
+
+      case class B() extends Base
+
+      case object C extends Base
+
+      val baseCodec1: JsonValueCodec[Base] = make
+      verifyDeser(baseCodec1, A(1), """{"type":"A","x":1,"extra":"should be ignored"}""")
+      verifyDeser(baseCodec1, B(), """{"type":"B","extra":"should be ignored"}""")
+      verifyDeser(baseCodec1, C, """{"type":"C","extra":"should be ignored"}""")
+      val baseCodec2: JsonValueCodec[Base] = makeWithoutDiscriminator
+      verifyDeser(baseCodec2, A(1), """{"A":{"x":1,"extra":"should be ignored"}}""")
+      verifyDeser(baseCodec2, B(), """{"B":{"extra":"should be ignored"}}""")
+      verifyDeser(baseCodec2, C, """"C"""")
+    }
     "deserialize ADTs when discriminator field was serialized in far away last position and configuration allows to parse it" in {
       val longStr = "W" * 100000
       verifyDeser(codecOfADTList3, List(CCC(2, longStr), CCC(1, "VVV")),
