@@ -4,6 +4,22 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   @Benchmark
+  def circe(): Map[Int, Boolean] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Map[Int, Boolean]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Map[Int, Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Map[Int, Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

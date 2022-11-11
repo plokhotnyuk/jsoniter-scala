@@ -5,6 +5,24 @@ import scala.collection.immutable.BitSet
 
 class BitSetReading extends BitSetBenchmark {
   @Benchmark
+  def circe(): BitSet = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.jawn._
+
+    decodeByteArray[BitSet](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): BitSet = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[BitSet].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

@@ -12,6 +12,23 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   }
 
   @Benchmark
+  def circe(): Array[BigInt] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Array[BigInt]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[BigInt] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Array[BigInt]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[BigInt] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

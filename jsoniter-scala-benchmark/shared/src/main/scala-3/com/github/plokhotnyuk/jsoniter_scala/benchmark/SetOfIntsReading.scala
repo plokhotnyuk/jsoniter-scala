@@ -11,6 +11,22 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
   }
 
   @Benchmark
+  def circe(): Set[Int] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Set[Int]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Set[Int]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

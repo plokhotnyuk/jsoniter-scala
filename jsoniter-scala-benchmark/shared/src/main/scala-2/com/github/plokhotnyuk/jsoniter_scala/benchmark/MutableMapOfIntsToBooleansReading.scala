@@ -14,7 +14,9 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def circe(): mutable.Map[Int, Boolean] = {
-    io.circe.jawn.decodeByteArray[mutable.Map[Int, Boolean]](jsonBytes).fold(throw _, identity)
+    import io.circe.jawn._
+
+    decodeByteArray[mutable.Map[Int, Boolean]](jsonBytes).fold(throw _, identity)
   }
 
   @Benchmark

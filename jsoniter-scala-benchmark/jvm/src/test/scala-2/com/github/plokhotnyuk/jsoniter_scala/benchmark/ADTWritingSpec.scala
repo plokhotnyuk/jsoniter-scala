@@ -10,8 +10,8 @@ class ADTWritingSpec extends BenchmarkSpecBase {
       val b = benchmark
       toString(b.avSystemGenCodec()) shouldBe b.jsonString1
       toString(b.borer()) shouldBe b.jsonString1
-      toString(b.circe()) shouldBe b.jsonString2
-      toString(b.circeJsoniter()) shouldBe b.jsonString2
+      toString(b.circe()) shouldBe b.jsonString1
+      toString(b.circeJsoniter()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString1
       toString(b.json4sJackson()) shouldBe b.jsonString1
       toString(b.json4sNative()) shouldBe b.jsonString1

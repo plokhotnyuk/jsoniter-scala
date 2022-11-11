@@ -4,6 +4,24 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class IntWriting extends IntBenchmark {
   @Benchmark
+  def circe(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.syntax._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    printer.print(obj.asJson).getBytes(UTF_8)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.syntax._
+
+    writeToArray(obj.asJson)
+  }
+
+  @Benchmark
   def borer(): Array[Byte] = {
     import io.bullet.borer.Json
 

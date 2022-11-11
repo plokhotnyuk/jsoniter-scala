@@ -17,6 +17,24 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   }
 
   @Benchmark
+  def circe(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.jawn._
+
+    decodeByteArray[MissingRequiredFields](jsonBytes).fold(_.getMessage, _.toString) // toString shouldn't be called
+  }
+
+  @Benchmark
+  def circeJsoniter(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[MissingRequiredFields].decodeJson(readFromArray(jsonBytes)).fold(_.getMessage, _.toString) // toString shouldn't be called
+  }
+
+  @Benchmark
   def jacksonScala(): String = {
     import com.fasterxml.jackson.databind.exc.MismatchedInputException
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

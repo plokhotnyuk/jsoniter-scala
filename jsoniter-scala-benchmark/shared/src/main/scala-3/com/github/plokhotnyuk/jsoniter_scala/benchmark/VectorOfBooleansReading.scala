@@ -11,6 +11,22 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   }
 
   @Benchmark
+  def circe(): Vector[Boolean] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Vector[Boolean]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Vector[Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): Vector[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

@@ -12,6 +12,22 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   }
 
   @Benchmark
+  def circe(): ArraySeq[Boolean] = {
+    import io.circe.jawn._
+
+    decodeByteArray[ArraySeq[Boolean]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): ArraySeq[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[ArraySeq[Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

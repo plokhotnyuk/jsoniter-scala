@@ -13,6 +13,23 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
   }
 
   @Benchmark
+  def circe(): Array[Instant] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Array[Instant]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[Instant] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Array[Instant]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Instant] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

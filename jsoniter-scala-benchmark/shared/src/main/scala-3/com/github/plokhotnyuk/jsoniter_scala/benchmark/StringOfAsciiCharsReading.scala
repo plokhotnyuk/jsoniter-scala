@@ -11,6 +11,22 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   }
 
   @Benchmark
+  def circe(): String = {
+    import io.circe.jawn._
+
+    decodeByteArray[String](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[String].decodeJson(readFromArray(jsonBytes, tooLongStringConfig)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

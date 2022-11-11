@@ -12,6 +12,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       val b = benchmark
       b.borer() shouldBe
         "Cannot decode `MissingRequiredFields` instance due to missing map keys \"s\" and \"i\" (input position 1)"
+      b.circe() shouldBe "Missing required field: DownField(s)"
+      b.circeJsoniter() shouldBe "Missing required field: DownField(s)"
       b.jacksonScala() shouldBe
         """Missing required creator property 's' (index 0)
           | at [Source: (byte[])"{}"; line: 1, column: 2] (through reference chain: com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields["s"])""".stripMargin
@@ -43,6 +45,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       val b = benchmark
       b.jsonBytes = """{"s":"VVV","i":1}""".getBytes(UTF_8)
       b.borer() shouldBe "MissingRequiredFields(VVV,1)"
+      b.circe() shouldBe "MissingRequiredFields(VVV,1)"
+      b.circeJsoniter() shouldBe "MissingRequiredFields(VVV,1)"
       b.jacksonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.json4sJackson() shouldBe "MissingRequiredFields(VVV,1)"
       b.json4sNative() shouldBe "MissingRequiredFields(VVV,1)"

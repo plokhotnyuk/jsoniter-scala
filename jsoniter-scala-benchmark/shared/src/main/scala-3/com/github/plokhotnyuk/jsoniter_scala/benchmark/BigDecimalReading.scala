@@ -12,6 +12,22 @@ class BigDecimalReading extends BigDecimalBenchmark {
   }
 
   @Benchmark
+  def circe(): BigDecimal = {
+    import io.circe.jawn._
+
+    decodeByteArray[BigDecimal](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): BigDecimal = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[BigDecimal].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

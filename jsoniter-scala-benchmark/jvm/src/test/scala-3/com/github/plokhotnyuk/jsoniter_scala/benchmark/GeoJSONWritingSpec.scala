@@ -9,6 +9,8 @@ class GeoJSONWritingSpec extends BenchmarkSpecBase {
     "write properly" in {
       val b = benchmark
       toString(b.borer()) shouldBe b.jsonString1
+      toString(b.circe()) shouldBe b.jsonString1
+      toString(b.circeJsoniter()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString1
       //FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
       //toString(b.json4sJackson()) shouldBe b.jsonString1

@@ -5,6 +5,22 @@ import scala.collection.mutable
 
 class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchmark {
   @Benchmark
+  def circe(): mutable.Map[Int, Boolean] = {
+    import io.circe.jawn._
+
+    decodeByteArray[mutable.Map[Int, Boolean]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): mutable.Map[Int, Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[mutable.Map[Int, Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): mutable.Map[Int, Boolean] = {
     import com.fasterxml.jackson.module.scala.JavaTypeable.gen2JavaTypeable
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

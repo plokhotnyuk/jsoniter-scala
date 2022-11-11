@@ -9,6 +9,8 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
     "write properly" in {
       val b = benchmark
       toString(b.borer()) shouldBe b.compactJsonString
+      toString(b.circe()) shouldBe b.compactJsonString
+      toString(b.circeJsoniter()) shouldBe b.compactJsonString
       toString(b.jacksonScala()) shouldBe b.compactJsonString
       //FIXME: json4s.jackson serializes empty collections
       //toString(b.json4sJackson()) shouldBe b.compactJsonString

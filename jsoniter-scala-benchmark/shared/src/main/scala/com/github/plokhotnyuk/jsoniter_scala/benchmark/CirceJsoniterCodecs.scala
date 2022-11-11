@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import io.circe._
 import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, ReaderConfig, WriterConfig}
+import io.circe._
 
 object CirceJsoniterCodecs {
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)

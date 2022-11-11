@@ -1,13 +1,13 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.time.Instant
-import java.util.Base64
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 import io.circe.Decoder._
 import io.circe.Encoder._
 import io.circe._
-import io.circe.generic.extras.Configuration
 import io.circe.generic.semiauto._
+import io.circe.syntax._
+import java.time.Instant
+import java.util.Base64
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 import scala.util.Try
@@ -16,11 +16,19 @@ object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true, predictSize = true)
   val prettyPrinter: Printer = Printer.spaces2.copy(dropNullValues = true, reuseWriters = true, predictSize = true)
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
-  implicit val config: Configuration = Configuration.default.withDefaults.withDiscriminator("type")
   implicit val adtC3c: Codec[ADTBase] = {
-    import io.circe.generic.extras.semiauto._
+    import io.circe.generic.auto._
 
-    deriveConfiguredCodec
+    Codec.from(Decoder.instance(c =>
+      c.downField("type").as[String].flatMap {
+        case "X" => c.as[X]
+        case "Y" => c.as[Y]
+        case "Z" => c.as[Z]
+      }), Encoder.instance {
+      case x: X => x.asJson.mapObject(_.+:("type" -> "X".asJson))
+      case y: Y => y.asJson.mapObject(_.+:("type" -> "Y".asJson))
+      case z: Z => z.asJson.mapObject(_.+:("type" -> "Z".asJson))
+    })
   }
   implicit val anyValsC3c: Codec[AnyVals] = {
     implicit val c1: Codec[ByteVal] = Codec.from(decodeByte.map(ByteVal.apply), encodeByte.contramap(_.a))
@@ -37,10 +45,9 @@ object CirceEncodersDecoders {
     Codec.from(Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
       Encoder.encodeString.contramap[Array[Byte]](Base64.getEncoder.encodeToString))
   implicit val bidRequestC3c: Codec[OpenRTB.BidRequest] = {
-    import io.circe.generic.extras.semiauto._
-    import io.circe.generic.extras.auto._
+    import io.circe.generic.auto._
 
-    deriveConfiguredCodec
+    deriveCodec // FIXME: create a custom codec
   }
   implicit val bigIntE5r: Encoder[BigInt] = encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
@@ -71,12 +78,56 @@ object CirceEncodersDecoders {
   }
   implicit val extractFieldsC3c: Codec[ExtractFields] = deriveCodec
   implicit val geoJSONC3c: Codec[GeoJSON.GeoJSON] = {
-    import io.circe.generic.extras.semiauto._
+    import io.circe.generic.auto._
 
-    implicit val c1: Codec[GeoJSON.SimpleGeometry] = deriveConfiguredCodec
-    implicit val c2: Codec[GeoJSON.Geometry] = deriveConfiguredCodec
-    implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = deriveConfiguredCodec
-    deriveConfiguredCodec
+    implicit val c1: Codec[GeoJSON.SimpleGeometry] = Codec.from(Decoder.instance(c =>
+      c.downField("type").as[String].flatMap {
+        case "Point" => c.as[GeoJSON.Point]
+        case "MultiPoint" => c.as[GeoJSON.MultiPoint]
+        case "LineString" => c.as[GeoJSON.LineString]
+        case "MultiLineString" => c.as[GeoJSON.MultiLineString]
+        case "Polygon" => c.as[GeoJSON.Polygon]
+        case "MultiPolygon" => c.as[GeoJSON.MultiPolygon]
+      }), Encoder.instance {
+        case x: GeoJSON.Point => x.asJson.mapObject(_.+:("type" -> "Point".asJson))
+        case x: GeoJSON.MultiPoint => x.asJson.mapObject(_.+:("type" -> "MultiPoint".asJson))
+        case x: GeoJSON.LineString => x.asJson.mapObject(_.+:("type" -> "LineString".asJson))
+        case x: GeoJSON.MultiLineString => x.asJson.mapObject(_.+:("type" -> "MultiLineString".asJson))
+        case x: GeoJSON.Polygon => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
+        case x: GeoJSON.MultiPolygon => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
+      })
+    implicit val c2: Codec[GeoJSON.Geometry] = Codec.from(Decoder.instance(c =>
+      c.downField("type").as[String].flatMap {
+        case "Point" => c.as[GeoJSON.Point]
+        case "MultiPoint" => c.as[GeoJSON.MultiPoint]
+        case "LineString" => c.as[GeoJSON.LineString]
+        case "MultiLineString" => c.as[GeoJSON.MultiLineString]
+        case "Polygon" => c.as[GeoJSON.Polygon]
+        case "MultiPolygon" => c.as[GeoJSON.MultiPolygon]
+        case "GeometryCollection" => c.as[GeoJSON.GeometryCollection]
+      }), Encoder.instance {
+        case x: GeoJSON.Point => x.asJson.mapObject(_.+:("type" -> "Point".asJson))
+        case x: GeoJSON.MultiPoint => x.asJson.mapObject(_.+:("type" -> "MultiPoint".asJson))
+        case x: GeoJSON.LineString => x.asJson.mapObject(_.+:("type" -> "LineString".asJson))
+        case x: GeoJSON.MultiLineString => x.asJson.mapObject(_.+:("type" -> "MultiLineString".asJson))
+        case x: GeoJSON.Polygon => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
+        case x: GeoJSON.MultiPolygon => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
+        case x: GeoJSON.GeometryCollection => x.asJson.mapObject(_.+:("type" -> "GeometryCollection".asJson))
+      })
+    implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = Codec.from(Decoder.instance(c =>
+      c.downField("type").as[String].flatMap {
+        case "Feature" => c.as[GeoJSON.Feature]
+      }), Encoder.instance {
+      case x: GeoJSON.Feature => x.asJson.mapObject(_.+:("type" -> "Feature".asJson))
+    })
+    Codec.from(Decoder.instance(c =>
+      c.downField("type").as[String].flatMap {
+        case "Feature" => c.as[GeoJSON.Feature]
+        case "FeatureCollection" => c.as[GeoJSON.FeatureCollection]
+      }), Encoder.instance {
+      case x: GeoJSON.Feature => x.asJson.mapObject(_.+:("type" -> "Feature".asJson))
+      case x: GeoJSON.FeatureCollection => x.asJson.mapObject(_.+:("type" -> "FeatureCollection".asJson))
+    })
   }
   implicit val intMapC3c: Codec[IntMap[Boolean]] =
     Codec.from(Decoder.decodeMap[Int, Boolean].map(_.foldLeft(IntMap.empty[Boolean])((m, p) => m.updated(p._1, p._2))),
@@ -99,7 +150,9 @@ object CirceEncodersDecoders {
       "Clubs" -> Clubs)
     s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }, encodeString.contramap(_.toString))
-  implicit val suitEnumC3c: Codec[SuitEnum.Value] = Codec.from(decodeEnumeration(SuitEnum), encodeEnumeration(SuitEnum))
+  implicit val suitEnumC3c: Codec[SuitEnum.Value] =
+    Codec.from(decodeString.emap(s => Try(SuitEnum.withName(s)).fold[Either[String, SuitEnum.Value]](_ => Left("SuitEnum"), Right.apply)),
+      encodeString.contramap(_.toString))
   implicit val primitivesC3c: Codec[Primitives] = deriveCodec
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {
     import io.circe.generic.auto._

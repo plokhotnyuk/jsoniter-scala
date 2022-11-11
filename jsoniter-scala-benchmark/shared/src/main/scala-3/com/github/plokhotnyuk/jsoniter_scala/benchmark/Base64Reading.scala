@@ -11,6 +11,24 @@ class Base64Reading extends Base64Benchmark {
   }
 
   @Benchmark
+  def circe(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.jawn._
+
+    decodeByteArray[Array[Byte]](jsonBytes)(base64C3c).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Array[Byte]](base64C3c).decodeJson(readFromArray(jsonBytes, tooLongStringConfig)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

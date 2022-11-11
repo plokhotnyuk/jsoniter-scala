@@ -12,6 +12,22 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   }
 
   @Benchmark
+  def circe(): mutable.Set[Int] = {
+    import io.circe.jawn._
+
+    decodeByteArray[mutable.Set[Int]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): mutable.Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[mutable.Set[Int]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): mutable.Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

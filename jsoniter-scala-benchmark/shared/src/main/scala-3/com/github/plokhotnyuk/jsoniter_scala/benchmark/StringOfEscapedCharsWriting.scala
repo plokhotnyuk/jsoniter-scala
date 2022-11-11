@@ -4,6 +4,23 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   @Benchmark
+  def circe(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import io.circe.syntax._
+
+    escapingPrinter.print(obj.asJson).getBytes
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.syntax._
+
+    writeToArray(obj.asJson, escapingConfig)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

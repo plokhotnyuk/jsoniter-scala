@@ -10,6 +10,8 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
   "BigDecimalReading" should {
     "read properly" in {
       benchmark.borer() shouldBe benchmark.sourceObj
+      benchmark.circe() shouldBe benchmark.sourceObj
+      benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.jacksonScala() shouldBe benchmark.sourceObj
       benchmark.json4sJackson() shouldBe benchmark.obj
       //FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
@@ -23,6 +25,8 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       val b = benchmark
       b.jsonBytes = "{}".getBytes(UTF_8)
       intercept[Throwable](b.borer())
+      intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       //FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array

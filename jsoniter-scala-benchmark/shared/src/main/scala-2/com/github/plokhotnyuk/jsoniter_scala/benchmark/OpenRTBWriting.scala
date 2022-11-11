@@ -19,13 +19,23 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
     Json.encode(obj).toByteArray
   }
-/* FIXME: Circe serializes fields with default values
+/* FIXME: circe requires a custom codec
   @Benchmark
   def circe(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.syntax._
 
     printer.print(obj.asJson).getBytes(UTF_8)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.syntax._
+
+    writeToArray(obj.asJson)
   }
 */
 /* FIXME: Jackson serializes fields with default values

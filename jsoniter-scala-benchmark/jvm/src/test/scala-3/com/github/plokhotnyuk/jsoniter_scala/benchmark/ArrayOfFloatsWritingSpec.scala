@@ -9,6 +9,8 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
     "write properly" in {
       val b = benchmark
       check(toString(b.borer()), b.jsonString)
+      check(toString(b.circe()), b.jsonString)
+      check(toString(b.circeJsoniter()), b.jsonString)
       check(toString(b.jacksonScala()), b.jsonString)
       check(toString(b.json4sJackson()), b.jsonString)
       check(toString(b.json4sNative()), b.jsonString)

@@ -10,6 +10,8 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
   "ArrayOfBigDecimalsReading" should {
     "read properly" in {
       benchmark.borer() shouldBe benchmark.sourceObj
+      benchmark.circe() shouldBe benchmark.sourceObj
+      benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
       benchmark.smithy4sJson() shouldBe benchmark.sourceObj
     }
@@ -17,6 +19,8 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       val b = benchmark
       b.jsonBytes = "[true]".getBytes(UTF_8)
       intercept[Throwable](b.borer())
+      intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
     }

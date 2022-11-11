@@ -8,6 +8,8 @@ class MutableBitSetWritingSpec extends BenchmarkSpecBase {
   "MutableBitSetWriting" should {
     "write properly" in {
       val b = benchmark
+      toString(b.circe()) shouldBe b.jsonString
+      toString(b.circeJsoniter()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.json4sJackson()) shouldBe b.jsonString
       toString(b.json4sNative()) shouldBe b.jsonString

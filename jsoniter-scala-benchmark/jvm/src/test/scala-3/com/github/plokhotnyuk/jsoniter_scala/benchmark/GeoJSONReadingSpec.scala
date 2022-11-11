@@ -10,6 +10,8 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
   "GeoJSONReading" should {
     "read properly" in {
       benchmark.borer() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
+      benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       //FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
       //benchmark.json4sJackson() shouldBe benchmark.obj
@@ -23,6 +25,8 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       val b = benchmark
       b.jsonBytes = "[]".getBytes(UTF_8)
       intercept[Throwable](b.borer())
+      intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
       //FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
       //intercept[Throwable](b.json4sJackson())

@@ -12,6 +12,22 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   }
 
   @Benchmark
+  def circe(): mutable.ArrayBuffer[Boolean] = {
+    import io.circe.jawn._
+
+    decodeByteArray[mutable.ArrayBuffer[Boolean]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): mutable.ArrayBuffer[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[mutable.ArrayBuffer[Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): mutable.ArrayBuffer[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

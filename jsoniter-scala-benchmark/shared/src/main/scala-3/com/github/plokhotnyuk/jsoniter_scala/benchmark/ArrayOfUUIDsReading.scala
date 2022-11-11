@@ -13,6 +13,22 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   }
 
   @Benchmark
+  def circe(): Array[UUID] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Array[UUID]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[UUID] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Array[UUID]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[UUID] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

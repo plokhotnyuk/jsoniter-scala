@@ -9,6 +9,10 @@ class AnyValsWritingSpec extends BenchmarkSpecBase {
     "write properly" in {
       val b = benchmark
       toString(b.borer()) shouldBe b.jsonString1
+      toString(b.circe()) shouldBe b.jsonString1
+      toString(b.circeJsoniter()) shouldBe b.jsonString1
+      //FIXME: DSL-JSON wraps AnyVal values
+      //toString(b.dslJsonScala()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString1
       toString(b.json4sJackson()) shouldBe b.jsonString1
       toString(b.json4sNative()) shouldBe b.jsonString1

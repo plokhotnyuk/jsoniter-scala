@@ -12,6 +12,29 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   }
 
   @Benchmark
+  def circe(): Array[Float] = {
+    import io.circe.jawn._
+
+    decodeByteArray[Array[Float]](jsonBytes).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def circeJsoniter(): Array[Float] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
+
+    Decoder[Array[Float]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+  }
+/* FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
+  @Benchmark
+  def dslJsonScala(): Array[Float] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+    dslJsonDecode[Array[Float]](jsonBytes)
+  }
+*/
+  @Benchmark
   def jacksonScala(): Array[Float] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
