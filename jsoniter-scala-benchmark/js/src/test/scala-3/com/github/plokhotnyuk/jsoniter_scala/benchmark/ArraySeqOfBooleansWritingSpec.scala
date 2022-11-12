@@ -15,6 +15,7 @@ class ArraySeqOfBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }

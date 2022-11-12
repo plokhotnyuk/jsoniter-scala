@@ -82,4 +82,12 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[Short]])
   }
+
+  @Benchmark
+  def zioJson(): Array[Short] = {
+    import zio.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[Short]].fold(sys.error, identity)
+  }
 }

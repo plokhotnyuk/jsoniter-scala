@@ -20,6 +20,7 @@ class ArrayOfBigDecimalsWritingSpec extends BenchmarkSpecBase {
       toString(b.uPickle()) shouldBe b.jsonString
       //FIXME: weePickle writes BigDecimal as JSON strings by default
       //toString(b.weePickle()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }

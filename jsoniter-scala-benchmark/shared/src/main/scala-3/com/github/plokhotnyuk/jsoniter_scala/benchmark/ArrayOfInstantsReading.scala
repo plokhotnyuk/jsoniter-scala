@@ -85,4 +85,12 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[Instant]])
   }
+
+  @Benchmark
+  def zioJson(): Array[Instant] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[Instant]].fold(sys.error, identity)
+  }
 }

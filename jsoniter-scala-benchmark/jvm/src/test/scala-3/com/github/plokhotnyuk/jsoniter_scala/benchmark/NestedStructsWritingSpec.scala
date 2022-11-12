@@ -23,6 +23,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       //FIXME: uPuckle hungs in endless loop
       //toString(b.uPickle()) shouldBe b.jsonString
       toString(b.weePickle()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }

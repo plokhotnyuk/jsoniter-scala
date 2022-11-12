@@ -78,4 +78,12 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[MonthDay]])
   }
+
+  @Benchmark
+  def zioJson(): Array[MonthDay] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[MonthDay]].fold(sys.error, identity)
+  }
 }

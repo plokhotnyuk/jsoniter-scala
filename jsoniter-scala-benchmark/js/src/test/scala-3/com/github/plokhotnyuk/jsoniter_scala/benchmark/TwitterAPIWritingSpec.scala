@@ -15,6 +15,8 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.compactJsonString
       toString(b.smithy4sJson()) shouldBe b.compactJsonString
       toString(b.uPickle()) shouldBe b.compactJsonString
+      //FIXME: Zio-JSON serializes empty collections
+      //toString(b.zioJson()) shouldBe b.compactJsonString
     }
   }
 }

@@ -148,4 +148,15 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
       case ex: TransformException => ex.getMessage
     }
   }
+/* FIXME: zio-json codec doesn't compile
+  @Benchmark
+  def zioJson(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+    import zio.json._
+    import zio.json.JsonDecoder._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[MissingRequiredFields].fold(identity, _.toString) // toString shouldn't be called
+  }
+*/
 }

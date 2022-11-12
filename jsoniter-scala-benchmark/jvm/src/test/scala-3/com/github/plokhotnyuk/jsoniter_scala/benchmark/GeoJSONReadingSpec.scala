@@ -21,6 +21,8 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
+      //FIXME: zio-json codec doesn't compile
+      //benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -37,6 +39,8 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
+      //FIXME: zio-json codec doesn't compile
+      //intercept[Throwable](b.zioJson())
     }
   }
 }

@@ -82,4 +82,12 @@ class IntReading extends IntBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Int])
   }
+
+  @Benchmark
+  def zioJson(): Int = {
+    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderOps
+
+    new String(jsonBytes, UTF_8).fromJson[Int].fold(sys.error, identity)
+  }
 }

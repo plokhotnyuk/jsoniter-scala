@@ -77,4 +77,12 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[ZoneId]])
   }
+
+  @Benchmark
+  def zioJson(): Array[ZoneId] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[ZoneId]].fold(sys.error, identity)
+  }
 }

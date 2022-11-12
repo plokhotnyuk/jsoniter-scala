@@ -77,4 +77,12 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[LocalDate]])
   }
+
+  @Benchmark
+  def zioJson(): Array[LocalDate] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[LocalDate]].fold(sys.error, identity)
+  }
 }

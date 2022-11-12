@@ -87,4 +87,15 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[GitHubActionsAPI.Response])
   }
+/* FIXME: zio-json codec doesn't compile
+  @Benchmark
+  def zioJson(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+    import zio.json._
+    import zio.json.JsonDecoder._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[GitHubActionsAPI.Response].fold(sys.error, identity)
+  }
+*/
 }

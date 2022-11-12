@@ -82,4 +82,12 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[String])
   }
+
+  @Benchmark
+  def zioJson(): String = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[String].fold(sys.error, identity)
+  }
 }

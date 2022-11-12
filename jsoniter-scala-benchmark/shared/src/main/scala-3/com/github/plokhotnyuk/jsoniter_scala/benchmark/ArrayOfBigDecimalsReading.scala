@@ -83,4 +83,12 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[BigDecimal]])
   }
+
+  @Benchmark
+  def zioJson(): Array[BigDecimal] = {
+    import zio.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[BigDecimal]].fold(sys.error, identity)
+  }
 }

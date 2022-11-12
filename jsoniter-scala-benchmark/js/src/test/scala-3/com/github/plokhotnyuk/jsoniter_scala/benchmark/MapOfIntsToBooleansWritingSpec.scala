@@ -15,6 +15,7 @@ class MapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.smithy4sJson()) shouldBe b.jsonString
       //FIXME: uPickle serializes maps as JSON arrays
       //toString(b.uPickle()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }

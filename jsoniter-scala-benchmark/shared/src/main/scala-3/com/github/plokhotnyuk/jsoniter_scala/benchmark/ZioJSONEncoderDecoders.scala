@@ -2,14 +2,15 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import zio.json.JsonDecoder.{JsonError, UnsafeJson}
-import zio.json._
-import zio.json.internal._
+import zio.json.{JsonCodec, JsonDecoder, JsonEncoder, DeriveJsonCodec}
+import zio.json.internal.{Lexer, RetractReader, Write}
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
 object ZioJSONEncoderDecoders {
+/*
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
@@ -17,29 +18,30 @@ object ZioJSONEncoderDecoders {
     implicit val c3: JsonCodec[GeoJSON.SimpleGeoJSON] = DeriveJsonCodec.gen
     DeriveJsonCodec.gen
   }
+*/
   implicit lazy val nestedStructsC3c: JsonCodec[NestedStructs] = DeriveJsonCodec.gen
   implicit lazy val openRTBBidRequestC3c: JsonCodec[OpenRTB.BidRequest] = {
-    implicit val c1: JsonCodec[OpenRTB.Segment] = DeriveJsonCodec.gen
-    implicit val c2: JsonCodec[OpenRTB.Format] = DeriveJsonCodec.gen
-    implicit val c3: JsonCodec[OpenRTB.Deal] = DeriveJsonCodec.gen
-    implicit val c4: JsonCodec[OpenRTB.Metric] = DeriveJsonCodec.gen
-    implicit val c5: JsonCodec[OpenRTB.Banner] = DeriveJsonCodec.gen
-    implicit val c6: JsonCodec[OpenRTB.Audio] = DeriveJsonCodec.gen
-    implicit val c7: JsonCodec[OpenRTB.Video] = DeriveJsonCodec.gen
-    implicit val c8: JsonCodec[OpenRTB.Native] = DeriveJsonCodec.gen
-    implicit val c9: JsonCodec[OpenRTB.Pmp] = DeriveJsonCodec.gen
-    implicit val c10: JsonCodec[OpenRTB.Producer] = DeriveJsonCodec.gen
-    implicit val c11: JsonCodec[OpenRTB.Data] = DeriveJsonCodec.gen
-    implicit val c12: JsonCodec[OpenRTB.Content] = DeriveJsonCodec.gen
-    implicit val c13: JsonCodec[OpenRTB.Publisher] = DeriveJsonCodec.gen
-    implicit val c14: JsonCodec[OpenRTB.Geo] = DeriveJsonCodec.gen
-    implicit val c15: JsonCodec[OpenRTB.Imp] = DeriveJsonCodec.gen
-    implicit val c16: JsonCodec[OpenRTB.Site] = DeriveJsonCodec.gen
-    implicit val c17: JsonCodec[OpenRTB.App] = DeriveJsonCodec.gen
-    implicit val c18: JsonCodec[OpenRTB.Device] = DeriveJsonCodec.gen
-    implicit val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
-    implicit val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
-    implicit val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
+    implicit lazy val c1: JsonCodec[OpenRTB.Segment] = DeriveJsonCodec.gen
+    implicit lazy val c2: JsonCodec[OpenRTB.Format] = DeriveJsonCodec.gen
+    implicit lazy val c3: JsonCodec[OpenRTB.Deal] = DeriveJsonCodec.gen
+    implicit lazy val c4: JsonCodec[OpenRTB.Metric] = DeriveJsonCodec.gen
+    implicit lazy val c5: JsonCodec[OpenRTB.Banner] = DeriveJsonCodec.gen
+    implicit lazy val c6: JsonCodec[OpenRTB.Audio] = DeriveJsonCodec.gen
+    implicit lazy val c7: JsonCodec[OpenRTB.Video] = DeriveJsonCodec.gen
+    implicit lazy val c8: JsonCodec[OpenRTB.Native] = DeriveJsonCodec.gen
+    implicit lazy val c9: JsonCodec[OpenRTB.Pmp] = DeriveJsonCodec.gen
+    implicit lazy val c10: JsonCodec[OpenRTB.Producer] = DeriveJsonCodec.gen
+    implicit lazy val c11: JsonCodec[OpenRTB.Data] = DeriveJsonCodec.gen
+    implicit lazy val c12: JsonCodec[OpenRTB.Content] = DeriveJsonCodec.gen
+    implicit lazy val c13: JsonCodec[OpenRTB.Publisher] = DeriveJsonCodec.gen
+    implicit lazy val c14: JsonCodec[OpenRTB.Geo] = DeriveJsonCodec.gen
+    implicit lazy val c15: JsonCodec[OpenRTB.Imp] = DeriveJsonCodec.gen
+    implicit lazy val c16: JsonCodec[OpenRTB.Site] = DeriveJsonCodec.gen
+    implicit lazy val c17: JsonCodec[OpenRTB.App] = DeriveJsonCodec.gen
+    implicit lazy val c18: JsonCodec[OpenRTB.Device] = DeriveJsonCodec.gen
+    implicit lazy val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
+    implicit lazy val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
+    implicit lazy val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
     DeriveJsonCodec.gen
   }
   implicit lazy val twitterAPIC3c: JsonCodec[TwitterAPI.Tweet] = {
@@ -71,6 +73,7 @@ object ZioJSONEncoderDecoders {
     },
     (trace: List[JsonError], in: RetractReader) => Base64.getDecoder.decode(Lexer.string(trace, in).toString))
   implicit val extractFieldsC3c: JsonCodec[ExtractFields] = DeriveJsonCodec.gen
+/*
   implicit val gitHubActionsAPIC3c: JsonCodec[GitHubActionsAPI.Response] = {
     implicit val e1: JsonEncoder[Boolean] = (a: Boolean, _: Option[Int], out: Write) =>
       out.write(if (a) "\"true\"" else "\"false\"")
@@ -83,13 +86,16 @@ object ZioJSONEncoderDecoders {
     implicit val c2: JsonCodec[GitHubActionsAPI.Artifact] = DeriveJsonCodec.gen
     DeriveJsonCodec.gen
   }
-  implicit val googleMapsAPIC3c: JsonCodec[GoogleMapsAPI.DistanceMatrix] = {
+*/
+  implicit lazy val googleMapsAPIC3c: JsonCodec[GoogleMapsAPI.DistanceMatrix] = {
     implicit val c1: JsonCodec[GoogleMapsAPI.Value] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[GoogleMapsAPI.Elements] = DeriveJsonCodec.gen
     implicit val c3: JsonCodec[GoogleMapsAPI.Rows] = DeriveJsonCodec.gen
     DeriveJsonCodec.gen
   }
+/*
   implicit val missingRequiredFieldsC3c: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
+*/
   implicit val primitivesC3c: JsonCodec[Primitives] = DeriveJsonCodec.gen
   implicit val arrayOfEnumADTsC3c: JsonCodec[Array[SuitADT]] = new JsonCodec(
     JsonEncoder.array[SuitADT]({ (a: SuitADT, _: Option[Int], out: Write) =>

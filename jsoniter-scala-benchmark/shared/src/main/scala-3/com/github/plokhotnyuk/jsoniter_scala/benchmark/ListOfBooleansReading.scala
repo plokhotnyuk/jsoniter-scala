@@ -82,4 +82,12 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[List[Boolean]])
   }
+
+  @Benchmark
+  def zioJson(): List[Boolean] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[List[Boolean]].fold(sys.error, identity)
+  }
 }

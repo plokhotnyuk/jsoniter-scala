@@ -75,4 +75,12 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[ZonedDateTime]])
   }
+
+  @Benchmark
+  def zioJson(): Array[ZonedDateTime] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[ZonedDateTime]].fold(sys.error, identity)
+  }
 }

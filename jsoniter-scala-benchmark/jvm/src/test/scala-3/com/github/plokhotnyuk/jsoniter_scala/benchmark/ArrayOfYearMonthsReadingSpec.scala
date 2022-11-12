@@ -18,6 +18,7 @@ class ArrayOfYearMonthsReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -31,6 +32,7 @@ class ArrayOfYearMonthsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

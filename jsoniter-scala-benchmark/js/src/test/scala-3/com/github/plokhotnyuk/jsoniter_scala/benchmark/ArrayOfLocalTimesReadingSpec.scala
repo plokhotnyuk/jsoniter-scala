@@ -14,6 +14,7 @@ class ArrayOfLocalTimesReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -23,6 +24,7 @@ class ArrayOfLocalTimesReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

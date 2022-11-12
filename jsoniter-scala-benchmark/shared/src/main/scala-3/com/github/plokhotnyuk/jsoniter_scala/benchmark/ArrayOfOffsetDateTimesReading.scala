@@ -77,4 +77,12 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[OffsetDateTime]])
   }
+
+  @Benchmark
+  def zioJson(): Array[OffsetDateTime] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[OffsetDateTime]].fold(sys.error, identity)
+  }
 }

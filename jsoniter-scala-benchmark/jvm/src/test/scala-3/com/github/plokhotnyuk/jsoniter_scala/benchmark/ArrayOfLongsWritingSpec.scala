@@ -19,6 +19,7 @@ class ArrayOfLongsWritingSpec extends BenchmarkSpecBase {
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.weePickle()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }

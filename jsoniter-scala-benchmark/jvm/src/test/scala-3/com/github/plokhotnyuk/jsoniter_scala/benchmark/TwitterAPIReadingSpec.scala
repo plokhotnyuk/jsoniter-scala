@@ -20,6 +20,7 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -36,6 +37,7 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

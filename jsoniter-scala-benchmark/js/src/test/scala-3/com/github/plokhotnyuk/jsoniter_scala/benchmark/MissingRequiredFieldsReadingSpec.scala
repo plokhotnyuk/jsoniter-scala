@@ -31,6 +31,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+""".stripMargin
       b.smithy4sJson() shouldBe "Missing required field (path: .s)"
       b.uPickle() shouldBe "missing keys in dictionary: s, i at index 1"
+      //FIXME: zio-json codec doesn't compile
+      //b.zioJson() shouldBe ".s(missing)"
     }
     "return toString value for valid input" in {
       val b = benchmark
@@ -43,6 +45,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.jsoniterScalaWithStacktrace() shouldBe "MissingRequiredFields(VVV,1)"
       b.smithy4sJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
+      //FIXME: zio-json codec doesn't compile
+      //b.zioJson() shouldBe "MissingRequiredFields(VVV,1)"
     }
   }
 }

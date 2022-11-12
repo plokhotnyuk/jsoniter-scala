@@ -78,4 +78,12 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[Duration]])
   }
+
+  @Benchmark
+  def zioJson(): Array[Duration] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[Duration]].fold(sys.error, identity)
+  }
 }

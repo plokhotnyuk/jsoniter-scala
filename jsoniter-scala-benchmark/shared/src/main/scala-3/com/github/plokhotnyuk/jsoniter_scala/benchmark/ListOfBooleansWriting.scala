@@ -4,6 +4,13 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class ListOfBooleansWriting extends ListOfBooleansBenchmark {
   @Benchmark
+  def borer(): Array[Byte] = {
+    import io.bullet.borer.Json
+
+    Json.encode(obj).toByteArray
+  }
+
+  @Benchmark
   def circe(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.syntax._
@@ -19,13 +26,6 @@ class ListOfBooleansWriting extends ListOfBooleansBenchmark {
     import io.circe.syntax._
 
     writeToArray(obj.asJson)
-  }
-
-  @Benchmark
-  def borer(): Array[Byte] = {
-    import io.bullet.borer.Json
-
-    Json.encode(obj).toByteArray
   }
 
   @Benchmark
@@ -90,5 +90,13 @@ class ListOfBooleansWriting extends ListOfBooleansBenchmark {
     import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 
     FromScala(obj).transform(ToJson.bytes)
+  }
+
+  @Benchmark
+  def zioJson(): Array[Byte] = {
+    import zio.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    obj.toJson.getBytes(UTF_8)
   }
 }

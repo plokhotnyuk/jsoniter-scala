@@ -87,4 +87,14 @@ class NestedStructsReading extends NestedStructsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[NestedStructs])
   }
+
+  @Benchmark
+  def zioJson(): NestedStructs = {
+     import zio.json._
+     import zio.json.JsonDecoder._
+     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+     import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[NestedStructs].fold(sys.error, identity)
+  }
 }

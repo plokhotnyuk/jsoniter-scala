@@ -15,6 +15,7 @@ class AnyValsWritingSpec extends BenchmarkSpecBase {
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
       toString(b.smithy4sJson()) shouldBe b.jsonString1
       toString(b.uPickle()) shouldBe b.jsonString3
+      toString(b.zioJson()) shouldBe b.jsonString1
     }
   }
 }

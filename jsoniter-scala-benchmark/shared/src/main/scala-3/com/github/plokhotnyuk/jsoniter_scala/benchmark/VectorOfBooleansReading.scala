@@ -82,4 +82,12 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Vector[Boolean]])
   }
+
+  @Benchmark
+  def zioJson(): Vector[Boolean] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Vector[Boolean]].fold(sys.error, identity)
+  }
 }

@@ -84,4 +84,12 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Array[UUID]])
   }
+
+  @Benchmark
+  def zioJson(): Array[UUID] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Array[UUID]].fold(sys.error, identity)
+  }
 }

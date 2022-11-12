@@ -19,6 +19,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
       benchmark.weePickle() shouldBe benchmark.sourceObj
+      benchmark.zioJson() shouldBe benchmark.sourceObj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -33,6 +34,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

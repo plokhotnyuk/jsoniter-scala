@@ -82,4 +82,12 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[Set[Int]])
   }
+
+  @Benchmark
+  def zioJson(): Set[Int] = {
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[Set[Int]].fold(sys.error, identity)
+  }
 }
