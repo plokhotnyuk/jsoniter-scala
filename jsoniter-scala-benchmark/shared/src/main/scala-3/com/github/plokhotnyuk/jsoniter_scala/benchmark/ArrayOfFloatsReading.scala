@@ -77,6 +77,13 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Float] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Float]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Float] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

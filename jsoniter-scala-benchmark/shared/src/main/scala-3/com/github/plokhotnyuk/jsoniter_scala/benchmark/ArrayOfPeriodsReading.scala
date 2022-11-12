@@ -64,6 +64,13 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Period]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Period] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

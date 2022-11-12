@@ -63,6 +63,13 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[ZoneId] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[ZoneId]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[ZoneId] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

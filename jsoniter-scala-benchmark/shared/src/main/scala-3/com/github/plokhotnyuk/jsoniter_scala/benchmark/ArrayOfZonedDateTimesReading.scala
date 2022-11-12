@@ -62,6 +62,13 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[ZonedDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[ZonedDateTime]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[ZonedDateTime] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

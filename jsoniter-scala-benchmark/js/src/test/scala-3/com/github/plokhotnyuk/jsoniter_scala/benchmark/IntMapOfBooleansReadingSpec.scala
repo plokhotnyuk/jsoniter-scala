@@ -12,6 +12,8 @@ class IntMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      //FIXME: uPickle doesn't support IntMap
+      //benchmark.uPickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark

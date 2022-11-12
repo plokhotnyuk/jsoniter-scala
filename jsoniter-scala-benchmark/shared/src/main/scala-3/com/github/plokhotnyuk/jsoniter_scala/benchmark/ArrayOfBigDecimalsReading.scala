@@ -70,6 +70,13 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[BigDecimal] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[BigDecimal]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[BigDecimal] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

@@ -39,7 +39,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new AnyValsWriting { setup() }
@@ -49,7 +50,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayBufferOfBooleansReading { size = 128; setup() }
@@ -57,7 +59,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayBufferOfBooleansWriting { size = 128; setup() }
@@ -66,7 +69,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfBigDecimalsReading { size = 128; setup() }
@@ -75,7 +79,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfBigDecimalsWriting { size = 128; setup() }
@@ -85,7 +90,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfBigIntsReading { size = 128; setup() }
@@ -94,7 +100,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfBigIntsWriting { size = 128; setup() }
@@ -104,7 +111,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfBooleansReading { size = 128; setup() }
@@ -113,7 +121,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfBooleansWriting { size = 128; setup() }
@@ -123,7 +132,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfBytesReading { size = 128; setup() }
@@ -132,7 +142,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfBytesWriting { size = 128; setup() }
@@ -142,7 +153,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfCharsReading { size = 128; setup() }
@@ -150,7 +162,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfCharsWriting { size = 128; setup() }
@@ -159,7 +172,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfDoublesReading { size = 128; setup() }
@@ -168,7 +182,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfDoublesWriting { size = 128; setup() }
@@ -178,7 +193,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfDurationsReading { size = 128; setup() }
@@ -186,7 +202,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfDurationsWriting { size = 128; setup() }
@@ -195,7 +212,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfEnumADTsReading { size = 128; setup() }
@@ -203,7 +221,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfEnumADTsWriting { size = 128; setup() }
@@ -212,7 +231,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfEnumsReading { size = 128; setup() }
@@ -220,7 +240,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfEnumsWriting { size = 128; setup() }
@@ -229,7 +250,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfFloatsReading { size = 128; setup() }
@@ -238,7 +260,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfFloatsWriting { size = 128; setup() }
@@ -248,7 +271,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfInstantsReading { size = 128; setup() }
@@ -257,7 +281,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfInstantsWriting { size = 128; setup() }
@@ -267,7 +292,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfIntsReading { size = 128; setup() }
@@ -276,7 +302,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfIntsWriting { size = 128; setup() }
@@ -286,7 +313,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfJavaEnumsReading { size = 128; setup() }
@@ -294,7 +322,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfJavaEnumsWriting { size = 128; setup() }
@@ -303,7 +332,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfLocalDatesReading { size = 128; setup() }
@@ -311,7 +341,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfLocalDatesWriting { size = 128; setup() }
@@ -320,7 +351,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfLocalDateTimesReading { size = 128; setup() }
@@ -328,7 +360,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfLocalDateTimesWriting { size = 128; setup() }
@@ -337,7 +370,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfLocalTimesReading { size = 128; setup() }
@@ -345,7 +379,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfLocalTimesWriting { size = 128; setup() }
@@ -354,7 +389,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfLongsReading { size = 128; setup() }
@@ -363,7 +399,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfLongsWriting { size = 128; setup() }
@@ -373,7 +410,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfMonthDaysReading { size = 128; setup() }
@@ -381,7 +419,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfMonthDaysWriting { size = 128; setup() }
@@ -390,7 +429,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfOffsetDateTimesReading { size = 128; setup() }
@@ -398,7 +438,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfOffsetDateTimesWriting { size = 128; setup() }
@@ -407,7 +448,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfOffsetTimesReading { size = 128; setup() }
@@ -415,7 +457,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfOffsetTimesWriting { size = 128; setup() }
@@ -424,7 +467,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfPeriodsReading { size = 128; setup() }
@@ -432,7 +476,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfPeriodsWriting { size = 128; setup() }
@@ -441,7 +486,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfShortsReading { size = 128; setup() }
@@ -450,7 +496,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfShortsWriting { size = 128; setup() }
@@ -460,7 +507,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfUUIDsReading { size = 128; setup() }
@@ -469,7 +517,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfUUIDsWriting { size = 128; setup() }
@@ -479,7 +528,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfYearMonthsReading { size = 128; setup() }
@@ -487,7 +537,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfYearMonthsWriting { size = 128; setup() }
@@ -496,7 +547,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfYearsReading { size = 128; setup() }
@@ -504,7 +556,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfYearsWriting { size = 128; setup() }
@@ -513,7 +566,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfZonedDateTimesReading { size = 128; setup() }
@@ -521,7 +575,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfZonedDateTimesWriting { size = 128; setup() }
@@ -530,7 +585,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfZoneIdsReading { size = 128; setup() }
@@ -538,7 +594,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfZoneIdsWriting { size = 128; setup() }
@@ -547,7 +604,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfZoneOffsetsReading { size = 128; setup() }
@@ -555,7 +613,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArrayOfZoneOffsetsWriting { size = 128; setup() }
@@ -564,7 +623,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArraySeqOfBooleansReading { size = 128; setup() }
@@ -573,7 +633,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ArraySeqOfBooleansWriting { size = 128; setup() }
@@ -583,7 +644,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new Base16Reading { size = 128; setup() }
@@ -605,7 +667,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new Base64Writing { size = 128; setup() }
@@ -615,7 +678,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new BigDecimalReading { size = 128; setup() }
@@ -623,7 +687,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new BigDecimalWriting { size = 128; setup() }
@@ -633,7 +698,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new BigIntReading { size = 128; setup() }
@@ -642,7 +708,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new BigIntWriting { size = 128; setup() }
@@ -652,7 +719,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new BitSetReading { size = 128; setup() }
@@ -676,7 +744,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new GeoJSONReading { setup() }
@@ -685,7 +754,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new GeoJSONWriting { setup() }
@@ -695,7 +765,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new GitHubActionsAPIReading { setup() }
@@ -714,7 +785,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new GoogleMapsAPIPrettyPrinting { setup() }
@@ -723,7 +795,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new GoogleMapsAPIReading { setup() }
@@ -732,7 +805,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new GoogleMapsAPIWriting { setup() }
@@ -742,7 +816,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new IntMapOfBooleansReading { size = 128; setup() }
@@ -766,7 +841,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new IntWriting { setup() }
@@ -776,7 +852,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ListOfBooleansReading { size = 128; setup() }
@@ -785,7 +862,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new ListOfBooleansWriting { size = 128; setup() }
@@ -795,7 +873,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new MapOfIntsToBooleansReading { size = 128; setup() }
@@ -823,7 +902,8 @@ object Main {
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaWithoutDump")(benchmark.jsoniterScalaWithoutDump()),
       B("jsoniterScalaWithStacktrace")(benchmark.jsoniterScalaWithStacktrace()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new MutableBitSetReading { size = 128; setup() }
@@ -876,7 +956,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new MutableSetOfIntsWriting { size = 128; setup() }
@@ -885,7 +966,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new NestedStructsReading { size = 128; setup() }
@@ -912,7 +994,8 @@ object Main {
       //B("circe")(benchmark.circe()),
       //B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new OpenRTBWriting { setup() }
@@ -923,7 +1006,8 @@ object Main {
       //B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new PrimitivesReading { setup() }
@@ -932,7 +1016,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new PrimitivesWriting { setup() }
@@ -942,7 +1027,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new SetOfIntsReading { size = 128; setup() }
@@ -951,7 +1037,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new SetOfIntsWriting { size = 128; setup() }
@@ -961,7 +1048,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new StringOfAsciiCharsReading { size = 128; setup() }
@@ -970,7 +1058,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new StringOfAsciiCharsWriting { size = 128; setup() }
@@ -980,7 +1069,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new StringOfEscapedCharsReading { size = 128; setup() }
@@ -989,7 +1079,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new StringOfEscapedCharsWriting { size = 128; setup() }
@@ -998,7 +1089,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new StringOfNonAsciiCharsReading { size = 128; setup() }
@@ -1007,7 +1099,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new StringOfNonAsciiCharsWriting { size = 128; setup() }
@@ -1017,7 +1110,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new TwitterAPIReading { setup() }
@@ -1026,7 +1120,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new TwitterAPIWriting { setup() }
@@ -1036,7 +1131,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new VectorOfBooleansReading { size = 128; setup() }
@@ -1045,7 +1141,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   }, {
     val benchmark = new VectorOfBooleansWriting { size = 128; setup() }
@@ -1055,7 +1152,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle())
     ))
   })
 }

@@ -14,6 +14,8 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
+      //FIXME: uPickle throws java.lang.NullPointerException: Cannot invoke "upickle.core.Visitor.visitString(java.lang.CharSequence, int)" because the return value of "upickle.core.ObjArrVisitor.subVisitor()" is null
+      //benchmark.uPickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -23,6 +25,8 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
+      //FIXME: uPickle throws java.lang.NullPointerException: Cannot invoke "upickle.core.Visitor.visitString(java.lang.CharSequence, int)" because the return value of "upickle.core.ObjArrVisitor.subVisitor()" is null
+      //intercept[Throwable](b.uPickle())
     }
   }
 }

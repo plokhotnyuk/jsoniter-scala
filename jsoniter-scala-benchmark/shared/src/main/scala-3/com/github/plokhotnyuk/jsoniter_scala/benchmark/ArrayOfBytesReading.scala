@@ -70,6 +70,13 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Byte] = {
+    import upickle.default._
+
+    read[Array[Byte]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Byte] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

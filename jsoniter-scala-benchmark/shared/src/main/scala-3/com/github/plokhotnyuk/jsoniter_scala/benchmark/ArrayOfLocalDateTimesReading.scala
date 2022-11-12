@@ -64,6 +64,13 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[LocalDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[LocalDateTime]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[LocalDateTime] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

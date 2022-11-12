@@ -20,6 +20,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       //benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
@@ -36,6 +37,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
     }
   }

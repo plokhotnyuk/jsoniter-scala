@@ -64,6 +64,13 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Year] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Year]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Year] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

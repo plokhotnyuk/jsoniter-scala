@@ -78,6 +78,13 @@ class ListOfBooleansWriting extends ListOfBooleansBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    writeToByteArray(obj)
+  }
+
+  @Benchmark
   def weePickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weepickle.v1.WeePickle.FromScala

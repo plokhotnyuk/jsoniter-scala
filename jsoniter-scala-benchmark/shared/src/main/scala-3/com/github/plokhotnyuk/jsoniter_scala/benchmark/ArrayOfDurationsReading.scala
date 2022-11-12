@@ -64,6 +64,13 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Duration] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Duration]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Duration] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

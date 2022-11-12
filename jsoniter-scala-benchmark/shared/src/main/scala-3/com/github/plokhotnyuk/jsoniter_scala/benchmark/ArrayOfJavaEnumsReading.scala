@@ -64,6 +64,13 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Suit] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Suit]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Suit] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

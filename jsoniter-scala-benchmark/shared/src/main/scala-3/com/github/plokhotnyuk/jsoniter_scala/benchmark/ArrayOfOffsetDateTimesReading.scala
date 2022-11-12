@@ -64,6 +64,13 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[OffsetDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[OffsetDateTime]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[OffsetDateTime] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

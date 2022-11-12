@@ -64,6 +64,13 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[MonthDay] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[MonthDay]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[MonthDay] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

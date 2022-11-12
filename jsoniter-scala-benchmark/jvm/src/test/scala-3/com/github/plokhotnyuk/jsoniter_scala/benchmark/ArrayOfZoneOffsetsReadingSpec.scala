@@ -16,6 +16,7 @@ class ArrayOfZoneOffsetsReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
@@ -28,6 +29,7 @@ class ArrayOfZoneOffsetsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
     }
   }

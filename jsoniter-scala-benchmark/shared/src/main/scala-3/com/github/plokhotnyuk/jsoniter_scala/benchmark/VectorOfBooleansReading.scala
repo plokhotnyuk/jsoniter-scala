@@ -69,6 +69,13 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Vector[Boolean] = {
+    import upickle.default._
+
+    read[Vector[Boolean]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Vector[Boolean] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

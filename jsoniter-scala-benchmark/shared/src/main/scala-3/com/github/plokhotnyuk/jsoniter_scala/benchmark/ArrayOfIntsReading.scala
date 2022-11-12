@@ -69,6 +69,13 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Int] = {
+    import upickle.default._
+
+    read[Array[Int]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Int] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

@@ -69,6 +69,13 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): String = {
+    import upickle.default._
+
+    read[String](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): String = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

@@ -71,6 +71,13 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[UUID] = {
+    import upickle.default._
+
+    read[Array[UUID]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[UUID] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

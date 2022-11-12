@@ -69,6 +69,13 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Short] = {
+    import upickle.default._
+
+    read[Array[Short]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Short] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

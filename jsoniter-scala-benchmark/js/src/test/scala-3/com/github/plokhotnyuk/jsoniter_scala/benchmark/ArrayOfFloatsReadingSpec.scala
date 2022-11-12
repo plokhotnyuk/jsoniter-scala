@@ -25,6 +25,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -34,6 +35,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
+      intercept[Throwable](b.uPickle())
     }
   }
 }

@@ -236,6 +236,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("3.2.1", "2.13.10"),
     resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Resolver.sonatypeOssRepos("staging"),
     libraryDependencies ++= Seq(
+      "com.lihaoyi" %%% "upickle" % "2.0.0",
       "io.circe" %%% "circe-generic" % "0.14.3",
       "io.circe" %%% "circe-parser" % "0.14.3",
       "io.circe" %%% "circe-jawn" % "0.14.3",
@@ -254,7 +255,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.scalatest" %%% "scalatest" % "3.2.14" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
-        "com.lihaoyi" %%% "upickle" % "2.0.0",
         "dev.zio" %%% "zio-json" % "0.3.0",
         "io.bullet" %%% "borer-derivation" % "1.8.0",
         "com.avsystem.commons" %%% "commons-core" % "2.7.6",

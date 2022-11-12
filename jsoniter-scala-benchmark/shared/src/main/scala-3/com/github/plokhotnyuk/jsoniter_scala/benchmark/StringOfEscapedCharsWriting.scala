@@ -70,6 +70,13 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Byte] = {
+    import upickle.default._
+
+    writeToByteArray(obj, escapeUnicode = true)
+  }
+
+  @Benchmark
   def weePickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weepickle.v1.WeePickle.FromScala

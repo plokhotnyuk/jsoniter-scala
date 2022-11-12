@@ -60,7 +60,14 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
 
     readFromArray[Map[Int, Boolean]](jsonBytes)
   }
+/* FIXME: uPickle parses maps from JSON arrays only
+  @Benchmark
+  def uPickle(): Map[Int, Boolean] = {
+    import upickle.default._
 
+    read[Map[Int, Boolean]](jsonBytes)
+  }
+*/
   @Benchmark
   def weePickle(): Map[Int, Boolean] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson

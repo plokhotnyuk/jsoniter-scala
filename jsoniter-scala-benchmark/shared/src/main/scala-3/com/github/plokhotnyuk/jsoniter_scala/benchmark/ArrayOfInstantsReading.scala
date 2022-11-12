@@ -72,6 +72,13 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Instant] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Instant]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Instant] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

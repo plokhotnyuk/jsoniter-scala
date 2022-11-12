@@ -72,6 +72,13 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[ExtractFields](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

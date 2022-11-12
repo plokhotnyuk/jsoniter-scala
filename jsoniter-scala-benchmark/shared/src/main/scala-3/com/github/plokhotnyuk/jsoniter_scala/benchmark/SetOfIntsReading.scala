@@ -69,6 +69,13 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Set[Int] = {
+    import upickle.default._
+
+    read[Set[Int]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Set[Int] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

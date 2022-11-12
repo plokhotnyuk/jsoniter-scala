@@ -69,6 +69,13 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Double] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Double]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Double] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

@@ -76,6 +76,13 @@ class BigDecimalWriting extends BigDecimalBenchmark {
 
     writeToArray(obj)(bigDecimalJCodec)
   }
+
+  @Benchmark
+  def uPickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    writeToByteArray(obj)
+  }
 /* FIXME: weePickle serializes BigDecimal values as JSON strings
   @Benchmark
   def weePickle(): Array[Byte] = {

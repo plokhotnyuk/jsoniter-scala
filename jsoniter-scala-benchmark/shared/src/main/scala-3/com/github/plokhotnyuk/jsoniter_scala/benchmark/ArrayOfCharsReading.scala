@@ -62,6 +62,13 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Char] = {
+    import upickle.default._
+
+    read[Array[Char]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Char] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

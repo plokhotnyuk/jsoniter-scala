@@ -14,6 +14,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
       benchmark.smithy4sJson() shouldBe benchmark.sourceObj
+      benchmark.uPickle() shouldBe benchmark.sourceObj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -23,6 +24,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
+      intercept[Throwable](b.uPickle())
     }
   }
 }

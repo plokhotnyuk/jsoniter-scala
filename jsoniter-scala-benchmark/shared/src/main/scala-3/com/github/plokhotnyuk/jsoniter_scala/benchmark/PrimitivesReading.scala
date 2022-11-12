@@ -72,6 +72,13 @@ class PrimitivesReading extends PrimitivesBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Primitives](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Primitives = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

@@ -64,6 +64,13 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[SuitADT] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[SuitADT]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[SuitADT] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

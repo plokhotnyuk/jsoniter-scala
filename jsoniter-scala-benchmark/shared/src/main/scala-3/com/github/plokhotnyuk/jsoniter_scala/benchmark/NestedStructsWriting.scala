@@ -79,7 +79,14 @@ class NestedStructsWriting extends NestedStructsBenchmark {
 
     writeToArray(obj)
   }
+/* FIXME: uPuckle hungs in endless loop
+  @Benchmark
+  def uPickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
+    writeToByteArray(obj)
+  }
+*/
   @Benchmark
   def weePickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._

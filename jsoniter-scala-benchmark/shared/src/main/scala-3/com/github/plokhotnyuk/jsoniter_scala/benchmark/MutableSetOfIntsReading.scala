@@ -62,6 +62,13 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): mutable.Set[Int] = {
+    import upickle.default._
+
+    read[mutable.Set[Int]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): mutable.Set[Int] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

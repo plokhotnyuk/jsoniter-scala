@@ -70,6 +70,13 @@ class BigDecimalReading extends BigDecimalBenchmark {
   }
 */
   @Benchmark
+  def uPickle(): BigDecimal = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[BigDecimal](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): BigDecimal = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

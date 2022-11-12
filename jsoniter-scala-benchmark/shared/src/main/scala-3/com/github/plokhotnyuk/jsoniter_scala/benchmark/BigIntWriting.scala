@@ -76,6 +76,13 @@ class BigIntWriting extends BigIntBenchmark {
 
     writeToArray(obj)(bigIntJCodec)
   }
+
+  @Benchmark
+  def uPickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    writeToByteArray(obj)
+  }
 /* FIXME: weePickle serializes BigInt values as JSON strings
   @Benchmark
   def weePickle(): Array[Byte] = {

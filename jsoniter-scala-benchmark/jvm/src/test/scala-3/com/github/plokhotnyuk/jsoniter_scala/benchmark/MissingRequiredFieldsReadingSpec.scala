@@ -39,6 +39,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
       b.smithy4sJson() shouldBe "Missing required field (path: .s)"
+      b.uPickle() shouldBe "missing keys in dictionary: s, i at index 1"
       b.weePickle() shouldBe "Parser or Visitor failure jsonPointer= index=2 line=1 col=3 token=END_OBJECT"
     }
     "return toString value for valid input" in {
@@ -54,6 +55,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.jsoniterScalaWithoutDump() shouldBe "MissingRequiredFields(VVV,1)"
       b.jsoniterScalaWithStacktrace() shouldBe "MissingRequiredFields(VVV,1)"
       b.smithy4sJson() shouldBe "MissingRequiredFields(VVV,1)"
+      b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
       b.weePickle() shouldBe "MissingRequiredFields(VVV,1)"
     }
   }

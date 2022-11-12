@@ -13,9 +13,9 @@ class ArrayOfMonthDaysWriting extends ArrayOfMonthDaysBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = {
-    import java.nio.charset.StandardCharsets.UTF_8
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.syntax._
+    import java.nio.charset.StandardCharsets.UTF_8
 
     printer.print(obj.asJson).getBytes(UTF_8)
   }
@@ -69,6 +69,13 @@ class ArrayOfMonthDaysWriting extends ArrayOfMonthDaysBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
+  }
+
+  @Benchmark
+  def uPickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    writeToByteArray(obj)
   }
 
   @Benchmark

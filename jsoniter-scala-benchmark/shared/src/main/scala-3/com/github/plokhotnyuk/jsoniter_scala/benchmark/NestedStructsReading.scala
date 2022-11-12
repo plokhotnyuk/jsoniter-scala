@@ -71,7 +71,14 @@ class NestedStructsReading extends NestedStructsBenchmark {
 
     readFromArray[NestedStructs](jsonBytes)
   }
+/* FIXME: uPuckle hungs in endless loop
+  @Benchmark
+  def uPickle(): NestedStructs = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
+    read[NestedStructs](jsonBytes)
+  }
+*/
   @Benchmark
   def weePickle(): NestedStructs = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._

@@ -73,6 +73,13 @@ class GeoJSONReading extends GeoJSONBenchmark {
   }
 
   @Benchmark
+  def uPickle(): GeoJSON = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[GeoJSON](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

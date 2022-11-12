@@ -124,6 +124,18 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+    import upickle.core.AbortException
+
+    try {
+      read[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
+    } catch {
+      case ex: AbortException => ex.getMessage
+    }
+  }
+
+  @Benchmark
   def weePickle(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

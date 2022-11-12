@@ -17,6 +17,7 @@ class BigIntWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
+      toString(b.uPickle()) shouldBe b.jsonString
       //FIXME: weePickle serializes BigInt values as JSON strings
       //toString(b.weePickle()) shouldBe b.jsonString
     }

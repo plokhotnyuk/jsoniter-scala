@@ -69,6 +69,13 @@ class IntReading extends IntBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Int = {
+    import upickle.default._
+
+    read[Int](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Int = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

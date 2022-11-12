@@ -72,6 +72,13 @@ class AnyValsReading extends AnyValsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): AnyVals = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[AnyVals](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): AnyVals = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

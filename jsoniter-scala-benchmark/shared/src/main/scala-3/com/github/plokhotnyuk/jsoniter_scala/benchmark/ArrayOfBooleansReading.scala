@@ -69,6 +69,13 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Boolean] = {
+    import upickle.default._
+
+    read[Array[Boolean]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Boolean] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala

@@ -34,6 +34,7 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
     }
   }

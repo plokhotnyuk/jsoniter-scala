@@ -18,6 +18,8 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
+      //FIXME: uPuckle hungs in endless loop
+      //benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
@@ -32,6 +34,8 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       b.jsonBytes = "[]".getBytes(UTF_8)
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
+      //FIXME: uPuckle hungs in endless loop
+      //intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
     }
   }

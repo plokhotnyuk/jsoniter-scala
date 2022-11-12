@@ -62,6 +62,14 @@ class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark 
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
+/* FIXME: uPickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
+  @Benchmark
+  def uPickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    writeToByteArray(obj)
+  }
+*/
 /* FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
   @Benchmark
   def weePickle(): Array[Byte] = {

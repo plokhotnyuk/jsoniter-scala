@@ -63,6 +63,13 @@ class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[ZoneOffset] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[ZoneOffset]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[ZoneOffset] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weejson.v1.jackson.FromJson

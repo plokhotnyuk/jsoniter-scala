@@ -69,6 +69,13 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Long] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[Array[Long]](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): Array[Long] = {
     import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
