@@ -19,8 +19,7 @@ class GitHubActionsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.smithy4sJson()) shouldBe b.compactJsonString1
       toString(b.uPickle()) shouldBe b.compactJsonString1
       toString(b.weePickle()) shouldBe b.compactJsonString1
-      //FIXME: zio-json codec doesn't compile
-      //toString(b.zioJson()) shouldBe b.compactJsonString1
+      toString(b.zioJson()) shouldBe b.compactJsonString1
     }
   }
 }

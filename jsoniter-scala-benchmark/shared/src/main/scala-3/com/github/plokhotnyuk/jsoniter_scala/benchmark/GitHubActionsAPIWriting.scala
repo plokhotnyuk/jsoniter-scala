@@ -34,7 +34,7 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.writeValueAsBytes(obj)
+    jacksonBooleanAsStringMapper.writeValueAsBytes(obj)
   }
 
   @Benchmark
@@ -93,7 +93,7 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: zio-json codec doesn't compile
+
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
@@ -103,5 +103,4 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
 
     obj.toJson.getBytes(UTF_8)
   }
-*/
 }

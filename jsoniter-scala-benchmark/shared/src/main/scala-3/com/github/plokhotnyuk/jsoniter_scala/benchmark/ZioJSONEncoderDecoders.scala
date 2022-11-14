@@ -73,7 +73,6 @@ object ZioJSONEncoderDecoders {
     },
     (trace: List[JsonError], in: RetractReader) => Base64.getDecoder.decode(Lexer.string(trace, in).toString))
   implicit val extractFieldsC3c: JsonCodec[ExtractFields] = DeriveJsonCodec.gen
-/*
   implicit val gitHubActionsAPIC3c: JsonCodec[GitHubActionsAPI.Response] = {
     implicit val e1: JsonEncoder[Boolean] = (a: Boolean, _: Option[Int], out: Write) =>
       out.write(if (a) "\"true\"" else "\"false\"")
@@ -86,7 +85,6 @@ object ZioJSONEncoderDecoders {
     implicit val c2: JsonCodec[GitHubActionsAPI.Artifact] = DeriveJsonCodec.gen
     DeriveJsonCodec.gen
   }
-*/
   implicit lazy val googleMapsAPIC3c: JsonCodec[GoogleMapsAPI.DistanceMatrix] = {
     implicit val c1: JsonCodec[GoogleMapsAPI.Value] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[GoogleMapsAPI.Elements] = DeriveJsonCodec.gen

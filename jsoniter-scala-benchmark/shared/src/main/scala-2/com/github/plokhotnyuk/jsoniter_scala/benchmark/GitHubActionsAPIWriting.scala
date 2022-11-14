@@ -43,7 +43,7 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.writeValueAsBytes(obj)
+    jacksonBooleanAsStringMapper.writeValueAsBytes(obj)
   }
 
   @Benchmark

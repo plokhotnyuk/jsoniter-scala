@@ -63,6 +63,11 @@ object JacksonSerDesers {
     jm.registerModule(new SimpleModule().addSerializer(classOf[Array[Byte]], new ByteArraySerializer))
     jm
   }
+  val jacksonBooleanAsStringMapper: ObjectMapper with ClassTagExtensions = {
+    val jm = createJacksonMapper()
+    jm.registerModule(new SimpleModule().addSerializer(classOf[Boolean], new StringifiedBooleanSerializer))
+    jm
+  }
 }
 
 class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]]) {
