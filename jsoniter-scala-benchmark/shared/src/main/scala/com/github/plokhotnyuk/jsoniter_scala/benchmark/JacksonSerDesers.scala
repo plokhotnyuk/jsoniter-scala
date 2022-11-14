@@ -42,6 +42,7 @@ object JacksonSerDesers {
       configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
       configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
       configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      configure(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES, true)
       configure(SerializationFeature.WRITE_CHAR_ARRAYS_AS_JSON_ARRAYS, true)
       configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false)
       configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)

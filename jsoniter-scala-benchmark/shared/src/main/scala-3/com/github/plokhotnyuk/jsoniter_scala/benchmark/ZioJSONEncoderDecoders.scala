@@ -93,9 +93,7 @@ object ZioJSONEncoderDecoders {
     implicit val c3: JsonCodec[GoogleMapsAPI.Rows] = DeriveJsonCodec.gen
     DeriveJsonCodec.gen
   }
-/*
   implicit val missingRequiredFieldsC3c: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
-*/
   implicit val primitivesC3c: JsonCodec[Primitives] = DeriveJsonCodec.gen
   implicit val arrayOfEnumADTsC3c: JsonCodec[Array[SuitADT]] = new JsonCodec(
     JsonEncoder.array[SuitADT]({ (a: SuitADT, _: Option[Int], out: Write) =>

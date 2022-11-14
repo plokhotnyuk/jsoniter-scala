@@ -976,7 +976,8 @@ object Main {
       B("jsoniterScalaWithoutDump")(benchmark.jsoniterScalaWithoutDump()),
       B("jsoniterScalaWithStacktrace")(benchmark.jsoniterScalaWithStacktrace()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new MutableBitSetReading { size = 128; setup() }
