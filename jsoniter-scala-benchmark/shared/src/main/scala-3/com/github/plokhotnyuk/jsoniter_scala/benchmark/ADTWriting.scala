@@ -93,7 +93,7 @@ class ADTWriting extends ADTBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: zio-json codec doesn't compile
+
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
@@ -103,5 +103,4 @@ class ADTWriting extends ADTBenchmark {
 
     obj.toJson.getBytes(UTF_8)
   }
-*/
 }

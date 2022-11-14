@@ -2,10 +2,12 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.util.concurrent.ConcurrentHashMap
 import com.fasterxml.jackson.annotation.JsonInclude.Include
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, JsonParser, StreamReadFeature, StreamWriteFeature}
 import com.fasterxml.jackson.databind._
+import com.fasterxml.jackson.databind.jsontype.NamedType
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
@@ -27,6 +29,22 @@ object JacksonSerDesers {
       .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
       .build()
     new ObjectMapper(jsonFactory) with ClassTagExtensions {
+      addMixIn(classOf[GeoJSON.GeoJSON], classOf[MixIn])
+      addMixIn(classOf[GeoJSON.Geometry], classOf[MixIn])
+      addMixIn(classOf[ADTBase], classOf[MixIn])
+      registerSubtypes(
+        new NamedType(classOf[GeoJSON.Point], "Point"),
+        new NamedType(classOf[GeoJSON.MultiPoint], "MultiPoint"),
+        new NamedType(classOf[GeoJSON.LineString], "LineString"),
+        new NamedType(classOf[GeoJSON.MultiLineString], "MultiLineString"),
+        new NamedType(classOf[GeoJSON.Polygon], "Polygon"),
+        new NamedType(classOf[GeoJSON.MultiPolygon], "MultiPolygon"),
+        new NamedType(classOf[GeoJSON.GeometryCollection], "GeometryCollection"),
+        new NamedType(classOf[GeoJSON.Feature], "Feature"),
+        new NamedType(classOf[GeoJSON.FeatureCollection], "FeatureCollection"),
+        new NamedType(classOf[X], "X"),
+        new NamedType(classOf[Y], "Y"),
+        new NamedType(classOf[Z], "Z"))
       registerModule(DefaultScalaModule)
       registerModule(BitSetDeserializerModule)
       registerModule(new SimpleModule()
@@ -126,3 +144,6 @@ class SuitADTDeserializer extends JsonDeserializer[SuitADT] {
       case _ => ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]
     }
 }
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+abstract class MixIn

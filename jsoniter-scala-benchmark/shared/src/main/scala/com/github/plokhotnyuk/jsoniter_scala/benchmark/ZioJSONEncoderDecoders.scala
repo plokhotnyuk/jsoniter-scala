@@ -2,15 +2,14 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import zio.json.JsonDecoder.{JsonError, UnsafeJson}
-import zio.json.{JsonCodec, JsonDecoder, JsonEncoder, DeriveJsonCodec}
 import zio.json.internal.{Lexer, RetractReader, Write}
+import zio.json.{DeriveJsonCodec, JsonCodec, JsonDecoder, JsonEncoder}
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
 object ZioJSONEncoderDecoders {
-/*
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
@@ -18,7 +17,6 @@ object ZioJSONEncoderDecoders {
     implicit val c3: JsonCodec[GeoJSON.SimpleGeoJSON] = DeriveJsonCodec.gen
     DeriveJsonCodec.gen
   }
-*/
   implicit lazy val nestedStructsC3c: JsonCodec[NestedStructs] = DeriveJsonCodec.gen
   implicit lazy val openRTBBidRequestC3c: JsonCodec[OpenRTB.BidRequest] = {
     implicit lazy val c1: JsonCodec[OpenRTB.Segment] = DeriveJsonCodec.gen

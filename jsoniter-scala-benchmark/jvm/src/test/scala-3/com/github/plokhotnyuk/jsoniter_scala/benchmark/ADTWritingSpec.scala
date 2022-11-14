@@ -20,8 +20,7 @@ class ADTWritingSpec extends BenchmarkSpecBase {
       //FIXME: uPuckle hungs in endless loop
       //toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString1
-      //FIXME: zio-json codec doesn't compile
-      //toString(b.zioJson()) shouldBe b.jsonString1
+      toString(b.zioJson()) shouldBe b.jsonString1
     }
   }
 }

@@ -1,24 +1,16 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type
-import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.rallyhealth.weepickle.v1.implicits.{discriminator, dropDefault, key}
+import zio.json.jsonDiscriminator
 import scala.collection.immutable.IndexedSeq
 
 object GeoJSON {
   @discriminator("type")
-  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-  @JsonSubTypes(Array(
-    new Type(value = classOf[Point], name = "Point"),
-    new Type(value = classOf[MultiPoint], name = "MultiPoint"),
-    new Type(value = classOf[LineString], name = "LineString"),
-    new Type(value = classOf[MultiLineString], name = "MultiLineString"),
-    new Type(value = classOf[Polygon], name = "Polygon"),
-    new Type(value = classOf[MultiPolygon], name = "MultiPolygon"),
-    new Type(value = classOf[GeometryCollection], name = "GeometryCollection")))
+  @jsonDiscriminator("type")
   sealed trait Geometry extends Product with Serializable
 
   @discriminator("type")
+  @jsonDiscriminator("type")
   sealed trait SimpleGeometry extends Geometry
 
   @key("Point")
@@ -43,13 +35,11 @@ object GeoJSON {
   case class GeometryCollection(geometries: IndexedSeq[SimpleGeometry]) extends Geometry
 
   @discriminator("type")
-  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-  @JsonSubTypes(Array(
-    new Type(value = classOf[Feature], name = "Feature"),
-    new Type(value = classOf[FeatureCollection], name = "FeatureCollection")))
+  @jsonDiscriminator("type")
   sealed trait GeoJSON extends Product with Serializable
 
   @discriminator("type")
+  @jsonDiscriminator("type")
   sealed trait SimpleGeoJSON extends GeoJSON
 
   @key("Feature")

@@ -87,7 +87,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[GeoJSON])
   }
-/* FIXME: zio-json codec doesn't compile
+/* FIXME: zio-json throws java.lang.RuntimeException: (FeatureCollection).features[0](Feature).geometry(invalid disambiguator)
   @Benchmark
   def zioJson(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._

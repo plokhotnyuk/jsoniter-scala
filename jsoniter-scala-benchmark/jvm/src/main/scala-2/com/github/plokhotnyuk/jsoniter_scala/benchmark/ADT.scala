@@ -8,11 +8,6 @@ import zio.json.jsonDiscriminator
 
 @discriminator("type")
 @flatten("type")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes(Array(
-  new Type(value = classOf[X], name = "X"),
-  new Type(value = classOf[Y], name = "Y"),
-  new Type(value = classOf[Z], name = "Z")))
 @jsonDiscriminator("type")
 sealed trait ADTBase extends Product with Serializable
 

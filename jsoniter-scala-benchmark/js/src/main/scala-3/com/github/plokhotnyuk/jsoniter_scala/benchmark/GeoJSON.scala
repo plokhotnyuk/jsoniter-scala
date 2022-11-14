@@ -1,10 +1,13 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import zio.json.jsonDiscriminator
 import scala.collection.immutable.IndexedSeq
 
 object GeoJSON {
+  @jsonDiscriminator("type")
   sealed trait Geometry extends Product with Serializable
 
+  @jsonDiscriminator("type")
   sealed trait SimpleGeometry extends Geometry
 
   case class Point(coordinates: (Double, Double)) extends SimpleGeometry
@@ -21,8 +24,10 @@ object GeoJSON {
 
   case class GeometryCollection(geometries: IndexedSeq[SimpleGeometry]) extends Geometry
 
+  @jsonDiscriminator("type")
   sealed trait GeoJSON extends Product with Serializable
 
+  @jsonDiscriminator("type")
   sealed trait SimpleGeoJSON extends GeoJSON
 
   case class Feature(

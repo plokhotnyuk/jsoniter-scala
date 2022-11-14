@@ -86,7 +86,7 @@ class ADTReading extends ADTBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[ADTBase])
   }
-/* FIXME: zio-json codec doesn't compile
+
   @Benchmark
   def zioJson(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
@@ -96,5 +96,4 @@ class ADTReading extends ADTBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[ADTBase].fold(sys.error, identity)
   }
-*/
 }

@@ -20,8 +20,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       //FIXME: uPuckle hungs in endless loop
       //benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
-      //FIXME: zio-json codec doesn't compile
-      //benchmark.zioJson() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -37,8 +36,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       //FIXME: uPuckle hungs in endless loop
       //intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
-      //FIXME: zio-json codec doesn't compile
-      //intercept[Throwable](b.zioJson())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

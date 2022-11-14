@@ -20,7 +20,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new ADTWriting { setup() }
@@ -30,7 +31,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("smithy4sJson")(benchmark.smithy4sJson())
+      B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new AnyValsReading { setup() }

@@ -15,7 +15,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
-      //FIXME: zio-json codec doesn't compile
+      //FIXME: zio-json throws java.lang.RuntimeException: (FeatureCollection).features[0](Feature).geometry(invalid disambiguator)
       //benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
@@ -27,7 +27,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
-      //FIXME: zio-json codec doesn't compile
+      //FIXME: zio-json throws java.lang.RuntimeException: (FeatureCollection).features[0](Feature).geometry(invalid disambiguator)
       //intercept[Throwable](b.zioJson())
     }
   }
