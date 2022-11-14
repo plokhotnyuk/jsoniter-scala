@@ -5,7 +5,6 @@ import ai.x.play.json.Encoders._
 import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
-import julienrf.json.derived.flat
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import java.util.Base64
@@ -14,6 +13,10 @@ import scala.collection.mutable
 import scala.util.Try
 
 object PlayJsonFormats {
+  implicit val config = JsonConfiguration(typeNaming = JsonNaming { fullName =>
+    fullName.substring(Math.max(fullName.lastIndexOf('.') + 1, 0))
+  }, discriminator = "type")
+
   def stringFormat[A](name: String)(f: String => A): Format[A] = new Format[A] {
     override def reads(js: JsValue): JsResult[A] =
       Try(JsSuccess(f(js.asInstanceOf[JsString].value))).getOrElse(JsError(s"expected.${name}string"))
@@ -78,14 +81,14 @@ object PlayJsonFormats {
   implicit val missingReqFieldsFormat: Format[MissingRequiredFields] = Json.format
   implicit val nestedStructsFormat: Format[NestedStructs] = Json.format
   implicit val anyValsFormat: Format[AnyVals] = {
-    implicit val v1: Format[ByteVal] = Jsonx.formatInline
-    implicit val v2: Format[ShortVal] = Jsonx.formatInline
-    implicit val v3: Format[IntVal] = Jsonx.formatInline
-    implicit val v4: Format[LongVal] = Jsonx.formatInline
-    implicit val v5: Format[BooleanVal] = Jsonx.formatInline
-    implicit val v6: Format[CharVal] = Jsonx.formatInline
-    implicit val v7: Format[DoubleVal] = Jsonx.formatInline
-    implicit val v8: Format[FloatVal] = Jsonx.formatInline
+    implicit val v1: Format[ByteVal] = implicitly[Format[Byte]].inmap(ByteVal.apply, _.a)
+    implicit val v2: Format[ShortVal] = implicitly[Format[Short]].inmap(ShortVal.apply, _.a)
+    implicit val v3: Format[IntVal] = implicitly[Format[Int]].inmap(IntVal.apply, _.a)
+    implicit val v4: Format[LongVal] = implicitly[Format[Long]].inmap(LongVal.apply, _.a)
+    implicit val v5: Format[BooleanVal] = implicitly[Format[Boolean]].inmap(BooleanVal.apply, _.a)
+    implicit val v6: Format[CharVal] = charFormat.inmap(CharVal.apply, _.a)
+    implicit val v7: Format[DoubleVal] = implicitly[Format[Double]].inmap(DoubleVal.apply, _.a)
+    implicit val v8: Format[FloatVal] = implicitly[Format[Float]].inmap(FloatVal.apply, _.a)
     Json.format
   }
   implicit val bitSetFormat: Format[BitSet] = Format(
@@ -100,7 +103,7 @@ object PlayJsonFormats {
     implicit lazy val v1: Format[X] = Json.format
     implicit lazy val v2: Format[Y] = Json.format
     implicit lazy val v3: Format[Z] = Json.format
-    implicit lazy val v4: Format[ADTBase] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v4: Format[ADTBase] = Json.format
     v4
   }
   val geoJSONFormat: Format[GeoJSON.GeoJSON] = {
@@ -111,13 +114,13 @@ object PlayJsonFormats {
     implicit lazy val v4: Format[GeoJSON.MultiLineString] = Json.format
     implicit lazy val v5: Format[GeoJSON.Polygon] = Json.format
     implicit lazy val v6: Format[GeoJSON.MultiPolygon] = Json.format
-    implicit lazy val v7: Format[GeoJSON.SimpleGeometry] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v7: Format[GeoJSON.SimpleGeometry] = Json.format
     implicit lazy val v8: Format[GeoJSON.GeometryCollection] = Json.format
-    implicit lazy val v9: Format[GeoJSON.Geometry] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v9: Format[GeoJSON.Geometry] = Json.format
     implicit lazy val v10: Format[GeoJSON.Feature] = Json.format
-    implicit lazy val v11: Format[GeoJSON.SimpleGeoJSON] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v11: Format[GeoJSON.SimpleGeoJSON] = Json.format
     implicit lazy val v12: Format[GeoJSON.FeatureCollection] = Json.format
-    implicit lazy val v13: Format[GeoJSON.GeoJSON] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v13: Format[GeoJSON.GeoJSON] = Json.format
     v13
   }
   implicit val gitHubActionsAPIFormat: Format[GitHubActionsAPI.Response] = {
