@@ -19,8 +19,8 @@ libraryDependencySchemes ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.openjdk.jmh" % "jmh-core" % "1.35",
-  "org.openjdk.jmh" % "jmh-generator-asm" % "1.35",
-  "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.35",
-  "org.openjdk.jmh" % "jmh-generator-reflection" % "1.35"
+  "org.openjdk.jmh" % "jmh-core" % "1.36",
+  "org.openjdk.jmh" % "jmh-generator-asm" % "1.36",
+  "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.36",
+  "org.openjdk.jmh" % "jmh-generator-reflection" % "1.36"
 )
