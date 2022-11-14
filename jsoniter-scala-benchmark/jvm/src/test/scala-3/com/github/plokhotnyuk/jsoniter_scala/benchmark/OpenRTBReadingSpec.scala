@@ -22,8 +22,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
-      //FIXME: zio-json doesn't support default values
-      //benchmark.zioJson() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -41,8 +40,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
-      //FIXME: zio-json doesn't support default values
-      //intercept[Throwable](b.zioJson())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

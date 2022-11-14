@@ -234,6 +234,10 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("3.2.1", "2.13.10"),
+    scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _)) => Seq("-Yretain-trees")
+      case _ => Seq()
+    }),
     resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Resolver.sonatypeOssRepos("staging"),
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio-json" % "0.3.0",

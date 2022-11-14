@@ -88,7 +88,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[BidRequest])
   }
-/* FIXME: zio-json doesn't support default values
+
   @Benchmark
   def zioJson(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
@@ -98,5 +98,4 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[BidRequest].fold(sys.error, identity)
   }
-*/
 }

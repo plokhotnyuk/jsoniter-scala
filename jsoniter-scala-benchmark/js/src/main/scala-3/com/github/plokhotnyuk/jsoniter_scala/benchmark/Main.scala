@@ -1072,7 +1072,8 @@ object Main {
       //B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new OpenRTBWriting { setup() }
