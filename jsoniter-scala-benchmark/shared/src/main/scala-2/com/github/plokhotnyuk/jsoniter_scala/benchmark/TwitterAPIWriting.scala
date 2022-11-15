@@ -89,7 +89,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
-/* FIXME: Play-JSON serializes empty collections
+
   @Benchmark
   def playJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -97,7 +97,17 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
     Json.toBytes(Json.toJson(obj))
   }
-*/
+
+  @Benchmark
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import play.api.libs.json.Json
+
+    writeToArray(Json.toJson(obj))
+  }
+
   @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
