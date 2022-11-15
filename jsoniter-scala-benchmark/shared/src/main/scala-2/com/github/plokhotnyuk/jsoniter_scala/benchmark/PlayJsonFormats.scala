@@ -125,9 +125,7 @@ object PlayJsonFormats {
   }
   implicit val gitHubActionsAPIFormat: Format[GitHubActionsAPI.Response] = {
     implicit val v1: Format[Boolean] = stringFormat[Boolean]("boolean") { s =>
-      if (s == "true") true
-      else if (s == "false") false
-      else sys.error("")
+      "true" == s || "false" != s && sys.error("")
     }
     implicit val v2: Format[GitHubActionsAPI.Artifact] = Jsonx.formatCaseClass
     Json.format
