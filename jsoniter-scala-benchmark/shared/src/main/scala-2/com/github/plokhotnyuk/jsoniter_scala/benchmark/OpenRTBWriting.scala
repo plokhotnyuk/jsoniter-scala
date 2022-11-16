@@ -81,7 +81,7 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
-/* FIXME: Play-JSON serializes lists with default values
+
   @Benchmark
   def playJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -89,7 +89,17 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
     Json.toBytes(Json.toJson(obj))
   }
-*/
+
+  @Benchmark
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import play.api.libs.json.Json
+
+    writeToArray(Json.toJson(obj))
+  }
+
   @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._

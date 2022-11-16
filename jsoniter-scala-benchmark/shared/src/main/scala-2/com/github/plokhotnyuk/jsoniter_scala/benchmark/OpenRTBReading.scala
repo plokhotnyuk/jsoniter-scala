@@ -72,7 +72,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
     readFromArray[BidRequest](jsonBytes)
   }
-/* FIXME: Play-JSON requires fields for lists with default values
+
   @Benchmark
   def playJson(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -80,7 +80,16 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
     Json.parse(jsonBytes).as[BidRequest]
   }
-*/
+
+  @Benchmark
+  def playJsonJsoniter(): BidRequest = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[BidRequest]
+  }
+
   @Benchmark
   def smithy4sJson(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._

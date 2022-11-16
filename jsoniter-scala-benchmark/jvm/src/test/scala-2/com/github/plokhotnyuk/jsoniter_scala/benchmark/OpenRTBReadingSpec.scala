@@ -18,8 +18,8 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
-      //FIXME: Play-JSON requires fields for lists with default values
-      //benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       //FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
       //benchmark.sprayJson() shouldBe benchmark.obj
@@ -39,6 +39,8 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())

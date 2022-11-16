@@ -15,8 +15,8 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       //toString(b.circeJsoniter()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
-      //FIXME: Play-JSON serializes lists with default values
-      //toString(b.playJson()) shouldBe b.jsonString
+      toString(b.playJson()) shouldBe b.jsonString
+      toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       //FIXME: Zio-JSON serializes empty collections

@@ -235,11 +235,12 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("3.2.1", "2.13.10"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((3, _)) => Seq("-Yretain-trees")
+      case Some((3, _)) => Seq("-Yretain-trees", "-Xmax-inlines:100")
       case _ => Seq()
     }),
     resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Resolver.sonatypeOssRepos("staging"),
     libraryDependencies ++= Seq(
+      "com.typesafe.play" %%% "play-json" % "2.10.0-RC7",
       "dev.zio" %%% "zio-json" % "0.3.0",
       "com.lihaoyi" %%% "upickle" % "2.0.0",
       "io.circe" %%% "circe-generic" % "0.14.3",
@@ -262,9 +263,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       case Some((2, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
         "com.avsystem.commons" %%% "commons-core" % "2.7.6",
-        "com.typesafe.play" %%% "play-json" % "2.10.0-RC7",
         "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.2",
-        "com.github.plokhotnyuk.play-json-extensions" %%% "play-json-extensions" % "0.43.1",
         "pl.iterators" %% "kebs-spray-json" % "1.9.5",
         "io.spray" %% "spray-json" % "1.3.6",
         "com.dslplatform" %% "dsl-json-scala" % "1.9.9"
@@ -272,10 +271,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       case Some((3, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.10.1"
       )
-      case _ => Seq()
-    }),
-    Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((3, _)) => Seq("-Xmax-inlines:100")
       case _ => Seq()
     })
   )
