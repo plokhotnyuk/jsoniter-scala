@@ -71,6 +71,14 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): ArraySeq[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[ArraySeq[Boolean]]
+  }
+
+  @Benchmark
   def uPickle(): ArraySeq[Boolean] = {
     import upickle.default._
 

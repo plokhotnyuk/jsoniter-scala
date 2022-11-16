@@ -78,6 +78,15 @@ class ADTWriting extends ADTBenchmark {
 
     writeToArray(obj)
   }
+
+  @Benchmark
+  def sprayJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    obj.toJson(adtBaseJsonFormat).compactPrint.getBytes(UTF_8)
+  }
 /* FIXME: uPuckle hungs in endless loop
   @Benchmark
   def uPickle(): Array[Byte] = {

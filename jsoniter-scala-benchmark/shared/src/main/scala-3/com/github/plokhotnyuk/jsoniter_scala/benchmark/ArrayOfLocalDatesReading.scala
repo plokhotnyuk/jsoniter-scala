@@ -64,6 +64,14 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[LocalDate] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[LocalDate]]
+  }
+
+  @Benchmark
   def uPickle(): Array[LocalDate] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

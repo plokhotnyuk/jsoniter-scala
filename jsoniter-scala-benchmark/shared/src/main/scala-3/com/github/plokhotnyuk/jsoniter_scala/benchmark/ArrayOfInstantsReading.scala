@@ -72,6 +72,14 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Instant] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Instant]]
+  }
+
+  @Benchmark
   def uPickle(): Array[Instant] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

@@ -71,6 +71,14 @@ class NestedStructsReading extends NestedStructsBenchmark {
 
     readFromArray[NestedStructs](jsonBytes)
   }
+
+  @Benchmark
+  def sprayJson(): NestedStructs = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[NestedStructs](nestedStructsJsonFormat)
+  }
 /* FIXME: uPuckle hungs in endless loop
   @Benchmark
   def uPickle(): NestedStructs = {

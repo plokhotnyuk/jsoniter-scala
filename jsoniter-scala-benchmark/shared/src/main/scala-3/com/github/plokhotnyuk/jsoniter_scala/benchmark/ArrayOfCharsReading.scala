@@ -62,6 +62,14 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Char] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Char]]
+  }
+
+  @Benchmark
   def uPickle(): Array[Char] = {
     import upickle.default._
 

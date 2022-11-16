@@ -69,6 +69,14 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Set[Int]]
+  }
+
+  @Benchmark
   def uPickle(): Set[Int] = {
     import upickle.default._
 

@@ -70,6 +70,14 @@ class BigDecimalReading extends BigDecimalBenchmark {
   }
 */
   @Benchmark
+  def sprayJson(): BigDecimal = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes, jsonParserSettings).convertTo[BigDecimal]
+  }
+
+  @Benchmark
   def uPickle(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

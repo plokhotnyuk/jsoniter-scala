@@ -62,6 +62,14 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[ZonedDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[ZonedDateTime]]
+  }
+
+  @Benchmark
   def uPickle(): Array[ZonedDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

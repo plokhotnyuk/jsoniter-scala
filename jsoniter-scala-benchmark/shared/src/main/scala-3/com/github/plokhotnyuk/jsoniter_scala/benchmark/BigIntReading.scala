@@ -71,6 +71,14 @@ class BigIntReading extends BigIntBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): BigInt = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes, jsonParserSettings).convertTo[BigInt]
+  }
+
+  @Benchmark
   def uPickle(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

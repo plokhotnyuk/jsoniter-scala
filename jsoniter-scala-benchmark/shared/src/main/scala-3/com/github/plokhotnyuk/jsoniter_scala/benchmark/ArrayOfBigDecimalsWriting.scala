@@ -78,6 +78,15 @@ class ArrayOfBigDecimalsWriting extends ArrayOfBigDecimalsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Byte] = {
+    import spray.json._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
+
+  @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

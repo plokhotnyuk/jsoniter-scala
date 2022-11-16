@@ -71,6 +71,14 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[BigInt] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[BigInt]]
+  }
+
+  @Benchmark
   def uPickle(): Array[BigInt] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

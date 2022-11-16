@@ -69,6 +69,14 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): List[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[List[Boolean]]
+  }
+
+  @Benchmark
   def uPickle(): List[Boolean] = {
     import upickle.default._
 

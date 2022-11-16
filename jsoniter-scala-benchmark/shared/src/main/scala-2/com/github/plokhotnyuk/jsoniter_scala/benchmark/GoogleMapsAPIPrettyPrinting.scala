@@ -106,7 +106,7 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
     import spray.json._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    CustomPrettyPrinter(obj.toJson).getBytes(UTF_8)
+    prettyPrinter(obj.toJson).getBytes(UTF_8)
   }
 
   @Benchmark

@@ -69,6 +69,14 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Short] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Short]]
+  }
+
+  @Benchmark
   def uPickle(): Array[Short] = {
     import upickle.default._
 

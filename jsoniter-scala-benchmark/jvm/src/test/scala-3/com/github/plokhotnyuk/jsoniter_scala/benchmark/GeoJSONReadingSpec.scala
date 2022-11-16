@@ -19,6 +19,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       //benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
+      benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       //FIXME: zio-json throws java.lang.RuntimeException: (FeatureCollection).features[0](Feature).geometry(invalid disambiguator)
@@ -37,6 +38,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
+      intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       //FIXME: zio-json throws java.lang.RuntimeException: (FeatureCollection).features[0](Feature).geometry(invalid disambiguator)

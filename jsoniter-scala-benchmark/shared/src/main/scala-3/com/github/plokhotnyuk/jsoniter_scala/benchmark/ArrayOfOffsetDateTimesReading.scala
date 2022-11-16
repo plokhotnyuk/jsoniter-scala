@@ -64,6 +64,14 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[OffsetDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[OffsetDateTime]]
+  }
+
+  @Benchmark
   def uPickle(): Array[OffsetDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

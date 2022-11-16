@@ -16,6 +16,8 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
+      //FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
+      //benchmark.sprayJson() shouldBe benchmark.obj
       //FIXME: uPickle parses maps from JSON arrays only
       //benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj

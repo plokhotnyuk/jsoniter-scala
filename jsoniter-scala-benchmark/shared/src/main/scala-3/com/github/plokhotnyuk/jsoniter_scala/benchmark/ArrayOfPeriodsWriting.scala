@@ -72,6 +72,15 @@ class ArrayOfPeriodsWriting extends ArrayOfPeriodsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
+
+  @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

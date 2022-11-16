@@ -21,6 +21,8 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
+      //FIXME: Spray-JSON serializes fields with default values
+      //toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.weePickle()) shouldBe b.jsonString
       //FIXME: Zio-JSON serializes empty collections

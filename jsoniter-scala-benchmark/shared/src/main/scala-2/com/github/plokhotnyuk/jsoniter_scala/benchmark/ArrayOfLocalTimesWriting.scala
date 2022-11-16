@@ -22,9 +22,9 @@ class ArrayOfLocalTimesWriting extends ArrayOfLocalTimesBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = {
+    import java.nio.charset.StandardCharsets.UTF_8
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.syntax._
-    import java.nio.charset.StandardCharsets.UTF_8
 
     printer.print(obj.asJson).getBytes(UTF_8)
   }

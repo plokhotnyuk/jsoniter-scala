@@ -71,6 +71,14 @@ class Base64Reading extends Base64Benchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json.JsonParser
+
+    JsonParser(jsonBytes).convertTo[Array[Byte]](base64JsonFormat)
+  }
+
+  @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

@@ -64,6 +64,14 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[SuitADT] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[SuitADT]]
+  }
+
+  @Benchmark
   def uPickle(): Array[SuitADT] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

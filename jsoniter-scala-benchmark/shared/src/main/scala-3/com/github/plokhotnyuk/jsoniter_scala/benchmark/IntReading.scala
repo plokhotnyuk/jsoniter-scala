@@ -69,6 +69,14 @@ class IntReading extends IntBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Int = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Int]
+  }
+
+  @Benchmark
   def uPickle(): Int = {
     import upickle.default._
 

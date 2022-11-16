@@ -70,6 +70,14 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Byte]]
+  }
+
+  @Benchmark
   def uPickle(): Array[Byte] = {
     import upickle.default._
 

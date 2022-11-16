@@ -72,6 +72,14 @@ class AnyValsReading extends AnyValsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): AnyVals = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[AnyVals]
+  }
+
+  @Benchmark
   def uPickle(): AnyVals = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

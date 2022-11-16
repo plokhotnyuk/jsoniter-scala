@@ -124,6 +124,18 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    try {
+      JsonParser(jsonBytes).convertTo[MissingRequiredFields](missingReqFieldsJsonFormat).toString // toString shouldn't be called
+    } catch {
+      case ex: DeserializationException => ex.getMessage
+    }
+  }
+
+  @Benchmark
   def uPickle(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
     import upickle.core.AbortException

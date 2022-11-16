@@ -70,6 +70,14 @@ class ADTReading extends ADTBenchmark {
 
     readFromArray[ADTBase](jsonBytes)
   }
+
+  @Benchmark
+  def sprayJson(): ADTBase = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[ADTBase](adtBaseJsonFormat)
+  }
 /* FIXME: uPuckle hungs in endless loop
   @Benchmark
   def uPickle(): ADTBase = {

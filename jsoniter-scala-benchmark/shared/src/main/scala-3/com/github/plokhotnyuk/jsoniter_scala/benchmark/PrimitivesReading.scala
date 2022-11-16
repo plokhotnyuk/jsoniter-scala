@@ -72,6 +72,14 @@ class PrimitivesReading extends PrimitivesBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Primitives]
+  }
+
+  @Benchmark
   def uPickle(): Primitives = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

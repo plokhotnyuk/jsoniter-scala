@@ -69,6 +69,14 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[String]
+  }
+
+  @Benchmark
   def uPickle(): String = {
     import upickle.default._
 

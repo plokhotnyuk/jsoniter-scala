@@ -71,6 +71,14 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[UUID] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[UUID]]
+  }
+
+  @Benchmark
   def uPickle(): Array[UUID] = {
     import upickle.default._
 

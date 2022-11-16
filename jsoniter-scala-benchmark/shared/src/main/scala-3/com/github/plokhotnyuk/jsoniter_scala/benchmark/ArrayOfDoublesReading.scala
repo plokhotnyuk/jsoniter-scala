@@ -69,6 +69,14 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Double] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Double]]
+  }
+
+  @Benchmark
   def uPickle(): Array[Double] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

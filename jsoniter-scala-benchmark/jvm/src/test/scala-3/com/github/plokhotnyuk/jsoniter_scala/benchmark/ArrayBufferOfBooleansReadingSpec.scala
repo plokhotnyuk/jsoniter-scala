@@ -16,6 +16,7 @@ class ArrayBufferOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
     }
@@ -29,6 +30,7 @@ class ArrayBufferOfBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
     }

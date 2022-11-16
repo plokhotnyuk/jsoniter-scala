@@ -69,6 +69,14 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Long] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Long]]
+  }
+
+  @Benchmark
   def uPickle(): Array[Long] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

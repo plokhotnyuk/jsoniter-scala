@@ -16,6 +16,8 @@ class MapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
+      //FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
+      //toString(b.sprayJson()) shouldBe b.jsonString
       //FIXME: uPickle serializes maps as JSON arrays
       //toString(b.uPickle()) shouldBe b.jsonString
       toString(b.weePickle()) shouldBe b.jsonString

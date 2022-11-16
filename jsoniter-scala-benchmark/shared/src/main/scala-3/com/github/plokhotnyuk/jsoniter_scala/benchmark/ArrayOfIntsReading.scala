@@ -69,6 +69,14 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Array[Int]]
+  }
+
+  @Benchmark
   def uPickle(): Array[Int] = {
     import upickle.default._
 

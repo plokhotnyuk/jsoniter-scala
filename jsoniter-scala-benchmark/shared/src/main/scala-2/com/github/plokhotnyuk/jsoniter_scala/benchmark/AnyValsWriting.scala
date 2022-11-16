@@ -115,7 +115,7 @@ class AnyValsWriting extends AnyValsBenchmark {
 
   @Benchmark
   def sprayJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.FlatSprayFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._
     import java.nio.charset.StandardCharsets.UTF_8
 

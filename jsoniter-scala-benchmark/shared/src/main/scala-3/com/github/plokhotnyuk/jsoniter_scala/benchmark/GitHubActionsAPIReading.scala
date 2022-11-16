@@ -71,6 +71,14 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
 
     readFromArray[GitHubActionsAPI.Response](jsonBytes)
   }
+
+  @Benchmark
+  def sprayJson(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json.JsonParser
+
+    JsonParser(jsonBytes).convertTo[GitHubActionsAPI.Response]
+  }
 /* FIXME: uPickle throws java.lang.NullPointerException: Cannot invoke "upickle.core.Visitor.visitString(java.lang.CharSequence, int)" because the return value of "upickle.core.ObjArrVisitor.subVisitor()" is null
   @Benchmark
   def uPickle(): GitHubActionsAPI.Response = {

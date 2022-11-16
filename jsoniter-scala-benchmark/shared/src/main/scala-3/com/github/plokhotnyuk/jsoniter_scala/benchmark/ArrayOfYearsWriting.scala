@@ -72,6 +72,15 @@ class ArrayOfYearsWriting extends ArrayOfYearsBenchmark {
   }
 
   @Benchmark
+  def sprayJson(): Array[Byte] = {
+    import spray.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
+
+  @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

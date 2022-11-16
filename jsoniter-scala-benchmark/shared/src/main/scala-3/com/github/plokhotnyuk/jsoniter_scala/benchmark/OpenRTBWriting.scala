@@ -80,7 +80,15 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
     writeToArray(obj)
   }
+/* FIXME: Spray-JSON serializes fields with default values
+  @Benchmark
+  def sprayJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
 
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
+*/
   @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
