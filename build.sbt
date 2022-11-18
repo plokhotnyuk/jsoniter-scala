@@ -19,7 +19,7 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  scalaVersion := "2.13.10",
+  scalaVersion := "3.2.1",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
