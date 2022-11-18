@@ -16,6 +16,7 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
       check(toString(b.json4sJackson()), b.jsonString)
       check(toString(b.json4sNative()), b.jsonString)
       check(toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()), b.jsonString)
+      check(toString(b.playJson()), b.jsonString)
       check(toString(b.smithy4sJson()), b.jsonString)
       check(toString(b.sprayJson()), b.jsonString)
       check(toString(b.uPickle()), b.jsonString)

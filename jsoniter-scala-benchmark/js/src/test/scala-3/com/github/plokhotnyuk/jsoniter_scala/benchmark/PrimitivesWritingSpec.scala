@@ -13,6 +13,7 @@ class PrimitivesWritingSpec extends BenchmarkSpecBase {
       toString(b.circeJsoniter()) shouldBe b.jsonString1
       toString(b.jsoniterScala()) shouldBe b.jsonString1
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
+      toString(b.playJson()) shouldBe b.jsonString3
       toString(b.smithy4sJson()) shouldBe b.jsonString1
       toString(b.uPickle()) shouldBe b.jsonString3
       toString(b.zioJson()) shouldBe b.jsonString1

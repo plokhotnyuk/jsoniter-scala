@@ -65,6 +65,14 @@ class NestedStructsReading extends NestedStructsBenchmark {
   }
 
   @Benchmark
+  def playJson(): NestedStructs = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[NestedStructs]
+  }
+
+  @Benchmark
   def smithy4sJson(): NestedStructs = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

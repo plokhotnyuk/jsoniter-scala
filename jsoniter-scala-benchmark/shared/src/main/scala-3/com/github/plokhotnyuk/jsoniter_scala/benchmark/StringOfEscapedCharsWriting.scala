@@ -62,6 +62,13 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
+
+    Json.asciiStringify(Json.toJson(obj)).getBytes
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

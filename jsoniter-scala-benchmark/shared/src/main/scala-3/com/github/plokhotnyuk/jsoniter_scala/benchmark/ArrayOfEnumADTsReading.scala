@@ -64,6 +64,14 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[SuitADT] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Array[SuitADT]]
+  }
+
+  @Benchmark
   def sprayJson(): Array[SuitADT] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

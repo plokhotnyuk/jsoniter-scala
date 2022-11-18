@@ -62,6 +62,14 @@ class IntMapOfBooleansWriting extends IntMapOfBooleansBenchmark {
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
+
+  @Benchmark
+  def playJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj))
+  }
 /* FIXME: uPickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
   @Benchmark
   def uPickle(): Array[Byte] = {

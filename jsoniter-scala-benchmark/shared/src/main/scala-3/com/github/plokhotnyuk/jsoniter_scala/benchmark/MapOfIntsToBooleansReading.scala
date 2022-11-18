@@ -54,6 +54,13 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   }
 
   @Benchmark
+  def playJson(): Map[Int, Boolean] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Map[Int, Boolean]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

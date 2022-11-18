@@ -19,6 +19,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       //FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB$BidRequest
       //benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       //FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
       //benchmark.sprayJson() shouldBe benchmark.obj
@@ -39,6 +40,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       //FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB$BidRequest
       //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())

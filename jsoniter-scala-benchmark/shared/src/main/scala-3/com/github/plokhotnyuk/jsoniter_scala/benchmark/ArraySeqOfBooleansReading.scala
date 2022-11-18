@@ -63,6 +63,13 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   }
 
   @Benchmark
+  def playJson(): ArraySeq[Boolean] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[ArraySeq[Boolean]]
+  }
+
+  @Benchmark
   def smithy4sJson(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

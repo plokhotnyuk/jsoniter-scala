@@ -61,6 +61,13 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Set[Int] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Set[Int]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

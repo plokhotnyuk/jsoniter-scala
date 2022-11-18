@@ -61,6 +61,13 @@ class StringOfNonAsciiCharsReading extends StringOfNonAsciiCharsBenchmark {
   }
 
   @Benchmark
+  def playJson(): String = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[String]
+  }
+
+  @Benchmark
   def smithy4sJson(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

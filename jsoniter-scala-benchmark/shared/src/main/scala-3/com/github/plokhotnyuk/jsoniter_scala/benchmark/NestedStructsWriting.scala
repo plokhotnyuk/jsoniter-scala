@@ -73,6 +73,14 @@ class NestedStructsWriting extends NestedStructsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj))
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

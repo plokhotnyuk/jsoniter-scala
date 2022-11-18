@@ -62,6 +62,13 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   }
 
   @Benchmark
+  def playJson(): mutable.Set[Int] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[mutable.Set[Int]]
+  }
+
+  @Benchmark
   def uPickle(): mutable.Set[Int] = {
     import upickle.default._
 

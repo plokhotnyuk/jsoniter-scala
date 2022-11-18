@@ -61,6 +61,13 @@ class IntReading extends IntBenchmark {
   }
 
   @Benchmark
+  def playJson(): Int = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Int]
+  }
+
+  @Benchmark
   def smithy4sJson(): Int = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

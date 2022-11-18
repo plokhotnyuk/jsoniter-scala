@@ -65,6 +65,14 @@ class ArrayOfLocalTimesReading extends ArrayOfLocalTimesBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[LocalTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Array[LocalTime]]
+  }
+
+  @Benchmark
   def sprayJson(): Array[LocalTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

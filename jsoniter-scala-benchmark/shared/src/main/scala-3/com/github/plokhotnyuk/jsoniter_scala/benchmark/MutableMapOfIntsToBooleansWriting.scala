@@ -63,6 +63,13 @@ class MutableMapOfIntsToBooleansWriting extends MutableMapOfIntsToBooleansBenchm
   }
 
   @Benchmark
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj))
+  }
+
+  @Benchmark
   def weePickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weepickle.v1.WeePickle.FromScala

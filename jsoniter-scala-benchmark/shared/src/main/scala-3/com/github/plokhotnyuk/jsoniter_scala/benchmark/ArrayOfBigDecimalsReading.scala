@@ -62,6 +62,13 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[BigDecimal] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Array[BigDecimal]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[BigDecimal] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

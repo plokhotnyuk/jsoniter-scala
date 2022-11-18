@@ -56,4 +56,12 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
 
     readFromArray[mutable.LongMap[Boolean]](jsonBytes)
   }
+
+  @Benchmark
+  def playJson(): mutable.LongMap[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[mutable.LongMap[Boolean]]
+  }
 }

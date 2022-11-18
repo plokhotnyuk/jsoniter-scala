@@ -23,7 +23,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes = "[]".getBytes(UTF_8)
+      b.jsonBytes = "x".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())

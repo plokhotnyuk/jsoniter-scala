@@ -61,7 +61,14 @@ class BigIntReading extends BigIntBenchmark {
 
     readFromArray[BigInt](jsonBytes)(bigIntCodec)
   }
+/* FIXME: Play-JSON looses significant digits in BigInt values
+  @Benchmark
+  def playJson(): BigInt = {
+    import play.api.libs.json.Json
 
+    Json.parse(jsonBytes).as[BigInt]
+  }
+*/
   @Benchmark
   def smithy4sJson(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._

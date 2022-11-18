@@ -64,6 +64,14 @@ class PrimitivesReading extends PrimitivesBenchmark {
   }
 
   @Benchmark
+  def playJson(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Primitives]
+  }
+
+  @Benchmark
   def smithy4sJson(): Primitives = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

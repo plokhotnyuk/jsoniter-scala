@@ -24,6 +24,8 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      //FIXME play-json parses 1.1999999284744263 as 1.2000000476837158
+      //benchmark.playJson() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
@@ -35,6 +37,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())

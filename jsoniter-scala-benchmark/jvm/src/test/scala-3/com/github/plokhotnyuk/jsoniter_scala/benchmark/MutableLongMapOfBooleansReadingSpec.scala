@@ -17,6 +17,7 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       //FIXME: json4s.native throws org.json4s.MappingException: unknown error
       //benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -29,6 +30,7 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       //FIXME: json4s.native throws org.json4s.MappingException: unknown error
       //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
     }
   }
 }

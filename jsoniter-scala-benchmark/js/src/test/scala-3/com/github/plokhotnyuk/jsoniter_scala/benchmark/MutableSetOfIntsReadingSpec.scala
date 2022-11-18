@@ -13,6 +13,7 @@ class MutableSetOfIntsReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
@@ -22,6 +23,7 @@ class MutableSetOfIntsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
       intercept[Throwable](b.uPickle())
     }
   }

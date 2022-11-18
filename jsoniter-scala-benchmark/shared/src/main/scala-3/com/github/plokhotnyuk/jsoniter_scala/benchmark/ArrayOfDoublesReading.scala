@@ -61,6 +61,13 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[Double] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Array[Double]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Double] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

@@ -70,6 +70,13 @@ class MutableSetOfIntsWriting extends MutableSetOfIntsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj))
+  }
+
+  @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 

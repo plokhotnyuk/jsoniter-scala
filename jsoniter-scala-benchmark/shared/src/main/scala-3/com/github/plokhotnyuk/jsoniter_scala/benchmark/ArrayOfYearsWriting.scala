@@ -72,6 +72,14 @@ class ArrayOfYearsWriting extends ArrayOfYearsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj))
+  }
+
+  @Benchmark
   def sprayJson(): Array[Byte] = {
     import spray.json._
     import java.nio.charset.StandardCharsets.UTF_8

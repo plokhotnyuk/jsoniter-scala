@@ -12,9 +12,9 @@ class ArrayOfShortsWriting extends ArrayOfShortsBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = {
-    import java.nio.charset.StandardCharsets.UTF_8
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.syntax._
+    import java.nio.charset.StandardCharsets.UTF_8
 
     printer.print(obj.asJson).getBytes(UTF_8)
   }
@@ -22,7 +22,6 @@ class ArrayOfShortsWriting extends ArrayOfShortsBenchmark {
   @Benchmark
   def circeJsoniter(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.syntax._
 
@@ -68,6 +67,13 @@ class ArrayOfShortsWriting extends ArrayOfShortsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
+  }
+
+  @Benchmark
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj))
   }
 
   @Benchmark

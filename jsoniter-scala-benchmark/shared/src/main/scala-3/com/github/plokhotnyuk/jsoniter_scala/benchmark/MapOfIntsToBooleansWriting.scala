@@ -63,6 +63,13 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj))
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

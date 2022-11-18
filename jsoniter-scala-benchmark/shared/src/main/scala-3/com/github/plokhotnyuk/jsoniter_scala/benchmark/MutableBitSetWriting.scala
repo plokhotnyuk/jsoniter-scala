@@ -62,4 +62,11 @@ class MutableBitSetWriting extends MutableBitSetBenchmark {
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
+
+  @Benchmark
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj))
+  }
 }

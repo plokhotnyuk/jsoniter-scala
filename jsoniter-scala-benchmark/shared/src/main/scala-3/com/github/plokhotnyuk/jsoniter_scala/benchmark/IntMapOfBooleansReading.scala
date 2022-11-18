@@ -56,4 +56,12 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
 
     readFromArray[IntMap[Boolean]](jsonBytes)
   }
+
+  @Benchmark
+  def playJson(): IntMap[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[IntMap[Boolean]]
+  }
 }

@@ -17,6 +17,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       //FIXME: uPuckle hungs in endless loop
@@ -33,8 +34,8 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       b.jsonBytes = "x".getBytes(UTF_8)
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())
-      b.jsonBytes = "[]".getBytes(UTF_8)
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
       //FIXME: uPuckle hungs in endless loop

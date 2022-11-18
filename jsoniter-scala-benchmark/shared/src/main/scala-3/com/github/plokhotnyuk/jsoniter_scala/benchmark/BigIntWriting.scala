@@ -68,7 +68,14 @@ class BigIntWriting extends BigIntBenchmark {
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)(bigIntCodec)
   }
+/* FIXME: Play-JSON serializes BigInt values as floating point numbers with a scientific representation
+  @Benchmark
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
 
+    Json.toBytes(Json.toJson(obj))
+  }
+*/
   @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._

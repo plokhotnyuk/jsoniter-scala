@@ -63,6 +63,14 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[ZoneId] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Array[ZoneId]]
+  }
+
+  @Benchmark
   def sprayJson(): Array[ZoneId] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

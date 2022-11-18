@@ -4,15 +4,12 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import java.time._
 import java.util.Base64
-import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.immutable.{BitSet, IndexedSeq, IntMap, Map, Seq}
 import scala.collection.mutable
 import scala.util.Try
 
 object PlayJsonFormats {
-  implicit val config = JsonConfiguration(typeNaming = JsonNaming { fullName =>
-    fullName.substring(Math.max(fullName.lastIndexOf('.') + 1, 0))
-  }, discriminator = "type")
-
   def stringFormat[A](name: String)(f: String => A): Format[A] = new Format[A] {
     override def reads(js: JsValue): JsResult[A] =
       Try(JsSuccess(f(js.asInstanceOf[JsString].value))).getOrElse(JsError(s"expected.${name}string"))
@@ -74,63 +71,181 @@ object PlayJsonFormats {
   }
 
   implicit val charFormat: Format[Char] = stringFormat("char") { case s if s.length == 1 => s.charAt(0) }
-  implicit val missingReqFieldsFormat: Format[MissingRequiredFields] = Json.format
-  implicit val nestedStructsFormat: Format[NestedStructs] = Json.format
-  implicit val anyValsFormat: Format[AnyVals] = {
-    implicit val v1: Format[ByteVal] = implicitly[Format[Byte]].inmap(ByteVal.apply, _.a)
-    implicit val v2: Format[ShortVal] = implicitly[Format[Short]].inmap(ShortVal.apply, _.a)
-    implicit val v3: Format[IntVal] = implicitly[Format[Int]].inmap(IntVal.apply, _.a)
-    implicit val v4: Format[LongVal] = implicitly[Format[Long]].inmap(LongVal.apply, _.a)
-    implicit val v5: Format[BooleanVal] = implicitly[Format[Boolean]].inmap(BooleanVal.apply, _.a)
-    implicit val v6: Format[CharVal] = charFormat.inmap(CharVal.apply, _.a)
-    implicit val v7: Format[DoubleVal] = implicitly[Format[Double]].inmap(DoubleVal.apply, _.a)
-    implicit val v8: Format[FloatVal] = implicitly[Format[Float]].inmap(FloatVal.apply, _.a)
-    Json.format
-  }
+  implicit val missingReqFieldsFormat: Format[MissingRequiredFields] = Format({
+    for {
+      s <- (__ \ "s").read[String]
+      i <- (__ \ "i").read[Int]
+    } yield MissingRequiredFields(s, i)
+  }, (x: MissingRequiredFields) => {
+    toJsObject(
+      "s" -> Json.toJson(x.s),
+      "i" -> Json.toJson(x.i)
+    )
+  })
+  implicit lazy val nestedStructsFormat: Format[NestedStructs] = Format({
+    for {
+      n <- (__ \ "n").lazyReadNullable(nestedStructsFormat)
+    } yield NestedStructs(n)
+  }, (x: NestedStructs) => {
+    toJsObject(
+      "n" -> Json.toJson(x.n)
+    )
+  })
+  implicit val anyValsFormat: Format[AnyVals] = Format({
+    for {
+      b <- (__ \ "b").read[Byte]
+      s <- (__ \ "s").read[Short]
+      i <- (__ \ "i").read[Int]
+      l <- (__ \ "l").read[Long]
+      bl <- (__ \ "bl").read[Boolean]
+      ch <- (__ \ "ch").read[Char]
+      dbl <- (__ \ "dbl").read[Double]
+      f <- (__ \ "f").read[Float]
+    } yield AnyVals(ByteVal(b), ShortVal(s), IntVal(i), LongVal(l), BooleanVal(bl), CharVal(ch), DoubleVal(dbl),
+      FloatVal(f))
+  }, (x: AnyVals) => {
+    toJsObject(
+      "b" -> Json.toJson(x.b.a),
+      "s" -> Json.toJson(x.s.a),
+      "i" -> Json.toJson(x.i.a),
+      "l" -> Json.toJson(x.l.a),
+      "bl" -> Json.toJson(x.bl.a),
+      "ch" -> Json.toJson(x.ch.a),
+      "dbl" -> Json.toJson(x.dbl.a),
+      "f" -> Json.toJson(x.f.a)
+    )
+  })
   implicit val bitSetFormat: Format[BitSet] = Format(
     Reads(js => JsSuccess(BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
     Writes((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val mutableBitSetFormat: Format[mutable.BitSet] = Format(
     Reads(js => JsSuccess(mutable.BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
     Writes((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
-  implicit val primitivesFormat: Format[Primitives] = Json.format
-  implicit val extractFieldsFormat: Format[ExtractFields] = Json.format
-  val adtFormat: Format[ADTBase] = {
-    implicit lazy val v1: Format[X] = Json.format
-    implicit lazy val v2: Format[Y] = Json.format
-    implicit lazy val v3: Format[Z] = Json.format
-    implicit lazy val v4: Format[ADTBase] = Json.format
-    v4
-  }
-  val geoJSONFormat: Format[GeoJSON.GeoJSON] = {
-    implicit val v1: Format[GeoJSON.Point] =
-      (__ \ "coordinates").format[(Double, Double)].inmap(GeoJSON.Point.apply, _.coordinates)
-    implicit lazy val v2: Format[GeoJSON.MultiPoint] = Json.format
-    implicit lazy val v3: Format[GeoJSON.LineString] = Json.format
-    implicit lazy val v4: Format[GeoJSON.MultiLineString] = Json.format
-    implicit lazy val v5: Format[GeoJSON.Polygon] = Json.format
-    implicit lazy val v6: Format[GeoJSON.MultiPolygon] = Json.format
-    implicit lazy val v7: Format[GeoJSON.SimpleGeometry] = Json.format
-    implicit lazy val v8: Format[GeoJSON.GeometryCollection] = Json.format
-    implicit lazy val v9: Format[GeoJSON.Geometry] = Json.format
-    implicit lazy val v10: Format[GeoJSON.Feature] = Json.format
-    implicit lazy val v11: Format[GeoJSON.SimpleGeoJSON] = Json.format
-    implicit lazy val v12: Format[GeoJSON.FeatureCollection] = Json.format
-    implicit lazy val v13: Format[GeoJSON.GeoJSON] = Json.format
-    v13
-  }
+  implicit val primitivesFormat: Format[Primitives] = Format({
+    for {
+      b <- (__ \ "b").read[Byte]
+      s <- (__ \ "s").read[Short]
+      i <- (__ \ "i").read[Int]
+      l <- (__ \ "l").read[Long]
+      bl <- (__ \ "bl").read[Boolean]
+      ch <- (__ \ "ch").read[Char]
+      dbl <- (__ \ "dbl").read[Double]
+      f <- (__ \ "f").read[Float]
+    } yield Primitives(b, s, i, l, bl, ch, dbl, f)
+  }, (x: Primitives) => {
+    toJsObject(
+      "b" -> Json.toJson(x.b),
+      "s" -> Json.toJson(x.s),
+      "i" -> Json.toJson(x.i),
+      "l" -> Json.toJson(x.l),
+      "bl" -> Json.toJson(x.bl),
+      "ch" -> Json.toJson(x.ch),
+      "dbl" -> Json.toJson(x.dbl),
+      "f" -> Json.toJson(x.f)
+    )
+  })
+  implicit val extractFieldsFormat: Format[ExtractFields] = Format({
+    for {
+      s <- (__ \ "s").read[String]
+      i <- (__ \ "i").read[Int]
+    } yield ExtractFields(s, i)
+  }, (x: ExtractFields) => {
+    toJsObject(
+      "s" -> Json.toJson(x.s),
+      "i" -> Json.toJson(x.i)
+    )
+  })
   implicit val gitHubActionsAPIFormat: Format[GitHubActionsAPI.Response] = {
     implicit val v1: Format[Boolean] = stringFormat[Boolean]("boolean") { s =>
       "true" == s || "false" != s && sys.error("")
     }
-    implicit val v2: Format[GitHubActionsAPI.Artifact] = Json.format
-    Json.format
+    implicit val v2: Format[GitHubActionsAPI.Artifact] = Format({
+      for {
+        id <- (__ \ "id").read[Long]
+        node_id <- (__ \ "node_id").read[String]
+        name <- (__ \ "name").read[String]
+        size_in_bytes <- (__ \ "size_in_bytes").read[Long]
+        url <- (__ \ "url").read[String]
+        archive_download_url <- (__ \ "archive_download_url").read[String]
+        expired <- (__ \ "expired").read[Boolean]
+        created_at <- (__ \ "created_at").read[Instant]
+        expires_at <- (__ \ "expires_at").read[Instant]
+      } yield GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url, expired,
+        created_at, expires_at)
+    }, (x: GitHubActionsAPI.Artifact) => {
+      toJsObject(
+        "id" -> Json.toJson(x.id),
+        "node_id" -> Json.toJson(x.node_id),
+        "name" -> Json.toJson(x.name),
+        "size_in_bytes" -> Json.toJson(x.size_in_bytes),
+        "url" -> Json.toJson(x.url),
+        "archive_download_url" -> Json.toJson(x.archive_download_url),
+        "expired" -> Json.toJson(x.expired),
+        "created_at" -> Json.toJson(x.created_at),
+        "expires_at" -> Json.toJson(x.expires_at)
+      )
+    })
+    Format({
+      for {
+        total_count <- (__ \ "total_count").read[Int]
+        artifacts <- (__ \ "artifacts").read[Seq[GitHubActionsAPI.Artifact]]
+      } yield GitHubActionsAPI.Response(total_count, artifacts)
+    }, (x: GitHubActionsAPI.Response) => {
+      toJsObject(
+        "total_count" -> Json.toJson(x.total_count),
+        "artifacts" -> Json.toJson(x.artifacts)
+      )
+    })
   }
   implicit val googleMapsAPIFormat: Format[GoogleMapsAPI.DistanceMatrix] = {
-    implicit val v1: Format[GoogleMapsAPI.Value] = Json.format
-    implicit val v2: Format[GoogleMapsAPI.Elements] = Json.format
-    implicit val v3: Format[GoogleMapsAPI.Rows] = Json.format
-    Json.format
+    implicit val v1: Format[GoogleMapsAPI.Value] = Format({
+      for {
+        text <- (__ \ "text").read[String]
+        value <- (__ \ "value").read[Int]
+      } yield GoogleMapsAPI.Value(text, value)
+    }, (x: GoogleMapsAPI.Value) => {
+      toJsObject(
+        "text" -> Json.toJson(x.text),
+        "value" -> Json.toJson(x.value)
+      )
+    })
+    implicit val v2: Format[GoogleMapsAPI.Elements] = Format({
+      for {
+        distance <- (__ \ "distance").read[GoogleMapsAPI.Value]
+        duration <- (__ \ "duration").read[GoogleMapsAPI.Value]
+        status <- (__ \ "status").read[String]
+      } yield GoogleMapsAPI.Elements(distance, duration, status)
+    }, (x: GoogleMapsAPI.Elements) => {
+      toJsObject(
+        "distance" -> Json.toJson(x.distance),
+        "duration" -> Json.toJson(x.duration),
+        "status" -> Json.toJson(x.status)
+      )
+    })
+    implicit val v3: Format[GoogleMapsAPI.Rows] = Format({
+      for {
+        elements <- (__ \ "elements").readWithDefault[IndexedSeq[GoogleMapsAPI.Elements]](Vector.empty)
+      } yield GoogleMapsAPI.Rows(elements)
+    }, (x: GoogleMapsAPI.Rows) => {
+      toJsObject(
+        "elements" -> Json.toJson(x.elements)
+      )
+    })
+    Format({
+      for {
+        destination_addresses <- (__ \ "destination_addresses").readWithDefault[IndexedSeq[String]](Vector.empty)
+        origin_addresses <- (__ \ "origin_addresses").readWithDefault[IndexedSeq[String]](Vector.empty)
+        rows <- (__ \ "rows").readWithDefault[IndexedSeq[GoogleMapsAPI.Rows]](Vector.empty)
+        status <- (__ \ "status").read[String]
+      } yield GoogleMapsAPI.DistanceMatrix(destination_addresses, origin_addresses, rows, status)
+    }, (x: GoogleMapsAPI.DistanceMatrix) => {
+      toJsObject(
+        "destination_addresses" -> Json.toJson(x.destination_addresses),
+        "origin_addresses" -> Json.toJson(x.origin_addresses),
+        "rows" -> Json.toJson(x.rows),
+        "status" -> Json.toJson(x.status)
+      )
+    })
   }
   implicit val openRTBBidRequestFormat: Format[OpenRTB.BidRequest] = {
     implicit val v1: Format[OpenRTB.Segment] = Format({
@@ -717,7 +832,11 @@ object PlayJsonFormats {
         "pchain" -> Json.toJson(x.pchain)
       )
     })
-    implicit val v21: Format[OpenRTB.Reqs] = Json.format
+    implicit val v21: Format[OpenRTB.Reqs] = Format({
+      for {
+        coppa <- (__ \ "coppa").read[Int]
+      } yield OpenRTB.Reqs(coppa)
+    }, (x: OpenRTB.Reqs) => toJsObject("coppa" -> Json.toJson(x.coppa)))
     Format({
       for {
         id <- (__ \ "id").read[String]
@@ -1042,7 +1161,16 @@ object PlayJsonFormats {
       )
     })
   }
-  implicit val enumFormat: Format[SuitEnum.SuitEnum] = Format(Reads.enumNameReads(SuitEnum), Writes.enumNameWrites)
+  implicit val enumFormat: Format[SuitEnum.SuitEnum] = stringFormat("suitenum") {
+    val ec = new ConcurrentHashMap[String, SuitEnum.SuitEnum]
+    (s: String) =>
+      var x = ec.get(s)
+      if (x eq null) {
+        x = SuitEnum.values.iterator.find(_.toString == s).getOrElse(sys.error(""))
+        ec.put(s, x)
+      }
+      x
+  }
   implicit val enumADTFormat: Format[SuitADT] = stringFormat("suitadt") {
     val suite = Map(
       "Hearts" -> Hearts,

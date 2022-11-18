@@ -38,7 +38,6 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       b.jsonBytes = "x".getBytes(UTF_8)
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())
-      b.jsonBytes = "[]".getBytes(UTF_8)
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

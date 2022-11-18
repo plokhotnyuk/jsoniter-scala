@@ -19,6 +19,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       toString(b.json4sNative()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
+      toString(b.playJson()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.sprayJson()) shouldBe b.jsonString
       //FIXME: uPuckle hungs in endless loop

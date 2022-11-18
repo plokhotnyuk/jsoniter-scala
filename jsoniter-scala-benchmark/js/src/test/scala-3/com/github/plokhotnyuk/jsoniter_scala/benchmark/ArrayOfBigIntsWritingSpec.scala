@@ -13,6 +13,8 @@ class ArrayOfBigIntsWritingSpec extends BenchmarkSpecBase {
       toString(b.circeJsoniter()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
+      //FIXME: Play-JSON uses BigDecimal with engineering decimal representation to serialize numbers
+      //toString(b.playJson()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.zioJson()) shouldBe b.jsonString

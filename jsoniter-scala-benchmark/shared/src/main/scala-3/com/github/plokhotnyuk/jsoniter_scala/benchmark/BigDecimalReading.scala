@@ -60,6 +60,14 @@ class BigDecimalReading extends BigDecimalBenchmark {
 
     readFromArray[BigDecimal](jsonBytes)(bigDecimalCodec)
   }
+/* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
+  @Benchmark
+  def playJson(): BigDecimal = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[BigDecimal]
+  }
+*/
 /* FIXME: smithy4sJson: don't know how to tune precision for parsing of BigDecimal values
   @Benchmark
   def smithy4sJson(): BigDecimal = {

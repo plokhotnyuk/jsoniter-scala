@@ -82,7 +82,7 @@ class ADTWriting extends ADTBenchmark {
 
   @Benchmark
   def playJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonDerivedFormats._
     import play.api.libs.json.Json
 
     Json.toBytes(Json.toJson(obj)(adtFormat))
@@ -91,7 +91,7 @@ class ADTWriting extends ADTBenchmark {
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonDerivedFormats._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import play.api.libs.json.Json
 

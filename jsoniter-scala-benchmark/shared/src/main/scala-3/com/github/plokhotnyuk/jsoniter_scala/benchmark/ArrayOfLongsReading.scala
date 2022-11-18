@@ -61,6 +61,13 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[Long] = {
+    import play.api.libs.json.Json
+
+    Json.parse(jsonBytes).as[Array[Long]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Long] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

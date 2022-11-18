@@ -12,6 +12,7 @@ class MapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.circeJsoniter()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
+      toString(b.playJson()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
       //FIXME: uPickle serializes maps as JSON arrays
       //toString(b.uPickle()) shouldBe b.jsonString

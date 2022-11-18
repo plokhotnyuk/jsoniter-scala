@@ -69,7 +69,15 @@ class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
+/* FIXME: Play-JSON uses BigDecimal with engineering decimal representation to serialize numbers
+  @Benchmark
+  def playJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
 
+    Json.toBytes(Json.toJson(obj))
+  }
+*/
   @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
