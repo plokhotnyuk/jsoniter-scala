@@ -8,21 +8,19 @@
 Scala macros for compile-time generation of safe and ultra-fast JSON codecs.
 
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
-serialization performance of jsoniter-scala with: [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons),
-[Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), 
+serialization performance of jsoniter-scala with: [Borer](https://github.com/sirthias/borer), 
+[Circe](https://github.com/circe/circe), 
 [Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
-[DSL-JSON](https://github.com/ngs-doo/dsl-json),
 [jackson-module-scala](https://github.com/FasterXML/jackson-module-scala),
 [json4s.jackson](https://github.com/json4s/json4s/tree/master/jackson),
 [json4s.native](https://github.com/json4s/json4s/tree/master/native),
 [Play-JSON](https://github.com/playframework/play-json),
-[play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
 (max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 22.04, and latest versions of Azul Zulu 11/17, OpenJDK 20[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
-GraalVM CE/EE 22.2 for Java 11/17, and GraalVM CE 22.3 for Java 19.
+GraalVM CE 23-dev for Java 17/19, and GraalVM EE 22.3 for Java 11/17/19.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
 compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.11.0 to ES 2015 with
