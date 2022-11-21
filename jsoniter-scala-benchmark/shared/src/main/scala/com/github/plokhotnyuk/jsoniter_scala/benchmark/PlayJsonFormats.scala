@@ -78,8 +78,8 @@ object PlayJsonFormats {
     } yield MissingRequiredFields(s, i)
   }, (x: MissingRequiredFields) => {
     toJsObject(
-      "s" -> Json.toJson(x.s),
-      "i" -> Json.toJson(x.i)
+      "s" -> JsString(x.s),
+      "i" -> JsNumber(x.i)
     )
   })
   implicit lazy val nestedStructsFormat: Format[NestedStructs] = Format({
@@ -107,11 +107,11 @@ object PlayJsonFormats {
     toJsObject(
       "b" -> Json.toJson(x.b.a),
       "s" -> Json.toJson(x.s.a),
-      "i" -> Json.toJson(x.i.a),
-      "l" -> Json.toJson(x.l.a),
-      "bl" -> Json.toJson(x.bl.a),
+      "i" -> JsNumber(x.i.a),
+      "l" -> JsNumber(x.l.a),
+      "bl" -> JsBoolean(x.bl.a),
       "ch" -> Json.toJson(x.ch.a),
-      "dbl" -> Json.toJson(x.dbl.a),
+      "dbl" -> JsNumber(x.dbl.a),
       "f" -> Json.toJson(x.f.a)
     )
   })
@@ -136,11 +136,11 @@ object PlayJsonFormats {
     toJsObject(
       "b" -> Json.toJson(x.b),
       "s" -> Json.toJson(x.s),
-      "i" -> Json.toJson(x.i),
-      "l" -> Json.toJson(x.l),
-      "bl" -> Json.toJson(x.bl),
+      "i" -> JsNumber(x.i),
+      "l" -> JsNumber(x.l),
+      "bl" -> JsBoolean(x.bl),
       "ch" -> Json.toJson(x.ch),
-      "dbl" -> Json.toJson(x.dbl),
+      "dbl" -> JsNumber(x.dbl),
       "f" -> Json.toJson(x.f)
     )
   })
@@ -151,8 +151,8 @@ object PlayJsonFormats {
     } yield ExtractFields(s, i)
   }, (x: ExtractFields) => {
     toJsObject(
-      "s" -> Json.toJson(x.s),
-      "i" -> Json.toJson(x.i)
+      "s" -> JsString(x.s),
+      "i" -> JsNumber(x.i)
     )
   })
   implicit val gitHubActionsAPIFormat: Format[GitHubActionsAPI.Response] = {
@@ -174,12 +174,12 @@ object PlayJsonFormats {
         created_at, expires_at)
     }, (x: GitHubActionsAPI.Artifact) => {
       toJsObject(
-        "id" -> Json.toJson(x.id),
-        "node_id" -> Json.toJson(x.node_id),
-        "name" -> Json.toJson(x.name),
-        "size_in_bytes" -> Json.toJson(x.size_in_bytes),
-        "url" -> Json.toJson(x.url),
-        "archive_download_url" -> Json.toJson(x.archive_download_url),
+        "id" -> JsNumber(x.id),
+        "node_id" -> JsString(x.node_id),
+        "name" -> JsString(x.name),
+        "size_in_bytes" -> JsNumber(x.size_in_bytes),
+        "url" -> JsString(x.url),
+        "archive_download_url" -> JsString(x.archive_download_url),
         "expired" -> Json.toJson(x.expired),
         "created_at" -> Json.toJson(x.created_at),
         "expires_at" -> Json.toJson(x.expires_at)
@@ -192,7 +192,7 @@ object PlayJsonFormats {
       } yield GitHubActionsAPI.Response(total_count, artifacts)
     }, (x: GitHubActionsAPI.Response) => {
       toJsObject(
-        "total_count" -> Json.toJson(x.total_count),
+        "total_count" -> JsNumber(x.total_count),
         "artifacts" -> Json.toJson(x.artifacts)
       )
     })
@@ -205,8 +205,8 @@ object PlayJsonFormats {
       } yield GoogleMapsAPI.Value(text, value)
     }, (x: GoogleMapsAPI.Value) => {
       toJsObject(
-        "text" -> Json.toJson(x.text),
-        "value" -> Json.toJson(x.value)
+        "text" -> JsString(x.text),
+        "value" -> JsNumber(x.value)
       )
     })
     implicit val v2: Format[GoogleMapsAPI.Elements] = Format({
@@ -219,7 +219,7 @@ object PlayJsonFormats {
       toJsObject(
         "distance" -> Json.toJson(x.distance),
         "duration" -> Json.toJson(x.duration),
-        "status" -> Json.toJson(x.status)
+        "status" -> JsString(x.status)
       )
     })
     implicit val v3: Format[GoogleMapsAPI.Rows] = Format({
@@ -243,7 +243,7 @@ object PlayJsonFormats {
         "destination_addresses" -> Json.toJson(x.destination_addresses),
         "origin_addresses" -> Json.toJson(x.origin_addresses),
         "rows" -> Json.toJson(x.rows),
-        "status" -> Json.toJson(x.status)
+        "status" -> JsString(x.status)
       )
     })
   }
@@ -289,7 +289,7 @@ object PlayJsonFormats {
       } yield OpenRTB.Deal(id, bidfloor, bidfloorcur, at, wseat, wadomain)
     }, (x: OpenRTB.Deal) => {
       toJsObject(
-        "id" -> Json.toJson(x.id),
+        "id" -> JsString(x.id),
         "bidfloor" -> toJson(x.bidfloor, 0.0),
         "bidfloorcur" -> toJson(x.bidfloorcur, "USD"),
         "at" -> Json.toJson(x.at),
@@ -305,8 +305,8 @@ object PlayJsonFormats {
       } yield OpenRTB.Metric(type_, value, vendor)
     }, (x: OpenRTB.Metric) => {
       toJsObject(
-        "type" -> Json.toJson(x.`type`),
-        "value" -> Json.toJson(x.value),
+        "type" -> JsString(x.`type`),
+        "value" -> JsNumber(x.value),
         "vendor" -> Json.toJson(x.vendor)
       )
     })
@@ -463,7 +463,7 @@ object PlayJsonFormats {
       } yield OpenRTB.Native(request, ver, api, battr)
     }, (x: OpenRTB.Native) => {
       toJsObject(
-        "request" -> Json.toJson(x.request),
+        "request" -> JsString(x.request),
         "ver" -> Json.toJson(x.ver),
         "api" -> Json.toJson(x.api),
         "battr" -> Json.toJson(x.battr)
@@ -638,7 +638,7 @@ object PlayJsonFormats {
         tagid, bidfloor, bidfloorcur, clickbrowser, secure, iframebuster, exp)
     }, (x: OpenRTB.Imp) => {
       toJsObject(
-        "id" -> Json.toJson(x.id),
+        "id" -> JsString(x.id),
         "metric" -> Json.toJson(x.metric),
         "banner" -> Json.toJson(x.banner),
         "video" -> Json.toJson(x.video),
@@ -836,7 +836,7 @@ object PlayJsonFormats {
       for {
         coppa <- (__ \ "coppa").read[Int]
       } yield OpenRTB.Reqs(coppa)
-    }, (x: OpenRTB.Reqs) => toJsObject("coppa" -> Json.toJson(x.coppa)))
+    }, (x: OpenRTB.Reqs) => toJsObject("coppa" -> JsNumber(x.coppa)))
     Format({
       for {
         id <- (__ \ "id").read[String]
@@ -862,7 +862,7 @@ object PlayJsonFormats {
         bcat, badv, bapp, source, reqs)
     }, (x: OpenRTB.BidRequest) => {
       toJsObject(
-        "id" -> Json.toJson(x.id),
+        "id" -> JsString(x.id),
         "imp" -> Json.toJson(x.imp),
         "site" -> Json.toJson(x.site),
         "app" -> Json.toJson(x.app),
@@ -894,9 +894,9 @@ object PlayJsonFormats {
       } yield TwitterAPI.Urls(url, expanded_url, display_url, indices)
     }, (x: TwitterAPI.Urls) => {
       toJsObject(
-        "url" -> Json.toJson(x.url),
-        "expanded_url" -> Json.toJson(x.expanded_url),
-        "display_url" -> Json.toJson(x.display_url),
+        "url" -> JsString(x.url),
+        "expanded_url" -> JsString(x.expanded_url),
+        "display_url" -> JsString(x.display_url),
         "indices" -> Json.toJson(x.indices),
       )
     })
@@ -924,10 +924,10 @@ object PlayJsonFormats {
       } yield TwitterAPI.UserMentions(screen_name, name, id, id_str, indices)
     }, (x: TwitterAPI.UserMentions) => {
       toJsObject(
-        "screen_name" -> Json.toJson(x.screen_name),
-        "name" -> Json.toJson(x.name),
-        "id" -> Json.toJson(x.id),
-        "id_str" -> Json.toJson(x.id_str),
+        "screen_name" -> JsString(x.screen_name),
+        "name" -> JsString(x.name),
+        "id" -> JsNumber(x.id),
+        "id_str" -> JsString(x.id_str),
         "indices" -> Json.toJson(x.indices),
       )
     })
@@ -1000,48 +1000,48 @@ object PlayJsonFormats {
         translator_type)
     }, (x: TwitterAPI.User) => {
       toJsObject(
-        "id" -> Json.toJson(x.id),
-        "id_str" -> Json.toJson(x.id_str),
-        "name" -> Json.toJson(x.name),
-        "screen_name" -> Json.toJson(x.screen_name),
-        "location" -> Json.toJson(x.location),
-        "description" -> Json.toJson(x.description),
-        "url" -> Json.toJson(x.url),
+        "id" -> JsNumber(x.id),
+        "id_str" -> JsString(x.id_str),
+        "name" -> JsString(x.name),
+        "screen_name" -> JsString(x.screen_name),
+        "location" -> JsString(x.location),
+        "description" -> JsString(x.description),
+        "url" -> JsString(x.url),
         "entities" -> Json.toJson(x.entities),
-        "protected" -> Json.toJson(x.`protected`),
-        "followers_count" -> Json.toJson(x.followers_count),
-        "friends_count" -> Json.toJson(x.friends_count),
-        "listed_count" -> Json.toJson(x.listed_count),
-        "created_at" -> Json.toJson(x.created_at),
-        "favourites_count" -> Json.toJson(x.favourites_count),
-        "utc_offset" -> Json.toJson(x.utc_offset),
-        "time_zone" -> Json.toJson(x.time_zone),
-        "geo_enabled" -> Json.toJson(x.geo_enabled),
-        "verified" -> Json.toJson(x.verified),
-        "statuses_count" -> Json.toJson(x.statuses_count),
-        "lang" -> Json.toJson(x.lang),
-        "contributors_enabled" -> Json.toJson(x.contributors_enabled),
-        "is_translator" -> Json.toJson(x.is_translator),
-        "is_translation_enabled" -> Json.toJson(x.is_translation_enabled),
-        "profile_background_color" -> Json.toJson(x.profile_background_color),
-        "profile_background_image_url" -> Json.toJson(x.profile_background_image_url),
-        "profile_background_image_url_https" -> Json.toJson(x.profile_background_image_url_https),
-        "profile_background_tile" -> Json.toJson(x.profile_background_tile),
-        "profile_image_url" -> Json.toJson(x.profile_image_url),
-        "profile_image_url_https" -> Json.toJson(x.profile_image_url_https),
-        "profile_banner_url" -> Json.toJson(x.profile_banner_url),
-        "profile_link_color" -> Json.toJson(x.profile_link_color),
-        "profile_sidebar_border_color" -> Json.toJson(x.profile_sidebar_border_color),
-        "profile_sidebar_fill_color" -> Json.toJson(x.profile_sidebar_fill_color),
-        "profile_text_color" -> Json.toJson(x.profile_text_color),
-        "profile_use_background_image" -> Json.toJson(x.profile_use_background_image),
-        "has_extended_profile" -> Json.toJson(x.has_extended_profile),
-        "default_profile" -> Json.toJson(x.default_profile),
-        "default_profile_image" -> Json.toJson(x.default_profile_image),
-        "following" -> Json.toJson(x.following),
-        "follow_request_sent" -> Json.toJson(x.follow_request_sent),
-        "notifications" -> Json.toJson(x.notifications),
-        "translator_type" -> Json.toJson(x.translator_type)
+        "protected" -> JsBoolean(x.`protected`),
+        "followers_count" -> JsNumber(x.followers_count),
+        "friends_count" -> JsNumber(x.friends_count),
+        "listed_count" -> JsNumber(x.listed_count),
+        "created_at" -> JsString(x.created_at),
+        "favourites_count" -> JsNumber(x.favourites_count),
+        "utc_offset" -> JsNumber(x.utc_offset),
+        "time_zone" -> JsString(x.time_zone),
+        "geo_enabled" -> JsBoolean(x.geo_enabled),
+        "verified" -> JsBoolean(x.verified),
+        "statuses_count" -> JsNumber(x.statuses_count),
+        "lang" -> JsString(x.lang),
+        "contributors_enabled" -> JsBoolean(x.contributors_enabled),
+        "is_translator" -> JsBoolean(x.is_translator),
+        "is_translation_enabled" -> JsBoolean(x.is_translation_enabled),
+        "profile_background_color" -> JsString(x.profile_background_color),
+        "profile_background_image_url" -> JsString(x.profile_background_image_url),
+        "profile_background_image_url_https" -> JsString(x.profile_background_image_url_https),
+        "profile_background_tile" -> JsBoolean(x.profile_background_tile),
+        "profile_image_url" -> JsString(x.profile_image_url),
+        "profile_image_url_https" -> JsString(x.profile_image_url_https),
+        "profile_banner_url" -> JsString(x.profile_banner_url),
+        "profile_link_color" -> JsString(x.profile_link_color),
+        "profile_sidebar_border_color" -> JsString(x.profile_sidebar_border_color),
+        "profile_sidebar_fill_color" -> JsString(x.profile_sidebar_fill_color),
+        "profile_text_color" -> JsString(x.profile_text_color),
+        "profile_use_background_image" -> JsBoolean(x.profile_use_background_image),
+        "has_extended_profile" -> JsBoolean(x.has_extended_profile),
+        "default_profile" -> JsBoolean(x.default_profile),
+        "default_profile_image" -> JsBoolean(x.default_profile_image),
+        "following" -> JsBoolean(x.following),
+        "follow_request_sent" -> JsBoolean(x.follow_request_sent),
+        "notifications" -> JsBoolean(x.notifications),
+        "translator_type" -> JsString(x.translator_type)
       )
     })
     implicit val v7: Format[TwitterAPI.RetweetedStatus] = Format({
@@ -1076,13 +1076,13 @@ object PlayJsonFormats {
         favorite_count, favorited, retweeted, possibly_sensitive, lang)
     }, (x: TwitterAPI.RetweetedStatus) => {
       toJsObject(
-        "created_at" -> Json.toJson(x.created_at),
-        "id" -> Json.toJson(x.id),
-        "id_str" -> Json.toJson(x.id_str),
-        "text" -> Json.toJson(x.text),
-        "truncated" -> Json.toJson(x.truncated),
+        "created_at" -> JsString(x.created_at),
+        "id" -> JsNumber(x.id),
+        "id_str" -> JsString(x.id_str),
+        "text" -> JsString(x.text),
+        "truncated" -> JsBoolean(x.truncated),
         "entities" -> Json.toJson(x.entities),
-        "source" -> Json.toJson(x.source),
+        "source" -> JsString(x.source),
         "in_reply_to_status_id" -> Json.toJson(x.in_reply_to_status_id),
         "in_reply_to_status_id_str" -> Json.toJson(x.in_reply_to_status_id_str),
         "in_reply_to_user_id" -> Json.toJson(x.in_reply_to_user_id),
@@ -1092,13 +1092,13 @@ object PlayJsonFormats {
         "coordinates" -> Json.toJson(x.coordinates),
         "place" -> Json.toJson(x.place),
         "contributors" -> Json.toJson(x.contributors),
-        "is_quote_status" -> Json.toJson(x.is_quote_status),
-        "retweet_count" -> Json.toJson(x.retweet_count),
-        "favorite_count" -> Json.toJson(x.favorite_count),
-        "favorited" -> Json.toJson(x.favorited),
-        "retweeted" -> Json.toJson(x.retweeted),
-        "possibly_sensitive" -> Json.toJson(x.possibly_sensitive),
-        "lang" -> Json.toJson(x.lang)
+        "is_quote_status" -> JsBoolean(x.is_quote_status),
+        "retweet_count" -> JsNumber(x.retweet_count),
+        "favorite_count" -> JsNumber(x.favorite_count),
+        "favorited" -> JsBoolean(x.favorited),
+        "retweeted" -> JsBoolean(x.retweeted),
+        "possibly_sensitive" -> JsBoolean(x.possibly_sensitive),
+        "lang" -> JsString(x.lang)
       )
     })
     Format({
@@ -1134,13 +1134,13 @@ object PlayJsonFormats {
         retweeted, possibly_sensitive, lang)
     }, (x: TwitterAPI.Tweet) => {
       toJsObject(
-        "created_at" -> Json.toJson(x.created_at),
-        "id" -> Json.toJson(x.id),
-        "id_str" -> Json.toJson(x.id_str),
-        "text" -> Json.toJson(x.text),
-        "truncated" -> Json.toJson(x.truncated),
+        "created_at" -> JsString(x.created_at),
+        "id" -> JsNumber(x.id),
+        "id_str" -> JsString(x.id_str),
+        "text" -> JsString(x.text),
+        "truncated" -> JsBoolean(x.truncated),
         "entities" -> Json.toJson(x.entities),
-        "source" -> Json.toJson(x.source),
+        "source" -> JsString(x.source),
         "in_reply_to_status_id" -> Json.toJson(x.in_reply_to_status_id),
         "in_reply_to_status_id_str" -> Json.toJson(x.in_reply_to_status_id_str),
         "in_reply_to_user_id" -> Json.toJson(x.in_reply_to_user_id),
@@ -1151,13 +1151,13 @@ object PlayJsonFormats {
         "place" -> Json.toJson(x.place),
         "contributors" -> Json.toJson(x.contributors),
         "retweeted_status" -> Json.toJson(x.retweeted_status),
-        "is_quote_status" -> Json.toJson(x.is_quote_status),
-        "retweet_count" -> Json.toJson(x.retweet_count),
-        "favorite_count" -> Json.toJson(x.favorite_count),
-        "favorited" -> Json.toJson(x.favorited),
-        "retweeted" -> Json.toJson(x.retweeted),
-        "possibly_sensitive" -> Json.toJson(x.possibly_sensitive),
-        "lang" -> Json.toJson(x.lang)
+        "is_quote_status" -> JsBoolean(x.is_quote_status),
+        "retweet_count" -> JsNumber(x.retweet_count),
+        "favorite_count" -> JsNumber(x.favorite_count),
+        "favorited" -> JsBoolean(x.favorited),
+        "retweeted" -> JsBoolean(x.retweeted),
+        "possibly_sensitive" -> JsBoolean(x.possibly_sensitive),
+        "lang" -> JsString(x.lang)
       )
     })
   }
