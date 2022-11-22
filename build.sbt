@@ -32,14 +32,6 @@ lazy val commonSettings = Seq(
     case _ => Seq()
   }),
   compileOrder := CompileOrder.JavaThenScala,
-  Compile / managedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toSeq.map(f => file(f.getPath + "-2"))
-    case _ => Seq()
-  }),
-  Test / managedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
-    case _ => Seq()
-  }),
   Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
@@ -232,13 +224,11 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("3.2.1", "2.13.10"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Yretain-trees", "-Xmax-inlines:100")
       case _ => Seq()
     }),
-    resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Resolver.sonatypeOssRepos("staging"),
     libraryDependencies ++= Seq(
       "io.spray" %% "spray-json" % "1.3.6",
       "com.typesafe.play" %%% "play-json" % "2.10.0-RC7",
