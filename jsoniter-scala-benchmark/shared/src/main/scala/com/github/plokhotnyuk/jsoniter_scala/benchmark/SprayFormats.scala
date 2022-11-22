@@ -37,26 +37,31 @@ object SprayFormats extends DefaultJsonProtocol {
       sb.append(']')
     }
   }
-  implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = {
-    // Based on the following "horrible hack": https://github.com/spray/spray-json/issues/38#issuecomment-11708058
-    case class AnyValJsonFormat[T <: AnyVal {def a: V}, V](construct: V => T)(implicit jf: JsonFormat[V]) extends JsonFormat[T] {
-
-      import scala.language.reflectiveCalls
-
-      override def read(json: JsValue): T = construct(jf.read(json))
-
-      override def write(obj: T): JsValue = jf.write(obj.a)
+  implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = new RootJsonFormat[AnyVals] {
+    override def read(json: JsValue): AnyVals = {
+      val fields = json.asJsObject.fields
+      new AnyVals(
+        new ByteVal(fields("b").convertTo[Byte]),
+        new ShortVal(fields("s").convertTo[Short]),
+        new IntVal(fields("i").convertTo[Int]),
+        new LongVal(fields("l").convertTo[Long]),
+        new BooleanVal(fields("bl").convertTo[Boolean]),
+        new CharVal(fields("ch").convertTo[Char]),
+        new DoubleVal(fields("dbl").convertTo[Double]),
+        new FloatVal(fields("f").convertTo[Float])
+      )
     }
 
-    implicit val jf1: JsonFormat[ByteVal] = AnyValJsonFormat(ByteVal.apply)
-    implicit val jf2: JsonFormat[ShortVal] = AnyValJsonFormat(ShortVal.apply)
-    implicit val jf3: JsonFormat[IntVal] = AnyValJsonFormat(IntVal.apply)
-    implicit val jf4: JsonFormat[LongVal] = AnyValJsonFormat(LongVal.apply)
-    implicit val jf5: JsonFormat[BooleanVal] = AnyValJsonFormat(BooleanVal.apply)
-    implicit val jf6: JsonFormat[CharVal] = AnyValJsonFormat(CharVal.apply)
-    implicit val jf7: JsonFormat[DoubleVal] = AnyValJsonFormat(DoubleVal.apply)
-    implicit val jf8: JsonFormat[FloatVal] = AnyValJsonFormat(FloatVal.apply)
-    jsonFormat8(AnyVals.apply)
+    override def write(x: AnyVals): JsValue = JsObject(
+      ("b", JsNumber(x.b.a)),
+      ("s", JsNumber(x.s.a)),
+      ("i", JsNumber(x.i.a)),
+      ("l", JsNumber(x.l.a)),
+      ("bl", JsBoolean(x.bl.a)),
+      ("ch", JsString(x.ch.a.toString)),
+      ("dbl", JsNumber(x.dbl.a)),
+      ("f", JsNumber(x.f.a))
+    )
   }
   val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
     .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /* WARNING: It is an unsafe option for open systems */
