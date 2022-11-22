@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.jsontype.NamedType
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.blackbird.BlackbirdModule
 import com.fasterxml.jackson.module.scala.deser.{ImmutableBitSetDeserializer, MutableBitSetDeserializer}
@@ -55,7 +54,6 @@ object JacksonSerDesers {
         .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
         .addDeserializer(classOf[SuitEnum], new SuiteEnumDeserializer))
       registerModule(new JavaTimeModule)
-      registerModule(new Jdk8Module)
       registerModule(new BlackbirdModule)
       configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
       configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
@@ -113,8 +111,8 @@ class SuiteEnumDeserializer extends JsonDeserializer[SuitEnum] {
   private[this] val ec = new ConcurrentHashMap[String, SuitEnum]
 
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum = {
-    val s = jp.getValueAsString
     var x: SuitEnum = null
+    val s = jp.getValueAsString
     if (s ne null) {
       x = ec.get(s)
       if (x eq null) {
