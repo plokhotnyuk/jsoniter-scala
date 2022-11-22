@@ -16,9 +16,9 @@ object SprayFormats extends DefaultJsonProtocol {
       kvs.foreach { kv =>
         if (first) first = false
         else sb.append(',').append('\n')
-        printIndent(sb, indent + Indent)
+        printIndent(sb, indent + 2)
         printString(kv._1, sb)
-        print(kv._2, sb.append(':').append(' '), indent + Indent)
+        print(kv._2, sb.append(':').append(' '), indent + 2)
       }
       printIndent(sb.append('\n'), indent)
       sb.append('}')
@@ -30,8 +30,8 @@ object SprayFormats extends DefaultJsonProtocol {
       vs.foreach { v =>
         if (first) first = false
         else sb.append(',').append('\n')
-        printIndent(sb, indent + Indent)
-        print(v, sb, indent + Indent)
+        printIndent(sb, indent + 2)
+        print(v, sb, indent + 2)
       }
       printIndent(sb.append('\n'), indent)
       sb.append(']')
@@ -539,7 +539,6 @@ object SprayFormats extends DefaultJsonProtocol {
 
       def write(buf: mutable.ArrayBuffer[T]): JsValue = {
         val vs = Vector.newBuilder[JsValue]
-        vs.sizeHint(buf.size)
         buf.foreach(x => vs += x.toJson)
         JsArray(vs.result())
       }
@@ -557,7 +556,6 @@ object SprayFormats extends DefaultJsonProtocol {
 
       def write(as: ArraySeq[T]): JsValue = {
         val vs = Vector.newBuilder[JsValue]
-        vs.sizeHint(as.size)
         as.foreach(x => vs += x.toJson)
         JsArray(vs.result())
       }
