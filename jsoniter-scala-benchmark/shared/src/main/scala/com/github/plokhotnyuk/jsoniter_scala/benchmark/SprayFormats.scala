@@ -244,9 +244,44 @@ object SprayFormats extends DefaultJsonProtocol {
   }
   implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = stringJsonFormat(Suit.valueOf)
   implicit val tweetJsonFormat: RootJsonFormat[TwitterAPI.Tweet] = {
-    implicit val jf1: RootJsonFormat[TwitterAPI.Urls] = jsonFormat4(TwitterAPI.Urls.apply)
-    implicit val jf2: RootJsonFormat[TwitterAPI.Url] = jsonFormat1(TwitterAPI.Url.apply)
-    implicit val jf3: RootJsonFormat[TwitterAPI.UserEntities] = jsonFormat2(TwitterAPI.UserEntities.apply)
+    implicit val jf1: RootJsonFormat[TwitterAPI.Urls] = new RootJsonFormat[TwitterAPI.Urls] {
+      override def read(json: JsValue): TwitterAPI.Urls = {
+        val fields = json.asJsObject.fields
+        new TwitterAPI.Urls(
+          fields("url").convertTo[String],
+          fields("expanded_url").convertTo[String],
+          fields("display_url").convertTo[String],
+          fields("indices").convertTo[Seq[Int]]
+        )
+      }
+
+      override def write(x: TwitterAPI.Urls): JsValue = toJsObject(
+        ("url", JsString(x.url)),
+        ("expanded_url", JsString(x.expanded_url)),
+        ("display_url", JsString(x.display_url)),
+        ("indices", x.indices.toJson)
+      )
+    }
+    implicit val jf2: RootJsonFormat[TwitterAPI.Url] = new RootJsonFormat[TwitterAPI.Url] {
+      override def read(json: JsValue): TwitterAPI.Url =
+        new TwitterAPI.Url(json.asJsObject.fields("urls").convertTo[Seq[TwitterAPI.Urls]])
+
+      override def write(x: TwitterAPI.Url): JsValue = toJsObject(("urls", x.urls.toJson))
+    }
+    implicit val jf3: RootJsonFormat[TwitterAPI.UserEntities] = new RootJsonFormat[TwitterAPI.UserEntities] {
+      override def read(json: JsValue): TwitterAPI.UserEntities = {
+        val fields = json.asJsObject.fields
+        new TwitterAPI.UserEntities(
+          fields("url").convertTo[TwitterAPI.Url],
+          fields("description").convertTo[TwitterAPI.Url]
+        )
+      }
+
+      override def write(x: TwitterAPI.UserEntities): JsValue = toJsObject(
+        ("url", x.url.toJson),
+        ("description", x.description.toJson)
+      )
+    }
     implicit val jf4: RootJsonFormat[TwitterAPI.User] = new RootJsonFormat[TwitterAPI.User] {
       override def read(json: JsValue): TwitterAPI.User = {
         val fields = json.asJsObject.fields
@@ -292,11 +327,11 @@ object SprayFormats extends DefaultJsonProtocol {
           fields("following").convertTo[Boolean],
           fields("follow_request_sent").convertTo[Boolean],
           fields("notifications").convertTo[Boolean],
-          fields("translator_type").convertTo[String],
+          fields("translator_type").convertTo[String]
         )
       }
 
-      override def write(x: TwitterAPI.User): JsValue = JsObject(
+      override def write(x: TwitterAPI.User): JsValue = toJsObject(
         ("id", JsNumber(x.id)),
         ("id_str", JsString(x.id_str)),
         ("name", JsString(x.name)),
@@ -338,7 +373,7 @@ object SprayFormats extends DefaultJsonProtocol {
         ("following", JsBoolean(x.following)),
         ("follow_request_sent", JsBoolean(x.follow_request_sent)),
         ("notifications", JsBoolean(x.notifications)),
-        ("translator_type", JsString(x.translator_type)),
+        ("translator_type", JsString(x.translator_type))
       )
     }
     implicit val jf5: RootJsonFormat[TwitterAPI.UserMentions] = new RootJsonFormat[TwitterAPI.UserMentions] {
@@ -349,11 +384,11 @@ object SprayFormats extends DefaultJsonProtocol {
           fields("name").convertTo[String],
           fields("id").convertTo[Long],
           fields("id_str").convertTo[String],
-          fields("indices").convertTo[Seq[Int]],
+          fields("indices").convertTo[Seq[Int]]
         )
       }
 
-      override def write(x: TwitterAPI.UserMentions): JsValue = JsObject(
+      override def write(x: TwitterAPI.UserMentions): JsValue = toJsObject(
         ("screen_name", JsString(x.screen_name)),
         ("name", JsString(x.name)),
         ("id", JsNumber(x.id)),
@@ -368,11 +403,11 @@ object SprayFormats extends DefaultJsonProtocol {
           fields("hashtags").convertTo[Seq[String]],
           fields("symbols").convertTo[Seq[String]],
           fields("user_mentions").convertTo[Seq[TwitterAPI.UserMentions]],
-          fields("urls").convertTo[Seq[TwitterAPI.Urls]],
+          fields("urls").convertTo[Seq[TwitterAPI.Urls]]
         )
       }
 
-      override def write(x: TwitterAPI.Entities): JsValue = JsObject(
+      override def write(x: TwitterAPI.Entities): JsValue = toJsObject(
         ("hashtags", x.hashtags.toJson),
         ("symbols", x.symbols.toJson),
         ("user_mentions", x.user_mentions.toJson),
@@ -410,7 +445,7 @@ object SprayFormats extends DefaultJsonProtocol {
         )
       }
 
-      override def write(x: TwitterAPI.RetweetedStatus): JsValue = JsObject(
+      override def write(x: TwitterAPI.RetweetedStatus): JsValue = toJsObject(
         ("created_at", JsString(x.created_at)),
         ("id", JsNumber(x.id)),
         ("id_str", JsString(x.id_str)),
@@ -469,7 +504,7 @@ object SprayFormats extends DefaultJsonProtocol {
         )
       }
 
-      override def write(x: TwitterAPI.Tweet): JsValue = JsObject(
+      override def write(x: TwitterAPI.Tweet): JsValue = toJsObject(
         ("created_at", JsString(x.created_at)),
         ("id", JsNumber(x.id)),
         ("id_str", JsString(x.id_str)),
@@ -560,4 +595,8 @@ object SprayFormats extends DefaultJsonProtocol {
         JsArray(vs.result())
       }
     }
+
+  private[this] def toJsObject(fields: (String, JsValue)*): JsObject = JsObject(fields.filterNot { case (_, v) =>
+    (v eq JsNull) || (v.isInstanceOf[JsArray] && v.asInstanceOf[JsArray].elements.isEmpty)
+  }:_*)
 }
