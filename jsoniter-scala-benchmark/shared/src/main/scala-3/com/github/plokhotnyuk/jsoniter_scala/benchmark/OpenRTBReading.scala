@@ -80,7 +80,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
     readFromArray[BidRequest](jsonBytes)
   }
-/* FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
+
   @Benchmark
   def sprayJson(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -88,7 +88,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
     JsonParser(jsonBytes).convertTo[BidRequest]
   }
-*/
+
   @Benchmark
   def uPickle(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._

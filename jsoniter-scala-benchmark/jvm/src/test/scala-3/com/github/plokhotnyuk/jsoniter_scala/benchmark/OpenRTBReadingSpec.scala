@@ -21,8 +21,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
-      //FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
-      //benchmark.sprayJson() shouldBe benchmark.obj
+      benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
@@ -42,6 +41,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.smithy4sJson())
+      intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())

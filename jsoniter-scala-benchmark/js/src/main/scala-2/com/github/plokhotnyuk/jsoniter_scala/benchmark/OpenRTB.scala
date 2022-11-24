@@ -61,25 +61,6 @@ object OpenRTB {
     @transientDefault vendor: Option[String] = None,
     /*@transientDefault ext: Option[MetricExt] = None*/)
 
-  case class Banner(
-    @transientDefault format: Option[Format] = None,
-    @transientDefault w: Option[Int] = None,
-    @transientDefault h: Option[Int] = None,
-    @transientDefault wmax: Option[Int] = None,
-    @transientDefault hmax: Option[Int] = None,
-    @transientDefault wmin: Option[Int] = None,
-    @transientDefault hmin: Option[Int] = None,
-    @transientDefault btype: List[Int] = Nil,
-    @transientDefault battr: List[Int] = Nil,
-    @transientDefault pos: Option[Int] = None,
-    @transientDefault mimes: List[String] = Nil,
-    @transientDefault topframe: Option[Int] = None,
-    @transientDefault expdir: List[Int] = Nil,
-    @transientDefault api: List[Int] = Nil,
-    @transientDefault id: Option[String] = None,
-    @transientDefault vcm: Option[Int] = None,
-    /*@transientDefault ext: Option[BannerExt] = None*/)
-
   case class Video(
     @transientDefault mimes: List[String] = Nil,
     @transientDefault minduration: Option[Int] = None,
@@ -129,6 +110,25 @@ object OpenRTB {
     @transientDefault stitched: Option[Int] = None,
     @transientDefault nvol: Option[Int] = None,
     /*@transientDefault ext: Option[AudioExt] = None*/)
+
+  case class Banner(
+    @transientDefault format: Option[Format] = None,
+    @transientDefault w: Option[Int] = None,
+    @transientDefault h: Option[Int] = None,
+    @transientDefault wmax: Option[Int] = None,
+    @transientDefault hmax: Option[Int] = None,
+    @transientDefault wmin: Option[Int] = None,
+    @transientDefault hmin: Option[Int] = None,
+    @transientDefault btype: List[Int] = Nil,
+    @transientDefault battr: List[Int] = Nil,
+    @transientDefault pos: Option[Int] = None,
+    @transientDefault mimes: List[String] = Nil,
+    @transientDefault topframe: Option[Int] = None,
+    @transientDefault expdir: List[Int] = Nil,
+    @transientDefault api: List[Int] = Nil,
+    @transientDefault id: Option[String] = None,
+    @transientDefault vcm: Option[Int] = None,
+    /*@transientDefault ext: Option[BannerExt] = None*/)
 
   case class Native(
     request: String,
@@ -267,6 +267,17 @@ object OpenRTB {
     @transientDefault macmd5: Option[String] = None,
     /*@transientDefault ext: Option[DeviceExt] = None*/)
 
+  case class User(
+    @transientDefault id: Option[String] = None,
+    @transientDefault buyeruid: Option[String] = None,
+    @transientDefault yob: Option[Int] = None,
+    @transientDefault gender: Option[String] = None,
+    @transientDefault keywords: Option[String] = None,
+    @transientDefault customdata: Option[String] = None,
+    @transientDefault geo: Option[Geo] = None,
+    @transientDefault data: Option[Data] = None,
+    /*@transientDefault ext: Option[UserExt] = None*/)
+
   case class Geo(
     @transientDefault lat: Option[Double] = None,
     @transientDefault lon: Option[Double] = None,
@@ -282,17 +293,6 @@ object OpenRTB {
     @transientDefault zip: Option[String] = None,
     @transientDefault utcoffset: Option[String] = None,
     /*@transientDefault ext: Option[GeoExt] = None*/)
-
-  case class User(
-    @transientDefault id: Option[String] = None,
-    @transientDefault buyeruid: Option[String] = None,
-    @transientDefault yob: Option[Int] = None,
-    @transientDefault gender: Option[String] = None,
-    @transientDefault keywords: Option[String] = None,
-    @transientDefault customdata: Option[String] = None,
-    @transientDefault geo: Option[Geo] = None,
-    @transientDefault data: Option[Data] = None,
-    /*@transientDefault ext: Option[UserExt] = None*/)
 
   case class Data(
     @transientDefault id: Option[String] = None,
