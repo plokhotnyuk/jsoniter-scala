@@ -1856,14 +1856,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize ADTs with circe like default formatting" in {
       sealed trait Base
 
-      case class A(x: Int = 1, xs: List[Int], o: Option[Int]) extends Base
+      case class AbbA(x: Int = 1, xs: List[Int], oX: Option[Int]) extends Base
 
       val baseCodec1: JsonValueCodec[Base] = makeCirceLike
-      verifySerDeser(baseCodec1, A(2, List(1, 2, 3), _root_.scala.Some(1)), """{"A":{"x":2,"xs":[1,2,3],"o":1}}""")
-      verifySerDeser(baseCodec1, A(1, List(), _root_.scala.None), """{"A":{"x":1,"xs":[],"o":null}}""")
+      verifySerDeser(baseCodec1, AbbA(2, List(1, 2, 3), _root_.scala.Some(1)), """{"AbbA":{"x":2,"xs":[1,2,3],"oX":1}}""")
+      verifySerDeser(baseCodec1, AbbA(1, List(), _root_.scala.None), """{"AbbA":{"x":1,"xs":[],"oX":null}}""")
       val baseCodec2: JsonValueCodec[Base] = makeCirceLikeSnakeCased
-      verifySerDeser(baseCodec2, A(2, List(1, 2, 3), _root_.scala.Some(1)), """{"a":{"x":2,"xs":[1,2,3],"o":1}}""")
-      verifySerDeser(baseCodec2, A(1, List(), _root_.scala.None), """{"a":{"x":1,"xs":[],"o":null}}""")
+      verifySerDeser(baseCodec2, AbbA(2, List(1, 2, 3), _root_.scala.Some(1)), """{"abb_a":{"x":2,"xs":[1,2,3],"o_x":1}}""")
+      verifySerDeser(baseCodec2, AbbA(1, List(), _root_.scala.None), """{"abb_a":{"x":1,"xs":[],"o_x":null}}""")
     }
     "deserialize ADTs when discriminator field was serialized in far away last position and configuration allows to parse it" in {
       val longStr = "W" * 100000
