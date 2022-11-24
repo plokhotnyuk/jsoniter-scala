@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
@@ -96,13 +95,7 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %%% moduleName.value % oldVersion)
     else Set()
   },
-  mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq( // Skip the internal API changes for Scala Native implementation
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.ByteArrayAccess"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.ByteArrayAccess$"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.NativeMath"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.NativeMath$")
-  )
+  mimaReportSignatureProblems := true
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))

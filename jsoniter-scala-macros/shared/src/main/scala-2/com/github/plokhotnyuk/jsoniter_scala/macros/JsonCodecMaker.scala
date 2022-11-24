@@ -380,6 +380,26 @@ object JsonCodecMaker {
   def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A]: JsonValueCodec[A] = macro Impl.makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A]
 
   /**
+    * A replacement for the `make` call with the
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None)`
+    * configuration parameter.
+    *
+    * @tparam A a type that should be encoded and decoded by the derived codec
+    * @return an instance of the derived codec
+    */
+  def makeCirceLike[A]: JsonValueCodec[A] = macro Impl.makeCirceLike[A]
+
+  /**
+    * A replacement for the `make` call with the
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case)`
+    * configuration parameter.
+    *
+    * @tparam A a type that should be encoded and decoded by the derived codec
+    * @return an instance of the derived codec
+    */
+  def makeCirceLikeSnakeCased[A]: JsonValueCodec[A] = macro Impl.makeCirceLikeSnakeCased[A]
+
+  /**
     * Derives a codec for JSON values for the specified type `A` and a provided derivation configuration.
     *
     * @param config a derivation configuration
@@ -399,7 +419,17 @@ object JsonCodecMaker {
       make(c)(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true))
 
     def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
-      make(c)(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true).withDiscriminatorFieldName(Some("name")))
+      make(c)(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)
+        .withDiscriminatorFieldName(Some("name")))
+
+    def makeCirceLike[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
+      make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
+        .withDiscriminatorFieldName(None))
+
+    def makeCirceLikeSnakeCased[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
+      make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
+        .withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x)))
+        .withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case))
 
     def makeWithSpecifiedConfig[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] =
       make(c) {
