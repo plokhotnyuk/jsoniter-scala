@@ -111,13 +111,13 @@ class CodecMakerConfig private[macros] (
     val requireDiscriminatorFirst: Boolean,
     val useScalaEnumValueId: Boolean,
     val skipNestedOptionValues: Boolean) {
-  @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodec.make functions")
+  @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodecMaker.make functions")
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
 
-  @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodec.make functions")
+  @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodecMaker.make functions")
   def withJavaEnumValueNameMapper(javaEnumValueNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
 
-  @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodec.make functions")
+  @compileTimeOnly("withAdtLeafClassNameMapper should be used only inside JsonCodecMaker.make functions")
   def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig = ???
 
   def withDiscriminatorFieldName(discriminatorFieldName: Option[String]): CodecMakerConfig =
@@ -481,6 +481,27 @@ object JsonCodecMaker {
     ${Impl.makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A]}
 
   /**
+    * A replacement for the `make` call with the
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None)`
+    * configuration parameter.
+    *
+    * @tparam A a type that should be encoded and decoded by the derived codec
+    * @return an instance of the derived codec
+    */
+  inline def makeCirceLike[A]: JsonValueCodec[A] = ${Impl.makeCirceLike[A]}
+
+  /**
+    * A replacement for the `make` call with the
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case)`
+    * configuration parameter.
+    *
+    * @tparam A a type that should be encoded and decoded by the derived codec
+    * @return an instance of the derived codec
+    */
+  inline def makeCirceLikeSnakeCased[A]: JsonValueCodec[A] =
+    ${Impl.makeCirceLikeSnakeCased[A]}
+
+  /**
     * Derives a codec for JSON values for the specified type `A` and a provided derivation configuration.
     *
     * @param config a derivation configuration
@@ -490,34 +511,57 @@ object JsonCodecMaker {
   inline def make[A](inline config: CodecMakerConfig): JsonValueCodec[A] = ${Impl.makeWithSpecifiedConfig[A]('config)}
 
   private[macros] object Impl {
-    def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] = tryMake(CodecMakerConfig)
+    def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] = make(CodecMakerConfig)
 
     def makeWithoutDiscriminator[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      tryMake(CodecMakerConfig.withDiscriminatorFieldName(None))
+      make(CodecMakerConfig.withDiscriminatorFieldName(None))
 
     def makeWithRequiredCollectionFields[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      tryMake(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true))
+      make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true))
 
     def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      tryMake(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)
+      make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)
         .withDiscriminatorFieldName(Some("name")))
+
+    def makeCirceLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+      make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
+        .withDiscriminatorFieldName(None))
+
+    def makeCirceLikeSnakeCased[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+      make(CodecMakerConfig(
+        fieldNameMapper = JsonCodecMaker.enforce_snake_case,
+        javaEnumValueNameMapper = JsonCodecMaker.enforce_snake_case,
+        adtLeafClassNameMapper = (x: String) => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(x)),
+        discriminatorFieldName = None,
+        isStringified = false,
+        mapAsArray = false,
+        skipUnexpectedFields = true,
+        transientDefault = false,
+        transientEmpty = false,
+        transientNone = false,
+        requireCollectionFields = false,
+        bigDecimalPrecision = 34,
+        bigDecimalScaleLimit = 6178,
+        bigDecimalDigitsLimit = 308,
+        bigIntDigitsLimit = 308,
+        bitSetValueLimit = 1024,
+        mapMaxInsertNumber = 1024,
+        setMaxInsertNumber = 1024,
+        allowRecursiveTypes = false,
+        requireDiscriminatorFirst = true,
+        useScalaEnumValueId = false,
+        skipNestedOptionValues = false))
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
 
-      tryMake[A](summon[FromExpr[CodecMakerConfig]].unapply(config)
+      try make[A](summon[FromExpr[CodecMakerConfig]].unapply(config)
         .fold(report.errorAndAbort(s"Cannot evaluate a parameter of the 'make' macro call for type '${Type.show[A]}'. ")) {
           cfg =>
             if (cfg.requireCollectionFields && cfg.transientEmpty)
               report.errorAndAbort("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
             cfg
-        })
-    }
-
-    private[this] def tryMake[A: Type](cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
-      import quotes.reflect._
-
-      try make[A](cfg) catch {
+        }) catch {
         case ex: CompileTimeEvalException => report.errorAndAbort("Can't evaluate compile-time expression", ex.expr)
       }
     }
