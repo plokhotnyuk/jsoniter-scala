@@ -10,6 +10,7 @@ import scala.{specialized => sp}
   *
   *   - [[https://bugs.openjdk.org/browse/JDK-8180450]]
   *   - [[https://github.com/netty/netty/search?q=JDK-8180450&type=issues]]
+  *   - [[https://redhatperf.github.io/post/type-check-scalability-issue]]
   *   - [[https://netflixtechblog.com/seeing-through-hardware-counters-a-journey-to-threefold-performance-increase-2721924a2822]]
   */
 trait JsonCodec[@sp A] extends JsonValueCodec[A] with JsonKeyCodec[A]
