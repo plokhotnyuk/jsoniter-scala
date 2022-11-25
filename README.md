@@ -303,8 +303,8 @@ check the input length for other `read...` calls.
 If you have an input that is an array of values or white-space separate values then consider parsing it by
 `scanJsonArrayFromInputStream` or `scanJsonValuesFromInputStream` instead of `readFromStream`.
 
-2. The configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on 
-other code that uses a result of the macro's call, otherwise the following compilation error will be reported:
+2. The configuration parameter for the `make` macro is evaluated in compile-time. It requires no dependency
+on other code that uses a result of the macro's call, otherwise the following compilation error will be reported:
 ```
 [error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on
         code from the same compilation module where the 'make' macro is called. Use a separated submodule of the project
@@ -313,9 +313,7 @@ other code that uses a result of the macro's call, otherwise the following compi
 Sometime scalac (or zinc) can fail to compile the `make` macro call with the same error message for the configuration 
 that has not clear dependencies on other code. For those cases workarounds can be simpler than recommended usage of
 separated submodule:
-- use the `make` macro call without parameters when they match with defaults
-- use the `makeWithoutDiscriminator` macro call without parameters when the following configuration is used: `CodecMakerConfig.withDiscriminatorFieldName(None)`
-- use the `makeWithRequiredCollectionFields` macro call without parameters when the following configuration is used: `CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)`
+- use `make` or `make...` macro calls without parameters 
 - isolate the `make` macro call in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
 - move jsoniter-scala imports to be local, like [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorld.scala#L6-L7)
 and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorldController.scala#L12)
@@ -450,7 +448,7 @@ sbt -java-home /usr/lib/jvm/zulu-11 clean +test +mimaReportBinaryIssues
 ```
 
 BEWARE: jsoniter-scala is included into [Scala Community Build](https://github.com/scala/community-builds)
- for 2.12.x and 2.13.x versions of Scala.
+ for Scala 2 and [Scala Open Community Build](https://scala3.westeurope.cloudapp.azure.com/job/runBuild/) for Scala 3.
 
 ### Run JVM benchmarks
 
