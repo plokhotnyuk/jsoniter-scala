@@ -39,4 +39,7 @@ object Util {
   }
 
   def deepDropEmptyValues(json: Json): Json = json.foldWith(dropEmptyValueFolder)
+
+  def toJObject(fields: (String, Json)*): Json =
+    Json.obj(fields.filterNot { case (_, v) => v.isNull || (v.isArray && v.asInstanceOf[JArray].value.isEmpty) }: _*)
 }

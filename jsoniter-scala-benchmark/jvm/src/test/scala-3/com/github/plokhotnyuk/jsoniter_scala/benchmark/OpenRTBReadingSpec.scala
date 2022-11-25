@@ -10,9 +10,8 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
   "OpenRTBReading" should {
     "read properly" in {
       benchmark.borer() shouldBe benchmark.obj
-      //FIXME: Circe require a custom codec
-      //benchmark.circe() shouldBe benchmark.obj
-      //benchmark.circeJsoniter() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
+      benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       //FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB$BidRequest
       //benchmark.json4sJackson() shouldBe benchmark.obj
@@ -30,9 +29,8 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       val b = benchmark
       b.jsonBytes = "[]".getBytes(UTF_8)
       intercept[Throwable](b.borer())
-      //FIXME: Circe require a custom codec
-      //intercept[Throwable](b.circe())
-      //intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
       //FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB$BidRequest
       //intercept[Throwable](b.json4sJackson())

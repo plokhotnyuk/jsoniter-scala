@@ -45,9 +45,621 @@ object CirceEncodersDecoders {
     Codec.from(Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
       Encoder.encodeString.contramap[Array[Byte]](Base64.getEncoder.encodeToString))
   implicit val bidRequestC3c: Codec[OpenRTB.BidRequest] = {
-    import io.circe.generic.auto._
-
-    deriveCodec // FIXME: create a custom codec
+    implicit val c21: Codec[OpenRTB.Segment] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[Option[String]]
+        name <- c.downField("name").as[Option[String]]
+        value <- c.downField("value").as[Option[String]]
+      } yield {
+        new OpenRTB.Segment(id, name, value)
+      }, (x: OpenRTB.Segment) => Util.toJObject(
+        ("id", x.id.asJson),
+        ("name", x.name.asJson),
+        ("value", x.value.asJson)
+      ))
+    implicit val c20: Codec[OpenRTB.Data] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[Option[String]]
+        name <- c.downField("name").as[Option[String]]
+        segment <- c.downField("segment").as[Option[List[OpenRTB.Segment]]]
+      } yield {
+        new OpenRTB.Data(id, name, segment.getOrElse(Nil))
+      }, (x: OpenRTB.Data) => Util.toJObject(
+        ("id", x.id.asJson),
+        ("name", x.name.asJson),
+        ("segment", x.segment.asJson)
+      ))
+    implicit val c19: Codec[OpenRTB.Geo] =
+      Codec.from((c: HCursor) => for {
+        lat <- c.downField("lat").as[Option[Double]]
+        lon <- c.downField("lon").as[Option[Double]]
+        type_ <- c.downField("type").as[Option[Int]]
+        accuracy <- c.downField("accuracy").as[Option[Int]]
+        lastfix <- c.downField("lastfix").as[Option[Int]]
+        ipservice <- c.downField("ipservice").as[Option[Int]]
+        country <- c.downField("country").as[Option[String]]
+        region <- c.downField("region").as[Option[String]]
+        regionfips104 <- c.downField("regionfips104").as[Option[String]]
+        metro <- c.downField("metro").as[Option[String]]
+        city <- c.downField("city").as[Option[String]]
+        zip <- c.downField("zip").as[Option[String]]
+        utcoffset <- c.downField("utcoffset").as[Option[String]]
+      } yield {
+        new OpenRTB.Geo(lat, lon, type_, accuracy, lastfix, ipservice, country, region, regionfips104, metro, city, zip, utcoffset)
+      }, (x: OpenRTB.Geo) => Util.toJObject(
+        ("lat", x.lat.asJson),
+        ("lon", x.lon.asJson),
+        ("type", x.`type`.asJson),
+        ("accuracy", x.accuracy.asJson),
+        ("lastfix", x.lastfix.asJson),
+        ("ipservice", x.ipservice.asJson),
+        ("country", x.country.asJson),
+        ("region", x.region.asJson),
+        ("regionfips104", x.regionfips104.asJson),
+        ("metro", x.metro.asJson),
+        ("city", x.city.asJson),
+        ("zip", x.zip.asJson),
+        ("utcoffset", x.utcoffset.asJson),
+      ))
+    implicit val c18: Codec[OpenRTB.User] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[Option[String]]
+        buyeruid <- c.downField("buyeruid").as[Option[String]]
+        yob <- c.downField("yob").as[Option[Int]]
+        gender <- c.downField("gender").as[Option[String]]
+        keywords <- c.downField("keywords").as[Option[String]]
+        customdata <- c.downField("customdata").as[Option[String]]
+        geo <- c.downField("geo").as[Option[OpenRTB.Geo]]
+        data <- c.downField("data").as[Option[OpenRTB.Data]]
+      } yield {
+        new OpenRTB.User(id, buyeruid, yob, gender, keywords, customdata, geo, data)
+      }, (x: OpenRTB.User) => Util.toJObject(
+        ("id", x.id.asJson),
+        ("buyeruid", x.buyeruid.asJson),
+        ("yob", x.yob.asJson),
+        ("gender", x.gender.asJson),
+        ("keywords", x.keywords.asJson),
+        ("customdata", x.customdata.asJson),
+        ("geo", x.geo.asJson),
+        ("data", x.data.asJson),
+      ))
+    implicit val c17: Codec[OpenRTB.Device] =
+      Codec.from((c: HCursor) => for {
+        ua <- c.downField("ua").as[Option[String]]
+        geo <- c.downField("geo").as[Option[OpenRTB.Geo]]
+        dnt <- c.downField("dnt").as[Option[Int]]
+        lmt <- c.downField("lmt").as[Option[Int]]
+        ip <- c.downField("ip").as[Option[String]]
+        devicetype <- c.downField("devicetype").as[Option[Int]]
+        make <- c.downField("make").as[Option[String]]
+        model <- c.downField("model").as[Option[String]]
+        os <- c.downField("os").as[Option[String]]
+        osv <- c.downField("osv").as[Option[String]]
+        hwv <- c.downField("hwv").as[Option[String]]
+        h <- c.downField("h").as[Option[Int]]
+        w <- c.downField("w").as[Option[Int]]
+        ppi <- c.downField("ppi").as[Option[Int]]
+        pxratio <- c.downField("pxratio").as[Option[Double]]
+        js <- c.downField("js").as[Option[Int]]
+        geofetch <- c.downField("geofetch").as[Option[Int]]
+        flashver <- c.downField("flashver").as[Option[String]]
+        language <- c.downField("language").as[Option[String]]
+        carrier <- c.downField("carrier").as[Option[String]]
+        mccmnc <- c.downField("mccmnc").as[Option[String]]
+        connectiontype <- c.downField("connectiontype").as[Option[Int]]
+        ifa <- c.downField("ifa").as[Option[String]]
+        didsha1 <- c.downField("didsha1").as[Option[String]]
+        didmd5 <- c.downField("didmd5").as[Option[String]]
+        dpidsha1 <- c.downField("dpidsha1").as[Option[String]]
+        dpidmd5 <- c.downField("dpidmd5").as[Option[String]]
+        macsha1 <- c.downField("macsha1").as[Option[String]]
+        macmd5 <- c.downField("macmd5").as[Option[String]]
+      } yield {
+        new OpenRTB.Device(ua, geo, dnt, lmt, ip, devicetype, make, model, os, osv, hwv, h, w, ppi, pxratio, js,
+          geofetch, flashver, language, carrier, mccmnc, connectiontype, ifa, didsha1, didmd5, dpidsha1, dpidmd5,
+          macsha1, macmd5)
+      }, (x: OpenRTB.Device) => Util.toJObject(
+        ("ua", x.ua.asJson),
+        ("geo", x.geo.asJson),
+        ("dnt", x.dnt.asJson),
+        ("lmt", x.lmt.asJson),
+        ("ip", x.ip.asJson),
+        ("devicetype", x.devicetype.asJson),
+        ("make", x.make.asJson),
+        ("model", x.model.asJson),
+        ("os", x.os.asJson),
+        ("osv", x.osv.asJson),
+        ("hwv", x.hwv.asJson),
+        ("h", x.h.asJson),
+        ("w", x.w.asJson),
+        ("ppi", x.ppi.asJson),
+        ("pxratio", x.pxratio.asJson),
+        ("js", x.js.asJson),
+        ("geofetch", x.geofetch.asJson),
+        ("flashver", x.flashver.asJson),
+        ("language", x.language.asJson),
+        ("carrier", x.carrier.asJson),
+        ("mccmnc", x.mccmnc.asJson),
+        ("connectiontype", x.connectiontype.asJson),
+        ("ifa", x.ifa.asJson),
+        ("didsha1", x.didsha1.asJson),
+        ("didmd5", x.didmd5.asJson),
+        ("dpidsha1", x.dpidsha1.asJson),
+        ("dpidmd5", x.dpidmd5.asJson),
+        ("macsha1", x.macsha1.asJson),
+        ("macmd5", x.macmd5.asJson),
+      ))
+    implicit val c16: Codec[OpenRTB.Producer] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[Option[String]]
+        name <- c.downField("name").as[Option[String]]
+        cat <- c.downField("cat").as[Option[List[String]]]
+        domain <- c.downField("domain").as[Option[String]]
+      } yield {
+        new OpenRTB.Producer(id, name, cat.getOrElse(Nil), domain)
+      }, (x: OpenRTB.Producer) => Util.toJObject(
+        ("id", x.id.asJson),
+        ("name", x.name.asJson),
+        ("cat", x.cat.asJson),
+        ("domain", x.domain.asJson)
+      ))
+    implicit val c15: Codec[OpenRTB.Content] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[Option[String]]
+        episode <- c.downField("episode").as[Option[Int]]
+        title <- c.downField("title").as[Option[String]]
+        series <- c.downField("series").as[Option[String]]
+        season <- c.downField("season").as[Option[String]]
+        artist <- c.downField("artist").as[Option[String]]
+        genre <- c.downField("genre").as[Option[String]]
+        album <- c.downField("album").as[Option[String]]
+        isrc <- c.downField("isrc").as[Option[String]]
+        producer <- c.downField("producer").as[Option[OpenRTB.Producer]]
+        url <- c.downField("url").as[Option[String]]
+        cat <- c.downField("cat").as[Option[List[String]]]
+        prodq <- c.downField("prodq").as[Option[Int]]
+        videoquality <- c.downField("videoquality").as[Option[Int]]
+        context <- c.downField("context").as[Option[Int]]
+        contentrating <- c.downField("contentrating").as[Option[String]]
+        userrating <- c.downField("userrating").as[Option[String]]
+        qagmediarating <- c.downField("qagmediarating").as[Option[Int]]
+        keywords <- c.downField("keywords").as[Option[String]]
+        livestream <- c.downField("livestream").as[Option[Int]]
+        sourcerelationship <- c.downField("sourcerelationship").as[Option[Int]]
+        len <- c.downField("len").as[Option[Int]]
+        language <- c.downField("language").as[Option[String]]
+        embeddable <- c.downField("embeddable").as[Option[Int]]
+        data <- c.downField("data").as[Option[OpenRTB.Data]]
+      } yield {
+        new OpenRTB.Content(id, episode, title, series, season, artist, genre, album, isrc, producer, url,
+          cat.getOrElse(Nil), prodq, videoquality, context, contentrating, userrating, qagmediarating, keywords,
+          livestream, sourcerelationship, len, language, embeddable, data)
+      }, (x: OpenRTB.Content) => Util.toJObject(
+        ("id", x.id.asJson),
+        ("episode", x.episode.asJson),
+        ("title", x.title.asJson),
+        ("series", x.series.asJson),
+        ("season", x.season.asJson),
+        ("artist", x.artist.asJson),
+        ("genre", x.genre.asJson),
+        ("album", x.album.asJson),
+        ("isrc", x.isrc.asJson),
+        ("producer", x.producer.asJson),
+        ("url", x.url.asJson),
+        ("cat", x.cat.asJson),
+        ("prodq", x.prodq.asJson),
+        ("videoquality", x.videoquality.asJson),
+        ("context", x.context.asJson),
+        ("contentrating", x.contentrating.asJson),
+        ("userrating", x.userrating.asJson),
+        ("qagmediarating", x.qagmediarating.asJson),
+        ("keywords", x.keywords.asJson),
+        ("livestream", x.livestream.asJson),
+        ("sourcerelationship", x.sourcerelationship.asJson),
+        ("len", x.len.asJson),
+        ("language", x.language.asJson),
+        ("embeddable", x.embeddable.asJson),
+        ("data", x.data.asJson),
+      ))
+    implicit val c14: Codec[OpenRTB.Publisher] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[Option[String]]
+        name <- c.downField("name").as[Option[String]]
+        cat <- c.downField("cat").as[Option[List[String]]]
+        domain <- c.downField("domain").as[Option[String]]
+      } yield {
+        new OpenRTB.Publisher(id, name, cat.getOrElse(Nil), domain)
+      }, (x: OpenRTB.Publisher) => Util.toJObject(
+        ("id", x.id.asJson),
+        ("name", x.name.asJson),
+        ("cat", x.cat.asJson),
+        ("domain", x.domain.asJson)
+      ))
+    implicit val c13: Codec[OpenRTB.App] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[Option[String]]
+        name <- c.downField("name").as[Option[String]]
+        bundle <- c.downField("bundle").as[Option[String]]
+        domain <- c.downField("domain").as[Option[String]]
+        storeurl <- c.downField("storeurl").as[Option[String]]
+        cat <- c.downField("cat").as[Option[List[String]]]
+        sectioncat <- c.downField("sectioncat").as[Option[List[String]]]
+        pagecat <- c.downField("pagecat").as[Option[List[String]]]
+        ver <- c.downField("ver").as[Option[String]]
+        privacypolicy <- c.downField("privacypolicy").as[Option[Int]]
+        paid <- c.downField("paid").as[Option[Int]]
+        publisher <- c.downField("publisher").as[Option[OpenRTB.Publisher]]
+        content <- c.downField("content").as[Option[OpenRTB.Content]]
+        keywords <- c.downField("keywords").as[Option[String]]
+      } yield {
+        new OpenRTB.App(id, name, bundle, domain, storeurl, cat.getOrElse(Nil), sectioncat.getOrElse(Nil),
+          pagecat.getOrElse(Nil), ver, privacypolicy, paid, publisher, content, keywords)
+      }, (x: OpenRTB.App) => Util.toJObject(
+        ("id", x.id.asJson),
+        ("name", x.name.asJson),
+        ("bundle", x.bundle.asJson),
+        ("domain", x.domain.asJson),
+        ("storeurl", x.storeurl.asJson),
+        ("cat", x.cat.asJson),
+        ("sectioncat", x.sectioncat.asJson),
+        ("pagecat", x.pagecat.asJson),
+        ("ver", x.ver.asJson),
+        ("privacypolicy", x.privacypolicy.asJson),
+        ("paid", x.paid.asJson),
+        ("publisher", x.publisher.asJson),
+        ("content", x.content.asJson),
+        ("keywords", x.keywords.asJson)
+      ))
+    implicit val c12: Codec[OpenRTB.Site] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[Option[String]]
+        name <- c.downField("name").as[Option[String]]
+        domain <- c.downField("domain").as[Option[String]]
+        cat <- c.downField("cat").as[Option[List[String]]]
+        sectioncat <- c.downField("sectioncat").as[Option[List[String]]]
+        pagecat <- c.downField("pagecat").as[Option[List[String]]]
+        page <- c.downField("page").as[Option[String]]
+        ref <- c.downField("ref").as[Option[String]]
+        search <- c.downField("search").as[Option[String]]
+        mobile <- c.downField("mobile").as[Option[Int]]
+        privacypolicy <- c.downField("privacypolicy").as[Option[Int]]
+        publisher <- c.downField("publisher").as[Option[OpenRTB.Publisher]]
+        content <- c.downField("content").as[Option[OpenRTB.Content]]
+        keywords <- c.downField("keywords").as[Option[String]]
+      } yield {
+        new OpenRTB.Site(id, name, domain, cat.getOrElse(Nil), sectioncat.getOrElse(Nil), pagecat.getOrElse(Nil), page,
+          ref, search, mobile, privacypolicy, publisher, content, keywords)
+      }, (x: OpenRTB.Site) => Util.toJObject(
+        ("id", x.id.asJson),
+        ("name", x.name.asJson),
+        ("domain", x.domain.asJson),
+        ("cat", x.cat.asJson),
+        ("sectioncat", x.sectioncat.asJson),
+        ("pagecat", x.pagecat.asJson),
+        ("page", x.page.asJson),
+        ("ref", x.ref.asJson),
+        ("search", x.search.asJson),
+        ("mobile", x.mobile.asJson),
+        ("privacypolicy", x.privacypolicy.asJson),
+        ("publisher", x.publisher.asJson),
+        ("content", x.content.asJson),
+        ("keywords", x.keywords.asJson)
+      ))
+    implicit val c11: Codec[OpenRTB.Deal] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[String]
+        bidfloor <- c.downField("bidfloor").as[Option[Double]]
+        bidfloorcur <- c.downField("bidfloorcur").as[Option[String]]
+        at <- c.downField("at").as[Option[Int]]
+        wseat <- c.downField("wseat").as[Option[List[String]]]
+        wadomain <- c.downField("wadomain").as[Option[List[String]]]
+      } yield {
+        new OpenRTB.Deal(id, bidfloor.getOrElse(0.0), bidfloorcur.getOrElse("USD"), at, wseat.getOrElse(Nil),
+          wadomain.getOrElse(Nil))
+      }, (x: OpenRTB.Deal) => Util.toJObject(
+        ("id", Json.fromString(x.id)),
+        ("bidfloor", toJson(x.bidfloor, 0.0)),
+        ("bidfloorcur", toJson(x.bidfloorcur, "USD")),
+        ("at", x.at.asJson),
+        ("wseat", x.wseat.asJson),
+        ("wadomain", x.wadomain.asJson)
+      ))
+    implicit val c10: Codec[OpenRTB.Pmp] =
+      Codec.from((c: HCursor) => for {
+        private_auction <- c.downField("private_auction").as[Option[Int]]
+        deals <- c.downField("deals").as[Option[List[OpenRTB.Deal]]]
+      } yield {
+        new OpenRTB.Pmp(private_auction.getOrElse(0), deals.getOrElse(Nil))
+      }, (x: OpenRTB.Pmp) => Util.toJObject(
+        ("private_auction", toJson(x.private_auction, 0)),
+        ("deals", x.deals.asJson)
+      ))
+    implicit val c9: Codec[OpenRTB.Format] =
+      Codec.from((c: HCursor) => for {
+        w <- c.downField("w").as[Option[Int]]
+        h <- c.downField("h").as[Option[Int]]
+        wratio <- c.downField("wratio").as[Option[Int]]
+        hratio <- c.downField("hratio").as[Option[Int]]
+        wmin <- c.downField("wmin").as[Option[Int]]
+      } yield {
+        new OpenRTB.Format(w, h, wratio, hratio, wmin)
+      }, (x: OpenRTB.Format) => Util.toJObject(
+        ("w", x.w.asJson),
+        ("h", x.h.asJson),
+        ("wratio", x.wratio.asJson),
+        ("hratio", x.hratio.asJson),
+        ("wmin", x.wmin.asJson)
+      ))
+    implicit val c8: Codec[OpenRTB.Native] =
+      Codec.from((c: HCursor) => for {
+        request <- c.downField("request").as[String]
+        ver <- c.downField("ver").as[Option[String]]
+        api <- c.downField("api").as[Option[List[Int]]]
+        battr <- c.downField("battr").as[Option[List[Int]]]
+      } yield {
+        new OpenRTB.Native(request, ver, api.getOrElse(Nil), battr.getOrElse(Nil))
+      }, (x: OpenRTB.Native) => Util.toJObject(
+        ("request", Json.fromString(x.request)),
+        ("ver", x.ver.asJson),
+        ("api", x.api.asJson),
+        ("battr", x.battr.asJson)
+      ))
+    implicit val c7: Codec[OpenRTB.Banner] =
+      Codec.from((c: HCursor) => for {
+        format <- c.downField("format").as[Option[OpenRTB.Format]]
+        w <- c.downField("w").as[Option[Int]]
+        h <- c.downField("h").as[Option[Int]]
+        wmax <- c.downField("wmax").as[Option[Int]]
+        hmax <- c.downField("hmax").as[Option[Int]]
+        wmin <- c.downField("wmin").as[Option[Int]]
+        hmin <- c.downField("hmin").as[Option[Int]]
+        btype <- c.downField("btype").as[Option[List[Int]]]
+        battr <- c.downField("battr").as[Option[List[Int]]]
+        pos <- c.downField("pos").as[Option[Int]]
+        mimes <- c.downField("mimes").as[Option[List[String]]]
+        topframe <- c.downField("topframe").as[Option[Int]]
+        expdir <- c.downField("expdir").as[Option[List[Int]]]
+        api <- c.downField("api").as[Option[List[Int]]]
+        id <- c.downField("id").as[Option[String]]
+        vcm <- c.downField("vcm").as[Option[Int]]
+      } yield {
+        new OpenRTB.Banner(format, w, h, wmax, hmax, wmin, hmin, btype.getOrElse(Nil), battr.getOrElse(Nil), pos,
+          mimes.getOrElse(Nil), topframe, expdir.getOrElse(Nil), api.getOrElse(Nil), id, vcm)
+      }, (x: OpenRTB.Banner) => Util.toJObject(
+        ("format", x.format.asJson),
+        ("w", x.w.asJson),
+        ("h", x.h.asJson),
+        ("wmax", x.wmax.asJson),
+        ("hmax", x.hmax.asJson),
+        ("wmin", x.wmin.asJson),
+        ("hmin", x.hmin.asJson),
+        ("btype", x.btype.asJson),
+        ("battr", x.battr.asJson),
+        ("pos", x.pos.asJson),
+        ("mimes", x.mimes.asJson),
+        ("topframe", x.topframe.asJson),
+        ("expdir", x.expdir.asJson),
+        ("api", x.api.asJson),
+        ("id", x.id.asJson),
+        ("vcm", x.vcm.asJson)
+      ))
+    implicit val c6: Codec[OpenRTB.Audio] =
+      Codec.from((c: HCursor) => for {
+        mimes <- c.downField("mimes").as[Option[List[String]]]
+        minduration <- c.downField("minduration").as[Option[Int]]
+        maxduration <- c.downField("maxduration").as[Option[Int]]
+        protocols <- c.downField("protocols").as[Option[List[Int]]]
+        startdelay <- c.downField("startdelay").as[Option[Int]]
+        sequence <- c.downField("sequence").as[Option[Int]]
+        battr <- c.downField("battr").as[Option[List[Int]]]
+        maxextended <- c.downField("maxextended").as[Option[Int]]
+        minbitrate <- c.downField("minbitrate").as[Option[Int]]
+        maxbitrate <- c.downField("maxbitrate").as[Option[Int]]
+        delivery <- c.downField("delivery").as[Option[List[Int]]]
+        companionad <- c.downField("companionad").as[Option[List[OpenRTB.Banner]]]
+        api <- c.downField("api").as[Option[List[Int]]]
+        companiontype <- c.downField("companiontype").as[Option[List[Int]]]
+        maxseq <- c.downField("maxseq").as[Option[Int]]
+        feed <- c.downField("feed").as[Option[Int]]
+        stitched <- c.downField("stitched").as[Option[Int]]
+        nvol <- c.downField("nvol").as[Option[Int]]
+      } yield {
+        new OpenRTB.Audio(mimes.getOrElse(Nil), minduration, maxduration, protocols.getOrElse(Nil), startdelay,
+          sequence, battr.getOrElse(Nil), maxextended, minbitrate, maxbitrate, delivery.getOrElse(Nil),
+          companionad.getOrElse(Nil), api.getOrElse(Nil), companiontype.getOrElse(Nil), maxseq, feed, stitched, nvol)
+      }, (x: OpenRTB.Audio) => Util.toJObject(
+        ("mimes", x.mimes.asJson),
+        ("minduration", x.minduration.asJson),
+        ("maxduration", x.maxduration.asJson),
+        ("protocols", x.protocols.asJson),
+        ("startdelay", x.startdelay.asJson),
+        ("sequence", x.sequence.asJson),
+        ("battr", x.battr.asJson),
+        ("maxextended", x.maxextended.asJson),
+        ("minbitrate", x.minbitrate.asJson),
+        ("maxbitrate", x.maxbitrate.asJson),
+        ("delivery", x.delivery.asJson),
+        ("companionad", x.companionad.asJson),
+        ("api", x.api.asJson),
+        ("companiontype", x.companiontype.asJson),
+        ("maxseq", x.maxseq.asJson),
+        ("feed", x.feed.asJson),
+        ("stitched", x.stitched.asJson),
+        ("nvol", x.nvol.asJson),
+      ))
+    implicit val c5: Codec[OpenRTB.Video] =
+      Codec.from((c: HCursor) => for {
+        mimes <- c.downField("mimes").as[Option[List[String]]]
+        minduration <- c.downField("minduration").as[Option[Int]]
+        maxduration <- c.downField("maxduration").as[Option[Int]]
+        protocols <- c.downField("protocols").as[Option[List[Int]]]
+        protocol <- c.downField("protocol").as[Option[Int]]
+        w <- c.downField("w").as[Option[Int]]
+        h <- c.downField("h").as[Option[Int]]
+        startdelay <- c.downField("startdelay").as[Option[Int]]
+        placement <- c.downField("placement").as[Option[Int]]
+        linearity <- c.downField("linearity").as[Option[Int]]
+        skip <- c.downField("skip").as[Option[Int]]
+        skipmin <- c.downField("skipmin").as[Option[Int]]
+        skipafter <- c.downField("skipafter").as[Option[Int]]
+        sequence <- c.downField("sequence").as[Option[Int]]
+        battr <- c.downField("battr").as[Option[List[Int]]]
+        maxextended <- c.downField("maxextended").as[Option[Int]]
+        minbitrate <- c.downField("minbitrate").as[Option[Int]]
+        maxbitrate <- c.downField("maxbitrate").as[Option[Int]]
+        boxingallowed <- c.downField("boxingallowed").as[Option[Int]]
+        playbackmethod <- c.downField("playbackmethod").as[Option[List[Int]]]
+        playbackend <- c.downField("playbackend").as[Option[Int]]
+        delivery <- c.downField("delivery").as[Option[List[Int]]]
+        pos <- c.downField("pos").as[Option[Int]]
+        companionad <- c.downField("companionad").as[Option[List[OpenRTB.Banner]]]
+        api <- c.downField("api").as[Option[List[Int]]]
+        companiontype <- c.downField("companiontype").as[Option[List[Int]]]
+      } yield {
+        new OpenRTB.Video(mimes.getOrElse(Nil), minduration, maxduration, protocols.getOrElse(Nil), protocol, w, h,
+          startdelay, placement, linearity, skip, skipmin.getOrElse(0), skipafter.getOrElse(0), sequence,
+          battr.getOrElse(Nil), maxextended, minbitrate, maxbitrate, boxingallowed.getOrElse(1),
+          playbackmethod.getOrElse(Nil), playbackend, delivery.getOrElse(Nil), pos, companionad.getOrElse(Nil),
+          api.getOrElse(Nil), companiontype.getOrElse(Nil))
+      }, (x: OpenRTB.Video) => Util.toJObject(
+        ("mimes", x.mimes.asJson),
+        ("minduration", x.minduration.asJson),
+        ("maxduration", x.maxduration.asJson),
+        ("protocols", x.protocols.asJson),
+        ("protocol", x.protocol.asJson),
+        ("w", x.w.asJson),
+        ("h", x.h.asJson),
+        ("startdelay", x.startdelay.asJson),
+        ("placement", x.placement.asJson),
+        ("linearity", x.linearity.asJson),
+        ("skip", x.skip.asJson),
+        ("skipmin", toJson(x.skipmin, 0)),
+        ("skipafter", toJson(x.skipafter, 0)),
+        ("sequence", x.sequence.asJson),
+        ("battr", x.battr.asJson),
+        ("maxextended", x.maxextended.asJson),
+        ("minbitrate", x.minbitrate.asJson),
+        ("maxbitrate", x.maxbitrate.asJson),
+        ("boxingallowed", toJson(x.boxingallowed, 1)),
+        ("playbackmethod", x.playbackmethod.asJson),
+        ("playbackend", x.playbackend.asJson),
+        ("delivery", x.delivery.asJson),
+        ("pos", x.pos.asJson),
+        ("companionad", x.companionad.asJson),
+        ("api", x.api.asJson),
+        ("companiontype", x.companiontype.asJson)
+      ))
+    implicit val c4: Codec[OpenRTB.Metric] =
+      Codec.from((c: HCursor) => for {
+        type_ <- c.downField("type").as[String]
+        value <- c.downField("value").as[Double]
+        vendor <- c.downField("vendor").as[Option[String]]
+      } yield {
+        new OpenRTB.Metric(type_, value, vendor)
+      }, (x: OpenRTB.Metric) => Util.toJObject(
+        ("type", Json.fromString(x.`type`)),
+        ("value", x.value.asJson),
+        ("vendor", x.vendor.asJson)
+      ))
+    implicit val c3: Codec[OpenRTB.Imp] =
+      Codec.from((c: HCursor) => for {
+        id <- c.downField("id").as[String]
+        metric <- c.downField("metric").as[Option[List[OpenRTB.Metric]]]
+        banner <- c.downField("banner").as[Option[OpenRTB.Banner]]
+        video <- c.downField("video").as[Option[OpenRTB.Video]]
+        audio <- c.downField("audio").as[Option[OpenRTB.Audio]]
+        native <- c.downField("native").as[Option[OpenRTB.Native]]
+        pmp <- c.downField("pmp").as[Option[OpenRTB.Pmp]]
+        displaymanager <- c.downField("displaymanager").as[Option[String]]
+        displaymanagerver <- c.downField("displaymanagerver").as[Option[String]]
+        instl <- c.downField("instl").as[Option[Int]]
+        tagid <- c.downField("tagid").as[Option[String]]
+        bidfloor <- c.downField("bidfloor").as[Option[Double]]
+        bidfloorcur <- c.downField("bidfloorcur").as[Option[String]]
+        clickbrowser <- c.downField("clickbrowser").as[Option[Int]]
+        secure <- c.downField("secure").as[Option[Int]]
+        iframebuster <- c.downField("iframebuster").as[Option[List[String]]]
+        exp <- c.downField("exp").as[Option[Int]]
+      } yield {
+        new OpenRTB.Imp(id, metric.getOrElse(Nil), banner, video, audio, native, pmp, displaymanager, displaymanagerver,
+          instl.getOrElse(0), tagid, bidfloor.getOrElse(0.0), bidfloorcur.getOrElse("USD"), clickbrowser,
+          secure.getOrElse(0), iframebuster.getOrElse(Nil), exp)
+      }, (x: OpenRTB.Imp) => Util.toJObject(
+        ("id", Json.fromString(x.id)),
+        ("metric", x.metric.asJson),
+        ("banner", x.banner.asJson),
+        ("video", x.video.asJson),
+        ("audio", x.audio.asJson),
+        ("native", x.native.asJson),
+        ("pmp", x.pmp.asJson),
+        ("displaymanager", x.displaymanager.asJson),
+        ("displaymanagerver", x.displaymanagerver.asJson),
+        ("instl", toJson(x.instl, 0)),
+        ("tagid", x.tagid.asJson),
+        ("bidfloor", toJson(x.bidfloor, 0.0)),
+        ("bidfloorcur", toJson(x.bidfloorcur, "USD")),
+        ("secure", toJson(x.secure, 0)),
+        ("iframebuster", x.iframebuster.asJson),
+        ("exp", x.exp.asJson)
+      ))
+    implicit val c2: Codec[OpenRTB.Reqs] = deriveCodec
+    implicit val c1: Codec[OpenRTB.Source] =
+      Codec.from((c: HCursor) => for {
+        fd <- c.downField("fd").as[Option[Int]]
+        tid <- c.downField("tid").as[Option[String]]
+        pchain <- c.downField("pchain").as[Option[String]]
+      } yield {
+        new OpenRTB.Source(fd, tid, pchain)
+      }, (x: OpenRTB.Source) => Util.toJObject(
+        ("fd", x.fd.asJson),
+        ("tid", x.tid.asJson),
+        ("pchain", x.pchain.asJson)
+      ))
+    Codec.from((c: HCursor) => for {
+      id <- c.downField("id").as[String]
+      imp <- c.downField("imp").as[Option[List[OpenRTB.Imp]]]
+      site <- c.downField("site").as[Option[OpenRTB.Site]]
+      app <- c.downField("app").as[Option[OpenRTB.App]]
+      device <- c.downField("device").as[Option[OpenRTB.Device]]
+      user <- c.downField("user").as[Option[OpenRTB.User]]
+      test <- c.downField("test").as[Option[Int]]
+      at <- c.downField("at").as[Option[Int]]
+      tmax <- c.downField("tmax").as[Option[Int]]
+      wset <- c.downField("wset").as[Option[List[String]]]
+      bset <- c.downField("bset").as[Option[List[String]]]
+      allimps <- c.downField("allimps").as[Option[Int]]
+      cur <- c.downField("cur").as[Option[List[String]]]
+      wlang <- c.downField("wlang").as[Option[List[String]]]
+      bcat <- c.downField("bcat").as[Option[List[String]]]
+      badv <- c.downField("badv").as[Option[List[String]]]
+      bapp <- c.downField("bapp").as[Option[List[String]]]
+      source <- c.downField("source").as[Option[OpenRTB.Source]]
+      reqs <- c.downField("reqs").as[Option[OpenRTB.Reqs]]
+    } yield {
+      new OpenRTB.BidRequest(id, imp.getOrElse(Nil), site, app, device, user, test.getOrElse(0), at.getOrElse(2), tmax,
+        wset.getOrElse(Nil), bset.getOrElse(Nil), allimps.getOrElse(0), cur.getOrElse(Nil), wlang.getOrElse(Nil),
+        bcat.getOrElse(Nil), badv.getOrElse(Nil), bapp.getOrElse(Nil), source, reqs)
+    }, (x: OpenRTB.BidRequest) => Util.toJObject(
+      ("id", Json.fromString(x.id)),
+      ("imp", x.imp.asJson),
+      ("site", x.site.asJson),
+      ("app", x.app.asJson),
+      ("device", x.device.asJson),
+      ("user", x.user.asJson),
+      ("test", toJson(x.test, 0)),
+      ("at", toJson(x.at, 2)),
+      ("tmax", x.tmax.asJson),
+      ("wset", x.wset.asJson),
+      ("bset", x.bset.asJson),
+      ("allimps", toJson(x.allimps, 0)),
+      ("cur", x.cur.asJson),
+      ("wlang", x.wlang.asJson),
+      ("bcat", x.bcat.asJson),
+      ("badv", x.badv.asJson),
+      ("bapp", x.bapp.asJson),
+      ("source", x.source.asJson),
+      ("reqs", x.reqs.asJson)
+    ))
   }
   implicit val bigIntE5r: Encoder[BigInt] = encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
@@ -159,4 +771,8 @@ object CirceEncodersDecoders {
 
     deriveCodec
   }
+
+  private[this] def toJson[T: Encoder](x: T, d: T): Json =
+    if (x == d) Json.Null
+    else x.asJson
 }

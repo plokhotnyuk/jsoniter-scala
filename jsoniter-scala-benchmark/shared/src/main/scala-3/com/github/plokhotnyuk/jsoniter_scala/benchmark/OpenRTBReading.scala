@@ -11,7 +11,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
     Json.decode(jsonBytes).to[BidRequest].value
   }
-/* FIXME: circe requires a custom codec
+
   @Benchmark
   def circe(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -29,7 +29,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
     Decoder[BidRequest].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
-*/
+
   @Benchmark
   def jacksonScala(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

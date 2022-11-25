@@ -10,9 +10,8 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       val b = benchmark
       toString(b.avSystemGenCodec()) shouldBe b.jsonString1
       toString(b.borer()) shouldBe b.jsonString1
-      //FIXME: Circe require a custom codec
-      //toString(b.circe()) shouldBe b.jsonString1
-      //toString(b.circeJsoniter()) shouldBe b.jsonString1
+      toString(b.circe()) shouldBe b.jsonString1
+      toString(b.circeJsoniter()) shouldBe b.jsonString1
       //FIXME: Jackson serializes fields with default values
       //toString(b.jacksonScala()) shouldBe b.jsonString1
       //FIXME: json4s.jackson serializes fields with default values
