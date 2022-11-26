@@ -36,8 +36,8 @@ class ByteArrayAccess { // FIXME: Use Java wrapper as w/a for missing support of
         VH_SHORT.set(buf, pos, value);
     }
 
-    static long getLongReversed(byte[] buf, int pos) {
-        return (long) VH_LONG_REVERSED.get(buf, pos);
+    static void setLongReversed(byte[] buf, int pos, long value) {
+        VH_LONG_REVERSED.set(buf, pos, value);
     }
 
     static int getIntReversed(byte[] buf, int pos) {

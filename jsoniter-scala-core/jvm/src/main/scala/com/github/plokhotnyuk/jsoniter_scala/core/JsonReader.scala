@@ -1852,18 +1852,32 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     val mask = 0x000000FF000000FFL
-    var x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+    val x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
       val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
       (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
     } + buf(pos + 8)) * 1000000000 + {
       val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561 >> 8
       (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
     } + buf(pos + 17) - 48000000048L
-    if (isNeg) {
-      x1 = -x1
-      x2 = -x2
+    val q = x1 * 1000000000000000000L
+    var l = q + x2
+    val h = Math.multiplyHigh(x1, 1000000000000000000L) + ((~l & q) >>> 63)
+    if ((l >> 63 | h) == 0) {
+      if (isNeg) l = -l
+      java.math.BigDecimal.valueOf(l, scale)
+    } else {
+      val signum =
+        if (isNeg) -1
+        else 1
+      var magnitude = this.magnitude
+      if (magnitude eq null) {
+        magnitude = new Array[Byte](128)
+        this.magnitude = magnitude
+      }
+      ByteArrayAccess.setLongReversed(magnitude, 0, h)
+      ByteArrayAccess.setLongReversed(magnitude, 8, l)
+      new java.math.BigDecimal(new java.math.BigInteger(signum, magnitude, 0, 16), scale)
     }
-    java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
   private[this] def toBigDecimal308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
@@ -1915,7 +1929,7 @@ final class JsonReader private[jsoniter_scala](
     }
     var i = 0
     while (i <= last) {
-      ByteArrayAccess.setLong(magnitude, i, ByteArrayAccess.getLongReversed(magnitude, i))
+      ByteArrayAccess.setLongReversed(magnitude, i, ByteArrayAccess.getLong(magnitude, i))
       i += 8
     }
     val signum =
