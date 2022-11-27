@@ -726,14 +726,13 @@ object JsonCodecMaker {
           case '[t] => Expr.summon[Ordering[t]].fold(fail(s"Can't summon Ordering[${tpe.show}]"))(_.asTerm)
       })
 
-      def summonClassTag(tpe: TypeRepr): Term =
-        Ref(classTags.getOrElseUpdate(tpe, {
-          tpe.asType match
-            case '[t] =>
-              val sym = symbol("ct" + classTags.size, TypeRepr.of[ClassTag[t]])
-              val ct = Expr.summon[ClassTag[t]].getOrElse(fail(s"Can't summon ClassTag[${tpe.show}]"))
-              ValDef(sym, Some(ct.asTerm.changeOwner(sym)))
-        }).symbol)
+      def summonClassTag(tpe: TypeRepr): Term = Ref(classTags.getOrElseUpdate(tpe, {
+        tpe.asType match
+          case '[t] =>
+            val sym = symbol("ct" + classTags.size, TypeRepr.of[ClassTag[t]])
+            val ct = Expr.summon[ClassTag[t]].getOrElse(fail(s"Can't summon ClassTag[${tpe.show}]"))
+            ValDef(sym, Some(ct.asTerm.changeOwner(sym)))
+      }).symbol)
 
       def inferImplicitValue[T: Type](typeToSearch: TypeRepr): Option[Expr[T]] = Implicits.search(typeToSearch) match
         case v: ImplicitSearchSuccess => Some(v.tree.asExprOf[T])
@@ -1407,21 +1406,21 @@ object JsonCodecMaker {
 
       case class DecoderMethodKey(tpe: TypeRepr, isStringified: Boolean, useDiscriminator: Boolean)
 
-      val decodeMethodDefs = new mutable.LinkedHashMap[DecoderMethodKey, DefDef]
       val decodeMethodSyms = new mutable.LinkedHashMap[DecoderMethodKey, Symbol]
+      val decodeMethodDefs = new mutable.ArrayBuffer[DefDef]
 
       def withDecoderFor[T: Type](methodKey: DecoderMethodKey, arg: Expr[T], in: Expr[JsonReader])
                                  (f: (Expr[JsonReader], Expr[T]) => Expr[T])(using Quotes): Expr[T] =
-        Apply(Ref(decodeMethodSyms.get(methodKey).getOrElse {
+        Apply(Ref(decodeMethodSyms.getOrElse(methodKey, {
           val mt = MethodType(List("in", "defaultValue"))(_ => List(TypeRepr.of[JsonReader], methodKey.tpe), _ => TypeRepr.of[T])
           val sym = Symbol.newMethod(Symbol.spliceOwner, "d" + decodeMethodSyms.size, mt)
           decodeMethodSyms.update(methodKey, sym)
-          decodeMethodDefs.update(methodKey, DefDef(sym, params => {
+          decodeMethodDefs += DefDef(sym, params => {
             val List(List(in, default)) = params
             Some(f(in.asExprOf[JsonReader], default.asExprOf[T]).asTerm.changeOwner(sym))
-          }))
+          })
           sym
-        }), List(in.asTerm, arg.asTerm)).asExprOf[T]
+        })), List(in.asTerm, arg.asTerm)).asExprOf[T]
 
       case class WriteDiscriminator(fieldName: String, fieldValue: String) {
         def write(out: Expr[JsonWriter]): Expr[Unit] = '{
@@ -1432,21 +1431,21 @@ object JsonCodecMaker {
 
       case class EncoderMethodKey(tpe: TypeRepr, isStringified: Boolean, discriminatorKeyValue: Option[(String, String)])
 
-      val encodeMethodDefs = new mutable.LinkedHashMap[EncoderMethodKey, DefDef]
       val encodeMethodSyms = new mutable.LinkedHashMap[EncoderMethodKey, Symbol]
+      val encodeMethodDefs = new mutable.ArrayBuffer[DefDef]
 
       def withEncoderFor[T: Type](methodKey: EncoderMethodKey, arg: Expr[T], out: Expr[JsonWriter])
                                  (f: (Expr[JsonWriter], Expr[T])=> Expr[Unit]): Expr[Unit] =
-        Apply(Ref(encodeMethodSyms.get(methodKey).getOrElse {
+        Apply(Ref(encodeMethodSyms.getOrElse(methodKey, {
           val mt = MethodType(List("x", "out"))(_ => List(TypeRepr.of[T], TypeRepr.of[JsonWriter]), _ => TypeRepr.of[Unit])
           val sym = Symbol.newMethod(Symbol.spliceOwner, "e" + encodeMethodSyms.size, mt)
           encodeMethodSyms.update(methodKey, sym)
-          encodeMethodDefs.update(methodKey, DefDef(sym, params => {
+          encodeMethodDefs += DefDef(sym, params => {
             val List(List(x, out)) = params
             Some(f(out.asExprOf[JsonWriter], x.asExprOf[T]).asTerm.changeOwner(sym))
-          }))
+          })
           sym
-        }), List(arg.asTerm, out.asTerm)).asExprOf[Unit]
+        })), List(arg.asTerm, out.asTerm)).asExprOf[Unit]
 
       def genNullValue[T: Type](types: List[TypeRepr])(using Quotes): Expr[T] =
         val tpe = types.head
@@ -2733,8 +2732,8 @@ object JsonCodecMaker {
           equalsMethods.values ++
           scalaEnumCaches.values ++
           fieldIndexAccessors.values ++
-          decodeMethodDefs.values ++
-          encodeMethodDefs.values
+          decodeMethodDefs ++
+          encodeMethodDefs
       val codec = Block(needDefs.toList, codecDef).asExprOf[JsonValueCodec[A]]
       if (//FIXME: uncomment after graduating from experimental API: CompilationInfo.XmacroSettings.contains("print-codecs") ||
         Expr.summon[CodecMakerConfig.PrintCodec].isDefined) {

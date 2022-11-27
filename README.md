@@ -230,7 +230,7 @@ implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make
 ```
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec` for the
-whole nested data structure. No need to derive intemendiate codecs if you use the default or same derivation
+whole nested data structure. No need to derive intemendiate codecs if you use the default or the same derivation
 configuration for them.
 
 Now use it for parsing and serialization:
@@ -289,6 +289,8 @@ instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or outpu
 - [scalatest-json](https://github.com/stephennancekivell/scalatest-json) - Scalatest matchers with appropriate equality 
 and descriptive error messages
 - [tapir](https://tapir.softwaremill.com/en/latest/endpoint/json.html#jsoniter-scala) - Typed API descRiptions
+
+Also, for usages in other OSS projects see the `Dependents` section of [peoject's Scala Index page](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala)
 
 For all dependent projects it is recommended to use [sbt-updates plugin](https://github.com/rtimush/sbt-updates) or
 [Scala steward service](https://github.com/scala-steward) to keep up with using of the latest releases.

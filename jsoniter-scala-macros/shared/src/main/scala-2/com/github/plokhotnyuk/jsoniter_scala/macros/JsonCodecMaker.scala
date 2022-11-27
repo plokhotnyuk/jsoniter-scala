@@ -591,35 +591,29 @@ object JsonCodecMaker {
         }
       }
 
-      val mathContextNames = new mutable.LinkedHashMap[Int, TermName]
-      val mathContextTrees = new mutable.LinkedHashMap[Int, Tree]
+      val mathContexts = new mutable.LinkedHashMap[Int, (TermName, Tree)]
 
       def withMathContextFor(precision: Int): Tree =
         if (precision == java.math.MathContext.DECIMAL128.getPrecision) q"_root_.java.math.MathContext.DECIMAL128"
         else if (precision == java.math.MathContext.DECIMAL64.getPrecision) q"_root_.java.math.MathContext.DECIMAL64"
         else if (precision == java.math.MathContext.DECIMAL32.getPrecision) q"_root_.java.math.MathContext.DECIMAL32"
         else if (precision == java.math.MathContext.UNLIMITED.getPrecision) q"_root_.java.math.MathContext.UNLIMITED"
-        else Ident(mathContextNames.get(precision).getOrElse {
-          val name = TermName("mc" + mathContextNames.size)
-          mathContextNames.update(precision, name)
-          mathContextTrees.update(precision,
+        else Ident(mathContexts.getOrElseUpdate(precision, {
+          val name = TermName("mc" + mathContexts.size)
+          (name,
             q"private[this] val $name = new _root_.java.math.MathContext(${cfg.bigDecimalPrecision}, _root_.java.math.RoundingMode.HALF_EVEN)")
-          name
-        })
+        })._1)
 
-      val scalaEnumCacheNames = new mutable.LinkedHashMap[Type, TermName]
-      val scalaEnumCacheTries = new mutable.LinkedHashMap[Type, Tree]
+      val scalaEnumCaches = new mutable.LinkedHashMap[Type, (TermName, Tree)]
 
-      def withScalaEnumCacheFor(tpe: Type): Tree = Ident(scalaEnumCacheNames.get(tpe).getOrElse {
-        val name = TermName("ec" + scalaEnumCacheNames.size)
+      def withScalaEnumCacheFor(tpe: Type): Tree = Ident(scalaEnumCaches.getOrElseUpdate(tpe, {
+        val name = TermName("ec" + scalaEnumCaches.size)
         val keyTpe =
           if (cfg.useScalaEnumValueId) tq"Int"
           else tq"String"
-        scalaEnumCacheNames.update(tpe, name)
-        scalaEnumCacheTries.update(tpe,
+        (name,
           q"private[this] val $name = new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]")
-        name
-      })
+      })._1)
 
       case class JavaEnumValueInfo(value: Tree, name: String, transformed: Boolean)
 
@@ -1047,40 +1041,31 @@ object JsonCodecMaker {
         }
       }
 
-      val nullValueNames = new mutable.LinkedHashMap[Type, TermName]
-      val nullValueTrees = new mutable.LinkedHashMap[Type, Tree]
+      val nullValues = new mutable.LinkedHashMap[Type, (TermName, Tree)]
 
-      def withNullValueFor(tpe: Type)(f: => Tree): Tree = Ident(nullValueNames.get(tpe).getOrElse{
-        val name = TermName("c" + nullValueNames.size)
-        nullValueNames.update(tpe, name)
-        nullValueTrees.update(tpe, q"private[this] val $name: $tpe = $f")
-        name
-      })
+      def withNullValueFor(tpe: Type)(f: => Tree): Tree = Ident(nullValues.getOrElseUpdate(tpe, {
+        val name = TermName("c" + nullValues.size)
+        (name, q"private[this] val $name: $tpe = $f")
+      })._1)
 
-      val fieldNames = new mutable.LinkedHashMap[Type, TermName]
-      val fieldTrees = new mutable.LinkedHashMap[Type, Tree]
+      val fields = new mutable.LinkedHashMap[Type, (TermName, Tree)]
 
-      def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = Ident(fieldNames.get(tpe).getOrElse {
-        val name = TermName("f" + fieldNames.size)
-        fieldNames.update(tpe, name)
-        fieldTrees.update(tpe,
+      def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = Ident(fields.getOrElseUpdate(tpe, {
+        val name = TermName("f" + fields.size)
+        (name,
           q"""private[this] def $name(i: Int): String =
-              (i: @_root_.scala.annotation.switch @_root_.scala.unchecked) match {
-                case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n" }}
-              }""")
-        name
-      })
+                (i: @_root_.scala.annotation.switch @_root_.scala.unchecked) match {
+                  case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n" }}
+                }""")
+      })._1)
 
-      val equalsMethodNames = new mutable.LinkedHashMap[Type, TermName]
-      val equalsMethodTrees = new mutable.LinkedHashMap[Type, Tree]
+      val equalsMethods = new mutable.LinkedHashMap[Type, (TermName, Tree)]
 
       def withEqualsFor(tpe: Type, arg1: Tree, arg2: Tree)(f: => Tree): Tree = {
-        val equalsMethodName = equalsMethodNames.get(tpe).getOrElse{
-          val name = TermName("q" + equalsMethodNames.size)
-          equalsMethodNames.update(tpe, name)
-          equalsMethodTrees.update(tpe, q"private[this] def $name(x1: $tpe, x2: $tpe): _root_.scala.Boolean = $f")
-          name
-        }
+        val equalsMethodName = equalsMethods.getOrElseUpdate(tpe, {
+          val name = TermName("q" + equalsMethods.size)
+          (name, q"private[this] def $name(x1: $tpe, x2: $tpe): _root_.scala.Boolean = $f")
+        })._1
         q"$equalsMethodName($arg1, $arg2)"
       }
 
@@ -1102,31 +1087,31 @@ object JsonCodecMaker {
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
       val decodeMethodNames = new mutable.LinkedHashMap[MethodKey, TermName]
-      val decodeMethodTrees = new mutable.LinkedHashMap[MethodKey, Tree]
+      val decodeMethodTrees = new mutable.ArrayBuffer[Tree]
 
       def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
-        val decodeMethodName = decodeMethodNames.get(methodKey).getOrElse {
+        val decodeMethodName = decodeMethodNames.getOrElse(methodKey, {
           val name = TermName("d" + decodeMethodNames.size)
           val mtpe = methodKey.tpe
           decodeMethodNames.update(methodKey, name)
-          decodeMethodTrees.update(methodKey,
-            q"private[this] def $name(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $mtpe): $mtpe = $f")
+          decodeMethodTrees +=
+            q"private[this] def $name(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $mtpe): $mtpe = $f"
           name
-        }
+        })
         q"$decodeMethodName(in, $arg)"
       }
 
       val encodeMethodNames = new mutable.LinkedHashMap[MethodKey, TermName]
-      val encodeMethodTrees = new mutable.LinkedHashMap[MethodKey, Tree]
+      val encodeMethodTrees = new mutable.ArrayBuffer[Tree]
 
       def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
-        val encodeMethodName = encodeMethodNames.get(methodKey).getOrElse {
+        val encodeMethodName = encodeMethodNames.getOrElse(methodKey, {
           val name = TermName("e" + encodeMethodNames.size)
           encodeMethodNames.update(methodKey, name)
-          encodeMethodTrees.update(methodKey,
-            q"private[this] def $name(x: ${methodKey.tpe}, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = $f")
+          encodeMethodTrees +=
+            q"private[this] def $name(x: ${methodKey.tpe}, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = $f"
           name
-        }
+        })
         q"$encodeMethodName($arg, out)"
       }
 
@@ -1988,13 +1973,13 @@ object JsonCodecMaker {
                   ${genReadVal(rootTpe :: Nil, q"default", cfg.isStringified, EmptyTree)}
                 def encodeValue(x: $rootTpe, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit =
                   ${genWriteVal(q"x", rootTpe :: Nil, cfg.isStringified, EmptyTree)}
-                ..${decodeMethodTrees.values}
-                ..${encodeMethodTrees.values}
-                ..${fieldTrees.values}
-                ..${equalsMethodTrees.values}
-                ..${nullValueTrees.values}
-                ..${mathContextTrees.values}
-                ..${scalaEnumCacheTries.values}
+                ..$decodeMethodTrees
+                ..$encodeMethodTrees
+                ..${fields.values.map(_._2)}
+                ..${equalsMethods.values.map(_._2)}
+                ..${nullValues.values.map(_._2)}
+                ..${mathContexts.values.map(_._2)}
+                ..${scalaEnumCaches.values.map(_._2)}
               }
               x
             }"""
