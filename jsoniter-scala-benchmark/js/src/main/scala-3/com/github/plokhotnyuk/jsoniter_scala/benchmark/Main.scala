@@ -1158,9 +1158,8 @@ object Main {
     val benchmark = new OpenRTBReading { setup() }
     GS(S("OpenRTBReading")(
       B("borer")(benchmark.borer()),
-      //FIXME: Circe require a custom codec
-      //B("circe")(benchmark.circe()),
-      //B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("circe")(benchmark.circe()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("playJson")(benchmark.playJson()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
@@ -1171,9 +1170,8 @@ object Main {
     val benchmark = new OpenRTBWriting { setup() }
     GS(S("OpenRTBWriting")(
       B("borer")(benchmark.borer()),
-      //FIXME: Circe require a custom codec
-      //B("circe")(benchmark.circe()),
-      //B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("circe")(benchmark.circe()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("playJson")(benchmark.playJson()),

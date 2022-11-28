@@ -1361,9 +1361,8 @@ object Main {
     GS(S("OpenRTBReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      //FIXME: Circe require a custom codec
-      //B("circe")(benchmark.circe()),
-      //B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("circe")(benchmark.circe()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
@@ -1376,9 +1375,8 @@ object Main {
     GS(S("OpenRTBWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      //FIXME: Circe require a custom codec
-      //B("circe")(benchmark.circe()),
-      //B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("circe")(benchmark.circe()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("playJson")(benchmark.playJson()),
