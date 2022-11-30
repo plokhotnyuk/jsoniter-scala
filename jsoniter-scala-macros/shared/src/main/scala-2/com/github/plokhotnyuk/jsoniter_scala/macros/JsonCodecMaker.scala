@@ -499,9 +499,9 @@ object JsonCodecMaker {
         case _ => false
       }
 
-      def adtLeafClasses(adtBaseTpe: Type): Seq[Type] = {
-        def collectRecursively(tpe: Type): Seq[Type] = {
-          val leafTpes = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.flatMap { s =>
+      def adtLeafClasses(adtBaseTpe: Type): List[Type] = {
+        def collectRecursively(tpe: Type): List[Type] = {
+          val leafTpes = tpe.typeSymbol.asClass.knownDirectSubclasses.toList.flatMap { s =>
             val classSymbol = s.asClass
             val subTpe =
               if (classSymbol.typeParams.isEmpty) classSymbol.toType
@@ -617,13 +617,13 @@ object JsonCodecMaker {
 
       case class JavaEnumValueInfo(value: Tree, name: String, transformed: Boolean)
 
-      val enumValueInfos = new mutable.LinkedHashMap[Type, Seq[JavaEnumValueInfo]]
+      val enumValueInfos = new mutable.LinkedHashMap[Type, List[JavaEnumValueInfo]]
 
       def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[_]]
 
-      def javaEnumValues(tpe: Type): Seq[JavaEnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
+      def javaEnumValues(tpe: Type): List[JavaEnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
         val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
-        var values = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
+        var values = tpe.typeSymbol.asClass.knownDirectSubclasses.toList.map { s: Symbol =>
           val name = s.name.toString
           val transformedName = javaEnumValueNameMapper(name)
           JavaEnumValueInfo(q"$s", transformedName, name != transformedName)
@@ -631,11 +631,11 @@ object JsonCodecMaker {
         if (values.isEmpty) {
           val comp = companion(tpe)
           values =
-            comp.typeSignature.members.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
+            comp.typeSignature.members.sorted.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
               val name = decodeName(m)
               val transformedName = javaEnumValueNameMapper(name)
               JavaEnumValueInfo(q"$comp.${TermName(name)}", transformedName, name != transformedName)
-            }.toSeq
+            }
         }
         val nameCollisions = duplicated(values.map(_.name))
         if (nameCollisions.nonEmpty) {
@@ -943,8 +943,8 @@ object JsonCodecMaker {
       case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
                            defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
 
-      case class ClassInfo(tpe: Type, paramLists: Seq[Seq[FieldInfo]]) {
-        val fields: Seq[FieldInfo] = paramLists.flatten
+      case class ClassInfo(tpe: Type, paramLists: List[List[FieldInfo]]) {
+        val fields: List[FieldInfo] = paramLists.flatten
       }
 
       val classInfos = new mutable.LinkedHashMap[Type, ClassInfo]
@@ -1086,7 +1086,7 @@ object JsonCodecMaker {
 
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
-      val decodeMethodNames = new mutable.LinkedHashMap[MethodKey, TermName]
+      val decodeMethodNames = new mutable.HashMap[MethodKey, TermName]
       val decodeMethodTrees = new mutable.ArrayBuffer[Tree]
 
       def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
@@ -1101,7 +1101,7 @@ object JsonCodecMaker {
         q"$decodeMethodName(in, $arg)"
       }
 
-      val encodeMethodNames = new mutable.LinkedHashMap[MethodKey, TermName]
+      val encodeMethodNames = new mutable.HashMap[MethodKey, TermName]
       val encodeMethodTrees = new mutable.ArrayBuffer[Tree]
 
       def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
