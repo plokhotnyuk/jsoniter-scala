@@ -293,7 +293,7 @@ object JsonCodecMaker {
       }
     } else {
       val len = s.length
-      val sb = new StringBuilder(len)
+      val sb = new java.lang.StringBuilder(len)
       var i = 0
       var isPrecedingDash = toPascal
       while (i < len) isPrecedingDash = {
@@ -312,7 +312,7 @@ object JsonCodecMaker {
 
   private[this] def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
     val len = s.length
-    val sb = new StringBuilder(len << 1)
+    val sb = new java.lang.StringBuilder(len << 1)
     var i = 0
     var isPrecedingLowerCased = false
     while (i < len) isPrecedingLowerCased = {
@@ -531,7 +531,7 @@ object JsonCodecMaker {
         if (comp.isModule) comp
         else { // Borrowed from Magnolia: https://github.com/softwaremill/magnolia/blob/f21f2aabb49e43b372240e98ec77981662cc570c/core/shared/src/main/scala/magnolia.scala#L123-L155
           val ownerChainOf = (s: Symbol) =>
-            Iterator.iterate(s)(_.owner).takeWhile(x => x != null && x != NoSymbol).toVector.reverseIterator
+            Iterator.iterate(s)(_.owner).takeWhile(x => x != NoSymbol).toVector.reverseIterator
           val path = ownerChainOf(tpe.typeSymbol)
             .zipAll(ownerChainOf(enclosingOwner), NoSymbol, NoSymbol)
             .dropWhile { case (x, y) => x == y }
@@ -855,14 +855,9 @@ object JsonCodecMaker {
         } else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(s: String)) => genWriteConstantKey(s)
-            case ConstantType(Constant(_: Boolean)) => q"out.writeKey($x)"
-            case ConstantType(Constant(_: Byte)) => q"out.writeKey($x)"
-            case ConstantType(Constant(_: Char)) => q"out.writeKey($x)"
-            case ConstantType(Constant(_: Short)) => q"out.writeKey($x)"
-            case ConstantType(Constant(_: Int)) => q"out.writeKey($x)"
-            case ConstantType(Constant(_: Long)) => q"out.writeKey($x)"
-            case ConstantType(Constant(_: Float)) => q"out.writeKey($x)"
-            case ConstantType(Constant(_: Double)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Boolean)) | ConstantType(Constant(_: Byte)) | ConstantType(Constant(_: Char)) |
+                ConstantType(Constant(_: Short)) | ConstantType(Constant(_: Int)) | ConstantType(Constant(_: Long)) |
+                ConstantType(Constant(_: Float)) | ConstantType(Constant(_: Double)) => q"out.writeKey($x)"
             case _ => cannotFindKeyCodecError(tpe)
           }
         } else cannotFindKeyCodecError(tpe)
@@ -1749,26 +1744,10 @@ object JsonCodecMaker {
 
       def getWriteConstType(tpe: c.universe.Type, m: c.universe.Tree, isStringified: Boolean): Tree = tpe match {
         case ConstantType(Constant(s: String)) => genWriteConstantVal(s)
-        case ConstantType(Constant(_: Boolean)) =>
-          if (isStringified) q"out.writeValAsString($m)"
-          else q"out.writeVal($m)"
-        case ConstantType(Constant(_: Byte)) =>
-          if (isStringified) q"out.writeValAsString($m)"
-          else q"out.writeVal($m)"
         case ConstantType(Constant(_: Char)) => q"out.writeVal($m)"
-        case ConstantType(Constant(_: Short)) =>
-          if (isStringified) q"out.writeValAsString($m)"
-          else q"out.writeVal($m)"
-        case ConstantType(Constant(_: Int)) =>
-          if (isStringified) q"out.writeValAsString($m)"
-          else q"out.writeVal($m)"
-        case ConstantType(Constant(_: Long)) =>
-          if (isStringified) q"out.writeValAsString($m)"
-          else q"out.writeVal($m)"
-        case ConstantType(Constant(_: Float)) =>
-          if (isStringified) q"out.writeValAsString($m)"
-          else q"out.writeVal($m)"
-        case ConstantType(Constant(_: Double)) =>
+        case ConstantType(Constant(_: Boolean)) | ConstantType(Constant(_: Byte)) | ConstantType(Constant(_: Short)) |
+            ConstantType(Constant(_: Int)) | ConstantType(Constant(_: Long)) | ConstantType(Constant(_: Float)) |
+             ConstantType(Constant(_: Double)) =>
           if (isStringified) q"out.writeValAsString($m)"
           else q"out.writeVal($m)"
         case _ => cannotFindValueCodecError(tpe)
