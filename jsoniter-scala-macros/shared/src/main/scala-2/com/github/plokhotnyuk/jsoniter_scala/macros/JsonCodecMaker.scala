@@ -854,7 +854,7 @@ object JsonCodecMaker {
           }
         } else if (isConstType(tpe)) {
           tpe match {
-            case ConstantType(Constant(_: String)) => q"out.writeKey($x)"
+            case ConstantType(Constant(s: String)) => genWriteConstantKey(s)
             case ConstantType(Constant(_: Boolean)) => q"out.writeKey($x)"
             case ConstantType(Constant(_: Byte)) => q"out.writeKey($x)"
             case ConstantType(Constant(_: Char)) => q"out.writeKey($x)"
@@ -1748,7 +1748,7 @@ object JsonCodecMaker {
       }
 
       def getWriteConstType(tpe: c.universe.Type, m: c.universe.Tree, isStringified: Boolean): Tree = tpe match {
-        case ConstantType(Constant(_: String)) => q"out.writeVal($m)"
+        case ConstantType(Constant(s: String)) => genWriteConstantVal(s)
         case ConstantType(Constant(_: Boolean)) =>
           if (isStringified) q"out.writeValAsString($m)"
           else q"out.writeVal($m)"

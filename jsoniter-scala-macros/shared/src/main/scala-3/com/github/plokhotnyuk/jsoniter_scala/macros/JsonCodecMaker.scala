@@ -1219,7 +1219,7 @@ object JsonCodecMaker {
           }
         } else if (isConstType(tpe)) {
           tpe match
-            case ConstantType(StringConstant(v)) => '{ $out.writeKey(${Expr(v)}) }
+            case ConstantType(StringConstant(v)) => genWriteConstantKey(v, out)
             case ConstantType(BooleanConstant(v)) => '{ $out.writeKey(${Expr(v)}) }
             case ConstantType(ByteConstant(v)) => '{ $out.writeKey(${Expr(v)}) }
             case ConstantType(CharConstant(v)) => '{ $out.writeKey(${Expr(v)}) }
@@ -2405,7 +2405,7 @@ object JsonCodecMaker {
 
       def getWriteConstType(tpe: TypeRepr, isStringified: Boolean, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         tpe match
-          case ConstantType(StringConstant(v)) => '{ $out.writeVal(${Expr(v)}) }
+          case ConstantType(StringConstant(v)) => genWriteConstantVal(v, out)
           case ConstantType(BooleanConstant(v)) =>
             if (isStringified) '{ $out.writeValAsString(${Expr(v)}) }
             else '{ $out.writeVal(${Expr(v)}) }
