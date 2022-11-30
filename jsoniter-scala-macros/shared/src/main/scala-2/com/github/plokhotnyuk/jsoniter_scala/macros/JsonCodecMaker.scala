@@ -668,7 +668,8 @@ object JsonCodecMaker {
       def genReadKey(types: List[Type]): Tree = {
         val tpe = types.head
         val implKeyCodec = findImplicitCodec(types, isValueCodec = false)
-        if (!implKeyCodec.isEmpty) q"$implKeyCodec.decodeKey(in)"
+        if (implKeyCodec.nonEmpty) q"$implKeyCodec.decodeKey(in)"
+        else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readKeyAsBoolean()"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readKeyAsByte()"
         else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readKeyAsChar()"
@@ -678,7 +679,6 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readKeyAsFloat()"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readKeyAsDouble()"
         else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe) :: types)})"
-        else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
         else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt(${cfg.bigIntDigitsLimit})"
         else if (tpe =:= typeOf[BigDecimal]) {
           val mc = withMathContextFor(cfg.bigDecimalPrecision)
@@ -821,22 +821,19 @@ object JsonCodecMaker {
       def genWriteKey(x: Tree, types: List[Type]): Tree = {
         val tpe = types.head
         val implKeyCodec = findImplicitCodec(types, isValueCodec = false)
-        if (!implKeyCodec.isEmpty) q"$implKeyCodec.encodeKey($x, out)"
-        else if (isValueClass(tpe)) genWriteKey(q"$x.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types)
-        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
-          tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
-          tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
-          tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
-          tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer] ||
-          tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long] ||
-          tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
-          tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
-          tpe =:= typeOf[String] || tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal] ||
-          tpe =:= typeOf[java.util.UUID] || tpe =:= typeOf[Duration] || tpe =:= typeOf[Instant] ||
-          tpe =:= typeOf[LocalDate] || tpe =:= typeOf[LocalDateTime] || tpe =:= typeOf[LocalTime] ||
-          tpe =:= typeOf[MonthDay] || tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[OffsetTime] ||
-          tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
+        if (implKeyCodec.nonEmpty) q"$implKeyCodec.encodeKey($x, out)"
+        else if (tpe =:= typeOf[String] || tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
+          tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] || tpe =:= definitions.CharTpe ||
+          tpe =:= typeOf[java.lang.Character] || tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
+          tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer] || tpe =:= definitions.LongTpe ||
+          tpe =:= typeOf[java.lang.Long] || tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
+          tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] || tpe =:= typeOf[BigInt] ||
+          tpe =:= typeOf[BigDecimal] || tpe =:= typeOf[java.util.UUID] || tpe =:= typeOf[Duration] ||
+          tpe =:= typeOf[Instant] || tpe =:= typeOf[LocalDate] || tpe =:= typeOf[LocalDateTime] ||
+          tpe =:= typeOf[LocalTime] || tpe =:= typeOf[MonthDay] || tpe =:= typeOf[OffsetDateTime] ||
+          tpe =:= typeOf[OffsetTime] || tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
+        else if (isValueClass(tpe)) genWriteKey(q"$x.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types)
         else if (tpe <:< typeOf[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) q"out.writeKey($x.id)"
           else q"out.writeKey($x.toString)"
@@ -856,8 +853,8 @@ object JsonCodecMaker {
           tpe match {
             case ConstantType(Constant(s: String)) => genWriteConstantKey(s)
             case ConstantType(Constant(_: Boolean)) | ConstantType(Constant(_: Byte)) | ConstantType(Constant(_: Char)) |
-                ConstantType(Constant(_: Short)) | ConstantType(Constant(_: Int)) | ConstantType(Constant(_: Long)) |
-                ConstantType(Constant(_: Float)) | ConstantType(Constant(_: Double)) => q"out.writeKey($x)"
+              ConstantType(Constant(_: Short)) | ConstantType(Constant(_: Int)) | ConstantType(Constant(_: Long)) |
+              ConstantType(Constant(_: Float)) | ConstantType(Constant(_: Double)) => q"out.writeKey($x)"
             case _ => cannotFindKeyCodecError(tpe)
           }
         } else cannotFindKeyCodecError(tpe)
@@ -968,7 +965,7 @@ object JsonCodecMaker {
             if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$name' of '$tpe'.")
             val strings = m.annotations.filter(_.tree.tpe =:= typeOf[stringified])
             if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
-            if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
+            if ((named.nonEmpty || strings.nonEmpty) && trans.nonEmpty) {
               warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
                 s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
@@ -1113,7 +1110,8 @@ object JsonCodecMaker {
       def genNullValue(types: List[Type]): Tree = {
         val tpe = types.head
         val implCodec = findImplicitCodec(types, isValueCodec = true)
-        if (!implCodec.isEmpty) q"$implCodec.nullValue"
+        if (implCodec.nonEmpty) q"$implCodec.nullValue"
+        else if (tpe =:= typeOf[String]) q"null"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"false"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"(0: _root_.scala.Byte)"
         else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"'\u0000'"
@@ -1151,8 +1149,8 @@ object JsonCodecMaker {
             case _ => cannotFindValueCodecError(tpe)
           }
         } else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
-        else if (tpe <:< typeOf[AnyRef]) q"null"
         else if (isValueClass(tpe)) q"new $tpe(${genNullValue(valueClassValueType(tpe) :: types)})"
+        else if (tpe <:< typeOf[AnyRef]) q"null"
         else q"null.asInstanceOf[$tpe]"
       }
 
@@ -1293,8 +1291,9 @@ object JsonCodecMaker {
         val implCodec = findImplicitCodec(types, isValueCodec = true)
         val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
         val decodeMethodName = decodeMethodNames.get(methodKey)
-        if (!implCodec.isEmpty) q"$implCodec.decodeValue(in, $default)"
+        if (implCodec.nonEmpty) q"$implCodec.decodeValue(in, $default)"
         else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
+        else if (tpe =:= typeOf[String]) q"in.readString($default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           if (isStringified) q"in.readStringAsBoolean()"
           else q"in.readBoolean()"
@@ -1317,8 +1316,7 @@ object JsonCodecMaker {
         } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
           if (isStringified) q"in.readStringAsDouble()"
           else q"in.readDouble()"
-        } else if (tpe =:= typeOf[String]) q"in.readString($default)"
-        else if (tpe =:= typeOf[java.util.UUID]) q"in.readUUID($default)"
+        } else if (tpe =:= typeOf[java.util.UUID]) q"in.readUUID($default)"
         else if (tpe =:= typeOf[Duration]) q"in.readDuration($default)"
         else if (tpe =:= typeOf[Instant]) q"in.readInstant($default)"
         else if (tpe =:= typeOf[LocalDate]) q"in.readLocalDate($default)"
@@ -1468,8 +1466,8 @@ object JsonCodecMaker {
                 val i = v >>> 6
                 if (i >= x.length) x = _root_.java.util.Arrays.copyOf(x, _root_.java.lang.Integer.highestOneBit(i) << 1)
                 x(i) |= 1L << v""",
-            if (tpe =:= typeOf[BitSet]) q"_root_.scala.collection.immutable.BitSet.fromBitMaskNoCopy(x)"
-            else q"${scalaCollectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
+            if (tpe <:< typeOf[mutable.BitSet]) q"_root_.scala.collection.mutable.BitSet.fromBitMaskNoCopy(x)"
+            else q"_root_.scala.collection.immutable.BitSet.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadSet(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
@@ -1746,8 +1744,8 @@ object JsonCodecMaker {
         case ConstantType(Constant(s: String)) => genWriteConstantVal(s)
         case ConstantType(Constant(_: Char)) => q"out.writeVal($m)"
         case ConstantType(Constant(_: Boolean)) | ConstantType(Constant(_: Byte)) | ConstantType(Constant(_: Short)) |
-            ConstantType(Constant(_: Int)) | ConstantType(Constant(_: Long)) | ConstantType(Constant(_: Float)) |
-             ConstantType(Constant(_: Double)) =>
+          ConstantType(Constant(_: Int)) | ConstantType(Constant(_: Long)) | ConstantType(Constant(_: Float)) |
+          ConstantType(Constant(_: Double)) =>
           if (isStringified) q"out.writeValAsString($m)"
           else q"out.writeVal($m)"
         case _ => cannotFindValueCodecError(tpe)
@@ -1758,27 +1756,23 @@ object JsonCodecMaker {
         val implCodec = findImplicitCodec(types, isValueCodec = true)
         val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
         val encodeMethodName = encodeMethodNames.get(methodKey)
-        if (!implCodec.isEmpty) q"$implCodec.encodeValue($m, out)"
+        if (implCodec.nonEmpty) q"$implCodec.encodeValue($m, out)"
         else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
-        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
-          tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
-          tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
-          tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer] ||
-          tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long] ||
-          tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
-          tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
-          tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
+        else if (tpe =:= typeOf[String]) q"out.writeVal($m)"
+        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] || tpe =:= definitions.ByteTpe ||
+          tpe =:= typeOf[java.lang.Byte] || tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
+          tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer] || tpe =:= definitions.LongTpe ||
+          tpe =:= typeOf[java.lang.Long] || tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
+          tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] || tpe =:= typeOf[BigInt] ||
+          tpe =:= typeOf[BigDecimal]) {
           if (isStringified) q"out.writeValAsString($m)"
           else q"out.writeVal($m)"
         } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
-          tpe =:= typeOf[String] || tpe =:= typeOf[java.util.UUID] ||
-          tpe =:= typeOf[Duration] || tpe =:= typeOf[Instant] ||
-          tpe =:= typeOf[LocalDate] || tpe =:= typeOf[LocalDateTime] ||
-          tpe =:= typeOf[LocalTime] || tpe =:= typeOf[MonthDay] ||
-          tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[OffsetTime] ||
-          tpe =:= typeOf[Period] || tpe =:= typeOf[Year] ||
-          tpe =:= typeOf[YearMonth] || tpe =:= typeOf[ZonedDateTime] ||
-          tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeVal($m)"
+          tpe =:= typeOf[java.util.UUID] || tpe =:= typeOf[Duration] || tpe =:= typeOf[Instant] ||
+          tpe =:= typeOf[LocalDate] || tpe =:= typeOf[LocalDateTime] || tpe =:= typeOf[LocalTime] ||
+          tpe =:= typeOf[MonthDay] || tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[OffsetTime] ||
+          tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
+          tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeVal($m)"
         else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types, isStringified, EmptyTree)
         } else if (isOption(tpe, types.tail)) {
