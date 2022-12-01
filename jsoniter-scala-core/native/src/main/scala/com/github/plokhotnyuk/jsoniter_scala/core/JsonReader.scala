@@ -978,7 +978,7 @@ final class JsonReader private[jsoniter_scala](
       b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else parseSecond(loadMoreOrError(pos))
 
-  private[this] def parseOptionalNanoWithByte(t: Byte): Int = {
+  private[this] def parseOptionalNanoWithDoubleQuotes(): Int = {
     var nano = 0
     var b = nextByte(head)
     if (b == '.') {
@@ -998,8 +998,8 @@ final class JsonReader private[jsoniter_scala](
         nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
       }
       head = pos
-      if (b != t) nanoError(nanoDigitWeight, t)
-    } else if (b != t) tokensError('.', t)
+      if (b != '"') nanoError(nanoDigitWeight, '"')
+    } else if (b != '"') tokensError('.', '"')
     nano
   }
 
@@ -1859,7 +1859,7 @@ final class JsonReader private[jsoniter_scala](
     val q = x1 * 1000000000000000000L
     var l = q + x2
     val h = NativeMath.multiplyHigh(x1, 1000000000000000000L) + ((~l & q) >>> 63)
-    if ((l >> 63 | h) == 0) {
+    if (l >= 0 && h == 0) {
       if (isNeg) l = -l
       java.math.BigDecimal.valueOf(l, scale)
     } else {
@@ -1918,8 +1918,7 @@ final class JsonReader private[jsoniter_scala](
         val m = ByteArrayAccess.getLong(magnitude, i)
         val p = m * q
         val s = p + x
-        val c = (~s & p) >>> 63
-        x = NativeMath.unsignedMultiplyHigh(m, q) + c
+        x = NativeMath.unsignedMultiplyHigh(m, q) + ((~s & p) >>> 63)
         ByteArrayAccess.setLong(magnitude, i, s)
         i -= 8
       }
@@ -2193,7 +2192,7 @@ final class JsonReader private[jsoniter_scala](
       else rollbackToken()
     }
     LocalDateTime.of(year, monthDay & 0xFF, monthDay >> 24, hourMinute & 0xFF, hourMinute >> 24, second,
-      parseOptionalNanoWithByte('"'))
+      parseOptionalNanoWithDoubleQuotes())
   }
 
   private[this] def parseLocalTime(): LocalTime = {
@@ -2220,7 +2219,7 @@ final class JsonReader private[jsoniter_scala](
       else if (b != '"') tokensError(':', '"')
       else rollbackToken()
     }
-    LocalTime.of(hourMinute & 0xFF, hourMinute >> 24, second, parseOptionalNanoWithByte('"'))
+    LocalTime.of(hourMinute & 0xFF, hourMinute >> 24, second, parseOptionalNanoWithDoubleQuotes())
   }
 
   @tailrec

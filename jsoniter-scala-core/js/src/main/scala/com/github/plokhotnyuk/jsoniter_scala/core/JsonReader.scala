@@ -948,7 +948,7 @@ final class JsonReader private[jsoniter_scala](
       b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else parseSecond(loadMoreOrError(pos))
 
-  private[this] def parseOptionalNanoWithByte(t: Byte): Int = {
+  private[this] def parseOptionalNanoWithDoubleQuotes(): Int = {
     var nano = 0
     var b = nextByte(head)
     if (b == '.') {
@@ -968,8 +968,8 @@ final class JsonReader private[jsoniter_scala](
         nanoDigitWeight /= 10
       }
       head = pos
-      if (b != t) nanoError(nanoDigitWeight, t)
-    } else if (b != t) tokensError('.', t)
+      if (b != '"') nanoError(nanoDigitWeight, '"')
+    } else if (b != '"') tokensError('.', '"')
     nano
   }
 
@@ -2046,7 +2046,7 @@ final class JsonReader private[jsoniter_scala](
     val b = nextByte(head)
     if (b == ':') {
       second = parseSecond(head)
-      nano = parseOptionalNanoWithByte('"')
+      nano = parseOptionalNanoWithDoubleQuotes()
     } else if (b != '"') tokensError(':', '"')
     LocalDateTime.of(year, month, day, hour, minute, second, nano)
   }
@@ -2058,7 +2058,7 @@ final class JsonReader private[jsoniter_scala](
     val b = nextByte(head)
     if (b == ':') {
       second = parseSecond(head)
-      nano = parseOptionalNanoWithByte('"')
+      nano = parseOptionalNanoWithDoubleQuotes()
     } else if (b != '"') tokensError(':', '"')
     LocalTime.of(hour, minute, second, nano)
   }

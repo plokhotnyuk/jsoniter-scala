@@ -110,12 +110,12 @@ private[macros] object CompileTimeEval {
         case id@Ident(_) => bindings.get(id.symbol) match
           case Some(term) => evalTerm(term, bindings, optDefault)
           case None => throw CompileTimeEvalException(s"Unknown symbol: $id, bindigns=$bindings", ft.asExpr)
-        case m@Match(scrutinee, caseDefs ) => evalMatch(m, bindings, optDefault)
+        case m@Match(_, _) => evalMatch(m, bindings, optDefault)
         case If(cond, ifTrue, ifFalse) =>
           if (evalCondition(cond, bindings)) evalTerm(ifTrue, bindings, optDefault)
           else evalTerm(ifFalse, bindings, optDefault)
-        case app@Apply(fun, args) => evalApply(app, bindings)
-        case block@Block(statements, exprs) => evalBlock(block, bindings, optDefault)
+        case app@Apply(_, _) => evalApply(app, bindings)
+        case block@Block(_, _) => evalBlock(block, bindings, optDefault)
         case lt@Literal(_) => lt
         case Typed(expr, tpt) => evalTerm(expr, bindings, optDefault)
         case other => throw CompileTimeEvalException(s"Unsupported constant expression: $other", ft.asExpr)
@@ -269,7 +269,7 @@ private[macros] object CompileTimeEval {
     private def evalBlock(block: Block, bindings: Map[Symbol, Term], optDefault: Option[Term]): Term =
       var statements = block.statements
       var b = bindings
-      while (!statements.isEmpty) {
+      while (statements.nonEmpty) {
         statements.head match
           case dfn: Definition => b = addDefinition(block, b, dfn)
           case bt: Term => throw CompileTimeEvalException(s"Term as non-last block statement have no sence", bt.asExpr)

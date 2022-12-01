@@ -606,7 +606,7 @@ object JsonCodecMaker {
       def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = { // TODO: explore yet one variant with mirrors
         def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
                                  binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
-          if (fromNudeChildTarg.typeSymbol.isTypeParam) { // todo: check for paramRef instead ?
+          if (fromNudeChildTarg.typeSymbol.isTypeParam) { // TODO: check for paramRef instead ?
             val paramName = fromNudeChildTarg.typeSymbol.name
             binding.get(paramName) match
               case None => binding.updated(paramName, parentTarg)
@@ -614,7 +614,7 @@ object JsonCodecMaker {
                 if (oldBinding =:= parentTarg) binding
                 else fail(s"Type parameter $paramName in class ${child.name} appeared in the constructor of " +
                   s"${tpe.show} two times differently, with ${oldBinding.show} and ${parentTarg.show}")
-          } else if (fromNudeChildTarg <:< parentTarg) binding // TODO: assupe parentTag is covariant, get covariance from tycon type parameters.
+          } else if (fromNudeChildTarg <:< parentTarg) binding // TODO: assure parentTag is covariant, get covariance from type parameters
           else {
             (fromNudeChildTarg, parentTarg) match
               case (AppliedType(ctycon, ctargs), AppliedType(ptycon, ptargs)) =>
@@ -642,7 +642,7 @@ object JsonCodecMaker {
                 val targs = typeArgs(tpe)
                 val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, targs, Map.empty)
                 val ctArgs = names.map { name =>
-                  tpBinding.get(name).getOrElse(fail(s"Type parameter $name of $sym can't be deduced from " +
+                  tpBinding.getOrElse(name, fail(s"Type parameter $name of $sym can't be deduced from " +
                     s"type arguments of ${tpe.show}. Please provide a custom implicitly accessible codec for it."))
                 }
                 val polyRes = resPolyTp match
