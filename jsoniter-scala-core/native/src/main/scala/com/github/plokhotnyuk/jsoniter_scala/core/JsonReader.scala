@@ -982,20 +982,43 @@ final class JsonReader private[jsoniter_scala](
     var nano = 0
     var b = nextByte(head)
     if (b == '.') {
-      var nanoDigitWeight = 100000000
       var pos = head
       var buf = this.buf
-      while ({
-        if (pos >= tail) {
-          pos = loadMoreOrError(pos)
-          buf = this.buf
-        }
-        b = buf(pos)
-        pos += 1
-        (b >= '0' && b <= '9') && nanoDigitWeight != 0
+      var nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
       }) {
-        nano += (b - '0') * nanoDigitWeight
-        nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        nano += (bs * 2561 & 0x00FF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
       }
       head = pos
       if (b != '"') nanoError(nanoDigitWeight, '"')
@@ -1986,7 +2009,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseDuration(): Duration = {
     var seconds = 0L
-    var nanos, state = 0
+    var nano, state = 0
     var b = nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
@@ -2042,23 +2065,46 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
         seconds = sumSeconds(x, seconds, pos)
         var nanoDigitWeight = 100000000
-        while ({
-          if (pos >= tail) {
-            pos = loadMoreOrError(pos)
-            buf = this.buf
-          }
-          b = buf(pos)
-          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        var bs = 0
+        if (pos + 9 < tail && {
+          bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+          ((bs + 0x767676 | bs) & 0x808080) == 0
+        } && {
+          nano = ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000000
+          pos += 3
+          bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+          nanoDigitWeight = 100000
+          ((bs + 0x767676 | bs) & 0x808080) == 0
+        } && {
+          nano += ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000
+          pos += 3
+          bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+          nanoDigitWeight = 100
+          ((bs + 0x767676 | bs) & 0x808080) == 0
         }) {
-          nanos += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
-          pos += 1
+          nano += (bs * 2561 & 0x00FF00FF) * 6553601 >> 16
+          pos += 3
+          b = (bs >> 24).toByte
+          nanoDigitWeight = 0
+        } else {
+          while ({
+            if (pos >= tail) {
+              pos = loadMoreOrError(pos)
+              buf = this.buf
+            }
+            b = buf(pos)
+            (b >= '0' && b <= '9') && nanoDigitWeight != 0
+          }) {
+            nano += (b - '0') * nanoDigitWeight
+            nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+            pos += 1
+          }
         }
         if (b != 'S') {
           head = pos + 1
           nanoError(nanoDigitWeight, 'S')
         }
-        if (isNeg ^ isNegX) nanos = -nanos
+        if (isNeg ^ isNegX) nano = -nano
         state = 4
       } else if (b == 'S') {
         seconds = sumSeconds(x, seconds, pos)
@@ -2067,7 +2113,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(pos + 1)
       b != '"'
     }) ()
-    Duration.ofSeconds(seconds, nanos)
+    Duration.ofSeconds(seconds, nano)
   }
 
   private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
@@ -2104,17 +2150,40 @@ final class JsonReader private[jsoniter_scala](
     pos += 1
     if (b == '.') {
       nanoDigitWeight = 100000000
-      while ({
-        if (pos >= tail) {
-          pos = loadMoreOrError(pos)
-          buf = this.buf
-        }
-        b = buf(pos)
-        pos += 1
-        (b >= '0' && b <= '9') && nanoDigitWeight != 0
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
       }) {
-        nano += (b - '0') * nanoDigitWeight
-        nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        nano += (bs * 2561 & 0x00FF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
       }
     }
     if (b == 'Z') nextByteOrError('"', pos)
@@ -2293,17 +2362,40 @@ final class JsonReader private[jsoniter_scala](
     }
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
-      while ({
-        if (pos >= tail) {
-          pos = loadMoreOrError(pos)
-          buf = this.buf
-        }
-        b = buf(pos)
-        pos += 1
-        (b >= '0' && b <= '9') && nanoDigitWeight != 0
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
       }) {
-        nano += (b - '0') * nanoDigitWeight
-        nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        nano += (bs * 2561 & 0x00FF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
       }
     }
     val zoneOffset =
@@ -2362,17 +2454,40 @@ final class JsonReader private[jsoniter_scala](
     }
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
-      while ({
-        if (pos >= tail) {
-          pos = loadMoreOrError(pos)
-          buf = this.buf
-        }
-        b = buf(pos)
-        pos += 1
-        (b >= '0' && b <= '9') && nanoDigitWeight != 0
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
       }) {
-        nano += (b - '0') * nanoDigitWeight
-        nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        nano += (bs * 2561 & 0x00FF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
       }
     }
     val zoneOffset =
@@ -2506,17 +2621,40 @@ final class JsonReader private[jsoniter_scala](
     }
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
-      while ({
-        if (pos >= tail) {
-          pos = loadMoreOrError(pos)
-          buf = this.buf
-        }
-        b = buf(pos)
-        pos += 1
-        (b >= '0' && b <= '9') && nanoDigitWeight != 0
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0x00FF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
       }) {
-        nano += (b - '0') * nanoDigitWeight
-        nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        nano += (bs * 2561 & 0x00FF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
       }
     }
     val localDateTime = LocalDateTime.of(year, monthDay & 0xFF, monthDay >> 24, hourMinute & 0xFF, hourMinute >> 24, second, nano)

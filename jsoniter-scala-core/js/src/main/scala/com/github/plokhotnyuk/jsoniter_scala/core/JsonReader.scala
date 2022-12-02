@@ -1897,7 +1897,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseDuration(): Duration = {
     var seconds = 0L
-    var nanos, state = 0
+    var nano, state = 0
     var b = nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
@@ -1961,7 +1961,7 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           (b >= '0' && b <= '9') && nanoDigitWeight != 0
         }) {
-          nanos += (b - '0') * nanoDigitWeight
+          nano += (b - '0') * nanoDigitWeight
           nanoDigitWeight /= 10
           pos += 1
         }
@@ -1969,7 +1969,7 @@ final class JsonReader private[jsoniter_scala](
           head = pos + 1
           nanoError(nanoDigitWeight, 'S')
         }
-        if (isNeg ^ isNegX) nanos = -nanos
+        if (isNeg ^ isNegX) nano = -nano
         state = 4
       } else if (b == 'S') {
         seconds = sumSeconds(x, seconds, pos)
@@ -1978,7 +1978,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(pos + 1)
       b != '"'
     }) ()
-    Duration.ofSeconds(seconds, nanos)
+    Duration.ofSeconds(seconds, nano)
   }
 
   private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
