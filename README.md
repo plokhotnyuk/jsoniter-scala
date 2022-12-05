@@ -23,7 +23,7 @@ libraries using different JDK and GraalVM versions on the following environment:
 GraalVM CE 23-dev for Java 17/19, and GraalVM EE 22.3 for Java 11/17/19.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.11.0 to ES 2015 with
+compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.12.0 to ES 2015 with
 GCC v20220202 optimizations applied.
 
 ## Contents
@@ -593,10 +593,10 @@ sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/zulu-11 jsoniter-scala-benchm
 Then open the list of benchmarks in a browser:
 ```sh
 cd jsoniter-scala-benchmark/js
-open scala-2.13-fullopt.html
+open scala-3-fullopt.html
 ```
 
-The released version of Scala.js benchmarks is available [here](https://plokhotnyuk.github.io/jsoniter-scala/scala-2.13-fullopt.html).
+The released version of Scala.js benchmarks is available [here](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fullopt.html).
 
 ### Run compilation time benchmarks
 
