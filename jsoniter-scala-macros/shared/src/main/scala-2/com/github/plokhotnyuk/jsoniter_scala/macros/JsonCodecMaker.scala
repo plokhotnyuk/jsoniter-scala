@@ -268,18 +268,40 @@ object JsonCodecMaker {
   val EnforcePascalCase: PartialFunction[String, String] = { case s => enforceCamelOrPascalCase(s, toPascal = true) }
 
   /**
-    * Mapping function for field or class names that should be in snake_case format.
+    * Mapping function for field or class names that should be in snake_case format
+    * with separated non-alphabetic characters.
     *
     * @return a transformed name or the same name if no transformation is required
     */
-  val enforce_snake_case: PartialFunction[String, String] = { case s => enforceSnakeOrKebabCase(s, '_') }
+  val enforce_snake_case: PartialFunction[String, String] =
+    { case s => enforceSnakeOrKebabCaseWithSeparatedNonAlphabetic(s, '_') }
 
   /**
-    * Mapping function for field or class names that should be in kebab-case format.
+    * Mapping function for field or class names that should be in snake_case format
+    * with joined non-alphabetic characters.
     *
     * @return a transformed name or the same name if no transformation is required
     */
-  val `enforce-kebab-case`: PartialFunction[String, String] = { case s => enforceSnakeOrKebabCase(s, '-') }
+  val enforce_snake_case2: PartialFunction[String, String] =
+    { case s => enforceSnakeOrKebabCaseWithJoinedNonAphabetic(s, '_') }
+
+  /**
+    * Mapping function for field or class names that should be in kebab-case format
+    * with separated non-alphabetic characters.
+    *
+    * @return a transformed name or the same name if no transformation is required
+    */
+  val `enforce-kebab-case`: PartialFunction[String, String] =
+    { case s => enforceSnakeOrKebabCaseWithSeparatedNonAlphabetic(s, '-') }
+
+  /**
+    * Mapping function for field or class names that should be in kebab-case format
+    * with joined non-alphabetic characters.
+    *
+    * @return a transformed name or the same name if no transformation is required
+    */
+  val `enforce-kebab-case2`: PartialFunction[String, String] =
+    { case s => enforceSnakeOrKebabCaseWithJoinedNonAphabetic(s, '-') }
 
   private[this] def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
     if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
@@ -310,7 +332,7 @@ object JsonCodecMaker {
       sb.toString
     }
 
-  private[this] def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
+  private[this] def enforceSnakeOrKebabCaseWithSeparatedNonAlphabetic(s: String, separator: Char): String = {
     val len = s.length
     val sb = new java.lang.StringBuilder(len << 1)
     var i = 0
@@ -326,6 +348,32 @@ object JsonCodecMaker {
         true
       } else {
         if (isPrecedingLowerCased || i > 1 && i < len && isLowerCase(s.charAt(i))) sb.append(separator)
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+  private[this] def enforceSnakeOrKebabCaseWithJoinedNonAphabetic(s: String, separator: Char): String = {
+    val len = s.length
+    val sb = new java.lang.StringBuilder(len << 1)
+    var i = 0
+    var isPrecedingNotUpperCased = false
+    while (i < len) isPrecedingNotUpperCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        if (i > 1 && i < len && !isAlphabetic(s.charAt(i))) isPrecedingNotUpperCased
+        else {
+          sb.append(separator)
+          false
+        }
+      } else if (!isUpperCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingNotUpperCased || i > 1 && i < len && !isUpperCase(s.charAt(i))) sb.append(separator)
         sb.append(toLowerCase(ch))
         false
       }

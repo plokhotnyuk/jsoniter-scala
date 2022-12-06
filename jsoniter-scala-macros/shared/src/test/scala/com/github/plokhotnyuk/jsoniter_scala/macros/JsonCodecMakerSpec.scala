@@ -2467,45 +2467,115 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
   }
   "JsonCodecMaker.enforce_snake_case" should {
-    "transform camelCase names to snake_case" in {
+    "transform camelCase names to snake_case with separated non-alphabetic" in {
       JsonCodecMaker.enforce_snake_case("oO") shouldBe "o_o"
       JsonCodecMaker.enforce_snake_case("oOoo") shouldBe "o_ooo"
+      JsonCodecMaker.enforce_snake_case("oOoo111") shouldBe "o_ooo_111"
+      JsonCodecMaker.enforce_snake_case("oOoo$") shouldBe "o_ooo_$"
     }
-    "transform PascalCase names to snake_case" in {
-      JsonCodecMaker.enforce_snake_case("OOOoo111") shouldBe "oo_ooo_111"
+    "transform PascalCase names to snake_case with separated non-alphabetic" in {
+      JsonCodecMaker.enforce_snake_case("Oo") shouldBe "oo"
       JsonCodecMaker.enforce_snake_case("Ooo111") shouldBe "ooo_111"
+      JsonCodecMaker.enforce_snake_case("OOOoo111") shouldBe "oo_ooo_111"
+      JsonCodecMaker.enforce_snake_case("OOOoo$") shouldBe "oo_ooo_$"
     }
-    "transform kebab-case names to snake_case" in {
-      JsonCodecMaker.enforce_snake_case("o-O") shouldBe "o_o"
+    "transform kebab-case names to snake_case with separated non-alphabetic" in {
+      JsonCodecMaker.enforce_snake_case("o-o") shouldBe "o_o"
       JsonCodecMaker.enforce_snake_case("o-ooo-") shouldBe "o_ooo_"
-      JsonCodecMaker.enforce_snake_case("O-OOO-111") shouldBe "o_ooo_111"
+      JsonCodecMaker.enforce_snake_case("o-ooo111") shouldBe "o_ooo_111"
+      JsonCodecMaker.enforce_snake_case("o-ooo-111") shouldBe "o_ooo_111"
+      JsonCodecMaker.enforce_snake_case("o-ooo-$") shouldBe "o_ooo_$"
     }
-    "leave snake_case as is" in {
-      JsonCodecMaker.enforce_snake_case("") shouldBe ""
-      JsonCodecMaker.enforce_snake_case("o") shouldBe "o"
+    "transform snake_case names to snake_case with separated non-alphabetic" in {
       JsonCodecMaker.enforce_snake_case("o_o") shouldBe "o_o"
       JsonCodecMaker.enforce_snake_case("o_ooo_") shouldBe "o_ooo_"
+      JsonCodecMaker.enforce_snake_case("o_ooo111") shouldBe "o_ooo_111"
+      JsonCodecMaker.enforce_snake_case("o_ooo_111") shouldBe "o_ooo_111"
+      JsonCodecMaker.enforce_snake_case("o_ooo$") shouldBe "o_ooo_$"
+    }
+  }
+  "JsonCodecMaker.enforce_snake_case2" should {
+    "transform camelCase names to snake_case with joined non-alphabetic" in {
+      JsonCodecMaker.enforce_snake_case2("oO") shouldBe "o_o"
+      JsonCodecMaker.enforce_snake_case2("oOoo") shouldBe "o_ooo"
+      JsonCodecMaker.enforce_snake_case2("oOoo111") shouldBe "o_ooo111"
+      JsonCodecMaker.enforce_snake_case2("oOoo$") shouldBe "o_ooo$"
+    }
+    "transform PascalCase names to snake_case with joined non-alphabetic" in {
+      JsonCodecMaker.enforce_snake_case2("Oo") shouldBe "oo"
+      JsonCodecMaker.enforce_snake_case2("Ooo111") shouldBe "ooo111"
+      JsonCodecMaker.enforce_snake_case2("OOOoo111") shouldBe "oo_ooo111"
+      JsonCodecMaker.enforce_snake_case2("OOOoo$") shouldBe "oo_ooo$"
+    }
+    "transform kebab-case names to snake_case with joined non-alphabetic" in {
+      JsonCodecMaker.enforce_snake_case2("o-o") shouldBe "o_o"
+      JsonCodecMaker.enforce_snake_case2("o-ooo-") shouldBe "o_ooo_"
+      JsonCodecMaker.enforce_snake_case2("o-ooo111") shouldBe "o_ooo111"
+      JsonCodecMaker.enforce_snake_case2("o-ooo-111") shouldBe "o_ooo111"
+      JsonCodecMaker.enforce_snake_case2("o-ooo-$") shouldBe "o_ooo$"
+    }
+    "transform snake_case names to snake_case with joined non-alphabetic" in {
+      JsonCodecMaker.enforce_snake_case2("o_o") shouldBe "o_o"
+      JsonCodecMaker.enforce_snake_case2("o_ooo_") shouldBe "o_ooo_"
+      JsonCodecMaker.enforce_snake_case2("o_ooo111") shouldBe "o_ooo111"
+      JsonCodecMaker.enforce_snake_case2("o_ooo_111") shouldBe "o_ooo111"
+      JsonCodecMaker.enforce_snake_case2("o_ooo_$") shouldBe "o_ooo$"
     }
   }
   "JsonCodecMaker.enforce-kebab-case" should {
-    "transform camelCase names to kebab-case" in {
+    "transform camelCase names to kebab-case with separated non-alphabetic" in {
       JsonCodecMaker.`enforce-kebab-case`("oO") shouldBe "o-o"
       JsonCodecMaker.`enforce-kebab-case`("oOoo") shouldBe "o-ooo"
+      JsonCodecMaker.`enforce-kebab-case`("oOoo111") shouldBe "o-ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("oOoo$") shouldBe "o-ooo-$"
     }
-    "transform PascalCase names to kebab-case" in {
-      JsonCodecMaker.`enforce-kebab-case`("OOOoo111") shouldBe "oo-ooo-111"
+    "transform PascalCase names to kebab-case with separated non-alphabetic" in {
+      JsonCodecMaker.`enforce-kebab-case`("Oo") shouldBe "oo"
       JsonCodecMaker.`enforce-kebab-case`("Ooo111") shouldBe "ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("OOOoo111") shouldBe "oo-ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("OOOoo$") shouldBe "oo-ooo-$"
     }
-    "transform snake_case names to kebab-case" in {
-      JsonCodecMaker.`enforce-kebab-case`("o_O") shouldBe "o-o"
+    "transform snake_case names to kebab-case with separated non-alphabetic" in {
+      JsonCodecMaker.`enforce-kebab-case`("o_o") shouldBe "o-o"
       JsonCodecMaker.`enforce-kebab-case`("o_ooo_") shouldBe "o-ooo-"
-      JsonCodecMaker.`enforce-kebab-case`("O_OOO_111") shouldBe "o-ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("o_ooo111") shouldBe "o-ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("o_ooo_111") shouldBe "o-ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("o_ooo_$") shouldBe "o-ooo-$"
     }
-    "leave kebab-case names as is" in {
-      JsonCodecMaker.`enforce-kebab-case`("") shouldBe ""
-      JsonCodecMaker.`enforce-kebab-case`("o") shouldBe "o"
+    "transform kebab-case names to kebab-case with separated non-alphabetic" in {
       JsonCodecMaker.`enforce-kebab-case`("o-o") shouldBe "o-o"
       JsonCodecMaker.`enforce-kebab-case`("o-ooo-") shouldBe "o-ooo-"
+      JsonCodecMaker.`enforce-kebab-case`("o-ooo111") shouldBe "o-ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("o-ooo-111") shouldBe "o-ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("o-ooo$") shouldBe "o-ooo-$"
+    }
+  }
+  "JsonCodecMaker.enforce-kebab-case2" should {
+    "transform camelCase names to kebab-case with joined non-alphabetic" in {
+      JsonCodecMaker.`enforce-kebab-case2`("oO") shouldBe "o-o"
+      JsonCodecMaker.`enforce-kebab-case2`("oOoo") shouldBe "o-ooo"
+      JsonCodecMaker.`enforce-kebab-case2`("oOoo111") shouldBe "o-ooo111"
+      JsonCodecMaker.`enforce-kebab-case2`("oOoo$") shouldBe "o-ooo$"
+    }
+    "transform PascalCase names to kebab-case with joined non-alphabetic" in {
+      JsonCodecMaker.`enforce-kebab-case2`("Oo") shouldBe "oo"
+      JsonCodecMaker.`enforce-kebab-case2`("Ooo111") shouldBe "ooo111"
+      JsonCodecMaker.`enforce-kebab-case2`("OOOoo111") shouldBe "oo-ooo111"
+      JsonCodecMaker.`enforce-kebab-case2`("OOOoo$") shouldBe "oo-ooo$"
+    }
+    "transform snake_case names to kebab-case with joined non-alphabetic" in {
+      JsonCodecMaker.`enforce-kebab-case2`("o_o") shouldBe "o-o"
+      JsonCodecMaker.`enforce-kebab-case2`("o_ooo_") shouldBe "o-ooo-"
+      JsonCodecMaker.`enforce-kebab-case2`("o_ooo111") shouldBe "o-ooo111"
+      JsonCodecMaker.`enforce-kebab-case2`("o_ooo_111") shouldBe "o-ooo111"
+      JsonCodecMaker.`enforce-kebab-case2`("o_ooo_$") shouldBe "o-ooo$"
+    }
+    "transform kebab-case names to kebab-case with joined non-alphabetic" in {
+      JsonCodecMaker.`enforce-kebab-case2`("o-o") shouldBe "o-o"
+      JsonCodecMaker.`enforce-kebab-case2`("o-ooo-") shouldBe "o-ooo-"
+      JsonCodecMaker.`enforce-kebab-case2`("o-ooo111") shouldBe "o-ooo111"
+      JsonCodecMaker.`enforce-kebab-case2`("o-ooo-111") shouldBe "o-ooo111"
+      JsonCodecMaker.`enforce-kebab-case2`("o-ooo-$") shouldBe "o-ooo$"
     }
   }
   "JsonCodecMaker.simpleClassName" should {
