@@ -170,7 +170,7 @@ lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
   .settings(
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
-        "com.beachape" %%% "enumeratum" % "1.7.0" % Test
+        "com.beachape" %%% "enumeratum" % "1.7.2" % Test
       )
       case _ => Seq()
     })
@@ -181,7 +181,7 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
   .settings(
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
-        "com.beachape" %%% "enumeratum" % "1.7.0" % Test
+        "com.beachape" %%% "enumeratum" % "1.7.2" % Test
       )
       case _ => Seq()
     })
