@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import com.github.plokhotnyuk.jsoniter_scala.core.{ReaderConfig, WriterConfig}
 import smithy4s.http.json._
 import smithy4s.{ByteArray, Schema, Timestamp}
-import smithy4s.api.Discriminated
+import alloy.Discriminated
 import smithy4s.schema.Schema._
 import java.time.Instant
 import java.util.UUID
