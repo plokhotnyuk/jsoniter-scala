@@ -97,12 +97,12 @@ supports Scala 2.11.
 
 ## Features and limitations
 
-- JSON parsing from `Array[Byte]`, `java.io.InputStream` or `java.nio.ByteBuffer`
-- JSON serialization to `Array[Byte]`, `java.io.OutputStream` or `java.nio.ByteBuffer`
+- JSON parsing from `String`, `Array[Byte]`, `java.nio.ByteBuffer`, `java.io.InputStream`/`java.io.FileInputStream`
+- JSON serialization to `String`, `Array[Byte]`, `java.nio.ByteBuffer`, `java.io.OutputStream`/`java.io.FileOutputStream`
 - Support of parsing from or writing to part of `Array[Byte]` or `java.nio.ByteBuffer` by specifying of position and 
   limit
-- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without the need of holding all input 
-  and parsed values in the memory
+- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream`/`java.io.FileInputStream` without the need
+  of holding all input and parsed values in the memory
 - Only UTF-8 encoding is supported when working with buffered bytes directly but there is a fallback to parse and
   serialize JSON from/to `String` (while this is much less efficient)
 - Parsing of strings with escaped characters for JSON keys and string values
@@ -143,11 +143,12 @@ supports Scala 2.11.
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all
 - Field names can be overridden for serialization/parsing by field annotation in the primary constructor of classes
 - Reading and writing of any arbitrary bytes or raw values are possible by using custom codecs
-- Parsing exception always reports a hexadecimal offset of `Array[Byte]`, `java.io.InputStream` or `java.nio.ByteBuffer`
-  where it occurs, and an optional hex dump affected by error part of an internal byte buffer
+- Parsing exception always reports a hexadecimal offset of `Array[Byte]`, `java.nio.ByteBuffer`, `java.io.InputStream`/
+  `java.io.FileInputStream` where it occurs, and an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - Both key and value codecs are specialized to work with primitives efficiently without boxing/unboxing
-- No extra buffering is required when parsing from `java.io.InputStream` or serializing to `java.io.OutputStream`
+- No extra buffering is required when parsing from `java.io.InputStream`/`java.io.FileInputStream` or serializing to
+  `java.io.OutputStream`/`java.io.FileOuputStream`
 - Using black box macros only for codec generation ensures that your types will never be changed
 - Ability to print generated code for codecs using an implicit val of `CodecMakerConfig.PrintCodec` type in a scope of 
   codec derivation
