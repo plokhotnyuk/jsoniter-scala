@@ -73,6 +73,15 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): GitHubActionsAPI.Response = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[GitHubActionsAPI.Response]
+  }
+
+  @Benchmark
   def smithy4sJson(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

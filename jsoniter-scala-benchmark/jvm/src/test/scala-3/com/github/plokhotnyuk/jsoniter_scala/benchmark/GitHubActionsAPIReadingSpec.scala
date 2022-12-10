@@ -17,6 +17,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       //FIXME: uPickle throws java.lang.NullPointerException: Cannot invoke "upickle.core.Visitor.visitString(java.lang.CharSequence, int)" because the return value of "upickle.core.ObjArrVisitor.subVisitor()" is null
@@ -35,6 +36,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
       //FIXME: uPickle throws java.lang.NullPointerException: Cannot invoke "upickle.core.Visitor.visitString(java.lang.CharSequence, int)" because the return value of "upickle.core.ObjArrVisitor.subVisitor()" is null

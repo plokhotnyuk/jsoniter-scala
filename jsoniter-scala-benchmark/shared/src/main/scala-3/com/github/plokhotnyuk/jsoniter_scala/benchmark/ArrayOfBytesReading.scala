@@ -69,6 +69,14 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Array[Byte]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

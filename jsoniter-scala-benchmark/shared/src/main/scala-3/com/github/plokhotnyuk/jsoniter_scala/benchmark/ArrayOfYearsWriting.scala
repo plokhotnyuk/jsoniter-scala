@@ -22,8 +22,8 @@ class ArrayOfYearsWriting extends ArrayOfYearsBenchmark {
 
   @Benchmark
   def circeJsoniter(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.syntax._
 
@@ -77,6 +77,15 @@ class ArrayOfYearsWriting extends ArrayOfYearsBenchmark {
     import play.api.libs.json.Json
 
     Json.toBytes(Json.toJson(obj))
+  }
+
+  @Benchmark
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    writeToArray(Json.toJson(obj))(com.evolutiongaming.jsonitertool.PlayJsonJsoniter.jsValueCodec)
   }
 
   @Benchmark

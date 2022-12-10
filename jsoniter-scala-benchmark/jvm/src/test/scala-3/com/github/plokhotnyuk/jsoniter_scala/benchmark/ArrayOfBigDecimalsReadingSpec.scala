@@ -17,6 +17,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sNative() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
       benchmark.playJson() shouldBe benchmark.sourceObj
+      benchmark.playJsonJsoniter() shouldBe benchmark.sourceObj
       benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.sprayJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
@@ -34,6 +35,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())

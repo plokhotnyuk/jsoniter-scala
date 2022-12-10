@@ -16,6 +16,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
@@ -28,6 +29,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.weePickle())
     }
   }

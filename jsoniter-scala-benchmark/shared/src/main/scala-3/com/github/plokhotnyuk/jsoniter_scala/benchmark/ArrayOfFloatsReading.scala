@@ -76,6 +76,14 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[Float] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Float]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Float] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

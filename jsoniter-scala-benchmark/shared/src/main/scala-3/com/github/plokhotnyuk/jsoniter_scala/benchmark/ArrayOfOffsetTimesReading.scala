@@ -72,6 +72,14 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[OffsetTime] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Array[OffsetTime]]
+  }
+
+  @Benchmark
   def sprayJson(): Array[OffsetTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

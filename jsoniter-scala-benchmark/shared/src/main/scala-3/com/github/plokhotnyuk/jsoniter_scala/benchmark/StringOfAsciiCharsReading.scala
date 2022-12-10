@@ -68,6 +68,15 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): String = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes, tooLongStringConfig).as[String]
+  }
+
+  @Benchmark
   def smithy4sJson(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

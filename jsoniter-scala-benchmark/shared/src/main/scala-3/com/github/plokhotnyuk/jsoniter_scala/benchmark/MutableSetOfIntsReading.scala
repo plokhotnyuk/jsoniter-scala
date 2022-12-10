@@ -69,6 +69,14 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): mutable.Set[Int] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[mutable.Set[Int]]
+  }
+
+  @Benchmark
   def uPickle(): mutable.Set[Int] = {
     import upickle.default._
 

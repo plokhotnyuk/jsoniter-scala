@@ -15,6 +15,7 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME: play-json parses 850007368138018817 as 850007368138018800
       //benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
@@ -27,6 +28,7 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())

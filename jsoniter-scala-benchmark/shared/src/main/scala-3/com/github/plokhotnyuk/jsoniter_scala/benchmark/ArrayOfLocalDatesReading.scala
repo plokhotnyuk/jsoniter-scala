@@ -72,6 +72,14 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[LocalDate] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Array[LocalDate]]
+  }
+
+  @Benchmark
   def sprayJson(): Array[LocalDate] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

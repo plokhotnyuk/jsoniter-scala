@@ -72,6 +72,14 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[Year] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Year]]
+  }
+
+  @Benchmark
   def sprayJson(): Array[Year] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

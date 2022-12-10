@@ -70,6 +70,16 @@ class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark 
 
     Json.toBytes(Json.toJson(obj))
   }
+
+  @Benchmark
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import play.api.libs.json.Json
+
+    writeToArray(Json.toJson(obj))
+  }
 /* FIXME: uPickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
   @Benchmark
   def uPickle(): Array[Byte] = {

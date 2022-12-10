@@ -79,6 +79,16 @@ class Base64Writing extends Base64Benchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import play.api.libs.json.Json
+
+    writeToArray(Json.toJson(obj)(base64Format))
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

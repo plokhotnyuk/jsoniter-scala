@@ -17,6 +17,7 @@ class BigDecimalWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       BigDecimal(toString(b.playJson())) shouldBe b.obj
+      BigDecimal(toString(b.playJsonJsoniter())) shouldBe b.obj
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString

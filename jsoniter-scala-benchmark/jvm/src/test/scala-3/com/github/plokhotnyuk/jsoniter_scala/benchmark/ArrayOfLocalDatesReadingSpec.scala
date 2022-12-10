@@ -17,6 +17,7 @@ class ArrayOfLocalDatesReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
@@ -33,6 +34,7 @@ class ArrayOfLocalDatesReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
