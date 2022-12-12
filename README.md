@@ -227,7 +227,7 @@ Derive a codec for the top-level type that need to be parsed or serialized:
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 
-implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make
+given codec: JsonValueCodec[User] = JsonCodecMaker.make
 ```
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec` for the
@@ -242,19 +242,8 @@ val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model =
 
 To print generated code for codecs add the following line to the scope of the codec derivation before `make` call.
 
-For Scala 2.x:
-```scala
-implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {} 
-```
-
-For Scala 3:
 ```scala
 given CodecMakerConfig.PrintCodec with {}
-```
-
-To print _all_ generated code add the following line to your `sbt` build file (for Scala 2.x only):
-```sbt
-scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
 ```
 
 Full code of this `How to` section see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/examples/Example01.scala)
@@ -313,7 +302,7 @@ on other code that uses a result of the macro's call, otherwise the following co
         code from the same compilation module where the 'make' macro is called. Use a separated submodule of the project
         to compile all such dependencies before their usage for generation of codecs.
 ```
-Sometime scalac (or zinc) can fail to compile the `make` macro call with the same error message for the configuration 
+Sometime Scala 2 compiler can fail to compile the `make` macro call with the same error message for the configuration 
 that has not clear dependencies on other code. For those cases workarounds can be simpler than recommended usage of
 separated submodule:
 - use `make` or `make...` macro calls without parameters 
