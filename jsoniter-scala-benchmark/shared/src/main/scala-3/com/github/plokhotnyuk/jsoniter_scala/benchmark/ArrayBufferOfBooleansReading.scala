@@ -35,6 +35,7 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): mutable.ArrayBuffer[Boolean] = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -44,6 +45,7 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): mutable.ArrayBuffer[Boolean] = {
     import org.json4s._
     import org.json4s.native.JsonMethods._

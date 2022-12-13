@@ -42,6 +42,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): Array[Float] = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -51,6 +52,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): Array[Float] = {
     import org.json4s._
     import org.json4s.native.JsonMethods._

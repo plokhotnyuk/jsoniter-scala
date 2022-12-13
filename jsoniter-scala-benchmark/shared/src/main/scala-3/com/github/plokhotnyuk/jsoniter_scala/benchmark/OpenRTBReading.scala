@@ -38,6 +38,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
   }
 /* FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB$BidRequest
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): BidRequest = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -48,6 +49,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
 */
 /* FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB$BidRequest
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): BidRequest = {
     import org.json4s._
     import org.json4s.native.JsonMethods._

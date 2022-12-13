@@ -36,6 +36,7 @@ class BigIntReading extends BigIntBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): BigInt = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -45,6 +46,7 @@ class BigIntReading extends BigIntBenchmark {
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): BigInt = {
     import org.json4s._
     import org.json4s.native.JsonMethods._

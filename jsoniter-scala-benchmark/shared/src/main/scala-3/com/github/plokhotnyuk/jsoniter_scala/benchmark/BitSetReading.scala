@@ -30,6 +30,7 @@ class BitSetReading extends BitSetBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): Set[Int] = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -39,6 +40,7 @@ class BitSetReading extends BitSetBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): Set[Int] = {
     import org.json4s._
     import org.json4s.native.JsonMethods._
