@@ -1,11 +1,11 @@
-echo 'var providedBenchmarks = ["Zulu 11", "Zulu 17", "OpenJDK 20", "GraalVM CE 17", "GraalVM CE 19", "GraalVM EE 11", "GraalVM EE 17", "GraalVM EE 19"];
+echo 'var providedBenchmarks = ["Zulu 11", "Zulu 17", "OpenJDK 21", "GraalVM CE 17", "GraalVM CE 19", "GraalVM EE 11", "GraalVM EE 17", "GraalVM EE 19"];
 var providedBenchmarkStore = {
 "Zulu 11":'
 jq -c . < zulu-11.json
 echo ', "Zulu 17":'
 jq -c . < zulu-17.json
-echo ', "OpenJDK 20":'
-jq -c . < openjdk-20.json
+echo ', "OpenJDK 21":'
+jq -c . < openjdk-21.json
 echo ', "GraalVM CE 17":'
 jq -c . < graalvm-ce-java17.json
 echo ', "GraalVM CE 19":'
