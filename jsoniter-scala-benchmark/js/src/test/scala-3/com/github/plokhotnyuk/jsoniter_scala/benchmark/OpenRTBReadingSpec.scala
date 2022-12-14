@@ -25,6 +25,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())

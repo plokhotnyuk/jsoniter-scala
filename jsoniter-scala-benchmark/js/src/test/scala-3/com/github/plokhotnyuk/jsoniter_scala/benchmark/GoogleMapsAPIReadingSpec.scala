@@ -28,6 +28,7 @@ class GoogleMapsAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

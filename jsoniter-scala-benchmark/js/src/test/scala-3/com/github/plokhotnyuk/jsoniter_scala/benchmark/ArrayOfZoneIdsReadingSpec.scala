@@ -24,6 +24,7 @@ class ArrayOfZoneIdsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())
     }
