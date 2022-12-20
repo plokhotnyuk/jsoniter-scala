@@ -460,35 +460,35 @@ Learn how to write benchmarks in [JMH samples](https://hg.openjdk.java.net/code-
 
 List of available options can be printed by:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -h'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -h'
 ```
 
 Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -lrf'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -lrf'
 ```
 
 JMH allows running benchmarks with different profilers, to get a list of supported use (can require entering of user
 password):
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -lprof'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -lprof'
 ```
 
 Help for profiler options can be printed by following command (`<profiler_name>` should be replaced by the name of the
 supported profiler from the command above):
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof <profiler_name>:help'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof <profiler_name>:help'
 ```
 
 For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -p size=1,10,100,1000 ArrayOf.*'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -p size=1,10,100,1000 ArrayOf.*'
 ```
 
 To see throughput with the allocation rate of generated codecs run benchmarks with GC profiler using the following
 command:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof gc .*Reading.*'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof gc .*Reading.*'
 ```
 
 Results that are stored in JSON can be easy plotted in [JMH Visualizer](https://jmh.morethan.io/) by drugging & dropping
@@ -497,12 +497,12 @@ of your file to the drop zone or using the `source` parameter with an HTTP link 
 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfnorm TwitterAPIReading.jsoniterScala'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfnorm TwitterAPIReading.jsoniterScala'
 ```
 
 Also, it can be run with a specified list of events: 
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof "perfnorm:event=cycles,instructions,ld_blocks_partial.address_alias" TwitterAPIReading.jsoniterScala'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "perfnorm:event=cycles,instructions,ld_blocks_partial.address_alias" TwitterAPIReading.jsoniterScala'
 ```
 
 List of available events for the perf profiler can be retrieved by the following command:
@@ -512,14 +512,14 @@ perf list
 
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof "jfr:dir=target/jfr-reports" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "jfr:dir=target/jfr-reports" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
 You will get the profile in the `jsoniter-scala-benchmark/jvm/target/jfr-reports` directory.
 
 To run benchmarks with recordings by [Async profiler](https://github.com/jvm-profiling-tools/async-profiler), extract
 binaries to `/opt/async-profiler` directory and use command like this:
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-17 clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" --p size=128 -wi 5 -i 10 jsoniterScala'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" --p size=128 -wi 5 -i 10 jsoniterScala'
 ```
 Now you can open direct and reverse flame graphs in the `jsoniter-scala-benchmark/jvmtarget/async-reports` directory.
 
@@ -554,7 +554,7 @@ Perf events:
 Following command can be used to profile and print assembly code of the hottest methods, but it requires [a setup of an 
 additional library to make PrintAssembly feature enabled](https://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
 ```
 
 More info about extras, options, and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
@@ -596,12 +596,12 @@ play-json, and circe in 3 modes: auto, semi-auto, and derivation.
 
 ### Publish locally
 
-Publish to local Ivy repo:
+Publish to the local Ivy repo:
 ```sh
 sbt clean +publishLocal
 ```
 
-Publish to local Maven repo:
+Publish to the local Maven repo:
 ```sh
 sbt clean +publishM2
 ```
@@ -611,7 +611,8 @@ sbt clean +publishM2
 For version numbering use [Recommended Versioning Scheme](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
-Double-check binary and source compatibility, including behavior, and release using the following command on the enironment with 16+GB of RAM:
+Double-check binary and source compatibility, including behavior, and release using the following command on the
+environment with 16+GB of RAM:
 ```sh
 sbt -java-home /usr/lib/jvm/zulu-11 -J-Xmx8g release
 ```
