@@ -856,21 +856,7 @@ final class JsonWriter private[jsoniter_scala](
 
   @tailrec
   private[this] def writeString(s: String, from: Int, pos: Int, minLim: Int, escapedChars: Array[Byte]): Int =
-    if (pos + 3 < minLim) {
-      val ch1 = s.charAt(from)
-      val ch2 = s.charAt(from + 1)
-      val ch3 = s.charAt(from + 2)
-      val ch4 = s.charAt(from + 3)
-      ByteArrayAccess.setInt(buf, pos, ch1 | ch2 << 8 | ch3 << 16 | ch4 << 24)
-      if ((ch1 | ch2 | ch3 | ch4) >= 0x80 || {
-        val ech1 = escapedChars(ch1)
-        val ech2 = escapedChars(ch2)
-        val ech3 = escapedChars(ch3)
-        val ech4 = escapedChars(ch4)
-        (ech1 | ech2 | ech3 | ech4) != 0
-      }) writeEscapedOrEncodedString(s, from, pos, escapedChars)
-      else writeString(s, from + 4, pos + 4, minLim, escapedChars)
-    } else if (pos < minLim) {
+    if (pos < minLim) {
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
       if (ch >= 0x80 || escapedChars(ch) != 0) writeEscapedOrEncodedString(s, from, pos, escapedChars)

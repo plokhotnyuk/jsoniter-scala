@@ -1495,12 +1495,14 @@ final class JsonReader private[jsoniter_scala](
         if (e2 == -1074) m2
         else if (e2 >= 972) 0x7FF0000000000000L
         else e2 + 1075L << 52 | m2 & 0x000FFFFFFFFFFFFFL
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
-      }
+      } else toDouble(from, newMark, pos)
     }
+
+  private[this] def toDouble(from: Int, newMark: Int, pos: Int): Double = {
+    var offset = from
+    if (mark == 0) offset -= newMark
+    java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
+  }
 
   private[this] def parseFloat(isToken: Boolean): Float = {
     var b =
@@ -1634,12 +1636,14 @@ final class JsonReader private[jsoniter_scala](
         if (e2 == -149) mf
         else if (e2 >= 105) 0x7F800000
         else e2 + 150 << 23 | mf & 0x007FFFFF
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
-      }
+      } else toFloat(from, newMark, pos)
     }
+
+  private[this] def toFloat(from: Int, newMark: Int, pos: Int): Float = {
+    var offset = from
+    if (mark == 0) offset -= newMark
+    java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
+  }
 
   private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
     Math.multiplyHigh(x, y) + x + y // Use implementation that works only when both params are negative
