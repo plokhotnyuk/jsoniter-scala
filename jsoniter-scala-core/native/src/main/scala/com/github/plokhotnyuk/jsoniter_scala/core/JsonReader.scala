@@ -1317,9 +1317,9 @@ final class JsonReader private[jsoniter_scala](
         ((bs + 0x4646464646464646L | dec) & 0x8080808080808080L) == 0
       }) {
         if (x < -92233720368L || {
-          dec = dec * 2561 >> 8
-          val mask = 0x000000FF000000FFL
-          x = x * 100000000 - ((dec & mask) * 4294967296000100L + (dec >> 16 & mask) * 42949672960001L >> 32)
+          dec *= 2561
+          x *= 100000000
+          x -= ((dec >> 8 & 0x000000FF000000FFL) * 4294967296000100L + (dec >> 24 & 0x000000FF000000FFL) * 42949672960001L >> 32)
           x > 0
         }) longOverflowError(pos + 2)
         pos += 8
@@ -1875,13 +1875,12 @@ final class JsonReader private[jsoniter_scala](
       x1 = x1 * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val mask = 0x000000FF000000FFL
     val x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-      val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
-      (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
+      val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0x000000FF000000FFL) * 42949672960001000L + (dec >> 24 & 0x000000FF000000FFL) * 429496729600010L >> 32
     } + buf(pos + 8)) * 1000000000 + {
-      val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561 >> 8
-      (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
+      val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0x000000FF000000FFL) * 42949672960001000L + (dec >> 24 & 0x000000FF000000FFL) * 429496729600010L >> 32
     } + buf(pos + 17) - 48000000048L
     val q = x1 * 1000000000000000000L
     var l = q + x2
@@ -1929,13 +1928,12 @@ final class JsonReader private[jsoniter_scala](
     ByteArrayAccess.setLong(magnitude, last, x)
     var first = last
     while (pos < limit) {
-      val mask = 0x000000FF000000FFL
       x = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-        val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561 >> 8
-        (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
+        val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+        (dec >> 8 & 0x000000FF000000FFL) * 42949672960001000L + (dec >> 24 & 0x000000FF000000FFL) * 429496729600010L >> 32
       } + buf(pos + 8)) * 1000000000 + {
-        val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561 >> 8
-        (dec & mask) * 42949672960001000L + (dec >> 16 & mask) * 429496729600010L >> 32
+        val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+        (dec >> 8 & 0x000000FF000000FFL) * 42949672960001000L + (dec >> 24 & 0x000000FF000000FFL) * 429496729600010L >> 32
       } + buf(pos + 17) - 48000000048L
       pos += 18
       first = Math.max(first - 8, 0)
