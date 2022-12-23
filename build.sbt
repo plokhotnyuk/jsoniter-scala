@@ -46,6 +46,10 @@ lazy val commonSettings = Seq(
 )
 
 lazy val jsSettings = Seq(
+  libraryDependencies ++= Seq(
+    "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test,
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
+  ),
   scalaJSLinkerConfig ~= {
     _.withSemantics({
       _.optimized
@@ -63,6 +67,10 @@ lazy val jsSettings = Seq(
 )
 
 lazy val nativeSettings = Seq(
+  libraryDependencies ++= Seq(
+    "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test,
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
+  ),
   //nativeMode := "release-full", // Uncomment and test with these options
   //nativeLTO := "thin",
   coverageEnabled := false // FIXME: Unexpected linking error
@@ -132,21 +140,9 @@ lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(jsSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0"
-    )
-  )
 
 lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
   .settings(nativeSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0"
-    )
-  )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
