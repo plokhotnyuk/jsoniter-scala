@@ -154,6 +154,7 @@ supports Scala 2.11.
   codec derivation
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library` (all platforms) and
   `scala-java-time` (replacement of JDKs `java.time._` types for Scala.js and Scala Native)
+- On Scala.js and Scala Native platforms, if you need support for timezones besides `UTC` then you should follow the [scala-java-time documentation](https://cquiroz.github.io/scala-java-time/#time-zones) for adding a time zone database to your application.
 - Codecs and runtime configurations implement `java.io.Serializable` for easier usage in distributive computing
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
