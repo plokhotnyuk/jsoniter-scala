@@ -47,7 +47,6 @@ lazy val commonSettings = Seq(
 
 lazy val jsSettings = Seq(
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test,
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
   ),
   scalaJSLinkerConfig ~= {
@@ -68,7 +67,6 @@ lazy val jsSettings = Seq(
 
 lazy val nativeSettings = Seq(
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test,
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
   ),
   //nativeMode := "release-full", // Uncomment and test with these options
@@ -133,6 +131,11 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0" % Test,
       "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.14.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.14" % Test
+    )
+  )
+  .platformsSettings(JSPlatform, NativePlatform)(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
     )
   )
 
