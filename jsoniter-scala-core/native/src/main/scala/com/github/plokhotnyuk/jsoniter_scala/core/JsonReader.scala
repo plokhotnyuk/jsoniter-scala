@@ -478,7 +478,7 @@ final class JsonReader private[jsoniter_scala](
       val x = new Array[Byte](len)
       System.arraycopy(buf, from, x, 0, len)
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   @tailrec
@@ -858,7 +858,7 @@ final class JsonReader private[jsoniter_scala](
     val b3 = (bs >> 16).toByte
     val b4 = (bs >> 24).toByte
     val b5 = buf(pos + 4)
-    val yearNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
+    val isNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
     if (b2 < '0' || b2 > '9') digitError(pos + 1)
     if (b3 < '0' || b3 > '9') digitError(pos + 2)
     if (b4 < '0' || b4 > '9') digitError(pos + 3)
@@ -882,9 +882,9 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     head = pos + 1
-    if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-    if (b != t) yearError(t, maxDigits, pos, yearNeg, yearDigits)
-    if (yearNeg) year = -year
+    if (isNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+    if (b != t) yearError(t, maxDigits, pos, isNeg, yearDigits)
+    if (isNeg) year = -year
     if (year >= 0 && year < 10000) digitError(pos)
     year
   }
@@ -1118,7 +1118,7 @@ final class JsonReader private[jsoniter_scala](
       zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex)
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   private[this] def appendChar(ch: Char, i: Int): Int = {
@@ -1460,7 +1460,7 @@ final class JsonReader private[jsoniter_scala](
         } else toDouble(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -1601,7 +1601,7 @@ final class JsonReader private[jsoniter_scala](
         } else toFloat(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -1696,7 +1696,7 @@ final class JsonReader private[jsoniter_scala](
           if (mark == 0) from -= newMark
           if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
           new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
-        } finally if (mark != 0 || oldMark < 0) mark = oldMark
+        } finally if (mark > oldMark) mark = oldMark
       }
     }
   }
@@ -1833,10 +1833,10 @@ final class JsonReader private[jsoniter_scala](
             } else toBigDecimal(buf, from, fracLimit, isNeg, scale)
               .add(toBigDecimal(buf, fracPos, limit, isNeg, scale + fracLen))
           } else toBigDecimal(buf, from, from + digits, isNeg, scale)
-        if (digits > mc.getPrecision) x = x.plus(mc)
+        if (mc.getPrecision < digits) x = x.plus(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
         new BigDecimal(x, mc)
-      } finally if (mark != 0 || oldMark < 0) mark = oldMark
+      } finally if (mark > oldMark) mark = oldMark
     }
   }
 
@@ -2190,7 +2190,7 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b == 'Z') nextByteOrError('"', pos)
     else {
-      val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+      val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
       var offsetTotal = 0L
       if (pos + 7 < tail && {
         offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
@@ -2201,7 +2201,7 @@ final class JsonReader private[jsoniter_scala](
         head = pos + 6
       } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
       if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-      if (offsetNeg) offsetTotal = -offsetTotal
+      if (isNeg) offsetTotal = -offsetTotal
       secondOfDay -= offsetTotal
     }
     Instant.ofEpochSecond(epochDaySeconds + secondOfDay, nano)
@@ -2405,7 +2405,7 @@ final class JsonReader private[jsoniter_scala](
         nextByteOrError('"', pos)
         ZoneOffset.UTC
       } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
         var offsetTotal = 0L
         if (pos + 7 < tail && {
           offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
@@ -2415,7 +2415,7 @@ final class JsonReader private[jsoniter_scala](
           offsetTotal = ((offsetTotal & 0x0F07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           head = pos + 6
         } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
-        toZoneOffset(offsetNeg, offsetTotal.toInt)
+        toZoneOffset(isNeg, offsetTotal.toInt)
       }
     OffsetDateTime.of(year, monthDay & 0xFF, monthDay >> 24, hourMinute & 0xFF, hourMinute >> 24, second, nano, zoneOffset)
   }
@@ -2497,7 +2497,7 @@ final class JsonReader private[jsoniter_scala](
         nextByteOrError('"', pos)
         ZoneOffset.UTC
       } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
         var offsetTotal = 0L
         if (pos + 7 < tail && {
           offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
@@ -2507,7 +2507,7 @@ final class JsonReader private[jsoniter_scala](
           offsetTotal = ((offsetTotal & 0x0F07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
           head = pos + 6
         } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
-        toZoneOffset(offsetNeg, offsetTotal.toInt)
+        toZoneOffset(isNeg, offsetTotal.toInt)
       }
     OffsetTime.of(hourMinute & 0xFF, hourMinute >> 24, second, nano, zoneOffset)
   }
@@ -2665,7 +2665,7 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(pos)
         ZoneOffset.UTC
       } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
         nanoDigitWeight = -3
         var offsetTotal = 0L
         if (pos + 7 < tail && {
@@ -2689,7 +2689,7 @@ final class JsonReader private[jsoniter_scala](
             }
           }
         }
-        toZoneOffset(offsetNeg, offsetTotal.toInt)
+        toZoneOffset(isNeg, offsetTotal.toInt)
       }
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (b == '[') {
@@ -2706,7 +2706,7 @@ final class JsonReader private[jsoniter_scala](
       nextByteOrError('"', pos)
       ZoneOffset.UTC
     } else {
-      val offsetNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
+      val isNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
       var offsetTotal = 0L
       if (pos + 7 < tail && {
         offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
@@ -2716,7 +2716,7 @@ final class JsonReader private[jsoniter_scala](
         offsetTotal = ((offsetTotal & 0x0F07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
         head = pos + 6
       } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
-      toZoneOffset(offsetNeg, offsetTotal.toInt)
+      toZoneOffset(isNeg, offsetTotal.toInt)
     }
   }
 
@@ -2814,8 +2814,8 @@ final class JsonReader private[jsoniter_scala](
     case 3 => "expected 'S or '.' or digit"
   }, pos)
 
-  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, yearNeg: Boolean, yearDigits: Int): Nothing = {
-    if (!yearNeg && yearDigits == 4) digitError(pos)
+  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, isNeg: Boolean, yearDigits: Int): Nothing = {
+    if (!isNeg && yearDigits == 4) digitError(pos)
     if (yearDigits == maxDigits) tokenError(t, pos)
     tokenOrDigitError(t, pos)
   }

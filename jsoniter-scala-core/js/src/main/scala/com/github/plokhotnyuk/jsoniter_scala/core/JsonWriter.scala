@@ -1622,14 +1622,13 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeLocalTime(secsOfDay: Int, nano: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val hour = secsOfDay * 37283 >>> 27 // divide a small positive int by 3600
-    var pos = write2Digits(hour, p, buf, ds)
+    var y = secsOfDay * 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    var pos = write2Digits(y >>> 27, p, buf, ds)
     buf(pos) = ':'
-    val secsOfHour = secsOfDay - hour * 3600
-    val minute = secsOfHour * 17477 >> 20 // divide a small positive int by 60
-    pos = write2Digits(minute, pos + 1, buf, ds)
+    y = (y & 0x7FFFFFF) * 15
+    pos = write2Digits(y >> 25, pos + 1, buf, ds)
     buf(pos) = ':'
-    pos = write2Digits(secsOfHour - minute * 60, pos + 1, buf, ds)
+    pos = write2Digits(((y & 0x1FFFFFF) * 15) >> 23, pos + 1, buf, ds)
     if (nano != 0) writeNanos(nano, pos, buf, ds)
     else pos
   }
@@ -1658,36 +1657,30 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeOffset(x: ZoneOffset, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val totalSeconds = x.getTotalSeconds
-    if (totalSeconds == 0) {
+    var y = x.getTotalSeconds
+    if (y == 0) {
       buf(p) = 'Z'
       p + 1
     } else {
-      val q0 =
-        if (totalSeconds > 0) {
-          buf(p) = '+'
-          totalSeconds
-        } else {
-          buf(p) = '-'
-          -totalSeconds
-        }
-      val p1 = q0 * 37283
-      val q1 = p1 >>> 27 // divide a small positive int by 3600
-      var pos = write2Digits(q1, p + 1, buf, ds)
+      if (y > 0) buf(p) = '+'
+      else {
+        buf(p) = '-'
+        y = -y
+      }
+      y *= 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      var pos = write2Digits(y >>> 27, p + 1, buf, ds)
       buf(pos) = ':'
-      if ((p1 & 0x7FF8000) == 0) { // check if q0 is divisible by 3600
+      if ((y & 0x7FF8000) == 0) { // check if totalSeconds is divisible by 3600
         buf(pos + 1) = '0'
         buf(pos + 2) = '0'
         pos + 3
       } else {
-        val r1 = q0 - q1 * 3600
-        val p2 = r1 * 17477
-        val q2 = p2 >> 20 // divide a small positive int by 60
-        pos = write2Digits(q2, pos + 1, buf, ds)
-        if ((p2 & 0xFC000) == 0) pos // check if r1 is divisible by 60
+        y = (y & 0x7FFFFFF) * 15
+        pos = write2Digits(y >> 25, pos + 1, buf, ds)
+        if ((y & 0x1F80000) == 0) pos // check if totalSeconds is divisible by 60
         else {
           buf(pos) = ':'
-          write2Digits(r1 - q2 * 60, pos + 1, buf, ds)
+          write2Digits((y & 0x1FFFFFF) * 15 >> 23, pos + 1, buf, ds)
         }
       }
     }
@@ -1861,7 +1854,7 @@ final class JsonWriter private[jsoniter_scala](
             expShift = 1
           }
         } else if (ieeeExponent == 255) illegalNumberError(x)
-        if (ieeeMantissa == 0 && ieeeExponent > 1) {
+        else if (ieeeMantissa == 0 && ieeeExponent > 1) {
           expCorr = 131007
           cblShift = 1
         }
@@ -1985,7 +1978,7 @@ final class JsonWriter private[jsoniter_scala](
             expShift = 1
           }
         } else if (ieeeExponent == 2047) illegalNumberError(x)
-        if (ieeeMantissa == 0 && ieeeExponent > 1) {
+        else if (ieeeMantissa == 0 && ieeeExponent > 1) {
           expCorr = 131007
           cblShift = 1
         }
@@ -2106,11 +2099,11 @@ final class JsonWriter private[jsoniter_scala](
     else {
       val q1 = q0 / 100000000
       val r1 = (q0 - q1 * 100000000).toInt
-      if (r1 == 0) writeSignificantFractionDigits(q1.toInt, pos - 8, posLim, buf, ds)
+      val posm8 = pos - 8
+      if (r1 == 0) writeSignificantFractionDigits(q1.toInt, posm8, posLim, buf, ds)
       else {
-        val lastPos = writeSignificantFractionDigits(r1, pos, pos - 8, buf, ds)
-        writeFractionDigits(q1.toInt, pos - 8, posLim, buf, ds)
-        lastPos
+        writeFractionDigits(q1.toInt, posm8, posLim, buf, ds)
+        writeSignificantFractionDigits(r1, pos, posm8, buf, ds)
       }
     }
 
@@ -2129,7 +2122,7 @@ final class JsonWriter private[jsoniter_scala](
     val d = ds(r1)
     buf(pos - 1) = d.toByte
     var lastPos = pos
-    if (d > 12345) { // 12345 == ('0' << 8) | '9'
+    if (d > 0x3039) {
       buf(pos) = (d >> 8).toByte
       lastPos += 1
     }

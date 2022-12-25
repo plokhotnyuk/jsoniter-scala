@@ -478,7 +478,7 @@ final class JsonReader private[jsoniter_scala](
       val x = new Array[Byte](len)
       System.arraycopy(buf, from, x, 0, len)
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   def readNullOrError[@sp A](default: A, msg: String): A =
@@ -828,7 +828,7 @@ final class JsonReader private[jsoniter_scala](
     val b3 = buf(pos + 2)
     val b4 = buf(pos + 3)
     val b5 = buf(pos + 4)
-    val yearNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
+    val isNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
     if (b2 < '0' || b2 > '9') digitError(pos + 1)
     if (b3 < '0' || b3 > '9') digitError(pos + 2)
     if (b4 < '0' || b4 > '9') digitError(pos + 3)
@@ -852,9 +852,9 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     head = pos + 1
-    if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-    if (b != t) yearError(t, maxDigits, pos, yearNeg, yearDigits)
-    if (yearNeg) year = -year
+    if (isNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+    if (b != t) yearError(t, maxDigits, pos, isNeg, yearDigits)
+    if (isNeg) year = -year
     if (year >= 0 && year < 10000) digitError(pos)
     year
   }
@@ -1064,7 +1064,7 @@ final class JsonReader private[jsoniter_scala](
       zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex)
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   @tailrec
@@ -1413,7 +1413,7 @@ final class JsonReader private[jsoniter_scala](
         } else toDouble(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -1554,7 +1554,7 @@ final class JsonReader private[jsoniter_scala](
         } else toFloat(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -1645,7 +1645,7 @@ final class JsonReader private[jsoniter_scala](
           if (mark == 0) from -= newMark
           if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
           new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
-        } finally if (mark != 0 || oldMark < 0) mark = oldMark
+        } finally if (mark > oldMark) mark = oldMark
       }
     }
   }
@@ -1762,10 +1762,10 @@ final class JsonReader private[jsoniter_scala](
             } else toBigDecimal(buf, from, fracLimit, isNeg, scale)
               .add(toBigDecimal(buf, fracPos, limit, isNeg, scale + fracLen))
           } else toBigDecimal(buf, from, from + digits, isNeg, scale)
-        if (digits > mc.getPrecision) x = x.plus(mc)
+        if (mc.getPrecision < digits) x = x.plus(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
         new BigDecimal(x, mc)
-      } finally if (mark != 0 || oldMark < 0) mark = oldMark
+      } finally if (mark > oldMark) mark = oldMark
     }
   }
 
@@ -2016,10 +2016,10 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b == 'Z') nextByteOrError('"', head)
     else {
-      val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
+      val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
       var offsetTotal = parseOffsetTotalWithDoubleQuotes(head)
       if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-      if (offsetNeg) offsetTotal = -offsetTotal
+      if (isNeg) offsetTotal = -offsetTotal
       epochSecond -= offsetTotal
     }
     Instant.ofEpochSecond(epochSecond, nano)
@@ -2264,7 +2264,7 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(head)
         ZoneOffset.UTC
       } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
+        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
         nanoDigitWeight = -3
         var offsetTotal = parseOffsetHour(head) * 3600
         b = nextByte(head)
@@ -2277,7 +2277,7 @@ final class JsonReader private[jsoniter_scala](
             b = nextByte(head)
           }
         }
-        toZoneOffset(offsetNeg, offsetTotal)
+        toZoneOffset(isNeg, offsetTotal)
       }
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (b == '[') {
@@ -2378,8 +2378,8 @@ final class JsonReader private[jsoniter_scala](
     case 3 => "expected 'S or '.' or digit"
   }, pos)
 
-  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, yearNeg: Boolean, yearDigits: Int): Nothing = {
-    if (!yearNeg && yearDigits == 4) digitError(pos)
+  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, isNeg: Boolean, yearDigits: Int): Nothing = {
+    if (!isNeg && yearDigits == 4) digitError(pos)
     if (yearDigits == maxDigits) tokenError(t, pos)
     tokenOrDigitError(t, pos)
   }
