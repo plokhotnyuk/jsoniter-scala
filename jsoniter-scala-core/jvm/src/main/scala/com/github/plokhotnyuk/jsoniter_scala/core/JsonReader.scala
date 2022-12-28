@@ -1735,6 +1735,7 @@ final class JsonReader private[jsoniter_scala](
           }) leadingZeroError(pos - 1)
         } else {
           digits -= pos
+          var m, bs = 0L
           while ((pos + 7 < tail || {
             digits += pos
             pos = loadMore(pos)
@@ -1742,19 +1743,26 @@ final class JsonReader private[jsoniter_scala](
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-            ((bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L) == 0
+            bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+            m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
+            m == 0
           }) pos += 8
-          while ((pos < tail || {
-            digits += pos
-            pos = loadMore(pos)
-            digits -= pos
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) pos += 1
+          if (m == 0) {
+            while ((pos < tail || {
+              digits += pos
+              pos = loadMore(pos)
+              digits -= pos
+              buf = this.buf
+              pos < tail
+            }) && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos += 1
+          } else {
+            val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+            pos += offset
+            b = (bs >> (offset << 3)).toByte
+          }
           digits += pos
         }
         var fracLen, scale = 0
@@ -1762,6 +1770,7 @@ final class JsonReader private[jsoniter_scala](
         if (b == '.') {
           pos += 1
           fracLen -= pos
+          var m, bs = 0L
           while ((pos + 7 < tail || {
             fracLen += pos
             pos = loadMore(pos)
@@ -1769,19 +1778,26 @@ final class JsonReader private[jsoniter_scala](
             buf = this.buf
             pos + 7 < tail
           }) && {
-            val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-            ((bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L) == 0
+            bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+            m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
+            m == 0
           }) pos += 8
-          while ((pos < tail || {
-            fracLen += pos
-            pos = loadMore(pos)
-            fracLen -= pos
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) pos += 1
+          if (m == 0) {
+            while ((pos < tail || {
+              fracLen += pos
+              pos = loadMore(pos)
+              fracLen -= pos
+              buf = this.buf
+              pos < tail
+            }) && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos += 1
+          } else {
+            val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+            pos += offset
+            b = (bs >> (offset << 3)).toByte
+          }
           fracLen += pos
           digits += fracLen
           if (fracLen == 0) numberError(pos)
