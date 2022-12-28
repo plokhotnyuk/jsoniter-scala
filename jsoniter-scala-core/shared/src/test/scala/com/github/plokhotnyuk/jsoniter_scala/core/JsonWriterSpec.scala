@@ -519,7 +519,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(1.0f)
       check(-1.0f)
       check(1.0E7f)
-      check(java.lang.Float.intBitsToFloat(0x00800000)) // subnormal
+      check(java.lang.Float.intBitsToFloat(0x800000)) // subnormal
       check(9999999.0f)
       check(0.001f)
       check(0.0009999999f)
@@ -636,7 +636,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(-0.0)
       check(1.0)
       check(-1.0)
-      check(java.lang.Double.longBitsToDouble(0x0010000000000000L)) // subnormal
+      check(java.lang.Double.longBitsToDouble(0x10000000000000L)) // subnormal
       check(1.0E7)
       check(9999999.999999998)
       check(0.001)

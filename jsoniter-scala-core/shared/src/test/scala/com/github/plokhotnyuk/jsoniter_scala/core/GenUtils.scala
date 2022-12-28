@@ -124,10 +124,10 @@ object GenUtils {
   val genFiniteFloat: Gen[Float] = arbitrary[Float].filter(java.lang.Float.isFinite)
   val genNonFiniteDouble: Gen[Double] = Gen.oneOf(
     Gen.oneOf(java.lang.Double.NaN, java.lang.Double.NEGATIVE_INFINITY, java.lang.Double.POSITIVE_INFINITY),
-    Gen.choose(0L, 0x0007FFFFFFFFFFFFL).map(x => java.lang.Double.longBitsToDouble(x | 0x7FF8000000000000L))) // Double.NaN with error code
+    Gen.choose(0L, 0x7FFFFFFFFFFFFL).map(x => java.lang.Double.longBitsToDouble(x | 0x7FF8000000000000L))) // Double.NaN with error code
   val genNonFiniteFloat: Gen[Float] = Gen.oneOf(
     Gen.oneOf(java.lang.Float.NaN, java.lang.Float.NEGATIVE_INFINITY, java.lang.Float.POSITIVE_INFINITY),
-    Gen.choose(0, 0x003FFFFF).map(x => java.lang.Float.intBitsToFloat(x | 0x7FC00000))) // Float.NaN with error code
+    Gen.choose(0, 0x3FFFFF).map(x => java.lang.Float.intBitsToFloat(x | 0x7FC00000))) // Float.NaN with error code
 
   def isEscapedAscii(ch: Char): Boolean = ch < ' ' || ch == '\\' || ch == '"' || ch == '\u007f'
 

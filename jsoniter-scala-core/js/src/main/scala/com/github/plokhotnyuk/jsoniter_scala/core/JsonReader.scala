@@ -1440,14 +1440,14 @@ final class JsonReader private[jsoniter_scala](
         m2 >>>= truncatedBitNum
         e2 += truncatedBitNum
         if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (m2 == 0x001FFFFFFFFFFFFFL) {
-            m2 = 0x0010000000000000L
+          if (m2 == 0x1FFFFFFFFFFFFFL) {
+            m2 = 0x10000000000000L
             e2 += 1
           } else m2 += 1
         }
         if (e2 == -1074) m2
         else if (e2 >= 972) 0x7FF0000000000000L
-        else e2 + 1075L << 52 | m2 & 0x000FFFFFFFFFFFFFL
+        else e2 + 1075L << 52 | m2 & 0xFFFFFFFFFFFFFL
       } else toDouble(from, newMark, pos)
     }
 
@@ -1581,14 +1581,14 @@ final class JsonReader private[jsoniter_scala](
         if (savedBitNum > 0) mf = (m2 >>> truncatedBitNum).toInt
         e2 += truncatedBitNum
         if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mf == 0x00FFFFFF) {
-            mf = 0x00800000
+          if (mf == 0xFFFFFF) {
+            mf = 0x800000
             e2 += 1
           } else mf += 1
         }
         if (e2 == -149) mf
         else if (e2 >= 105) 0x7F800000
-        else e2 + 150 << 23 | mf & 0x007FFFFF
+        else e2 + 150 << 23 | mf & 0x7FFFFF
       } else toFloat(from, newMark, pos)
     }
 
@@ -2562,8 +2562,8 @@ final class JsonReader private[jsoniter_scala](
             val b4 = buf(pos + 3)
             val cp = b1 << 18 ^ b2 << 12 ^ b3 << 6 ^ b4 ^ 0x381F80 // 0x381F80 == 0xF0.toByte << 18 ^ 0x80.toByte << 12 ^ 0x80.toByte << 6 ^ 0x80.toByte
             if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80 ||
-              cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
-            charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
+              cp < 0x10000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
+            charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x10000 >>> 10)
             charBuf(i + 1) = ((cp & 0x3FF) + 0xDC00).toChar
             parseEncodedString(i + 2, lim, charBuf, pos + 4)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))

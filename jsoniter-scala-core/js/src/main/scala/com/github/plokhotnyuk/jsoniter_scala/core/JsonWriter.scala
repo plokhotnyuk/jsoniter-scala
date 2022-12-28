@@ -1025,7 +1025,7 @@ final class JsonWriter private[jsoniter_scala](
         if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
         val ch2 = s.charAt(from + 1)
         if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
-        val cp = (ch1 << 10) + (ch2 - 56613888) // -56613888 == 0x010000 - (0xD800 << 10) - 0xDC00
+        val cp = (ch1 << 10) + (ch2 - 56613888) // -56613888 == 0x10000 - (0xD800 << 10) - 0xDC00
         buf(pos) = (cp >> 18 | 0xF0).toByte
         buf(pos + 1) = (cp >> 12 & 0x3F | 0x80).toByte
         buf(pos + 2) = (cp >> 6 & 0x3F | 0x80).toByte
