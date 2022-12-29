@@ -1290,13 +1290,13 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeDuration(x: Duration): Unit = count = {
     var pos = ensureBufCapacity(40) // 40 == "PT-1111111111111111H-11M-11.111111111S".length + 2
     val buf = this.buf
+    val totalSecs = x.getSeconds
+    var nano = x.getNano
     buf(pos) = '"'
     buf(pos + 1) = 'P'
     buf(pos + 2) = 'T'
     pos += 3
-    val totalSecs = x.getSeconds
-    var nano = x.getNano
-    if ((totalSecs | nano) == 0) {
+    if (totalSecs == 0 && nano == 0) {
       buf(pos) = '0'
       buf(pos + 1) = 'S'
       pos += 2
@@ -1469,18 +1469,18 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writePeriod(x: Period): Unit = count = {
     var pos = ensureBufCapacity(39) // 39 == "P-2147483648Y-2147483648M-2147483648D".length + 2
     val buf = this.buf
+    val years = x.getYears
+    val months = x.getMonths
+    val days = x.getDays
     buf(pos) = '"'
     buf(pos + 1) = 'P'
     pos += 2
-    if (x eq Period.ZERO) {
+    if ((years | months | days) == 0) {
       buf(pos) = '0'
       buf(pos + 1) = 'D'
       pos += 2
     } else {
       val ds = digits
-      val years = x.getYears
-      val months = x.getMonths
-      val days = x.getDays
       if (years != 0) pos = writePeriod(years, pos, buf, ds, 'Y')
       if (months != 0) pos = writePeriod(months, pos, buf, ds, 'M')
       if (days != 0) pos = writePeriod(days, pos, buf, ds, 'D')
