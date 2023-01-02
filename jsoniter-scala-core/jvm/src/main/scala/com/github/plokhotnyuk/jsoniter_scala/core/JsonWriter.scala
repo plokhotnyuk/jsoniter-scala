@@ -1692,9 +1692,8 @@ final class JsonWriter private[jsoniter_scala](
         val vb = rop(g1, cb << h)
         val vbls = rop(g1, cb - cblShift << h) + outm1
         val vbrd = outm1 - rop(g1, cb + 2 << h)
-        val s = vb >> 2
-        if (s < 100 || {
-          dv = (s * 3435973837L >> 35).toInt // divide a positive int by 10
+        if (vb < 400 || {
+          dv = (vb * 107374183L >> 32).toInt // divide a positive int by 40
           val sp40 = dv * 40
           val upin = vbls - sp40
           (sp40 + vbrd + 40 ^ upin) >= 0 || {
@@ -1703,12 +1702,13 @@ final class JsonWriter private[jsoniter_scala](
             false
           }
         }) {
-          val s4 = s << 2
+          dv = vb >> 2
+          val s4 = vb & 0xFFFFFFFC
           val uin = vbls - s4
-          dv = (~{
+          dv += ~{
             if ((s4 + vbrd + 4 ^ uin) < 0) uin
-            else (vb & 0x3) + (s & 0x1) - 3
-          } >>> 31) + s
+            else (vb & 0x3) + (dv & 0x1) - 3
+          } >>> 31
           exp -= expShift
         }
       }
@@ -1811,9 +1811,8 @@ final class JsonWriter private[jsoniter_scala](
         val vb = rop(g1, g0, cb << h)
         val vbls = rop(g1, g0, cb - cblShift << h) + outm1
         val vbrd = outm1 - rop(g1, g0, cb + 2 << h)
-        val s = vb >> 2
-        if (s < 100 || {
-          dv = Math.multiplyHigh(s, 1844674407370955168L) // divide a positive long by 10
+        if (vb < 400 || {
+          dv = Math.multiplyHigh(vb, 461168601842738792L) // divide a positive long by 40
           val sp40 = dv * 40
           val upin = (vbls - sp40).toInt
           ((sp40 + vbrd).toInt + 40 ^ upin) >= 0 || {
@@ -1822,12 +1821,13 @@ final class JsonWriter private[jsoniter_scala](
             false
           }
         }) {
-          val s4 = s << 2
+          dv = vb >> 2
+          val s4 = vb & 0xFFFFFFFFFFFFFFFCL
           val uin = (vbls - s4).toInt
-          dv = (~{
+          dv += ~{
             if (((s4 + vbrd).toInt + 4 ^ uin) < 0) uin
-            else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
-          } >>> 31) + s
+            else (vb.toInt & 0x3) + (dv.toInt & 0x1) - 3
+          } >>> 31
           exp -= expShift
         }
       }
@@ -1887,18 +1887,25 @@ final class JsonWriter private[jsoniter_scala](
   // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
   private[this] def digitCount(q0: Long): Int = (offsets(java.lang.Long.numberOfLeadingZeros(q0)) + q0 >> 58).toInt
 
-  private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, pos, posLim, buf, ds)
-    else {
-      val q1 = Math.multiplyHigh(q0, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
-      val r1 = (q0 - q1 * 100000000).toInt
+  private[this] def writeSignificantFractionDigits(q: Long, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var q0 = q.toInt
+    var pos = p
+    var posLim = pl
+    if (q0 != q) {
+      val q1 = (Math.multiplyHigh(q, 6189700196426901375L) >>> 25).toInt // divide a positive long by 100000000
+      val r1 = (q - q1 * 100000000L).toInt
       val posm8 = pos - 8
-      if (r1 == 0) writeSignificantFractionDigits(q1.toInt, posm8, posLim, buf, ds)
-      else {
-        writeFractionDigits(q1.toInt, posm8, posLim, buf, ds)
-        writeSignificantFractionDigits(r1, pos, posm8, buf, ds)
+      if (r1 == 0) {
+        q0 = q1
+        pos = posm8
+      } else {
+        writeFractionDigits(q1, posm8, posLim, buf, ds)
+        q0 = r1
+        posLim = posm8
       }
     }
+    writeSignificantFractionDigits(q0, pos, posLim, buf, ds)
+  }
 
   private[this] def writeSignificantFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var q0 = q
