@@ -1450,13 +1450,14 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       var x: Double =
         if (e10 == 0 && m10 < 922337203685477580L) m10.toDouble
-        else if (m10 < 4503599627370496L && Math.abs(e10) <= 22) {
-          if (e10 < 0) m10 / pow10Doubles(-e10)
-          else m10 * pow10Doubles(e10)
-        } else if (m10 < 4503599627370496L && e10 > 22 && e10 + digits <= 38) {
+        else if (m10 < 4503599627370496L && e10 >= -22 && e10 <= 38 - digits) {
           val pow10 = pow10Doubles
-          val slop = 16 - digits
-          (m10 * pow10(slop)) * pow10(e10 - slop)
+          if (e10 < 0) m10 / pow10(-e10)
+          else if (e10 <= 22) m10 * pow10(e10)
+          else {
+            val slop = 16 - digits
+            (m10 * pow10(slop)) * pow10(e10 - slop)
+          }
         } else toDouble(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
