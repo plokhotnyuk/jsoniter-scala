@@ -129,8 +129,8 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
     crossScalaVersions := Seq("3.2.1", "2.13.10", "2.12.17"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.14.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.15" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.15" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.15.0" % Test
     )
   )
   .platformsSettings(JSPlatform, NativePlatform)(
@@ -248,7 +248,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "io.bullet" %%% "borer-derivation" % "1.8.0",
         "com.avsystem.commons" %%% "commons-core" % "2.7.7",
         "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.2",
-        "com.dslplatform" %% "dsl-json-scala" % "1.9.9"
+        "com.dslplatform" %% "dsl-json-scala" % "1.10.0"
       )
       case Some((3, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.10.1"
