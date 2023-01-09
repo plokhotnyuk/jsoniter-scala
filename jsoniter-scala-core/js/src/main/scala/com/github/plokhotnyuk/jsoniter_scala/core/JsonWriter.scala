@@ -1157,12 +1157,18 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -exp
         }
-      count =
-        if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
-        else {
-          val q1 = q0 / 100000000
-          write8Digits((q0 - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
-        }
+      var q = q0.toInt
+      var lastPos = pos
+      if (q0 == q) {
+        lastPos += digitCount(q)
+        count = lastPos
+      } else {
+        val q1 = q0 / 100000000
+        q = q1.toInt
+        lastPos += digitCount(q)
+        count = write8Digits((q0 - q1 * 100000000).toInt, lastPos, buf, ds)
+      }
+      writePositiveIntDigits(q, lastPos, buf, ds)
     }
   }
 
@@ -1314,12 +1320,18 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '-'
           pos += 1
         }
-        pos =
-          if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
-          else {
-            val q1 = hours / 100000000
-            write8Digits((hours - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
-          }
+        var q = hours.toInt
+        var lastPos = pos
+        if (hours == q) {
+          lastPos += digitCount(hours)
+          pos = lastPos
+        } else {
+          val q1 = hours / 100000000
+          q = q1.toInt
+          lastPos += digitCount(q1)
+          pos = write8Digits((hours - q1 * 100000000).toInt, lastPos, buf, ds)
+        }
+        writePositiveIntDigits(q, lastPos, buf, ds)
         buf(pos) = 'H'
         pos += 1
       }
@@ -1503,7 +1515,8 @@ final class JsonWriter private[jsoniter_scala](
         pos += 2
         147483648
       }
-    pos = writePositiveInt(q0, pos, buf, ds)
+    pos += digitCount(q0)
+    writePositiveIntDigits(q0, pos, buf, ds)
     buf(pos) = b
     pos + 1
   }
@@ -1595,16 +1608,22 @@ final class JsonWriter private[jsoniter_scala](
     if (year >= 0 && year < 10000) write4Digits(year, pos, buf, ds)
     else writeYearWithSign(year, pos, buf, ds)
 
-  private[this] def writeYearWithSign(year: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var posYear = year
+  private[this] def writeYearWithSign(year: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var q0 = year
+    var pos = p
     var b: Byte = '+'
-    if (posYear < 0) {
-      posYear = -posYear
+    if (q0 < 0) {
+      q0 = -q0
       b = '-'
     }
     buf(pos) = b
-    if (posYear < 10000) write4Digits(posYear, pos + 1, buf, ds)
-    else writePositiveInt(posYear, pos + 1, buf, ds)
+    pos += 1
+    if (q0 < 10000) write4Digits(q0, pos, buf, ds)
+    else {
+      pos += digitCount(q0)
+      writePositiveIntDigits(q0, pos, buf, ds)
+      pos
+    }
   }
 
   private[this] def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
@@ -1769,6 +1788,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeInt(x: Int): Unit = count = {
     var pos = ensureBufCapacity(11) // Int.MinValue.toString.length
     val buf = this.buf
+    val ds = digits
     val q0 =
       if (x >= 0) x
       else if (x != -2147483648) {
@@ -1781,7 +1801,9 @@ final class JsonWriter private[jsoniter_scala](
         pos += 2
         147483648
       }
-    writePositiveInt(q0, pos, buf, digits)
+    pos += digitCount(q0)
+    writePositiveIntDigits(q0, pos, buf, ds)
+    pos
   }
 
   private[this] def writeLong(x: Long): Unit = count = {
@@ -1800,23 +1822,28 @@ final class JsonWriter private[jsoniter_scala](
         pos += 2
         223372036854775808L
       }
-    if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
-    else {
+    var q = q0.toInt
+    var lastPos = pos
+    if (q0 == q) {
+      lastPos += digitCount(q)
+      pos = lastPos
+    } else {
       val q1 = q0 / 100000000
-      write8Digits((q0 - q1 * 100000000).toInt, {
-        if (q1.toInt == q1) writePositiveInt(q1.toInt, pos, buf, ds)
-        else {
+      pos = write8Digits((q0 - q1 * 100000000).toInt, {
+        q = q1.toInt
+        if (q1 == q) {
+          lastPos += digitCount(q)
+          lastPos
+        } else {
           val q2 = q1 / 100000000
-          write8Digits((q1 - q2 * 100000000).toInt, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds)
+          q = q2.toInt
+          lastPos += digitCount(q)
+          write8Digits((q1 - q2 * 100000000).toInt, lastPos, buf, ds)
         }
       }, buf, ds)
     }
-  }
-
-  private[this] def writePositiveInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val lastPos = digitCount(q0) + pos
-    writePositiveIntDigits(q0, lastPos - 1, buf, ds)
-    lastPos
+    writePositiveIntDigits(q, lastPos, buf, ds)
+    pos
   }
 
   // Based on the amazing work of Raffaello Giulietti
@@ -1929,7 +1956,7 @@ final class JsonWriter private[jsoniter_scala](
         lastPos
       } else {
         pos += len
-        writePositiveIntDigits(m10, pos - 1, buf, ds)
+        writePositiveIntDigits(m10, pos, buf, ds)
         buf(pos) = '.'
         buf(pos + 1) = '0'
         pos + 2
@@ -2056,7 +2083,7 @@ final class JsonWriter private[jsoniter_scala](
         lastPos
       } else {
         pos += len
-        writePositiveIntDigits(m10.toInt, pos - 1, buf, ds)
+        writePositiveIntDigits(m10.toInt, pos, buf, ds)
         buf(pos) = '.'
         buf(pos + 1) = '0'
         pos + 2
@@ -2170,19 +2197,21 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writePositiveIntDigits(q: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
     var q0 = q
     var pos = p
-    while (q0 >= 100) {
+    while ({
+      pos -= 2
+      q0 >= 100
+    }) {
       val q1 = q0 / 100
       val d = ds(q0 - q1 * 100)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
+      buf(pos) = d.toByte
+      buf(pos + 1) = (d >> 8).toByte
       q0 = q1
-      pos -= 2
     }
-    if (q0 < 10) buf(pos) = (q0 + '0').toByte
+    if (q0 < 10) buf(pos + 1) = (q0 + '0').toByte
     else {
       val d = ds(q0)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
+      buf(pos) = d.toByte
+      buf(pos + 1) = (d >> 8).toByte
     }
   }
 
