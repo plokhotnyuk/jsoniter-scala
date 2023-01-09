@@ -520,7 +520,7 @@ You will get the profile in the `jsoniter-scala-benchmark/jvm/target/jfr-reports
 To run benchmarks with recordings by [Async profiler](https://github.com/jvm-profiling-tools/async-profiler), extract
 binaries to `/opt/async-profiler` directory and use command like this:
 ```sh
-sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" --p size=128 -wi 5 -i 10 jsoniterScala'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" --p size=128 -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -wi 5 -i 10 jsoniterScala'
 ```
 Now you can open direct and reverse flame graphs in the `jsoniter-scala-benchmark/jvmtarget/async-reports` directory.
 
@@ -586,6 +586,10 @@ Then open the list of benchmarks in a browser:
 cd jsoniter-scala-benchmark/js
 open scala-3-fullopt.html
 ```
+
+Then select the batch mode with storing results in a `.zip` file.
+
+Use the following command for merging unpacked results from browsers: `jq -s '[.[][]]' firefox/*.json firefox.json` 
 
 The released version of Scala.js benchmarks is available [here](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fullopt.html).
 
