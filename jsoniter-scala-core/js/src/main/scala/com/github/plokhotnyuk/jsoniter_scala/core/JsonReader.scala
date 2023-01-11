@@ -2023,7 +2023,8 @@ final class JsonReader private[jsoniter_scala](
       if (isNeg) offsetTotal = -offsetTotal
       epochSecond -= offsetTotal
     }
-    Instant.ofEpochSecond(epochSecond, nano)
+    if (nano == 0) Instant.ofEpochSecond(epochSecond)
+    else Instant.ofEpochSecond(epochSecond, nano)
   }
 
   private[this] def parseEpochSecond(): Long = {

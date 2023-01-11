@@ -2142,7 +2142,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseInstant(): Instant = {
-    val epochDaySeconds = parseEpochDaySeconds()
+    var epochSecond = parseEpochDaySeconds()
     var pos = head
     var buf = this.buf
     var secondOfDay = 0L
@@ -2159,6 +2159,7 @@ final class JsonReader private[jsoniter_scala](
       pos = head
       buf = this.buf
     }
+    epochSecond += secondOfDay
     var nano = 0
     var nanoDigitWeight = -2
     if (pos >= tail) {
@@ -2219,9 +2220,10 @@ final class JsonReader private[jsoniter_scala](
       } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
       if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
       if (isNeg) offsetTotal = -offsetTotal
-      secondOfDay -= offsetTotal
+      epochSecond -= offsetTotal
     }
-    Instant.ofEpochSecond(epochDaySeconds + secondOfDay, nano)
+    if (nano == 0) Instant.ofEpochSecond(epochSecond)
+    else Instant.ofEpochSecond(epochSecond, nano)
   }
 
   private[this] def parseEpochDaySeconds(): Long = {
