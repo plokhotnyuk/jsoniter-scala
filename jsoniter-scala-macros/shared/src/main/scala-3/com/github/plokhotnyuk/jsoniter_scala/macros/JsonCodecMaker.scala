@@ -2683,7 +2683,7 @@ object JsonCodecMaker {
               val tx = x.asExprOf[IndexedSeq[t1]]
               '{
                 $out.writeArrayStart()
-                val l = $tx.size
+                val l = $tx.length
                 if (l <= 32) {
                   var i = 0
                   while (i < l) {

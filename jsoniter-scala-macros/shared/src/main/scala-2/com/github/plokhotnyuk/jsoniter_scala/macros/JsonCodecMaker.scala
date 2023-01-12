@@ -1909,7 +1909,7 @@ object JsonCodecMaker {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[IndexedSeq[_]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()
-              val l = x.size
+              val l = x.length
               if (l <= 32) {
                 var i = 0
                 while (i < l) {
