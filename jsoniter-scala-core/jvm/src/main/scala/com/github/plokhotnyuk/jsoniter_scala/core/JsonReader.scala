@@ -3413,7 +3413,7 @@ final class JsonReader private[jsoniter_scala](
     val maxCharBufSize = config.maxCharBufSize
     if (charBufLen == maxCharBufSize) tooLongStringError()
     charBufLen = (-1 >>> Integer.numberOfLeadingZeros(charBufLen | required)) + 1
-    if (Integer.compareUnsigned(charBufLen, maxCharBufSize) > 0) charBufLen = maxCharBufSize
+    if (charBufLen > maxCharBufSize || charBufLen < 0) charBufLen = maxCharBufSize
     charBuf = java.util.Arrays.copyOf(charBuf, charBufLen)
     charBufLen
   }
@@ -3519,7 +3519,7 @@ final class JsonReader private[jsoniter_scala](
     val maxBufSize = config.maxBufSize
     if (bufLen == maxBufSize) tooLongInputError()
     bufLen <<= 1
-    if (Integer.compareUnsigned(bufLen, maxBufSize) > 0) bufLen = maxBufSize
+    if (bufLen > maxBufSize || bufLen < 0) bufLen = maxBufSize
     buf = java.util.Arrays.copyOf(buf, bufLen)
   }
 
