@@ -2608,6 +2608,14 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkFloat("1.000000178813934326171875", ws)
         checkFloat("1.00000017881393432617187501", ws)
         checkFloat("36028797018963967.0", ws) // 2^n - 1 integer regression
+        checkFloat("1.17549435E-38", ws)
+        checkFloat("1.17549434E-38", ws)
+        checkFloat("1.17549433E-38", ws)
+        checkFloat("1.17549432E-38", ws)
+        checkFloat("1.17549431E-38", ws)
+        checkFloat("1.17549430E-38", ws)
+        checkFloat("1.17549429E-38", ws)
+        checkFloat("1.17549428E-38", ws)
       }
       forAll(arbitrary[Float], genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
       forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
@@ -2740,6 +2748,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkDouble("11417981541647680316116887983825362587765178369.0", ws)
         checkDouble("36028797018963967.0", ws) // 2^n - 1 integer regression
         checkDouble("11224326888185522059941158352151320185835795563643008", ws) // Regression after reducing an error range
+        checkDouble("2.2250738585072014E-308", ws)
+        checkDouble("2.2250738585072013E-308", ws)
+        checkDouble("2.2250738585072012E-308", ws)
+        checkDouble("2.2250738585072011E-308", ws)
       }
       forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))
       forAll(arbitrary[Float], genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))

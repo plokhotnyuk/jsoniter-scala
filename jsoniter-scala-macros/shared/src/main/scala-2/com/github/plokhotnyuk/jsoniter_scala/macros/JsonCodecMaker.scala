@@ -1173,7 +1173,7 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty")
         else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[::[_]]) q"null"
-        else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) q"_root_.scala.Nil"
+        else if (tpe <:< typeOf[List[_]] || tpe.typeSymbol == typeOf[Seq[_]].typeSymbol) q"_root_.scala.Nil"
         else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[immutable.LongMap[_]] ||
           tpe <:< typeOf[immutable.Seq[_]] || tpe <:< typeOf[Set[_]]) withNullValueFor(tpe) {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
@@ -1538,17 +1538,17 @@ object JsonCodecMaker {
                     ..$readVal
                     in.isNextToken(',')
                   }) ()
-                  if (in.isCurrentToken(']')) x.toList.asInstanceOf[_root_.scala.collection.immutable.::[$tpe1]]
+                  if (in.isCurrentToken(']')) x.result().asInstanceOf[_root_.scala.collection.immutable.::[$tpe1]]
                   else in.arrayEndOrCommaError()
                 }
               } else {
                 if (default ne null) in.readNullOrTokenError(default, '[')
                 else in.decodeError("expected non-empty JSON array")
               }"""
-        } else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[List[_]] || tpe.typeSymbol == typeOf[Seq[_]].typeSymbol) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1] }",
-            genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
+            genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.12.x
           val tpe1 = typeArg1(tpe)
@@ -1909,7 +1909,7 @@ object JsonCodecMaker {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[IndexedSeq[_]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()
-              val l = x.size
+              val l = x.length
               if (l <= 32) {
                 var i = 0
                 while (i < l) {

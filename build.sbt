@@ -46,6 +46,9 @@ lazy val commonSettings = Seq(
 )
 
 lazy val jsSettings = Seq(
+  libraryDependencies ++= Seq(
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
+  ),
   scalaJSLinkerConfig ~= {
     _.withSemantics({
       _.optimized
@@ -63,6 +66,9 @@ lazy val jsSettings = Seq(
 )
 
 lazy val nativeSettings = Seq(
+  libraryDependencies ++= Seq(
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
+  ),
   //nativeMode := "release-full", // Uncomment and test with these options
   //nativeLTO := "thin",
   coverageEnabled := false // FIXME: Unexpected linking error
@@ -123,8 +129,13 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
     crossScalaVersions := Seq("3.2.1", "2.13.10", "2.12.17"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.14.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.14" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.15" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.15.0" % Test
+    )
+  )
+  .platformsSettings(JSPlatform, NativePlatform)(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
     )
   )
 
@@ -132,21 +143,9 @@ lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(jsSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0"
-    )
-  )
 
 lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
   .settings(nativeSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0"
-    )
-  )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
@@ -161,7 +160,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
       )
       case _ => Seq()
     }) ++ Seq(
-      "org.scalatest" %%% "scalatest" % "3.2.14" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.15" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0" % Test
     )
   )
@@ -200,7 +199,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.3",
       "io.circe" %%% "circe-parser" % "0.14.3" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.14" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.15" % Test
     )
   )
 
@@ -233,7 +232,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-generic" % "0.14.3",
       "io.circe" %%% "circe-parser" % "0.14.3",
       "io.circe" %%% "circe-jawn" % "0.14.3",
-      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.17.0",
+      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.17.2",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M2",
       "org.json4s" %% "json4s-native" % "4.1.0-M2",
       "com.rallyhealth" %% "weepickle-v1" % "1.8.0",
@@ -244,12 +243,13 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.36",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.36",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.36",
-      "org.scalatest" %%% "scalatest" % "3.2.14" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.15" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
         "com.avsystem.commons" %%% "commons-core" % "2.7.7",
-        "com.dslplatform" %% "dsl-json-scala" % "1.9.9"
+        "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
+        "com.dslplatform" %% "dsl-json-scala" % "1.10.0"
       )
       case Some((3, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.10.1"

@@ -35,6 +35,7 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   }
 /* FIXME json4s.jackson throws org.json4s.MappingException: unknown error
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): ArraySeq[Boolean] = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -45,6 +46,7 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
 */
 /* FIXME json4s.native throws org.json4s.MappingException: unknown error
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): ArraySeq[Boolean] = {
     import org.json4s._
     import org.json4s.native.JsonMethods._

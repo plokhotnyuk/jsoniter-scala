@@ -1521,7 +1521,7 @@ object JsonCodecMaker {
         else if (tpe <:< TypeRepr.of[immutable.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty }.asExprOf[T])
         else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ collection.BitSet.empty }.asExprOf[T])
         else if (tpe <:< TypeRepr.of[::[_]]) '{ null }.asExprOf[T]
-        else if (tpe <:< TypeRepr.of[List[_]] || tpe =:= TypeRepr.of[Seq[_]]) '{ Nil }.asExprOf[T]
+        else if (tpe <:< TypeRepr.of[List[_]] || tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) '{ Nil }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[collection.SortedSet[_]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1))).asExprOf[T]
@@ -2231,13 +2231,20 @@ object JsonCodecMaker {
                 }
               }.asExprOf[T]
           }
-        } else if (tpe <:< TypeRepr.of[List[_]] || tpe =:= TypeRepr.of[Seq[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[List[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
               genReadCollection('{ new mutable.ListBuffer[t1] },
                 x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
-                default.asExprOf[List[t1]], x => '{ $x.toList }, in).asExprOf[T]
+                default.asExprOf[List[t1]], x => '{ $x.result() }, in).asExprOf[T]
+        } else if (tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
+          val tpe1 = typeArg1(tpe)
+          tpe1.asType match
+            case '[t1] =>
+              genReadCollection('{ new mutable.ListBuffer[t1] },
+                x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
+                default.asExprOf[Seq[t1]], x => '{ $x.result() }, in).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[mutable.ListBuffer[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -2676,7 +2683,7 @@ object JsonCodecMaker {
               val tx = x.asExprOf[IndexedSeq[t1]]
               '{
                 $out.writeArrayStart()
-                val l = $tx.size
+                val l = $tx.length
                 if (l <= 32) {
                   var i = 0
                   while (i < l) {

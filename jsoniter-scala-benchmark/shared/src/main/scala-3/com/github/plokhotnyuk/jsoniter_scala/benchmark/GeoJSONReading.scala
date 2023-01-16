@@ -37,6 +37,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
   }
 /* FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): GeoJSON = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -47,6 +48,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
 */
 /* FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): GeoJSON = {
     import org.json4s._
     import org.json4s.native.JsonMethods._

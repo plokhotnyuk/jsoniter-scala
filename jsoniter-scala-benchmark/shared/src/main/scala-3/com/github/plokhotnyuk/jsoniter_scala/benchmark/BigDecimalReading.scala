@@ -35,6 +35,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): BigDecimal = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -44,6 +45,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): BigDecimal = {
     import org.json4s._
     import org.json4s.native.JsonMethods._

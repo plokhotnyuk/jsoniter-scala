@@ -38,6 +38,7 @@ class NestedStructsReading extends NestedStructsBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): NestedStructs = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -47,6 +48,7 @@ class NestedStructsReading extends NestedStructsBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): NestedStructs = {
     import org.json4s._
     import org.json4s.native.JsonMethods._
@@ -115,10 +117,10 @@ class NestedStructsReading extends NestedStructsBenchmark {
 
   @Benchmark
   def zioJson(): NestedStructs = {
-     import zio.json._
-     import zio.json.JsonDecoder._
-     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-     import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json._
+    import zio.json.JsonDecoder._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+    import java.nio.charset.StandardCharsets.UTF_8
 
     new String(jsonBytes, UTF_8).fromJson[NestedStructs].fold(sys.error, identity)
   }

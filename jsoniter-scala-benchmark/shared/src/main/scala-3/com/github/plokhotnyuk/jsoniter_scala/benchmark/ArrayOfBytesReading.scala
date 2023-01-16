@@ -35,6 +35,7 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sJackson(): Array[Byte] = {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
@@ -44,6 +45,7 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   }
 
   @Benchmark
+  @annotation.nowarn
   def json4sNative(): Array[Byte] = {
     import org.json4s._
     import org.json4s.native.JsonMethods._

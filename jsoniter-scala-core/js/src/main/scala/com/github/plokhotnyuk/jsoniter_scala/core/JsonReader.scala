@@ -478,7 +478,7 @@ final class JsonReader private[jsoniter_scala](
       val x = new Array[Byte](len)
       System.arraycopy(buf, from, x, 0, len)
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   def readNullOrError[@sp A](default: A, msg: String): A =
@@ -828,7 +828,7 @@ final class JsonReader private[jsoniter_scala](
     val b3 = buf(pos + 2)
     val b4 = buf(pos + 3)
     val b5 = buf(pos + 4)
-    val yearNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
+    val isNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
     if (b2 < '0' || b2 > '9') digitError(pos + 1)
     if (b3 < '0' || b3 > '9') digitError(pos + 2)
     if (b4 < '0' || b4 > '9') digitError(pos + 3)
@@ -852,9 +852,9 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     head = pos + 1
-    if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-    if (b != t) yearError(t, maxDigits, pos, yearNeg, yearDigits)
-    if (yearNeg) year = -year
+    if (isNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+    if (b != t) yearError(t, maxDigits, pos, isNeg, yearDigits)
+    if (isNeg) year = -year
     if (year >= 0 && year < 10000) digitError(pos)
     year
   }
@@ -1064,7 +1064,7 @@ final class JsonReader private[jsoniter_scala](
       zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex)
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   @tailrec
@@ -1403,17 +1403,18 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       var x: Double =
         if (e10 == 0 && m10 < 922337203685477580L) m10.toDouble
-        else if (m10 < 4503599627370496L && Math.abs(e10) <= 22) {
-          if (e10 < 0) m10 / pow10Doubles(-e10)
-          else m10 * pow10Doubles(e10)
-        } else if (m10 < 4503599627370496L && e10 > 22 && e10 + digits <= 38) {
+        else if (m10 < 4503599627370496L && e10 >= -22 && e10 <= 38 - digits) {
           val pow10 = pow10Doubles
-          val slop = 16 - digits
-          (m10 * pow10(slop)) * pow10(e10 - slop)
+          if (e10 < 0) m10 / pow10(-e10)
+          else if (e10 <= 22) m10 * pow10(e10)
+          else {
+            val slop = 16 - digits
+            (m10 * pow10(slop)) * pow10(e10 - slop)
+          }
         } else toDouble(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -1440,20 +1441,22 @@ final class JsonReader private[jsoniter_scala](
         m2 >>>= truncatedBitNum
         e2 += truncatedBitNum
         if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (m2 == 0x001FFFFFFFFFFFFFL) {
-            m2 = 0x0010000000000000L
+          if (m2 == 0x1FFFFFFFFFFFFFL) {
+            m2 = 0x10000000000000L
             e2 += 1
           } else m2 += 1
         }
         if (e2 == -1074) m2
         else if (e2 >= 972) 0x7FF0000000000000L
-        else e2 + 1075L << 52 | m2 & 0x000FFFFFFFFFFFFFL
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Double.parseDouble(new String(buf, offset, pos - offset))
-      }
+        else e2 + 1075L << 52 | m2 & 0xFFFFFFFFFFFFFL
+      } else toDouble(from, newMark, pos)
     }
+
+  private[this] def toDouble(from: Int, newMark: Int, pos: Int): Double = {
+    var offset = from
+    if (mark == 0) offset -= newMark
+    java.lang.Double.parseDouble(new String(buf, offset, pos - offset))
+  }
 
   private[this] def parseFloat(isToken: Boolean): Float = {
     var b =
@@ -1552,7 +1555,7 @@ final class JsonReader private[jsoniter_scala](
         } else toFloat(m10, e10, from, newMark, pos)
       if (isNeg) x = -x
       x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    } finally if (mark > oldMark) mark = oldMark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -1579,20 +1582,22 @@ final class JsonReader private[jsoniter_scala](
         if (savedBitNum > 0) mf = (m2 >>> truncatedBitNum).toInt
         e2 += truncatedBitNum
         if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mf == 0x00FFFFFF) {
-            mf = 0x00800000
+          if (mf == 0xFFFFFF) {
+            mf = 0x800000
             e2 += 1
           } else mf += 1
         }
         if (e2 == -149) mf
         else if (e2 >= 105) 0x7F800000
-        else e2 + 150 << 23 | mf & 0x007FFFFF
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Float.parseFloat(new String(buf, offset, pos - offset))
-      }
+        else e2 + 150 << 23 | mf & 0x7FFFFF
+      } else toFloat(from, newMark, pos)
     }
+
+  private[this] def toFloat(from: Int, newMark: Int, pos: Int): Float = {
+    var offset = from
+    if (mark == 0) offset -= newMark
+    java.lang.Float.parseFloat(new String(buf, offset, pos - offset))
+  }
 
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
   // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
@@ -1641,7 +1646,7 @@ final class JsonReader private[jsoniter_scala](
           if (mark == 0) from -= newMark
           if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
           new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
-        } finally if (mark != 0 || oldMark < 0) mark = oldMark
+        } finally if (mark > oldMark) mark = oldMark
       }
     }
   }
@@ -1758,10 +1763,10 @@ final class JsonReader private[jsoniter_scala](
             } else toBigDecimal(buf, from, fracLimit, isNeg, scale)
               .add(toBigDecimal(buf, fracPos, limit, isNeg, scale + fracLen))
           } else toBigDecimal(buf, from, from + digits, isNeg, scale)
-        if (digits > mc.getPrecision) x = x.plus(mc)
+        if (mc.getPrecision < digits) x = x.plus(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
         new BigDecimal(x, mc)
-      } finally if (mark != 0 || oldMark < 0) mark = oldMark
+      } finally if (mark > oldMark) mark = oldMark
     }
   }
 
@@ -2012,13 +2017,14 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b == 'Z') nextByteOrError('"', head)
     else {
-      val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
+      val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
       var offsetTotal = parseOffsetTotalWithDoubleQuotes(head)
       if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-      if (offsetNeg) offsetTotal = -offsetTotal
+      if (isNeg) offsetTotal = -offsetTotal
       epochSecond -= offsetTotal
     }
-    Instant.ofEpochSecond(epochSecond, nano)
+    if (nano == 0) Instant.ofEpochSecond(epochSecond)
+    else Instant.ofEpochSecond(epochSecond, nano)
   }
 
   private[this] def parseEpochSecond(): Long = {
@@ -2260,7 +2266,7 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(head)
         ZoneOffset.UTC
       } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
+        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
         nanoDigitWeight = -3
         var offsetTotal = parseOffsetHour(head) * 3600
         b = nextByte(head)
@@ -2273,7 +2279,7 @@ final class JsonReader private[jsoniter_scala](
             b = nextByte(head)
           }
         }
-        toZoneOffset(offsetNeg, offsetTotal)
+        toZoneOffset(isNeg, offsetTotal)
       }
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (b == '[') {
@@ -2374,8 +2380,8 @@ final class JsonReader private[jsoniter_scala](
     case 3 => "expected 'S or '.' or digit"
   }, pos)
 
-  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, yearNeg: Boolean, yearDigits: Int): Nothing = {
-    if (!yearNeg && yearDigits == 4) digitError(pos)
+  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, isNeg: Boolean, yearDigits: Int): Nothing = {
+    if (!isNeg && yearDigits == 4) digitError(pos)
     if (yearDigits == maxDigits) tokenError(t, pos)
     tokenOrDigitError(t, pos)
   }
@@ -2558,8 +2564,8 @@ final class JsonReader private[jsoniter_scala](
             val b4 = buf(pos + 3)
             val cp = b1 << 18 ^ b2 << 12 ^ b3 << 6 ^ b4 ^ 0x381F80 // 0x381F80 == 0xF0.toByte << 18 ^ 0x80.toByte << 12 ^ 0x80.toByte << 6 ^ 0x80.toByte
             if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80 ||
-              cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
-            charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
+              cp < 0x10000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
+            charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x10000 >>> 10)
             charBuf(i + 1) = ((cp & 0x3FF) + 0xDC00).toChar
             parseEncodedString(i + 2, lim, charBuf, pos + 4)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
@@ -2914,7 +2920,7 @@ final class JsonReader private[jsoniter_scala](
     val maxCharBufSize = config.maxCharBufSize
     if (charBufLen == maxCharBufSize) tooLongStringError()
     charBufLen = (-1 >>> Integer.numberOfLeadingZeros(charBufLen | required)) + 1
-    if (Integer.compareUnsigned(charBufLen, maxCharBufSize) > 0) charBufLen = maxCharBufSize
+    if (charBufLen > maxCharBufSize || charBufLen < 0) charBufLen = maxCharBufSize
     charBuf = java.util.Arrays.copyOf(charBuf, charBufLen)
     charBufLen
   }
@@ -3020,7 +3026,7 @@ final class JsonReader private[jsoniter_scala](
     val maxBufSize = config.maxBufSize
     if (bufLen == maxBufSize) tooLongInputError()
     bufLen <<= 1
-    if (Integer.compareUnsigned(bufLen, maxBufSize) > 0) bufLen = maxBufSize
+    if (bufLen > maxBufSize || bufLen < 0) bufLen = maxBufSize
     buf = java.util.Arrays.copyOf(buf, bufLen)
   }
 

@@ -17,7 +17,7 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val doubleWriter: Writer[Double] = numWriter[Double]
   implicit val floatWriter: Writer[Float] = numWriter[Float]
   implicit val longWriter: Writer[Long] = numWriter[Long]
-  implicit lazy val adtReadWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
+  @annotation.nowarn implicit lazy val adtReadWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
   implicit val anyValsReadWriter: ReadWriter[AnyVals] = {
     implicit val v1: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
     implicit val v2: ReadWriter[ShortVal] = readwriter[Short].bimap(_.a, ShortVal.apply)
@@ -55,7 +55,7 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v3: ReadWriter[GoogleMapsAPI.Rows] = macroRW
     macroRW
   }
-  implicit lazy val nestedStructsReadWriter: ReadWriter[NestedStructs] = macroRW
+  @annotation.nowarn implicit lazy val nestedStructsReadWriter: ReadWriter[NestedStructs] = macroRW
   implicit val missingRequiredFieldsReadWriter: ReadWriter[MissingRequiredFields] = macroRW
   implicit val primitivesReadWriter: ReadWriter[Primitives] = macroRW
   implicit val durationReader: Reader[Duration] = strReader(Duration.parse)
