@@ -72,6 +72,15 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[Char] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Array[Char]]
+  }
+
+  @Benchmark
   def sprayJson(): Array[Char] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

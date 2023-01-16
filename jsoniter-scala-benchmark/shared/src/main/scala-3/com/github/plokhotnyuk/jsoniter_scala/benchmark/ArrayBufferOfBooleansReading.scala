@@ -71,6 +71,14 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): mutable.ArrayBuffer[Boolean] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[mutable.ArrayBuffer[Boolean]]
+  }
+
+  @Benchmark
   def sprayJson(): mutable.ArrayBuffer[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

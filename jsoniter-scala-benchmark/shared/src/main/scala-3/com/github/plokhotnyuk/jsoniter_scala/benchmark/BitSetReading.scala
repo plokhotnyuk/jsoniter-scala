@@ -65,4 +65,13 @@ class BitSetReading extends BitSetBenchmark {
 
     Json.parse(jsonBytes).as[BitSet](bitSetFormat)
   }
+
+  @Benchmark
+  def playJsonJsoniter(): BitSet = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[BitSet](bitSetFormat)
+  }
 }

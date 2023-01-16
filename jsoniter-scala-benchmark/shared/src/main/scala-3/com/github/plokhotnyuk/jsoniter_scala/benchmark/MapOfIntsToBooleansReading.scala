@@ -63,12 +63,29 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Map[Int, Boolean] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Map[Int, Boolean]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[Map[Int, Boolean]](jsonBytes)
   }
+/* FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
+  @Benchmark
+  def sprayJson(): Map[Int, Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+
+    JsonParser(jsonBytes).convertTo[Map[Int, Boolean]]
+  }
+*/
 /* FIXME: uPickle parses maps from JSON arrays only
   @Benchmark
   def uPickle(): Map[Int, Boolean] = {

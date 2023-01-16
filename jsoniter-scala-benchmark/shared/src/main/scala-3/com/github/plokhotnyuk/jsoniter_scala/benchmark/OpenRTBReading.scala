@@ -76,6 +76,15 @@ class OpenRTBReading extends OpenRTBBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): BidRequest = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[BidRequest]
+  }
+
+  @Benchmark
   def smithy4sJson(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

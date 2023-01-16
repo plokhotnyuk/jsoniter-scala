@@ -70,6 +70,14 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[Short] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[Array[Short]]
+  }
+
+  @Benchmark
   def smithy4sJson(): Array[Short] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

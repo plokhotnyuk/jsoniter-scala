@@ -65,4 +65,13 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
 
     Json.parse(jsonBytes).as[mutable.BitSet]
   }
+
+  @Benchmark
+  def playJsonJsoniter(): mutable.BitSet = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[play.api.libs.json.JsValue](jsonBytes).as[mutable.BitSet]
+  }
 }

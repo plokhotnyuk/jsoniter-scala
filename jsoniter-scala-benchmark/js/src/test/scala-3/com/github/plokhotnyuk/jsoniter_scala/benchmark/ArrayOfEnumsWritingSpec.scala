@@ -14,6 +14,7 @@ class ArrayOfEnumsWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       toString(b.playJson()) shouldBe b.jsonString
+      toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.zioJson()) shouldBe b.jsonString
     }

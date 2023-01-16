@@ -16,6 +16,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       //FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
       //benchmark.sprayJson() shouldBe benchmark.obj
@@ -34,6 +35,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())

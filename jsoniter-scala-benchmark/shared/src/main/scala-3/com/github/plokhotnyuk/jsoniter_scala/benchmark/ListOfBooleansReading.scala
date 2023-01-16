@@ -70,6 +70,14 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): List[Boolean] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[List[Boolean]]
+  }
+
+  @Benchmark
   def smithy4sJson(): List[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

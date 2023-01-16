@@ -74,6 +74,15 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): Array[Suit] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray(jsonBytes).as[Array[Suit]]
+  }
+
+  @Benchmark
   def sprayJson(): Array[Suit] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._

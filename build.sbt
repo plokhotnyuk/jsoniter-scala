@@ -227,6 +227,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "io.spray" %% "spray-json" % "1.3.6",
       "com.typesafe.play" %%% "play-json" % "2.10.0-RC7",
       "dev.zio" %%% "zio-json" % "0.4.2",
+      "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
       "com.lihaoyi" %%% "upickle" % "2.0.0",
       "io.circe" %%% "circe-generic" % "0.14.3",
       "io.circe" %%% "circe-parser" % "0.14.3",
@@ -247,7 +248,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       case Some((2, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
         "com.avsystem.commons" %%% "commons-core" % "2.7.7",
-        "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.2",
+        "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
         "com.dslplatform" %% "dsl-json-scala" % "1.10.0"
       )
       case Some((3, _)) => Seq(

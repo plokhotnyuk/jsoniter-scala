@@ -125,6 +125,20 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   }
 
   @Benchmark
+  def playJsonJsoniter(): String = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import play.api.libs.json.JsResultException
+
+    try {
+      readFromArray(jsonBytes).as[MissingRequiredFields](missingReqFieldsFormat).toString // toString shouldn't be called
+    } catch {
+      case ex: JsResultException => ex.getMessage
+    }
+  }
+
+  @Benchmark
   def smithy4sJson(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
