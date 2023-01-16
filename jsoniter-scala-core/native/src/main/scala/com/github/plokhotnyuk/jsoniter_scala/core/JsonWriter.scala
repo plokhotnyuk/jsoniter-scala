@@ -1207,47 +1207,79 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeInstant(x: Instant): Unit = count = {
+  private[this] def writeInstant(x: Instant): Unit = {
     val epochSecond = x.getEpochSecond
-    val epochDay = (NativeMath.multiplyHigh({
-      if (epochSecond >= 0) epochSecond
-      else epochSecond - 86399
-    }, 1749024623285053783L) >> 13) - (epochSecond >> 63) // (if (epochSecond >= 0) epochSecond else epochSecond - 86399) / 86400
-    var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
-    var adjustYear = 0
-    if (marchZeroDay < 0) { // adjust negative years to positive for calculation
-      val marchZeroDayP1 = marchZeroDay + 1
-      val adjust400YearCycles = ((marchZeroDayP1 * 7525902 >> 40) + (~marchZeroDayP1 >> 63)).toInt // ((marchZeroDay + 1) / 146097).toInt - 1 (146097 == number of days in a 400 year cycle)
-      adjustYear = adjust400YearCycles * 400
-      marchZeroDay -= adjust400YearCycles * 146097L // 146097 == number of days in a 400 year cycle
+    if (epochSecond < 0) writeBeforeEpochInstant(epochSecond, x.getNano)
+    else {
+      var epochDay = NativeMath.multiplyHigh(epochSecond, 1749024623285053783L) >> 13 // epochSecond / 86400
+      val secsOfDay = (epochSecond - epochDay * 86400).toInt
+      epochDay += 719468
+      var year = (NativeMath.multiplyHigh(epochDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((epochDay * 400 + 591) / 146097).toInt
+      var year1374389535 = year * 1374389535L
+      var year365 = year * 365L
+      var century = (year1374389535 >> 37).toInt
+      var day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
+      if (day < 0) {
+        year1374389535 -= 1374389535L
+        year365 -= 365L
+        year -= 1
+        century = (year1374389535 >> 37).toInt
+        day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
+      }
+      var month = day * 17135 + 6854 >> 19 // (day * 5 + 2) / 153
+      year += month * 3277 >> 15 // month / 10
+      day -= month * 1002762 - 16383 >> 15 // (month * 306 + 5) / 10 + 1
+      month += 3
+      if (month > 12) month -= 12
+      writeInstant(year, month, day, secsOfDay, x.getNano)
     }
-    var year = { // ((marchZeroDay * 400 + 591) / 146097).toInt
-      val pa = marchZeroDay * 400 + 591
+  }
+
+  private[this] def writeBeforeEpochInstant(epochSecond: Long, nano: Int): Unit = {
+    var epochDay = (NativeMath.multiplyHigh(epochSecond - 86399, 1749024623285053783L) >> 13) + 1 // (epochSecond - 86399) / 86400
+    val secsOfDay = (epochSecond - epochDay * 86400).toInt
+    epochDay += 719468
+    val adjust400YearCycles = ((epochDay + 1) * 7525902 >> 40).toInt // ((epochDay + 1) / 146097).toInt - 1
+    epochDay -= adjust400YearCycles * 146097L
+    var year = { // ((epochDay * 400 + 591) / 146097).toInt
+      val pa = epochDay * 400 + 591
       ((NativeMath.multiplyHigh(pa, 4137408090565272301L) >> 15) + (pa >> 63)).toInt
     }
-    var marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
-    if (marchDayOfYear < 0) { // fix year estimate
+    var year1374389535 = year * 1374389535L
+    var year365 = year * 365L
+    var century = (year1374389535 >> 37).toInt
+    var day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
+    if (day < 0) {
+      year1374389535 -= 1374389535L
+      year365 -= 365L
       year -= 1
-      marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
+      century = (year1374389535 >> 37).toInt
+      day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
     }
-    val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
-    year += (marchMonth * 3277 >> 15) + adjustYear // year += marchMonth / 10 + adjustYear (reset any negative year and convert march-based values back to january-based)
-    val month = marchMonth +
-      (if (marchMonth < 10) 3
-      else -9)
-    val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    var month = day * 17135 + 6854 >> 19 // (day * 5 + 2) / 153
+    year += (month * 3277 >> 15) + adjust400YearCycles * 400 // month / 10 + adjust400YearCycles * 400
+    day -= month * 1002762 - 16383 >> 15 // (month * 306 + 5) / 10 + 1
+    month += 3
+    if (month > 12) month -= 12
+    writeInstant(year, month, day, secsOfDay, nano)
+  }
+
+  private[this] def writeInstant(year: Int, month: Int, day: Int, secsOfDay: Int, nano: Int): Unit = count = {
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalTime((epochSecond - epochDay * 86400).toInt, x.getNano, writeLocalDateWithT(year, month, day, pos + 1, buf, ds), buf, ds)
+    pos = writeYear(year, pos + 1, buf, ds)
+    ByteArrayAccess.setLong(buf, pos, ds(month) << 8 | ds(day).toLong << 32 | 0x5400002D00002DL)
+    pos += 7
+    val y1 = secsOfDay * 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y2 = (y1 & 0x7FFFFFF) * 15
+    val y3 = (y2 & 0x1FFFFFF) * 15
+    ByteArrayAccess.setLong(buf, pos, ds(y1 >>> 27) | ds(y2 >> 25).toLong << 24 | ds(y3 >> 23).toLong << 48 | 0x3A00003A0000L)
+    pos += 8
+    if (nano != 0) pos = writeNanos(nano, pos, buf, ds)
     ByteArrayAccess.setShort(buf, pos, 0x225A)
     pos + 2
-  }
-
-  private[this] def toMarchDayOfYear(marchZeroDay: Long, year: Int): Int = {
-    val century = (year * 1374389535L >> 37).toInt // divide an int by 100 (the sign correction is not needed)
-    (marchZeroDay - year * 365L).toInt - (year >> 2) + century - (century >> 2)
   }
 
   private[this] def writeLocalDate(x: LocalDate): Unit = count = {
@@ -1430,14 +1462,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 7
   }
 
-  private[this] def writeLocalDateWithT(year: Int, month: Int, day: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val pos = writeYear(year, p, buf, ds)
-    val d1 = ds(month) << 8
-    val d2 = ds(day).toLong << 32
-    ByteArrayAccess.setLong(buf, pos, d1 | d2 | 0x5400002D00002DL)
-    pos + 7
-  }
-
   private[this] def writeYear(year: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (year >= 0 && year < 10000) write4Digits(year, pos, buf, ds)
     else writeYearWithSign(year, pos, buf, ds)
@@ -1474,18 +1498,6 @@ final class JsonWriter private[jsoniter_scala](
       if (nano == 0) pos + 8
       else writeNanos(nano, pos + 8, buf, ds)
     }
-  }
-
-  private[this] def writeLocalTime(secsOfDay: Int, nano: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val y1 = secsOfDay * 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    val y2 = (y1 & 0x7FFFFFF) * 15
-    val y3 = (y2 & 0x1FFFFFF) * 15
-    val d1 = ds(y1 >>> 27) | 0x3A00003A0000L
-    val d2 = ds(y2 >> 25).toLong << 24
-    val d3 = ds(y3 >> 23).toLong << 48
-    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
-    if (nano == 0) pos + 8
-    else writeNanos(nano, pos + 8, buf, ds)
   }
 
   private[this] def writeNanos(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {

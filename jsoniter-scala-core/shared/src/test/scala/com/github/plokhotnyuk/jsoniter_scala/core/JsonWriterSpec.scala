@@ -110,6 +110,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       check(Instant.MAX)
       check(Instant.MIN)
+      check(Instant.EPOCH)
+      check(Instant.parse("1969-01-01T00:00:00Z"))
+      check(Instant.parse("1969-12-31T00:00:00Z"))
+      check(Instant.parse("1969-12-31T23:59:59Z"))
       forAll(genInstant, minSuccessful(10000))(check)
     }
   }
