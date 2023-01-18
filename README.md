@@ -7,6 +7,8 @@
 
 Scala macros for compile-time generation of safe and ultra-fast JSON codecs.
 
+![image](https://user-images.githubusercontent.com/890289/213166187-b63bbd17-baf0-435a-9c02-4b9737079323.png)
+
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
 serialization performance of jsoniter-scala with: [Borer](https://github.com/sirthias/borer), 
 [Circe](https://github.com/circe/circe), 
