@@ -1370,7 +1370,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  private[this] def writeInstant(x: Instant): Unit = count = {
+  private[this] def writeInstant(x: Instant): Unit = {
     val epochSecond = x.getEpochSecond
     var epochDay =
       (if (epochSecond >= 0) epochSecond
@@ -1393,10 +1393,14 @@ final class JsonWriter private[jsoniter_scala](
       day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
     }
     var month = day * 17135 + 6854 >> 19 // (day * 5 + 2) / 153
-    year += (month * 3277 >> 15) + adjust400YearCycles * 400 // month / 10 + adjust400YearCycles * 400
     day -= month * 1002762 - 16383 >> 15 // (month * 306 + 5) / 10 + 1
-    month += 3
-    if (month > 12) month -= 12
+    val m = 9 - month >> 4
+    year += adjust400YearCycles * 400 - m
+    month += m & -9 | 3
+    writeInstant(year, month, day, secsOfDay, x.getNano)
+  }
+
+  private[this] def writeInstant(year: Int, month: Int, day: Int, secsOfDay: Int, nano: Int): Unit = count = {
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
@@ -1414,7 +1418,6 @@ final class JsonWriter private[jsoniter_scala](
     pos = write2Digits(y >> 25, pos + 1, buf, ds)
     buf(pos) = ':'
     pos = write2Digits(((y & 0x1FFFFFF) * 15) >> 23, pos + 1, buf, ds)
-    val nano = x.getNano
     if (nano != 0) pos = writeNanos(nano, pos, buf, ds)
     buf(pos) = 'Z'
     buf(pos + 1) = '"'

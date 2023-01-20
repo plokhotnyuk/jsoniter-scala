@@ -1215,22 +1215,22 @@ final class JsonWriter private[jsoniter_scala](
       val secsOfDay = (epochSecond - epochDay * 86400).toInt
       epochDay += 719468
       var year = (Math.multiplyHigh(epochDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((epochDay * 400 + 591) / 146097).toInt
-      var year1374389535 = year * 1374389535L
       var year365 = year * 365L
+      var year1374389535 = year * 1374389535L
       var century = (year1374389535 >> 37).toInt
       var day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
       if (day < 0) {
-        year1374389535 -= 1374389535L
         year365 -= 365L
+        year1374389535 -= 1374389535L
         year -= 1
         century = (year1374389535 >> 37).toInt
         day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
       }
       var month = day * 17135 + 6854 >> 19 // (day * 5 + 2) / 153
-      year += month * 3277 >> 15 // month / 10
       day -= month * 1002762 - 16383 >> 15 // (month * 306 + 5) / 10 + 1
-      month += 3
-      if (month > 12) month -= 12
+      val m = 9 - month >> 4
+      year -= m
+      month += m & -9 | 3
       writeInstant(year, month, day, secsOfDay, x.getNano)
     }
   }
@@ -1245,22 +1245,22 @@ final class JsonWriter private[jsoniter_scala](
       val pa = epochDay * 400 + 591
       ((Math.multiplyHigh(pa, 4137408090565272301L) >> 15) + (pa >> 63)).toInt
     }
-    var year1374389535 = year * 1374389535L
     var year365 = year * 365L
+    var year1374389535 = year * 1374389535L
     var century = (year1374389535 >> 37).toInt
     var day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
     if (day < 0) {
-      year1374389535 -= 1374389535L
       year365 -= 365L
+      year1374389535 -= 1374389535L
       year -= 1
       century = (year1374389535 >> 37).toInt
       day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
     }
     var month = day * 17135 + 6854 >> 19 // (day * 5 + 2) / 153
-    year += (month * 3277 >> 15) + adjust400YearCycles * 400 // month / 10 + adjust400YearCycles * 400
     day -= month * 1002762 - 16383 >> 15 // (month * 306 + 5) / 10 + 1
-    month += 3
-    if (month > 12) month -= 12
+    val m = 9 - month >> 4
+    year += adjust400YearCycles * 400 - m
+    month += m & -9 | 3
     writeInstant(year, month, day, secsOfDay, nano)
   }
 
