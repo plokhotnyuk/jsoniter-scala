@@ -10,15 +10,16 @@ Scala macros for compile-time generation of safe and ultra-fast JSON codecs.
 ![image](https://user-images.githubusercontent.com/890289/213166187-b63bbd17-baf0-435a-9c02-4b9737079323.png)
 
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
-serialization performance of jsoniter-scala with: [Borer](https://github.com/sirthias/borer), 
-[Circe](https://github.com/circe/circe), 
-[Circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
+serialization performance of jsoniter-scala with: [borer](https://github.com/sirthias/borer), 
+[circe](https://github.com/circe/circe), 
+[circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
 [jackson-module-scala](https://github.com/FasterXML/jackson-module-scala),
-[json4s.jackson](https://github.com/json4s/json4s/tree/master/jackson),
-[json4s.native](https://github.com/json4s/json4s/tree/master/native),
-[Play-JSON](https://github.com/playframework/play-json),
+[json4s-jackson](https://github.com/json4s/json4s/tree/master/jackson),
+[json4s-native](https://github.com/json4s/json4s/tree/master/native),
+[play-json](https://github.com/playframework/play-json),
+[play-json with jsoniter-scala booster](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
-[Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
+[spray-json](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
 (max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 22.04, and latest versions of Azul Zulu 11/17, OpenJDK 21-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
