@@ -253,19 +253,25 @@ given CodecMakerConfig.PrintCodec with {}
 Full code of this `How to` section see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/examples/Example01.scala)
 directory.
 
-Also, you can use the following on-line services to generate an initial version of your data structures from JSON 
+You can use the following on-line services to generate an initial version of your data structures from JSON 
 samples: 
 - [json2caseclass](https://json2caseclass.cleverapps.io/)
 - [json-to-scala-case-class](https://transform.now.sh/json-to-scala-case-class/)
-- [json2classes](https://chadselph.github.io/json2classes/). 
+- [json2classes](https://chadselph.github.io/json2classes/).
 
-For more use cases, please, check out tests:
+Also, if you have JSON Schema the following on-line service can generate corresponding data structures for you:
+- [json-schema-to-case-class](https://cchandurkar.github.io/json-schema-to-case-class/)
+
+And the following library can generate JSON Schema for your existing data structures:
+- [scala-jsonschema](https://github.com/andyglow/scala-jsonschema)
+
+For more use cases of jsoniter-scala, please, check out tests:
 - [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
 - [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
 - [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
 - [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
 
-Samples for integration with different web frameworks and HTTP servers:
+Samples for its integration with different web frameworks and HTTP servers:
 - [akka-http](https://github.com/hseeberger/akka-http-json/blob/master/akka-http-jsoniter-scala/src/test/scala/de/heikoseeberger/akkahttpjsoniterscala/ExampleApp.scala)
 - [blaze](https://github.com/TechEmpower/FrameworkBenchmarks/blob/b3a39dcd95b207cd2509d7bbf873a0dfb91097f5/frameworks/Scala/blaze/src/main/scala/Main.scala)
 - [colossus](https://github.com/TechEmpower/FrameworkBenchmarks/blob/b3a39dcd95b207cd2509d7bbf873a0dfb91097f5/frameworks/Scala/colossus/src/main/scala/example/Main.scala)
