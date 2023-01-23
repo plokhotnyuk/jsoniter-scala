@@ -2142,7 +2142,9 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseInstant(): Instant = {
-    var epochSecond = parseEpochDaySeconds()
+    val year = parseInstantYearWithDash(head)
+    val monthDay = parseMonthDayWithT(year, head)
+    var epochSecond = epochDay(year, monthDay & 0xFF, monthDay >> 24) * 86400 // 86400 == seconds per day
     var pos = head
     var buf = this.buf
     var secondOfDay = 0L
@@ -2224,12 +2226,6 @@ final class JsonReader private[jsoniter_scala](
     }
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
     else Instant.ofEpochSecond(epochSecond, nano)
-  }
-
-  private[this] def parseEpochDaySeconds(): Long = {
-    val year = parseInstantYearWithDash(head)
-    val monthDay = parseMonthDayWithT(year, head)
-    epochDay(year, monthDay & 0xFF, monthDay >> 24) * 86400 // 86400 == seconds per day
   }
 
   private[this] def parseSecondOfDay(pos: Int): Int =
