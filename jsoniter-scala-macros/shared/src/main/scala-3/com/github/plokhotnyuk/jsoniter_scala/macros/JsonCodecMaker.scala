@@ -1553,7 +1553,8 @@ object JsonCodecMaker {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
             case '[t1] => getClassInfo(tpe).genNew(genNullValue[t1](tpe1 :: types).asTerm).asExprOf[T]
-        } else '{ null.asInstanceOf[T] }.asExprOf[T]
+        } else if (TypeRepr.of[Null] <:< tpe) '{ null }.asExprOf[T]
+        else '{ null.asInstanceOf[T] }.asExprOf[T]
 
       case class ReadDiscriminator(valDef: ValDef) {
         def skip(in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[Unit] = '{
