@@ -1372,32 +1372,31 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeInstant(x: Instant): Unit = {
     val epochSecond = x.getEpochSecond
-    var epochDay =
+    val epochDay =
       (if (epochSecond >= 0) epochSecond
       else epochSecond - 86399) / 86400
-    val secsOfDay = (epochSecond - epochDay * 86400).toInt
-    epochDay += 719468
+    var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjust400YearCycles = 0
-    if (epochDay < 0) {
-      adjust400YearCycles = ((epochDay + 1) / 146097).toInt - 1
-      epochDay -= adjust400YearCycles * 146097L
+    if (marchZeroDay < 0) {
+      adjust400YearCycles = ((marchZeroDay + 1) / 146097).toInt - 1
+      marchZeroDay -= adjust400YearCycles * 146097L
     }
-    var year = ((epochDay * 400 + 591) / 146097).toInt
+    var year = ((marchZeroDay * 400 + 591) / 146097).toInt
     var year365 = year * 365L
     var century = year / 100
-    var day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
-    if (day < 0) {
+    var marchDayOfYear = (marchZeroDay - year365).toInt - (year >> 2) + century - (century >> 2)
+    if (marchDayOfYear < 0) {
       year365 -= 365
       year -= 1
       century = year / 100
-      day = (epochDay - year365).toInt - (year >> 2) + century - (century >> 2)
+      marchDayOfYear = (marchZeroDay - year365).toInt - (year >> 2) + century - (century >> 2)
     }
-    var month = day * 17135 + 6854 >> 19 // (day * 5 + 2) / 153
-    day -= month * 1002762 - 16383 >> 15 // (month * 306 + 5) / 10 + 1
-    val m = 9 - month >> 4
+    val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
+    val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val m = 9 - marchMonth >> 4
+    val month = (m & -9 | 3) + marchMonth
     year += adjust400YearCycles * 400 - m
-    month += m & -9 | 3
-    writeInstant(year, month, day, secsOfDay, x.getNano)
+    writeInstant(year, month, day, (epochSecond - epochDay * 86400).toInt, x.getNano)
   }
 
   private[this] def writeInstant(year: Int, month: Int, day: Int, secsOfDay: Int, nano: Int): Unit = count = {
