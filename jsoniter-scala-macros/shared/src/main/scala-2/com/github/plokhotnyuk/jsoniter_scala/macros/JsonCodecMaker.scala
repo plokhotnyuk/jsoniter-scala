@@ -1211,17 +1211,17 @@ object JsonCodecMaker {
           else names :+ n
         })
         val required: Set[String] = classInfo.fields.collect {
-          case f if !(f.symbol.isParamWithDefault || isOption(f.resolvedTpe, types) ||
-            (isCollection(f.resolvedTpe) && !cfg.requireCollectionFields)) => f.mappedName
+          case fieldInfo if !(fieldInfo.symbol.isParamWithDefault || isOption(fieldInfo.resolvedTpe, types) ||
+            (isCollection(fieldInfo.resolvedTpe) && !cfg.requireCollectionFields)) => fieldInfo.mappedName
         }.toSet
         val paramVarNum = classInfo.fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
-        val checkAndResetFieldPresenceFlags = classInfo.fields.zipWithIndex.map { case (f, i) =>
+        val checkAndResetFieldPresenceFlags = classInfo.fields.zipWithIndex.map { case (fieldInfo, i) =>
           val n = paramVarNames(i >> 5)
           val m = 1 << i
-          (f.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
+          (fieldInfo.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
         }.toMap
         val paramVars =
           paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
@@ -1229,8 +1229,8 @@ object JsonCodecMaker {
           if (required.isEmpty) Nil
           else {
             val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
-            val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
-              if (required(f.mappedName)) acc | 1 << i
+            val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (fieldInfo, i)) =>
+              if (required(fieldInfo.mappedName)) acc | 1 << i
               else acc
             })
             paramVarNames.zipWithIndex.map { case (n, i) =>
@@ -1248,9 +1248,10 @@ object JsonCodecMaker {
               }
             }
           }
-        val construct = q"new $tpe(...${classInfo.paramLists.map(_.map(f => q"${f.symbol.name} = ${f.tmpName}"))})"
-        val readVars = classInfo.fields.map { f =>
-          q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(genNullValue(f.resolvedTpe :: types))}"
+        val construct = q"new $tpe(...${classInfo.paramLists.map(_.map(fieldInfo => q"${fieldInfo.symbol.name} = ${fieldInfo.tmpName}"))})"
+        val readVars = classInfo.fields.map { fieldInfo =>
+          val fTpe = fieldInfo.resolvedTpe
+          q"var ${fieldInfo.tmpName}: $fTpe = ${fieldInfo.defaultValue.getOrElse(genNullValue(fTpe :: types))}"
         }
         val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
           if (discriminator.isEmpty) classInfo.fields
@@ -1258,21 +1259,22 @@ object JsonCodecMaker {
         }
 
         def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
-          fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
+          fs.foldRight(unexpectedFieldHandler) { case (fieldInfo, acc) =>
             val readValue =
-              if (discriminator.nonEmpty && cfg.discriminatorFieldName.contains(f.mappedName)) discriminator
+              if (discriminator.nonEmpty && cfg.discriminatorFieldName.contains(fieldInfo.mappedName)) discriminator
               else {
-                q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
-                    ${f.tmpName} = ${genReadVal(f.resolvedTpe :: types, q"${f.tmpName}", f.isStringified, EmptyTree)}"""
+                val fTpe = fieldInfo.resolvedTpe
+                q"""${checkAndResetFieldPresenceFlags(fieldInfo.mappedName)}
+                    ${fieldInfo.tmpName} = ${genReadVal(fTpe :: types, q"${fieldInfo.tmpName}", fieldInfo.isStringified, EmptyTree)}"""
               }
-            q"if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue else $acc"
+            q"if (in.isCharBufEqualsTo(l, ${fieldInfo.mappedName})) $readValue else $acc"
           }
 
         val readFieldsBlock =
           if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
             genReadCollisions(readFields)
           } else {
-            val hashCode = (f: FieldInfo) => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
+            val hashCode = (fieldInfo: FieldInfo) => JsonReader.toHashCode(fieldInfo.mappedName.toCharArray, fieldInfo.mappedName.length)
             val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
               cq"$hash => ${genReadCollisions(fs)}"
             } :+ cq"_ => $unexpectedFieldHandler"
@@ -1722,61 +1724,62 @@ object JsonCodecMaker {
       def genWriteNonAbstractScalaClass(types: List[Type], discriminator: Tree): Tree = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
-        val writeFields = classInfo.fields.map { f =>
-          (if (cfg.transientDefault) f.defaultValue
+        val writeFields = classInfo.fields.map { fieldInfo =>
+          val fTpe = fieldInfo.resolvedTpe
+          (if (cfg.transientDefault) fieldInfo.defaultValue
           else None) match {
             case Some(d) =>
-              if (f.resolvedTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
-                q"""val v = x.${f.getter}
+              if (fTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
+                q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty && v != $d) {
-                      ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (isOption(f.resolvedTpe, types) && cfg.transientNone) {
-                q"""val v = x.${f.getter}
+              } else if (isOption(fTpe, types) && cfg.transientNone) {
+                q"""val v = x.${fieldInfo.getter}
                     if ((v ne _root_.scala.None) && v != $d) {
-                      ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe) :: f.resolvedTpe :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v.get", typeArg1(fTpe) :: fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
+              } else if (fTpe <:< typeOf[Array[_]]) {
                 val cond =
                   if (cfg.transientEmpty) {
-                    q"v.length > 0 && !${withEqualsFor(f.resolvedTpe, q"v", d)(genArrayEquals(f.resolvedTpe))}"
-                  } else q"!${withEqualsFor(f.resolvedTpe, q"v", d)(genArrayEquals(f.resolvedTpe))}"
-                q"""val v = x.${f.getter}
+                    q"v.length > 0 && !${withEqualsFor(fTpe, q"v", d)(genArrayEquals(fTpe))}"
+                  } else q"!${withEqualsFor(fTpe, q"v", d)(genArrayEquals(fTpe))}"
+                q"""val v = x.${fieldInfo.getter}
                     if ($cond) {
-                      ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else {
-                q"""val v = x.${f.getter}
+                q"""val v = x.${fieldInfo.getter}
                     if (v != $d) {
-                      ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
               }
             case None =>
-              if (f.resolvedTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
-                q"""val v = x.${f.getter}
+              if (fTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
+                q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty) {
-                      ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (isOption(f.resolvedTpe, types) && cfg.transientNone) {
-                q"""val v = x.${f.getter}
+              } else if (isOption(fTpe, types) && cfg.transientNone) {
+                q"""val v = x.${fieldInfo.getter}
                     if (v ne _root_.scala.None) {
-                      ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe) :: f.resolvedTpe :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v.get", typeArg1(fTpe) :: fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (f.resolvedTpe <:< typeOf[Array[_]] && cfg.transientEmpty) {
-                q"""val v = x.${f.getter}
+              } else if (fTpe <:< typeOf[Array[_]] && cfg.transientEmpty) {
+                q"""val v = x.${fieldInfo.getter}
                     if (v.length > 0) {
-                      ..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified, EmptyTree)}
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else {
-                q"""..${genWriteConstantKey(f.mappedName)}
-                    ..${genWriteVal(q"x.${f.getter}", f.resolvedTpe :: types, f.isStringified, EmptyTree)}"""
+                q"""..${genWriteConstantKey(fieldInfo.mappedName)}
+                    ..${genWriteVal(q"x.${fieldInfo.getter}", fTpe :: types, fieldInfo.isStringified, EmptyTree)}"""
               }
           }
         }

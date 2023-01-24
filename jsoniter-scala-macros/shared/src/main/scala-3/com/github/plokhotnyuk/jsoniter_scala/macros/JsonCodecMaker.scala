@@ -241,10 +241,10 @@ object CodecMakerConfig extends CodecMakerConfig(
 
   /**
     * Use to enable printing of codec during compilation:
-    *{{{
-    *given CodecMakerConfig.PrintCodec with {}
-    *val codec = JsonCodecMaker.make[MyClass]
-    *}}}
+    * {{{
+    * given CodecMakerConfig.PrintCodec with {}
+    * val codec = JsonCodecMaker.make[MyClass]
+    * }}}
     **/
   class PrintCodec
 
@@ -1683,8 +1683,8 @@ object JsonCodecMaker {
           else names
         })
         val required = classInfo.fields.collect {
-          case f if !(f.symbol.flags.is(Flags.HasDefault) || isOption(f.resolvedTpe, types) ||
-            (isCollection(f.resolvedTpe) && !cfg.requireCollectionFields)) => f.mappedName
+          case fieldInfo if !(fieldInfo.symbol.flags.is(Flags.HasDefault) || isOption(fieldInfo.resolvedTpe, types) ||
+            (isCollection(fieldInfo.resolvedTpe) && !cfg.requireCollectionFields)) => fieldInfo.mappedName
         }.toSet
         val paramVarNum = classInfo.fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
@@ -1696,10 +1696,10 @@ object JsonCodecMaker {
           }))))
 
         def checkAndResetFieldPresenceFlag(name: String, l: Expr[Int])(using Quotes): Expr[Unit] =
-          val fi = classInfo.fields.find(_.mappedName == name)
+          val fieldInfo = classInfo.fields.find(_.mappedName == name)
             .getOrElse(fail(s"Field $name is not found in fields for $classInfo"))
-          val n = Ref(paramVars(fi.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
-          val m = Expr(1 << fi.nonTransientFieldIndex)
+          val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
+          val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
           '{
             if (($m & $n) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
             else $in.duplicatedKeyError($l)
@@ -1710,8 +1710,8 @@ object JsonCodecMaker {
           else {
             val nameByIndex = withFieldsByIndexFor(tpe)(classInfo.fields.map(_.mappedName))
             val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) {
-              case (acc, (f, i)) =>
-                if (required(f.mappedName)) acc | 1 << i
+              case (acc, (fieldInfo, i)) =>
+                if (required(fieldInfo.mappedName)) acc | 1 << i
                 else acc
             })
             paramVars.zipWithIndex.map { case (nValDef, i) =>
@@ -1731,14 +1731,15 @@ object JsonCodecMaker {
               }
             }.toList
           }
-        val readVars = classInfo.fields.map { f =>
-          val sym = symbol("_" + f.symbol.name, f.resolvedTpe, Flags.Mutable)
-          f.resolvedTpe.asType match
+        val readVars = classInfo.fields.map { fieldInfo =>
+          val fTpe = fieldInfo.resolvedTpe
+          val sym = symbol("_" + fieldInfo.symbol.name, fTpe, Flags.Mutable)
+          fTpe.asType match
             case '[ft] =>
-              ValDef(sym, Some(f.defaultValue.getOrElse(genNullValue[ft](f.resolvedTpe :: types).asTerm.changeOwner(sym))))
+              ValDef(sym, Some(fieldInfo.defaultValue.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
         }
-        val readVarsMap = classInfo.fields.zip(readVars).map { case (field, tmpVar) =>
-          (field.symbol.name, tmpVar)
+        val readVarsMap = classInfo.fields.zip(readVars).map { case (fieldInfo, tmpVar) =>
+          (fieldInfo.symbol.name, tmpVar)
         }.toMap
         var nonTransientFieldIndex = 0
         val construct = classInfo.genNew(classInfo.paramLists.map(_.foldLeft(List.newBuilder[Term]) {
@@ -1760,21 +1761,22 @@ object JsonCodecMaker {
           } else classInfo.fields
         }
 
-        def genReadCollisions(fs: collection.Seq[FieldInfo], tmpVars: Map[String, ValDef],
+        def genReadCollisions(fieldInfos: collection.Seq[FieldInfo], tmpVars: Map[String, ValDef],
                               discriminator: Option[ReadDiscriminator], l: Expr[Int])(using Quotes): Expr[Unit] =
-          fs.foldRight(unexpectedFieldHandler(in, l)) { (f, acc) =>
+          fieldInfos.foldRight(unexpectedFieldHandler(in, l)) { (fieldInfo, acc) =>
             val readValue =
-              if (discriminator.nonEmpty && cfg.discriminatorFieldName.contains(f.mappedName)) {
+              if (discriminator.nonEmpty && cfg.discriminatorFieldName.contains(fieldInfo.mappedName)) {
                 discriminator.get.skip(in, l)
               } else {
-                f.resolvedTpe.asType match
+                val fTpe = fieldInfo.resolvedTpe
+                fTpe.asType match
                   case '[ft] =>
-                    val tmpVar = Ref(tmpVars(f.symbol.name).symbol)
-                    val readVal = genReadVal(f.resolvedTpe :: types, tmpVar.asExprOf[ft], f.isStringified, false, in).asTerm
-                    Block(List(checkAndResetFieldPresenceFlag(f.mappedName, l).asTerm), Assign(tmpVar, readVal)).asExprOf[Unit]
+                    val tmpVar = Ref(tmpVars(fieldInfo.symbol.name).symbol)
+                    val readVal = genReadVal(fTpe :: types, tmpVar.asExprOf[ft], fieldInfo.isStringified, false, in).asTerm
+                    Block(List(checkAndResetFieldPresenceFlag(fieldInfo.mappedName, l).asTerm), Assign(tmpVar, readVal)).asExprOf[Unit]
               }
             '{
-              if ($in.isCharBufEqualsTo($l, ${Expr(f.mappedName)})) $readValue
+              if ($in.isCharBufEqualsTo($l, ${Expr(fieldInfo.mappedName)})) $readValue
               else $acc
             }
           }
@@ -1792,9 +1794,10 @@ object JsonCodecMaker {
           if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
             genReadCollisions(readFields, readVarsMap, discriminator, l)
           } else {
-            val hashCode = (f: FieldInfo) => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
-            val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
-              CaseDef(Literal(IntConstant(hash)), None, genReadCollisions(fs, readVarsMap, discriminator, l).asTerm)
+            val hashCode = (fieldInfo: FieldInfo) =>
+              JsonReader.toHashCode(fieldInfo.mappedName.toCharArray, fieldInfo.mappedName.length)
+            val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fieldInfos) =>
+              CaseDef(Literal(IntConstant(hash)), None, genReadCollisions(fieldInfos, readVarsMap, discriminator, l).asTerm)
             } :+ CaseDef(Wildcard(), None, unexpectedFieldHandler(in, l).asTerm)
             Match('{ $in.charBufToHashCode($l): @scala.annotation.switch }.asTerm, cases.toList).asExprOf[Unit]
           }
@@ -1907,10 +1910,8 @@ object JsonCodecMaker {
         } else if (tpe =:= TypeRepr.of[java.lang.Byte]) {
           if (isStringified) '{ java.lang.Byte.valueOf($in.readStringAsByte()) }.asExprOf[T]
           else '{ java.lang.Byte.valueOf($in.readByte()) }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[Char]) {
-          '{ $in.readChar() }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[java.lang.Character])
-          '{ java.lang.Character.valueOf($in.readChar()) }.asExprOf[T]
+        } else if (tpe =:= TypeRepr.of[Char]) '{ $in.readChar() }.asExprOf[T]
+        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ java.lang.Character.valueOf($in.readChar()) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Short]) {
           if (isStringified) '{ $in.readStringAsShort() }.asExprOf[T]
           else '{ $in.readShort() }.asExprOf[T]
@@ -1996,12 +1997,11 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
+          val newArrayOnChange = tpe1 match
+            case AppliedType(_, _) => true
+            case _ => isValueClass(tpe1)
           tpe1.asType match
             case '[t1] =>
-              val newArrayOnChange = tpe1 match
-                case AppliedType(_, _) => true
-                case _ => isValueClass(tpe1)
-
               def growArray(x: Expr[Array[t1]], i: Expr[Int], l: Expr[Int])(using Quotes): Expr[Array[t1]] =
                 if (newArrayOnChange) '{
                   val x1 = ${genNewArray[t1](l)}
@@ -2381,78 +2381,79 @@ object JsonCodecMaker {
                                                  out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
-        val writeFields = classInfo.fields.map { f =>
+        val writeFields = classInfo.fields.map { fieldInfo =>
           val fDefault =
-            if (cfg.transientDefault) f.defaultValue
+            if (cfg.transientDefault) fieldInfo.defaultValue
             else None
-          f.resolvedTpe.asType match {
+          val fTpe = fieldInfo.resolvedTpe
+          fTpe.asType match {
             case '[ft] =>
               fDefault match {
                 case Some(d) =>
-                  if (f.resolvedTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) '{
-                    val v = ${Select(x.asTerm, f.getterOrField).asExprOf[ft & Iterable[_]]}
+                  if (fTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) '{
+                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterable[_]]}
                     if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
-                      ${genWriteConstantKey(f.mappedName, out)}
-                      ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
+                      ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                      ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
-                  } else if (isOption(f.resolvedTpe, types) && cfg.transientNone) {
-                    val tpe1 = typeArg1(f.resolvedTpe)
+                  } else if (isOption(fTpe, types) && cfg.transientNone) {
+                    val tpe1 = typeArg1(fTpe)
                     tpe1.asType match
                       case '[t1] => '{
-                        val v = ${Select(x.asTerm, f.getterOrField).asExprOf[Option[t1]]}
+                        val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[Option[t1]]}
                         if ((v ne None) && v != ${d.asExprOf[ft]}) {
-                          ${genWriteConstantKey(f.mappedName, out)}
-                          ${genWriteVal('{v.get}, tpe1 :: f.resolvedTpe :: types, f.isStringified, None, out)}
+                          ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                          ${genWriteVal('{v.get}, tpe1 :: fTpe :: types, fieldInfo.isStringified, None, out)}
                         }
                       }
-                  } else if (f.resolvedTpe <:< TypeRepr.of[Array[_]]) {
+                  } else if (fTpe <:< TypeRepr.of[Array[_]]) {
                     def cond(v: Expr[Array[_]])(using Quotes): Expr[Boolean] =
                       val da = d.asExprOf[Array[_]]
                       if (cfg.transientEmpty)
-                        '{ $v.length > 0 && !${withEqualsFor(f.resolvedTpe, v, da)((x1, x2) => genArrayEquals(f.resolvedTpe, x1, x2))} }
+                        '{ $v.length > 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
                       else
-                        '{ !${withEqualsFor(f.resolvedTpe, v, da)((x1, x2) => genArrayEquals(f.resolvedTpe, x1, x2))} }
+                        '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
 
                     '{
-                      val v = ${Select(x.asTerm, f.getterOrField).asExprOf[ft & Array[_]]}
+                      val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Array[_]]}
                       if (${cond('v)}) {
-                        ${genWriteConstantKey(f.mappedName, out)}
-                        ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
+                        ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                        ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                       }
                     }
                   } else '{
-                    val v = ${Select(x.asTerm, f.getterOrField).asExprOf[ft]}
+                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft]}
                     if (v != ${d.asExprOf[ft]}) {
-                      ${genWriteConstantKey(f.mappedName, out)}
-                      ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
+                      ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                      ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
                   }
                 case None =>
-                  if (f.resolvedTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) '{
-                    val v = ${Select(x.asTerm, f.getterOrField).asExprOf[ft & Iterable[_]]}
+                  if (fTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) '{
+                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterable[_]]}
                     if (!v.isEmpty) {
-                      ${genWriteConstantKey(f.mappedName, out)}
-                      ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
+                      ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                      ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
-                  } else if (isOption(f.resolvedTpe, types) && cfg.transientNone) {
-                    val tpe1 = typeArg1(f.resolvedTpe)
+                  } else if (isOption(fTpe, types) && cfg.transientNone) {
+                    val tpe1 = typeArg1(fTpe)
                     tpe1.asType match
                       case '[tf] => '{
-                        val v = ${Select(x.asTerm, f.getterOrField).asExprOf[Option[tf]]}
+                        val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[Option[tf]]}
                         if (v ne None) {
-                          ${genWriteConstantKey(f.mappedName, out)}
-                          ${genWriteVal('{ v.get }, tpe1 :: f.resolvedTpe :: types, f.isStringified, None, out)}
+                          ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                          ${genWriteVal('{ v.get }, tpe1 :: fTpe :: types, fieldInfo.isStringified, None, out)}
                         }
                       }
-                  } else if (f.resolvedTpe <:< TypeRepr.of[Array[_]] && cfg.transientEmpty) '{
-                    val v = ${Select(x.asTerm, f.getterOrField).asExprOf[ft & Array[_]]}
+                  } else if (fTpe <:< TypeRepr.of[Array[_]] && cfg.transientEmpty) '{
+                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Array[_]]}
                     if (v.length > 0) {
-                      ${genWriteConstantKey(f.mappedName, out)}
-                      ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
+                      ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                      ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
                   } else '{
-                    ${genWriteConstantKey(f.mappedName, out)}
-                    ${genWriteVal(Select(x.asTerm, f.getterOrField).asExprOf[ft], f.resolvedTpe :: types, f.isStringified, None, out)}
+                    ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                    ${genWriteVal(Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft], fTpe :: types, fieldInfo.isStringified, None, out)}
                   }
               }
           }
