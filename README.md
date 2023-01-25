@@ -445,7 +445,7 @@ creating pull requests (fixes and improvements to docs, code, and tests are high
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-11 clean coverage test coverageReport
+sbt -java-home /usr/lib/jvm/zulu-11 ++2.13.10 clean coverage jsoniter-scala-coreJVM/test jsoniter-scala-circeJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageReport
 sbt -java-home /usr/lib/jvm/zulu-11 clean +test +mimaReportBinaryIssues
 ```
 
