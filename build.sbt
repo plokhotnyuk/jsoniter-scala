@@ -58,6 +58,7 @@ lazy val jsSettings = Seq(
         .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
         .withArrayStores(CheckedBehavior.Unchecked)
         .withNegativeArraySizes(CheckedBehavior.Unchecked)
+        .withNullPointers(CheckedBehavior.Unchecked)
     }).withClosureCompiler(true)
       .withESFeatures(_.withESVersion(ESVersion.ES2015))
       .withModuleKind(ModuleKind.CommonJSModule)
