@@ -628,7 +628,7 @@ that is used in the Scala ecosystem.
 Double-check binary and source compatibility, including behavior, and release using the following command on the
 environment with 16+GB of RAM:
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-11 -J-Xmx8g release
+sbt -java-home /usr/lib/jvm/zulu-11 -J-Xmx8g clean release
 ```
 
 Do not push changes to GitHub until promoted artifacts for the new version are not available for downloading on
