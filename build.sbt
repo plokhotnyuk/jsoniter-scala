@@ -164,9 +164,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
       "org.scalatest" %%% "scalatest" % "3.2.15" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0" % Test
     ),
-    coverageEnabled := CrossVersion.partialVersion(scalaVersion.value).exists {
-      case (major, _) => major == 2  // FIXME: Unexpected crash of scalac with Scala 3
-    }
+    coverageEnabled := false // FIXME: Unexpected crash of scalac with Scala 3
   )
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
@@ -259,9 +257,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       )
       case _ => Seq()
     }),
-    coverageEnabled := CrossVersion.partialVersion(scalaVersion.value).exists {
-      case (major, _) => major == 2 // FIXME: Unexpected crash of scalac with Scala 3
-    }
+    coverageEnabled := false // FIXME: Unexpected crash of scalac with Scala 3
   )
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
