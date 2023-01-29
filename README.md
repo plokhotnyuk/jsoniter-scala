@@ -238,11 +238,19 @@ That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_sc
 whole nested data structure. No need to derive intemendiate codecs if you use the default or the same derivation
 configuration for them.
 
-Now use it for parsing and serialization:
+Now use it for parsing and serialization from/to `String`:
 ```scala
-val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""".getBytes("UTF-8"))
-val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
+val user = readFromString[User]("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""")
+val json = writeToString(User("John", Seq(Device(2, "iPhone X"))))
 ```
+
+When your input comes from the network or disks much more efficient ways are to parse and serialize from/to:
+- byte arrays using `readFromArray`/`writeToArray`;
+- byte sub-arrays using `readFromSubArray`/`writeToSubArray`;
+- `java.nio.ByteBuffer` istances using `readFromByteBuffer`/`writeToByteBuffer`;
+- `java.io.InputString`/`java.io.OutputStream` istances using `readFromStream`/`writeToStream`.
+
+Also, parsing from bytes will check `UTF-8` encoding and throw an error in case of malformed bytes.
 
 To print generated code for codecs add the following line to the scope of the codec derivation before `make` call.
 
