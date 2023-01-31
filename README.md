@@ -247,8 +247,8 @@ val json = writeToString(User("John", Seq(Device(2, "iPhone X"))))
 When your input comes from the network or disks much more efficient ways are to parse and serialize from/to:
 - byte arrays using `readFromArray`/`writeToArray`;
 - byte sub-arrays using `readFromSubArray`/`writeToSubArray`;
-- `java.nio.ByteBuffer` istances using `readFromByteBuffer`/`writeToByteBuffer`;
-- `java.io.InputString`/`java.io.OutputStream` istances using `readFromStream`/`writeToStream`.
+- `java.nio.ByteBuffer` instances using `readFromByteBuffer`/`writeToByteBuffer`;
+- `java.io.InputString`/`java.io.OutputStream` instances using `readFromStream`/`writeToStream`.
 
 Also, parsing from bytes will check `UTF-8` encoding and throw an error in case of malformed bytes.
 
