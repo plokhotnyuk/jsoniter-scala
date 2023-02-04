@@ -529,7 +529,19 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Map[LocationType.LocationType, Int]](CodecMakerConfig.withUseScalaEnumValueId(true)),
         Map(LocationType.GPS -> 0), """{"1":0}""")
     }
-    "serialize and deserialize outer types using custom value codecs for primitive types" in {
+    "serialize and deserialize outer types using custom value codecs for int type" in {
+      implicit val customCodecOfInt: JsonValueCodec[Int] = new JsonValueCodec[Int] {
+        def nullValue: Int = 0
+
+        def decodeValue(in: JsonReader, default: Int): Int = in.readDouble().toInt
+
+        def encodeValue(x: Int, out: JsonWriter): _root_.scala.Unit = out.writeVal(x)
+      }
+      val codecOfIntList = make[List[Int]]
+      verifyDeser(codecOfIntList, List(1, 123, 1234567), """[1.0,123000e-3,1.23456789E+6]""")
+      verifySer(codecOfIntList, List(1, 123, 1234567), """[1,123,1234567]""")
+    }
+    "serialize and deserialize outer types using custom value codecs for long type" in {
       implicit val customCodecOfLong: JsonValueCodec[Long] = new JsonValueCodec[Long] {
         def nullValue: Long = 0
 
@@ -551,6 +563,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """["1",9007199254740992,"9007199254740993"]""")
       verifySer(codecOfLongList, List(1L, 9007199254740992L, 9007199254740993L),
         """[1,9007199254740992,"9007199254740993"]""")
+    }
+    "serialize and deserialize outer types using custom value codecs for boolean type" in {
       implicit val customCodecOfBoolean: JsonValueCodec[_root_.scala.Boolean] = new JsonValueCodec[_root_.scala.Boolean] {
         def nullValue: _root_.scala.Boolean = false
 
@@ -577,6 +591,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codecOfFlags, Flags(f1 = true, f2 = false), """{"f1":"TRUE","f2":"FALSE"}""")
       verifyDeserError(codecOfFlags, """{"f1":"XALSE","f2":true}""", "illegal boolean, offset: 0x0000000c")
       verifyDeserError(codecOfFlags, """{"f1":xalse,"f2":true}""", "illegal boolean, offset: 0x00000006")
+    }
+    "serialize and deserialize outer types using custom value codecs for double type" in {
       implicit val customCodecOfDouble: JsonValueCodec[Double] = new JsonValueCodec[Double] {
         def nullValue: Double = 0.0f
 
