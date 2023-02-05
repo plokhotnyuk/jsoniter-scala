@@ -11,13 +11,13 @@ object Example01 {
 
   case class User(name: String, devices: Seq[Device])
 
-  implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make
+  implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make(CodecMakerConfig)
 
   def main(args: Array[String]): Unit = {
-    val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""".getBytes("UTF-8"))
-    val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
+    val user = readFromString("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""")
+    val json = writeToString(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 
     println(user)
-    println(new String(json, "UTF-8"))
+    println(json)
   }
 }
