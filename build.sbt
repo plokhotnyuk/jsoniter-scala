@@ -240,7 +240,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.rallyhealth" %% "weepickle-v1" % "1.8.0",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.14.2",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2",
       "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.14.2",
       "org.openjdk.jmh" % "jmh-core" % "1.36",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.36",
