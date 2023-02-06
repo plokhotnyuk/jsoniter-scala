@@ -17,8 +17,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       toString(b.playJson()) shouldBe b.jsonString
       toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
-      //FIXME: uPickle hungs in the endless loop
-      //toString(b.uPickle()) shouldBe b.jsonString
+      toString(b.uPickle()) shouldBe b.jsonString
       toString(b.zioJson()) shouldBe b.jsonString
     }
   }

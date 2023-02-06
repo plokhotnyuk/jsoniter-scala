@@ -17,8 +17,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
-      //FIXME: uPickle hungs in the endless loop
-      //benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
@@ -30,8 +29,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
-      //FIXME: uPickle hungs in the endless loop
-      //intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())
     }
   }

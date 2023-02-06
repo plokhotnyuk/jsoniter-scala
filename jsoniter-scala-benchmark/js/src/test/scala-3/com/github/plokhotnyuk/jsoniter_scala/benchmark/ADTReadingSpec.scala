@@ -14,8 +14,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
-      //FIXME: uPickle hungs in the endless loop
-      //benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
@@ -26,8 +25,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
-      //FIXME: uPickle hungs in the endless loop
-      //intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())
     }
   }

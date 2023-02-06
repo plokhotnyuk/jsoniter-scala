@@ -80,14 +80,14 @@ class ADTReading extends ADTBenchmark {
 
     JsonParser(jsonBytes).convertTo[ADTBase](adtBaseJsonFormat)
   }
-/* FIXME: uPuckle hungs in endless loop
+
   @Benchmark
   def uPickle(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
     read[ADTBase](jsonBytes)
   }
-*/
+
   @Benchmark
   def weePickle(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._

@@ -98,14 +98,14 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
 
     JsonParser(jsonBytes).convertTo[GitHubActionsAPI.Response]
   }
-/* FIXME: uPickle throws java.lang.NullPointerException: Cannot invoke "upickle.core.Visitor.visitString(java.lang.CharSequence, int)" because the return value of "upickle.core.ObjArrVisitor.subVisitor()" is null
+
   @Benchmark
   def uPickle(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
     read[GitHubActionsAPI.Response](jsonBytes)
   }
-*/
+
   @Benchmark
   def weePickle(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._

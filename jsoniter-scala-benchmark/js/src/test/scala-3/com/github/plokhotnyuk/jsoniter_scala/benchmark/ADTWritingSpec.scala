@@ -14,8 +14,7 @@ class ADTWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.jsonString1
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
       toString(b.smithy4sJson()) shouldBe b.jsonString1
-      //FIXME: uPickle hungs in the endless loop
-      //toString(b.uPickle()) shouldBe b.jsonString1
+      toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.zioJson()) shouldBe b.jsonString1
     }
   }
