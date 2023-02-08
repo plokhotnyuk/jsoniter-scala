@@ -61,14 +61,11 @@ enum FooEnum[A[_]]:
   case Bar[A[_]](a: A[Int]) extends FooEnum[A]
   case Baz[A[_]](a: A[String]) extends FooEnum[A]
 
-trait MyMarker
+trait Mix
 
 enum MyEnum(val value: String):
-  case Marked extends MyEnum("item1") with MyMarker
+  case Mixed extends MyEnum("item1") with Mix
   case Simple extends MyEnum("item2")
-
-object MyEnum:
-  implicit val codec: JsonValueCodec[MyEnum] = JsonCodecMaker.make
 
 class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
@@ -85,6 +82,12 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
           case "Green" => "🟩"
         }).withDiscriminatorFieldName(None)),
         List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["🟥","🟨","🟩"]""".stripMargin)
+    }
+    "serialize and deserialize Scala3 enums with mixed types" in {
+      verifySerDeser(make[List[MyEnum]],
+        List(MyEnum.Mixed, MyEnum.Simple), """[{"type":"Mixed"},{"type":"Simple"}]""")
+      verifySerDeser(make[List[MyEnum]](CodecMakerConfig.withDiscriminatorFieldName(None)),
+        List(MyEnum.Mixed, MyEnum.Simple), """["Mixed","Simple"]""")
     }
     "serialize and deserialize Scala3 enums with parameters" in {
       verifySerDeser(make[List[Color]](CodecMakerConfig.withDiscriminatorFieldName(None)),

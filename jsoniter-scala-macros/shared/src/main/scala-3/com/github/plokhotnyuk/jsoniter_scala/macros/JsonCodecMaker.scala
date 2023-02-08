@@ -792,7 +792,7 @@ object JsonCodecMaker {
         if (!cfg.allowRecursiveTypes) {
           val tpe = types.head
           val nestedTypes = types.tail
-          if (!tpe.typeSymbol.flags.is(Flags.Enum)) {
+          if (!tpe.termSymbol.flags.is(Flags.Enum)) {
             val recursiveIdx = nestedTypes.indexOf(tpe)
             if (recursiveIdx >= 0) {
               val recTypes = nestedTypes.take(recursiveIdx + 1).map(_.show).reverse.mkString("'", "', '", "'")
@@ -1345,7 +1345,7 @@ object JsonCodecMaker {
           namedValueOpt(named.headOption, tpe).get
         } else cfg.adtLeafClassNameMapper({
           if (tpe =:= TypeRepr.of[None.type]) "None"
-          else if (tpe.typeSymbol.flags.is(Flags.Enum)) {
+          else if (tpe.termSymbol.flags.is(Flags.Enum)) {
             tpe match
               case TermRef(_, name) => name
               case TypeRef(_, name) => name // ADT
