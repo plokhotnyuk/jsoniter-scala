@@ -616,26 +616,37 @@ object JsonCodecMaker {
 
       def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
 
-      def findImplicitCodec(types: List[Type], isValueCodec: Boolean): Tree = {
-        val tpe = types.head
-        val nestedTypes = types.tail
-        val recursiveIdx =
-          if (cfg.allowRecursiveTypes) -1
-          else nestedTypes.indexOf(tpe)
-        if (recursiveIdx < 0) {
-          if (tpe =:= rootTpe) EmptyTree
-          else if (isValueCodec) {
-            inferredValueCodecs.getOrElseUpdate(tpe,
-              inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]"))
-          } else {
-            inferredKeyCodecs.getOrElseUpdate(tpe,
-              inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]"))
+      def checkRecursionInTypes(types: List[Type]): Unit =
+        if (!cfg.allowRecursiveTypes) {
+          val tpe = types.head
+          val nestedTypes = types.tail
+          val recursiveIdx = nestedTypes.indexOf(tpe)
+          if (recursiveIdx >= 0) {
+            val recTypes = nestedTypes.take(recursiveIdx + 1).reverse.mkString("'", "', '", "'")
+            fail(s"Recursive type(s) detected: $recTypes. Please consider using a custom implicitly " +
+              s"accessible codec for this type to control the level of recursion or turn on the " +
+              s"'${typeOf[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
+              "will not exceed the thread stack size.")
           }
-        } else {
-          fail(s"Recursive type(s) detected: ${nestedTypes.take(recursiveIdx + 1).reverse.mkString("'", "', '", "'")}. " +
-            "Please consider using a custom implicitly accessible codec for this type to control the level of " +
-            s"recursion or turn on the '${typeOf[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
-            "will not exceed the thread stack size.")
+        }
+
+      def findImplicitKeyCodec(types: List[Type]): Tree = {
+        checkRecursionInTypes(types)
+        val tpe = types.head
+        if (tpe =:= rootTpe) EmptyTree
+        else {
+          inferredKeyCodecs.getOrElseUpdate(tpe,
+            inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]"))
+        }
+      }
+
+      def findImplicitValueCodec(types: List[Type]): Tree = {
+        checkRecursionInTypes(types)
+        val tpe = types.head
+        if (tpe =:= rootTpe) EmptyTree
+        else {
+          inferredValueCodecs.getOrElseUpdate(tpe,
+            inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]"))
         }
       }
 
@@ -715,7 +726,7 @@ object JsonCodecMaker {
 
       def genReadKey(types: List[Type]): Tree = {
         val tpe = types.head
-        val implKeyCodec = findImplicitCodec(types, isValueCodec = false)
+        val implKeyCodec = findImplicitKeyCodec(types)
         if (implKeyCodec.nonEmpty) q"$implKeyCodec.decodeKey(in)"
         else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readKeyAsBoolean()"
@@ -868,7 +879,7 @@ object JsonCodecMaker {
       @tailrec
       def genWriteKey(x: Tree, types: List[Type]): Tree = {
         val tpe = types.head
-        val implKeyCodec = findImplicitCodec(types, isValueCodec = false)
+        val implKeyCodec = findImplicitKeyCodec(types)
         if (implKeyCodec.nonEmpty) q"$implKeyCodec.encodeKey($x, out)"
         else if (tpe =:= typeOf[String] || tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] || tpe =:= definitions.CharTpe ||
@@ -1157,8 +1168,8 @@ object JsonCodecMaker {
 
       def genNullValue(types: List[Type]): Tree = {
         val tpe = types.head
-        val implCodec = findImplicitCodec(types, isValueCodec = true)
-        if (implCodec.nonEmpty) q"$implCodec.nullValue"
+        val implValueCodec = findImplicitValueCodec(types)
+        if (implValueCodec.nonEmpty) q"$implValueCodec.nullValue"
         else if (tpe =:= typeOf[String]) q"null"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"false"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"(0: _root_.scala.Byte)"
@@ -1338,10 +1349,10 @@ object JsonCodecMaker {
 
       def genReadVal(types: List[Type], default: Tree, isStringified: Boolean, discriminator: Tree): Tree = {
         val tpe = types.head
-        val implCodec = findImplicitCodec(types, isValueCodec = true)
+        val implValueCodec = findImplicitValueCodec(types)
         val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
         val decodeMethodName = decodeMethodNames.get(methodKey)
-        if (implCodec.nonEmpty) q"$implCodec.decodeValue(in, $default)"
+        if (implValueCodec.nonEmpty) q"$implValueCodec.decodeValue(in, $default)"
         else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
         else if (tpe =:= typeOf[String]) q"in.readString($default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
@@ -1804,10 +1815,10 @@ object JsonCodecMaker {
 
       def genWriteVal(m: Tree, types: List[Type], isStringified: Boolean, discriminator: Tree): Tree = {
         val tpe = types.head
-        val implCodec = findImplicitCodec(types, isValueCodec = true)
+        val implValueCodec = findImplicitValueCodec(types)
         val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
         val encodeMethodName = encodeMethodNames.get(methodKey)
-        if (implCodec.nonEmpty) q"$implCodec.encodeValue($m, out)"
+        if (implValueCodec.nonEmpty) q"$implValueCodec.encodeValue($m, out)"
         else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
         else if (tpe =:= typeOf[String]) q"out.writeVal($m)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] || tpe =:= definitions.ByteTpe ||

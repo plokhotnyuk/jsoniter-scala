@@ -792,15 +792,13 @@ object JsonCodecMaker {
         if (!cfg.allowRecursiveTypes) {
           val tpe = types.head
           val nestedTypes = types.tail
-          if (!tpe.termSymbol.flags.is(Flags.Enum)) {
-            val recursiveIdx = nestedTypes.indexOf(tpe)
-            if (recursiveIdx >= 0) {
-              val recTypes = nestedTypes.take(recursiveIdx + 1).map(_.show).reverse.mkString("'", "', '", "'")
-              fail(s"Recursive type(s) detected: $recTypes. Please consider using a custom implicitly " +
-                s"accessible codec for this type to control the level of recursion or turn on the " +
-                s"'${Type.show[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
-                s"will not exceed the thread stack size.\nall types: ${types.map(_.show)}")
-            }
+          val recursiveIdx = nestedTypes.indexOf(tpe)
+          if (recursiveIdx >= 0) {
+            val recTypes = nestedTypes.take(recursiveIdx + 1).map(_.show).reverse.mkString("'", "', '", "'")
+            fail(s"Recursive type(s) detected: $recTypes. Please consider using a custom implicitly " +
+              s"accessible codec for this type to control the level of recursion or turn on the " +
+              s"'${Type.show[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
+              s"will not exceed the thread stack size.\nall types: ${types.map(_.show)}")
           }
         }
 

@@ -67,6 +67,9 @@ enum MyEnum(val value: String):
   case Mixed extends MyEnum("item1") with Mix
   case Simple extends MyEnum("item2")
 
+enum RecursiveEnum:
+  case Rec(val next: Option[Rec]) extends RecursiveEnum
+
 class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize Scala3 enums" in {
@@ -138,6 +141,23 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
     "serialize and deserialize higher-kinded enum ADTs" in {
       verifySerDeser(make[List[FooEnum[Option]]], List(FooEnum.Bar[Option](Some(1)), FooEnum.Baz[Option](Some("VVV"))),
         """[{"type":"Bar","a":1},{"type":"Baz","a":"VVV"}]""")
+    }
+    "serialize and deserialize recursive Scala3 enums if it is allowed" in {
+      verifySerDeser(make[List[RecursiveEnum]](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        List(RecursiveEnum.Rec(None), RecursiveEnum.Rec(Some(RecursiveEnum.Rec(None)))),
+        """[{"type":"Rec"},{"type":"Rec","next":{}}]""")
+    }
+    "don't generate codecs for recursive Scala3 enums by default" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """JsonCodecMaker.make[RecursiveEnum]""".stripMargin
+      }).getMessage.contains {
+        """Recursive type(s) detected: 'com.github.plokhotnyuk.jsoniter_scala.macros.RecursiveEnum.Rec',
+          |'scala.Option[com.github.plokhotnyuk.jsoniter_scala.macros.RecursiveEnum.Rec]'.
+          |Please consider using a custom implicitly accessible codec for this
+          |type to control the level of recursion or turn on the
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
+          |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
+      })
     }
   }
 }
