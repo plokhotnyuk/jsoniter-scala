@@ -649,8 +649,7 @@ object JsonCodecMaker {
         case _ => false
 
       def isEnumOrModuleValue(tpe: TypeRepr): Boolean = tpe.isSingleton &&
-        (tpe.typeSymbol.flags.is(Flags.Enum) || tpe.typeSymbol.flags.is(Flags.Module) ||
-          tpe.typeSymbol.flags.is(Flags.EmptyFlags) && !isConstType(tpe)) // FIXME: Remove after fix in Dotty: https://github.com/lampepfl/dotty/issues/16008
+        (tpe.typeSymbol.flags.is(Flags.Module) || tpe.termSymbol.flags.is(Flags.Enum))
 
       def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = { // TODO: explore yet one variant with mirrors
         def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,

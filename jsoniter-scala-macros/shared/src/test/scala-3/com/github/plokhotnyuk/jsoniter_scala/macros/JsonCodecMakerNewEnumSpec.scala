@@ -68,7 +68,7 @@ enum MyEnum(val value: String):
   case Simple extends MyEnum("item2")
 
 object MyEnum:
-  implicit val codec: JsonValueCodec[MyEnum] = JsonCodecMaker.make // FIXME: Remove after fix in Dotty: https://github.com/lampepfl/dotty/issues/16008
+  implicit val codec: JsonValueCodec[MyEnum] = JsonCodecMaker.make
 
 class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
