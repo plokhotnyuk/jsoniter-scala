@@ -1216,20 +1216,21 @@ object JsonCodecMaker {
       def genReadNonAbstractScalaClass(types: List[Type], discriminator: Tree): Tree = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
+        val fields = classInfo.fields
+        val mappedNames = fields.map(_.mappedName)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
-          val names = classInfo.fields.map(_.mappedName)
-          if (discriminator.isEmpty) names
-          else names :+ n
+          if (discriminator.isEmpty) mappedNames
+          else mappedNames :+ n
         })
-        val required: Set[String] = classInfo.fields.collect {
+        val required: Set[String] = fields.collect {
           case fieldInfo if !(fieldInfo.symbol.isParamWithDefault || isOption(fieldInfo.resolvedTpe, types) ||
             (isCollection(fieldInfo.resolvedTpe) && !cfg.requireCollectionFields)) => fieldInfo.mappedName
         }.toSet
-        val paramVarNum = classInfo.fields.size
+        val paramVarNum = fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
-        val checkAndResetFieldPresenceFlags = classInfo.fields.zipWithIndex.map { case (fieldInfo, i) =>
+        val checkAndResetFieldPresenceFlags = fields.zipWithIndex.map { case (fieldInfo, i) =>
           val n = paramVarNames(i >> 5)
           val m = 1 << i
           (fieldInfo.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
@@ -1239,8 +1240,8 @@ object JsonCodecMaker {
         val checkReqVars =
           if (required.isEmpty) Nil
           else {
-            val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
-            val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (fieldInfo, i)) =>
+            val names = withFieldsFor(tpe)(mappedNames)
+            val reqMasks = fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (fieldInfo, i)) =>
               if (required(fieldInfo.mappedName)) acc | 1 << i
               else acc
             })
@@ -1260,13 +1261,13 @@ object JsonCodecMaker {
             }
           }
         val construct = q"new $tpe(...${classInfo.paramLists.map(_.map(fieldInfo => q"${fieldInfo.symbol.name} = ${fieldInfo.tmpName}"))})"
-        val readVars = classInfo.fields.map { fieldInfo =>
+        val readVars = fields.map { fieldInfo =>
           val fTpe = fieldInfo.resolvedTpe
           q"var ${fieldInfo.tmpName}: $fTpe = ${fieldInfo.defaultValue.getOrElse(genNullValue(fTpe :: types))}"
         }
-        val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
-          if (discriminator.isEmpty) classInfo.fields
-          else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, isStringified = true)
+        val readFields = cfg.discriminatorFieldName.fold(fields) { n =>
+          if (discriminator.isEmpty) fields
+          else fields :+ FieldInfo(null, n, null, null, null, null, isStringified = true)
         }
 
         def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =

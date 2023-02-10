@@ -777,8 +777,8 @@ object JsonCodecMaker {
         tpe.asType match
           case '[t] =>
             val sym = symbol("ct" + classTags.size, TypeRepr.of[ClassTag[t]])
-            val ct = Expr.summon[ClassTag[t]].getOrElse(fail(s"Can't summon ClassTag[${tpe.show}]"))
-            ValDef(sym, Some(ct.asTerm.changeOwner(sym)))
+            val ct = Expr.summon[ClassTag[t]].fold(fail(s"Can't summon ClassTag[${tpe.show}]"))(_.asTerm)
+            ValDef(sym, Some(ct.changeOwner(sym)))
       }).symbol)
 
       def inferImplicitValue[T: Type](typeToSearch: TypeRepr): Option[Expr[T]] = Implicits.search(typeToSearch) match
@@ -798,7 +798,7 @@ object JsonCodecMaker {
             fail(s"Recursive type(s) detected: $recTypes. Please consider using a custom implicitly " +
               s"accessible codec for this type to control the level of recursion or turn on the " +
               s"'${Type.show[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
-              s"will not exceed the thread stack size.\nall types: ${types.map(_.show)}")
+              s"will not exceed the thread stack size.")
           }
         }
 
@@ -1674,16 +1674,17 @@ object JsonCodecMaker {
                                                 default: Expr[T])(using Quotes): Expr[T] = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
+        val fields = classInfo.fields
+        val mappedNames = fields.map(_.mappedName)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
-          val names = classInfo.fields.map(_.mappedName)
-          if (useDiscriminator) names :+ n
-          else names
+          if (useDiscriminator) mappedNames :+ n
+          else mappedNames
         })
-        val required = classInfo.fields.collect {
+        val required = fields.collect {
           case fieldInfo if !(fieldInfo.symbol.flags.is(Flags.HasDefault) || isOption(fieldInfo.resolvedTpe, types) ||
             (isCollection(fieldInfo.resolvedTpe) && !cfg.requireCollectionFields)) => fieldInfo.mappedName
         }.toSet
-        val paramVarNum = classInfo.fields.size
+        val paramVarNum = fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVars = (0 to lastParamVarIndex)
@@ -1691,22 +1692,11 @@ object JsonCodecMaker {
             if (i == lastParamVarIndex) lastParamVarBits
             else -1
           }))))
-
-        def checkAndResetFieldPresenceFlag(name: String, l: Expr[Int])(using Quotes): Expr[Unit] =
-          val fieldInfo = classInfo.fields.find(_.mappedName == name)
-            .getOrElse(fail(s"Field $name is not found in fields for $classInfo"))
-          val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
-          val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
-          '{
-            if (($m & $n) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
-            else $in.duplicatedKeyError($l)
-          }
-
         val checkReqVars =
           if (required.isEmpty) Nil
           else {
-            val nameByIndex = withFieldsByIndexFor(tpe)(classInfo.fields.map(_.mappedName))
-            val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) {
+            val nameByIndex = withFieldsByIndexFor(tpe)(mappedNames)
+            val reqMasks = fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) {
               case (acc, (fieldInfo, i)) =>
                 if (required(fieldInfo.mappedName)) acc | 1 << i
                 else acc
@@ -1728,14 +1718,14 @@ object JsonCodecMaker {
               }
             }.toList
           }
-        val readVars = classInfo.fields.map { fieldInfo =>
+        val readVars = fields.map { fieldInfo =>
           val fTpe = fieldInfo.resolvedTpe
           val sym = symbol("_" + fieldInfo.symbol.name, fTpe, Flags.Mutable)
           fTpe.asType match
             case '[ft] =>
               ValDef(sym, Some(fieldInfo.defaultValue.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
         }
-        val readVarsMap = classInfo.fields.zip(readVars).map { case (fieldInfo, tmpVar) =>
+        val readVarsMap = fields.zip(readVars).map { case (fieldInfo, tmpVar) =>
           (fieldInfo.symbol.name, tmpVar)
         }.toMap
         var nonTransientFieldIndex = 0
@@ -1750,12 +1740,11 @@ object JsonCodecMaker {
               Ref(rv)
             })
         }.result))
-        val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
+        val readFields = cfg.discriminatorFieldName.fold(fields) { n =>
           if (useDiscriminator) {
-            classInfo.fields :+
-              FieldInfo(Symbol.noSymbol, n, Symbol.noSymbol, None, TypeRepr.of[String], isTransient = false,
-                isStringified = true, classInfo.fields.size)
-          } else classInfo.fields
+            fields :+ FieldInfo(Symbol.noSymbol, n, Symbol.noSymbol, None, TypeRepr.of[String], isTransient = false,
+              isStringified = true, fields.size)
+          } else fields
         }
 
         def genReadCollisions(fieldInfos: collection.Seq[FieldInfo], tmpVars: Map[String, ValDef],
@@ -1770,7 +1759,16 @@ object JsonCodecMaker {
                   case '[ft] =>
                     val tmpVar = Ref(tmpVars(fieldInfo.symbol.name).symbol)
                     val readVal = genReadVal(fTpe :: types, tmpVar.asExprOf[ft], fieldInfo.isStringified, false, in).asTerm
-                    Block(List(checkAndResetFieldPresenceFlag(fieldInfo.mappedName, l).asTerm), Assign(tmpVar, readVal)).asExprOf[Unit]
+                    val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
+                    val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
+                    Block(List('{
+                      if (($m & $n) != 0) ${
+                        Assign(n.asTerm, '{
+                          $n ^ $m
+                        }.asTerm).asExprOf[Unit]
+                      }
+                      else $in.duplicatedKeyError($l)
+                    }.asTerm), Assign(tmpVar, readVal)).asExprOf[Unit]
               }
             '{
               if ($in.isCharBufEqualsTo($l, ${Expr(fieldInfo.mappedName)})) $readValue
