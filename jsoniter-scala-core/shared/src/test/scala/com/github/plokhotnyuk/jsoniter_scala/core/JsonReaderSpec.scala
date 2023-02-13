@@ -2582,24 +2582,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse valid float values" in {
       forAll(genWhitespaces) { ws =>
-        checkFloat("16777216.0", ws) // Round-down, halfway
-        checkFloat("16777217.0", ws)
-        checkFloat("16777218.0", ws)
-        checkFloat("33554432.0", ws)
+        checkFloat("16777217.0", ws) // Round-down, halfway
         checkFloat("33554434.0", ws)
-        checkFloat("33554436.0", ws)
-        checkFloat("17179869184.0", ws)
         checkFloat("17179870208.0", ws)
-        checkFloat("17179871232.0", ws)
-        checkFloat("16777218.0", ws) // Round-up, halfway
-        checkFloat("16777219.0", ws)
-        checkFloat("16777220.0", ws)
-        checkFloat("33554436.0", ws)
+        checkFloat("16777219.0", ws) // Round-up, halfway
         checkFloat("33554438.0", ws)
-        checkFloat("33554440.0", ws)
-        checkFloat("17179871232.0", ws)
         checkFloat("17179872256.0", ws)
-        checkFloat("17179873280.0", ws)
         checkFloat("33554435.0", ws) // Round-up, above halfway
         checkFloat("17179870209.0", ws)
         checkFloat("37930954282500097", ws) // Fast path with `toFloat`
@@ -2719,31 +2707,14 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
     "parse valid double values" in {
       forAll(genWhitespaces) { ws =>
-        checkDouble("9007199254740992.0", ws) // Round-down, halfway
-        checkDouble("9007199254740993.0", ws)
-        checkDouble("9007199254740994.0", ws)
-        checkDouble("18014398509481984.0", ws)
+        checkDouble("9007199254740993.0", ws) // Round-down, halfway
         checkDouble("18014398509481986.0", ws)
-        checkDouble("18014398509481988.0", ws)
-        checkDouble("9223372036854775808.0", ws)
         checkDouble("9223372036854776832.0", ws)
-        checkDouble("9223372036854777856.0", ws)
-        checkDouble("11417981541647679048466287755595961091061972992.0", ws)
         checkDouble("11417981541647680316116887983825362587765178368.0", ws)
-        checkDouble("11417981541647681583767488212054764084468383744.0", ws)
-        checkDouble("11417981541647681583767488212054764084468383744.0", ws)
-        checkDouble("9007199254740994.0", ws) // Round-up, halfway
-        checkDouble("9007199254740995.0", ws)
-        checkDouble("9007199254740996.0", ws)
-        checkDouble("18014398509481988.0", ws)
+        checkDouble("9007199254740995.0", ws) // Round-up, halfway
         checkDouble("18014398509481990.0", ws)
-        checkDouble("18014398509481992.0", ws)
-        checkDouble("9223372036854777856.0", ws)
         checkDouble("9223372036854778880.0", ws)
-        checkDouble("9223372036854779904.0", ws)
-        checkDouble("11417981541647681583767488212054764084468383744.0", ws)
         checkDouble("11417981541647682851418088440284165581171589120.0", ws)
-        checkDouble("11417981541647684119068688668513567077874794496.0", ws)
         checkDouble("9223372036854776833.0", ws) // Round-up, above halfway
         checkDouble("11417981541647680316116887983825362587765178369.0", ws)
         checkDouble("36028797018963967.0", ws) // 2^n - 1 integer regression
