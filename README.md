@@ -165,7 +165,7 @@ supports Scala 2.11.
 - Integration with circe for faster parsing/serialization and decoding/encoding to/from circe AST 
 - Releases for different Scala versions: 2.12, 2.13, and 3.2
 - Support of Scala.js 1.0+ for all supported Scala versions
-- Support of Scala Native 0.4.4+ for all supported Scala versions and all modules except jsoniter-scala-circe
+- Support of Scala Native 0.4.4+ for all supported Scala versions
 - Suppressing of all WartRemover warnings of generated codecs for Scala 2.12 and 2.13 
 
 There are configurable options that can be set in compile-time:
