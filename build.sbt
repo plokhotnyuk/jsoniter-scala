@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
@@ -102,7 +103,10 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %%% moduleName.value % oldVersion)
     else Set()
   },
-  mimaReportSignatureProblems := true
+  mimaReportSignatureProblems := true,
+  mimaBinaryIssueFilters := Seq( // ignore changes of some private constructor in Core API
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.ReaderConfig.this")
+  )
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))

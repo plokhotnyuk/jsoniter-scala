@@ -74,9 +74,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
   }
   "JsonReader.skip" should {
-    def validateSkip(s: String, ws: String): Unit = {
+    def validateSkip(s: String, ws: String, allowComments: Boolean = false): Unit = {
       def checkWithSuffix(s: String, suffix: Char): Unit = {
-        val r = reader(ws + s + suffix)
+        val r = reader(ws + s + suffix, config = readerConfig.withAllowComments(allowComments))
         r.skip()
         r.nextToken().toChar shouldBe suffix
       }
@@ -147,6 +147,13 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         validateSkip("{}", ws)
         validateSkip("{{{{{}}}}{{{}}}}", ws)
         validateSkip("""{"{"}""", ws)
+        validateSkip(
+          """{
+            |// One-line comment
+            |/*
+            |  Multi-line comment
+            |*/
+            |}""".stripMargin, ws, allowComments = true)
       }
     }
     "throw parsing exception when skipping not closed object" in {
@@ -158,6 +165,13 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         validateSkip("[]", ws)
         validateSkip("[[[[[]]]][[[]]]]", ws)
         validateSkip("""["["]""", ws)
+        validateSkip(
+          """[
+            |// One-line comment
+            |/*
+            |  Multi-line comment
+            |*/
+            |]""".stripMargin, ws, allowComments = true)
       }
     }
     "throw parsing exception when skipping not closed array" in {
@@ -174,7 +188,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
             |      -1.0,
             |      1,
             |      4.0E20
-            |    ],
+            |    ], // One-line comment
+            |/*
+            |  Multi-line comment
+            |*/
             |    "yy": {
             |      "xxx": true,
             |      "yyy": false,
@@ -186,7 +203,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
             |    [4, 5, 6],
             |    [7, 8, 9]
             |  ]
-            |}""".stripMargin, ws)
+            |}""".stripMargin, ws, allowComments = true)
       }
     }
     "throw parsing exception when skipping not from start of JSON value" in {
@@ -235,6 +252,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       assert(toJsonValuesIteratorFromStream(toInputStream("1")).toList == List(1))
       assert(toJsonValuesIteratorFromStream(toInputStream("1\n2\n3")).toList == List(1, 2, 3))
       assert(toJsonValuesIteratorFromStream(toInputStream("\n1\n2\n\n3\n")).toList == List(1, 2, 3))
+      assert(toJsonValuesIteratorFromStream(toInputStream(
+        """1// One-line comment
+          |/*
+          |  Multi-line comment
+          |*/
+          |""".stripMargin), config = ReaderConfig.withAllowComments(true)).toList == List(1))
       assert(intercept[JsonReaderException](toJsonValuesIteratorFromStream(toInputStream("01\n")).toList)
         .getMessage.startsWith("illegal number with leading zero, offset: 0x00000000"))
     }
@@ -429,6 +452,16 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       assert(r.nextToken() == '{')
       assert(r.nextToken() == '}')
     }
+    "skip JavaScript-like comments of input" in {
+      val r = reader(
+        """[ // One-line comment
+          |/*
+          |  Multi-line comment
+          |*/
+          |]""".stripMargin, config = readerConfig.withAllowComments(true))
+      assert(r.nextToken() == '[')
+      assert(r.nextToken() == ']')
+    }
     "throw parse exception in case of end of input" in {
       val r = reader("{}")
       r.skip()
@@ -545,6 +578,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   "JsonReader.readBoolean, JsonReader.readStringAsBoolean and JsonReader.readKeyAsBoolean" should {
     def check(s: String, value: Boolean, ws: String): Unit = {
       reader(ws + s).readBoolean() shouldBe value
+      reader(ws +
+        """// One-line comment
+          |/*
+          |  Multi-line comment
+          |*/
+          |""".stripMargin + s, config = readerConfig.withAllowComments(true)).readBoolean() shouldBe value
       reader(s"""$ws"$s"""").readStringAsBoolean() shouldBe value
       reader(s"""$ws"$s":""").readKeyAsBoolean() shouldBe value
     }
@@ -3179,11 +3218,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
   }
 
-  def reader(json: String, totalRead: Long = 0): JsonReader = reader2(json.getBytes(UTF_8), totalRead)
+  def reader(json: String, totalRead: Long = 0, config: ReaderConfig = readerConfig): JsonReader =
+    reader2(json.getBytes(UTF_8), totalRead, config)
 
-  def reader2(jsonBytes: Array[Byte], totalRead: Long = 0): JsonReader =
+  def reader2(jsonBytes: Array[Byte], totalRead: Long = 0, config: ReaderConfig = readerConfig): JsonReader =
     new JsonReader(new Array[Byte](Random.nextInt(20) + 12), // 12 is a minimal allowed length to test resizing of the buffer
-      0, 0, -1, new Array[Char](Random.nextInt(32)), null, new ByteArrayInputStream(jsonBytes), totalRead, readerConfig)
+      0, 0, -1, new Array[Char](Random.nextInt(32)), null, new ByteArrayInputStream(jsonBytes), totalRead, config)
 
   def readerConfig: ReaderConfig = ReaderConfig
     .withPreferredBufSize(Random.nextInt(20) + 12) // 12 is a minimal allowed length to test resizing of the buffer

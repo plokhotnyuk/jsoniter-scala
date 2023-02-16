@@ -34,11 +34,12 @@ package com.github.plokhotnyuk.jsoniter_scala.core
   * @param checkForEndOfInput a flag to check and raise an error if some non whitespace bytes will be detected after
   *                           successful parsing of the value
   * @param hexDumpSize a size of the hex dump in 16-byte lines before and after the 16-byte line where an error occurs
+  * @param allowComments a flag to allow one-line and multi-line JavaScript-like comments
   */
 class ReaderConfig private (val preferredBufSize: Int, val preferredCharBufSize: Int, val maxBufSize: Int,
                             val maxCharBufSize: Int, val checkForEndOfInput: Boolean,
                             val throwReaderExceptionWithStackTrace: Boolean, val appendHexDumpToParseException: Boolean,
-                            val hexDumpSize: Int) extends Serializable {
+                            val hexDumpSize: Int, val allowComments: Boolean) extends Serializable {
   def withThrowReaderExceptionWithStackTrace(throwReaderExceptionWithStackTrace: Boolean): ReaderConfig =
     copy(throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace)
 
@@ -69,26 +70,27 @@ class ReaderConfig private (val preferredBufSize: Int, val preferredCharBufSize:
     copy(preferredCharBufSize = preferredCharBufSize)
   }
 
-  def withCheckForEndOfInput(checkForEndOfInput: Boolean): ReaderConfig =
-    copy(checkForEndOfInput = checkForEndOfInput)
+  def withCheckForEndOfInput(checkForEndOfInput: Boolean): ReaderConfig = copy(checkForEndOfInput = checkForEndOfInput)
 
   def withHexDumpSize(hexDumpSize: Int): ReaderConfig = {
     if (hexDumpSize < 1) throw new IllegalArgumentException("'hexDumpSize' should be not less than 1")
     copy(hexDumpSize = hexDumpSize)
   }
 
+  def withAllowComments(allowComments: Boolean): ReaderConfig = copy(allowComments = allowComments)
+
   private[this] def copy(preferredBufSize: Int = preferredBufSize, preferredCharBufSize: Int = preferredCharBufSize,
                          maxBufSize: Int = maxBufSize, maxCharBufSize: Int = maxCharBufSize,
                          checkForEndOfInput: Boolean = checkForEndOfInput,
                          throwReaderExceptionWithStackTrace: Boolean = throwReaderExceptionWithStackTrace,
                          appendHexDumpToParseException: Boolean = appendHexDumpToParseException,
-                         hexDumpSize: Int = hexDumpSize): ReaderConfig =
+                         hexDumpSize: Int = hexDumpSize, allowComments: Boolean = allowComments): ReaderConfig =
     new ReaderConfig(throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace,
       appendHexDumpToParseException = appendHexDumpToParseException, maxBufSize = maxBufSize,
       maxCharBufSize = maxCharBufSize, preferredBufSize = preferredBufSize, preferredCharBufSize = preferredCharBufSize,
-      checkForEndOfInput = checkForEndOfInput, hexDumpSize = hexDumpSize)
+      checkForEndOfInput = checkForEndOfInput, hexDumpSize = hexDumpSize, allowComments = allowComments)
 }
 
 object ReaderConfig extends ReaderConfig(preferredBufSize = 32768, preferredCharBufSize = 4096, maxBufSize = 33554432,
   maxCharBufSize = 4194304, throwReaderExceptionWithStackTrace = false, appendHexDumpToParseException = true,
-  checkForEndOfInput = true, hexDumpSize = 2)
+  checkForEndOfInput = true, hexDumpSize = 2, allowComments = false)
