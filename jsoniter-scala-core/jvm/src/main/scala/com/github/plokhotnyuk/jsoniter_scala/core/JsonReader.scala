@@ -719,13 +719,14 @@ final class JsonReader private[jsoniter_scala](
   private[jsoniter_scala] def skipWhitespaces(): Boolean = {
     var pos = head
     var buf = this.buf
+    val ns = nibbles
     while ((pos < tail || {
       pos = loadMore(pos)
       buf = this.buf
       pos < tail
     }) && {
       val b = buf(pos)
-      b == ' ' || b == '\n' || (b | 0x4) == '\r' || b == '/' && config.allowComments && {
+      ns(b & 0xFF) == -2 || b == '/' && config.allowComments && {
         pos = skipComment(pos + 1) - 1
         true
       }
@@ -795,16 +796,16 @@ final class JsonReader private[jsoniter_scala](
     } else nextByteOrError(t, loadMoreOrError(pos))
 
   @tailrec
-  private[this] def nextToken(pos: Int): Byte =
+  private[this] def nextToken(pos: Int, ns: Array[Byte] = nibbles): Byte =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == ' ' || b == '\n' || (b | 0x4) == '\r') nextToken(pos + 1)
-      else if (b == '/' && config.allowComments) nextToken(skipComment(pos + 1))
+      if (ns(b & 0xFF) == -2) nextToken(pos + 1, ns)
+      else if (b == '/' && config.allowComments) nextToken(skipComment(pos + 1), ns)
       else {
         head = pos + 1
         b
       }
-    } else nextToken(loadMoreOrError(pos))
+    } else nextToken(loadMoreOrError(pos), ns)
 
   @tailrec
   private[this] def nextTokenOrError(t: Byte, pos: Int): Unit =
@@ -1177,9 +1178,8 @@ final class JsonReader private[jsoniter_scala](
         if (nextByte(pos + 4) != 'e') booleanError(pos + 4)
         false
       } else if (isToken) {
-        val b = bs.toByte
-        if (b == ' ' || b == '\n' || (b | 0x4) == '\r') parseBoolean(isToken, pos + 1)
-        else if (b == '/' && config.allowComments) parseBoolean(isToken, skipComment(pos + 1))
+        if (nibbles(bs & 0xFF) == -2) parseBoolean(isToken, pos + 1)
+        else if (bs.toByte == '/' && config.allowComments) parseBoolean(isToken, skipComment(pos + 1))
         else booleanError(bs, pos)
       } else booleanError(bs, pos)
     } else parseBoolean(isToken, loadMoreOrError(pos))
@@ -3781,6 +3781,10 @@ object JsonReader {
   /* Use the following code to generate `nibbles` in Scala REPL:
     val ns = new Array[Byte](256)
     java.util.Arrays.fill(ns, -1: Byte)
+    ns(' ') = -2
+    ns('\n') = -2
+    ns('\t') = -2
+    ns('\r') = -2
     ns('0') = 0
     ns('1') = 1
     ns('2') = 2
@@ -3806,9 +3810,9 @@ object JsonReader {
     ns.grouped(16).map(_.mkString(", ")).mkString("Array(\n", ",\n", "\n)")
    */
   private final val nibbles: Array[Byte] = Array(
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -2, -1, -1, -2, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1, -1, -1, -1, -1,
     -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,

@@ -24,6 +24,9 @@ private[core] object ByteArrayAccess {
   def setShort(buf: Array[Byte], pos: Int, value: Short): Unit = storeShort(toPtr(buf, pos), value)
 
   @inline
+  def getShort(buf: Array[Byte], pos: Int): Short = loadShort(toPtr(buf, pos))
+
+  @inline
   def setLongReversed(buf: Array[Byte], pos: Int, value: Long): Unit = storeLong(toPtr(buf, pos), `llvm.bswap.i64`(value))
 
   @inline
