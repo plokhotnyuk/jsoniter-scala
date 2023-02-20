@@ -1499,7 +1499,7 @@ object JsonCodecMaker {
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
         if (implCodec.nonEmpty) '{ ${implCodec.get}.nullValue }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[String]) '{ null }.asExprOf[T]
+        else if (tpe =:= TypeRepr.of[String]) '{ (null: String) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Boolean]) Literal(BooleanConstant(false)).asExprOf[T]
         else if (tpe =:= TypeRepr.of[java.lang.Boolean]) '{ java.lang.Boolean.valueOf(false) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Byte]) Literal(ByteConstant(0)).asExprOf[T]
@@ -1520,7 +1520,10 @@ object JsonCodecMaker {
         else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[immutable.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty }.asExprOf[T])
         else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ collection.BitSet.empty }.asExprOf[T])
-        else if (tpe <:< TypeRepr.of[::[_]]) '{ null }.asExprOf[T]
+        else if (tpe <:< TypeRepr.of[::[_]]) {
+          typeArg1(tpe).asType match
+            case '[t1] => '{ (null: ::[t1]) }.asExprOf[T]
+        }
         else if (tpe <:< TypeRepr.of[List[_]] || tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) '{ Nil }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[collection.SortedSet[_]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)

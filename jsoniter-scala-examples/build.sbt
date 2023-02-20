@@ -7,7 +7,10 @@ val `jsoniter-scala-examples` = crossProject(JVMPlatform, NativePlatform)
   .in(file("."))
   .settings(
     scalaVersion := "3.2.2",
-    scalacOptions ++= Seq("-Xmacro-settings:print-codecs"),
+    scalacOptions ++= Seq("-Xmacro-settings:print-codecs") ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _)) => Seq("-Yexplicit-nulls")
+      case _ => Seq()
+    }),
     crossScalaVersions := Seq("3.2.2", "2.13.10", "2.12.17"),
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
     assembly / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
