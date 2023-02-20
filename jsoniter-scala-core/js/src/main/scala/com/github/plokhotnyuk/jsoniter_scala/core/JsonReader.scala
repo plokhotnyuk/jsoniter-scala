@@ -499,6 +499,8 @@ final class JsonReader private[jsoniter_scala](
 
   def isCurrentToken(t: Byte): Boolean = isCurrentToken(t, head)
 
+  def hasRemaining(): Boolean = head < tail || loadMore(head) < tail
+
   def rollbackToken(): Unit = {
     val pos = head
     if (pos == 0) illegalTokenOperation()

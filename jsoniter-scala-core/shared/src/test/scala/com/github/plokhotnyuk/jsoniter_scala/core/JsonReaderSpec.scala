@@ -463,6 +463,15 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         .getMessage.startsWith("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
+  "JsonReader.hasRemaining" should {
+    "return true in case of at least one byte can be read from the input" in {
+      val jsonReader = reader("{\n}")
+      jsonReader.nextToken()
+      jsonReader.hasRemaining() shouldBe true
+      jsonReader.isNextToken('}')
+      jsonReader.hasRemaining() shouldBe false
+    }
+  }
   "JsonReader.readANullOrError" should {
     "parse null value" in {
       val r = reader("null")
