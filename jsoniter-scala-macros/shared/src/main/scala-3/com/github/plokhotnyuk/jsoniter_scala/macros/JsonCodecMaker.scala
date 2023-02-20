@@ -4,7 +4,6 @@ import java.lang.Character._
 import java.time._
 import java.math.MathContext
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CompileTimeEval._
 import scala.annotation._
@@ -931,10 +930,10 @@ object JsonCodecMaker {
         }.toMap
         val primaryConstructor = getPrimaryConstructor(tpe)
 
-        def createFieldInfos(params: List[Symbol], typeParams: List[Symbol],
-                             nonTransientFieldIndex: AtomicInteger): List[FieldInfo] = {
-          val fieldInfos = new mutable.ListBuffer[FieldInfo]
-          params.zipWithIndex.foreach { case (symbol, i) =>
+        def createFieldInfos(params: List[Symbol], typeParams: List[Symbol], fieldIndex: Boolean => Int): List[FieldInfo] =
+          var i = 0
+          params.map { symbol =>
+            i += 1
             val name = symbol.name
             val annotationOption = annotations.get(name)
             val mappedName = annotationOption.fold(cfg.fieldNameMapper(name).getOrElse(name))(_.partiallyMappedName)
@@ -959,7 +958,7 @@ object JsonCodecMaker {
               }
             val defaultValue =
               if (symbol.flags.is(Flags.HasDefault)) {
-                val dvMembers = tpe.typeSymbol.companionClass.methodMember("$lessinit$greater$default$" + (i + 1))
+                val dvMembers = tpe.typeSymbol.companionClass.methodMember("$lessinit$greater$default$" + i)
                 if (dvMembers.isEmpty) fail(s"Can't find default value for $symbol in class ${tpe.show}")
                 val methodSymbol = dvMembers.head
                 val dvSelectNoTArgs = Ref(tpe.typeSymbol.companionModule).select(methodSymbol)
@@ -990,20 +989,21 @@ object JsonCodecMaker {
                     s"field $symbol of class ${tpe.show} have type ${defaultValue.get.tpe.show} but field type " +
                     s"is ${fieldType.show}")
                 }
-            fieldInfos.addOne(FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient,
-              isStringified, nonTransientFieldIndex.get))
-            if (!isTransient) nonTransientFieldIndex.getAndIncrement()
-          }
-          fieldInfos.result()
-        }
+            FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, fieldIndex(isTransient))
+          }.toList
 
         def isTypeParamsList(symbols: List[Symbol]): Boolean = symbols.exists(_.isTypeParam)
 
-        val nonTransientFieldIndex = new AtomicInteger
+        val fieldIndex: Boolean => Int = {
+          var i = -1
+          (isTransient: Boolean) =>
+            if (!isTransient) i += 1
+            i
+        }
         ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
-          case tps :: ps :: Nil if isTypeParamsList(tps) => createFieldInfos(ps, tps, nonTransientFieldIndex) :: Nil
-          case tps :: pss if isTypeParamsList(tps) => pss.map(ps => createFieldInfos(ps, tps, nonTransientFieldIndex))
-          case pss => pss.map(ps => createFieldInfos(ps, Nil, nonTransientFieldIndex))
+          case tps :: ps :: Nil if isTypeParamsList(tps) => createFieldInfos(ps, tps, fieldIndex) :: Nil
+          case tps :: pss if isTypeParamsList(tps) => pss.map(ps => createFieldInfos(ps, tps, fieldIndex))
+          case pss => pss.map(ps => createFieldInfos(ps, Nil, fieldIndex))
         })
       })
 
@@ -1389,8 +1389,11 @@ object JsonCodecMaker {
             MethodType(List("i"))(_ => List(TypeRepr.of[Int]), _ => TypeRepr.of[String]))
           DefDef(sym, params => {
             val List(List(param)) = params
-            val cases = f.zipWithIndex
-              .map { case (n, i) => CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n))) }
+            var i = -1
+            val cases = f.map { n =>
+              i += 1
+              CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n)))
+            }
             Some(Match(param.asExprOf[Int].asTerm, cases).changeOwner(sym))
           })
         }).symbol)
@@ -1696,12 +1699,16 @@ object JsonCodecMaker {
           if (required.isEmpty) Nil
           else {
             val nameByIndex = withFieldsByIndexFor(tpe)(mappedNames)
-            val reqMasks = fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) {
-              case (acc, (fieldInfo, i)) =>
+            val reqMasks = fields.grouped(32).toArray.map(_.foldLeft(0) {
+              var i = -1
+              (acc, fieldInfo) =>
+                i += 1
                 if (required(fieldInfo.mappedName)) acc | 1 << i
                 else acc
             })
-            paramVars.zipWithIndex.map { case (nValDef, i) =>
+            var i = -1
+            paramVars.map { nValDef =>
+              i += 1
               val n = Ref(nValDef.symbol).asExprOf[Int]
               val reqMask = reqMasks(i)
               if (reqMask == -1 || (i == lastParamVarIndex && reqMask == lastParamVarBits)) {
@@ -2339,14 +2346,16 @@ object JsonCodecMaker {
           }
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           val valDefs = new mutable.ListBuffer[ValDef]
-          val indexedTypes = typeArgs(tpe).zipWithIndex
-          indexedTypes.foreach { case (te, i) =>
+          val indexedTypes = typeArgs(tpe)
+          var i = 0
+          indexedTypes.foreach { te =>
+            i += 1
             te.asType match
               case '[t] =>
-                val sym = symbol("_r" + (i + 1), te)
+                val sym = symbol("_r" + i, te)
                 val nullVal = genNullValue[t](te :: types)
                 val rhs =
-                  if (i == 0) genReadVal(te :: types, nullVal, isStringified, false, in)
+                  if (i == 1) genReadVal(te :: types, nullVal, isStringified, false, in)
                   else '{
                     if ($in.isNextToken(',')) {
                       ${genReadVal(te :: types, nullVal, isStringified, false, in)}
@@ -2357,7 +2366,7 @@ object JsonCodecMaker {
           val readCreateBlock = Block(valDefs.toList, '{
             if ($in.isNextToken(']')) {
               ${Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"),
-                indexedTypes.map(x => Inferred(x._1))), valDefs.toList.map(x => Ref(x.symbol))).asExpr}
+                indexedTypes.map(x => Inferred(x))), valDefs.toList.map(x => Ref(x.symbol))).asExpr}
             } else $in.arrayEndError()
           }.asTerm)
           '{
@@ -2723,10 +2732,12 @@ object JsonCodecMaker {
             $out.writeObjectEnd()
           }
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val writeFields = typeArgs(tpe).zipWithIndex.map { case (te, i) =>
+          var i = 0
+          val writeFields = typeArgs(tpe).map { te =>
+            i += 1
             te.asType match
               case '[t] =>
-                genWriteVal(Select.unique(x.asTerm, "_" + (i + 1)).asExprOf[t], te :: types, isStringified, None, out).asTerm
+                genWriteVal(Select.unique(x.asTerm, "_" + i).asExprOf[t], te :: types, isStringified, None, out).asTerm
           }
           if (writeFields.isEmpty) fail(s"Expected that ${tpe.show} should be an applied type")
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
@@ -2805,7 +2816,7 @@ object JsonCodecMaker {
     xs.foldLeft(new mutable.LinkedHashMap[K, ArrayBuffer[A]]) { (m, x) =>
       m.getOrElseUpdate(f(x), new ArrayBuffer[A]) += x
       m
-    }.toSeq
+    }.toArray
 
   private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] = xs.filter {
     val seen = new mutable.HashSet[A]

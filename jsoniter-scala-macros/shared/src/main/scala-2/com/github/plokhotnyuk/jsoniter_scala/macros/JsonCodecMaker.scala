@@ -1103,10 +1103,16 @@ object JsonCodecMaker {
 
       def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = Ident(fields.getOrElseUpdate(tpe, {
         val name = TermName("f" + fields.size)
+        val cases = f.map {
+          var i = -1
+          n =>
+            i += 1
+            cq"$i => $n"
+        }
         (name,
           q"""private[this] def $name(i: Int): String =
                 (i: @_root_.scala.annotation.switch @_root_.scala.unchecked) match {
-                  case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n" }}
+                  case ..$cases
                 }""")
       })._1)
 
@@ -1230,10 +1236,13 @@ object JsonCodecMaker {
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
-        val checkAndResetFieldPresenceFlags = fields.zipWithIndex.map { case (fieldInfo, i) =>
-          val n = paramVarNames(i >> 5)
-          val m = 1 << i
-          (fieldInfo.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
+        val checkAndResetFieldPresenceFlags = fields.map {
+          var i = -1
+          fieldInfo =>
+            i += 1
+            val n = paramVarNames(i >> 5)
+            val m = 1 << i
+            (fieldInfo.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
         }.toMap
         val paramVars =
           paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
@@ -1241,23 +1250,29 @@ object JsonCodecMaker {
           if (required.isEmpty) Nil
           else {
             val names = withFieldsFor(tpe)(mappedNames)
-            val reqMasks = fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (fieldInfo, i)) =>
-              if (required(fieldInfo.mappedName)) acc | 1 << i
-              else acc
+            val reqMasks = fields.grouped(32).toArray.map(_.foldLeft(0) {
+              var i = -1
+              (acc, fieldInfo) =>
+                i += 1
+                if (required(fieldInfo.mappedName)) acc | 1 << i
+                else acc
             })
-            paramVarNames.zipWithIndex.map { case (n, i) =>
-              val m = reqMasks(i)
-              if (m == -1 || (i == lastParamVarIndex && m == lastParamVarBits)) {
-                val fieldName =
-                  if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n))"
-                  else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n) + ${i << 5})"
-                q"if ($n != 0) in.requiredFieldError($fieldName)"
-              } else {
-                val fieldName =
-                  if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m))"
-                  else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m) + ${i << 5})"
-                q"if (($n & $m) != 0) in.requiredFieldError($fieldName)"
-              }
+            paramVarNames.map {
+              var i = -1
+              n =>
+                i += 1
+                val m = reqMasks(i)
+                if (m == -1 || (i == lastParamVarIndex && m == lastParamVarBits)) {
+                  val fieldName =
+                    if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n))"
+                    else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n) + ${i << 5})"
+                  q"if ($n != 0) in.requiredFieldError($fieldName)"
+                } else {
+                  val fieldName =
+                    if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m))"
+                    else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m) + ${i << 5})"
+                  q"if (($n & $m) != 0) in.requiredFieldError($fieldName)"
+                }
             }
           }
         val construct = q"new $tpe(...${classInfo.paramLists.map(_.map(fieldInfo => q"${fieldInfo.symbol.name} = ${fieldInfo.tmpName}"))})"
@@ -1624,18 +1639,21 @@ object JsonCodecMaker {
                 ${tpe.typeSymbol.asClass.module}
               } else in.readNullOrTokenError(default, '{')"""
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default) {
-          val indexedTypes = tpe.typeArgs.zipWithIndex
+          val indexedTypes = tpe.typeArgs
           val readFields = indexedTypes.tail.foldLeft[Tree] {
             val t = typeArg1(tpe)
             q"val _1: $t = ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}"
-          }{ case (acc, (ta, i)) =>
-            val t = ta.dealias
-            q"""..$acc
-                val ${TermName("_" + (i + 1))}: $t =
-                  if (in.isNextToken(',')) ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}
-                  else in.commaError()"""
+          }{
+            var i = 1
+            (acc, ta) =>
+              i += 1
+              val t = ta.dealias
+              q"""..$acc
+                  val ${TermName("_" + i)}: $t =
+                    if (in.isNextToken(',')) ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}
+                    else in.commaError()"""
           }
-          val params = indexedTypes.map { case (_, i) => TermName("_" + (i + 1)) }
+          val params = (1 to indexedTypes.length).map(i => TermName("_" + i))
           q"""if (in.isNextToken('[')) {
                 ..$readFields
                 if (in.isNextToken(']')) new $tpe(..$params)
@@ -1961,8 +1979,11 @@ object JsonCodecMaker {
               ..$discriminator
               out.writeObjectEnd()"""
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
-          val writeFields = tpe.typeArgs.zipWithIndex.map { case (ta, i) =>
-            genWriteVal(q"x.${TermName("_" + (i + 1))}", ta.dealias :: types, isStringified, EmptyTree)
+          val writeFields = tpe.typeArgs.map {
+            var i = 0
+            ta =>
+              i += 1
+              genWriteVal(q"x.${TermName("_" + i)}", ta.dealias :: types, isStringified, EmptyTree)
           }
           q"""out.writeArrayStart()
               ..$writeFields
