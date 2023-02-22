@@ -734,7 +734,8 @@ object JsonCodecMaker {
       def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< TypeRepr.of[Option[_]] &&
         (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< TypeRepr.of[Option[_]]))
 
-      def isCollection(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Array[_]]
+      def isCollection(tpe: TypeRepr): Boolean =
+        tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]] || tpe <:< TypeRepr.of[Array[_]]
 
       def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[_]]
 
@@ -1283,7 +1284,7 @@ object JsonCodecMaker {
         if (isEncodingRequired(value)) '{ $out.writeVal(${Expr(value)}) }
         else '{ $out.writeNonEscapedAsciiVal(${Expr(value)}) }
 
-      def genWriteArray[T: Type](x: Expr[Iterable[T]], writeVal: Quotes ?=> (Expr[JsonWriter], Expr[T]) => Expr[Unit],
+      def genWriteArray[T: Type](x: Expr[IterableOnce[T]], writeVal: Quotes ?=> (Expr[JsonWriter], Expr[T]) => Expr[Unit],
                                  out: Expr[JsonWriter])(using Quotes): Expr[Unit] = '{
         $out.writeArrayStart()
         $x.foreach(x => ${writeVal(out, 'x)})
@@ -1543,8 +1544,9 @@ object JsonCodecMaker {
           scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) {
           scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[Iterable[_]]) scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
-        else if (tpe <:< TypeRepr.of[Array[_]]) withNullValueFor(tpe) {
+        } else if (tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]]) {
+          scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
+        } else if (tpe <:< TypeRepr.of[Array[_]]) withNullValueFor(tpe) {
           typeArg1(tpe).asType match
             case '[t1] => genNewArray[t1]('{ 0 }).asExprOf[T]
         } else if (isConstType(tpe)) {
@@ -2274,7 +2276,7 @@ object JsonCodecMaker {
                 else $emptyCollection
               }.asExprOf[T & mutable.Growable[t1]], x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
                 default, x => x, in).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[Iterable[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
@@ -2397,8 +2399,8 @@ object JsonCodecMaker {
             case '[ft] =>
               fDefault match {
                 case Some(d) =>
-                  if (fTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterable[_]]}
+                  if ((fTpe <:< TypeRepr.of[Iterable[_]] || fTpe <:< TypeRepr.of[Iterator[_]]) && cfg.transientEmpty) '{
+                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & IterableOnce[_]]}
                     if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2436,8 +2438,8 @@ object JsonCodecMaker {
                     }
                   }
                 case None =>
-                  if (fTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterable[_]]}
+                  if ((fTpe <:< TypeRepr.of[Iterable[_]] || fTpe <:< TypeRepr.of[Iterator[_]]) && cfg.transientEmpty) '{
+                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & IterableOnce[_]]}
                     if (!v.isEmpty) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2702,11 +2704,11 @@ object JsonCodecMaker {
                 } else $tx.foreach(x => ${genWriteVal('x, tpe1 :: types, isStringified, None, out)})
                 $out.writeArrayEnd()
               }
-        } else if (tpe <:< TypeRepr.of[Iterable[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
-              genWriteArray(x.asExprOf[Iterable[t1]],
+              genWriteArray(x.asExprOf[IterableOnce[t1]],
                 (out, x1) => genWriteVal(x1, tpe1 :: types, isStringified, None, out), out)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tx = x.asExprOf[Enumeration#Value]

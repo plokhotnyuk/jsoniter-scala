@@ -1192,7 +1192,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfArrays, """{"aa":[[1,2,3}],"a":[]}""", "expected ']' or ',', offset: 0x0000000d")
       verifyDeserError(codecOfArrays, """{"aa":[[1,2,3,]],"a":[]}""", "illegal number, offset: 0x0000000e")
     }
-    "serialize and deserialize case classes with generic Iterables" in {
+    "serialize and deserialize case classes with Iterators" in {
+      case class GenericIterators(
+         s: _root_.scala.collection.Iterator[_root_.scala.collection.Iterator[String]],
+         i: _root_.scala.collection.Iterator[Int])
+
+      val codecOfGenericIterables = make[GenericIterators]
+      val obj = readFromString("""{"s":[["1","2","3"]],"i":[4,5,6]}""")(codecOfGenericIterables)
+      writeToString(obj)(codecOfGenericIterables) shouldBe """{"s":[["1","2","3"]],"i":[4,5,6]}"""
+    }
+    "serialize and deserialize case classes with Iterables" in {
       case class GenericIterables(
         s: _root_.scala.collection.Set[_root_.scala.collection.SortedSet[String]],
         is: _root_.scala.collection.IndexedSeq[_root_.scala.collection.Seq[Float]],

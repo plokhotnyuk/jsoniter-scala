@@ -593,7 +593,8 @@ object JsonCodecMaker {
       def isOption(tpe: Type, types: List[Type]): Boolean =
         tpe <:< typeOf[Option[_]] && (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< typeOf[Option[_]]))
 
-      def isCollection(tpe: Type): Boolean = tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Array[_]]
+      def isCollection(tpe: Type): Boolean =
+        tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Iterator[_]] || tpe <:< typeOf[Array[_]]
 
       def scalaCollectionCompanion(tpe: Type): Tree =
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ident(tpe.typeSymbol.companion)
@@ -1198,8 +1199,12 @@ object JsonCodecMaker {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
         } else if (tpe <:< typeOf[collection.Map[_, _]]) {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe <:< typeOf[Iterable[_]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-        else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new _root_.scala.Array[${typeArg1(tpe)}](0)")
+        } else if (tpe <:< typeOf[Iterable[_]]) {
+          q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+        } else if (tpe <:< typeOf[Iterator[_]]) {
+          if (isScala213) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+          else q"${scalaCollectionCompanion(tpe)}.empty"
+        } else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new _root_.scala.Array[${typeArg1(tpe)}](0)")
         else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(v: String)) => q"$v"
@@ -1587,6 +1592,15 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
+        } else if (tpe <:< typeOf[Iterator[_]]) withDecoderFor(methodKey, default) {
+          val tpe1 = typeArg1(tpe)
+          genReadArray({
+            if (isScala213) q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }"
+            else q"{ val x = Seq.newBuilder[$tpe1] }"
+          }, genReadValForGrowable(tpe1 :: types, isStringified), {
+            if (isScala213) q"x.result()"
+            else q"x.result().iterator"
+          })
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           val ec = withScalaEnumCacheFor(tpe)
           if (cfg.useScalaEnumValueId) {
@@ -1759,7 +1773,7 @@ object JsonCodecMaker {
           (if (cfg.transientDefault) fieldInfo.defaultValue
           else None) match {
             case Some(d) =>
-              if (fTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
+              if ((fTpe <:< typeOf[Iterable[_]] || fTpe <:< typeOf[Iterator[_]]) && cfg.transientEmpty) {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
@@ -1789,7 +1803,7 @@ object JsonCodecMaker {
                     }"""
               }
             case None =>
-              if (fTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
+              if ((fTpe <:< typeOf[Iterable[_]] || fTpe <:< typeOf[Iterator[_]]) && cfg.transientEmpty) {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
@@ -1955,7 +1969,7 @@ object JsonCodecMaker {
                 }
               }
               out.writeArrayEnd()"""
-        } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Iterator[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree))
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           if (cfg.useScalaEnumValueId) {
