@@ -935,6 +935,13 @@ object JsonCodecMaker {
             }
             out.writeArrayEnd()"""
 
+      def genWriteArray2(x: Tree, writeVal: Tree): Tree =
+        q"""out.writeArrayStart()
+            while($x.hasNext) {
+              ..$writeVal
+            }
+            out.writeArrayEnd()"""
+
       def genWriteMap(x: Tree, writeKey: Tree, writeVal: Tree): Tree =
         q"""out.writeObjectStart()
             $x.foreach { kv =>
@@ -1773,9 +1780,15 @@ object JsonCodecMaker {
           (if (cfg.transientDefault) fieldInfo.defaultValue
           else None) match {
             case Some(d) =>
-              if ((fTpe <:< typeOf[Iterable[_]] || fTpe <:< typeOf[Iterator[_]]) && cfg.transientEmpty) {
+              if (fTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty && v != $d) {
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                    }"""
+              } else if (fTpe <:< typeOf[Iterator[_]] && cfg.transientEmpty) {
+                q"""val v = x.${fieldInfo.getter}
+                    if (v.hasNext && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
@@ -1803,9 +1816,15 @@ object JsonCodecMaker {
                     }"""
               }
             case None =>
-              if ((fTpe <:< typeOf[Iterable[_]] || fTpe <:< typeOf[Iterator[_]]) && cfg.transientEmpty) {
+              if (fTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty) {
+                      ..${genWriteConstantKey(fieldInfo.mappedName)}
+                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                    }"""
+              } else if (fTpe <:< typeOf[Iterator[_]] && cfg.transientEmpty) {
+                q"""val v = x.${fieldInfo.getter}
+                    if (v.hasNext) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
@@ -1969,8 +1988,10 @@ object JsonCodecMaker {
                 }
               }
               out.writeArrayEnd()"""
-        } else if (tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Iterator[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree))
+        } else if (tpe <:< typeOf[Iterator[_]]) withEncoderFor(methodKey, m) {
+          genWriteArray2(q"x", genWriteVal(q"x.next()", typeArg1(tpe) :: types, isStringified, EmptyTree))
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           if (cfg.useScalaEnumValueId) {
             if (isStringified) q"out.writeValAsString(x.id)"
