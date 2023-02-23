@@ -105,6 +105,8 @@ case class Tuples(t1: (Int, Double, List[Char]), t2: (String, BigInt, Option[Loc
 
 case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
 
+case class Iterators(s: Iterator[Iterator[String]], i: Iterator[Int])
+
 case class MutableMaps(
   hm: collection.mutable.HashMap[Boolean, collection.mutable.AnyRefMap[BigDecimal, Int]],
   m: collection.mutable.Map[Float, collection.mutable.ListMap[BigInt, String]],
@@ -252,6 +254,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   val codecOfOptions: JsonValueCodec[Options] = make
   val codecOfTuples: JsonValueCodec[Tuples] = make
   val codecOfArrays: JsonValueCodec[Arrays] = make
+  val codecOfIterators: JsonValueCodec[Iterators] = make
   val codecOfMutableMaps: JsonValueCodec[MutableMaps] = make
   val codecOfImmutableMaps: JsonValueCodec[ImmutableMaps] = make
   val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make
@@ -1193,33 +1196,41 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfArrays, """{"aa":[[1,2,3,]],"a":[]}""", "illegal number, offset: 0x0000000e")
     }
     "serialize and deserialize case classes with Iterators" in {
-      case class GenericIterators(
-         s: _root_.scala.collection.Iterator[_root_.scala.collection.Iterator[String]],
-         i: _root_.scala.collection.Iterator[Int])
-
-      val codecOfGenericIterables = make[GenericIterators]
-      val obj = readFromString("""{"s":[["1","2","3"]],"i":[4,5,6]}""")(codecOfGenericIterables)
-      writeToString(obj)(codecOfGenericIterables) shouldBe """{"s":[["1","2","3"]],"i":[4,5,6]}"""
+      val obj = readFromString("""{"s":[["1","2","3"]],"i":[4,5,6]}""")(codecOfIterators)
+      writeToString(obj)(codecOfIterators) shouldBe """{"s":[["1","2","3"]],"i":[4,5,6]}"""
+    }
+    "serialize and deserialize top-level Iterators" in {
+      val codecOfIteratorOfIteratorOfInt = make[Iterator[Iterator[Int]]]
+      val obj = readFromString("""[[1,2,3],[4,5,6]]""")(codecOfIteratorOfIteratorOfInt)
+      writeToString(obj)(codecOfIteratorOfIteratorOfInt) shouldBe """[[1,2,3],[4,5,6]]"""
+    }
+    "don't serialize fields of case classes with empty Iterators" in {
+      val obj = readFromString("""{"s":[[]],"i":[]}""")(codecOfIterators)
+      writeToString(obj)(codecOfIterators) shouldBe """{"s":[[]]}"""
+    }
+    "serialize fields of case classes with empty Iterators when transientEmpty is off" in {
+      val obj = readFromString("""{"s":[[]],"i":[]}""")(codecOfIterators)
+      writeToString(obj)(make[Iterators](CodecMakerConfig.withTransientEmpty(false))) shouldBe """{"s":[[]],"i":[]}"""
     }
     "serialize and deserialize case classes with Iterables" in {
-      case class GenericIterables(
+      case class Iterables(
         s: _root_.scala.collection.Set[_root_.scala.collection.SortedSet[String]],
         is: _root_.scala.collection.IndexedSeq[_root_.scala.collection.Seq[Float]],
         i: _root_.scala.collection.Iterable[Int])
 
-      val codecOfGenericIterables = make[GenericIterables]
-      verifySerDeser(codecOfGenericIterables,
-        GenericIterables(_root_.scala.collection.Set(_root_.scala.collection.SortedSet("1", "2", "3")),
+      val codecOfIterables = make[Iterables]
+      verifySerDeser(codecOfIterables,
+        Iterables(_root_.scala.collection.Set(_root_.scala.collection.SortedSet("1", "2", "3")),
           _root_.scala.collection.IndexedSeq(_root_.scala.collection.Seq(1.1f, 2.2f, 3.3f)),
           _root_.scala.collection.Iterable(4, 5, 6)),
         """{"s":[["1","2","3"]],"is":[[1.1,2.2,3.3]],"i":[4,5,6]}""")
-      verifySer(codecOfGenericIterables,
-        GenericIterables(_root_.scala.collection.immutable.Set(_root_.scala.collection.immutable.SortedSet("1", "2", "3")),
+      verifySer(codecOfIterables,
+        Iterables(_root_.scala.collection.immutable.Set(_root_.scala.collection.immutable.SortedSet("1", "2", "3")),
           _root_.scala.  collection.immutable.IndexedSeq(_root_.scala.collection.immutable.Seq(1.1f, 2.2f, 3.3f)),
           _root_.scala.collection.immutable.Iterable(4, 5, 6)),
         """{"s":[["1","2","3"]],"is":[[1.1,2.2,3.3]],"i":[4,5,6]}""")
-      verifySer(codecOfGenericIterables,
-        GenericIterables(_root_.scala.collection.mutable.Set(_root_.scala.collection.mutable.SortedSet("1", "2", "3")),
+      verifySer(codecOfIterables,
+        Iterables(_root_.scala.collection.mutable.Set(_root_.scala.collection.mutable.SortedSet("1", "2", "3")),
           _root_.scala.collection.mutable.IndexedSeq(_root_.scala.collection.mutable.Seq(1.1f, 2.2f, 3.3f)),
           _root_.scala.collection.mutable.Iterable(4, 5, 6)),
         """{"s":[["1","2","3"]],"is":[[1.1,2.2,3.3]],"i":[4,5,6]}""")
