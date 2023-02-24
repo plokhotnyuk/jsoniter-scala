@@ -16,9 +16,9 @@ val `jsoniter-scala-examples` = crossProject(JVMPlatform, NativePlatform)
     assembly / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
     libraryDependencySchemes += "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "always",
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "2.21.1",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "2.21.2",
       // Use the "provided" scope instead when the "compile-internal" scope is not supported
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.21.1" % "compile-internal"
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.21.2" % "compile-internal"
     )
   )
 
