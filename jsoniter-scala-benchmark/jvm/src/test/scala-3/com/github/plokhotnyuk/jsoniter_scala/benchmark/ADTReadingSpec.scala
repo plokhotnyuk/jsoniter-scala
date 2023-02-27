@@ -34,8 +34,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
-      //FIXME: uPuckle hungs in endless loop
-      //intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())
     }
