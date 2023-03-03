@@ -202,13 +202,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
       "io.circe" %%% "circe-core" % "0.14.5",
       "io.circe" %%% "circe-parser" % "0.14.5" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.15" % Test
-    ),
-    dependencyOverrides ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 12)) => Seq(
-        "io.circe" %%% "circe-numbers" % "0.14.3"
-      )
-      case _ => Seq()
-    })
+    )
   )
 
 lazy val `jsoniter-scala-circeJVM` = `jsoniter-scala-circe`.jvm
