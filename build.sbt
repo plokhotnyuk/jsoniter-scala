@@ -199,10 +199,16 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(
     crossScalaVersions := Seq("3.2.2", "2.13.10", "2.12.17"),
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.3",
-      "io.circe" %%% "circe-parser" % "0.14.3" % Test,
+      "io.circe" %%% "circe-core" % "0.14.5",
+      "io.circe" %%% "circe-parser" % "0.14.5" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.15" % Test
-    )
+    ),
+    dependencyOverrides ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 12)) => Seq(
+        "io.circe" %%% "circe-numbers" % "0.14.3"
+      )
+      case _ => Seq()
+    })
   )
 
 lazy val `jsoniter-scala-circeJVM` = `jsoniter-scala-circe`.jvm
@@ -231,9 +237,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "dev.zio" %%% "zio-json" % "0.4.2",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
       "com.lihaoyi" %%% "upickle" % "3.0.0-M2",
-      "io.circe" %%% "circe-generic" % "0.14.3",
-      "io.circe" %%% "circe-parser" % "0.14.3",
-      "io.circe" %%% "circe-jawn" % "0.14.3",
+      "io.circe" %%% "circe-generic" % "0.14.5",
+      "io.circe" %%% "circe-parser" % "0.14.5",
+      "io.circe" %%% "circe-jawn" % "0.14.5",
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.17.4",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M2",
       "org.json4s" %% "json4s-native" % "4.1.0-M2",

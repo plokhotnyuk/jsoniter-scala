@@ -12,8 +12,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       val b = benchmark
       b.borer() shouldBe
         "Cannot decode `MissingRequiredFields` instance due to missing map keys \"s\" and \"i\" (input position 1)"
-      b.circe() shouldBe "Missing required field: DownField(s)"
-      b.circeJsoniter() shouldBe "Missing required field: DownField(s)"
+      b.circe() shouldBe "DecodingFailure at .s: Missing required field"
+      b.circeJsoniter() shouldBe "DecodingFailure at .s: Missing required field"
       b.jsoniterScala() shouldBe
         """missing required field "s", offset: 0x00000001, buf:
           |+----------+-------------------------------------------------+------------------+
