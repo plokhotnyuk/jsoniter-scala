@@ -1177,22 +1177,9 @@ final class JsonReader private[jsoniter_scala](
       else booleanError(bs, pos)
     } else parseBoolean(isToken, loadMoreOrError(pos))
 
-  private[this] def booleanError(bs: Int, pos: Int): Nothing = booleanError({
-    val b1 = bs.toByte
-    val b2 = (bs >> 8).toByte
-    val b3 = (bs >> 16).toByte
-    if (b1 == 't') {
-      pos +
-        (if (b2 != 'r') 1
-        else if (b3 != 'u') 2
-        else 3)
-    } else if (b1 == 'f') {
-      pos +
-        (if (b2 != 'a') 1
-        else if (b3 != 'l') 2
-        else 3)
-    } else pos
-  })
+  private[this] def booleanError(bs: Int, pos: Int): Nothing =
+    booleanError((Math.max(java.lang.Integer.numberOfTrailingZeros(bs ^ 0x65757274),
+      java.lang.Integer.numberOfTrailingZeros(bs ^ 0x736C6166)) >> 3) + pos)
 
   private[this] def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
 
