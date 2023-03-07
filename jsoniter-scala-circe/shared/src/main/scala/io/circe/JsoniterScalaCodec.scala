@@ -7,7 +7,7 @@ import java.util
 import scala.collection.immutable.VectorBuilder
 
 object JsoniterScalaCodec {
-  val defaultNumberParser: JsonReader => Json = in => {
+  val defaultNumberParser: JsonReader => Json = in => new JNumber({
     in.setMark()
     var digits = 0
     var b = in.nextByte()
@@ -17,19 +17,17 @@ object JsoniterScalaCodec {
       digits += 1
     }
     in.rollbackToMark()
-    new JNumber({
-      if ((b | 0x20) != 'e' && b != '.') {
-        if (digits < 19) new JsonLong({
-          if (digits < 10) in.readInt()
-          else in.readLong()
-        }) else {
-          val x = in.readBigInt(null)
-          if (x.bitLength < 64) new JsonLong(x.longValue)
-          else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
-        }
-      } else new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
-    })
-  }
+    if ((b | 0x20) != 'e' && b != '.') {
+      if (digits < 19) new JsonLong({
+        if (digits < 10) in.readInt()
+        else in.readLong()
+      }) else {
+        val x = in.readBigInt(null)
+        if (x.isValidLong) new JsonLong(x.longValue)
+        else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
+      }
+    } else new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
+  })
 
   def asciiStringToJString[A](buf: Array[Byte], len: Int): Json = new JString(StringUtil.toString(buf, len))
 
