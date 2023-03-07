@@ -12,13 +12,9 @@ object JsoniterScalaCodec {
     var digits = 0
     var b = in.nextByte()
     if (b == '-') b = in.nextByte()
-    try {
-      while (b >= '0' && b <= '9') {
-        b = in.nextByte()
-        digits += 1
-      }
-    } catch {
-      case _: JsonReaderException => // ignore the end of input error for now
+    while ((b >= '0' && b <= '9') && in.hasRemaining()) {
+      b = in.nextByte()
+      digits += 1
     }
     in.rollbackToMark()
     new JNumber({
