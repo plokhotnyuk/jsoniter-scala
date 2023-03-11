@@ -23,7 +23,7 @@ object Example02 {
         in.readBoolean()
       } else if ((b >= '0' && b <= '9') || b == '-') {
         in.rollbackToken()
-        in.readDouble()
+        in.readFloat()
       } else if (b == '[') {
         val depthM1 = depth - 1
         if (depthM1 < 0) in.decodeError("depth limit exceeded")
