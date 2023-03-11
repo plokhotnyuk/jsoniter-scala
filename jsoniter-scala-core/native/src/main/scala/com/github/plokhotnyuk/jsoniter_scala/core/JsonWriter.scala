@@ -78,7 +78,8 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) writeLong(x.longValue)
+    else writeBigInteger(x.bigInteger, null)
     writeParenthesesWithColon()
   }
 
@@ -235,7 +236,8 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) writeLong(x.longValue)
+    else writeBigInteger(x.bigInteger, null)
   }
 
   def writeVal(x: UUID): Unit = {
@@ -403,7 +405,8 @@ final class JsonWriter private[jsoniter_scala](
   def writeValAsString(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) writeLong(x.longValue)
+    else writeBigInteger(x.bigInteger, null)
     writeBytes('"')
   }
 

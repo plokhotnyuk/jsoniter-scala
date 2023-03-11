@@ -79,7 +79,12 @@ final class JsonWriter private[jsoniter_scala](
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) {
+      val l = x.longValue
+      val i = l.toInt
+      if (i == l) writeInt(i)
+      else writeLong(l)
+    } else writeBigInteger(x.bigInteger, null)
     writeParenthesesWithColon()
   }
 
@@ -267,7 +272,12 @@ final class JsonWriter private[jsoniter_scala](
   def writeVal(x: BigInt): Unit = {
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) {
+      val l = x.longValue
+      val i = l.toInt
+      if (i == l) writeInt(i)
+      else writeLong(l)
+    } else writeBigInteger(x.bigInteger, null)
   }
 
   def writeVal(x: UUID): Unit = {
@@ -454,7 +464,12 @@ final class JsonWriter private[jsoniter_scala](
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) {
+      val l = x.longValue
+      val i = l.toInt
+      if (i == l) writeInt(i)
+      else writeLong(l)
+    } else writeBigInteger(x.bigInteger, null)
     writeBytes('"')
   }
 
