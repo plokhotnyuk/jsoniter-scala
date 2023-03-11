@@ -48,7 +48,10 @@ object JsoniterScalaCodec {
     case _ => null
   }
 
-  def jsonValue(x: BigInt): Json = new JNumber(new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger)))
+  def jsonValue(x: BigInt): Json = new JNumber({
+    if (x.isValidLong) new JsonLong(x.longValue)
+    else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
+  })
 }
 
 final class JsoniterScalaCodec(
