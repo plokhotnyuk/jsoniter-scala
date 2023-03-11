@@ -1646,8 +1646,27 @@ final class JsonReader private[jsoniter_scala](
           head = pos
           if ((b | 0x20) == 'e' || b == '.') numberError(pos)
           if (mark == 0) from -= newMark
-          if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
-          new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
+          val len = pos - from
+          if (len >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
+          if (len < 10) {
+            var x: Int = buf(from) - '0'
+            from += 1
+            while (from < pos) {
+              x = x * 10 + (buf(from) - '0')
+              from += 1
+            }
+            if (isNeg) x = -x
+            BigInt(x)
+          } else if (len < 19) {
+            var x: Long = buf(from) - '0'
+            from += 1
+            while (from < pos) {
+              x = x * 10 + (buf(from) - '0')
+              from += 1
+            }
+            if (isNeg) x = -x
+            BigInt(x)
+          } else new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
         } finally if (mark > oldMark) mark = oldMark
       }
     }
