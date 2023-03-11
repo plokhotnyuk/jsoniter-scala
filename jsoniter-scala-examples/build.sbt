@@ -6,9 +6,9 @@ lazy val commonSettings = Seq(
   assembly / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
   libraryDependencySchemes += "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "always",
   libraryDependencies ++= Seq(
-    "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "2.21.2",
+    "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "2.21.3",
     // Use the "provided" scope instead when the "compile-internal" scope is not supported
-    "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.21.2" % "compile-internal"
+    "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.21.3" % "compile-internal"
   )
 )
 
