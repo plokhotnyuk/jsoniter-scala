@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import upickle.AttributeTagged
-import upickle.core.Visitor
+import upickle.core.{Annotator, Visitor}
 import java.time._
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
@@ -145,11 +145,11 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW
   }
 
-  override def annotate[V](rw: CaseR[V], n: String): TaggedReader.Leaf[V] =
+  override def annotate[V](rw: Reader[V], n: String): TaggedReader.Leaf[V] =
     new TaggedReader.Leaf[V](simpleName(n), rw)
 
-  override def annotate[V](rw: CaseW[V], n: String)(implicit c: ClassTag[V]): TaggedWriter.Leaf[V] =
-    new TaggedWriter.Leaf[V](c, simpleName(n), rw)
+  override def annotate[V](rw: ObjectWriter[V], n: String, checker: Annotator.Checker): TaggedWriter[V] =
+    new TaggedWriter.Leaf[V](checker, simpleName(n), rw)
 
   override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
     implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
