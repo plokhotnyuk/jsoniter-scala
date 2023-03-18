@@ -103,7 +103,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: zio-json serializes 2 "type" fields per JSON object
+
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
@@ -113,5 +113,4 @@ class GeoJSONWriting extends GeoJSONBenchmark {
 
     obj.toJson.getBytes(UTF_8)
   }
-*/
 }

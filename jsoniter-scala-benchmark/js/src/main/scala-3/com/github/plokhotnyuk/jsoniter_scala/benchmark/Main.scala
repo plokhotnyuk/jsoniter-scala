@@ -959,7 +959,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new GeoJSONWriting { setup() }
@@ -970,7 +971,8 @@ object Main {
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new GitHubActionsAPIReading { setup() }
