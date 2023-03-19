@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
-import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, JsonParser, StreamReadFeature, StreamWriteFeature}
+import com.fasterxml.jackson.core._
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.jsontype.NamedType
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -19,13 +19,15 @@ import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 object JacksonSerDesers {
-  def createJacksonMapper(escapeNonAscii: Boolean = false,
-                          indentOutput: Boolean = false): ObjectMapper with ClassTagExtensions = {
+  private[this] def createJacksonMapper(escapeNonAscii: Boolean = false,
+                                        indentOutput: Boolean = false): ObjectMapper with ClassTagExtensions = {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
       .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
       .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
       .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
+      .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
+      .streamReadConstraints(StreamReadConstraints.builder().maxNumberLength(Int.MaxValue).build()) /* WARNING: It is an unsafe option for open systems */
       .build()
     new ObjectMapper(jsonFactory) with ClassTagExtensions {
       addMixIn(classOf[GeoJSON.GeoJSON], classOf[MixIn])
