@@ -239,6 +239,21 @@ object Kind {
   implicit def codecOfKindAux[V]: JsonValueCodec[Kind.Aux[V]] = codecOfKind.asInstanceOf[JsonValueCodec[Kind.Aux[V]]]
 }
 
+object Demo { // See https://github.com/plokhotnyuk/jsoniter-scala/issues/1004
+  sealed trait Status[+E, +A]
+
+  final case class Error[E](error: E) extends Status[E, Nothing]
+
+  final case class Fatal(reason: String) extends Status[Nothing, Nothing]
+
+  final case class Success[A](a: A) extends Status[Nothing, A]
+
+  final case class Timeout() extends Status[Nothing, Nothing]
+
+  implicit def statusCodec[A, E](implicit ec: JsonValueCodec[E], ac: JsonValueCodec[A]): JsonValueCodec[Status[E, A]] =
+    JsonCodecMaker.make
+}
+
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
 

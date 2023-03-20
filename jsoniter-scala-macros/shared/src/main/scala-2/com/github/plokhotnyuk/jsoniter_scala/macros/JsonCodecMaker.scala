@@ -520,17 +520,12 @@ object JsonCodecMaker {
 
       def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
 
-      def substituteTypes(tpe: Type, from: List[Symbol], to: List[Type]): Type =
-        try tpe.substituteTypes(from, to) catch { case NonFatal(_) =>
-          fail(s"Cannot resolve generic type(s) for `$tpe`. Please provide a custom implicitly accessible codec for it.")
-        }
-
       def resolveConcreteType(tpe: Type, mtpe: Type): Type = {
         val tpeTypeParams =
           if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.typeParams
           else Nil
         if (tpeTypeParams.isEmpty) mtpe
-        else substituteTypes(mtpe, tpeTypeParams, tpe.typeArgs)
+        else mtpe.substituteTypes(tpeTypeParams, tpe.typeArgs)
       }
 
       def paramType(tpe: Type, p: TermSymbol): Type = resolveConcreteType(tpe, p.typeSignature.dealias)
@@ -549,11 +544,19 @@ object JsonCodecMaker {
 
       def adtLeafClasses(adtBaseTpe: Type): List[Type] = {
         def collectRecursively(tpe: Type): List[Type] = {
-          val leafTpes = tpe.typeSymbol.asClass.knownDirectSubclasses.toList.flatMap { s =>
+          val tpeClass = tpe.typeSymbol.asClass
+          val leafTpes = tpeClass.knownDirectSubclasses.toList.flatMap { s =>
             val classSymbol = s.asClass
+            val typeParams = classSymbol.typeParams
             val subTpe =
-              if (classSymbol.typeParams.isEmpty) classSymbol.toType
-              else substituteTypes(classSymbol.toType, classSymbol.typeParams, tpe.typeArgs)
+              if (typeParams.isEmpty) classSymbol.toType
+              else {
+                val typeParamsAndArgs = tpeClass.typeParams.map(_.toString).zip(tpe.typeArgs).toMap
+                val typeArgs = typeParams.map(s => typeParamsAndArgs.getOrElse(s.toString, fail {
+                  s"Cannot resolve generic type(s) for `${classSymbol.toType}`. Please provide a custom implicitly accessible codec for it."
+                }))
+                classSymbol.toType.substituteTypes(typeParams, typeArgs)
+              }
             if (isSealedClass(subTpe)) collectRecursively(subTpe)
             else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
             else fail(if (s.isAbstract) {
