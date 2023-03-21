@@ -38,7 +38,7 @@ object CirceCodecs {
     new JsonValueCodec[A] with Codec[A] {
       override def apply(x: A): Json = {
         val (buf, _, writer) = pool.get
-        io.circe.JsoniterScalaCodec.asciiStringToJString(buf, writer.write(this, x, buf, 0, buf.length, WriterConfig))
+        io.circe.JsoniterScalaCodec.asciiStringToJString(buf, writer.write(this, x, buf, 0, 128, WriterConfig))
       }
 
       override def apply(c: HCursor): Decoder.Result[A] = {

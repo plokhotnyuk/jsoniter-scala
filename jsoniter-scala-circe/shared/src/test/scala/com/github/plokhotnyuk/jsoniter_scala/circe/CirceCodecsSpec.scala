@@ -48,6 +48,10 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers {
       verifyDecoding[YearMonth]("year month", YearMonth.now())
       verifyEncoding[YearMonth](YearMonth.now())
     }
+    "decode and encode year" in {
+      verifyDecoding[Year]("year", Year.now())
+      verifyEncoding[Year](Year.now())
+    }
     "decode and encode zoned date time" in {
       verifyDecoding[ZonedDateTime]("zoned date time", ZonedDateTime.now())
       verifyEncoding[ZonedDateTime](ZonedDateTime.now())
