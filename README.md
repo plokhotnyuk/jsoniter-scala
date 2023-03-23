@@ -135,7 +135,7 @@ supports Scala 2.11.
 - Order of instance fields is preserved during serialization for generated codecs
 - Throws a parsing exception if duplicated keys were detected for a class instance (except maps)
 - Serialization of `null` values is prohibited by throwing of `NullPointerException` errors
-- Parsing of `null` values allowed only for optional of collection types (that means the `None` value or an empty 
+- Parsing of `null` values allowed only for optional or collection types (that means the `None` value or an empty 
   collection accordingly) and for fields which have defined non-null default values
 - Fields with default values that defined in the constructor are optional, other fields are required (no special
   annotation required)
