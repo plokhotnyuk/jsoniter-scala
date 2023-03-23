@@ -163,8 +163,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
     }) ++ Seq(
       "org.scalatest" %%% "scalatest" % "3.2.15" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0" % Test
-    ),
-    coverageEnabled := false // FIXME: Unexpected crash of scalac with Scala 3
+    )
   )
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
@@ -256,8 +255,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "io.bullet" %%% "borer-derivation" % "1.10.2"
       )
       case _ => Seq()
-    }),
-    coverageEnabled := false // FIXME: Unexpected crash of scalac with Scala 3
+    })
   )
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
