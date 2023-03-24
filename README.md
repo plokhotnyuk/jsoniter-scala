@@ -537,9 +537,11 @@ You will get the profile in the `jsoniter-scala-benchmark/jvm/target/jfr-reports
 To run benchmarks with recordings by [Async profiler](https://github.com/jvm-profiling-tools/async-profiler), extract
 binaries to `/opt/async-profiler` directory and use command like this:
 ```sh
-sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" --p size=128 -wi 5 -i 10 jsoniterScala'
+sbt -java-home /usr/lib/jvm/openjdk-21 jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" --p size=128 -wi 5 -i 10 jsoniterScala'
 ```
 Now you can open direct and reverse flame graphs in the `jsoniter-scala-benchmark/jvmtarget/async-reports` directory.
+
+Beware that `-XX:+DebugNonSafepoints` can lead to incorrect report due to [a bug which was fixed only for JDK 21 currently](https://bugs.openjdk.org/browse/JDK-8201516).  
 
 To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
 names for currently running Java processes. While your Java process still running launch the Async Profiler with the
