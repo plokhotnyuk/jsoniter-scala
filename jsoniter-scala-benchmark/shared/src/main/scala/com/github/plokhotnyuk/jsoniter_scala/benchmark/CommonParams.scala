@@ -23,7 +23,8 @@ import org.openjdk.jmh.annotations._
   "-XX:InlineSmallCode=1500",
   "-XX:+AlwaysPreTouch",
   "-XX:+UseNUMA",
-  "-XX:-UseAdaptiveNUMAChunkSizing"
+  "-XX:-UseAdaptiveNUMAChunkSizing",
+  "-XX:+PerfDisableSharedMem" // See https://github.com/Simonis/mmap-pause#readme
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
