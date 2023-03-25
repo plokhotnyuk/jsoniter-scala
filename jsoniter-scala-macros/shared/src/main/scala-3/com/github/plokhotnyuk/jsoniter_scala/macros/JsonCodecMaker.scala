@@ -821,10 +821,10 @@ object JsonCodecMaker {
       val mathContexts = new mutable.LinkedHashMap[Int, ValDef]
 
       def withMathContextFor(precision: Int): Expr[MathContext] =
-        if (precision == MathContext.DECIMAL128.getPrecision) '{ MathContext.DECIMAL128 }
-        else if (precision == MathContext.DECIMAL64.getPrecision) '{ MathContext.DECIMAL64 }
-        else if (precision == MathContext.DECIMAL32.getPrecision) '{ MathContext.DECIMAL32 }
-        else if (precision == MathContext.UNLIMITED.getPrecision) '{ MathContext.UNLIMITED }
+        if (precision == MathContext.DECIMAL128.getPrecision) '{ (MathContext.DECIMAL128: java.math.MathContext) }
+        else if (precision == MathContext.DECIMAL64.getPrecision) '{ (MathContext.DECIMAL64: java.math.MathContext) }
+        else if (precision == MathContext.DECIMAL32.getPrecision) '{ (MathContext.DECIMAL32: java.math.MathContext) }
+        else if (precision == MathContext.UNLIMITED.getPrecision) '{ (MathContext.UNLIMITED: java.math.MathContext) }
         else Ref(mathContexts.getOrElseUpdate(precision, {
           val sym = symbol("mc" + mathContexts.size, TypeRepr.of[MathContext])
           ValDef(sym, Some('{ new MathContext(${Expr(cfg.bigDecimalPrecision)}, java.math.RoundingMode.HALF_EVEN) }.asTerm.changeOwner(sym)))
