@@ -1349,12 +1349,13 @@ object JsonCodecMaker {
           if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '${tpe.show}'.")
           namedValueOpt(named.headOption, tpe).get
         } else cfg.adtLeafClassNameMapper({
-          if (tpe =:= TypeRepr.of[None.type]) "None"
+          if (tpe =:= TypeRepr.of[None.type]) "scala.None"
           else if (tpe.termSymbol.flags.is(Flags.Enum)) {
             tpe match
               case TermRef(_, name) => name
-              case TypeRef(_, name) => name // ADT
-              case AppliedType(base, _) => base.typeSymbol.fullName
+              case TypeRef(_, name) => name
+              case AppliedType(TermRef(_, name), _) => name
+              case AppliedType(TypeRef(_, name), _) => name
               case _ => fail(s"Unsupported enum type: '${tpe.show}', tree=$tpe")
           } else if (tpe.typeSymbol.flags.is(Flags.Module)) tpe.termSymbol.fullName
           else tpe.typeSymbol.fullName
