@@ -265,10 +265,12 @@ You can use the following on-line services to generate an initial version of you
 samples: 
 - [json2caseclass](https://json2caseclass.cleverapps.io/)
 - [json-to-scala-case-class](https://transform.now.sh/json-to-scala-case-class/)
-- [json2classes](https://chadselph.github.io/json2classes/).
+- [json2classes](https://chadselph.github.io/json2classes/)
+- [quicktype](https://app.quicktype.io/)
 
 Also, if you have JSON Schema the following on-line service can generate corresponding data structures for you:
 - [json-schema-to-case-class](https://cchandurkar.github.io/json-schema-to-case-class/)
+- [quicktype](https://app.quicktype.io/)
 
 And the following library can generate JSON Schema for your existing data structures:
 - [scala-jsonschema](https://github.com/andyglow/scala-jsonschema)
@@ -289,7 +291,9 @@ Samples for its integration with different web frameworks and HTTP servers:
 - [zio-http](https://github.com/TechEmpower/FrameworkBenchmarks/blob/master/frameworks/Scala/zio-http/src/main/scala/Main.scala)
 
 Other usages of jsoniter-scala:
-- [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types.
+- [caliban](https://github.com/ghostdogpr/caliban) - a purely functional library for building GraphQL servers and clients in Scala
+- [geo-scala](https://github.com/gnieh/geo-scala) - a core AST and utilities for GeoJSON (RFC 7946) and more
+- [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types
 - [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
 instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
