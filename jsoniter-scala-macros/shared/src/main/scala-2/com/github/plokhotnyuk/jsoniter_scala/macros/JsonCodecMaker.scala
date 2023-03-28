@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.lang.Character._
 import java.time._
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.core._
 import scala.annotation.{StaticAnnotation, tailrec}
 import scala.annotation.meta.field
 import scala.collection.{BitSet, immutable, mutable}
@@ -10,7 +10,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
 import scala.reflect.macros.blackbox
-import scala.util.control.NonFatal
 
 @field
 final class named(val name: String) extends StaticAnnotation
@@ -1582,7 +1581,7 @@ object JsonCodecMaker {
                     ..$readVal
                     in.isNextToken(',')
                   }) ()
-                  if (in.isCurrentToken(']')) x.result().asInstanceOf[_root_.scala.collection.immutable.::[$tpe1]]
+                  if (in.isCurrentToken(']')) x.toList.asInstanceOf[_root_.scala.collection.immutable.::[$tpe1]]
                   else in.arrayEndOrCommaError()
                 }
               } else {
@@ -1592,7 +1591,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[List[_]] || tpe.typeSymbol == typeOf[Seq[_]].typeSymbol) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1] }",
-            genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
+            genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.12.x
           val tpe1 = typeArg1(tpe)

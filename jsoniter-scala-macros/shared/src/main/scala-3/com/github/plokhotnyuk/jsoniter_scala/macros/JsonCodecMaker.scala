@@ -2252,14 +2252,14 @@ object JsonCodecMaker {
             case '[t1] =>
               genReadCollection('{ new mutable.ListBuffer[t1] },
                 x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
-                default.asExprOf[List[t1]], x => '{ $x.result() }, in).asExprOf[T]
+                default.asExprOf[List[t1]], x => '{ $x.toList }, in).asExprOf[T]
         } else if (tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
               genReadCollection('{ new mutable.ListBuffer[t1] },
                 x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
-                default.asExprOf[Seq[t1]], x => '{ $x.result() }, in).asExprOf[T]
+                default.asExprOf[Seq[t1]], x => '{ $x.toList }, in).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[mutable.ListBuffer[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -2357,10 +2357,9 @@ object JsonCodecMaker {
             } else $in.readNullOrTokenError($default, '{')
           }
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val valDefs = new mutable.ListBuffer[ValDef]
           val indexedTypes = typeArgs(tpe)
           var i = 0
-          indexedTypes.foreach { te =>
+          val valDefs = indexedTypes.map { te =>
             i += 1
             te.asType match
               case '[t] =>
@@ -2373,12 +2372,12 @@ object JsonCodecMaker {
                       ${genReadVal(te :: types, nullVal, isStringified, false, in)}
                     } else $in.commaError()
                   }
-                valDefs.addOne(ValDef(sym, Some(rhs.asTerm.changeOwner(sym))))
+                ValDef(sym, Some(rhs.asTerm.changeOwner(sym)))
           }
-          val readCreateBlock = Block(valDefs.toList, '{
+          val readCreateBlock = Block(valDefs, '{
             if ($in.isNextToken(']')) {
               ${Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"),
-                indexedTypes.map(x => Inferred(x))), valDefs.toList.map(x => Ref(x.symbol))).asExpr}
+                indexedTypes.map(x => Inferred(x))), valDefs.map(x => Ref(x.symbol))).asExpr}
             } else $in.arrayEndError()
           }.asTerm)
           '{
