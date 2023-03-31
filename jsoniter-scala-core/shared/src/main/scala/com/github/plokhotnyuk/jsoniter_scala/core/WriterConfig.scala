@@ -11,7 +11,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
   * <li>turn on escaping of Unicode characters to serialize with only ASCII characters</li>
   * <li>increase preferred size of an internal byte buffer to reduce allocation rate of grown and then reduced buffers
   * when writing to [[java.io.OutputStream]] or [[java.nio.DirectByteBuffer]] lot of large (>16Kb)
-  * [[scala.math.BigDecimal]], [[scala.math.BigInt]] or other non escaped ASCII strings written using
+  * [[scala.math.BigDecimal]] or [[scala.math.BigInt]] or other non escaped ASCII strings written using
   * `JsonWriter.writeNonEscapedAsciiKey` or `JsonWriter.writeNonEscapedAsciiVal` </li>
   * </ul>
   * @param throwWriterExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in

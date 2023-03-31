@@ -34,6 +34,10 @@ lazy val commonSettings = Seq(
   Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
+  Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 13)) => Seq("-jdk-api-doc-base", "https://docs.oracle.com/en/java/javase/11/docs/api")
+    case _ => Seq()
+  }),
   publishTo := sonatypePublishToBundle.value,
   publishMavenStyle := true,
   pomIncludeRepository := { _ => false },

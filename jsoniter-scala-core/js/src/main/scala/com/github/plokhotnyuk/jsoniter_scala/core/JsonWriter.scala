@@ -10,6 +10,19 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter._
 import scala.annotation.tailrec
 import scala.{specialized => sp}
 
+/**
+ * A writer for iterative serialization of JSON keys and values.
+ *
+ * @param buf an internal buffer for writing JSON data
+ * @param count the current position in the internal buffer
+ * @param limit the last position in the internal buffer
+ * @param indention the current indention level
+ * @param comma a flag indicating if the next element should be preceded by comma
+ * @param disableBufGrowing a flag indicating if growing of the internal buffer is disabled
+ * @param bbuf a byte buffer for writing JSON data
+ * @param out the output stream for writing JSON data
+ * @param config a writer configuration
+ */
 final class JsonWriter private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](32768),
     private[this] var count: Int = 0,
@@ -20,6 +33,11 @@ final class JsonWriter private[jsoniter_scala](
     private[this] var bbuf: ByteBuffer = null,
     private[this] var out: OutputStream = null,
     private[this] var config: WriterConfig = null) {
+  /**
+   * Writes a `Boolean` value as a JSON key.
+   *
+   * @param x the `Boolean` value to write
+   */
   def writeKey(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -27,6 +45,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Byte` value as a JSON key.
+   *
+   * @param x the `Byte` value to write
+   */
   def writeKey(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -34,12 +57,23 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Char` value as a JSON key.
+   *
+   * @param x the `Char` value to write
+   * @throws JsonWriterException in case of `Char` value is a part of surrogate pair
+   */
   def writeKey(x: Char): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeChar(x)
     writeColon()
   }
 
+  /**
+   * Writes a `Short` value as a JSON key.
+   *
+   * @param x the `Short` value to write
+   */
   def writeKey(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -47,6 +81,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Int` value as a JSON key.
+   *
+   * @param x the `Int` value to write
+   */
   def writeKey(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -54,6 +93,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Long` value as a JSON key.
+   *
+   * @param x the `Long` value to write
+   */
   def writeKey(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -61,6 +105,12 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Float` value as a JSON key.
+   *
+   * @param x the `Float` value to write
+   * @throws JsonWriterException if the value is non-finite
+   */
   def writeKey(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -68,6 +118,12 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Double` value as a JSON key.
+   *
+   * @param x the `Double` value to write
+   * @throws JsonWriterException if the value is non-finite
+   */
   def writeKey(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -75,6 +131,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `BigInt` value as a JSON key.
+   *
+   * @param x the `BigInt` value to write
+   */
   def writeKey(x: BigInt): Unit = {
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeKey()
@@ -88,6 +149,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `BigDecimal` value as a JSON key.
+   *
+   * @param x the `BigDecimal` value to write
+   */
   def writeKey(x: BigDecimal): Unit = {
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeKey()
@@ -96,6 +162,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a [[java.util.UUID]] value as a JSON key.
+   *
+   * @param x the [[java.util.UUID]] value to write
+   */
   def writeKey(x: UUID): Unit = {
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeKey()
@@ -103,6 +174,12 @@ final class JsonWriter private[jsoniter_scala](
     writeColon()
   }
 
+  /**
+   * Writes a `String` value as a JSON key.
+   *
+   * @param x the `String` value to write
+   * @throws JsonWriterException if the provided string has an illegal surrogate pair
+   */
   def writeKey(x: String): Unit = count = {
     if (x eq null) throw new NullPointerException
     val indention = this.indention
@@ -129,6 +206,13 @@ final class JsonWriter private[jsoniter_scala](
     pos
   }
 
+  /**
+   * Writes a `String` value that doesn't require encoding or escaping as a JSON key.
+   *
+   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligable for writing by this method.
+   *
+   * @param x the `String` value to write
+   */
   def writeNonEscapedAsciiKey(x: String): Unit = {
     if (x eq null) throw new NullPointerException
     val len = x.length
@@ -2752,5 +2836,11 @@ object JsonWriter {
     ss
   }
 
+  /**
+   * Checks if a character does not require JSON escaping or encoding.
+   *
+   * @param ch the character to check
+   * @return `true` if the character is a basic ASCII character (code point less than `0x80`) that does not need JSON escaping
+   */
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch) == 0
 }
