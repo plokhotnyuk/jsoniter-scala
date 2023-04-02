@@ -10,8 +10,8 @@ addSbtPlugin("com.github.sbt" % "sbt-release" % "1.1.0")
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.2.1")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.4")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.7")
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.1")
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.7")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.2")
 addSbtPlugin("com.evolution" % "sbt-artifactory-plugin" % "0.0.2")
 
 libraryDependencies ++= Seq(
