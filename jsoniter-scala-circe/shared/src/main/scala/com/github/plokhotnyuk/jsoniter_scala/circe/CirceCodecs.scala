@@ -4,6 +4,11 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe._
 import java.time._
 
+/**
+ * Implicit instances of Codec for circe's types.
+ *
+ * Uses Jsoniter Scala for efficient encoding and decoding.
+ */
 object CirceCodecs {
   private[this] val pool = new ThreadLocal[(Array[Byte], JsonReader, JsonWriter)] {
     override def initialValue(): (Array[Byte], JsonReader, JsonWriter) = {
@@ -11,6 +16,16 @@ object CirceCodecs {
       (buf, new JsonReader(buf, charBuf = new Array[Char](128)), new JsonWriter(buf))
     }
   }
+
+ /**
+   * Codec for `BigInt` values.
+   *
+   * Uses [[JsoniterScalaCodec.bigIntValue]] to decode from JSON if possible,
+   * otherwise falls back to circe's standard `BigInt` decoder.
+   *
+   * @param x the `BigInt` value to encode
+   * @return a JSON value representing the BigInt
+   */
   implicit val bigIntC3c: Codec[BigInt] = new Codec[BigInt] {
     override def apply(x: BigInt): Json = io.circe.JsoniterScalaCodec.jsonValue(x)
 
@@ -20,6 +35,9 @@ object CirceCodecs {
       else Decoder.decodeBigInt.apply(c)
     }
   }
+
+  // codecs for java.time.* types
+  
   implicit val durationC3C: Codec[Duration] = shortAsciiStringCodec("duration", _.readDuration(_), _.writeVal(_))
   implicit val instantC3C: Codec[Instant] = shortAsciiStringCodec("instant", _.readInstant(_), _.writeVal(_))
   implicit val localDateC3C: Codec[LocalDate] = shortAsciiStringCodec("local date", _.readLocalDate(_), _.writeVal(_))

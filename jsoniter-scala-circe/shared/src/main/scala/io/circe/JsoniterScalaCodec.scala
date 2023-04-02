@@ -7,6 +7,13 @@ import java.util
 import scala.collection.immutable.VectorBuilder
 
 object JsoniterScalaCodec {
+  /**
+   * Default number parser that detects integers vs floating-point values
+   * and chooses an appropriate JSON number representation.
+   *
+   * @param in the JSON reader
+   * @return a JSON number value
+   */
   val defaultNumberParser: JsonReader => Json = in => new JNumber({
     in.setMark()
     var digits = 0
@@ -29,13 +36,32 @@ object JsoniterScalaCodec {
     } else new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
   })
 
+  /**
+   * Converts an ASCII byte array to a JSON string.
+   *
+   * @param buf the ASCII byte array
+   * @param len the length of the byte array
+   * @return a JSON string
+   */
   def asciiStringToJString[A](buf: Array[Byte], len: Int): Json = new JString(StringUtil.toString(buf, len))
 
+  /**
+   * Extracts a `String` value from a JSON cursor.
+   *
+   * @param c the JSON cursor
+   * @return the `String` value, or null if the cursor does not point to a string
+   */
   def stringValue(c: HCursor): String = c.value match {
     case s: JString => s.value
     case _ => null
   }
 
+  /**
+   * Extracts a `BigInt` value from a JSON cursor.
+   *
+   * @param c the JSON cursor
+   * @return the `BigInt` value, or null if the cursor does not point to a number with an integer value
+   */  
   def bigIntValue(c: HCursor): BigInt = c.value match {
     case n: JNumber => n.value match {
       case jl: JsonLong => BigInt(jl.value)
@@ -48,12 +74,28 @@ object JsoniterScalaCodec {
     case _ => null
   }
 
+  /**
+   * Encodes a `BigInt` as a JSON number.
+   *
+   * Uses a `JsonLong` if the value fits in a Long, otherwise uses a `JsonBigDecimal`.
+   *
+   * @param x the BigInt to encode
+   * @return a JSON number representing the BigInt
+   */  
   def jsonValue(x: BigInt): Json = new JNumber({
     if (x.isValidLong) new JsonLong(x.longValue)
     else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
   })
 }
 
+/**
+ * Encodes a `BigInt` as a JSON number.
+ *
+ * Uses a JsonLong if the value fits in a `Long`, otherwise uses a `JsonBigDecimal`.
+ *
+ * @param x the `BigInt` to encode
+ * @return a JSON number representing the `BigInt`
+ */
 final class JsoniterScalaCodec(
     maxDepth: Int,
     initialSize: Int,
