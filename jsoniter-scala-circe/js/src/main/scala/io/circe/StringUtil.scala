@@ -1,7 +1,7 @@
 package io.circe
 
 private[circe] object StringUtil {
-  def toString[A](buf: Array[Byte], len: Int): String = {
+  def toString(buf: Array[Byte], len: Int): String = {
     val end = len - 1
     var s = ""
     var i = 1
