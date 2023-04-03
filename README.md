@@ -522,9 +522,9 @@ On Linux the perf profiler can be used to see CPU event statistics normalized pe
 sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfnorm TwitterAPIReading.jsoniterScala'
 ```
 
-Also, it can be run with a specified list of events: 
+Also, it can be run with a specified list of events. Here is an example of benchmarking using 16 threads to check of CPU stalls: 
 ```sh
-sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "perfnorm:event=cycles,instructions,ld_blocks_partial.address_alias" TwitterAPIReading.jsoniterScala'
+sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -t 16 -prof "perfnorm:event=cycles,instructions,uops_executed.core,uops_executed.stall_cycles,cache-references,cache-misses,cycle_activity.stalls_total,cycle_activity.stalls_mem_any,cycle_activity.stalls_l3_miss,cycle_activity.stalls_l2_miss,cycle_activity.stalls_l1d_miss" .*'
 ```
 
 List of available events for the perf profiler can be retrieved by the following command:
