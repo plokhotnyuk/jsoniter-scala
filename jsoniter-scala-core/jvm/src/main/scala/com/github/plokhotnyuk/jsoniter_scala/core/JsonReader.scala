@@ -3800,34 +3800,27 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i + 7 < minLim) { // Based on SWAR routine of JSON string parsing: https://github.com/sirthias/borer/blob/fde9d1ce674d151b0fee1dd0c2565020c3f6633a/core/src/main/scala/io/bullet/borer/json/JsonParser.scala#L456
-      val bs = ByteArrayAccess.getLong(buf, pos)
-      var m = (bs ^ 0x5D5D5D5D5D5D5D5DL) + 0x101010101010101L
+    if (i + 3 < minLim) { // Based on SWAR routine of JSON string parsing: https://github.com/sirthias/borer/blob/fde9d1ce674d151b0fee1dd0c2565020c3f6633a/core/src/main/scala/io/bullet/borer/json/JsonParser.scala#L456
+      val bs = ByteArrayAccess.getInt(buf, pos)
+      val m = ((bs - 0x20202020 ^ 0x3C3C3C3C) - 0x1010101 | (bs ^ 0x5D5D5D5D) + 0x1010101) & 0x80808080
       charBuf(i) = (bs & 0xFF).toChar
       charBuf(i + 1) = (bs >> 8 & 0xFF).toChar
-      m |= (bs ^ 0x2323232323232323L) + 0x101010101010101L
       charBuf(i + 2) = (bs >> 16 & 0xFF).toChar
-      charBuf(i + 3) = (bs >> 24 & 0xFF).toChar
-      m |= bs - 0x2020202020202020L
-      charBuf(i + 4) = (bs >> 32 & 0xFF).toChar
-      charBuf(i + 5) = (bs >> 40 & 0xFF).toChar
-      m &= 0x8080808080808080L
-      charBuf(i + 6) = (bs >> 48 & 0xFF).toChar
-      charBuf(i + 7) = (bs >>> 56).toChar
+      charBuf(i + 3) = (bs >> 24).toChar
       if (m != 0) {
-        val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+        val offset = java.lang.Integer.numberOfTrailingZeros(m) >> 3
         if ((bs >> (offset << 3)).toByte == '"') {
           head = pos + offset + 1
           i + offset
         } else parseEncodedString(i + offset, charBuf.length - 1, charBuf, pos + offset)
-      } else parseString(i + 8, minLim, charBuf, pos + 8)
+      } else parseString(i + 4, minLim, charBuf, pos + 4)
     } else if (i < minLim) {
       val b = buf(pos)
       charBuf(i) = b.toChar
       if (b == '"') {
         head = pos + 1
         i
-      } else if ((b - 32 ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      } else if ((b - 0x20 ^ 0x3C) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
       else parseString(i + 1, minLim, charBuf, pos + 1)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
