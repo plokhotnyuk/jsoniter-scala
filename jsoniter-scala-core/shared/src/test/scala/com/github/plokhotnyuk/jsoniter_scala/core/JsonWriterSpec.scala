@@ -42,7 +42,6 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeVal(value)) shouldBe s
         withWriter(_.writeValAsString(value)) shouldBe s""""$s""""
         withWriter(_.writeKey(value)) shouldBe s""""$s":"""
-        withWriter(WriterConfig.withIndentionStep(2))(_.writeKey(value)) shouldBe s""""$s": """
       }
 
       check(value = true)

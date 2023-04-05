@@ -199,7 +199,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     buf(pos + 1) = ':'
     pos += 2
-    if (config.indentionStep > 0) {
+    if (indention > 0) {
       buf(pos) = ' '
       pos += 1
     }
@@ -238,7 +238,7 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = '"'
       buf(pos + 1) = ':'
       pos += 2
-      if (config.indentionStep > 0) {
+      if (indention > 0) {
         buf(pos) = ' '
         pos += 1
       }
@@ -813,7 +813,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     buf(pos + 1) = ':'
     pos += 2
-    if (config.indentionStep > 0) {
+    if (indention > 0) {
       buf(pos) = ' '
       pos += 1
     }
@@ -825,7 +825,7 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     buf(pos) = ':'
     pos += 1
-    if (config.indentionStep > 0) {
+    if (indention > 0) {
       buf(pos) = ' '
       pos += 1
     }

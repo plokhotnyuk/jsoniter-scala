@@ -188,7 +188,7 @@ final class JsonWriter private[jsoniter_scala](
     pos = writeString(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
     if (pos + 4 >= limit) pos = flushAndGrowBuf(4, pos)
     ByteArrayAccess.setInt(this.buf, pos, 0x203A22)
-    if (config.indentionStep > 0) pos += 1
+    if (indention > 0) pos += 1
     pos + 2
   }
 
@@ -221,7 +221,7 @@ final class JsonWriter private[jsoniter_scala](
         i += 1
       }
       ByteArrayAccess.setInt(buf, pos, 0x203A22)
-      if (config.indentionStep > 0) pos += 1
+      if (indention > 0) pos += 1
       count = pos + 2
     } else writeLongNonEscapedAsciiKey(x)
   }
@@ -1094,14 +1094,14 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeParenthesesWithColon(): Unit = count = {
     var pos = ensureBufCapacity(4) // 4 == size of Int in bytes
     ByteArrayAccess.setInt(buf, pos, 0x203A22)
-    if (config.indentionStep > 0) pos += 1
+    if (indention > 0) pos += 1
     pos + 2
   }
 
   private[this] def writeColon(): Unit = count = {
     var pos = ensureBufCapacity(2)
     ByteArrayAccess.setShort(buf, pos, 0x203A)
-    if (config.indentionStep > 0) pos += 1
+    if (indention > 0) pos += 1
     pos + 1
   }
 
