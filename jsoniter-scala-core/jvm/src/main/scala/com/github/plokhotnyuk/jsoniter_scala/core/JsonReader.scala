@@ -154,7 +154,8 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    val len = parseString(0, Math.min(tail - head, charBuf.length), charBuf, head)
+    val pos = head
+    val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
     nextTokenOrError(':', head)
     len
   }
@@ -167,7 +168,8 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsString(): String = {
     nextTokenOrError('"', head)
-    val len = parseString(0, Math.min(tail - head, charBuf.length), charBuf, head)
+    val pos = head
+    val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
     nextTokenOrError(':', head)
     new String(charBuf, 0, len)
   }
@@ -674,7 +676,8 @@ final class JsonReader private[jsoniter_scala](
     */
   def readString(default: String): String =
     if (isNextToken('"', head)) {
-      val len = parseString(0, Math.min(tail - head, charBuf.length), charBuf, head)
+      val pos = head
+      val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
 
@@ -946,7 +949,8 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    parseString(0, Math.min(tail - head, charBuf.length), charBuf, head)
+    val pos = head
+    parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
   }
 
   /**
