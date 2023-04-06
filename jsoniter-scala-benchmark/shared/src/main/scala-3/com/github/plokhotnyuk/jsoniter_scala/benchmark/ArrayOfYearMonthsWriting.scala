@@ -6,8 +6,9 @@ class ArrayOfYearMonthsWriting extends ArrayOfYearMonthsBenchmark {
   @Benchmark
   def borer(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
 
-    io.bullet.borer.Json.encode(obj).toByteArray
+    Json.encode(obj).toByteArray
   }
 
   @Benchmark

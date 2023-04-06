@@ -1,7 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import scala.collection.immutable.IndexedSeq
-
 object GoogleMapsAPI {
   case class Value(
     text: String,

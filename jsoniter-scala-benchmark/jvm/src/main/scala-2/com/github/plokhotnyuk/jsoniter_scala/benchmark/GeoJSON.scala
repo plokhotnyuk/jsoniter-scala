@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import com.avsystem.commons.serialization.{flatten, transientDefault}
 import com.rallyhealth.weepickle.v1.implicits.{discriminator, dropDefault, key}
 import zio.json.jsonDiscriminator
-import scala.collection.immutable.IndexedSeq
 
 object GeoJSON {
   @discriminator("type")

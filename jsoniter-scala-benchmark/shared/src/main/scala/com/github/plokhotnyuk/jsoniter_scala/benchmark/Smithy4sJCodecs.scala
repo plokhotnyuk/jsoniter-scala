@@ -5,23 +5,24 @@ import smithy4s.http.json._
 import smithy4s.{ByteArray, Schema, Timestamp}
 import alloy.Discriminated
 import smithy4s.schema.Schema._
+
 import java.time.Instant
 import java.util.UUID
 import scala.collection.immutable.{ArraySeq, Seq}
 
 object Smithy4sJCodecs {
-  def toOptList[A](xs: List[A]): Option[List[A]] =
+  private[this] def toOptList[A](xs: List[A]): Option[List[A]] =
     if (xs.isEmpty) None
     else Some(xs)
 
-  def toOpt[A](x: A, default: A): Option[A] =
+  private[this] def toOpt[A](x: A, default: A): Option[A] =
     if (x == default) None
     else Some(x)
 
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
-  val adtSchema: Schema[ADTBase] = recursive {
+  private[this] val adtSchema: Schema[ADTBase] = recursive {
     val xAlt = struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X")
     val yAlt = struct(string.required[Y]("b", _.b))(Y.apply).oneOf[ADTBase]("Y")
     val zAlt = struct(adtSchema.required[Z]("l", _.l), adtSchema.required[Z]("r", _.r))(Z.apply).oneOf[ADTBase]("Z")
@@ -264,7 +265,7 @@ object Smithy4sJCodecs {
       string.required[MissingRequiredFields]("s", _.s),
       int.required[MissingRequiredFields]("i", _.i)
     )(MissingRequiredFields.apply))
-  val nestedStructsSchema: Schema[NestedStructs] =
+  private[this] val nestedStructsSchema: Schema[NestedStructs] =
     recursive(struct(nestedStructsSchema.optional[NestedStructs]("n", _.n))(NestedStructs.apply))
   implicit val nestedStructsJCodec: JCodec[NestedStructs] = JCodec.fromSchema(nestedStructsSchema)
   implicit val openRTBJCodec: JCodec[OpenRTB.BidRequest] = JCodec.fromSchema {

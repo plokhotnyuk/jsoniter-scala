@@ -5,7 +5,9 @@ import org.openjdk.jmh.annotations.Benchmark
 class StringOfNonAsciiCharsWriting extends StringOfNonAsciiCharsBenchmark {
   @Benchmark
   def borer(): Array[Byte] = {
-    io.bullet.borer.Json.encode(obj).toByteArray
+    import io.bullet.borer.Json
+
+    Json.encode(obj).toByteArray
   }
 
   @Benchmark

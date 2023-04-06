@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import org.openjdk.jmh.annotations.{Param, Setup}
-import scala.collection.immutable.Map
 
 abstract class MapOfIntsToBooleansBenchmark extends CommonParams {
   var obj: Map[Int, Boolean] = _

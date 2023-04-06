@@ -6,7 +6,6 @@ import upickle.core.{Annotator, Visitor}
 import java.time._
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
-import scala.reflect.ClassTag
 
 object UPickleReaderWriters extends AttributeTagged {
   override val tagName: String = "type"
