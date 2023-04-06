@@ -11,7 +11,6 @@ object JsoniterScalaCodec {
    * Default number parser that detects integers vs floating-point values
    * and chooses an appropriate JSON number representation.
    *
-   * @param in the JSON reader
    * @return a JSON number value
    */
   val defaultNumberParser: JsonReader => Json = in => new JNumber({
@@ -89,12 +88,13 @@ object JsoniterScalaCodec {
 }
 
 /**
- * Encodes a `BigInt` as a JSON number.
+ * A JSON value codec that parses and serialize to/from circe's JSON AST.
  *
- * Uses a JsonLong if the value fits in a `Long`, otherwise uses a `JsonBigDecimal`.
- *
- * @param x the `BigInt` to encode
- * @return a JSON number representing the `BigInt`
+ * @param maxDepth the maximum depth for decoding
+ * @param initialSize the initial size hint for object and array collections
+ * @param doSerialize a predicate that determines whether a value should be serialized
+ * @param numberParser a function that parses JSON numbers
+ * @return The JSON codec
  */
 final class JsoniterScalaCodec(
     maxDepth: Int,
