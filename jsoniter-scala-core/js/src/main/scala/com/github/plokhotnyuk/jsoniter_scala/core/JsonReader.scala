@@ -3755,15 +3755,17 @@ final class JsonReader private[jsoniter_scala](
     ensureCharBufCapacity(i + 16)
     val ds = hexDigits
     var j = i
-    if (d.toInt != d) {
-      var shift = 64 - java.lang.Long.numberOfLeadingZeros(d) & 0x3C
-      while (shift >= 32) {
-        charBuf(j) = ds((d >> shift).toInt & 0xF)
+    val dl = d.toInt
+    if (dl != d) {
+      val dh = (d >> 32).toInt
+      var shift = 32 - java.lang.Integer.numberOfLeadingZeros(dh) & 0x1C
+      while (shift >= 0) {
+        charBuf(j) = ds(dh >> shift & 0xF)
         shift -= 4
         j += 1
       }
     }
-    putHexInt(d.toInt, j, charBuf, ds)
+    putHexInt(dl, j, charBuf, ds)
     j + 8
   }
 
