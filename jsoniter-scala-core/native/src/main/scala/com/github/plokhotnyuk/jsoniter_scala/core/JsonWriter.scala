@@ -2186,11 +2186,9 @@ final class JsonWriter private[jsoniter_scala](
         }) {
           m10 = vb >> 2
           val vb4 = vb & 0xFFFFFFFC
-          val diff = vbl - vb4
-          m10 += ~{
-            if ((vb4 - vbr + 4 ^ diff) < 0) diff
-            else (vb & 0x3) + (m10 & 0x1) - 3
-          } >>> 31
+          var diff = vbl - vb4
+          if ((vb4 - vbr + 4 ^ diff) >= 0) diff = (vb & 0x3) + (m10 & 0x1) - 3
+          m10 += ~diff >>> 31
           e10 -= e10Corr
         }
       }
@@ -2305,11 +2303,9 @@ final class JsonWriter private[jsoniter_scala](
         }) {
           m10 = vb >> 2
           val vb4 = vb & 0xFFFFFFFFFFFFFFFCL
-          val diff = (vbl - vb4).toInt
-          m10 += ~{
-            if (((vb4 - vbr).toInt + 4 ^ diff) < 0) diff
-            else (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
-          } >>> 31
+          var diff = (vbl - vb4).toInt
+          if (((vb4 - vbr).toInt + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
+          m10 += ~diff >>> 31
           e10 -= e10Corr
         }
       }
