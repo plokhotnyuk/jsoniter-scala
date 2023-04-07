@@ -866,20 +866,10 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`[`).
    */
-  def writeArrayStart(): Unit = count = {
+  def writeArrayStart(): Unit = {
     val indentionStep = config.indentionStep
-    if (indentionStep == 0) {
-      val pos = ensureBufCapacity(2)
-      val buf = this.buf
-      if (comma) {
-        comma = false
-        ByteArrayAccess.setShort(buf, pos, 0x5B2C)
-        pos + 2
-      } else {
-        buf(pos) = '['
-        pos + 1
-      }
-    } else writeNestedStartWithIndention('[', indentionStep)
+    if (indentionStep == 0) writeNestedArrayStartWithoutIndention()
+    else writeNestedStartWithIndention('[', indentionStep)
   }
 
 
@@ -891,20 +881,10 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`{`).
    */
-  def writeObjectStart(): Unit = count = {
+  def writeObjectStart(): Unit = {
     val indentionStep = config.indentionStep
-    if (indentionStep == 0) {
-      val pos = ensureBufCapacity(2)
-      val buf = this.buf
-      if (comma) {
-        comma = false
-        ByteArrayAccess.setShort(buf, pos, 0x7B2C)
-        pos + 2
-      } else {
-        buf(pos) = '{'
-        pos + 1
-      }
-    } else writeNestedStartWithIndention('{', indentionStep)
+    if (indentionStep == 0) writeNestedObjectStartWithoutIndention()
+    else writeNestedStartWithIndention('{', indentionStep)
   }
 
   /**
@@ -1070,7 +1050,33 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
-  private[this] def writeNestedStartWithIndention(b: Byte, indentionStep: Int): Int = {
+  private[this] def writeNestedArrayStartWithoutIndention(): Unit = count = {
+    val pos = ensureBufCapacity(2)
+    val buf = this.buf
+    if (comma) {
+      comma = false
+      ByteArrayAccess.setShort(buf, pos, 0x5B2C)
+      pos + 2
+    } else {
+      buf(pos) = '['
+      pos + 1
+    }
+  }
+
+  private[this] def writeNestedObjectStartWithoutIndention(): Unit = count = {
+    val pos = ensureBufCapacity(2)
+    val buf = this.buf
+    if (comma) {
+      comma = false
+      ByteArrayAccess.setShort(buf, pos, 0x7B2C)
+      pos + 2
+    } else {
+      buf(pos) = '{'
+      pos + 1
+    }
+  }
+
+  private[this] def writeNestedStartWithIndention(b: Byte, indentionStep: Int): Unit = count = {
     var indention = this.indention
     var pos = ensureBufCapacity((indention << 1) + indentionStep + 12)
     val buf = this.buf
