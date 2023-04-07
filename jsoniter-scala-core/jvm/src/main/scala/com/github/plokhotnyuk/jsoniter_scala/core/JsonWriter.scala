@@ -37,7 +37,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Boolean` value as a JSON key.
    *
    * @param x the `Boolean` value to write
-   */    
+   */
   def writeKey(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -49,7 +49,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Byte` value as a JSON key.
    *
    * @param x the `Byte` value to write
-   */    
+   */
   def writeKey(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -62,7 +62,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `Char` value to write
    * @throws JsonWriterException in case of `Char` value is a part of surrogate pair
-   */    
+   */
   def writeKey(x: Char): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeChar(x)
@@ -73,7 +73,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Short` value as a JSON key.
    *
    * @param x the `Short` value to write
-   */    
+   */
   def writeKey(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -85,7 +85,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Int` value as a JSON key.
    *
    * @param x the `Int` value to write
-   */    
+   */
   def writeKey(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -97,7 +97,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Long` value as a JSON key.
    *
    * @param x the `Long` value to write
-   */    
+   */
   def writeKey(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -110,7 +110,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `Float` value to write
    * @throws JsonWriterException if the value is non-finite
-   */    
+   */
   def writeKey(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -123,7 +123,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `Double` value to write
    * @throws JsonWriterException if the value is non-finite
-   */    
+   */
   def writeKey(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -135,7 +135,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `BigInt` value as a JSON key.
    *
    * @param x the `BigInt` value to write
-   */    
+   */
   def writeKey(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -148,7 +148,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `BigDecimal` value as a JSON key.
    *
    * @param x the `BigDecimal` value to write
-   */    
+   */
   def writeKey(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -160,7 +160,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.util.UUID]] value as a JSON key.
    *
    * @param x the [[java.util.UUID]] value to write
-   */    
+   */
   def writeKey(x: UUID): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeUUID(x.getMostSignificantBits, x.getLeastSignificantBits)
@@ -172,7 +172,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `String` value to write
    * @throws JsonWriterException if the provided string has an illegal surrogate pair
-   */    
+   */
   def writeKey(x: String): Unit = count = {
     val indention = this.indention
     var pos = ensureBufCapacity(indention + 10)
@@ -194,11 +194,11 @@ final class JsonWriter private[jsoniter_scala](
 
   /**
    * Writes a `String` value that doesn't require encoding or escaping as a JSON key.
-   * 
+   *
    * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligable for writing by this method.
    *
    * @param x the `String` value to write
-   */    
+   */
   def writeNonEscapedAsciiKey(x: String): Unit = {
     val len = x.length
     val indention = this.indention
@@ -230,7 +230,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.Duration]] value as a JSON key.
    *
    * @param x the [[java.time.Duration]] value to write
-   */    
+   */
   def writeKey(x: Duration): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeDuration(x)
@@ -241,7 +241,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.Duration]] value as a JSON key.
    *
    * @param x the [[java.time.Duration]] value to write
-   */    
+   */
   def writeKey(x: Instant): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeInstant(x)
@@ -252,7 +252,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.LocalDate]] value as a JSON key.
    *
    * @param x the [[java.time.LocalDate]] value to write
-   */    
+   */
   def writeKey(x: LocalDate): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalDate(x)
@@ -263,7 +263,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.LocalDateTime]] value as a JSON key.
    *
    * @param x the [[java.time.LocalDateTime]] value to write
-   */    
+   */
   def writeKey(x: LocalDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalDateTime(x)
@@ -274,7 +274,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.LocalTime]] value as a JSON key.
    *
    * @param x the [[java.time.LocalTime]] value to write
-   */    
+   */
   def writeKey(x: LocalTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalTime(x)
@@ -285,7 +285,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.MonthDay]] value as a JSON key.
    *
    * @param x the [[java.time.MonthDay]] value to write
-   */    
+   */
   def writeKey(x: MonthDay): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeMonthDay(x)
@@ -296,7 +296,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.OffsetDateTime]] value as a JSON key.
    *
    * @param x the [[java.time.OffsetDateTime]] value to write
-   */    
+   */
   def writeKey(x: OffsetDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeOffsetDateTime(x)
@@ -307,7 +307,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.OffsetTime]] value as a JSON key.
    *
    * @param x the [[java.time.OffsetTime]] value to write
-   */    
+   */
   def writeKey(x: OffsetTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeOffsetTime(x)
@@ -318,7 +318,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.Period]] value as a JSON key.
    *
    * @param x the [[java.time.Period]] value to write
-   */    
+   */
   def writeKey(x: Period): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writePeriod(x)
@@ -329,7 +329,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.Year]] value as a JSON key.
    *
    * @param x the [[java.time.Year]] value to write
-   */    
+   */
   def writeKey(x: Year): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeYear(x)
@@ -340,7 +340,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.YearMonth]] value as a JSON key.
    *
    * @param x the [[java.time.YearMonth]] value to write
-   */    
+   */
   def writeKey(x: YearMonth): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeYearMonth(x)
@@ -351,7 +351,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.ZonedDateTime]] value as a JSON key.
    *
    * @param x the [[java.time.ZonedDateTime]] value to write
-   */    
+   */
   def writeKey(x: ZonedDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeZonedDateTime(x)
@@ -362,7 +362,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.ZoneId]] value as a JSON key.
    *
    * @param x the [[java.time.ZoneId]] value to write
-   */    
+   */
   def writeKey(x: ZoneId): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeZoneId(x)
@@ -373,7 +373,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.ZoneOffset]] value as a JSON key.
    *
    * @param x the [[java.time.ZoneOffset]] value to write
-   */    
+   */
   def writeKey(x: ZoneOffset): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeZoneOffset(x)
@@ -393,7 +393,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `BigDecimal` value as a JSON value.
    *
    * @param x the `BigDecimal` value to write
-   */    
+   */
   def writeVal(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBigDecimal(x.bigDecimal)
@@ -403,7 +403,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `BigInt` value as a JSON value.
    *
    * @param x the `BigInt` value to write
-   */    
+   */
   def writeVal(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     if (x.isValidLong) writeLong(x.longValue)
@@ -414,7 +414,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.util.UUID]] value as a JSON value.
    *
    * @param x the [[java.util.UUID]] value to write
-   */    
+   */
   def writeVal(x: UUID): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeUUID(x.getMostSignificantBits, x.getLeastSignificantBits)
@@ -425,7 +425,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `String` value to write
    * @throws JsonWriterException if the provided string has an illegal surrogate pair
-   */    
+   */
   def writeVal(x: String): Unit = count = {
     val indention = this.indention
     var pos = ensureBufCapacity(indention + 10)
@@ -443,11 +443,11 @@ final class JsonWriter private[jsoniter_scala](
 
   /**
    * Writes a `String` value that doesn't require encoding or escaping as a JSON value.
-   * 
+   *
    * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligable for writing by this method.
    *
    * @param x the `String` value to write
-   */    
+   */
   def writeNonEscapedAsciiVal(x: String): Unit = {
     val len = x.length
     val indention = this.indention
@@ -477,7 +477,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.Duration]] value as a JSON value.
    *
    * @param x the [[java.time.Duration]] value to write
-   */    
+   */
   def writeVal(x: Duration): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeDuration(x)
@@ -487,7 +487,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.Instant]] value as a JSON value.
    *
    * @param x the [[java.time.Instant]] value to write
-   */    
+   */
   def writeVal(x: Instant): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeInstant(x)
@@ -497,7 +497,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.LocalDate]] value as a JSON value.
    *
    * @param x the [[java.time.LocalDate]] value to write
-   */    
+   */
   def writeVal(x: LocalDate): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalDate(x)
@@ -507,7 +507,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.LocalDateTime]] value as a JSON value.
    *
    * @param x the [[java.time.LocalDateTime]] value to write
-   */    
+   */
   def writeVal(x: LocalDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalDateTime(x)
@@ -517,7 +517,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.LocalTime]] value as a JSON value.
    *
    * @param x the [[java.time.LocalTime]] value to write
-   */    
+   */
   def writeVal(x: LocalTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalTime(x)
@@ -527,7 +527,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.MonthDay]] value as a JSON value.
    *
    * @param x the [[java.time.MonthDay]] value to write
-   */    
+   */
   def writeVal(x: MonthDay): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeMonthDay(x)
@@ -537,7 +537,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.OffsetDateTime]] value as a JSON value.
    *
    * @param x the [[java.time.OffsetDateTime]] value to write
-   */    
+   */
   def writeVal(x: OffsetDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeOffsetDateTime(x)
@@ -547,7 +547,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.OffsetTime]] value as a JSON value.
    *
    * @param x the [[java.time.OffsetTime]] value to write
-   */    
+   */
   def writeVal(x: OffsetTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeOffsetTime(x)
@@ -557,7 +557,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.Period]] value as a JSON value.
    *
    * @param x the [[java.time.Period]] value to write
-   */    
+   */
   def writeVal(x: Period): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writePeriod(x)
@@ -567,7 +567,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.Year]] value as a JSON value.
    *
    * @param x the [[java.time.Year]] value to write
-   */    
+   */
   def writeVal(x: Year): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeYear(x)
@@ -577,7 +577,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.YearMonth]] value as a JSON value.
    *
    * @param x the [[java.time.YearMonth]] value to write
-   */    
+   */
   def writeVal(x: YearMonth): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeYearMonth(x)
@@ -587,7 +587,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.ZonedDateTime]] value as a JSON value.
    *
    * @param x the [[java.time.ZonedDateTime]] value to write
-   */    
+   */
   def writeVal(x: ZonedDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeZonedDateTime(x)
@@ -597,7 +597,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.ZoneId]] value as a JSON value.
    *
    * @param x the [[java.time.ZoneId]] value to write
-   */    
+   */
   def writeVal(x: ZoneId): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeZoneId(x)
@@ -607,7 +607,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a [[java.time.ZoneOffset]] value as a JSON value.
    *
    * @param x the [[java.time.ZoneOffset]] value to write
-   */    
+   */
   def writeVal(x: ZoneOffset): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeZoneOffset(x)
@@ -617,7 +617,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Boolean` value as a JSON value.
    *
    * @param x the `Boolean` value to write
-   */    
+   */
   def writeVal(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBoolean(x)
@@ -627,7 +627,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Byte` value as a JSON value.
    *
    * @param x the `Byte` value to write
-   */    
+   */
   def writeVal(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeByte(x)
@@ -637,7 +637,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Short` value as a JSON value.
    *
    * @param x the `Short` value to write
-   */    
+   */
   def writeVal(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeShort(x)
@@ -648,7 +648,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `Char` value to write
    * @throws JsonWriterException in case of `Char` value is a part of surrogate pair
-   */    
+   */
   def writeVal(x: Char): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeChar(x)
@@ -658,7 +658,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Int` value as a JSON value.
    *
    * @param x the `Int` value to write
-   */    
+   */
   def writeVal(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeInt(x)
@@ -668,7 +668,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Long` value as a JSON value.
    *
    * @param x the `Long` value to write
-   */    
+   */
   def writeVal(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeLong(x)
@@ -679,7 +679,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `Float` value to write
    * @throws JsonWriterException if the value is non-finite
-   */    
+   */
   def writeVal(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeFloat(x)
@@ -690,7 +690,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `Double` value to write
    * @throws JsonWriterException if the value is non-finite
-   */    
+   */
   def writeVal(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeDouble(x)
@@ -700,7 +700,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `BigDecimal` value as a JSON string value.
    *
    * @param x the `BigDecimal` value to write
-   */    
+   */
   def writeValAsString(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -712,7 +712,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `BigInt` value as a JSON string value.
    *
    * @param x the `BigInt` value to write
-   */    
+   */
   def writeValAsString(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -725,7 +725,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Boolean` value as a JSON string value.
    *
    * @param x the `Boolean` value to write
-   */    
+   */
   def writeValAsString(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -737,7 +737,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Byte` value as a JSON string value.
    *
    * @param x the `Byte` value to write
-   */    
+   */
   def writeValAsString(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -749,7 +749,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Short` value as a JSON string value.
    *
    * @param x the `Short` value to write
-   */    
+   */
   def writeValAsString(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -761,7 +761,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Int` value as a JSON string value.
    *
    * @param x the `Int` value to write
-   */    
+   */
   def writeValAsString(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -773,7 +773,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Long` value as a JSON string value.
    *
    * @param x the `Long` value to write
-   */    
+   */
   def writeValAsString(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -786,7 +786,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `Float` value to write
    * @throws JsonWriterException if the value is non-finite
-   */    
+   */
   def writeValAsString(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -799,7 +799,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param x the `Double` value to write
    * @throws JsonWriterException if the value is non-finite
-   */    
+   */
   def writeValAsString(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -866,7 +866,22 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`[`).
    */
-  def writeArrayStart(): Unit = writeNestedStart('[')
+  def writeArrayStart(): Unit = count = {
+    val indentionStep = config.indentionStep
+    if (indentionStep == 0) {
+      val pos = ensureBufCapacity(2)
+      val buf = this.buf
+      if (comma) {
+        comma = false
+        ByteArrayAccess.setShort(buf, pos, 0x5B2C)
+        pos + 2
+      } else {
+        buf(pos) = '['
+        pos + 1
+      }
+    } else writeNestedStartWithIndention('[', indentionStep)
+  }
+
 
   /**
    * Writes a JSON array end marker (`]`).
@@ -876,7 +891,21 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`{`).
    */
-  def writeObjectStart(): Unit = writeNestedStart('{')
+  def writeObjectStart(): Unit = count = {
+    val indentionStep = config.indentionStep
+    if (indentionStep == 0) {
+      val pos = ensureBufCapacity(2)
+      val buf = this.buf
+      if (comma) {
+        comma = false
+        ByteArrayAccess.setShort(buf, pos, 0x7B2C)
+        pos + 2
+      } else {
+        buf(pos) = '{'
+        pos + 1
+      }
+    } else writeNestedStartWithIndention('{', indentionStep)
+  }
 
   /**
    * Writes a JSON array end marker (`}`).
@@ -935,7 +964,7 @@ final class JsonWriter private[jsoniter_scala](
    * @param x the value to encode
    * @param config the writer configuration
    * @return the encoded JSON as a string
-   */    
+   */
   private[jsoniter_scala] def writeToString[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String =
     try {
       this.config = config
@@ -958,7 +987,7 @@ final class JsonWriter private[jsoniter_scala](
    * @param x the value to encode
    * @param config the writer configuration
    * @return the encoded JSON as a string
-   */  
+   */
   private[jsoniter_scala] def writeToStringWithoutBufReallocation[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String = {
     this.config = config
     count = 0
@@ -1004,7 +1033,7 @@ final class JsonWriter private[jsoniter_scala](
    * @param x the value to encode
    * @param bbuf the target byte buffer
    * @param config the writer configuration
-   */  
+   */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, bbuf: ByteBuffer, config: WriterConfig): Unit =
     if (bbuf.hasArray) {
       val offset = bbuf.arrayOffset
@@ -1041,14 +1070,21 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
-  private[this] def writeNestedStart(b: Byte): Unit = {
-    writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes(b)
-    val indentionStep = config.indentionStep
-    if (indentionStep != 0) {
-      indention += indentionStep
-      writeIndention()
+  private[this] def writeNestedStartWithIndention(b: Byte, indentionStep: Int): Int = {
+    var indention = this.indention
+    var pos = ensureBufCapacity((indention << 1) + indentionStep + 12)
+    val buf = this.buf
+    if (comma) {
+      comma = false
+      buf(pos) = ','
+      pos += 1
+      if (indention != 0) pos = writeIndention(buf, pos, indention)
     }
+    buf(pos) = b
+    pos += 1
+    indention += indentionStep
+    this.indention = indention
+    writeIndention(buf, pos, indention)
   }
 
   private[this] def writeNestedEnd(b: Byte): Unit = {
@@ -2186,11 +2222,9 @@ final class JsonWriter private[jsoniter_scala](
         }) {
           m10 = vb >> 2
           val vb4 = vb & 0xFFFFFFFC
-          val diff = vbl - vb4
-          m10 += ~{
-            if ((vb4 - vbr + 4 ^ diff) < 0) diff
-            else (vb & 0x3) + (m10 & 0x1) - 3
-          } >>> 31
+          var diff = vbl - vb4
+          if ((vb4 - vbr + 4 ^ diff) >= 0) diff = (vb & 0x3) + (m10 & 0x1) - 3
+          m10 += ~diff >>> 31
           e10 -= e10Corr
         }
       }
