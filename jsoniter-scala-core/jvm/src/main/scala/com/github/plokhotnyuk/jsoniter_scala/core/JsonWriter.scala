@@ -866,7 +866,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`[`).
    */
-  def writeArrayStart(): Unit = {
+  def writeArrayStart(): Unit = count = {
     val indentionStep = config.indentionStep
     if (indentionStep == 0) writeNestedArrayStartWithoutIndention()
     else writeNestedStartWithIndention('[', indentionStep)
@@ -881,7 +881,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`{`).
    */
-  def writeObjectStart(): Unit = {
+  def writeObjectStart(): Unit = count = {
     val indentionStep = config.indentionStep
     if (indentionStep == 0) writeNestedObjectStartWithoutIndention()
     else writeNestedStartWithIndention('{', indentionStep)
@@ -1050,7 +1050,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
-  private[this] def writeNestedArrayStartWithoutIndention(): Unit = count = {
+  private[this] def writeNestedArrayStartWithoutIndention(): Int = {
     val pos = ensureBufCapacity(2)
     val buf = this.buf
     if (comma) {
@@ -1063,7 +1063,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeNestedObjectStartWithoutIndention(): Unit = count = {
+  private[this] def writeNestedObjectStartWithoutIndention(): Int = {
     val pos = ensureBufCapacity(2)
     val buf = this.buf
     if (comma) {
@@ -1076,7 +1076,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeNestedStartWithIndention(b: Byte, indentionStep: Int): Unit = count = {
+  private[this] def writeNestedStartWithIndention(b: Byte, indentionStep: Int): Int = {
     var indention = this.indention
     var pos = ensureBufCapacity((indention << 1) + indentionStep + 12)
     val buf = this.buf

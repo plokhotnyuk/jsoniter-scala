@@ -937,9 +937,9 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`[`).
    */
-  def writeArrayStart(): Unit = {
+  def writeArrayStart(): Unit = count = {
     val indentionStep = config.indentionStep
-    if (indentionStep == 0) writeNestedArrayStartWithoutIndention()
+    if (indentionStep == 0) writeNestedStartWithoutIndention('[')
     else writeNestedStartWithIndention('[', indentionStep)
   }
 
@@ -952,9 +952,9 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`{`).
    */
-  def writeObjectStart(): Unit = {
+  def writeObjectStart(): Unit = count = {
     val indentionStep = config.indentionStep
-    if (indentionStep == 0) writeNestedObjectStartWithoutIndention()
+    if (indentionStep == 0) writeNestedStartWithoutIndention('{')
     else writeNestedStartWithIndention('{', indentionStep)
   }
 
@@ -1121,35 +1121,19 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
-  private[this] def writeNestedArrayStartWithoutIndention(): Unit = count = {
-    val pos = ensureBufCapacity(2)
+  private[this] def writeNestedStartWithoutIndention(b: Byte): Int = {
+    var pos = ensureBufCapacity(2)
     val buf = this.buf
     if (comma) {
       comma = false
       buf(pos) = ','
-      buf(pos + 1) = '['
-      pos + 2
-    } else {
-      buf(pos) = '['
-      pos + 1
+      pos += 1
     }
+    buf(pos) = b
+    pos + 1
   }
 
-  private[this] def writeNestedObjectStartWithoutIndention(): Unit = count = {
-    val pos = ensureBufCapacity(2)
-    val buf = this.buf
-    if (comma) {
-      comma = false
-      buf(pos) = ','
-      buf(pos + 1) = '{'
-      pos + 2
-    } else {
-      buf(pos) = '{'
-      pos + 1
-    }
-  }
-
-  private[this] def writeNestedStartWithIndention(b: Byte, indentionStep: Int): Unit = count = {
+  private[this] def writeNestedStartWithIndention(b: Byte, indentionStep: Int): Int = {
     var indention = this.indention
     var pos = ensureBufCapacity((indention << 1) + indentionStep + 12)
     val buf = this.buf
