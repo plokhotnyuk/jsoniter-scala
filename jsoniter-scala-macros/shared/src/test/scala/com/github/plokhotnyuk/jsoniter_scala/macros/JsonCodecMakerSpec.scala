@@ -640,7 +640,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """["-Infinity","Infinity",0.0,1.0E10]""")
       verifyDeserError(codecOfDoubleArray, """["Inf","-Inf"]""", "illegal double, offset: 0x00000005")
     }
-    "serialize date time values into alternative format" in {
+    "serialize zoned date time values into a custom format" in {
       implicit val customCodecOfZonedDateTime: JsonValueCodec[ZonedDateTime] = new JsonValueCodec[ZonedDateTime] {
         private[this] val standardCodec: JsonValueCodec[ZonedDateTime] = JsonCodecMaker.make[ZonedDateTime]
 
@@ -651,14 +651,32 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         def encodeValue(x: ZonedDateTime, out: JsonWriter): _root_.scala.Unit =
           if (x.getSecond != 0 || x.getNano != 0) out.writeVal(x)
           else {
-            val s = writeToStringReentrant(x)(standardCodec)
-            val i = s.indexOf(':', 13) + 3
-            out.writeNonEscapedAsciiVal(s"${s.substring(1, i)}:00${s.substring(i, s.length - 1)}")
+            val buf = writeToArrayReentrant(x)(standardCodec)
+            val len = buf.length
+            val newBuf = new Array[_root_.scala.Byte](len + 3)
+            var pos = 0
+            while ({ // copy up to `:` separator between hours and minutes
+              val b = buf(pos)
+              newBuf(pos) = b
+              pos += 1
+              b != ':'
+            }) ()
+            newBuf(pos) = buf(pos) // copy minutes
+            newBuf(pos + 1) = buf(pos + 1)
+            pos += 2
+            newBuf(pos) = ':'  // set zero seconds
+            newBuf(pos + 1) = '0'
+            newBuf(pos + 2) = '0'
+            while (pos < len) { // copy rest of the value
+              newBuf(pos + 3) = buf(pos)
+              pos += 1
+            }
+            out.writeRawVal(newBuf)
           }
       }
       verifySerDeser(make[Array[ZonedDateTime]],
-        _root_.scala.Array(ZonedDateTime.parse("2020-04-10T10:07:00Z"), ZonedDateTime.parse("2020-04-10T10:07:01Z")),
-        """["2020-04-10T10:07:00Z","2020-04-10T10:07:01Z"]""")
+        _root_.scala.Array(ZonedDateTime.parse("2020-04-10T10:07:00Z"), ZonedDateTime.parse("2020-04-10T10:07:10Z")),
+        """["2020-04-10T10:07:00Z","2020-04-10T10:07:10Z"]""")
     }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
