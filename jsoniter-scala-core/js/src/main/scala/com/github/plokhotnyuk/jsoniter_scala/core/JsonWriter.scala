@@ -937,11 +937,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`[`).
    */
-  def writeArrayStart(): Unit = count = {
-    val indentionStep = config.indentionStep
-    if (indentionStep == 0) writeNestedStartWithoutIndention('[')
-    else writeNestedStartWithIndention('[', indentionStep)
-  }
+  def writeArrayStart(): Unit = writeNestedStart('[')
 
 
   /**
@@ -952,11 +948,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a JSON array start marker (`{`).
    */
-  def writeObjectStart(): Unit = count = {
-    val indentionStep = config.indentionStep
-    if (indentionStep == 0) writeNestedStartWithoutIndention('{')
-    else writeNestedStartWithIndention('{', indentionStep)
-  }
+  def writeObjectStart(): Unit = writeNestedStart('{')
 
   /**
    * Writes a JSON array end marker (`}`).
@@ -1121,33 +1113,14 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
-  private[this] def writeNestedStartWithoutIndention(b: Byte): Int = {
-    var pos = ensureBufCapacity(2)
-    val buf = this.buf
-    if (comma) {
-      comma = false
-      buf(pos) = ','
-      pos += 1
+  private[this] def writeNestedStart(b: Byte): Unit = {
+    writeOptionalCommaAndIndentionBeforeKey()
+    writeBytes(b)
+    val indentionStep = config.indentionStep
+    if (indentionStep != 0) {
+      indention += indentionStep
+      writeIndention()
     }
-    buf(pos) = b
-    pos + 1
-  }
-
-  private[this] def writeNestedStartWithIndention(b: Byte, indentionStep: Int): Int = {
-    var indention = this.indention
-    var pos = ensureBufCapacity((indention << 1) + indentionStep + 12)
-    val buf = this.buf
-    if (comma) {
-      comma = false
-      buf(pos) = ','
-      pos += 1
-      if (indention != 0) pos = writeIndention(buf, pos, indention)
-    }
-    buf(pos) = b
-    pos += 1
-    indention += indentionStep
-    this.indention = indention
-    writeIndention(buf, pos, indention)
   }
 
   private[this] def writeNestedEnd(b: Byte): Unit = {
