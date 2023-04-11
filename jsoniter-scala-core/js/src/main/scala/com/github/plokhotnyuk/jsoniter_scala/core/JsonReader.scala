@@ -631,18 +631,18 @@ final class JsonReader private[jsoniter_scala](
     */
   def readBigInt(default: BigInt, digitsLimit: Int): BigInt = parseBigInt(isToken = true, default, digitsLimit)
 
- /**
-   * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
-   * the default limit for scale, and the defult instance of [[java.math.MathContext]] for precision.
-   * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
-   * if the provided default value is `null`.
-   *
-   * @param default the default `BigDecimal` value to return if the JSON value is `null`
-   * @return a `BigDecimal` instance of the parsed JSON value or the provided default value
-   * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
-   *                             illegal format of JSON value or exceeding of default limits or
-   *                             when both the JSON value and the provided default value are `null`
-   */
+  /**
+    * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
+    * the default limit for scale, and the defult instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigDecimal` value to return if the JSON value is `null`
+    * @return a `BigDecimal` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding of default limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readBigDecimal(default: BigDecimal): BigDecimal =
     parseBigDecimal(isToken = true, default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
@@ -1067,18 +1067,18 @@ final class JsonReader private[jsoniter_scala](
       x
     } else readNullOrTokenError(default, '"')
 
- /**
-   * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
-   * the default limit for scale, and the defult instance of [[java.math.MathContext]] for precision.
-   * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
-   * if the provided default value is `null`.
-   *
-   * @param default the default `BigDecimal` value to return if the JSON value is `null`
-   * @return a `BigDecimal` instance of the parsed JSON value or the provided default value
-   * @throws JsonReaderException in cases of reaching the end of input or
-   *                             illegal format of JSON value or exceeding of default limits or
-   *                             when both the JSON value and the provided default value are `null`
-   */
+  /**
+    * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
+    * the default limit for scale, and the defult instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigDecimal` value to return if the JSON value is `null`
+    * @return a `BigDecimal` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or
+    *                             illegal format of JSON value or exceeding of default limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
     readStringAsBigDecimal(default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
@@ -3360,7 +3360,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == '"') {
         head = pos + 1
         i
-      } else if ((b - 32 ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      } else if ((b - 0x20 ^ 0x3C) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
       else parseString(i + 1, minLim, charBuf, pos + 1)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
