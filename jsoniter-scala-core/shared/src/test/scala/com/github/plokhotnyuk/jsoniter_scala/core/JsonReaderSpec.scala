@@ -821,7 +821,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("P-1D", ws)
         check("PT-1S", ws)
       }
-      forAll(genDuration, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genDuration, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
+        reader(s"""$ws"$s"""").readDuration(null) shouldBe x
+        reader(s"""$ws"$s":""").readKeyAsDuration() shouldBe x
+      }
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(json: String, error: String): Unit = {
@@ -905,9 +909,17 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("2008-01-01T07:24:33.123456789+11:22:33", ws)
         check("2008-01-01T07:24:33.123456789-11:22:33", ws)
       }
-      forAll(genInstant, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genInstant, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
+        reader(s"""$ws"$s"""").readInstant(null) shouldBe x
+        reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe x
+      }
       forAll(genOffsetDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
-        check((if (x.getSecond == 0) x.plusSeconds(1) else x).toString, ws)
+        val xx = if (x.getSecond == 0) x.plusSeconds(1) else x
+        val s = xx.toString
+        val y = xx.toInstant
+        reader(s"""$ws"$s"""").readInstant(null) shouldBe y
+        reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe y
       }
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
@@ -1022,18 +1034,18 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readLocalDate(default) shouldBe default
     }
     "parse LocalDate from a string representation according to ISO-8601 format" in {
-      def check(s: String, ws: String): Unit = {
-        val x = LocalDate.parse(s)
+      def check(x: LocalDate, ws: String): Unit = {
+        val s = x.toString
         reader(s"""$ws"$s"""").readLocalDate(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsLocalDate() shouldBe x
       }
 
       forAll(genWhitespaces) { ws =>
-        check("+999999999-12-31", ws)
-        check("-999999999-01-01", ws)
-        check("2008-01-20", ws)
+        check(LocalDate.of(999999999, 12, 31), ws)
+        check(LocalDate.of(-999999999, 1, 1), ws)
+        check(LocalDate.of(2008, 1, 2), ws)
       }
-      forAll(genLocalDate, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genLocalDate, genWhitespaces, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDate string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1120,7 +1132,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("2008-01-01T07:24:33.000000", ws)
         check("2008-01-01T07:24:33.000000000", ws)
       }
-      forAll(genLocalDateTime, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genLocalDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
+        reader(s"""$ws"$s"""").readLocalDateTime(null) shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsLocalDateTime() shouldBe x
+      }
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1226,7 +1242,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("07:24:33.000000", ws)
         check("07:24:33.000000000", ws)
       }
-      forAll(genLocalTime, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genLocalTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
+        reader(s"""$ws"$s"""").readLocalTime(null) shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsLocalTime() shouldBe x
+      }
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1348,7 +1368,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("2008-01-20T07:24:33.000000000Z", ws)
         check("2008-01-20T07:24:33.000000000+00:00", ws)
       }
-      forAll(genOffsetDateTime, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genOffsetDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
+        reader(s"""$ws"$s"""").readOffsetDateTime(null) shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsOffsetDateTime() shouldBe x
+      }
     }
     "throw parsing exception for empty input and illegal or broken OffsetDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1475,7 +1499,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("07:24:33.000000000Z", ws)
         check("07:24:33.000000000+00:00", ws)
       }
-      forAll(genOffsetTime, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genOffsetTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
+        reader(s"""$ws"$s"""").readOffsetTime(null) shouldBe x
+        reader(s"""$ws"$s":$ws""").readKeyAsOffsetTime() shouldBe x
+      }
     }
     "throw parsing exception for empty input and illegal or broken OffsetTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1545,11 +1573,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         }
       }
 
-      forAll(genWhitespaces) { ws =>
-        check("P0D", ws)
-      }
-      forAll(genPeriod, genWhitespaces, minSuccessful(1000))((x, ws) => check(x.toString, ws))
-      forAll(arbitrary[Int], arbitrary[Int], genWhitespaces, minSuccessful(1000)) { (x, y, ws) =>
+      forAll(arbitrary[Int], arbitrary[Int], genWhitespaces, minSuccessful(10000)) { (x, y, ws) =>
         check(s"P${x}Y", ws)
         check(s"P${x}M", ws)
         check(s"P${x}D", ws)
@@ -1557,15 +1581,20 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check(s"P${x}M${y}D", ws)
         check(s"P${x}Y${y}D", ws)
       }
-      forAll(Gen.choose(-1000000, 1000000), genWhitespaces, minSuccessful(1000)) { (w, ws) =>
+      forAll(Gen.choose(-1000000, 1000000), genWhitespaces, minSuccessful(10000)) { (w, ws) =>
         check(s"P${w}W", ws)
         check(s"P1Y${w}W", ws)
         check(s"P1Y1M${w}W", ws)
       }
-      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), genWhitespaces, minSuccessful(1000)) { (w, d, ws) =>
+      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), genWhitespaces, minSuccessful(10000)) { (w, d, ws) =>
         check(s"P${w}W${d}D", ws)
         check(s"P1Y${w}W${d}D", ws)
         check(s"P1Y1M${w}W${d}D", ws)
+      }
+      forAll(genPeriod, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
+        reader(s"""$ws"$s"""").readPeriod(null) shouldBe x
+        reader(s"""$ws"$s":""").readKeyAsPeriod() shouldBe x
       }
     }
     "throw parsing exception for empty input and illegal or broken Period string" in {
@@ -1638,20 +1667,18 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readYear(default) shouldBe default
     }
     "parse Year from a string representation according to ISO-8601 format" in {
-      def check(s: String, ws: String): Unit = {
-        val x = Year.parse(s)
+      def check(x: Year, ws: String): Unit = {
+        val s = toISO8601(x)
         reader(s"""$ws"$s"""").readYear(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsYear() shouldBe x
       }
 
       forAll(genWhitespaces) { ws =>
-        check("-999999999", ws)
-        check("+999999999", ws)
-        check("2008", ws)
+        check(Year.of(-999999999), ws)
+        check(Year.of(+999999999), ws)
+        check(Year.of(2008), ws)
       }
-      forAll(genYear, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
-        check(toISO8601(x), ws)
-      }
+      forAll(genYear, genWhitespaces, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken Year string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1698,25 +1725,18 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readYearMonth(default) shouldBe default
     }
     "parse YearMonth from a string representation according to ISO-8601 format" in {
-      def check(s: String, ws: String): Unit = {
-        val x = YearMonth.parse(s)
+      def check(x: YearMonth, ws: String): Unit = {
+        val s = toISO8601(x)
         reader(s"""$ws"$s"""").readYearMonth(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsYearMonth() shouldBe x
       }
 
       forAll(genWhitespaces) { ws =>
-        check("+999999999-12", ws)
-        check("-999999999-01", ws)
-        check("2008-01", ws)
+        check(YearMonth.of(999999999, 12), ws)
+        check(YearMonth.of(-999999999, 1), ws)
+        check(YearMonth.of(2008, 1), ws)
       }
-      forAll(genYearMonth, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
-        val s = x.toString
-        val fixed =
-          if (x.getYear < 0 && !s.startsWith("-")) s"-$s"
-          else if (x.getYear > 9999 && !s.startsWith("+")) s"+$s"
-          else s
-        check(fixed, ws)
-      }
+      forAll(genYearMonth, genWhitespaces, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken YearMonth string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1917,13 +1937,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readZoneId(default) shouldBe default
     }
     "parse ZoneId from a string representation according to ISO-8601 format for timezone offset or JDK format for IANA timezone identifier" in {
-      def check(s: String, ws: String): Unit = {
-        val x = ZoneId.of(s)
+      forAll(genZoneId, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
         reader(s"""$ws"$s"""").readZoneId(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneId() shouldBe x
       }
-
-      forAll(genZoneId, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
     }
     "throw parsing exception for empty input and illegal or broken ZoneId string" in {
       def checkError(json: String, error: String): Unit = {
@@ -2002,7 +2020,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-18", ws)
         check("-18:00", ws)
       }
-      forAll(genZoneOffset, genWhitespaces, minSuccessful(10000))((x, ws) => check(x.toString, ws))
+      forAll(genZoneOffset, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+        val s = x.toString
+        reader(s"""$ws"$s"""").readZoneOffset(null) shouldBe x
+        reader(s"""$ws"$s":""").readKeyAsZoneOffset() shouldBe x
+      }
     }
     "throw parsing exception for empty input and illegal or broken ZoneOffset string" in {
       def checkError(json: String, error: String): Unit = {
@@ -2614,12 +2636,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkFloat("1.17549429E-38", ws)
         checkFloat("1.17549428E-38", ws)
       }
-      forAll(arbitrary[Float], genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
-      forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
+      forAll(arbitrary[Float], genWhitespaces, minSuccessful(10000))((n, ws) => check(n.toString, n, ws))
+      forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => check(n.toString, n.toFloat, ws))
       forAll(arbitrary[Int], genWhitespaces, minSuccessful(10000)) { (n, ws) =>
         val x = java.lang.Float.intBitsToFloat(n)
         whenever(java.lang.Float.isFinite(x)) {
-          checkFloat(x.toString, ws)
+          check(x.toString, x, ws)
         }
       }
       forAll(Gen.choose(0L, (1L << 32) - 1), Gen.choose(-22, 18), genWhitespaces, minSuccessful(10000)) { (m, e, ws) =>
@@ -2733,15 +2755,15 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkDouble("2.2250738585072012E-308", ws)
         checkDouble("2.2250738585072011E-308", ws)
       }
-      forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))
+      forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => check(n.toString, n, ws))
       forAll(arbitrary[Float], genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))
       forAll(arbitrary[Long], genWhitespaces, minSuccessful(10000)) { (n, ws) =>
         val x = java.lang.Double.longBitsToDouble(n)
         whenever(java.lang.Double.isFinite(x)) {
-          checkDouble(x.toString, ws)
+          check(x.toString, x, ws)
         }
       }
-      forAll(arbitrary[Long], genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))
+      forAll(arbitrary[Long], genWhitespaces, minSuccessful(10000))((n, ws) => check(n.toString, n.toDouble, ws))
       forAll(Gen.choose(0L, (1L << 53) - 1), Gen.choose(-22, 37), genWhitespaces, minSuccessful(10000)) { (m, e, ws) =>
         checkDouble(s"${m}e$e", ws)
       }
