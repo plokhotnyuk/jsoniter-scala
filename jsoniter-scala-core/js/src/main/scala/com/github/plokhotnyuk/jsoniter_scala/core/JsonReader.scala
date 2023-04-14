@@ -3798,9 +3798,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def ensureCharBufCapacity(required: Int): Unit =
-    if (charBuf.length < required) {
-      val _ = growCharBuf(required)
-    }
+    if (charBuf.length < required) growCharBuf(required): Unit
 
   @tailrec
   private[this] def skipString(evenBackSlashes: Boolean, pos: Int): Int =
