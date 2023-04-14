@@ -157,7 +157,9 @@ supports Scala 2.11.
   codec derivation
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library` (all platforms) and
   `scala-java-time` (replacement of JDKs `java.time._` types for Scala.js and Scala Native)
-- On Scala.js and Scala Native platforms, if you need support for timezones besides `UTC` then you should follow the [scala-java-time documentation](https://cquiroz.github.io/scala-java-time/#time-zones) for adding a time zone database to your application.
+- On Scala.js and Scala Native platforms, if you need support for timezones besides `UTC` then you should follow the 
+  [scala-java-time documentation](https://cquiroz.github.io/scala-java-time/#time-zones) for adding a time zone database
+  to your application
 - Codecs and runtime configurations implement `java.io.Serializable` for easier usage in distributive computing
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
@@ -188,7 +190,8 @@ There are configurable options that can be set in compile-time:
 - Throwing of a compilation error for recursive data structures can be turned off
 - Throwing of a runtime error when the discriminator is not the first field can be turned off
 - Ability to parse/serialize Scala enumeration from/to id numbers
-- Ability to derive codecs that can distinguish `null` field values and missing fields as `Some(None)` and `None` values of `Option[Option[_]]`
+- Ability to derive codecs that can distinguish `null` field values and missing fields as `Some(None)` and `None` values
+  of `Option[Option[_]]`
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
@@ -245,10 +248,10 @@ val json = writeToString(User("John", Seq(Device(2, "iPhone X"))))
 ```
 
 When your input comes from the network or disks much more efficient ways are to parse and serialize from/to:
-- byte arrays using `readFromArray`/`writeToArray`;
-- byte sub-arrays using `readFromSubArray`/`writeToSubArray`;
-- `java.nio.ByteBuffer` instances using `readFromByteBuffer`/`writeToByteBuffer`;
-- `java.io.InputString`/`java.io.OutputStream` instances using `readFromStream`/`writeToStream`.
+- byte arrays using `readFromArray`/`writeToArray`
+- byte sub-arrays using `readFromSubArray`/`writeToSubArray`
+- `java.nio.ByteBuffer` instances using `readFromByteBuffer`/`writeToByteBuffer`
+- `java.io.InputString`/`java.io.OutputStream` instances using `readFromStream`/`writeToStream`
 
 Also, parsing from bytes will check `UTF-8` encoding and throw an error in case of malformed bytes.
 
@@ -290,16 +293,19 @@ Samples for its integration with different web frameworks and HTTP servers:
 - [youi](https://github.com/TechEmpower/FrameworkBenchmarks/blob/master/frameworks/Scala/youi/src/main/scala/example/Main.scala)
 - [zio-http](https://github.com/TechEmpower/FrameworkBenchmarks/blob/master/frameworks/Scala/zio-http/src/main/scala/Main.scala)
 
-Other usages of jsoniter-scala:
-- [caliban](https://github.com/ghostdogpr/caliban) - a purely functional library for building GraphQL servers and clients in Scala
+Usages of jsoniter-scala in OSS libraries:
+- [caliban](https://github.com/ghostdogpr/caliban) - a purely functional library for building GraphQL servers and 
+  clients in Scala
 - [geo-scala](https://github.com/gnieh/geo-scala) - a core AST and utilities for GeoJSON (RFC 7946) and more
-- [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types
+- [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe 
+  booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types
 - [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
-instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
-- [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/) tooling for Scala
+  instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
+- [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/)
+  tooling for Scala
 - [scalatest-json](https://github.com/stephennancekivell/scalatest-json) - Scalatest matchers with appropriate equality 
-and descriptive error messages
+  and descriptive error messages
 - [tapir](https://tapir.softwaremill.com/en/latest/endpoint/json.html#jsoniter-scala) - Typed API descRiptions
 
 Also, for usages in other OSS projects see the `Dependents` section of [peoject's Scala Index page](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala)
@@ -311,10 +317,10 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 
 1. There is no validation for the length of JSON representation during parsing.
 
-So if your system is sensitive for that and can accept untrusted input then avoid parsing with `readFromStream` and
-check the input length for other `read...` calls.
+If your system can accept too long untrusted input then check the input length before parsing with `readFromStream`
+or other `read...` calls.
 
-If you have an input that is an array of values or white-space separate values then consider parsing it by
+Also, if you have an input that is an array of values or white-space separate values then consider parsing it by
 `scanJsonArrayFromInputStream` or `scanJsonValuesFromInputStream` instead of `readFromStream`.
 
 2. The configuration parameter for the `make` macro is evaluated in compile-time. It requires no dependency
@@ -522,7 +528,8 @@ On Linux the perf profiler can be used to see CPU event statistics normalized pe
 sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfnorm TwitterAPIReading.jsoniterScala'
 ```
 
-Also, it can be run with a specified list of events. Here is an example of benchmarking using 16 threads to check of CPU stalls: 
+Also, it can be run with a specified list of events. Here is an example of benchmarking using 16 threads to check of CPU
+stalls: 
 ```sh
 sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -t 16 -prof "perfnorm:event=cycles,instructions,uops_executed.core,uops_executed.stall_cycles,cache-references,cache-misses,cycle_activity.stalls_total,cycle_activity.stalls_mem_any,cycle_activity.stalls_l3_miss,cycle_activity.stalls_l2_miss,cycle_activity.stalls_l1d_miss" .*'
 ```
@@ -584,8 +591,8 @@ sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof
 More info about extras, options, and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
 Other benchmarks with results for jsoniter-scala:
-- [comparison](https://github.com/kostya/benchmarks/tree/master#json) with other JSON parsers for different programming languages
-  and compilers
+- [comparison](https://github.com/kostya/benchmarks/tree/master#json) with other JSON parsers for different programming
+  languages and compilers
 - [comparison](https://github.com/sirthias/borer/pull/30) with other JSON parsers for Scala mostly on samples from real
   APIs, but with mapping to simple types only like strings and primitives and results for GraalVM EE Java8 only
 - [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with the best binary parsers and serializers for
