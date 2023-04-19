@@ -914,7 +914,6 @@ object JsonCodecMaker {
             a.tpe <:< TypeRepr.of[stringified])
 
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"Expected that ${tpe.show} has classSymbol"))
-        val fieldsWithDefaultValues = tpeClassSym.fieldMembers.filter(_.flags.is(Flags.HasDefault))
         val annotations = tpeClassSym.fieldMembers.collect { case m: Symbol if hasSupportedAnnotation(m) =>
           val name = m.name
           val named = m.annotations.filter(_.tpe =:= TypeRepr.of[named])

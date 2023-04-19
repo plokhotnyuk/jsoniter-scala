@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import scala.quoted._
-import scala.util._
 
 private[macros] sealed trait NameMapper:
   def apply(input: String)(using Quotes): Option[String]
@@ -252,7 +251,7 @@ private[macros] object CompileTimeEval {
               case None =>
                 throw new CompileTimeEvalException(s"Can't interpret '${id.show}' as constant expression", qual.asExpr)
           case Select(qual1, name) =>
-            retrieveRuntimeField(qual, evalQualJvm(qual1, bindings), name)
+            retrieveRuntimeField(evalQualJvm(qual1, bindings), name)
           case Apply(Select(qual1, name), args) =>
             javaReflectionCall(qual, evalQualJvm(qual1, bindings), name, args)
           case If(cond, ifTrue, ifFalse) =>
@@ -330,7 +329,7 @@ private[macros] object CompileTimeEval {
       instance
 
     // Field is a Scala field, we search for an access method with the same name
-    private def retrieveRuntimeField(applyTerm: Term, obj: AnyRef, name: String): AnyRef =
+    private def retrieveRuntimeField(obj: AnyRef, name: String): AnyRef =
       try obj.getClass.getMethod(name).invoke(obj) catch { // TODO: error handling
         case ex: NoSuchMethodException => obj.getClass.getField(name).get(obj)
       }

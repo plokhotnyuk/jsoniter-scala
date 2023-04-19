@@ -1,7 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type
-import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.rallyhealth.weepickle.v1.implicits.{discriminator, key}
 import zio.json.jsonDiscriminator
 

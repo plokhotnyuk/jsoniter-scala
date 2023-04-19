@@ -22,7 +22,6 @@ class ArrayOfIntsWriting extends ArrayOfIntsBenchmark {
   @Benchmark
   def circeJsoniter(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.syntax._
 

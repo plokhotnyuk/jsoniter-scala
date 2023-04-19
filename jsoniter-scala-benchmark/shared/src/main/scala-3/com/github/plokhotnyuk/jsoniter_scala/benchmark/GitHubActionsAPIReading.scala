@@ -1,6 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
 import org.openjdk.jmh.annotations.Benchmark
 
 class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
