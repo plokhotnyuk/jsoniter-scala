@@ -840,7 +840,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize and deserialize raw untouched bytes using a custom value codec" in {
       object RawVal {
-        def apply(s: String) = new RawVal(s.getBytes)
+        def apply(s: String) = new RawVal(s)
 
         implicit val codec: JsonValueCodec[RawVal] = new JsonValueCodec[RawVal] {
           override def decodeValue(in: JsonReader, default: RawVal): RawVal = new RawVal(in.readRawValAsBytes())
@@ -852,7 +852,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }
 
       case class RawVal private(bs: _root_.scala.Array[_root_.scala.Byte]) {
-        def this(s: _root_.scala.Predef.String) = this(s.getBytes(UTF_8))
+        def this(s: String) = this(s.getBytes(UTF_8))
 
         override lazy val hashCode: Int = MurmurHash3.arrayHash(bs)
 
