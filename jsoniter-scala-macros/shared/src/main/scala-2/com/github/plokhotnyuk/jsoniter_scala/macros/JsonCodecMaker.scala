@@ -82,6 +82,8 @@ final class stringified extends StaticAnnotation
   * @param skipNestedOptionValues a flag that turns on skipping of some values for nested more than 2-times options and
   *                               allow using `Option[Option[_]]` field values to distinguish `null` and missing field
   *                               cases
+  * @param circeLikeObjectEncoding a flag that turns on serialization and parsing of Scala objects as JSON objects with
+  *                               a key and empty object value: `{"EnumValue":{}}`
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -105,7 +107,8 @@ class CodecMakerConfig private (
     val allowRecursiveTypes: Boolean,
     val requireDiscriminatorFirst: Boolean,
     val useScalaEnumValueId: Boolean,
-    val skipNestedOptionValues: Boolean) {
+    val skipNestedOptionValues: Boolean,
+    val circeLikeObjectEncoding: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -163,6 +166,9 @@ class CodecMakerConfig private (
   def withSkipNestedOptionValues(skipNestedOptionValues: Boolean): CodecMakerConfig =
     copy(skipNestedOptionValues = skipNestedOptionValues)
 
+  def withCirceLikeObjectEncoding(circeLikeObjectEncoding: Boolean): CodecMakerConfig =
+    copy(circeLikeObjectEncoding = circeLikeObjectEncoding)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -184,7 +190,8 @@ class CodecMakerConfig private (
                          allowRecursiveTypes: Boolean = allowRecursiveTypes,
                          requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
                          useScalaEnumValueId: Boolean = useScalaEnumValueId,
-                         skipNestedOptionValues: Boolean = skipNestedOptionValues): CodecMakerConfig =
+                         skipNestedOptionValues: Boolean = skipNestedOptionValues,
+                         circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -207,7 +214,8 @@ class CodecMakerConfig private (
       allowRecursiveTypes = allowRecursiveTypes,
       requireDiscriminatorFirst = requireDiscriminatorFirst,
       useScalaEnumValueId = useScalaEnumValueId,
-      skipNestedOptionValues = skipNestedOptionValues)
+      skipNestedOptionValues = skipNestedOptionValues,
+      circeLikeObjectEncoding = circeLikeObjectEncoding)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -232,7 +240,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   allowRecursiveTypes = false,
   requireDiscriminatorFirst = true,
   useScalaEnumValueId = false,
-  skipNestedOptionValues = false) {
+  skipNestedOptionValues = false,
+  circeLikeObjectEncoding = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -471,12 +480,13 @@ object JsonCodecMaker {
 
     def makeCirceLike[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
-        .withDiscriminatorFieldName(None))
+        .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true))
 
     def makeCirceLikeSnakeCased[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
         .withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x)))
-        .withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case))
+        .withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case)
+        .withCirceLikeObjectEncoding(true))
 
     def makeWithSpecifiedConfig[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] =
       make(c) {
@@ -491,9 +501,10 @@ object JsonCodecMaker {
               "Use a separated submodule of the project to compile all such dependencies before their usage for " +
               s"generation of codecs. Cause:\n$ex")
           }
-        if (cfg.requireCollectionFields && cfg.transientEmpty) {
+        if (cfg.requireCollectionFields && cfg.transientEmpty)
           fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
-        }
+        if (cfg.circeLikeObjectEncoding && cfg.discriminatorFieldName.nonEmpty)
+          fail("'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'")
         cfg
       }
 
@@ -1697,8 +1708,9 @@ object JsonCodecMaker {
                 if (cfg.discriminatorFieldName.isDefined) {
                   q"""in.rollbackToMark()
                       ..${genReadLeafClass(subTpe)}"""
-                } else if (subTpe.typeSymbol.isModuleClass) q"${subTpe.typeSymbol.asClass.module}"
-                else genReadLeafClass(subTpe)
+                } else if (subTpe.typeSymbol.isModuleClass && !cfg.circeLikeObjectEncoding) {
+                  q"${subTpe.typeSymbol.asClass.module}"
+                } else genReadLeafClass(subTpe)
               q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) $readVal else $acc"
             }
 
@@ -1723,7 +1735,8 @@ object JsonCodecMaker {
           checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
           cfg.discriminatorFieldName match {
             case None =>
-              val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.isModuleClass)
+              val (leafModuleClasses, leafCaseClasses) =
+                leafClasses.partition(_.typeSymbol.isModuleClass && !cfg.circeLikeObjectEncoding)
               if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
                 q"""if (in.isNextToken('"')) {
                       in.rollbackToken()
@@ -2033,7 +2046,8 @@ object JsonCodecMaker {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = (cfg.discriminatorFieldName match {
             case None =>
-              val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.isModuleClass)
+              val (leafModuleClasses, leafCaseClasses) =
+                leafClasses.partition(_.typeSymbol.isModuleClass && !cfg.circeLikeObjectEncoding)
               leafCaseClasses.map { subTpe =>
                 cq"""x: $subTpe =>
                        out.writeObjectStart()

@@ -1,6 +1,7 @@
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
+import com.typesafe.tools.mima.core._
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
 
@@ -106,7 +107,10 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %%% moduleName.value % oldVersion)
     else Set()
   },
-  mimaReportSignatureProblems := true
+  mimaReportSignatureProblems := true,
+  mimaBinaryIssueFilters := Seq(
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
+  )
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))

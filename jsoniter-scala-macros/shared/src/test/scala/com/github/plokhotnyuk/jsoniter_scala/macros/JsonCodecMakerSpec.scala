@@ -1923,16 +1923,31 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeser(baseCodec2, C, """"C"""")
     }
     "serialize and deserialize ADTs with circe like default formatting" in {
+      sealed trait Enum
+
+      object EnumValue extends Enum
+
       sealed trait Base
 
-      case class AbbA(x: Int = 1, xs: List[Int], oX: Option[Int]) extends Base
+      case class AbbA(x: Int = 1, xs: List[Int], oX: Option[Enum]) extends Base
 
       val baseCodec1: JsonValueCodec[Base] = makeCirceLike
-      verifySerDeser(baseCodec1, AbbA(2, List(1, 2, 3), _root_.scala.Some(1)), """{"AbbA":{"x":2,"xs":[1,2,3],"oX":1}}""")
+      verifySerDeser(baseCodec1, AbbA(2, List(1, 2, 3), _root_.scala.Some(EnumValue)), """{"AbbA":{"x":2,"xs":[1,2,3],"oX":{"EnumValue":{}}}}""")
       verifySerDeser(baseCodec1, AbbA(1, List(), _root_.scala.None), """{"AbbA":{"x":1,"xs":[],"oX":null}}""")
       val baseCodec2: JsonValueCodec[Base] = makeCirceLikeSnakeCased
-      verifySerDeser(baseCodec2, AbbA(2, List(1, 2, 3), _root_.scala.Some(1)), """{"abb_a":{"x":2,"xs":[1,2,3],"o_x":1}}""")
+      verifySerDeser(baseCodec2, AbbA(2, List(1, 2, 3), _root_.scala.Some(EnumValue)), """{"abb_a":{"x":2,"xs":[1,2,3],"o_x":{"enum_value":{}}}}""")
       verifySerDeser(baseCodec2, AbbA(1, List(), _root_.scala.None), """{"abb_a":{"x":1,"xs":[],"o_x":null}}""")
+    }
+    "don't generate codecs for ADT when circeLikeObjectEncoding is true and discriminatorFieldName is non empty" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait Enum
+          |
+          |object EnumValue extends Enum
+          |
+          |JsonCodecMaker.make[List[Enum]](CodecMakerConfig.withCirceLikeObjectEncoding(true))""".stripMargin
+      }).getMessage.contains {
+        """'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'"""
+      })
     }
     "deserialize ADTs when discriminator field was serialized in far away last position and configuration allows to parse it" in {
       val longStr = "W" * 100000

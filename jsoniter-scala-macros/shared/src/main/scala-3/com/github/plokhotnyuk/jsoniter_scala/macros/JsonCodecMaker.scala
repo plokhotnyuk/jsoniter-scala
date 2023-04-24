@@ -86,6 +86,8 @@ final class stringified extends StaticAnnotation
   * @param skipNestedOptionValues a flag that turns on skipping of some values for nested more than 2-times options and
   *                               allow using `Option[Option[_]]` field values to distinguish `null` and missing field
   *                               cases
+  * @param circeLikeObjectEncoding a flag that turns on serialization and parsing of Scala objects as JSON objects with
+  *                               a key and empty object value: `{"EnumValue":{}}`
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -109,7 +111,8 @@ class CodecMakerConfig private[macros] (
     val allowRecursiveTypes: Boolean,
     val requireDiscriminatorFirst: Boolean,
     val useScalaEnumValueId: Boolean,
-    val skipNestedOptionValues: Boolean) {
+    val skipNestedOptionValues: Boolean,
+    val circeLikeObjectEncoding: Boolean) {
   @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodecMaker.make functions")
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
 
@@ -167,6 +170,9 @@ class CodecMakerConfig private[macros] (
   def withSkipNestedOptionValues(skipNestedOptionValues: Boolean): CodecMakerConfig =
     copy(skipNestedOptionValues = skipNestedOptionValues)
 
+  def withCirceLikeObjectEncoding(circeLikeObjectEncoding: Boolean): CodecMakerConfig =
+    copy(circeLikeObjectEncoding = circeLikeObjectEncoding)
+
   private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                          javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -188,7 +194,8 @@ class CodecMakerConfig private[macros] (
                          allowRecursiveTypes: Boolean = allowRecursiveTypes,
                          requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
                          useScalaEnumValueId: Boolean = useScalaEnumValueId,
-                         skipNestedOptionValues: Boolean = skipNestedOptionValues): CodecMakerConfig =
+                         skipNestedOptionValues: Boolean = skipNestedOptionValues,
+                         circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -211,7 +218,8 @@ class CodecMakerConfig private[macros] (
       allowRecursiveTypes = allowRecursiveTypes,
       requireDiscriminatorFirst = requireDiscriminatorFirst,
       useScalaEnumValueId = useScalaEnumValueId,
-      skipNestedOptionValues = skipNestedOptionValues)
+      skipNestedOptionValues = skipNestedOptionValues,
+      circeLikeObjectEncoding = circeLikeObjectEncoding)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -236,7 +244,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   allowRecursiveTypes = false,
   requireDiscriminatorFirst = true,
   useScalaEnumValueId = false,
-  skipNestedOptionValues = false) {
+  skipNestedOptionValues = false,
+  circeLikeObjectEncoding = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -281,7 +290,8 @@ object CodecMakerConfig extends CodecMakerConfig(
             $exprAllowRecursiveTypes,
             $exprRequireDiscriminatorFirst,
             $exprUseScalaEnumValueId,
-            $skipNestedOptionValues)
+            $skipNestedOptionValues,
+            $circeLikeObjectEncoding)
         } =>
           try {
             Some(CodecMakerConfig(
@@ -306,7 +316,8 @@ object CodecMakerConfig extends CodecMakerConfig(
               extract("allowRecursiveTypes", exprAllowRecursiveTypes),
               extract("requireDiscriminatorFirst", exprRequireDiscriminatorFirst),
               extract("useScalaEnumValueId", exprUseScalaEnumValueId),
-              extract("skipNestedOptionValues", skipNestedOptionValues)))
+              extract("skipNestedOptionValues", skipNestedOptionValues),
+              extract("circeLikeObjectEncoding", circeLikeObjectEncoding)))
           } catch {
             case FromExprException(message, expr) =>
               report.warning(message, expr)
@@ -335,6 +346,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withMapMaxInsertNumber($v) } => Some(x.valueOrAbort.withMapMaxInsertNumber(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withSetMaxInsertNumber($v) } => Some(x.valueOrAbort.withSetMaxInsertNumber(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withSkipNestedOptionValues($v) } => Some(x.valueOrAbort.withSkipNestedOptionValues(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withCirceLikeObjectEncoding($v) } => Some(x.valueOrAbort.withCirceLikeObjectEncoding(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -572,7 +584,7 @@ object JsonCodecMaker {
 
     def makeCirceLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
-        .withDiscriminatorFieldName(None))
+        .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true))
 
     def makeCirceLikeSnakeCased[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       make(CodecMakerConfig(
@@ -597,7 +609,8 @@ object JsonCodecMaker {
         allowRecursiveTypes = false,
         requireDiscriminatorFirst = true,
         useScalaEnumValueId = false,
-        skipNestedOptionValues = false))
+        skipNestedOptionValues = false,
+        circeLikeObjectEncoding = true))
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
@@ -607,6 +620,8 @@ object JsonCodecMaker {
           cfg =>
             if (cfg.requireCollectionFields && cfg.transientEmpty)
               report.errorAndAbort("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
+            if (cfg.circeLikeObjectEncoding && cfg.discriminatorFieldName.nonEmpty)
+              report.errorAndAbort("'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'")
             cfg
         }) catch {
         case ex: CompileTimeEvalException => report.errorAndAbort("Can't evaluate compile-time expression", ex.expr)
@@ -1597,8 +1612,8 @@ object JsonCodecMaker {
                   if (currentDiscriminator.isDefined) '{
                     $in.rollbackToMark()
                     ${genReadLeafClass[st](subTpe)}
-                  } else if (isEnumOrModuleValue(subTpe)) Ref(subTpe.termSymbol).asExprOf[st]
-                  else if (subTpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[st]
+                  } else if (isEnumOrModuleValue(subTpe) && !cfg.circeLikeObjectEncoding) Ref(subTpe.termSymbol).asExprOf[st]
+                  else if (subTpe =:= TypeRepr.of[None.type] && !cfg.circeLikeObjectEncoding) '{ None }.asExprOf[st]
                   else genReadLeafClass[st](subTpe)
                 } else $acc
               }.asExprOf[T]
@@ -1663,8 +1678,9 @@ object JsonCodecMaker {
         }
 
         if (currentDiscriminator == None) {
-          val (leafModuleClasses, leafCaseClasses) =
-            leafClasses.partition(tpe => isEnumOrModuleValue(tpe) || tpe =:= TypeRepr.of[None.type])
+          val (leafModuleClasses, leafCaseClasses) = leafClasses.partition { x =>
+            (isEnumOrModuleValue(x) || x =:= TypeRepr.of[None.type]) && !cfg.circeLikeObjectEncoding
+          }
           if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
             '{
               if ($in.isNextToken('"')) {
@@ -2778,7 +2794,9 @@ object JsonCodecMaker {
 
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = cfg.discriminatorFieldName.fold {
-            val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(x => isEnumOrModuleValue(x) || x =:= TypeRepr.of[None.type])
+            val (leafModuleClasses, leafCaseClasses) = leafClasses.partition { x =>
+              (isEnumOrModuleValue(x) || x =:= TypeRepr.of[None.type]) && !cfg.circeLikeObjectEncoding
+            }
             leafCaseClasses.map { subTpe =>
               val vxSym = Symbol.newBind(Symbol.spliceOwner, "vx", Flags.EmptyFlags, subTpe)
               CaseDef(Bind(vxSym, Typed(Wildcard(), Inferred(subTpe))), None, '{
