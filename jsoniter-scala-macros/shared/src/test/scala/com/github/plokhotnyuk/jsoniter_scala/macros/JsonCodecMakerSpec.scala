@@ -1922,7 +1922,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeser(baseCodec2, B(), """{"B":{"extra":"should be ignored"}}""")
       verifyDeser(baseCodec2, C, """"C"""")
     }
-    "serialize and deserialize ADTs with circe like default formatting" in {
+    "serialize and deserialize ADTs with circe-like default formatting" in {
       sealed trait Enum
 
       object EnumValue extends Enum
@@ -1937,6 +1937,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val baseCodec2: JsonValueCodec[Base] = makeCirceLikeSnakeCased
       verifySerDeser(baseCodec2, AbbA(2, List(1, 2, 3), _root_.scala.Some(EnumValue)), """{"abb_a":{"x":2,"xs":[1,2,3],"o_x":{"enum_value":{}}}}""")
       verifySerDeser(baseCodec2, AbbA(1, List(), _root_.scala.None), """{"abb_a":{"x":1,"xs":[],"o_x":null}}""")
+    }
+    "serialize and deserialize ADTs with circe-like encoding for Scala objects" in {
+      sealed trait Enum
+
+      object EnumValue1 extends Enum
+
+      object EnumValue2 extends Enum
+
+      val enumCodec: JsonValueCodec[List[Enum]] =
+        make(CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None).withCirceLikeObjectEncoding(true))
+      verifySerDeser(enumCodec, List(EnumValue1, EnumValue2), """[{"EnumValue1":{}},{"EnumValue2":{}}]""")
     }
     "don't generate codecs for ADT when circeLikeObjectEncoding is true and discriminatorFieldName is non empty" in {
       assert(intercept[TestFailedException](assertCompiles {
