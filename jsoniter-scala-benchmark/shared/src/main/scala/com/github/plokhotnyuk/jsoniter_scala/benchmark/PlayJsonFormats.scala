@@ -1161,22 +1161,22 @@ object PlayJsonFormats {
     })
   }
   implicit val enumFormat: Format[SuitEnum.SuitEnum] = stringFormat("suitenum") {
-    val ec = new ConcurrentHashMap[String, SuitEnum.SuitEnum]
+    val m = new ConcurrentHashMap[String, SuitEnum.SuitEnum]
     (s: String) =>
-      var x = ec.get(s)
+      var x = m.get(s)
       if (x eq null) {
-        x = SuitEnum.values.iterator.find(_.toString == s).getOrElse(sys.error(""))
-        ec.put(s, x)
+        x = SuitEnum.values.iterator.find(_.toString == s).getOrElse(sys.error("suitenum"))
+        m.put(s, x)
       }
       x
   }
   implicit val enumADTFormat: Format[SuitADT] = stringFormat("suitadt") {
-    val suite = Map(
+    val m = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    (s: String) => suite(s)
+    (s: String) => m(s)
   }
   implicit val javaEnumFormat: Format[Suit] = stringFormat("suitenum")(Suit.valueOf)
   implicit val durationFormat: Format[Duration] = stringFormat("instant")(Duration.parse)

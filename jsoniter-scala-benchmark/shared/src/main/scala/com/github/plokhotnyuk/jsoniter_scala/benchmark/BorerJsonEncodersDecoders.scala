@@ -109,28 +109,25 @@ object BorerJsonEncodersDecoders {
   }
   implicit val Codec(primitivesEnc: Encoder[Primitives], primitivesDec: Decoder[Primitives]) = deriveCodec[Primitives]
   implicit val Codec(suitADTEnc: Encoder[SuitADT], suitADTDec: Decoder[SuitADT]) = stringCodec {
-    val suite = Map(
+    val m = Map[String, SuitADT](
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
+    s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val Codec(suitEnc: Encoder[Suit], suitDec: Decoder[Suit]) = stringCodec(Suit.valueOf)
-  implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = Codec(
-    (w: Writer, value: SuitEnum) => w.writeString(value.toString), {
-      val ec = new ConcurrentHashMap[String, SuitEnum]
-      (r: Reader) => {
-        val s = r.readString()
-        var v = ec.get(s)
-        if (v eq null) {
-          v = SuitEnum.values.iterator.find(_.toString == s)
-            .getOrElse(throw new InvalidInputData(r.position, "Expected [String] from SuitEnum"))
-          ec.put(s, v)
-        }
-        v
+  implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = stringCodec {
+    val m = new ConcurrentHashMap[String, SuitEnum]
+    s => {
+      var v = m.get(s)
+      if (v eq null) {
+        v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throw new IllegalArgumentException("SuitEnum"))
+        m.put(s, v)
       }
-    })
+      v
+    }
+  }
   implicit val Codec(twitterAPIEnc: Encoder[TwitterAPI.Tweet], twitterAPIDec: Decoder[TwitterAPI.Tweet]) = {
     import io.bullet.borer.NullOptions._
 
@@ -146,5 +143,5 @@ object BorerJsonEncodersDecoders {
   implicit val Codec(uuidEnc: Encoder[UUID], uuidDec: Decoder[UUID]) = stringCodec(UUID.fromString)
 
   def stringCodec[T](f: String => T): Codec[T] =
-    Codec((w: Writer, value: T) => w.writeString(value.toString), (r: Reader) => f(r.readString()))
+    new Codec((w: Writer, value: T) => w.writeString(value.toString), (r: Reader) => f(r.readString()))
 }

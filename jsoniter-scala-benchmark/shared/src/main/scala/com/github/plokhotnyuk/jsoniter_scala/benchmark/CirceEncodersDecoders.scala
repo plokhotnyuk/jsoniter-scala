@@ -1,13 +1,16 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import io.circe.Decoder._
 import io.circe.Encoder._
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
+
 import java.time.Instant
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 import scala.util.Try
@@ -755,16 +758,24 @@ object CirceEncodersDecoders {
     Codec.from(decodeString.emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply)),
       encodeString.contramap[Suit](_.name))
   implicit val suitADTC3c: Codec[SuitADT] = Codec.from(decodeString.map {
-    val suite = Map(
+    val m = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
+    s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }, encodeString.contramap(_.toString))
-  implicit val suitEnumC3c: Codec[SuitEnum.Value] =
-    Codec.from(decodeString.emap(s => Try(SuitEnum.withName(s)).fold[Either[String, SuitEnum.Value]](_ => Left("SuitEnum"), Right.apply)),
-      encodeString.contramap(_.toString))
+  implicit val suitEnumC3c: Codec[SuitEnum] = Codec.from(decodeString.emapTry {
+    val m = new ConcurrentHashMap[String, SuitEnum]
+    s => Try {
+      var v = m.get(s)
+      if (v eq null) {
+        v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throw new IllegalArgumentException("SuitEnum"))
+        m.put(s, v)
+      }
+      v
+    }
+  }, encodeString.contramap(_.toString))
   implicit val primitivesC3c: Codec[Primitives] = deriveCodec
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {
     import io.circe.generic.auto._

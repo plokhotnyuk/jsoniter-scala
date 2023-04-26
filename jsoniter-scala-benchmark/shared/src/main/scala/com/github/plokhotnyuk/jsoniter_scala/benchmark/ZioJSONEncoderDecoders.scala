@@ -97,14 +97,14 @@ object ZioJSONEncoderDecoders {
       out.write(a.toString)
       out.write('"')
     }, ClassTag(classOf[SuitADT])), JsonDecoder.array[SuitADT](new JsonDecoder[SuitADT] {
-      private[this] val suite = Map(
+      private[this] val m = Map(
         "Hearts" -> Hearts,
         "Spades" -> Spades,
         "Diamonds" -> Diamonds,
         "Clubs" -> Clubs)
 
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT =
-        suite.getOrElse(Lexer.string(trace, in).toString, throwError("SuitADT", trace))
+        m.getOrElse(Lexer.string(trace, in).toString, throwError("SuitADT", trace))
     }, ClassTag(classOf[SuitADT])))
   implicit val arrayOfEnumsC3c: JsonCodec[Array[SuitEnum]] = new JsonCodec(
     JsonEncoder.array[SuitEnum]({ (a: SuitEnum, _: Option[Int], out: Write) =>
@@ -112,14 +112,14 @@ object ZioJSONEncoderDecoders {
       out.write(a.toString)
       out.write('"')
     }, ClassTag(classOf[SuitEnum])), JsonDecoder.array[SuitEnum](new JsonDecoder[SuitEnum] {
-      private[this] val ec = new ConcurrentHashMap[String, SuitEnum]
+      private[this] val m = new ConcurrentHashMap[String, SuitEnum]
 
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitEnum = {
         val s = Lexer.string(trace, in).toString
-        var v = ec.get(s)
+        var v = m.get(s)
         if (v eq null) {
           v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throwError("SuitEnum", trace))
-          ec.put(s, v)
+          m.put(s, v)
         }
         v
       }

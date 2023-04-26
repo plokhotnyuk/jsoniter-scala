@@ -22,12 +22,12 @@ object AVSystemCodecs {
   implicit val anyValsGenCodec: GenCodec[AnyVals] = materializeRecursively
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
   implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, {
-    val ec = new ConcurrentHashMap[String, SuitEnum]
+    val m = new ConcurrentHashMap[String, SuitEnum]
     (s: String) => {
-      var x = ec.get(s)
+      var x = m.get(s)
       if (x eq null) {
         x = SuitEnum.withName(s)
-        ec.put(s, x)
+        m.put(s, x)
       }
       x
     }
@@ -41,12 +41,12 @@ object AVSystemCodecs {
   implicit val offsetTimeGenCodec: GenCodec[OffsetTime] = transformed(_.toString, OffsetTime.parse)
   implicit val periodGenCodec: GenCodec[Period] = transformed(_.toString, Period.parse)
   implicit val suitADTGenCodec: GenCodec[SuitADT] = transformed[SuitADT, String](_.toString, {
-    val suite = Map(
+    val m = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
+    s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   })
   implicit val uuidGenCodec: GenCodec[UUID] = transformed(_.toString, UUID.fromString)
   implicit val yearGenCodec: GenCodec[Year] = transformed(_.toString, Year.parse)

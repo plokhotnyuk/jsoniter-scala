@@ -11,20 +11,20 @@ object CommonJson4sFormats {
     StringifiedFormats.stringified[UUID](UUID.fromString) +
     StringifiedFormats.stringified[Suit](Suit.valueOf) +
     StringifiedFormats.stringified[SuitADT] {
-      val suite = Map(
+      val m = Map(
         "Hearts" -> Hearts,
         "Spades" -> Spades,
         "Diamonds" -> Diamonds,
         "Clubs" -> Clubs)
-      x => suite(x)
+      x => m.getOrElse(x, sys.error("SuitADT"))
     } +
     StringifiedFormats.stringified[SuitEnum.SuitEnum] {
-      val ec = new java.util.concurrent.ConcurrentHashMap[String, SuitEnum.SuitEnum]
+      val m = new java.util.concurrent.ConcurrentHashMap[String, SuitEnum.SuitEnum]
       x => {
-        var v = ec.get(x)
+        var v = m.get(x)
         if (v eq null) {
           v = SuitEnum.values.iterator.find(_.toString == x).getOrElse(sys.error("SuitEnum"))
-          ec.put(x, v)
+          m.put(x, v)
         }
         v
       }

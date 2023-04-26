@@ -110,16 +110,16 @@ class SuiteEnumSerializer extends JsonSerializer[SuitEnum] {
 }
 
 class SuiteEnumDeserializer extends JsonDeserializer[SuitEnum] {
-  private[this] val ec = new ConcurrentHashMap[String, SuitEnum]
+  private[this] val m = new ConcurrentHashMap[String, SuitEnum]
 
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum = {
     var x: SuitEnum = null
     val s = jp.getValueAsString
     if (s ne null) {
-      x = ec.get(s)
+      x = m.get(s)
       if (x eq null) {
         x = SuitEnum.values.iterator.find(_.toString == s).orNull
-        ec.put(s, x)
+        m.put(s, x)
       }
     }
     if (x eq null) ctxt.handleUnexpectedToken(classOf[SuitEnum], jp)
@@ -132,14 +132,14 @@ class SuitADTSerializer extends JsonSerializer[SuitADT] {
 }
 
 class SuitADTDeserializer extends JsonDeserializer[SuitADT] {
-  private[this] val suite = Map(
+  private[this] val m = Map(
     "Hearts" -> Hearts,
     "Spades" -> Spades,
     "Diamonds" -> Diamonds,
     "Clubs" -> Clubs)
 
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitADT =
-    suite.get(jp.getValueAsString) match {
+    m.get(jp.getValueAsString) match {
       case s: Some[SuitADT] => s.value
       case _ => ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]
     }

@@ -100,22 +100,22 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val periodReader: Reader[Period] = strReader(Period.parse)
   implicit val periodWriter: Writer[Period] = strWriter[Period]
   implicit val suiteADTReader: Reader[SuitADT] = strReader {
-    val suite = Map(
+    val m = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    s => suite.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))
+    s => m.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val suiteADTWriter: Writer[SuitADT] = strWriter[SuitADT]
   implicit val suitEnumReader: Reader[SuitEnum] = strReader[SuitEnum]({
-    val ec = new ConcurrentHashMap[String, SuitEnum]
+    val m = new ConcurrentHashMap[String, SuitEnum]
     (cs: CharSequence) => {
       val s = cs.toString
-      var x = ec.get(s)
+      var x = m.get(s)
       if (x eq null) {
-        x = SuitEnum.withName(s)
-        ec.put(s, x)
+        x = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throw new IllegalArgumentException("SuitEnum"))
+        m.put(s, x)
       }
       x
     }
