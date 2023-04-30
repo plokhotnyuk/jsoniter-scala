@@ -21,9 +21,9 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [spray-json](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
-libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
-(max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 22.04 (Linux 5.19), and latest versions of Azul Zulu 11/17, OpenJDK 21-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
-GraalVM CE 23-dev for Java 17/20, and GraalVM EE 22.3 for Java 11/17/19.
+libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i7-11800H CPU @ 2.3GHz
+(max 4.6GHz), RAM 64Gb DDR4-3200, Ubuntu 22.04 (Linux 5.19), and latest versions of Azul Zulu 11/17, OpenJDK 21-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
+GraalVM CE 23.1-dev for Java 17/20, and GraalVM EE 22.3 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
 compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.13.0 to ES 2015 with
