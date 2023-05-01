@@ -35,6 +35,13 @@ object MyEnum extends enumeratum.Enum[MyEnum] {
   case object MyEnumAsCheckbox extends MyEnum("checkbox")
 
   val values = findValues
+
+  implicit val codec: JsonValueCodec[MyEnum] = make(CodecMakerConfig
+    .withDiscriminatorFieldName(None)
+    .withAdtLeafClassNameMapper(x => simpleClassName(x) match {
+      case "MyEnumAsText" => "text"
+      case "MyEnumAsCheckbox" => "checkbox"
+    }))
 }
 
 class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
@@ -45,6 +52,7 @@ class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)
         .withAdtLeafClassNameMapper(x => simpleClassName(x).toLowerCase)),
         List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["red","yellow","green"]""")
+      verifySerDeser(make[List[MyEnum]], List(MyEnum.MyEnumAsText, MyEnum.MyEnumAsCheckbox), """["text","checkbox"]""")
     }
     "serialize and deserialize when injected by implicit vals as custom value codecs" in {
       implicit val codecOfMediaType: JsonValueCodec[MediaType] = new JsonValueCodec[MediaType] {
@@ -62,23 +70,6 @@ class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
 
       verifySerDeser(make[List[MediaType]],
         List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
-
-      implicit val valueCodec: JsonValueCodec[MyEnum] = new JsonValueCodec[MyEnum] {
-        override def decodeValue(in: JsonReader, default: MyEnum): MyEnum =
-          if (in.isNextToken('"')) {
-            in.rollbackToken()
-            val len = in.readStringAsCharBuf()
-            if (in.isCharBufEqualsTo(len, "text")) MyEnum.MyEnumAsText
-            else if (in.isCharBufEqualsTo(len, "checkbox")) MyEnum.MyEnumAsCheckbox
-            else in.decodeError("expected MyEnum value")
-          } else in.readNullOrTokenError(default, '"')
-
-        override def encodeValue(x: MyEnum, out: JsonWriter): Unit = out.writeNonEscapedAsciiVal(x.entryName)
-
-        override def nullValue: MyEnum = null
-      }
-
-      verifySerDeser(make[List[MyEnum]], List(MyEnum.MyEnumAsText, MyEnum.MyEnumAsCheckbox), """["text","checkbox"]""")
     }
   }
   "Key codecs for Enumeratum enum" should {
