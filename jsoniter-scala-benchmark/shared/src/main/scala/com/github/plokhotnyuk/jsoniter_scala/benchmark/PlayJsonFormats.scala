@@ -1,9 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import play.api.libs.json._
 import java.time._
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
+import play.api.libs.json._
 import scala.collection.immutable.{BitSet, IndexedSeq, IntMap, Map, Seq}
 import scala.collection.mutable
 import scala.util.Try
@@ -90,6 +90,53 @@ object PlayJsonFormats {
       "n" -> Json.toJson(x.n)
     )
   })
+  implicit lazy val adtBaseFormat: Format[ADTBase] = {
+    implicit val v1: Format[X] = Format({
+      for {
+        a <- (__ \ "a").read[Int]
+      } yield X(a)
+    }, (x: X) => {
+      toJsObject(
+        "type" -> JsString("X"),
+        "a" -> JsNumber(x.a)
+      )
+    })
+    implicit val v2: Format[Y] = Format({
+      for {
+        b <- (__ \ "b").read[String]
+      } yield Y(b)
+    }, (x: Y) => {
+      toJsObject(
+        "type" -> JsString("Y"),
+        "b" -> JsString(x.b)
+      )
+    })
+    implicit val v3: Format[Z] = Format({
+      for {
+        l <- (__ \ "l").lazyRead[ADTBase](adtBaseFormat)
+        r <- (__ \ "r").lazyRead[ADTBase](adtBaseFormat)
+      } yield Z(l, r)
+    }, (x: Z) => {
+      toJsObject(
+        "type" -> JsString("Z"),
+        "l" -> Json.toJson(x.l)(adtBaseFormat),
+        "r" -> Json.toJson(x.r)(adtBaseFormat)
+      )
+    })
+    Format[ADTBase](
+      readType.flatMap {
+        case "X" => v1.widen
+        case "Y" => v2.widen
+        case "Z" => v3.widen
+        case _ => Reads.failed("Unknown type value")
+      },
+      Writes {
+        case x: X => v1.writes(x)
+        case y: Y => v2.writes(y)
+        case z: Z => v3.writes(z)
+      }
+    )
+  }
   implicit val anyValsFormat: Format[AnyVals] = Format({
     for {
       b <- (__ \ "b").read[Byte]
@@ -1194,11 +1241,13 @@ object PlayJsonFormats {
   implicit val zoneIdFormat: Format[ZoneId] = stringFormat("zoneid")(ZoneId.of)
   implicit val zonedDateTimeFormat: Format[ZonedDateTime] = stringFormat("zoneddatetime")(ZonedDateTime.parse)
 
-  private[this] def toJson[T](x: T, d: T)(implicit tjs: Writes[T]): JsValue =
-    if (x == d) JsNull
-    else tjs.writes(x)
-
   def toJsObject(fields: (String, JsValue)*): JsObject = JsObject(fields.filterNot { case (_, v) =>
     (v eq JsNull) || (v.isInstanceOf[JsArray] && v.asInstanceOf[JsArray].value.isEmpty)
   })
+
+  private[this] def readType: Reads[String] = (__ \ "type").read[String]
+
+  private[this] def toJson[T](x: T, d: T)(implicit tjs: Writes[T]): JsValue =
+    if (x == d) JsNull
+    else tjs.writes(x)
 }

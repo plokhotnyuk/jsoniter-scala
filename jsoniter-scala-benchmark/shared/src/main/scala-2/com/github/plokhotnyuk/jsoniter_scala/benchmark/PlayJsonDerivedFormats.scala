@@ -6,13 +6,6 @@ import play.api.libs.json._
 object PlayJsonDerivedFormats {
   implicit val config: JsonConfiguration.Aux[Json.MacroOptions] = JsonConfiguration(discriminator = "type",
     typeNaming = JsonNaming(fullName => fullName.substring(Math.max(fullName.lastIndexOf('.') + 1, 0))))
-  val adtFormat: Format[ADTBase] = {
-    implicit lazy val v1: Format[X] = Json.format
-    implicit lazy val v2: Format[Y] = Json.format
-    implicit lazy val v3: Format[Z] = Json.format
-    implicit lazy val v4: Format[ADTBase] = Json.format
-    v4
-  }
   val geoJSONFormat: Format[GeoJSON.GeoJSON] = {
     implicit val v1: Format[GeoJSON.Point] =
       (__ \ "coordinates").format[(Double, Double)].inmap(GeoJSON.Point.apply, _.coordinates)

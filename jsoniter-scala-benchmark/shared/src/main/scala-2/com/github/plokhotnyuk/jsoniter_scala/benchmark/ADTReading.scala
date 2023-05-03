@@ -74,19 +74,19 @@ class ADTReading extends ADTBenchmark {
 
   @Benchmark
   def playJson(): ADTBase = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonDerivedFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import play.api.libs.json.Json
 
-    Json.parse(jsonBytes).as[ADTBase](adtFormat)
+    Json.parse(jsonBytes).as[ADTBase]
   }
 
   @Benchmark
   def playJsonJsoniter(): ADTBase = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonDerivedFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
-    readFromArray(jsonBytes).as[ADTBase](adtFormat)
+    readFromArray(jsonBytes).as[ADTBase]
   }
 
   @Benchmark
