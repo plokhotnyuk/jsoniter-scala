@@ -20,7 +20,6 @@ object CirceCodecs {
  /**
    * The circe's codec for `BigInt` values.
    *
-   * @param x the `BigInt` value to encode
    * @return a JSON value representing the BigInt
    */
   implicit val bigIntC3c: Codec[BigInt] = new Codec[BigInt] {
@@ -34,7 +33,6 @@ object CirceCodecs {
   }
 
   // codecs for java.time.* types
-  
   implicit val durationC3C: Codec[Duration] = shortAsciiStringCodec("duration", _.readDuration(_), _.writeVal(_))
   implicit val instantC3C: Codec[Instant] = shortAsciiStringCodec("instant", _.readInstant(_), _.writeVal(_))
   implicit val localDateC3C: Codec[LocalDate] = shortAsciiStringCodec("local date", _.readLocalDate(_), _.writeVal(_))
@@ -68,9 +66,9 @@ object CirceCodecs {
           var bits, i = 0
           while (i < len) {
             val ch = s.charAt(i)
-            i += 1
-            buf(i) = ch.toByte
+            buf(i + 1) = ch.toByte
             bits |= ch
+            i += 1
           }
           buf(i + 1) = '"'
           bits < 0x80
