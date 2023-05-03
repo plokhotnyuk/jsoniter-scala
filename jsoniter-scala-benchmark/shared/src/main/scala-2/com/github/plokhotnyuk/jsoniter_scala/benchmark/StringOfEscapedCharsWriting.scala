@@ -79,7 +79,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonJsoniterConfig._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonJsoniterFormats._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import play.api.libs.json.Json
 

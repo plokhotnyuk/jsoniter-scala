@@ -72,7 +72,7 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   @Benchmark
   def playJsonJsoniter(): String = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonJsoniterConfig._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonJsoniterFormats._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray[play.api.libs.json.JsValue](jsonBytes, tooLongStringConfig).as[String]

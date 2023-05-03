@@ -5,7 +5,6 @@ import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, ReaderConfig, WriterConfig}
 import io.circe._
 import io.circe.generic.semiauto.deriveCodec
-
 import java.time.Instant
 
 object CirceJsoniterCodecs {

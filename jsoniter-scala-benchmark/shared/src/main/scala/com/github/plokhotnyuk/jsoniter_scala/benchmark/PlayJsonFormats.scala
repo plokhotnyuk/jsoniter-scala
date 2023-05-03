@@ -1198,7 +1198,7 @@ object PlayJsonFormats {
     if (x == d) JsNull
     else tjs.writes(x)
 
-  private[this] def toJsObject(fields: (String, JsValue)*): JsObject = JsObject(fields.filterNot { case (_, v) =>
+  def toJsObject(fields: (String, JsValue)*): JsObject = JsObject(fields.filterNot { case (_, v) =>
     (v eq JsNull) || (v.isInstanceOf[JsArray] && v.asInstanceOf[JsArray].value.isEmpty)
   })
 }
