@@ -91,7 +91,7 @@ object PlayJsonFormats {
     )
   })
   implicit lazy val adtBaseFormat: Format[ADTBase] = {
-    implicit val v1: Format[X] = Format({
+    val v1: Format[X] = Format({
       for {
         a <- (__ \ "a").read[Int]
       } yield X(a)
@@ -101,7 +101,7 @@ object PlayJsonFormats {
         "a" -> JsNumber(x.a)
       )
     })
-    implicit val v2: Format[Y] = Format({
+    val v2: Format[Y] = Format({
       for {
         b <- (__ \ "b").read[String]
       } yield Y(b)
@@ -111,7 +111,7 @@ object PlayJsonFormats {
         "b" -> JsString(x.b)
       )
     })
-    implicit val v3: Format[Z] = Format({
+    val v3: Format[Z] = Format({
       for {
         l <- (__ \ "l").lazyRead[ADTBase](adtBaseFormat)
         r <- (__ \ "r").lazyRead[ADTBase](adtBaseFormat)
@@ -123,19 +123,16 @@ object PlayJsonFormats {
         "r" -> Json.toJson(x.r)(adtBaseFormat)
       )
     })
-    Format[ADTBase](
-      readType.flatMap {
-        case "X" => v1.widen
-        case "Y" => v2.widen
-        case "Z" => v3.widen
-        case _ => Reads.failed("Unknown type value")
-      },
-      Writes {
-        case x: X => v1.writes(x)
-        case y: Y => v2.writes(y)
-        case z: Z => v3.writes(z)
-      }
-    )
+    Format[ADTBase](readType.flatMap {
+      case "X" => v1.widen
+      case "Y" => v2.widen
+      case "Z" => v3.widen
+      case _ => Reads.failed("Unknown type value")
+    }, Writes {
+      case x: X => v1.writes(x)
+      case y: Y => v2.writes(y)
+      case z: Z => v3.writes(z)
+    })
   }
   implicit val anyValsFormat: Format[AnyVals] = Format({
     for {
@@ -201,6 +198,152 @@ object PlayJsonFormats {
       "i" -> JsNumber(x.i)
     )
   })
+  val geoJSONFormat: Format[GeoJSON.GeoJSON] = {
+    val v1: Format[GeoJSON.Point] = Format({
+      for {
+        coordinates <- (__ \ "coordinates").read[(Double, Double)]
+      } yield GeoJSON.Point(coordinates)
+    }, (x: GeoJSON.Point) => {
+      toJsObject(
+        "type" -> JsString("Point"),
+        "coordinates" -> Json.toJson(x.coordinates)
+      )
+    })
+    val v2: Format[GeoJSON.MultiPoint] = Format({
+      for {
+        coordinates <- (__ \ "coordinates").read[IndexedSeq[(Double, Double)]]
+      } yield GeoJSON.MultiPoint(coordinates)
+    }, (x: GeoJSON.MultiPoint) => {
+      toJsObject(
+        "type" -> JsString("MultiPoint"),
+        "coordinates" -> Json.toJson(x.coordinates)
+      )
+    })
+    val v3: Format[GeoJSON.LineString] = Format({
+      for {
+        coordinates <- (__ \ "coordinates").read[IndexedSeq[(Double, Double)]]
+      } yield GeoJSON.LineString(coordinates)
+    }, (x: GeoJSON.LineString) => {
+      toJsObject(
+        "type" -> JsString("LineString"),
+        "coordinates" -> Json.toJson(x.coordinates)
+      )
+    })
+    val v4: Format[GeoJSON.MultiLineString] = Format({
+      for {
+        coordinates <- (__ \ "coordinates").read[IndexedSeq[IndexedSeq[(Double, Double)]]]
+      } yield GeoJSON.MultiLineString(coordinates)
+    }, (x: GeoJSON.MultiLineString) => {
+      toJsObject(
+        "type" -> JsString("MultiLineString"),
+        "coordinates" -> Json.toJson(x.coordinates)
+      )
+    })
+    val v5: Format[GeoJSON.Polygon] = Format({
+      for {
+        coordinates <- (__ \ "coordinates").read[IndexedSeq[IndexedSeq[(Double, Double)]]]
+      } yield GeoJSON.Polygon(coordinates)
+    }, (x: GeoJSON.Polygon) => {
+      toJsObject(
+        "type" -> JsString("Polygon"),
+        "coordinates" -> Json.toJson(x.coordinates)
+      )
+    })
+    val v6: Format[GeoJSON.MultiPolygon] = Format({
+      for {
+        coordinates <- (__ \ "coordinates").read[IndexedSeq[IndexedSeq[IndexedSeq[(Double, Double)]]]]
+      } yield GeoJSON.MultiPolygon(coordinates)
+    }, (x: GeoJSON.MultiPolygon) => {
+      toJsObject(
+        "type" -> JsString("MultiPolygon"),
+        "coordinates" -> Json.toJson(x.coordinates)
+      )
+    })
+    implicit val v7: Format[GeoJSON.SimpleGeometry] = Format[GeoJSON.SimpleGeometry](readType.flatMap {
+      case "Point" => v1.widen
+      case "MultiPoint" => v2.widen
+      case "LineString" => v3.widen
+      case "MultiLineString" => v4.widen
+      case "Polygon" => v5.widen
+      case "MultiPolygon" => v6.widen
+      case _ => Reads.failed("Unknown type value")
+    }, Writes {
+      case x: GeoJSON.Point => v1.writes(x)
+      case x: GeoJSON.MultiPoint => v2.writes(x)
+      case x: GeoJSON.LineString => v3.writes(x)
+      case x: GeoJSON.MultiLineString => v4.writes(x)
+      case x: GeoJSON.Polygon => v5.writes(x)
+      case x: GeoJSON.MultiPolygon => v6.writes(x)
+    })
+    val v8: Format[GeoJSON.GeometryCollection] = Format({
+      for {
+        geometries <- (__ \ "geometries").read[IndexedSeq[GeoJSON.SimpleGeometry]]
+      } yield GeoJSON.GeometryCollection(geometries)
+    }, (x: GeoJSON.GeometryCollection) => {
+      toJsObject(
+        "type" -> JsString("GeometryCollection"),
+        "geometries" -> Json.toJson(x.geometries)
+      )
+    })
+    val v9: Format[GeoJSON.Geometry] = Format[GeoJSON.Geometry](readType.flatMap { // FIXME: Non-implicit format due to compilation error with Scala 3
+      case "Point" => v1.widen
+      case "MultiPoint" => v2.widen
+      case "LineString" => v3.widen
+      case "MultiLineString" => v4.widen
+      case "Polygon" => v5.widen
+      case "MultiPolygon" => v6.widen
+      case "GeometryCollection" => v8.widen
+      case _ => Reads.failed("Unknown type value")
+    }, Writes {
+      case x: GeoJSON.Point => v1.writes(x)
+      case x: GeoJSON.MultiPoint => v2.writes(x)
+      case x: GeoJSON.LineString => v3.writes(x)
+      case x: GeoJSON.MultiLineString => v4.writes(x)
+      case x: GeoJSON.Polygon => v5.writes(x)
+      case x: GeoJSON.MultiPolygon => v6.writes(x)
+      case x: GeoJSON.GeometryCollection => v8.writes(x)
+    })
+    val v10: Format[GeoJSON.Feature] = Format({
+      for {
+        properties <- (__ \ "properties").read[Map[String, String]]
+        geometry <- (__ \ "geometry").read[GeoJSON.Geometry](v9) // FIXME: Passing an explicit format due to compilation error with Scala 3
+        bbox <- (__ \ "bbox").readNullable[(Double, Double, Double, Double)]
+      } yield GeoJSON.Feature(properties, geometry, bbox)
+    }, (x: GeoJSON.Feature) => {
+      toJsObject(
+        "type" -> JsString("Feature"),
+        "properties" -> Json.toJson(x.properties),
+        "geometry" -> Json.toJson(x.geometry)(v9), // FIXME: Passing an explicit format due to compilation error with Scala 3
+        "bbox" -> Json.toJson(x.bbox)
+      )
+    })
+    implicit val v11: Format[GeoJSON.SimpleGeoJSON] = Format[GeoJSON.SimpleGeoJSON](readType.flatMap {
+      case "Feature" => v10.widen
+      case _ => Reads.failed("Unknown type value")
+    }, Writes {
+      case x: GeoJSON.Feature => v10.writes(x)
+    })
+    val v12: Format[GeoJSON.FeatureCollection] = Format({
+      for {
+        features <- (__ \ "features").read[IndexedSeq[GeoJSON.SimpleGeoJSON]]
+        bbox <- (__ \ "bbox").readNullable[(Double, Double, Double, Double)]
+      } yield GeoJSON.FeatureCollection(features, bbox)
+    }, (x: GeoJSON.FeatureCollection) => {
+      toJsObject(
+        "type" -> JsString("FeatureCollection"),
+        "features" -> Json.toJson(x.features),
+        "bbox" -> Json.toJson(x.bbox)
+      )
+    })
+    Format[GeoJSON.GeoJSON](readType.flatMap {
+      case "Feature" => v10.widen
+      case "FeatureCollection" => v12.widen
+      case _ => Reads.failed("Unknown type value")
+    }, Writes {
+      case x: GeoJSON.Feature => v10.writes(x)
+      case x: GeoJSON.FeatureCollection => v12.writes(x)
+    })
+  }
   implicit val gitHubActionsAPIFormat: Format[GitHubActionsAPI.Response] = {
     implicit val v1: Format[Boolean] = stringFormat[Boolean]("boolean") { s =>
       "true" == s || "false" != s && sys.error("")

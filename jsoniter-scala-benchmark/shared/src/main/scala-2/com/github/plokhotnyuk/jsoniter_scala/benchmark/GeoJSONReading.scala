@@ -74,7 +74,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
   @Benchmark
   def playJson(): GeoJSON = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonDerivedFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import play.api.libs.json.Json
 
     Json.parse(jsonBytes).as[GeoJSON](geoJSONFormat)
@@ -83,7 +83,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
   @Benchmark
   def playJsonJsoniter(): GeoJSON = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonDerivedFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
     import com.github.plokhotnyuk.jsoniter_scala.core._
 
     readFromArray(jsonBytes).as[GeoJSON](geoJSONFormat)

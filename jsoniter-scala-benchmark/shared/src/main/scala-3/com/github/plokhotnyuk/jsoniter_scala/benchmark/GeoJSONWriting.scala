@@ -81,6 +81,24 @@ class GeoJSONWriting extends GeoJSONBenchmark {
   }
 
   @Benchmark
+  def playJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import play.api.libs.json.Json
+
+    Json.toBytes(Json.toJson(obj)(geoJSONFormat))
+  }
+
+  @Benchmark
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import play.api.libs.json.Json
+
+    writeToArray(Json.toJson(obj)(geoJSONFormat))
+  }
+
+  @Benchmark
   def sprayJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._
