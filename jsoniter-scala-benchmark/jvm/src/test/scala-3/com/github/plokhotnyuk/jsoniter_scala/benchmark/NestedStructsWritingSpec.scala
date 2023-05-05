@@ -12,8 +12,6 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       //toString(b.borer()) shouldBe b.jsonString
       toString(b.circe()) shouldBe b.jsonString
       toString(b.circeJsoniter()) shouldBe b.jsonString
-      //FIXME: DSL-JSON serializes null value for Option.None
-      //toString(b.dslJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.json4sJackson()) shouldBe b.jsonString
       toString(b.json4sNative()) shouldBe b.jsonString

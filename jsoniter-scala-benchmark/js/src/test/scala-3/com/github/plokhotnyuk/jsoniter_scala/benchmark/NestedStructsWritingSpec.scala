@@ -8,10 +8,10 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
   "NestedStructsWriting" should {
     "write properly" in {
       val b = benchmark
-      toString(b.circe()) shouldBe b.jsonString
-      toString(b.circeJsoniter()) shouldBe b.jsonString
       //FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
       //toString(b.borer()) shouldBe b.jsonString
+      toString(b.circe()) shouldBe b.jsonString
+      toString(b.circeJsoniter()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       toString(b.playJson()) shouldBe b.jsonString
