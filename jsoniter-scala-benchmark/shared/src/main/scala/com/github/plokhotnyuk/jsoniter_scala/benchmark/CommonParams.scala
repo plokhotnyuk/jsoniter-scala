@@ -17,6 +17,8 @@ import org.openjdk.jmh.annotations._
   "-XX:NonNMethodCodeHeapSize=32m",
   "-XX:NonProfiledCodeHeapSize=240m",
   "-XX:ProfiledCodeHeapSize=240m",
+  "-XX:TLABSize=16m",
+  "-XX:-ResizeTLAB",
   "-XX:+UseParallelGC",
   "-XX:-UseAdaptiveSizePolicy",
   "-XX:MaxInlineLevel=20",
