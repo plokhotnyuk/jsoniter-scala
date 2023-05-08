@@ -2098,6 +2098,57 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(make[List[Base]], List(A(1), B("VVV")), """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
     }
+    "deserialize ADTs with a custom handler of unknown type" in {
+      def adtCodecWithUnknownKindHandler[A](knownKinds: Set[String], codec: JsonValueCodec[A],
+                                            handler: String => A): JsonValueCodec[A] =
+        new JsonValueCodec[A] {
+          override def decodeValue(in: JsonReader, default: A): A = {
+            in.setMark()
+            if (in.isNextToken('{')) {
+              in.skipToKey("kind")
+              val kind = in.readString(null)
+              in.rollbackToMark()
+              if (knownKinds(kind)) codec.decodeValue(in, default)
+              else {
+                in.skip()
+                handler(kind)
+              }
+            } else in.readNullOrTokenError(default, '{')
+          }
+
+          override def encodeValue(x: A, out: JsonWriter): _root_.scala.Unit = codec.encodeValue(x, out)
+
+          override def nullValue: A = null.asInstanceOf[A]
+        }
+
+
+      object Schema {
+        sealed trait Event {
+          def kind: String
+        }
+
+        case class CreateEvent() extends Event {
+          override def kind: String = "CreateEvent"
+        }
+
+        case class DeleteEvent() extends Event {
+          override def kind: String = "DeleteEvent"
+        }
+
+        case class UnknownEvent(unknownKind: String) extends Event {
+          override def kind: String = unknownKind
+        }
+
+        implicit val codec: JsonValueCodec[Event] = adtCodecWithUnknownKindHandler(
+          Set("CreateEvent", "DeleteEvent"),
+          JsonCodecMaker.make[Event](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("kind"))),
+          UnknownEvent.apply)
+      }
+
+      verifyDeser(make[List[Schema.Event]],
+        List(Schema.CreateEvent(), Schema.DeleteEvent(), Schema.UnknownEvent("UpdateEvent")),
+        """[{"kind":"CreateEvent"},{"kind":"DeleteEvent"},{"kind":"UpdateEvent"}]""")
+    }
     "serialize and deserialize case class that have a field named as discriminator" in {
       case class Foo(hint: String)
 
