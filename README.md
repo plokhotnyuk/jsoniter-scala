@@ -26,7 +26,7 @@ libraries using different JDK and GraalVM versions on the following environment:
 GraalVM CE 23.1-dev for Java 17/20, and GraalVM EE 22.3 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.13.0 to ES 2015 with
+compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.13.1 to ES 2015 with
 GCC v20220202 optimizations applied.
 
 ## Contents
@@ -167,7 +167,7 @@ supports Scala 2.11.
 - Integration with circe for faster parsing/serialization and decoding/encoding to/from circe AST 
 - Releases for different Scala versions: 2.12, 2.13, and 3.2
 - Support of Scala.js 1.0+ for all supported Scala versions
-- Support of Scala Native 0.4.4+ for all supported Scala versions
+- Support of Scala Native 0.4+ for all supported Scala versions
 - Suppressing of all WartRemover warnings of generated codecs for Scala 2.12 and 2.13 
 
 There are configurable options that can be set in compile-time:
@@ -583,8 +583,8 @@ Perf events:
   trace:tracepoint
 ```
 
-Following command can be used to profile and print assembly code of the hottest methods, but it requires [a setup of an 
-additional library to make PrintAssembly feature enabled](https://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
+Following command can be used to profile and print assembly code of the hottest methods, but it requires [a setup of 
+`hsdis` library to make PrintAssembly feature enabled](https://builds.shipilev.net/hsdis/):
 ```sh
 sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
 ```
