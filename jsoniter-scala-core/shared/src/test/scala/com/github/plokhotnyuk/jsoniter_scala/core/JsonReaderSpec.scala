@@ -534,6 +534,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
       assert(intercept[IllegalStateException](reader("null").readNullOrError("default", "error"))
         .getMessage.startsWith("expected preceding call of 'nextToken()' or 'isNextToken()'"))
+      assert(intercept[IllegalStateException](reader("null").readNullOrTokenError("default", 'e'))
+        .getMessage.startsWith("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
   "JsonReader.rollbackToken" should {
@@ -2861,6 +2863,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       assert(intercept[JsonReaderException](reader(s""""$s"""").readStringAsBigInt(null)).getMessage.startsWith(error2))
     }
 
+    def checkError2(s: String, error: String): Unit =
+      assert(intercept[JsonReaderException](reader(s).readBigInt(BigInt(0))).getMessage.startsWith(error))
+
     "parse valid number values" in {
       forAll(genBigInt, genWhitespaces, minSuccessful(10000))(check)
     }
@@ -2894,6 +2899,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError2("nxxx", "expected number or null, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
@@ -2940,6 +2946,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       assert(intercept[JsonReaderException](reader(s""""$s"""").readStringAsBigDecimal(null))
         .getMessage.startsWith(error2))
     }
+
+    def checkError2(s: String, error: String): Unit =
+      assert(intercept[JsonReaderException](reader(s).readBigDecimal(BigDecimal(0))).getMessage.startsWith(error))
 
     "parse valid number values with scale less than specified maximum" in {
       forAll(genBigDecimal, genWhitespaces, minSuccessful(10000)) { (n, ws) =>
@@ -3038,6 +3047,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError2("nxxx", "expected number or null, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
