@@ -259,16 +259,13 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
           override def next(): A = {
             val x = codec.decodeValue(reader, codec.nullValue)
-            continue = reader.isNextToken(',') || checkEndConditions()
+            if (!reader.isNextToken(',')) {
+              if (!reader.isCurrentToken(']')) reader.decodeError("expected ']' or ','")
+              if (config.checkForEndOfInput) reader.endOfInputOrError()
+              continue = false
+            }
             x
           }
-
-          private[this] def checkEndConditions(): Boolean =
-            (reader.isCurrentToken(']') || reader.decodeError("expected ']' or ','")) &&
-              config.checkForEndOfInput && {
-                reader.endOfInputOrError()
-                false
-              }
         }
 
       def toInputStream(s: String): InputStream = new ByteArrayInputStream(s.getBytes(UTF_8))
