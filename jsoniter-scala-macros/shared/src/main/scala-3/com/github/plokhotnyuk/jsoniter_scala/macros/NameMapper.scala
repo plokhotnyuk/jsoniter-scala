@@ -277,11 +277,9 @@ private[macros] object CompileTimeEval {
       }
       evalTerm(block.expr, b, optDefault)
 
-    private def evalLitEquals(lhs: Literal, rhs: Term, bindings: Map[Symbol, Term] ): Boolean = rhs match
+    private def evalLitEquals(lhs: Literal, rhs: Term, bindings: Map[Symbol, Term]): Boolean = rhs match
       case Literal(rconst) => lhs.constant.value == rconst.value
-      case _ => evalTerm(rhs, bindings, None) match
-        case Literal(rconst) => lhs.constant.value == rconst.value
-        case other => false // throw evaluation exception ?
+      case _ => evalLitEquals(lhs, evalTerm(rhs, bindings, None), bindings)
 
     private def addBindings(m: Term, x: Map[Symbol, Term], bindings: List[Definition]): Map[Symbol, Term] =
       var r = x
@@ -301,7 +299,7 @@ private[macros] object CompileTimeEval {
         case other =>
           throw CompileTimeEvalException(s"Definitions other then ValDefs is not supported, we have $other ", m.asExpr)
 
-    private def applyJsonCodeMakerField(t: Term, fieldName: String, operation: String, args: List[Term] ): Term =
+    private def applyJsonCodeMakerField(t: Term, fieldName: String, operation: String, args: List[Term]): Term =
       val arg = termToString(args.head)
       val field: PartialFunction[String, String] = fieldName match {
         case "partialIdentity" => JsonCodecMaker.partialIdentity
