@@ -8,6 +8,7 @@ import scala.{specialized => sp}
   * BEWARE: Minimize usage of `JsonCodec[A]` due to possible creation of the scalability limit on the JDK level,
   * for more info see:
   *
+  *   - [[https://www.youtube.com/watch?v=PxcO3WHqmng]]
   *   - [[https://bugs.openjdk.org/browse/JDK-8180450]]
   *   - [[https://github.com/netty/netty/search?q=JDK-8180450&type=issues]]
   *   - [[https://redhatperf.github.io/post/type-check-scalability-issue]]
