@@ -14,9 +14,11 @@ private[macros] class ExprPartialFunctionWrapper(fun: Expr[PartialFunction[Strin
 private[macros] case class FromExprException(name: String, expr: Expr[Any]) extends RuntimeException
 
 private[macros] object NameMapper {
-  inline given Conversion[PartialFunction[String, String], NameMapper] = PartialFunctionWrapper(_)
+  given Conversion[PartialFunction[String, String], NameMapper] with
+    inline def apply(pf: PartialFunction[String, String]) = PartialFunctionWrapper(pf)
 
-  inline given Conversion[Function[String, String], NameMapper] = f => PartialFunctionWrapper({ case x => f(x) })
+  given Conversion[Function[String, String], NameMapper] with
+    inline def apply(f: Function[String, String]) = PartialFunctionWrapper({ case x => f(x) })
 
   given FromExpr[NameMapper] with {
     def unapply(x: Expr[NameMapper])(using Quotes): Option[NameMapper] = {
