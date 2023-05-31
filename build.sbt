@@ -28,7 +28,7 @@ lazy val commonSettings = Seq(
     "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, 12)) => Seq("-language:higherKinds")
-    case Some((3, _)) => Seq("-Xcheck-macros")
+    case Some((3, _)) => Seq("-Xcheck-macros", "-explain")
     case _ => Seq()
   }),
   compileOrder := CompileOrder.JavaThenScala,
@@ -109,7 +109,8 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.NameMapper$given_Conversion_Function_NameMapper$"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.NameMapper$given_Conversion_PartialFunction_NameMapper$")
   )
 )
 
