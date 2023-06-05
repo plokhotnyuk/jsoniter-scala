@@ -1,7 +1,7 @@
 lazy val commonSettings = Seq(
   scalaVersion := "3.3.0",
   scalacOptions ++= Seq("-Xmacro-settings:print-codecs"),
-  crossScalaVersions := Seq("3.3.0", "2.13.10", "2.12.17"),
+  crossScalaVersions := Seq("3.3.0", "2.13.11", "2.12.17"),
   Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
   assembly / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
   libraryDependencySchemes += "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "always",
