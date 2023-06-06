@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import java.time.Instant
 import play.api.libs.json._
-import play.api.libs.json.jackson.PlayJsonModule
+import play.api.libs.json.jackson.PlayJsonMapperModule
 import smithy4s.Timestamp
 
 object PlatformUtils {
@@ -13,7 +13,7 @@ object PlatformUtils {
   def toInstant(x: Timestamp): Instant = x.toInstant
 
   private[this] val prettyPrintMapper = new ObjectMapper {
-    registerModule(new PlayJsonModule(JsonParserSettings.settings))
+    registerModule(new PlayJsonMapperModule(JsonParserSettings.settings))
     configure(SerializationFeature.INDENT_OUTPUT, true)
     setDefaultPrettyPrinter {
       val indenter = new DefaultIndenter("  ", "\n")
