@@ -82,6 +82,7 @@ lazy val nativeSettings = Seq(
 
 lazy val noPublishSettings = Seq(
   publish / skip := true,
+  publishTo := None, // W/A for https://github.com/sbt/sbt/issues/7288
   mimaPreviousArtifacts := Set()
 )
 
