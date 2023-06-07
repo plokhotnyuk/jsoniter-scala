@@ -22,7 +22,7 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [spray-json](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i7-11800H CPU @ 2.3GHz
-(max 4.6GHz), RAM 64Gb DDR4-3200, Ubuntu 22.04 (Linux 5.19), and latest versions of Azul Zulu 11/17, OpenJDK 21-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
+(max 4.6GHz), RAM 64Gb DDR4-3200, Ubuntu 23.04 (Linux 6.2), and latest versions of Azul Zulu 11/17, OpenJDK 21-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing), 
 GraalVM CE 23.1-dev for Java 17/20, and GraalVM EE 22.3 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
@@ -418,6 +418,7 @@ enum Level extends Enum[Level] {
 7. Scala 3 compiler cannot derive anonymous codecs for generic types with concrete type parameters:
 ```scala
 case class DeResult[T](isSucceed: Boolean, data: T, message: String)
+
 case class RootPathFiles(files: List[String])
 
 given JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
@@ -460,6 +461,14 @@ and [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
 creating pull requests (fixes and improvements to docs, code, and tests are highly appreciated).
+
+### Get report of available dependency updates
+
+```sh
+sbt ";dependencyUpdates; reload plugins; dependencyUpdates; reload return"
+cd jsoniter-scala-examples
+sbt ";dependencyUpdates; reload plugins; dependencyUpdates; reload return"
+```
 
 ### Run tests, check coverage and binary compatibility
 
