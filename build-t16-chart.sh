@@ -1,17 +1,17 @@
-echo 'var providedBenchmarks = ["Zulu 11", "Zulu 17", "OpenJDK 21", "GraalVM CE 17", "GraalVM CE 20", "GraalVM EE 11", "GraalVM EE 17"];
+echo 'var providedBenchmarks = ["Zulu 11", "Zulu 17", "OpenJDK 22", "GraalVM Community 17", "GraalVM Community 20", "Oracle GraalVM 17", "Oracle GraalVM 20"];
 var providedBenchmarkStore = {
 "Zulu 11":'
 jq -c . < zulu-11-t16.json
 echo ', "Zulu 17":'
 jq -c . < zulu-17-t16.json
-echo ', "OpenJDK 21":'
-jq -c . < openjdk-21-t16.json
-echo ', "GraalVM CE 17":'
-jq -c . < graalvm-ce-java17-t16.json
-echo ', "GraalVM CE 20":'
-jq -c . < graalvm-ce-java20-t16.json
-echo ', "GraalVM EE 11":'
-jq -c . < graalvm-ee-java11-t16.json
-echo ', "GraalVM EE 17":'
-jq -c . < graalvm-ee-java17-t16.json
+echo ', "OpenJDK 22":'
+jq -c . < jdk-22-t16.json
+echo ', "GraalVM Community 17":'
+jq -c . < graalvm-community-jdk-17-t16.json
+echo ', "GraalVM Community 20":'
+jq -c . < graalvm-community-jdk-20-t16.json
+echo ', "Oracle GraalVM 17":'
+jq -c . < oracle-graalvm-jdk-17-t16.json
+echo ', "Oracle GraalVM 20":'
+jq -c . < oracle-graalvm-jdk-20-t16.json
 echo '}'
