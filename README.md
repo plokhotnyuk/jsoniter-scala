@@ -462,6 +462,13 @@ and [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
 creating pull requests (fixes and improvements to docs, code, and tests are highly appreciated).
 
+If developing on a fork, make sure to download the git tags (required by the sbt build):
+
+```
+git remote add upstream git@github.com:plokhotnyuk/jsoniter-scala.git
+git fetch --tags upstream
+```
+
 ### Get report of available dependency updates
 
 ```sh
