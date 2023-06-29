@@ -298,6 +298,7 @@ Usages of jsoniter-scala in OSS libraries:
 - [caliban](https://github.com/ghostdogpr/caliban) - a purely functional library for building GraphQL servers and 
   clients in Scala
 - [geo-scala](https://github.com/gnieh/geo-scala) - a core AST and utilities for GeoJSON (RFC 7946) and more
+- [iron](https://github.com/Iltotore/iron) - a lightweight library for refined types in Scala 3
 - [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe 
   booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types
 - [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
