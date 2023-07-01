@@ -69,5 +69,12 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
 
       verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"name":"Value2","string":"VVV"}""")
     }
+    "test" in {
+      enum TestEnum derives JsonValueCodec:
+        case Value1
+        case Value2(string: String)
+
+      verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"name":"Value2","string":"VVV"}""")
+    }
   }
 }

@@ -24,6 +24,8 @@ final class transient extends StaticAnnotation
 @field
 final class stringified extends StaticAnnotation
 
+final class JsoniterConfig extends StaticAnnotation
+
 /**
   * Configuration parameter for `JsonCodecMaker.make()` call.
   *
@@ -569,7 +571,7 @@ object JsonCodecMaker {
     */
   inline def make[A](inline config: CodecMakerConfig): JsonValueCodec[A] = ${Impl.makeWithSpecifiedConfig('config)}
 
-  private[macros] object Impl {
+  private[jsoniter_scala] object Impl {
     def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] = make(CodecMakerConfig)
 
     def makeWithoutDiscriminator[A: Type](using Quotes): Expr[JsonValueCodec[A]] =

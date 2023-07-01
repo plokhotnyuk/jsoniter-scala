@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
+import com.github.plokhotnyuk.jsoniter_scala.macros.{JsonCodecMaker, JsoniterConfig}
 import scala.{specialized => sp}
 import scala.quoted.*
 
@@ -54,10 +55,30 @@ trait JsonValueCodec[@sp A] extends Serializable {
 
 object JsonValueCodec {
 
-  inline given derived[A]: JsonValueCodec[A] = ${ derivedImpl[A] }
+  inline given derived[A <: Product]: JsonValueCodec[A] = ${ derivedImpl[A] }
 
-  private def derivedImpl[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-    ???
+  private def derivedImpl[A: Type](using Quotes): Expr[JsonValueCodec[A]] = {
+    import quotes.reflect.*
+    report.info("should not work..")
+    getConfigAnnot[A] match
+      case Some(expr) =>
+        // todo
+        JsonCodecMaker.Impl.makeWithDefaultConfig[A]
+      case None =>
+        JsonCodecMaker.Impl.makeWithDefaultConfig[A]
+  }
+
+  private def getConfigAnnot[A: Type](using Quotes): Option[Expr[JsoniterConfig]] = {
+    import quotes.reflect.*
+    val annot = TypeRepr.of[JsoniterConfig]
+    TypeRepr
+      .of[A]
+      .typeSymbol
+      .annotations
+      .collectFirst {
+        case term if term.tpe =:= annot => term.asExprOf[JsoniterConfig]
+      }
+  }
 
 }
 
