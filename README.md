@@ -21,8 +21,8 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [spray-json](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
-libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-13900K CPU @ 2.9GHz
-(max 5.6GHz), RAM 64Gb DDR5-4800, Ubuntu 23.04 (Linux 6.2), and latest versions of Azul Zulu 11/17, OpenJDK 22-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
+libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-13900K CPU @ 3.0GHz
+(max 5.8GHz, performance-cores only), RAM 64Gb DDR5-4800, Ubuntu 23.04 (Linux 6.2), and latest versions of Azul Zulu 11/17, OpenJDK 22-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
 GraalVM Community 23.1-dev for Java 17/20, and Oracle GraalVM 23.0 for Java 17/20.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
