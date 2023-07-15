@@ -26,8 +26,9 @@ libraries using different JDK and GraalVM versions on the following environment:
 GraalVM Community 23.1-dev for Java 17/20, and Oracle GraalVM 23.0 for Java 17/20.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares libraries which supports Scala.js on the same environment compiled by Scala.js 1.13.1 to ES 2015 with
-GCC v20220202 optimizations applied.
+compares libraries which supports Scala.js compiled by Scala.js 1.13.1 to ES 2015 with
+GCC v20220202 optimizations applied on Intel® Core™ i9-13900K CPU @ 2.9GHz (max 5.6GHz),
+RAM 64Gb DDR5-4800, Ubuntu 23.04 (Linux 6.2).
 
 ## Contents
 
