@@ -15,8 +15,8 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.9")
 addSbtPlugin("com.evolution" % "sbt-artifactory-plugin" % "0.0.2")
 
 libraryDependencies ++= Seq(
-  "org.openjdk.jmh" % "jmh-core" % "1.36",
-  "org.openjdk.jmh" % "jmh-generator-asm" % "1.36",
-  "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.36",
-  "org.openjdk.jmh" % "jmh-generator-reflection" % "1.36"
+  "org.openjdk.jmh" % "jmh-core" % "1.37",
+  "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
+  "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
+  "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37"
 )

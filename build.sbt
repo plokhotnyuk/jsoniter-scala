@@ -250,10 +250,10 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.2",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.15.2",
       "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.15.2",
-      "org.openjdk.jmh" % "jmh-core" % "1.36",
-      "org.openjdk.jmh" % "jmh-generator-asm" % "1.36",
-      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.36",
-      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.36",
+      "org.openjdk.jmh" % "jmh-core" % "1.37",
+      "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
+      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
+      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37",
       "org.scalatest" %%% "scalatest" % "3.2.16" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
