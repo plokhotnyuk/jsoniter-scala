@@ -682,17 +682,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       implicit val customCodecOfOffsetDateTime: JsonValueCodec[OffsetDateTime] = new JsonValueCodec[OffsetDateTime] {
         private[this] val defaultCodec: JsonValueCodec[OffsetDateTime] = JsonCodecMaker.make[OffsetDateTime]
         private[this] val maxLen = 44 // should be enough for the longest offset date time value
-        private[this] val pool = new ThreadLocal[(_root_.scala.Array[_root_.scala.Byte], JsonReader)] {
-          override def initialValue(): (_root_.scala.Array[_root_.scala.Byte], JsonReader) = {
-            val buf = new _root_.scala.Array[_root_.scala.Byte](maxLen + 2)
-            (buf, new JsonReader(buf, charBuf = new _root_.scala.Array[Char](maxLen)))
-          }
+        private[this] val pool = new ThreadLocal[_root_.scala.Array[_root_.scala.Byte]] {
+          override def initialValue(): _root_.scala.Array[_root_.scala.Byte] =
+            new _root_.scala.Array[_root_.scala.Byte](maxLen + 2)
         }
 
         def nullValue: OffsetDateTime = null
 
         def decodeValue(in: JsonReader, default: OffsetDateTime): OffsetDateTime = {
-          val (buf, reader) = pool.get
+          val buf = pool.get
           val s = in.readString(null)
           val len = s.length
           if (len <= maxLen && {
@@ -706,7 +704,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             }
             buf(i + 1) = '"'
             bits < 0x80
-          }) reader.read(defaultCodec, buf, 0, len + 2, ReaderConfig)
+          }) readFromSubArrayReentrant(buf, 0, len + 2, ReaderConfig)(defaultCodec)
           else in.decodeError("illegal offset date time")
         }
 
