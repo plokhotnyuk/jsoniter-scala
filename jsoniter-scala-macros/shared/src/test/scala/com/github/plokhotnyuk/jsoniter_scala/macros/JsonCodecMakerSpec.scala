@@ -678,6 +678,42 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         _root_.scala.Array(ZonedDateTime.parse("2020-04-10T10:07:00Z"), ZonedDateTime.parse("2020-04-10T10:07:10Z")),
         """["2020-04-10T10:07:00Z","2020-04-10T10:07:10Z"]""")
     }
+    "parse offset date time values with escaped characters using a custom codec" in {
+      implicit val customCodecOfOffsetDateTime: JsonValueCodec[OffsetDateTime] = new JsonValueCodec[OffsetDateTime] {
+        private[this] val defaultCodec: JsonValueCodec[OffsetDateTime] = JsonCodecMaker.make[OffsetDateTime]
+        private[this] val maxLen = 44 // should be enough for the longest offset date time value
+        private[this] val pool = new ThreadLocal[_root_.scala.Array[_root_.scala.Byte]] {
+          override def initialValue(): _root_.scala.Array[_root_.scala.Byte] =
+            new _root_.scala.Array[_root_.scala.Byte](maxLen + 2)
+        }
+
+        def nullValue: OffsetDateTime = null
+
+        def decodeValue(in: JsonReader, default: OffsetDateTime): OffsetDateTime = {
+          val buf = pool.get
+          val s = in.readString(null)
+          val len = s.length
+          if (len <= maxLen && {
+            buf(0) = '"'
+            var bits, i = 0
+            while (i < len) {
+              val ch = s.charAt(i)
+              buf(i + 1) = ch.toByte
+              bits |= ch
+              i += 1
+            }
+            buf(i + 1) = '"'
+            bits < 0x80
+          }) readFromSubArrayReentrant(buf, 0, len + 2, ReaderConfig)(defaultCodec)
+          else in.decodeError("illegal offset date time")
+        }
+
+        def encodeValue(x: OffsetDateTime, out: JsonWriter): _root_.scala.Unit = out.writeVal(x)
+      }
+      verifyDeser(make[Array[OffsetDateTime]],
+        _root_.scala.Array(OffsetDateTime.parse("2020-01-01T12:34:56.789+08:00")),
+        """["2020-01-01T12:34:56.789\u002B08:00"]""")
+    }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
         type Bar
