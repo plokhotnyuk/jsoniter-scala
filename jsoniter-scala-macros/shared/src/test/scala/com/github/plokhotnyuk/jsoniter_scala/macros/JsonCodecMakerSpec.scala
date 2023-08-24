@@ -322,7 +322,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,"bl":true,"ch":"V","dbl":-123456789.0,"f":""",
         """unexpected end of input, offset: 0x00000068""".stripMargin)
     }
-    "serialize and deserialize case classes with boxed primitives" in {
+    "serialize and deserialize case classes with Java primitives" in {
       case class BoxedPrimitives(
         b: _root_.java.lang.Byte,
         s: _root_.java.lang.Short,
@@ -337,7 +337,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         BoxedPrimitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""")
     }
-    "serialize and deserialize top-level boxed primitives" in {
+    "serialize and deserialize top-level Java primitives" in {
       verifySerDeser(make[_root_.java.lang.Byte], _root_.java.lang.Byte.valueOf(1.toByte), "1")
       verifySerDeser(make[_root_.java.lang.Short], _root_.java.lang.Short.valueOf(2.toShort), "2")
       verifySerDeser(make[_root_.java.lang.Integer], _root_.java.lang.Integer.valueOf(3), "3")
@@ -347,7 +347,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[_root_.java.lang.Double], _root_.java.lang.Double.valueOf(1.1), "1.1")
       verifySerDeser(make[_root_.java.lang.Float], _root_.java.lang.Float.valueOf(2.2f), "2.2")
     }
-    "serialize and deserialize stringifeid top-level boxed primitives" in {
+    "serialize and deserialize stringifeid top-level Java primitives" in {
       verifySerDeser(make[_root_.java.lang.Byte](CodecMakerConfig.withIsStringified(true)),
         _root_.java.lang.Byte.valueOf(1.toByte), """"1"""")
       verifySerDeser(make[_root_.java.lang.Short](CodecMakerConfig.withIsStringified(true)),
@@ -362,6 +362,36 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         _root_.java.lang.Double.valueOf(1.1), """"1.1"""")
       verifySerDeser(make[_root_.java.lang.Float](CodecMakerConfig.withIsStringified(true)),
         _root_.java.lang.Float.valueOf(2.2f), """"2.2"""")
+    }
+    "serialize and deserialize Java primitives as map keys and values" in {
+      verifySerDeser(make[Map[_root_.java.lang.Byte, _root_.java.lang.Byte]],
+        Map(_root_.java.lang.Byte.valueOf(1.toByte) -> _root_.java.lang.Byte.valueOf(11.toByte),
+          _root_.java.lang.Byte.valueOf(2.toByte) -> _root_.java.lang.Byte.valueOf(12.toByte)),
+        """{"1":11,"2":12}""")
+      verifySerDeser(make[Map[_root_.java.lang.Short, _root_.java.lang.Short]],
+        Map(_root_.java.lang.Short.valueOf(1.toShort) -> _root_.java.lang.Short.valueOf(11.toShort),
+          _root_.java.lang.Short.valueOf(2.toShort) -> _root_.java.lang.Short.valueOf(12.toShort)),
+        """{"1":11,"2":12}""")
+      verifySerDeser(make[Map[_root_.java.lang.Integer, _root_.java.lang.Integer]],
+        Map(_root_.java.lang.Integer.valueOf(1) -> _root_.java.lang.Integer.valueOf(11),
+          _root_.java.lang.Integer.valueOf(2) -> _root_.java.lang.Integer.valueOf(12)),
+        """{"1":11,"2":12}""")
+      verifySerDeser(make[Map[_root_.java.lang.Long, _root_.java.lang.Long]],
+        Map(_root_.java.lang.Long.valueOf(1) -> _root_.java.lang.Long.valueOf(11),
+          _root_.java.lang.Long.valueOf(2) -> _root_.java.lang.Long.valueOf(12)),
+        """{"1":11,"2":12}""")
+      verifySerDeser(make[Map[_root_.java.lang.Boolean, _root_.java.lang.Boolean]],
+        Map(_root_.java.lang.Boolean.valueOf(false) -> _root_.java.lang.Boolean.valueOf(false),
+          _root_.java.lang.Boolean.valueOf(true) -> _root_.java.lang.Boolean.valueOf(true)),
+        """{"false":false,"true":true}""")
+      verifySerDeser(make[Map[_root_.java.lang.Double, _root_.java.lang.Double]],
+        Map(_root_.java.lang.Double.valueOf(1.0) -> _root_.java.lang.Double.valueOf(11.0),
+          _root_.java.lang.Double.valueOf(2.0) -> _root_.java.lang.Double.valueOf(12.0)),
+        """{"1.0":11.0,"2.0":12.0}""")
+      verifySerDeser(make[Map[_root_.java.lang.Float, _root_.java.lang.Float]],
+        Map(_root_.java.lang.Float.valueOf(1.0f) -> _root_.java.lang.Float.valueOf(11.0f),
+          _root_.java.lang.Float.valueOf(2.0f) -> _root_.java.lang.Float.valueOf(12.0f)),
+        """{"1.0":11.0,"2.0":12.0}""")
     }
     "serialize and deserialize case classes with standard types" in {
       val text = "text" * 100000
