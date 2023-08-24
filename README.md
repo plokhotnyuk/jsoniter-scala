@@ -467,10 +467,20 @@ Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scal
 creating pull requests (fixes and improvements to docs, code, and tests are highly appreciated).
 
 If developing on a fork, make sure to download the git tags (required by the sbt build):
-
-```
+```sh
 git remote add upstream git@github.com:plokhotnyuk/jsoniter-scala.git
 git fetch --tags upstream
+```
+
+Prerequisites for building of Scala.js and Scala Native modules are Clang 16.x and Node.js 16.x.
+The following sequence of commands works for me:
+```sh
+sudo apt install clang-16
+sudo apt install curl 
+curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash 
+source ~/.bashrc
+nvm install 16
+node -v
 ```
 
 ### Get report of available dependency updates
