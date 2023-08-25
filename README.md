@@ -507,7 +507,7 @@ Before benchmark running check if your CPU works in `performance` mode (not a `p
 commands to print current and set the `performance` mode:
 ```sh
 cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+for i in $(ls /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor); do echo performance | sudo tee $i; done
 ```
 
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check
