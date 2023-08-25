@@ -506,8 +506,8 @@ BEWARE: jsoniter-scala is included into [Scala Community Build](https://github.c
 Before benchmark running check if your CPU works in `performance` mode (not a `powersave` one). On Linux use following
 commands to print current and set the `performance` mode:
 ```sh
-cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+for i in $(ls /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor); do echo performance | sudo tee $i; done
 ```
 
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check
