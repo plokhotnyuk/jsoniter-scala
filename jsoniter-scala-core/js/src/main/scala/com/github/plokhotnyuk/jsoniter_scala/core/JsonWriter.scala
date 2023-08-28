@@ -2334,7 +2334,7 @@ final class JsonWriter private[jsoniter_scala](
         }
         e10 = e2 * 315653 - e2Corr >> 20
         val g = gs(e10 + 324 << 1) + 1
-        val h = (-e10 * 108853 >> 15) + e2 + 1
+        val h = (e10 * -108853 >> 15) + e2 + 1
         val cb = m2 << 2
         val vbCorr = (m2 & 0x1) - 1
         val vb = rop(g, cb << h)
@@ -2458,7 +2458,7 @@ final class JsonWriter private[jsoniter_scala](
         val i = e10 + 324 << 1
         val g1 = gs(i)
         val g0 = gs(i + 1)
-        val h = (-e10 * 108853 >> 15) + e2 + 2
+        val h = (e10 * -108853 >> 15) + e2 + 2
         val cb = m2 << 2
         val vbCorr = (m2.toInt & 0x1) - 1
         val vb = rop(g1, g0, cb << h)
