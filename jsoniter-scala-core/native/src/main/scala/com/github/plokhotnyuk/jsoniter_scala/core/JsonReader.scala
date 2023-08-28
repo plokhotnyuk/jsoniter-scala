@@ -3620,25 +3620,22 @@ final class JsonReader private[jsoniter_scala](
       val cp = year * 1374389535L
       if (year < 0) (cp >> 37) - (cp >> 39) // year / 100 - year / 400
       else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
-    }.toInt + (month * 1002277 - 988622 >> 15) - // (month * 367 - 362) / 12
-      (if (month <= 2) 0
-      else if (isLeap(year)) 1
-      else 2) + day - 719529) // 719528 == days 0000 to 1970)
+    }.toInt + (month * 1002277 - 988622 >> 15) + // (month * 367 - 362) / 12
+      (if (month <= 2) -719529
+      else if (isLeap(year)) -719530
+      else -719531) + day) // 719528 == days 0000 to 1970)
 
   private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
-    if (month != 2) (month >> 3 ^ (month & 0x1)) + 30
+    if (month != 2) month >> 3 ^ (month | 0x1E)
     else if (isLeap(year)) 29
     else 28
 
   private[this] def maxDayForMonth(month: Int): Int =
-    if (month != 2) (month >> 3 ^ (month & 0x1)) + 30
+    if (month != 2) month >> 3 ^ (month | 0x1E)
     else 29
 
-  private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && { // (year % 100 != 0 || year % 400 == 0)
-    val cp = year * 1374389535L
-    val cc = year >> 31
-    ((cp ^ cc) & 0x1FC0000000L) != 0 || ((cp >> 37) - cc & 0x3) == 0
-  }
+  private[this] def isLeap(year: Int): Boolean =
+    (year & 0x3) == 0 && (year * -1030792151 - 2061584303 > -1975684958 || (year & 0xF) == 0) // year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 
   private[this] def fourDigitYearWithByteError(t: Byte, pos: Int, bs: Int): Nothing = {
     val b2 = (bs >> 8).toByte
