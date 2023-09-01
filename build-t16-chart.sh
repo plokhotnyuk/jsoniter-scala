@@ -1,3 +1,4 @@
+sed -i '/"gc./ s//"·gc./g' *.json
 echo 'var providedBenchmarks = ["Zulu 11", "Zulu 17", "OpenJDK 22", "GraalVM Community 21", "Oracle GraalVM 17", "Oracle GraalVM 20"];
 var providedBenchmarkStore = {
 "Zulu 11":'
