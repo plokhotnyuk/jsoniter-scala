@@ -208,8 +208,8 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(
     crossScalaVersions := Seq("3.3.0", "2.13.11", "2.12.18"),
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.5",
-      "io.circe" %%% "circe-parser" % "0.14.5" % Test,
+      "io.circe" %%% "circe-core" % "0.14.6",
+      "io.circe" %%% "circe-parser" % "0.14.6" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.16" % Test
     )
   )
@@ -240,9 +240,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "dev.zio" %%% "zio-json" % "0.6.1",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
       "com.lihaoyi" %%% "upickle" % "3.1.2",
-      "io.circe" %%% "circe-generic" % "0.14.5",
-      "io.circe" %%% "circe-parser" % "0.14.5",
-      "io.circe" %%% "circe-jawn" % "0.14.5",
+      "io.circe" %%% "circe-generic" % "0.14.6",
+      "io.circe" %%% "circe-parser" % "0.14.6",
+      "io.circe" %%% "circe-jawn" % "0.14.6",
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.17.19",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M3",
       "org.json4s" %% "json4s-native" % "4.1.0-M3",
@@ -258,7 +258,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
-        "com.avsystem.commons" %%% "commons-core" % "2.11.0",
+        "com.avsystem.commons" %%% "commons-core" % "2.12.0",
         "com.dslplatform" %% "dsl-json-scala" % "2.0.2"
       )
       case Some((3, _)) => Seq(
