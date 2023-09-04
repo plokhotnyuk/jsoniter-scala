@@ -29,13 +29,13 @@ jobs:
       - name: Configure git
         run: "git config --global core.autocrlf false"
         shell: bash
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 300
       - name: Fetch tags
         run: git fetch --depth=300 origin +refs/tags/*:refs/tags/*
       - uses: coursier/cache-action@v6
-      - uses: olafurpg/setup-scala@v13
+      - uses: olafurpg/setup-scala@v14
         with:
           java-version: ${{ matrix.java }}
       - uses: actions/setup-node@v3
