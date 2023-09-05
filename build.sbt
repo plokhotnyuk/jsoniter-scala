@@ -19,7 +19,7 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  scalaVersion := "3.3.0",
+  scalaVersion := "3.3.1",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -137,7 +137,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.0", "2.13.11", "2.12.18"),
+    crossScalaVersions := Seq("3.3.1", "2.13.11", "2.12.18"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.16" % Test,
@@ -164,7 +164,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.0", "2.13.11", "2.12.18"),
+    crossScalaVersions := Seq("3.3.1", "2.13.11", "2.12.18"),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
@@ -206,7 +206,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.0", "2.13.11", "2.12.18"),
+    crossScalaVersions := Seq("3.3.1", "2.13.11", "2.12.18"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.6",
       "io.circe" %%% "circe-parser" % "0.14.6" % Test,
@@ -229,7 +229,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.0", "2.13.11"),
+    crossScalaVersions := Seq("3.3.1", "2.13.11"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Yretain-trees", "-Xmax-inlines:100")
       case _ => Seq()
