@@ -137,11 +137,11 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.1", "2.13.11", "2.12.18"),
+    crossScalaVersions := Seq("3.3.1", "2.13.12", "2.12.18"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.16" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.17.0" % Test
+      "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.17.0" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.17" % Test
     )
   )
   .platformsSettings(JSPlatform, NativePlatform)(
@@ -164,14 +164,14 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.1", "2.13.11", "2.12.18"),
+    crossScalaVersions := Seq("3.3.1", "2.13.12", "2.12.18"),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       )
       case _ => Seq()
     }) ++ Seq(
-      "org.scalatest" %%% "scalatest" % "3.2.16" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.17" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test
     )
   )
@@ -206,11 +206,11 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.1", "2.13.11", "2.12.18"),
+    crossScalaVersions := Seq("3.3.1", "2.13.12", "2.12.18"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.6",
       "io.circe" %%% "circe-parser" % "0.14.6" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.16" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.17" % Test
     )
   )
 
@@ -229,7 +229,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.1", "2.13.11"),
+    crossScalaVersions := Seq("3.3.1", "2.13.12"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Yretain-trees", "-Xmax-inlines:100")
       case _ => Seq()
@@ -237,7 +237,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "io.spray" %% "spray-json" % "1.3.6",
       "com.typesafe.play" %%% "play-json" % "2.10.0-RC9",
-      "dev.zio" %%% "zio-json" % "0.6.1",
+      "dev.zio" %%% "zio-json" % "0.6.2",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
       "com.lihaoyi" %%% "upickle" % "3.1.2",
       "io.circe" %%% "circe-generic" % "0.14.6",
@@ -254,7 +254,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37",
-      "org.scalatest" %%% "scalatest" % "3.2.16" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.17" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
