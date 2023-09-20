@@ -305,6 +305,7 @@ Usages of jsoniter-scala in OSS libraries:
 - [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe 
   booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types
 - [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
+- [logging4s](https://github.com/logging4s/logging4s) - structured logging for Scala 3 
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
   instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
 - [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/)
