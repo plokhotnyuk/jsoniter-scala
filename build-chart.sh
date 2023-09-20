@@ -5,7 +5,7 @@ var providedBenchmarkStore = {
 jq -c . < jdk-17.json
 echo ', "JDK 21":'
 jq -c . < jdk-21.json
-echo ', "CraalVM Community JDK 17":'
+echo ', "GraalVM Community JDK 17":'
 jq -c . < graalvm-community-jdk-17.json
 echo ', "GraalVM Community JDK 21":'
 jq -c . < graalvm-community-jdk-21.json
