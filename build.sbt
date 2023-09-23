@@ -110,8 +110,7 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.NameMapper$given_Conversion_Function_NameMapper$"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.NameMapper$given_Conversion_PartialFunction_NameMapper$")
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.*")
   )
 )
 

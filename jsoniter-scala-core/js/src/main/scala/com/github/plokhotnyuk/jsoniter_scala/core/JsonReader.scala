@@ -35,6 +35,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
   private[this] var magnitude: Array[Int] = _
+  private[this] val zoneIdKey: Key = new Key(0, null, 0, 0)
 
   /**
     * Throws a [[JsonReaderException]] indicating that a required field with the given name is missing.
@@ -1910,11 +1911,16 @@ final class JsonReader private[jsoniter_scala](
       }
       head = pos + 1
       if (mark == 0) from -= newMark
-      val k = new Key(hash, buf, from, pos)
+      val k = zoneIdKey
+      k.hash = hash
+      k.bs = buf
+      k.from = from
+      k.to = pos
       var zoneId = zoneIds.get(k)
       if ((zoneId eq null) && {
         zoneId = ZoneId.of(k.toString)
-        !zoneId.isInstanceOf[ZoneOffset] || zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
+        !zoneId.isInstanceOf[ZoneOffset] ||
+          zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
       }) zoneIds.put(k.copy, zoneId)
       zoneId
     } catch {
@@ -4271,7 +4277,7 @@ object JsonReader {
   }
 }
 
-private class Key(val hash: Int, val bs: Array[Byte], val from: Int, val to: Int) {
+private class Key(var hash: Int, var bs: Array[Byte], var from: Int, var to: Int) {
   def copy: Key = {
     val len = to - from
     val bs1 = new Array[Byte](len)
