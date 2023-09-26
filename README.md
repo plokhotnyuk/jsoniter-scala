@@ -494,8 +494,8 @@ sbt ";dependencyUpdates; reload plugins; dependencyUpdates; reload return"
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-11 ++2.13.11 clean coverage jsoniter-scala-coreJVM/test jsoniter-scala-circeJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageReport
-sbt -java-home /usr/lib/jvm/zulu-11 clean +test +mimaReportBinaryIssues
+sbt -java-home /usr/lib/jvm/jdk-11 ++2.13.12 clean coverage jsoniter-scala-coreJVM/test jsoniter-scala-circeJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageReport
+sbt -java-home /usr/lib/jvm/jdk-11 clean +test +mimaReportBinaryIssues
 ```
 
 BEWARE: jsoniter-scala is included into [Scala Community Build](https://github.com/scala/community-builds)
@@ -642,7 +642,7 @@ Other benchmarks with results for jsoniter-scala:
 
 Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module:
 ```sh
-sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/zulu-11 jsoniter-scala-benchmarkJS/fullOptJS
+sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-11 jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
@@ -683,7 +683,7 @@ that is used in the Scala ecosystem.
 Double-check binary and source compatibility, including behavior, and release using the following command on the
 environment with 16+GB of RAM:
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-11 -J-Xmx8g clean release
+sbt -java-home /usr/lib/jvm/jdk-11 -J-Xmx8g clean release
 ```
 
 Do not push changes to GitHub until promoted artifacts for the new version are not available for downloading on
