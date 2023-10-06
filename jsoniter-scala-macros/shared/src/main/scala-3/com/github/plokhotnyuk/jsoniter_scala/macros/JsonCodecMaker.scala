@@ -87,9 +87,7 @@ final class stringified extends StaticAnnotation
   *                               allow using `Option[Option[_]]` field values to distinguish `null` and missing field
   *                               cases
   * @param circeLikeObjectEncoding a flag that turns on serialization and parsing of Scala objects as JSON objects with
-  *               * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
-  * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
-                  a key and empty object value: `{"EnumValue":{}}`
+  *                               a key and empty object value: `{"EnumValue":{}}`
   * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
   * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
   */
