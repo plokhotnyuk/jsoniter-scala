@@ -84,6 +84,8 @@ final class stringified extends StaticAnnotation
   *                               cases
   * @param circeLikeObjectEncoding a flag that turns on serialization and parsing of Scala objects as JSON objects with
   *                               a key and empty object value: `{"EnumValue":{}}`
+  * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
+  * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -108,7 +110,9 @@ class CodecMakerConfig private (
     val requireDiscriminatorFirst: Boolean,
     val useScalaEnumValueId: Boolean,
     val skipNestedOptionValues: Boolean,
-    val circeLikeObjectEncoding: Boolean) {
+    val circeLikeObjectEncoding: Boolean,
+    val decodingOnly: Boolean,
+    val encodingOnly: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -169,6 +173,12 @@ class CodecMakerConfig private (
   def withCirceLikeObjectEncoding(circeLikeObjectEncoding: Boolean): CodecMakerConfig =
     copy(circeLikeObjectEncoding = circeLikeObjectEncoding)
 
+  def withDecodingOnly(decodingOnly: Boolean): CodecMakerConfig =
+    copy(decodingOnly = decodingOnly)
+
+  def withEncodingOnly(encodingOnly: Boolean): CodecMakerConfig =
+    copy(encodingOnly = encodingOnly)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -191,7 +201,9 @@ class CodecMakerConfig private (
                          requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
                          useScalaEnumValueId: Boolean = useScalaEnumValueId,
                          skipNestedOptionValues: Boolean = skipNestedOptionValues,
-                         circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding): CodecMakerConfig =
+                         circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding,
+                         decodingOnly: Boolean = decodingOnly,
+                         encodingOnly: Boolean = encodingOnly): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -215,7 +227,9 @@ class CodecMakerConfig private (
       requireDiscriminatorFirst = requireDiscriminatorFirst,
       useScalaEnumValueId = useScalaEnumValueId,
       skipNestedOptionValues = skipNestedOptionValues,
-      circeLikeObjectEncoding = circeLikeObjectEncoding)
+      circeLikeObjectEncoding = circeLikeObjectEncoding,
+      decodingOnly = decodingOnly,
+      encodingOnly = encodingOnly)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -241,7 +255,9 @@ object CodecMakerConfig extends CodecMakerConfig(
   requireDiscriminatorFirst = true,
   useScalaEnumValueId = false,
   skipNestedOptionValues = false,
-  circeLikeObjectEncoding = false) {
+  circeLikeObjectEncoding = false,
+  encodingOnly = false,
+  decodingOnly = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -505,6 +521,8 @@ object JsonCodecMaker {
           fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
         if (cfg.circeLikeObjectEncoding && cfg.discriminatorFieldName.nonEmpty)
           fail("'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'")
+        if (cfg.decodingOnly && cfg.encodingOnly)
+          fail("'decodingOnly' and 'encodingOnly' cannot be 'true' simultaneously")
         cfg
       }
 
@@ -2077,10 +2095,14 @@ object JsonCodecMaker {
               @_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.All"))
               val x = new _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$rootTpe] {
                 def nullValue: $rootTpe = ${genNullValue(rootTpe :: Nil)}
-                def decodeValue(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $rootTpe): $rootTpe =
-                  ${genReadVal(rootTpe :: Nil, q"default", cfg.isStringified, EmptyTree)}
-                def encodeValue(x: $rootTpe, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit =
-                  ${genWriteVal(q"x", rootTpe :: Nil, cfg.isStringified, EmptyTree)}
+                def decodeValue(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $rootTpe): $rootTpe = ${
+                  if (cfg.encodingOnly) q"???"
+                  else genReadVal(rootTpe :: Nil, q"default", cfg.isStringified, EmptyTree)
+                }
+                def encodeValue(x: $rootTpe, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = ${
+                  if (cfg.decodingOnly) q"???"
+                  else genWriteVal(q"x", rootTpe :: Nil, cfg.isStringified, EmptyTree)
+                }
                 ..$decodeMethodTrees
                 ..$encodeMethodTrees
                 ..${fields.values.map(_._2)}

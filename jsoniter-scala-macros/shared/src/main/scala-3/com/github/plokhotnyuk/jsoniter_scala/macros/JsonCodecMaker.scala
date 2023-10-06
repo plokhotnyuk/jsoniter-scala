@@ -87,7 +87,11 @@ final class stringified extends StaticAnnotation
   *                               allow using `Option[Option[_]]` field values to distinguish `null` and missing field
   *                               cases
   * @param circeLikeObjectEncoding a flag that turns on serialization and parsing of Scala objects as JSON objects with
-  *                               a key and empty object value: `{"EnumValue":{}}`
+  *               * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
+  * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
+                  a key and empty object value: `{"EnumValue":{}}`
+  * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
+  * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -112,7 +116,9 @@ class CodecMakerConfig private[macros] (
     val requireDiscriminatorFirst: Boolean,
     val useScalaEnumValueId: Boolean,
     val skipNestedOptionValues: Boolean,
-    val circeLikeObjectEncoding: Boolean) {
+    val circeLikeObjectEncoding: Boolean,
+    val decodingOnly: Boolean,
+    val encodingOnly: Boolean) {
   @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodecMaker.make functions")
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
 
@@ -173,6 +179,12 @@ class CodecMakerConfig private[macros] (
   def withCirceLikeObjectEncoding(circeLikeObjectEncoding: Boolean): CodecMakerConfig =
     copy(circeLikeObjectEncoding = circeLikeObjectEncoding)
 
+  def withDecodingOnly(decodingOnly: Boolean): CodecMakerConfig =
+    copy(decodingOnly = decodingOnly)
+
+  def withEncodingOnly(encodingOnly: Boolean): CodecMakerConfig =
+    copy(encodingOnly = encodingOnly)
+
   private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                          javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -195,7 +207,9 @@ class CodecMakerConfig private[macros] (
                          requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
                          useScalaEnumValueId: Boolean = useScalaEnumValueId,
                          skipNestedOptionValues: Boolean = skipNestedOptionValues,
-                         circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding): CodecMakerConfig =
+                         circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding,
+                         decodingOnly: Boolean = decodingOnly,
+                         encodingOnly: Boolean = encodingOnly): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -219,7 +233,9 @@ class CodecMakerConfig private[macros] (
       requireDiscriminatorFirst = requireDiscriminatorFirst,
       useScalaEnumValueId = useScalaEnumValueId,
       skipNestedOptionValues = skipNestedOptionValues,
-      circeLikeObjectEncoding = circeLikeObjectEncoding)
+      circeLikeObjectEncoding = circeLikeObjectEncoding,
+      decodingOnly = decodingOnly,
+      encodingOnly = encodingOnly)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -245,7 +261,9 @@ object CodecMakerConfig extends CodecMakerConfig(
   requireDiscriminatorFirst = true,
   useScalaEnumValueId = false,
   skipNestedOptionValues = false,
-  circeLikeObjectEncoding = false) {
+  circeLikeObjectEncoding = false,
+  encodingOnly = false,
+  decodingOnly = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -291,7 +309,9 @@ object CodecMakerConfig extends CodecMakerConfig(
             $exprRequireDiscriminatorFirst,
             $exprUseScalaEnumValueId,
             $skipNestedOptionValues,
-            $circeLikeObjectEncoding)
+            $circeLikeObjectEncoding,
+            $encodingOnly,
+            $decodingOnly)
         } =>
           try {
             Some(CodecMakerConfig(
@@ -317,7 +337,9 @@ object CodecMakerConfig extends CodecMakerConfig(
               extract("requireDiscriminatorFirst", exprRequireDiscriminatorFirst),
               extract("useScalaEnumValueId", exprUseScalaEnumValueId),
               extract("skipNestedOptionValues", skipNestedOptionValues),
-              extract("circeLikeObjectEncoding", circeLikeObjectEncoding)))
+              extract("circeLikeObjectEncoding", circeLikeObjectEncoding),
+              extract("decodingOnly", decodingOnly),
+              extract("encodingOnly", encodingOnly)))
           } catch {
             case FromExprException(message, expr) =>
               report.warning(message, expr)
@@ -347,6 +369,8 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withSetMaxInsertNumber($v) } => Some(x.valueOrAbort.withSetMaxInsertNumber(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withSkipNestedOptionValues($v) } => Some(x.valueOrAbort.withSkipNestedOptionValues(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withCirceLikeObjectEncoding($v) } => Some(x.valueOrAbort.withCirceLikeObjectEncoding(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withDecodingOnly($v) } => Some(x.valueOrAbort.withDecodingOnly(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withEncodingOnly($v) } => Some(x.valueOrAbort.withEncodingOnly(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -610,7 +634,9 @@ object JsonCodecMaker {
         requireDiscriminatorFirst = true,
         useScalaEnumValueId = false,
         skipNestedOptionValues = false,
-        circeLikeObjectEncoding = true))
+        circeLikeObjectEncoding = true,
+        decodingOnly = false,
+        encodingOnly = false))
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
@@ -622,6 +648,8 @@ object JsonCodecMaker {
               report.errorAndAbort("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
             if (cfg.circeLikeObjectEncoding && cfg.discriminatorFieldName.nonEmpty)
               report.errorAndAbort("'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'")
+            if (cfg.decodingOnly && cfg.encodingOnly)
+              report.errorAndAbort("'decodingOnly' and 'encodingOnly' cannot be 'true' simultaneously")
             cfg
         }) catch {
         case ex: CompileTimeEvalException => report.errorAndAbort("Can't evaluate compile-time expression", ex.expr)
@@ -2835,11 +2863,15 @@ object JsonCodecMaker {
         new JsonValueCodec[A] {
           def nullValue: A = ${genNullValue[A](rootTpe :: Nil)}
 
-          def decodeValue(in: JsonReader, default: A): A =
-            ${genReadVal(rootTpe :: Nil, 'default, cfg.isStringified, false, 'in)}
+          def decodeValue(in: JsonReader, default: A): A = ${
+            if (cfg.encodingOnly) '{ ??? }
+            else genReadVal(rootTpe :: Nil, 'default, cfg.isStringified, false, 'in)
+          }
 
-          def encodeValue(x: A, out: JsonWriter): Unit =
-            ${genWriteVal('x, rootTpe :: Nil, cfg.isStringified, None, 'out)}
+          def encodeValue(x: A, out: JsonWriter): Unit = ${
+            if (cfg.decodingOnly) '{ ??? }
+            else genWriteVal('x, rootTpe :: Nil, cfg.isStringified, None, 'out)
+          }
         }
       }.asTerm
       val needDefs =

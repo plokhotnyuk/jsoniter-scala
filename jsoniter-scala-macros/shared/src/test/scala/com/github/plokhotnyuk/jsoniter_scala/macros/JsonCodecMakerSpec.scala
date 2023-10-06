@@ -2026,6 +2026,23 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'"""
       })
     }
+    "deserialize and throw non-implemented error for serialization with decodingOnly" in {
+      val decodingOnlyCodec = make[Int](CodecMakerConfig.withDecodingOnly(true))
+      verifyDeser(decodingOnlyCodec, 1, "1")
+      verifySerError(decodingOnlyCodec, 1, "1", "an implementation is missing")
+    }
+    "serialize and throw non-implemented error for deserialization with encodingOnly" in {
+      val encodingOnlyCodec = make[Int](CodecMakerConfig.withEncodingOnly(true))
+      verifyDeserError(encodingOnlyCodec, "1", "an implementation is missing")
+      verifySer(encodingOnlyCodec, 1, "1")
+    }
+    "don't generate codecs when decodingOnly and encodingOnly are true simultaneously" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """JsonCodecMaker.make[Int](CodecMakerConfig.withDecodingOnly(true).withEncodingOnly(true))""".stripMargin
+      }).getMessage.contains {
+        """'decodingOnly' and 'encodingOnly' cannot be 'true' simultaneously"""
+      })
+    }
     "deserialize ADTs when discriminator field was serialized in far away last position and configuration allows to parse it" in {
       val longStr = "W" * 100000
       verifyDeser(codecOfADTList3, List(CCC(2, longStr), CCC(1, "VVV")),
