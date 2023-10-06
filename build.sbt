@@ -51,6 +51,15 @@ lazy val commonSettings = Seq(
 )
 
 lazy val jsSettings = Seq(
+  scalacOptions += {
+    val localSourcesPath = baseDirectory.value.toURI
+    val remoteSourcesPath = s"https://raw.githubusercontent.com/plokhotnyuk/jsoniter-scala/${git.gitHeadCommit.value.get}/"
+    val sourcesOptionName = CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => "-P:scalajs:mapSourceURI"
+      case _ => "-scalajs-mapSourceURI"
+    }
+    s"$sourcesOptionName:$localSourcesPath->$remoteSourcesPath"
+  },
   libraryDependencies ++= Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
   ),
