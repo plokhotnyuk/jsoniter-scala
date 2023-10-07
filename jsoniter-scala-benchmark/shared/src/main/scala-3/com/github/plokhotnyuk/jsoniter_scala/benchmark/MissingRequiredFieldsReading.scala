@@ -142,7 +142,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   def smithy4sJson(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
-    import smithy4s.http.PayloadError
+    import smithy4s.codecs.PayloadError
 
     try {
       readFromArray[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called

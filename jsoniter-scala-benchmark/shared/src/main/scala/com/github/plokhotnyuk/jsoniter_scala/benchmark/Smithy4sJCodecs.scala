@@ -1,9 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{ReaderConfig, WriterConfig}
-import smithy4s.http.json._
-import smithy4s.{ByteArray, Schema, Timestamp}
 import alloy.Discriminated
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, ReaderConfig, WriterConfig}
+import smithy4s.{Blob, Schema, Timestamp}
+import smithy4s.json.Json
 import smithy4s.schema.Schema._
 
 import java.time.Instant
@@ -22,18 +22,19 @@ object Smithy4sJCodecs {
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
+  private[this] val datetime: Schema[Timestamp] = timestamp.addHints(smithy.api.TimestampFormat.DATE_TIME.widen)
   private[this] val adtSchema: Schema[ADTBase] = recursive {
     val xAlt = struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X")
     val yAlt = struct(string.required[Y]("b", _.b))(Y.apply).oneOf[ADTBase]("Y")
     val zAlt = struct(adtSchema.required[Z]("l", _.l), adtSchema.required[Z]("r", _.r))(Z.apply).oneOf[ADTBase]("Z")
     union(xAlt, yAlt, zAlt) {
-      case x: X => xAlt(x)
-      case y: Y => yAlt(y)
-      case z: Z => zAlt(z)
+      case _: X => 0
+      case _: Y => 1
+      case _: Z => 2
     }.addHints(Discriminated("type"))
   }
-  implicit val adtJCodec: JCodec[ADTBase] = JCodec.fromSchema(adtSchema)
-  implicit val anyValsJCodec: JCodec[AnyVals] = JCodec.fromSchema(struct(
+  implicit val adtJCodec: JsonCodec[ADTBase] = Json.deriveJsonCodec(adtSchema)
+  implicit val anyValsJCodec: JsonCodec[AnyVals] = Json.deriveJsonCodec(struct(
     byte.required[AnyVals]("b", _.b.a),
     short.required[AnyVals]("s", _.s.a),
     int.required[AnyVals]("i", _.i.a),
@@ -47,74 +48,74 @@ object Smithy4sJCodecs {
       if (st.length == 1) st.charAt(0)
       else sys.error("illegal char")
     }), DoubleVal(dbl), FloatVal(f))))
-  implicit val arrayOfBigDecimalsJCodec: JCodec[Array[BigDecimal]] =
-    JCodec.fromSchema(bijection(indexedSeq(bigdecimal), (x: IndexedSeq[BigDecimal]) => x match {
+  implicit val arrayOfBigDecimalsJCodec: JsonCodec[Array[BigDecimal]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(bigdecimal), (x: IndexedSeq[BigDecimal]) => x match {
       case x: ArraySeq[BigDecimal] => x.unsafeArray.asInstanceOf[Array[BigDecimal]]
       case x => x.toArray
     }, (x: Array[BigDecimal]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfBigIntsJCodec: JCodec[Array[BigInt]] =
-    JCodec.fromSchema(bijection(indexedSeq(bigint), (x: IndexedSeq[BigInt]) => x match {
+  implicit val arrayOfBigIntsJCodec: JsonCodec[Array[BigInt]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(bigint), (x: IndexedSeq[BigInt]) => x match {
       case x: ArraySeq[BigInt] => x.unsafeArray.asInstanceOf[Array[BigInt]]
       case x => x.toArray
     }, (x: Array[BigInt]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfBooleansJCodec: JCodec[Array[Boolean]] =
-    JCodec.fromSchema(bijection(indexedSeq(boolean), (x: IndexedSeq[Boolean]) => x match {
+  implicit val arrayOfBooleansJCodec: JsonCodec[Array[Boolean]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(boolean), (x: IndexedSeq[Boolean]) => x match {
       case x: ArraySeq[Boolean] => x.unsafeArray.asInstanceOf[Array[Boolean]]
       case x => x.toArray
     }, (x: Array[Boolean]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfBytesJCodec: JCodec[Array[Byte]] =
-    JCodec.fromSchema(bijection(indexedSeq(byte), (x: IndexedSeq[Byte]) => x match {
+  implicit val arrayOfBytesJCodec: JsonCodec[Array[Byte]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(byte), (x: IndexedSeq[Byte]) => x match {
       case x: ArraySeq[Byte] => x.unsafeArray.asInstanceOf[Array[Byte]]
       case x => x.toArray
     }, (x: Array[Byte]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfDoublesJCodec: JCodec[Array[Double]] =
-    JCodec.fromSchema(bijection(indexedSeq(double), (x: IndexedSeq[Double]) => x match {
+  implicit val arrayOfDoublesJCodec: JsonCodec[Array[Double]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(double), (x: IndexedSeq[Double]) => x match {
       case x: ArraySeq[Double] => x.unsafeArray.asInstanceOf[Array[Double]]
       case x => x.toArray
     }, (x: Array[Double]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfFloatsJCodec: JCodec[Array[Float]] =
-    JCodec.fromSchema(bijection(indexedSeq(float), (x: IndexedSeq[Float]) => x match {
+  implicit val arrayOfFloatsJCodec: JsonCodec[Array[Float]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(float), (x: IndexedSeq[Float]) => x match {
       case x: ArraySeq[Float] => x.unsafeArray.asInstanceOf[Array[Float]]
       case x => x.toArray
     }, (x: Array[Float]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfInstantsJCodec: JCodec[Array[Instant]] =
-    JCodec.fromSchema(bijection(indexedSeq(timestamp),
+  implicit val arrayOfInstantsJCodec: JsonCodec[Array[Instant]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(datetime),
       (x: IndexedSeq[Timestamp]) => x.map(PlatformUtils.toInstant).toArray,
       (x: Array[Instant]) => ArraySeq.unsafeWrapArray(x).map(PlatformUtils.toTimestamp)))
-  implicit val arrayOfIntsJCodec: JCodec[Array[Int]] =
-    JCodec.fromSchema(bijection(indexedSeq(int), (x: IndexedSeq[Int]) => x match {
+  implicit val arrayOfIntsJCodec: JsonCodec[Array[Int]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(int), (x: IndexedSeq[Int]) => x match {
       case x: ArraySeq[Int] => x.unsafeArray.asInstanceOf[Array[Int]]
       case x => x.toArray
     }, (x: Array[Int]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfLongsJCodec: JCodec[Array[Long]] =
-    JCodec.fromSchema(bijection(indexedSeq(long), (x: IndexedSeq[Long]) => x match {
+  implicit val arrayOfLongsJCodec: JsonCodec[Array[Long]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(long), (x: IndexedSeq[Long]) => x match {
       case x: ArraySeq[Long] => x.unsafeArray.asInstanceOf[Array[Long]]
       case x => x.toArray
     }, (x: Array[Long]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfShortsJCodec: JCodec[Array[Short]] =
-    JCodec.fromSchema(bijection(indexedSeq(short), (x: IndexedSeq[Short]) => x match {
+  implicit val arrayOfShortsJCodec: JsonCodec[Array[Short]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(short), (x: IndexedSeq[Short]) => x match {
       case x: ArraySeq[Short] => x.unsafeArray.asInstanceOf[Array[Short]]
       case x => x.toArray
     }, (x: Array[Short]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arrayOfUUIDsJCodec: JCodec[Array[UUID]] =
-    JCodec.fromSchema(bijection(indexedSeq(uuid), (x: IndexedSeq[UUID]) => x match {
+  implicit val arrayOfUUIDsJCodec: JsonCodec[Array[UUID]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(uuid), (x: IndexedSeq[UUID]) => x match {
       case x: ArraySeq[UUID] => x.unsafeArray.asInstanceOf[Array[UUID]]
       case x => x.toArray
     }, (x: Array[UUID]) => ArraySeq.unsafeWrapArray(x)))
-  implicit val arraySeqOfBooleansJCodec: JCodec[ArraySeq[Boolean]] =
-    JCodec.fromSchema(bijection(indexedSeq(boolean), (x: IndexedSeq[Boolean]) => x match {
+  implicit val arraySeqOfBooleansJCodec: JsonCodec[ArraySeq[Boolean]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(boolean), (x: IndexedSeq[Boolean]) => x match {
       case x: ArraySeq[Boolean] => x
       case x => ArraySeq.from(x)
     }, (x: ArraySeq[Boolean]) => x))
-  val base64JCodec: JCodec[Array[Byte]] =
-    JCodec.fromSchema(bijection(bytes, (x: ByteArray) => x.array, (x: Array[Byte]) => ByteArray(x)))
-  val bigDecimalJCodec: JCodec[BigDecimal] = JCodec.fromSchema(bigdecimal)
-  val bigIntJCodec: JCodec[BigInt] = JCodec.fromSchema(bigint)
-  implicit val extractFieldsJCodec: JCodec[ExtractFields] = JCodec.fromSchema(struct(
+  val base64JCodec: JsonCodec[Array[Byte]] =
+    Json.deriveJsonCodec(bijection(bytes, (x: Blob) => x.toArrayUnsafe, (x: Array[Byte]) => Blob(x)))
+  val bigDecimalJCodec: JsonCodec[BigDecimal] = Json.deriveJsonCodec(bigdecimal)
+  val bigIntJCodec: JsonCodec[BigInt] = Json.deriveJsonCodec(bigint)
+  implicit val extractFieldsJCodec: JsonCodec[ExtractFields] = Json.deriveJsonCodec(struct(
     string.required[ExtractFields]("s", _.s),
     int.required[ExtractFields]("i", _.i)
   )(ExtractFields.apply))
-  implicit val geoJsonJCodec: JCodec[GeoJSON.GeoJSON] = JCodec.fromSchema {
+  implicit val geoJsonJCodec: JsonCodec[GeoJSON.GeoJSON] = Json.deriveJsonCodec {
     val coordinatesSchema: Schema[(Double, Double)] =
       bijection(list(double), (x: List[Double]) => x match {
         case (x: Double) :: (y: Double) :: Nil => (x, y)
@@ -158,12 +159,12 @@ object Smithy4sJCodecs {
       val polygonAlt = polygonSchema.oneOf[GeoJSON.SimpleGeometry]("Polygon")
       val multiPolygonAlt = multiPolygonSchema.oneOf[GeoJSON.SimpleGeometry]("MultiPolygon")
       union(pointAlt, multiPointAlt, lineStringAlt, multiLineStringAlt, polygonAlt, multiPolygonAlt) {
-        case x: GeoJSON.Point => pointAlt(x)
-        case x: GeoJSON.MultiPoint => multiPointAlt(x)
-        case x: GeoJSON.LineString => lineStringAlt(x)
-        case x: GeoJSON.MultiLineString => multiLineStringAlt(x)
-        case x: GeoJSON.Polygon => polygonAlt(x)
-        case x: GeoJSON.MultiPolygon => multiPolygonAlt(x)
+        case _: GeoJSON.Point => 0
+        case _: GeoJSON.MultiPoint => 1
+        case _: GeoJSON.LineString => 2
+        case _: GeoJSON.MultiLineString => 3
+        case _: GeoJSON.Polygon => 4
+        case _: GeoJSON.MultiPolygon => 5
       }.addHints(Discriminated("type"))
     }
     val geometryCollectionSchema: Schema[GeoJSON.GeometryCollection] =
@@ -179,13 +180,13 @@ object Smithy4sJCodecs {
       val multiPolygonAlt = multiPolygonSchema.oneOf[GeoJSON.Geometry]("MultiPolygon")
       val geometryCollectionAlt = geometryCollectionSchema.oneOf[GeoJSON.Geometry]("GeometryCollection")
       union(pointAlt, multiPointAlt, lineStringAlt, multiLineStringAlt, polygonAlt, multiPolygonAlt, geometryCollectionAlt) {
-        case x: GeoJSON.Point => pointAlt(x)
-        case x: GeoJSON.MultiPoint => multiPointAlt(x)
-        case x: GeoJSON.LineString => lineStringAlt(x)
-        case x: GeoJSON.MultiLineString => multiLineStringAlt(x)
-        case x: GeoJSON.Polygon => polygonAlt(x)
-        case x: GeoJSON.MultiPolygon => multiPolygonAlt(x)
-        case x: GeoJSON.GeometryCollection => geometryCollectionAlt(x)
+        case _: GeoJSON.Point => 0
+        case _: GeoJSON.MultiPoint => 1
+        case _: GeoJSON.LineString => 2
+        case _: GeoJSON.MultiLineString => 3
+        case _: GeoJSON.Polygon => 4
+        case _: GeoJSON.MultiPolygon => 5
+        case _: GeoJSON.GeometryCollection => 6
       }.addHints(Discriminated("type"))
     }
     val featureSchema: Schema[GeoJSON.Feature] =
@@ -197,7 +198,7 @@ object Smithy4sJCodecs {
     val simpleGeoJSONSchema: Schema[GeoJSON.SimpleGeoJSON] = {
       val featureAlt = featureSchema.oneOf[GeoJSON.SimpleGeoJSON]("Feature")
       union(featureAlt) {
-        case x: GeoJSON.Feature => featureAlt(x)
+        case _: GeoJSON.Feature => 0
       }.addHints(Discriminated("type"))
     }
     val featureCollectionSchema: Schema[GeoJSON.FeatureCollection] =
@@ -208,11 +209,11 @@ object Smithy4sJCodecs {
     val featureAlt = featureSchema.oneOf[GeoJSON.GeoJSON]("Feature")
     val featureCollectionAlt = featureCollectionSchema.oneOf[GeoJSON.GeoJSON]("FeatureCollection")
     union(featureAlt, featureCollectionAlt) {
-      case x: GeoJSON.Feature => featureAlt(x)
-      case x: GeoJSON.FeatureCollection => featureCollectionAlt(x)
+      case _: GeoJSON.Feature => 0
+      case _: GeoJSON.FeatureCollection => 1
     }.addHints(Discriminated("type"))
   }
-  implicit val gitHubActionsAPIJCodec: JCodec[GitHubActionsAPI.Response] = JCodec.fromSchema({
+  implicit val gitHubActionsAPIJCodec: JsonCodec[GitHubActionsAPI.Response] = Json.deriveJsonCodec({
     val rowsSchema: Schema[GitHubActionsAPI.Artifact] =
       struct(
         long.required[GitHubActionsAPI.Artifact]("id", _.id),
@@ -222,8 +223,8 @@ object Smithy4sJCodecs {
         string.required[GitHubActionsAPI.Artifact]("url", _.url),
         string.required[GitHubActionsAPI.Artifact]("archive_download_url", _.archive_download_url),
         string.required[GitHubActionsAPI.Artifact]("expired", _.expired.toString),
-        timestamp.required[GitHubActionsAPI.Artifact]("created_at", (x: GitHubActionsAPI.Artifact) => PlatformUtils.toTimestamp(x.created_at)),
-        timestamp.required[GitHubActionsAPI.Artifact]("expires_at", (x: GitHubActionsAPI.Artifact) => PlatformUtils.toTimestamp(x.expires_at))
+        datetime.required[GitHubActionsAPI.Artifact]("created_at", (x: GitHubActionsAPI.Artifact) => PlatformUtils.toTimestamp(x.created_at)),
+        datetime.required[GitHubActionsAPI.Artifact]("expires_at", (x: GitHubActionsAPI.Artifact) => PlatformUtils.toTimestamp(x.expires_at))
       )((id, node_id, name, size_in_bytes, url, archive_download_url, expired, created_at, expires_at) =>
         GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url, expired.toBoolean,
           PlatformUtils.toInstant(created_at), PlatformUtils.toInstant(expires_at)))
@@ -234,7 +235,7 @@ object Smithy4sJCodecs {
       GitHubActionsAPI.Response(total_count, artifacts)
     }
   })
-  implicit val googleMapsAPIJCodec: JCodec[GoogleMapsAPI.DistanceMatrix] = JCodec.fromSchema({
+  implicit val googleMapsAPIJCodec: JsonCodec[GoogleMapsAPI.DistanceMatrix] = Json.deriveJsonCodec({
     val valueSchema: Schema[GoogleMapsAPI.Value] =
       struct(
         string.required[GoogleMapsAPI.Value]("text", _.text),
@@ -257,18 +258,18 @@ object Smithy4sJCodecs {
       string.required[GoogleMapsAPI.DistanceMatrix]("status", _.status)
     )(GoogleMapsAPI.DistanceMatrix.apply)
   })
-  val intJCodec: JCodec[Int] = JCodec.fromSchema(int)
-  implicit val listOfBooleansJCodec: JCodec[List[Boolean]] = JCodec.fromSchema(list(boolean))
-  implicit val mapOfIntsToBooleansJCodec: JCodec[Map[Int, Boolean]] = JCodec.fromSchema(map(int, boolean))
-  implicit val missingRequiredFieldsJCodec: JCodec[MissingRequiredFields] =
-    JCodec.fromSchema(struct(
+  val intJCodec: JsonCodec[Int] = Json.deriveJsonCodec(int)
+  implicit val listOfBooleansJCodec: JsonCodec[List[Boolean]] = Json.deriveJsonCodec(list(boolean))
+  implicit val mapOfIntsToBooleansJCodec: JsonCodec[Map[Int, Boolean]] = Json.deriveJsonCodec(map(int, boolean))
+  implicit val missingRequiredFieldsJCodec: JsonCodec[MissingRequiredFields] =
+    Json.deriveJsonCodec(struct(
       string.required[MissingRequiredFields]("s", _.s),
       int.required[MissingRequiredFields]("i", _.i)
     )(MissingRequiredFields.apply))
   private[this] val nestedStructsSchema: Schema[NestedStructs] =
     recursive(struct(nestedStructsSchema.optional[NestedStructs]("n", _.n))(NestedStructs.apply))
-  implicit val nestedStructsJCodec: JCodec[NestedStructs] = JCodec.fromSchema(nestedStructsSchema)
-  implicit val openRTBJCodec: JCodec[OpenRTB.BidRequest] = JCodec.fromSchema {
+  implicit val nestedStructsJCodec: JsonCodec[NestedStructs] = Json.deriveJsonCodec(nestedStructsSchema)
+  implicit val openRTBJCodec: JsonCodec[OpenRTB.BidRequest] = Json.deriveJsonCodec {
     val metricSchema: Schema[OpenRTB.Metric] =
       struct(
         string.required[OpenRTB.Metric]("type", _.`type`),
@@ -699,7 +700,7 @@ object Smithy4sJCodecs {
         bcat.getOrElse(Nil), badv.getOrElse(Nil), bapp.getOrElse(Nil), source, reqs)
     }
   }
-  implicit val primitivesJCodec: JCodec[Primitives] = JCodec.fromSchema(struct(
+  implicit val primitivesJCodec: JsonCodec[Primitives] = Json.deriveJsonCodec(struct(
     byte.required[Primitives]("b", _.b),
     short.required[Primitives]("s", _.s),
     int.required[Primitives]("i", _.i),
@@ -712,9 +713,9 @@ object Smithy4sJCodecs {
     if (st.length == 1) st.charAt(0)
     else sys.error("illegal char")
   }, dbl, f)))
-  implicit val setOfIntsJCodec: JCodec[Set[Int]] = JCodec.fromSchema(set(int))
-  val stringJCodec: JCodec[String] = JCodec.fromSchema(string)
-  implicit val twitterAPIJCodec: JCodec[Seq[TwitterAPI.Tweet]] = JCodec.fromSchema({
+  implicit val setOfIntsJCodec: JsonCodec[Set[Int]] = Json.deriveJsonCodec(set(int))
+  val stringJCodec: JsonCodec[String] = Json.deriveJsonCodec(string)
+  implicit val twitterAPIJCodec: JsonCodec[Seq[TwitterAPI.Tweet]] = Json.deriveJsonCodec({
     val urlsSchema: Schema[TwitterAPI.Urls] = struct(
       string.required[TwitterAPI.Urls]("url", _.url),
       string.required[TwitterAPI.Urls]("expanded_url", _.expanded_url),
@@ -946,5 +947,5 @@ object Smithy4sJCodecs {
     }
     bijection(list(tweetSchema), (x: List[TwitterAPI.Tweet]) => x.toSeq, (x: Seq[TwitterAPI.Tweet]) => x.toList)
   })
-  implicit val vectorOfBooleansJCodec: JCodec[Vector[Boolean]] = JCodec.fromSchema(vector(boolean))
+  implicit val vectorOfBooleansJCodec: JsonCodec[Vector[Boolean]] = Json.deriveJsonCodec(vector(boolean))
 }
