@@ -497,7 +497,7 @@ final class JsonReader private[jsoniter_scala](
 
   /**
     * Reads a JSON key into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
-    * the default limit for scale, and the defult instance of [[java.math.MathContext]] for precision.
+    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
     *
     * @return a `BigDecimal` instance of the parsed JSON key
     * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key or
@@ -634,7 +634,7 @@ final class JsonReader private[jsoniter_scala](
 
   /**
     * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
-    * the default limit for scale, and the defult instance of [[java.math.MathContext]] for precision.
+    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
     *
@@ -1070,7 +1070,7 @@ final class JsonReader private[jsoniter_scala](
 
   /**
     * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
-    * the default limit for scale, and the defult instance of [[java.math.MathContext]] for precision.
+    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
     *
