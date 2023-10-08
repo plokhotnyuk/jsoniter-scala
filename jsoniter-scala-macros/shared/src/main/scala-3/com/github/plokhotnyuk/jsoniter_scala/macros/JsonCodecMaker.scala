@@ -1830,11 +1830,7 @@ object JsonCodecMaker {
                     val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
                     val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
                     Block(List('{
-                      if (($m & $n) != 0) ${
-                        Assign(n.asTerm, '{
-                          $n ^ $m
-                        }.asTerm).asExprOf[Unit]
-                      }
+                      if (($n & $m) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
                       else $in.duplicatedKeyError($l)
                     }.asTerm), Assign(tmpVar, readVal)).asExprOf[Unit]
               }
