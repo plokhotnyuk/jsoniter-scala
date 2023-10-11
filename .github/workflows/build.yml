@@ -20,8 +20,8 @@ jobs:
     strategy:
       matrix:
         java:
-          - zulu@1.17
-          - graalvm-ce-java11
+          - 11
+          - 21
         os:
           - macOS-latest # FIXME: restore build on Ubuntu and Windows
       fail-fast: false
@@ -35,8 +35,9 @@ jobs:
       - name: Fetch tags
         run: git fetch --depth=300 origin +refs/tags/*:refs/tags/*
       - uses: coursier/cache-action@v6
-      - uses: olafurpg/setup-scala@v14
+      - uses: actions/setup-java@v3
         with:
+          distribution: "adopt"
           java-version: ${{ matrix.java }}
       - uses: actions/setup-node@v3
         with:
