@@ -157,7 +157,7 @@ view of an error context
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
 - Integration with circe for faster parsing/serialization and decoding/encoding to/from circe AST 
-- Releases for different Scala versions: 2.12, 2.13, and 3.2
+- Releases for different Scala versions: 2.12, 2.13, and 3.3
 - Support of JVMs for Java 11+ versions
 - Support of compilation to a native image by GraalVM
 - Support of Scala.js 1.0+ for all supported Scala versions
