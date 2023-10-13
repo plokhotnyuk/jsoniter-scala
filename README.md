@@ -91,14 +91,6 @@ and run-time configuration instances, combined with compile-time annotations and
 representation of JSON providing a pretty printing option, provide a hex dump in the error message to speed up the
 view of an error context
 
-The library targets JDK 11+ and GraalVM 22+ (including compilation to native images) without any platform restrictions.
-
-The [**v2.13.5.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2) release is the last version that
-supports JDK 8+ and native image compilation with earlier versions of GraalVM.
-
-The [**v2.13.3.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2) release is the last version that
-supports Scala 2.11.
-
 ## Features and limitations
 
 - JSON parsing from `String`, `Array[Byte]`, `java.nio.ByteBuffer`, `java.io.InputStream`/`java.io.FileInputStream`
@@ -164,9 +156,10 @@ supports Scala 2.11.
 - Codecs and runtime configurations implement `java.io.Serializable` for easier usage in distributive computing
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
-- Support of compilation to a native image by GraalVM
 - Integration with circe for faster parsing/serialization and decoding/encoding to/from circe AST 
 - Releases for different Scala versions: 2.12, 2.13, and 3.2
+- Support of JVMs for Java 11+ versions
+- Support of compilation to a native image by GraalVM
 - Support of Scala.js 1.0+ for all supported Scala versions
 - Support of Scala Native 0.4+ for all supported Scala versions
 - Suppressing of all WartRemover warnings of generated codecs for Scala 2.12 and 2.13 
@@ -207,6 +200,12 @@ List of options that change parsing and serialization in runtime:
 - Preferred size of internal output buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
 - Max size of char buffers when parsing string values
 - Preferred size of char buffers when parsing string values
+
+The [**v2.13.5.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2) release is the last version that
+supports JDK 8+ and native image compilation with earlier versions of GraalVM.
+
+The [**v2.13.3.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2) release is the last version that
+supports Scala 2.11.
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master)
 and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
