@@ -117,14 +117,14 @@ class CodecMakerConfig private[macros] (
     val circeLikeObjectEncoding: Boolean,
     val decodingOnly: Boolean,
     val encodingOnly: Boolean) {
-  @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodecMaker.make functions")
-  def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
+  def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
+    copy(fieldNameMapper = fieldNameMapper)
 
-  @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodecMaker.make functions")
-  def withJavaEnumValueNameMapper(javaEnumValueNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
+  def withJavaEnumValueNameMapper(javaEnumValueNameMapper: PartialFunction[String, String]): CodecMakerConfig =
+    copy(javaEnumValueNameMapper = javaEnumValueNameMapper)
 
-  @compileTimeOnly("withAdtLeafClassNameMapper should be used only inside JsonCodecMaker.make functions")
-  def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig = ???
+  def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig =
+    copy(adtLeafClassNameMapper = adtLeafClassNameMapper)
 
   def withDiscriminatorFieldName(discriminatorFieldName: Option[String]): CodecMakerConfig =
     copy(discriminatorFieldName = discriminatorFieldName)

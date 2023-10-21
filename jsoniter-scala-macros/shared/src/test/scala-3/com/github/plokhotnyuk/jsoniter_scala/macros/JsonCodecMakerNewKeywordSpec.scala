@@ -55,19 +55,35 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for 'A'."
       })
     }
-    "serialize and deserialize Scala3 enum ADTs defined with `derives` keyword" in {
-      trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
+    "serialize and deserialize classes defined with `derives` keyword and different compile-time configurations" in {
+      trait ConfigurableJsonValueCodec[A] extends JsonValueCodec[A]
 
-      object DefaultJsonValueCodec:
-        inline def derived[A]: DefaultJsonValueCodec[A] = new:
-          private val impl = JsonCodecMaker.make[A](CodecMakerConfig.withDiscriminatorFieldName(Some("name")))
+      object ConfigurableJsonValueCodec:
+        inline def derived[A](implicit inline config: CodecMakerConfig): ConfigurableJsonValueCodec[A] = new:
+          private val impl = JsonCodecMaker.make[A](config)
           export impl._
 
-      enum TestEnum derives DefaultJsonValueCodec:
-        case Value1
-        case Value2(string: String)
+      {
+        inline given CodecMakerConfig = CodecMakerConfig.withDiscriminatorFieldName(Some("name"))
 
-      verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"name":"Value2","string":"VVV"}""")
+        enum TestEnum derives ConfigurableJsonValueCodec:
+          case Value1
+          case Value2(string: String)
+
+        verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"name":"Value2","string":"VVV"}""")
+      }
+
+      {
+        inline given CodecMakerConfig = CodecMakerConfig.withDiscriminatorFieldName(Some("hint")).withFieldNameMapper {
+          case "string" => "str"
+        }
+
+        enum TestEnum derives ConfigurableJsonValueCodec:
+          case Value1
+          case Value2(string: String)
+
+        verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"hint":"Value2","str":"VVV"}""")
+      }
     }
   }
 }
