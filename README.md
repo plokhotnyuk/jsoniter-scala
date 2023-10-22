@@ -103,8 +103,9 @@ view of an error context
   serialize JSON from/to `String` (while this is much less efficient)
 - Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`,
-  `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays, module
-  classes, literal types, value classes, and case classes with values/fields having any of types listed here
+  `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays
+  (including immutable arrays in Scala 3), module classes, literal types, value classes, and case classes with
+  values/fields having any of types listed here
 - Classes should be defined with a primary constructor that hasn't defined default values in non-first parameter lists
 - Non-case Scala classes also supported, but they should have getter accessors for all arguments of a primary
   constructor
@@ -262,7 +263,7 @@ To print generated code for codecs add the following line to the scope of the co
 given CodecMakerConfig.PrintCodec with {}
 ```
 
-Full code of this `How to` section see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/examples/Example01.scala)
+Full code of this section see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/examples/Example01.scala)
 directory.
 
 You can use the following on-line services to generate an initial version of your data structures from JSON 
