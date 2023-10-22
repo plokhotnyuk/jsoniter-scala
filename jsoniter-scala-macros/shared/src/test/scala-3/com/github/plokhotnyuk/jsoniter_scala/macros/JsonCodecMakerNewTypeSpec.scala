@@ -26,8 +26,51 @@ object Year {
     inline def apply(year: Year): Int = year
 }
 
+case class IArrays(aa: IArray[IArray[Int]], a: IArray[BigInt])
+
+case class IArrayDefaults(aa: IArray[IArray[Int]] = IArray(IArray[Int](1)), a: IArray[BigInt] = IArray[BigInt](2))
+
 class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
+  val codecOfIArrays = make[IArrays]
+
   "JsonCodecMaker.make generate codecs which" should {
+    "serialize and deserialize Scala 3 immutable array" in {
+      val json = """{"aa":[[1,2],[3,4]],"a":[1,2,3,4]}"""
+      val iArrays = IArrays(IArray(IArray[Int](1, 2), IArray[Int](3, 4)), IArray[BigInt](1, 2, 3, 4))
+      verifySer(codecOfIArrays, iArrays, json)
+      val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfIArrays)
+      parsedObj.aa shouldBe iArrays.aa
+      parsedObj.a shouldBe iArrays.a
+    }
+    "don't serialize fields of case classes with empty Scala 3 immutable arrays" in {
+      val json = """{"aa":[[],[]]}"""
+      val iArrays = IArrays(IArray(IArray[Int](), IArray[Int]()), IArray[BigInt]())
+      verifySer(codecOfIArrays, iArrays, json)
+      val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfIArrays)
+      parsedObj.aa shouldBe iArrays.aa
+      parsedObj.a shouldBe iArrays.a
+    }
+    "serialize fields of case classes with empty Scala 3 immutable arrays when transientEmpty is off" in {
+      val json = """{"aa":[[],[]],"a":[]}"""
+      val iArrays = IArrays(IArray(IArray[Int](), IArray[Int]()), IArray[BigInt]())
+      verifySer(make[IArrays](CodecMakerConfig.withTransientEmpty(false)), iArrays, json)
+      val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfIArrays)
+      parsedObj.aa shouldBe iArrays.aa
+      parsedObj.a shouldBe iArrays.a
+    }
+    "don't serialize default values of case classes that defined for fields when the transientDefault flag is on (by default)" in {
+      val codecOfDefaults: JsonValueCodec[IArrayDefaults] = make
+      verifySer(codecOfDefaults, IArrayDefaults(), "{}")
+      verifySer(codecOfDefaults, IArrayDefaults(aa = IArray[IArray[Int]](), a = IArray[BigInt]()), """{}""")
+    }
+    "serialize default values of case classes that defined for fields when the transientDefault flag is off" in {
+      verifySer(make[IArrayDefaults](CodecMakerConfig.withTransientDefault(false)),
+        IArrayDefaults(), """{"aa":[[1]],"a":[2]}""")
+    }
+    "serialize empty of case classes that defined for fields when the transientEmpty flag is off" in {
+      verifySer(make[IArrayDefaults](CodecMakerConfig.withTransientEmpty(false)),
+        IArrayDefaults(aa = IArray[IArray[Int]](), a = IArray[BigInt]()), """{"aa":[],"a":[]}""")
+    }
     "don't generate codecs for union types with proper compilation error" in {
       assert(intercept[TestFailedException](assertCompiles {
         """type ABC = "A" | "B" | "C"

@@ -776,7 +776,8 @@ object JsonCodecMaker {
         (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< TypeRepr.of[Option[_]]))
 
       def isCollection(tpe: TypeRepr): Boolean =
-        tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]] || tpe <:< TypeRepr.of[Array[_]]
+        tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]] || tpe <:< TypeRepr.of[Array[_]] ||
+        tpe.typeSymbol.fullName == "scala.IArray$package$.IArray"
 
       def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[_]]
 
@@ -1488,6 +1489,45 @@ object JsonCodecMaker {
                   }
                 })
               }
+        } else if (tpe1.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+          tpe1.asType match
+            case '[t1] =>
+              val x1 = x1t.asExprOf[IArray[t1]]
+              val x2 = x2t.asExprOf[IArray[t1]]
+
+              def arrEquals(i: Expr[Int])(using Quotes): Expr[Boolean] =
+                withEqualsFor(tpe1, '{ $x1($i) }, '{ $x2($i) })((x1, x2) => genArrayEquals(tpe1, x1, x2))
+
+              '{
+                (($x1 ne null) && ($x2 ne null) && {
+                  val l = $x1.length
+                  ($x2.length == l) && {
+                    var i = 0
+                    while (i < l && ${arrEquals('i)}) i += 1
+                    i == l
+                  }
+                })
+              }
+        } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+          if (tpe1 =:= TypeRepr.of[AnyRef]) {
+            '{ IArray.equals(${x1t.asExprOf[IArray[AnyRef]]}, ${x2t.asExprOf[IArray[AnyRef]]}) }
+          } else {
+            tpe1.asType match
+              case '[t1] =>
+                val x1 = x1t.asExprOf[IArray[t1]]
+                val x2 = x2t.asExprOf[IArray[t1]]
+
+                '{
+                  (($x1 ne null) && ($x2 ne null) && {
+                    val l = $x1.length
+                    ($x2.length == l) && {
+                      var i = 0
+                      while (i < l && $x1(i) == $x2(i)) i += 1
+                      i == l
+                    }
+                  })
+                }
+          }
         } else if (tpe1 =:= TypeRepr.of[Boolean]) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Boolean]]}, ${x2t.asExprOf[Array[Boolean]]}) }
         } else if (tpe1 =:= TypeRepr.of[Byte]) {
@@ -1604,6 +1644,9 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[Array[_]]) withNullValueFor(tpe) {
           typeArg1(tpe).asType match
             case '[t1] => genNewArray[t1]('{ 0 }).asExprOf[T]
+        } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") withNullValueFor(tpe) {
+          typeArg1(tpe).asType match
+            case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1]('{ 0 })}) }.asExprOf[T]
         } else if (isConstType(tpe)) {
           tpe match
             case ConstantType(c) => Literal(c).asExprOf[T]
@@ -2054,6 +2097,7 @@ object JsonCodecMaker {
                 }
               }.asExprOf[T]
         } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
+          tpe.typeSymbol.fullName == "scala.IArray$package$.IArray" ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val newArrayOnChange = tpe1 match
@@ -2101,6 +2145,19 @@ object JsonCodecMaker {
                     else ${shrinkArray(x, i)}
                   })
                 }.asExprOf[mutable.ArraySeq[t1]], in).asExprOf[T]
+              } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+                genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
+                  if ($i == $l) {
+                    ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
+                    ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExprOf[Unit]}
+                  }
+                  $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
+                }, default.asExprOf[IArray[t1]], (x, i, l) => '{
+                  IArray.unsafeFromArray[t1]({
+                    if ($i == $l) $x
+                    else ${shrinkArray(x, i)}
+                  })
+                }.asExprOf[IArray[t1]], in).asExprOf[T]
               } else {
                 genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
                   if ($i == $l) {
@@ -2487,6 +2544,25 @@ object JsonCodecMaker {
                         ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                       }
                     }
+                  } else if (fTpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+                    val fTpe1 = typeArg1(fTpe)
+                    fTpe1.asType match
+                      case '[ft1] => {
+                        def cond(v: Expr[IArray[ft1]])(using Quotes): Expr[Boolean] =
+                          val da = d.asExprOf[IArray[ft1]]
+                          if (cfg.transientEmpty)
+                            '{ $v.length > 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                          else
+                            '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+
+                        '{
+                          val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[IArray[ft1]]}
+                          if (${cond('v)}) {
+                            ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                            ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
+                          }
+                        }
+                      }
                   } else '{
                     val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft]}
                     if (v != ${d.asExprOf[ft]}) {
@@ -2523,6 +2599,16 @@ object JsonCodecMaker {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
+                  } else if (fTpe.typeSymbol.fullName == "scala.IArray$package$.IArray" && cfg.transientEmpty) {
+                    val fTpe1 = typeArg1(fTpe)
+                    fTpe1.asType match
+                      case '[ft1] => '{
+                        val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[IArray[ft1]]}
+                        if (v.length > 0) {
+                          ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                          ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
+                        }
+                      }
                   } else '{
                     ${genWriteConstantKey(fieldInfo.mappedName, out)}
                     ${genWriteVal(Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft], fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2649,6 +2735,7 @@ object JsonCodecMaker {
                 case None => $out.writeNull()
             }
         } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
+          tpe.typeSymbol.fullName == "scala.IArray$package$.IArray" ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -2675,6 +2762,18 @@ object JsonCodecMaker {
                   var i = 0
                   while (i < l) {
                     ${genWriteVal('{ xs(i) }, tpe1 :: types, isStringified, None, out)}
+                    i += 1
+                  }
+                  $out.writeArrayEnd()
+                }
+              } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+                val tx = x.asExprOf[IArray[t1]]
+                '{
+                  $out.writeArrayStart()
+                  val l = $tx.length
+                  var i = 0
+                  while (i < l) {
+                    ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
                     i += 1
                   }
                   $out.writeArrayEnd()
@@ -2776,7 +2875,7 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[Iterator[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
-            case'[t1] =>
+            case '[t1] =>
               genWriteArray2(x.asExprOf[Iterator[t1]],
                 (out, x1) => genWriteVal(x1, tpe1 :: types, isStringified, None, out), out)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withEncoderFor(methodKey, m, out) { (out, x) =>
