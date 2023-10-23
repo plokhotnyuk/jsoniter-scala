@@ -45,7 +45,7 @@ This library had started from macros that reused [jsoniter (json-iterator) for J
 reader and writer but then the library evolved to have its own core of mechanics for parsing and serialization.
 
 The idea to generate codecs by Scala macros and main details were borrowed from
-[Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for the needs of the JSON domain.
+[Kryo Macros](https://github.com/evolution-gaming/kryo-macros) (originally developed by [Alexander Nemish](https://github.com/nau)) and adapted for the needs of the JSON domain.
   
 Other Scala macros features were peeped in [AVSystem Commons](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros)
 and [magnolia](https://github.com/softwaremill/magnolia) libraries.
