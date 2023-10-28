@@ -2895,8 +2895,8 @@ object JsonCodecMaker {
             else '{ $out.writeNonEscapedAsciiVal($matching) }
           } else {
             val tx = x.asExprOf[java.lang.Enum[_]]
-            if (encodingRequired) '{ $out.writeVal($tx.name) }
-            else '{ $out.writeNonEscapedAsciiVal($tx.name) }
+            if (encodingRequired) '{ $out.writeVal(($tx.name: String)) }
+            else '{ $out.writeNonEscapedAsciiVal(($tx.name: String)) }
           }
         } else if (isEnumOrModuleValue(tpe) || tpe =:= TypeRepr.of[None.type]) withEncoderFor(methodKey, m, out) { (out, x) =>
           '{
