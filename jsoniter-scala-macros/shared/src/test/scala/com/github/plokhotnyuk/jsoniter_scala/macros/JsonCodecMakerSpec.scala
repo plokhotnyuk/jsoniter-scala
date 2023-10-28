@@ -418,7 +418,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[BigDecimal](CodecMakerConfig.withIsStringified(true)),
         BigDecimal("1234567890.12345678901234567890"), """"1234567890.12345678901234567890"""")
     }
-    "throw parse exception in case of duplicated key for case classe was detected" in {
+    "throw parse exception in case of duplicated key for case classes was detected" in {
       verifyDeserError(codecOfStandardTypes, s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""",
         """duplicated field "s", offset: 0x0000000e""")
     }
@@ -513,7 +513,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         override def encodeKey(x: Level, out: JsonWriter): _root_.scala.Unit = x match {
           case Level.LOW => out.writeKey(0)
           case Level.HIGH => out.writeKey(1)
-          case null => out.encodeError("illegal enum value: null")
+          case _ => out.encodeError("illegal enum value: null")
         }
       }
       verifySerDeser(make[Map[Level, Int]], Map(Level.HIGH -> 100), """{"1":100}""")
@@ -537,7 +537,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         override def encodeValue(x: Level, out: JsonWriter): _root_.scala.Unit = x match {
           case Level.LOW => out.writeVal(0)
           case Level.HIGH => out.writeVal(1)
-          case null => out.encodeError("illegal enum value: null")
+          case _ => out.encodeError("illegal enum value: null")
         }
 
         override def nullValue: Level = null.asInstanceOf[Level]

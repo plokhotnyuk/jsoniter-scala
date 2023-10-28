@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 import scala.annotation.switch
+import scala.collection.immutable.ArraySeq
 import scala.util.hashing.MurmurHash3
 
 enum TrafficLight:
@@ -124,7 +125,7 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
     }
     "serialize and deserialize Scala3 generic enum ADTs" in {
       verifySerDeser(make[Array[GEnum[_]]],
-        Array[GEnum[_]](GEnum.Exists("WWW"), GEnum.ReadBytes("QQQ"), GEnum.CopyOver("AAA".getBytes.toSeq, "OOO")),
+        Array[GEnum[_]](GEnum.Exists("WWW"), GEnum.ReadBytes("QQQ"), GEnum.CopyOver(ArraySeq.unsafeWrapArray("AAA".getBytes(UTF_8)), "OOO")),
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize enum ADTs with self-recursive (aka F-bounded) types" in {

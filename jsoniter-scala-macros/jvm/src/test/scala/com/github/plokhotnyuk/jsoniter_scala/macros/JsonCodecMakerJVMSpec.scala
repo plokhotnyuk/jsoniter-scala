@@ -17,12 +17,12 @@ class JsonCodecMakerJVMSpec extends VerifyingSpec {
         else construct(d - 1, Nested(_root_.scala.Some(n)))
 
       implicit val codecOfNestedStructs: JsonValueCodec[Nested] = make(CodecMakerConfig.withAllowRecursiveTypes(true))
-      val bytes = ("{" + "\"n\":{" * 1000000 + "}" * 1000000 + "}").getBytes
-      val readStackTrace = TestUtils.assertStackOverflow(readFromArray[Nested](bytes))
+      val json = "{" + "\"n\":{" * 1000000 + "}" * 1000000 + "}"
+      val readStackTrace = TestUtils.assertStackOverflow(readFromString[Nested](json))
       assert(readStackTrace.contains("d0"))
       assert(!readStackTrace.contains("d1"))
       assert(!readStackTrace.contains("decodeValue"))
-      val writeStackTrace = TestUtils.assertStackOverflow(writeToArray[Nested](construct()))
+      val writeStackTrace = TestUtils.assertStackOverflow(writeToString[Nested](construct()))
       assert(writeStackTrace.contains("e0"))
       assert(!writeStackTrace.contains("e1"))
       assert(!writeStackTrace.contains("encodeValue"))

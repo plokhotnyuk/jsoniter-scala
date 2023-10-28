@@ -38,7 +38,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       val json = """{"aa":[[1,2],[3,4]],"a":[1,2,3,4]}"""
       val iArrays = IArrays(IArray(IArray[Int](1, 2), IArray[Int](3, 4)), IArray[BigInt](1, 2, 3, 4))
       verifySer(codecOfIArrays, iArrays, json)
-      val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfIArrays)
+      val parsedObj = readFromString(json)(codecOfIArrays)
       parsedObj.aa shouldBe iArrays.aa
       parsedObj.a shouldBe iArrays.a
     }
@@ -46,7 +46,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       val json = """{"aa":[[],[]]}"""
       val iArrays = IArrays(IArray(IArray[Int](), IArray[Int]()), IArray[BigInt]())
       verifySer(codecOfIArrays, iArrays, json)
-      val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfIArrays)
+      val parsedObj = readFromString(json)(codecOfIArrays)
       parsedObj.aa shouldBe iArrays.aa
       parsedObj.a shouldBe iArrays.a
     }
@@ -54,7 +54,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       val json = """{"aa":[[],[]],"a":[]}"""
       val iArrays = IArrays(IArray(IArray[Int](), IArray[Int]()), IArray[BigInt]())
       verifySer(make[IArrays](CodecMakerConfig.withTransientEmpty(false)), iArrays, json)
-      val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfIArrays)
+      val parsedObj = readFromString(json)(codecOfIArrays)
       parsedObj.aa shouldBe iArrays.aa
       parsedObj.a shouldBe iArrays.a
     }
