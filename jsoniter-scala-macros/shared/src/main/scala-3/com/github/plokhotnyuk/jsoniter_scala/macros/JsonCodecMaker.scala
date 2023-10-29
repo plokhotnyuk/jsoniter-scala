@@ -1307,9 +1307,9 @@ object JsonCodecMaker {
             if (encodingRequired) '{ $out.writeKey($matchExpr) }
             else '{ $out.writeNonEscapedAsciiKey($matchExpr) }
           } else {
-            val nameExpr = Apply(Select.unique(x.asTerm, "name"), List()).asExprOf[String]
-            if (encodingRequired) '{ $out.writeKey($nameExpr) }
-            else '{ $out.writeNonEscapedAsciiKey($nameExpr) }
+            val tx = x.asExprOf[java.lang.Enum[_]]
+            if (encodingRequired) '{ $out.writeKey(($tx.name: String)) }
+            else '{ $out.writeNonEscapedAsciiKey(($tx.name: String)) }
           }
         } else if (isConstType(tpe)) {
           tpe match
