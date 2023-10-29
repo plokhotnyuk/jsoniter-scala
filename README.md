@@ -26,7 +26,7 @@ libraries using different JDK and GraalVM versions on the following environment:
 GraalVM Community JDK 17/21, and GraalVM JDK 17/21.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares libraries which supports Scala.js compiled by Scala.js 1.13.1 to ES 2015 with
+compares libraries which supports Scala.js compiled by Scala.js 1.14.0 to ES 2015 with
 GCC v20220202 optimizations applied on Intel® Core™ i7-11800H CPU @ 2.3GHz (max 4.6GHz),
 RAM 64Gb DDR4-3200, Ubuntu 23.10 (Linux 6.5).
 
@@ -293,19 +293,23 @@ Samples for its integration with different web frameworks and HTTP servers:
 - [blaze](https://github.com/TechEmpower/FrameworkBenchmarks/blob/b3a39dcd95b207cd2509d7bbf873a0dfb91097f5/frameworks/Scala/blaze/src/main/scala/Main.scala)
 - [colossus](https://github.com/TechEmpower/FrameworkBenchmarks/blob/b3a39dcd95b207cd2509d7bbf873a0dfb91097f5/frameworks/Scala/colossus/src/main/scala/example/Main.scala)
 - [http4s](https://github.com/TechEmpower/FrameworkBenchmarks/blob/d1f960b2d4d6ea7b5c30a3ef2a8b47670f346f1c/frameworks/Scala/http4s/src/main/scala/WebServer.scala)
+- [pekko-http](https://github.com/pjfanning/pekko-http-json/blob/d8ca725bb5621e46c6df0c739ef83eb9f96bb3f1/pekko-http-jsoniter-scala/src/test/scala/com/github/pjfanning/pekkohttpjsoniterscala/ExampleApp.scala)
 - [Play (with Netty native transport)](https://github.com/plokhotnyuk/play/tree/master/src/main/scala/microservice)
 - [youi](https://github.com/TechEmpower/FrameworkBenchmarks/blob/master/frameworks/Scala/youi/src/main/scala/example/Main.scala)
 - [zio-http](https://github.com/TechEmpower/FrameworkBenchmarks/blob/master/frameworks/Scala/zio-http/src/main/scala/Main.scala)
 
 Usages of jsoniter-scala in OSS libraries:
+- [akka-http-json](https://github.com/hseeberger/akka-http-json) - integrates some of the best JSON libs in Scala with Akka HTTP 
 - [caliban](https://github.com/ghostdogpr/caliban) - a purely functional library for building GraphQL servers and 
   clients in Scala
+- [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
 - [geo-scala](https://github.com/gnieh/geo-scala) - a core AST and utilities for GeoJSON (RFC 7946) and more
 - [iron](https://github.com/Iltotore/iron) - a lightweight library for refined types in Scala 3
 - [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe 
   booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types
-- [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
-- [logging4s](https://github.com/logging4s/logging4s) - structured logging for Scala 3 
+- [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala) - implicitly converts typeclass encoders to kafka Serializer, Deserializer, Serde
+- [logging4s](https://github.com/logging4s/logging4s) - structured logging for Scala 3
+- [pekko-http-json](https://github.com/pjfanning/pekko-http-json) - integrates some of the best JSON libs in Scala with Pekko HTTP 
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
   instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
 - [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/)
