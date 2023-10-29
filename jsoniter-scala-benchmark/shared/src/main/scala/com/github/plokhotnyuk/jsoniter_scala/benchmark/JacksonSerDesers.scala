@@ -27,6 +27,7 @@ object JacksonSerDesers {
       .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
       .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
       .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
+      .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
       .streamReadConstraints(StreamReadConstraints.builder().maxNumberLength(Int.MaxValue).build()) /* WARNING: It is an unsafe option for open systems */
       .build()
     new ObjectMapper(jsonFactory) with ClassTagExtensions {
