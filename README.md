@@ -188,6 +188,7 @@ There are configurable options that can be set in compile-time:
 - Ability to derive codecs that can distinguish `null` field values and missing fields as `Some(None)` and `None` values
   of `Option[Option[_]]`
 - Ability to turn on circe-like encoding of Scala objects in ADTs
+- Ability to disable generation of implementation for decoding or encoding
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
