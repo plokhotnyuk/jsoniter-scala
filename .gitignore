@@ -1,3 +1,7 @@
+# scala-cli
+.scala-build
+*.build_artifacts.txt
+
 # Sbt
 target
 .bsp
