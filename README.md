@@ -237,12 +237,13 @@ Derive a codec for the top-level type that need to be parsed or serialized:
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 
-given codec: JsonValueCodec[User] = JsonCodecMaker.make
+given userCodec: JsonValueCodec[User] = JsonCodecMaker.make
 ```
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec` for the
-whole nested data structure. No need to derive intemendiate codecs if you use the default or the same derivation
-configuration for them.
+whole nested data structure. No need to derive intermediate codecs for inner nested classes like `Device` if you are not
+going to parse/serialize them from/to JSON in isolation (not as a part of `User`) and use the default or the same 
+derivation configuration for their codecs.
 
 Now use it for parsing and serialization from/to `String`:
 ```scala
@@ -263,9 +264,6 @@ To print generated code for codecs add the following line to the scope of the co
 ```scala
 given CodecMakerConfig.PrintCodec with {}
 ```
-
-Full code of this section see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/examples/Example01.scala)
-directory.
 
 You can use the following on-line services to generate an initial version of your data structures from JSON 
 samples: 
@@ -491,8 +489,6 @@ node -v
 ### Get report of available dependency updates
 
 ```sh
-sbt ";dependencyUpdates; reload plugins; dependencyUpdates; reload return"
-cd jsoniter-scala-examples
 sbt ";dependencyUpdates; reload plugins; dependencyUpdates; reload return"
 ```
 
