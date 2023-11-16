@@ -1,5 +1,5 @@
 //> using dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.24.4"
-``
+
 import com.github.plokhotnyuk.jsoniter_scala.core._
 
 val jsonCodec: JsonValueCodec[Unit] = new JsonValueCodec[Unit] {
