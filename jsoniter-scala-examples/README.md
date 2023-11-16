@@ -1,6 +1,6 @@
 # Examples of jsoniter-scala usage
 
-## Getting started
+## Getting started (example01)
 
 Here you will learn how to build and run the simplest example and measure the startup time on Linux using 
 Debian packages
@@ -122,3 +122,8 @@ Expected output:
 
          0.0011042 +- 0.0000401 seconds time elapsed  ( +-  3.63% )
 ```
+
+## RFC-8259 validation (example02)
+
+An example of a command line application that reads the system input, parses and validates JSON according to the latest
+specification and in case of any error prints it to the system error output
