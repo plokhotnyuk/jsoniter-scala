@@ -6,7 +6,9 @@ import java.util.{Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
+
 import scala.annotation.switch
+import scala.util.control.NonFatal
 import scala.util.hashing.MurmurHash3
 
 case class UserId(id: String) extends AnyVal
@@ -915,6 +917,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
           override val nullValue: RawVal = new RawVal(new _root_.scala.Array[_root_.scala.Byte](0))
         }
+
+        private case class Nested(xx: _root_.java.lang.Boolean, yy: _root_.java.lang.Boolean)
+
+        private case class TopLevel(y: Nested)
+
+        private case object TopLevel {
+          implicit val codec: JsonValueCodec[TopLevel] = JsonCodecMaker.make
+        }
       }
 
       case class RawVal private(bs: _root_.scala.Array[_root_.scala.Byte]) {
@@ -926,12 +936,21 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           case that: RawVal => _root_.java.util.Arrays.equals(bs, that.bs)
           case _ => false
         }
+
+        lazy val isValid: _root_.java.lang.Boolean = try {
+          val topLevel = readFromArray[RawVal.TopLevel](bs)
+          topLevel.y.xx & !topLevel.y.yy
+        } catch {
+          case NonFatal(_) => false
+        }
       }
 
       case class Message(param1: String, param2: String, payload: RawVal, param3: String)
 
+      val rawVal = RawVal("""{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}""")
+      rawVal.isValid shouldBe true
       verifySerDeser(make[Message],
-        Message("A", "B", RawVal("""{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}"""), "C"),
+        Message("A", "B", rawVal, "C"),
         """{"param1":"A","param2":"B","payload":{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"},"param3":"C"}""")
     }
     "serialize and deserialize nested options without loss of information" in {
