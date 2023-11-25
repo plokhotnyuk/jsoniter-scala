@@ -8,7 +8,7 @@ case class Device(id: Int, model: String)
 
 case class User(name: String, devices: Seq[Device])
 
-implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make(CodecMakerConfig)
+implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make
 
 val user = readFromString("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""")
 val json = writeToString(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
