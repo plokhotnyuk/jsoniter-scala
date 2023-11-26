@@ -209,3 +209,5 @@ val contributions = Contributions(2, Vector(
 ))
 
 println(writeToString(contributions))
+
+println(writeToString(contributions, WriterConfig.withIndentionStep(2)))
