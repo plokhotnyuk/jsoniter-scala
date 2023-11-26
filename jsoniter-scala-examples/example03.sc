@@ -198,3 +198,14 @@ println(readFromString[Contributor](
 }
 """
 ))
+
+case class Contributions(count: Long, contributors: Vector[Contributor])
+
+implicit val contributionsCodec: JsonValueCodec[Contributions] = JsonCodecMaker.make
+
+val contributions = Contributions(2, Vector(
+  Contributor("Ghurtchu", 1),
+  Contributor("plokhotnyuk", 1)
+))
+
+println(writeToString(contributions))
