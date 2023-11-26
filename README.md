@@ -625,7 +625,7 @@ More info about extras, options, and ability to generate flame graphs see in [Sb
 Other benchmarks with results for jsoniter-scala:
 - [comparison](https://github.com/kostya/benchmarks/tree/master#json) with other JSON parsers for different programming
   languages and compilers
-- [comparison](https://github.com/simdjson/simdjson-java/pull/2) with most performant java parsers: simdjson-java, fastjson, jackson, etc.
+- [comparison](https://github.com/simdjson/simdjson-java/pull/31) with most performant java parsers: simdjson-java, fastjson, jackson, etc.
 - [comparison](https://github.com/sirthias/borer/pull/30) with other JSON parsers for Scala mostly on samples from real
   APIs, but with mapping to simple types only like strings and primitives and results for GraalVM EE Java8 only
 - [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with the best binary parsers and serializers for
