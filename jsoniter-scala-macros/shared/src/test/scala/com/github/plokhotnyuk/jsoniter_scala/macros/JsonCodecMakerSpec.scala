@@ -185,6 +185,8 @@ case class Defaults2(
 
 case class PolymorphicDefaults[A, B](i: A = 1, cs: List[B] = Nil)
 
+case class IterablesWithDefaults(l: List[Int] = _root_.scala.collection.immutable.Nil, s: Set[Option[String]] = Set())
+
 sealed trait AdtBase extends Product with Serializable
 
 sealed abstract class Inner extends AdtBase {
@@ -1421,10 +1423,20 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """missing required field "value", offset: 0x00000019""")
     }
     "serialize and deserialize case classes with collection fields that has default values when the requireCollectionFields flag is on" in {
-      case class IterablesWithDefaults(l: List[Int] = _root_.scala.collection.immutable.Nil, s: Set[Option[String]] = Set())
-
-      verifySerDeser(makeWithRequiredCollectionFields[IterablesWithDefaults],
+      verifySerDeser(makeWithRequiredCollectionFields[IterablesWithDefaults], IterablesWithDefaults(), "{}")
+      verifySerDeser(make[IterablesWithDefaults](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
         IterablesWithDefaults(), "{}")
+    }
+    "serialize and deserialize case classes with collection fields that has default values when the requireDefaultFields flag is on" in {
+      verifySerDeser(makeWithRequiredDefaultFields[IterablesWithDefaults], IterablesWithDefaults(), "{}")
+      verifySerDeser(make[IterablesWithDefaults](CodecMakerConfig.withRequireDefaultFields(true).withTransientDefault(false)),
+        IterablesWithDefaults(), "{}")
+    }
+    "throw parse exception for missing collection with default value when both the requireCollectionFields and the requireDefaultFields flags are on" in {
+      val codecOfDefaults2 = make[IterablesWithDefaults](CodecMakerConfig
+        .withRequireDefaultFields(true).withTransientDefault(false).withRequireCollectionFields(true).withTransientEmpty(false))
+      verifyDeserError(codecOfDefaults2, "{}", """missing required field "l", offset: 0x00000001""")
+      verifyDeserError(codecOfDefaults2, """{"l":[1,2,3]}""", """missing required field "s", offset: 0x0000000c""")
     }
     "serialize and deserialize case classes with empty Iterables when the requireCollectionFields flag is on and transientEmpty is off" in {
       verifySerDeser(makeWithRequiredCollectionFields[EmptyIterables],
@@ -1846,8 +1858,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codecOfDefaults, Defaults(), "{}")
       verifySer(codecOfDefaults, Defaults(oc = _root_.scala.None, l = _root_.scala.collection.immutable.Nil), """{}""")
     }
+    "throw parse exception for missing field with default value when the requireDefaultFields flag is on" in {
+      val codecOfDefaults1 = makeWithRequiredDefaultFields[Defaults]
+      verifyDeserError(codecOfDefaults1, "{}", """missing required field "st", offset: 0x00000001""")
+      verifyDeserError(codecOfDefaults1, """{"st":"VVV"}""", """missing required field "i", offset: 0x0000000b""")
+      val codecOfDefaults2 = make[Defaults](CodecMakerConfig.withRequireDefaultFields(true).withTransientDefault(false))
+      verifyDeserError(codecOfDefaults2, "{}", """missing required field "st", offset: 0x00000001""")
+      verifyDeserError(codecOfDefaults2, """{"st":"VVV"}""", """missing required field "i", offset: 0x0000000b""")
+    }
     "serialize default values of case classes that defined for fields when the transientDefault flag is off" in {
       verifySer(make[Defaults](CodecMakerConfig.withTransientDefault(false)), Defaults(),
+        """{"st":"VVV","i":1,"bi":-1,"oc":"X","l":[0],"a":[[1,2],[3,4]],"ab":[1,2],"m":{"1":true},"mm":{"VVV":1},"im":{"1":"VVV"},"lm":{"1":2},"s":["VVV"],"ms":[1],"bs":[1],"mbs":[1]}""")
+      verifySer(makeWithRequiredDefaultFields[Defaults], Defaults(),
         """{"st":"VVV","i":1,"bi":-1,"oc":"X","l":[0],"a":[[1,2],[3,4]],"ab":[1,2],"m":{"1":true},"mm":{"VVV":1},"im":{"1":"VVV"},"lm":{"1":2},"s":["VVV"],"ms":[1],"bs":[1],"mbs":[1]}""")
     }
     "serialize empty of case classes that defined for fields when the transientEmpty and transientNone flags are off" in {
@@ -2612,8 +2634,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "generate codecs for case classes with multiple parameter lists in a primary constructor without default values" in {
       case class MultiListOfArgs(i: Int)(val l: Long)(var s: String)
 
-      val codecOfMultiListOfArgs = make[MultiListOfArgs]
-      verifySerDeser(codecOfMultiListOfArgs, new MultiListOfArgs(1)(2)("VVV"),"""{"i":1,"l":2,"s":"VVV"}""")
+      verifySerDeser(make[MultiListOfArgs], new MultiListOfArgs(1)(2)("VVV"), """{"i":1,"l":2,"s":"VVV"}""")
+    }
+    "generate codecs for case classes with multiple parameter lists in a primary constructor with depended default values when the requireDefaultFields is on" in {
+      case class MultiListOfArgs(i: Int = 1)(val l: Long = i - 1)(var s: String = l.toString)
+
+      verifySerDeser(makeWithRequiredDefaultFields[MultiListOfArgs],
+        new MultiListOfArgs(1)(2)("VVV"), """{"i":1,"l":2,"s":"VVV"}""")
+      verifySerDeser(make[MultiListOfArgs](CodecMakerConfig.withRequireDefaultFields(true).withTransientDefault(false)),
+        new MultiListOfArgs(1)(2)("VVV"), """{"i":1,"l":2,"s":"VVV"}""")
     }
     "don't generate codecs for case classes with non public parameters of the primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -2652,6 +2681,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         "JsonCodecMaker.make[Arrays](CodecMakerConfig.withRequireCollectionFields(true))"
       }).getMessage.contains {
         "'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously"
+      })
+      assert(intercept[TestFailedException](assertCompiles {
+        "JsonCodecMaker.make[Arrays](CodecMakerConfig.withRequireDefaultFields(true))"
+      }).getMessage.contains {
+        "'requireDefaultFields' and 'transientDefault' cannot be 'true' simultaneously"
       })
     }
     "don't generate codecs for unsupported classes like java.util.Date" in {

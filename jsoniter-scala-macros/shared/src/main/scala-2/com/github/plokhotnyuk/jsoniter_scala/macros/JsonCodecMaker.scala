@@ -86,6 +86,8 @@ final class stringified extends StaticAnnotation
   *                               a key and empty object value: `{"EnumValue":{}}`
   * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
   * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
+  * @param requireDefaultFields   a flag that turn on checking of presence of fields with default and forces
+  *                               serialization of them
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -112,7 +114,8 @@ class CodecMakerConfig private (
     val skipNestedOptionValues: Boolean,
     val circeLikeObjectEncoding: Boolean,
     val decodingOnly: Boolean,
-    val encodingOnly: Boolean) {
+    val encodingOnly: Boolean,
+    val requireDefaultFields: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -179,6 +182,9 @@ class CodecMakerConfig private (
   def withEncodingOnly(encodingOnly: Boolean): CodecMakerConfig =
     copy(encodingOnly = encodingOnly)
 
+  def withRequireDefaultFields(requireDefaultFields: Boolean): CodecMakerConfig =
+    copy(requireDefaultFields = requireDefaultFields)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -203,7 +209,8 @@ class CodecMakerConfig private (
                          skipNestedOptionValues: Boolean = skipNestedOptionValues,
                          circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding,
                          decodingOnly: Boolean = decodingOnly,
-                         encodingOnly: Boolean = encodingOnly): CodecMakerConfig =
+                         encodingOnly: Boolean = encodingOnly,
+                         requireDefaultFields: Boolean = requireDefaultFields): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -229,7 +236,8 @@ class CodecMakerConfig private (
       skipNestedOptionValues = skipNestedOptionValues,
       circeLikeObjectEncoding = circeLikeObjectEncoding,
       decodingOnly = decodingOnly,
-      encodingOnly = encodingOnly)
+      encodingOnly = encodingOnly,
+      requireDefaultFields = requireDefaultFields)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -257,7 +265,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   skipNestedOptionValues = false,
   circeLikeObjectEncoding = false,
   encodingOnly = false,
-  decodingOnly = false) {
+  decodingOnly = false,
+  requireDefaultFields = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -452,6 +461,16 @@ object JsonCodecMaker {
   def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A]: JsonValueCodec[A] = macro Impl.makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A]
 
   /**
+   * A replacement for the `make` call with the
+   * `CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true)`
+   * configuration parameter.
+   *
+   * @tparam A a type that should be encoded and decoded by the derived codec
+   * @return an instance of the derived codec
+   */
+  def makeWithRequiredDefaultFields[A]: JsonValueCodec[A] = macro Impl.makeWithRequiredDefaultFields[A]
+
+  /**
     * A replacement for the `make` call with the
     * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None)`
     * configuration parameter.
@@ -494,6 +513,9 @@ object JsonCodecMaker {
       make(c)(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)
         .withDiscriminatorFieldName(Some("name")))
 
+    def makeWithRequiredDefaultFields[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
+      make(c)(CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true))
+
     def makeCirceLike[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
         .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true))
@@ -519,6 +541,8 @@ object JsonCodecMaker {
           }
         if (cfg.requireCollectionFields && cfg.transientEmpty)
           fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
+        if (cfg.requireDefaultFields && cfg.transientDefault)
+          fail("'requireDefaultFields' and 'transientDefault' cannot be 'true' simultaneously")
         if (cfg.circeLikeObjectEncoding && cfg.discriminatorFieldName.nonEmpty)
           fail("'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'")
         if (cfg.decodingOnly && cfg.encodingOnly)
@@ -1086,7 +1110,7 @@ object JsonCodecMaker {
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
               }
               val defaultValue =
-                if (symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
+                if (!cfg.requireDefaultFields && symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
                 else None
               val isStringified = annotationOption.exists(_.stringified)
               Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, paramType(tpe, symbol), isStringified))
@@ -1272,8 +1296,8 @@ object JsonCodecMaker {
           else mappedNames :+ n
         })
         val required: Set[String] = fields.collect {
-          case fieldInfo if !(fieldInfo.symbol.isParamWithDefault || isOption(fieldInfo.resolvedTpe, types) ||
-            (isCollection(fieldInfo.resolvedTpe) && !cfg.requireCollectionFields)) => fieldInfo.mappedName
+          case fieldInfo if !(!cfg.requireDefaultFields && fieldInfo.symbol.isParamWithDefault || isOption(fieldInfo.resolvedTpe, types) ||
+            (!cfg.requireCollectionFields && isCollection(fieldInfo.resolvedTpe))) => fieldInfo.mappedName
         }.toSet
         val paramVarNum = fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
@@ -1726,7 +1750,7 @@ object JsonCodecMaker {
                 if (cfg.discriminatorFieldName.isDefined) {
                   q"""in.rollbackToMark()
                       ..${genReadLeafClass(subTpe)}"""
-                } else if (subTpe.typeSymbol.isModuleClass && !cfg.circeLikeObjectEncoding) {
+                } else if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
                   q"${subTpe.typeSymbol.asClass.module}"
                 } else genReadLeafClass(subTpe)
               q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) $readVal else $acc"
@@ -1754,7 +1778,7 @@ object JsonCodecMaker {
           cfg.discriminatorFieldName match {
             case None =>
               val (leafModuleClasses, leafCaseClasses) =
-                leafClasses.partition(_.typeSymbol.isModuleClass && !cfg.circeLikeObjectEncoding)
+                leafClasses.partition(!cfg.circeLikeObjectEncoding && _.typeSymbol.isModuleClass)
               if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
                 q"""if (in.isNextToken('"')) {
                       in.rollbackToken()
@@ -1813,19 +1837,19 @@ object JsonCodecMaker {
           (if (cfg.transientDefault) fieldInfo.defaultValue
           else None) match {
             case Some(d) =>
-              if (fTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
+              if (cfg.transientEmpty && fTpe <:< typeOf[Iterable[_]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (fTpe <:< typeOf[Iterator[_]] && cfg.transientEmpty) {
+              } else if (cfg.transientEmpty && fTpe <:< typeOf[Iterator[_]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.hasNext && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (isOption(fTpe, types) && cfg.transientNone) {
+              } else if (cfg.transientNone && isOption(fTpe, types)) {
                 q"""val v = x.${fieldInfo.getter}
                     if ((v ne _root_.scala.None) && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
@@ -1849,25 +1873,25 @@ object JsonCodecMaker {
                     }"""
               }
             case None =>
-              if (fTpe <:< typeOf[Iterable[_]] && cfg.transientEmpty) {
+              if (cfg.transientEmpty && fTpe <:< typeOf[Iterable[_]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (fTpe <:< typeOf[Iterator[_]] && cfg.transientEmpty) {
+              } else if (cfg.transientEmpty && fTpe <:< typeOf[Iterator[_]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.hasNext) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (isOption(fTpe, types) && cfg.transientNone) {
+              } else if (cfg.transientNone && isOption(fTpe, types)) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v ne _root_.scala.None) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v.get", typeArg1(fTpe) :: fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (fTpe <:< typeOf[Array[_]] && cfg.transientEmpty) {
+              } else if (cfg.transientEmpty && fTpe <:< typeOf[Array[_]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.length > 0) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
@@ -2065,7 +2089,7 @@ object JsonCodecMaker {
           val writeSubclasses = (cfg.discriminatorFieldName match {
             case None =>
               val (leafModuleClasses, leafCaseClasses) =
-                leafClasses.partition(_.typeSymbol.isModuleClass && !cfg.circeLikeObjectEncoding)
+                leafClasses.partition(!cfg.circeLikeObjectEncoding && _.typeSymbol.isModuleClass)
               leafCaseClasses.map { subTpe =>
                 cq"""x: $subTpe =>
                        out.writeObjectStart()
