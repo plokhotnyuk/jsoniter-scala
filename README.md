@@ -167,11 +167,14 @@ view of an error context
 
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers from/to string values
+- Ability to read/write maps as JSON arrays
 - Skipping of unexpected fields or throwing of parse exceptions
 - Skipping of serialization of fields that have empty collection values can be turned off to force serialization of them
 - Skipping of serialization of fields that have empty optional values can be turned off to force serialization of them
 - Skipping of serialization of fields which values are matched with defaults that are defined in the primary constructor
   can be turned off to force serialization of that values
+- Ability to require collection fields in the JSON input
+- Ability to require fields with default values in the JSON input
 - Ability to override names of classes of ADTs and fields using a compile-time annotation  
 - Mapping functions from names of classes and their fields to JSON keys or from names of Java enumeration values to 
   JSON strings and back, including predefined functions which enforce snake_case, kebab-case, camelCase or 
