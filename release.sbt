@@ -14,14 +14,17 @@ lazy val updateVersionInReadmeAndExamples: ReleaseStep = { st: State =>
 
   def updateFile(path: String): Unit = {
     val oldContent = IO.read(file(path))
-    val newContent = oldContent.replaceAll('"' + oldVersion + '"', '"' + newVersion + '"')
+    val newContent = oldContent
+      .replaceAll('"' + oldVersion + '"', '"' + newVersion + '"')
       .replaceAll('-' + oldVersion + '-', '-' + newVersion + '-')
+      .replaceAll(':' + oldVersion + '"', ':' + newVersion + '"')
     IO.write(file(path), newContent)
     s"git add $path" !! st.log
   }
 
   updateFile("README.md")
-  updateFile("jsoniter-scala-examples/build.sbt")
+  (1 to 3).foreach(n => updateFile(s"jsoniter-scala-examples/example0$n.sc"))
+
   st
 }
 
