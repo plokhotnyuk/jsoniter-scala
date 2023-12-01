@@ -2160,6 +2160,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[List[Base]](CodecMakerConfig.withSkipUnexpectedFields(false)),
         List(A(B("x")), B("x")), """[{"type":"X","b":{"c":"x"}},{"type":"Y","c":"x"}]""")
     }
+    "serialize and deserialize ADTs with dots in simple names of leaf classes/objects using a workaround with named annotations" in {
+      sealed abstract class Version(val value: String)
+
+      @named("8.10") case object `8.10` extends Version("8.10")
+
+      @named("8.09") case object `8.09` extends Version("8.9")
+
+      verifySerDeser(makeWithoutDiscriminator[List[Version]], List(`8.09`, `8.10`), """["8.09","8.10"]""")
+    }
     "serialize and deserialize ADTs using non-ASCII characters for the discriminator field name and it's values" in {
       sealed abstract class База extends Product with Serializable
 

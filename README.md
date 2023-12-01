@@ -468,6 +468,19 @@ The workaround is using a custom codec for these types defined with `implicit va
 call, like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L16-L45)
 and [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L47-L137).
 
+9. If ADT leaf classes/object contains dots in their simple names the default name mapper will strip names up to the
+last dot character.
+The workaround is to use `@named` annotation like here:
+```scala
+sealed abstract class Version(val value: String)
+
+object Version {
+  @named("8.10") case object `8.10` extends Version("8.10")
+
+  @named("8.09") case object `8.09` extends Version("8.9")
+}
+```
+
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
