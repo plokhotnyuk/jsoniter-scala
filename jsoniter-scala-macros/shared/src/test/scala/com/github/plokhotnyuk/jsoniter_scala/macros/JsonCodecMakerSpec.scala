@@ -581,16 +581,22 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Map[LocationType.LocationType, Int]](CodecMakerConfig.withUseScalaEnumValueId(true)),
         Map(LocationType.GPS -> 0), """{"1":0}""")
     }
-    "serialize and deserialize outer types using custom value codecs for int type" in {
+    "deserialize int from floating point numbers using custom codecs" in {
       implicit val customCodecOfInt: JsonValueCodec[Int] = new JsonValueCodec[Int] {
         def nullValue: Int = 0
 
-        def decodeValue(in: JsonReader, default: Int): Int = in.readDouble().toInt
+        def decodeValue(in: JsonReader, default: Int): Int = {
+          val d = in.readDouble()
+          val i = d.toInt
+          if (d == i) i
+          else in.decodeError("illegal number")
+        }
 
         def encodeValue(x: Int, out: JsonWriter): _root_.scala.Unit = out.writeVal(x)
       }
       val codecOfIntList = make[List[Int]]
-      verifyDeser(codecOfIntList, List(1, 123, 1234567), """[1.0,123000e-3,1.23456789E+6]""")
+      verifyDeser(codecOfIntList, List(1, 123, 1234567), """[1.0,123000e-3,1.234567E+6]""")
+      verifyDeserError(codecOfIntList, """[1.23456789E+6]""", "illegal number, offset: 0x0000000d")
       verifySer(codecOfIntList, List(1, 123, 1234567), """[1,123,1234567]""")
     }
     "serialize and deserialize outer types using custom value codecs for long type" in {
@@ -2253,7 +2259,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
           override def nullValue: A = null.asInstanceOf[A]
         }
-
 
       object Schema {
         sealed trait Event {
