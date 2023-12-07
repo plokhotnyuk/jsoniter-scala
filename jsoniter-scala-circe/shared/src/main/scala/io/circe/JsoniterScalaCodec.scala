@@ -158,8 +158,8 @@ final class JsoniterScalaCodec(
   private[this] def encode(x: Json, out: JsonWriter, depth: Int): Unit = x match {
     case s: JString =>
       val str = s.value
-      if (str.length == 1) out.writeVal(str.charAt(0))
-      else out.writeVal(s.value)
+      if (str.length != 1) out.writeVal(str)
+      else out.writeVal(str.charAt(0))
     case b: JBoolean => out.writeVal(b.value)
     case n: JNumber => encodeJsonNumber(n.value, out)
     case a: JArray =>
