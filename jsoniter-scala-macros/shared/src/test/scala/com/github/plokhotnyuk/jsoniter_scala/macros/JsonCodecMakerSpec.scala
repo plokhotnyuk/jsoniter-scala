@@ -258,6 +258,14 @@ object Demo { // See https://github.com/plokhotnyuk/jsoniter-scala/issues/1004
     JsonCodecMaker.make
 }
 
+sealed abstract class Version(val value: String)
+
+object Version {
+  case object Current extends Version("8.10")
+
+  case object `8.09` extends Version("8.9")
+}
+
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
 
@@ -754,6 +762,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         _root_.scala.Array(OffsetDateTime.parse("2020-01-01T12:34:56.789+08:00")),
         """["2020-01-01T12:34:56.789\u002B08:00"]""")
     }
+    "serialize and deserialize ADTs with case object values using a custom codec" in {
+      implicit val codecOfVersion: JsonValueCodec[Version] = new JsonValueCodec[Version] {
+        def nullValue: Version = null.asInstanceOf[Version]
+
+        def encodeValue(x: Version, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.value)
+
+        def decodeValue(in: JsonReader, default: Version): Version =
+          in.readString(null) match {
+            case "8.10" => Version.Current
+            case "8.9" => Version.`8.09`
+            case _ => in.decodeError("illegal version")
+          }
+      }
+
+      case class App(name: String, version: Version)
+
+      val codecOfApp = make[App]
+      verifySerDeser(codecOfApp, App("Skype", Version.`Current`), """{"name":"Skype","version":"8.10"}""")
+      verifyDeserError(codecOfApp, """{"name":"Skype","version":"9.0"}""", "illegal version, offset: 0x0000001e")
+    }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
         type Bar
@@ -1236,8 +1264,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfStringifiedOption, _root_.scala.None, "null")
     }
     "throw parse exception in case of unexpected value for option" in {
-      val codecOfStringOption = make[Option[String]]
-      verifyDeserError(codecOfStringOption, """no!!!""", "expected value or null, offset: 0x00000001")
+      verifyDeserError(make[Option[String]], """no!!!""", "expected value or null, offset: 0x00000001")
     }
     "serialize and deserialize case classes with tuples" in {
       verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, _root_.scala.Some(LocationType.GPS))),
