@@ -268,8 +268,16 @@ To print generated code for codecs add the following line to the scope of the co
 given CodecMakerConfig.PrintCodec with {}
 ```
 
-You can use the following on-line services to generate an initial version of your data structures from JSON 
-samples: 
+For more use cases of jsoniter-scala, please, check out tests:
+- [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
+- [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
+- [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
+- [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
+
+Also, all Scala 3 only features are tested by specs in [this directory](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros).
+
+You can use the following on-line services to generate an initial version of your data structures from JSON
+samples:
 - [json2caseclass](https://json2caseclass.cleverapps.io/)
 - [json-to-scala-case-class](https://transform.now.sh/json-to-scala-case-class/)
 - [json2classes](https://chadselph.github.io/json2classes/)
@@ -281,14 +289,6 @@ Also, if you have JSON Schema the following on-line service can generate corresp
 
 And the following library can generate JSON Schema for your existing data structures:
 - [scala-jsonschema](https://github.com/andyglow/scala-jsonschema)
-
-For more use cases of jsoniter-scala, please, check out tests:
-- [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
-- [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
-- [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
-- [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
-
-Also, all Scala 3 only features are tested by specs in [this directory](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros).
 
 Samples for its integration with different web frameworks and HTTP servers:
 - [akka-http](https://github.com/hseeberger/akka-http-json/blob/master/akka-http-jsoniter-scala/src/test/scala/de/heikoseeberger/akkahttpjsoniterscala/ExampleApp.scala)
