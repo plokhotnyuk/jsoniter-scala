@@ -1437,7 +1437,7 @@ final class JsonWriter private[jsoniter_scala](
     if (pos < minLim) {
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
-      if (ch >= 0x80 || escapedChars(ch) != 0) writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      if (ch >= 0x80 || escapedChars(ch.toInt) != 0) writeEscapedOrEncodedString(s, from, pos, escapedChars)
       else writeString(s, from + 1, pos + 1, minLim, escapedChars)
     } else {
       val remaining = s.length - from
@@ -1458,7 +1458,7 @@ final class JsonWriter private[jsoniter_scala](
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 0x80) {
-        val esc = escapedChars(ch1)
+        val esc = escapedChars(ch1.toInt)
         if (esc == 0) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
           buf(pos) = ch1.toByte
           writeEncodedString(s, from + 1, to, pos + 1, posLim, escapedChars)
@@ -1496,7 +1496,7 @@ final class JsonWriter private[jsoniter_scala](
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 0x80) {
-        val esc = escapedChars(ch1)
+        val esc = escapedChars(ch1.toInt)
         if (esc == 0) {
           buf(pos) = ch1.toByte
           writeEscapedString(s, from + 1, to, pos + 1, posLim, escapedChars)
@@ -1521,7 +1521,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     if (ch < 0x80) {
-      val esc = escapedChars(ch)
+      val esc = escapedChars(ch.toInt)
       if (esc == 0) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
         buf(pos) = ch.toByte
         pos += 1
@@ -3194,5 +3194,5 @@ object JsonWriter {
    * @param ch the character to check
    * @return `true` if the character is a basic ASCII character (code point less than `0x80`) that does not need JSON escaping
    */
-  final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch) == 0
+  final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch.toInt) == 0
 }
