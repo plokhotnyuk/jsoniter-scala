@@ -2099,11 +2099,11 @@ final class JsonWriter private[jsoniter_scala](
     pos
   }
 
-  private[this] def writeNanos(q0: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+  private[this] def writeNanos(x: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var pos = p
     buf(pos) = '.'
-    val q1 = q0 / 10000000
-    val r1 = q0 - q1 * 10000000
+    val q1 = x / 10000000
+    val r1 = x - q1 * 10000000
     pos = write2Digits(q1, pos + 1, buf, ds)
     val q2 = r1 / 100000
     val r2 = r1 - q2 * 100000
@@ -2152,35 +2152,35 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def write2Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val d = ds(q0)
+  private[this] def write2Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val d = ds(x)
     buf(pos) = d.toByte
     buf(pos + 1) = (d >> 8).toByte
     pos + 2
   }
 
-  private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 * 1311 >> 17 // divide a small positive int by 100
+  private[this] def write3Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = x * 1311 >> 17 // divide a small positive int by 100
     buf(pos) = (q1 + '0').toByte
-    val d = ds(q0 - q1 * 100)
+    val d = ds(x - q1 * 100)
     buf(pos + 1) = d.toByte
     buf(pos + 2) = (d >> 8).toByte
     pos + 3
   }
 
-  private[this] def write4Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+  private[this] def write4Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = x * 5243 >> 19 // divide a small positive int by 100
     val d1 = ds(q1)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
-    val d2 = ds(q0 - q1 * 100)
+    val d2 = ds(x - q1 * 100)
     buf(pos + 2) = d2.toByte
     buf(pos + 3) = (d2 >> 8).toByte
     pos + 4
   }
 
-  private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 / 10000
+  private[this] def write8Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = x / 10000
     val q2 = q1 * 5243 >> 19 // divide a small positive int by 100
     val d1 = ds(q2)
     buf(pos) = d1.toByte
@@ -2188,7 +2188,7 @@ final class JsonWriter private[jsoniter_scala](
     val d2 = ds(q1 - q2 * 100)
     buf(pos + 2) = d2.toByte
     buf(pos + 3) = (d2 >> 8).toByte
-    val r1 = q0 - q1 * 10000
+    val r1 = x - q1 * 10000
     val q3 = r1 * 5243 >> 19 // divide a small positive int by 100
     val d3 = ds(q3)
     buf(pos + 4) = d3.toByte
@@ -2574,12 +2574,12 @@ final class JsonWriter private[jsoniter_scala](
       else 18
     }
 
-  private[this] def digitCount(q0: Int): Int =
-    if (q0 < 100) (9 - q0 >>> 31) + 1
-    else if (q0 < 10000) (999 - q0 >>> 31) + 3
-    else if (q0 < 1000000) (99999 - q0 >>> 31) + 5
-    else if (q0 < 100000000) (9999999 - q0 >>> 31) + 7
-    else (999999999 - q0 >>> 31) + 9
+  private[this] def digitCount(x: Int): Int =
+    if (x < 100) (9 - x >>> 31) + 1
+    else if (x < 10000) (999 - x >>> 31) + 3
+    else if (x < 1000000) (99999 - x >>> 31) + 5
+    else if (x < 100000000) (9999999 - x >>> 31) + 7
+    else (999999999 - x >>> 31) + 9
 
   private[this] def writeSignificantFractionDigits(q: Long, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var q0 = q.toInt
