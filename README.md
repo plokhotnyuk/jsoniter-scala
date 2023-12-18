@@ -209,7 +209,7 @@ List of options that change parsing and serialization in runtime:
 The [**v2.13.5.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2) release is the last version that
 supports JDK 8+ and native image compilation with earlier versions of GraalVM.
 
-The [**v2.13.3.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2) release is the last version that
+The [**v2.13.3.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.3.2) release is the last version that
 supports Scala 2.11.
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master)
