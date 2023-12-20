@@ -192,6 +192,8 @@ There are configurable options that can be set in compile-time:
   of `Option[Option[_]]`
 - Ability to turn on circe-like encoding of Scala objects in ADTs
 - Ability to disable generation of implementation for decoding or encoding
+- Ability to require fields that have defined default values
+- Ability to generate smaller and more efficient codecs for classes when checking of field duplication is not needed
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible

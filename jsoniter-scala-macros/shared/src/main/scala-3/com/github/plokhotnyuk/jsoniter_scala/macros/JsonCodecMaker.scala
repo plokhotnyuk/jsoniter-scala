@@ -92,6 +92,8 @@ final class stringified extends StaticAnnotation
   * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
   * @param requireDefaultFields   a flag that turn on checking of presence of fields with default values and forces
   *                               serialization of them
+  * @param checkFieldDuplication  a flag that turn on checking of duplicated fields during parsing of classes (turned on
+  *                               by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -119,7 +121,8 @@ class CodecMakerConfig private[macros] (
     val circeLikeObjectEncoding: Boolean,
     val decodingOnly: Boolean,
     val encodingOnly: Boolean,
-    val requireDefaultFields: Boolean) {
+    val requireDefaultFields: Boolean,
+    val checkFieldDuplication: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -189,6 +192,9 @@ class CodecMakerConfig private[macros] (
   def withRequireDefaultFields(requireDefaultFields: Boolean): CodecMakerConfig =
     copy(requireDefaultFields = requireDefaultFields)
 
+  def withCheckFieldDuplication(checkFieldDuplication: Boolean): CodecMakerConfig =
+    copy(checkFieldDuplication = checkFieldDuplication)
+
   private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                          javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -214,7 +220,8 @@ class CodecMakerConfig private[macros] (
                          circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding,
                          decodingOnly: Boolean = decodingOnly,
                          encodingOnly: Boolean = encodingOnly,
-                         requireDefaultFields: Boolean = requireDefaultFields): CodecMakerConfig =
+                         requireDefaultFields: Boolean = requireDefaultFields,
+                         checkFieldDuplication: Boolean = checkFieldDuplication): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -241,7 +248,8 @@ class CodecMakerConfig private[macros] (
       circeLikeObjectEncoding = circeLikeObjectEncoding,
       decodingOnly = decodingOnly,
       encodingOnly = encodingOnly,
-      requireDefaultFields = requireDefaultFields)
+      requireDefaultFields = requireDefaultFields,
+      checkFieldDuplication = checkFieldDuplication)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -270,7 +278,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   circeLikeObjectEncoding = false,
   encodingOnly = false,
   decodingOnly = false,
-  requireDefaultFields = false) {
+  requireDefaultFields = false,
+  checkFieldDuplication = true) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -319,7 +328,8 @@ object CodecMakerConfig extends CodecMakerConfig(
             $circeLikeObjectEncoding,
             $encodingOnly,
             $decodingOnly,
-            $exprRequireDefaultFields)
+            $exprRequireDefaultFields,
+            $exprCheckFieldDuplication)
         } =>
           try {
             Some(CodecMakerConfig(
@@ -348,7 +358,8 @@ object CodecMakerConfig extends CodecMakerConfig(
               extract("circeLikeObjectEncoding", circeLikeObjectEncoding),
               extract("decodingOnly", decodingOnly),
               extract("encodingOnly", encodingOnly),
-              extract("requireDefaultFields", exprRequireDefaultFields)))
+              extract("requireDefaultFields", exprRequireDefaultFields),
+              extract("checkFieldDuplication", exprCheckFieldDuplication)))
           } catch {
             case FromExprException(message, expr) =>
               report.warning(message, expr)
@@ -381,6 +392,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withDecodingOnly($v) } => Some(x.valueOrAbort.withDecodingOnly(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withEncodingOnly($v) } => Some(x.valueOrAbort.withEncodingOnly(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireDefaultFields($v) } => Some(x.valueOrAbort.withRequireDefaultFields(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withCheckFieldDuplication($v) } => Some(x.valueOrAbort.withCheckFieldDuplication(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -646,7 +658,6 @@ object JsonCodecMaker {
         transientEmpty = false,
         transientNone = false,
         requireCollectionFields = false,
-        requireDefaultFields = false,
         bigDecimalPrecision = 34,
         bigDecimalScaleLimit = 6178,
         bigDecimalDigitsLimit = 308,
@@ -660,7 +671,9 @@ object JsonCodecMaker {
         skipNestedOptionValues = false,
         circeLikeObjectEncoding = true,
         decodingOnly = false,
-        encodingOnly = false))
+        encodingOnly = false,
+        requireDefaultFields = false,
+        checkFieldDuplication = true))
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
@@ -1687,12 +1700,15 @@ object JsonCodecMaker {
         } else if (TypeRepr.of[Null] <:< tpe) '{ null }.asExprOf[T]
         else '{ null.asInstanceOf[T] }.asExprOf[T]
 
-      case class ReadDiscriminator(valDef: ValDef) {
-        def skip(in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[Unit] = '{
-          if (${Ref(valDef.symbol).asExprOf[Boolean]}) {
-            ${Assign(Ref(valDef.symbol), Literal(BooleanConstant(false))).asExprOf[Unit]}
-            $in.skip()
-          } else $in.duplicatedKeyError($l)
+      case class ReadDiscriminator(valDefOpt: Option[ValDef]) {
+        def skip(in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[Unit] = valDefOpt match {
+          case None => '{ $in.skip() }
+          case Some(valDef) => '{
+            if (${Ref(valDef.symbol).asExprOf[Boolean]}) {
+              ${Assign(Ref(valDef.symbol), Literal(BooleanConstant(false))).asExprOf[Unit]}
+              $in.skip()
+            } else $in.duplicatedKeyError($l)
+          }
         }
       }
 
@@ -1900,10 +1916,14 @@ object JsonCodecMaker {
                     val readVal = genReadVal(fTpe :: types, tmpVar.asExprOf[ft], fieldInfo.isStringified, false, in).asTerm
                     val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
                     val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
-                    Block(List('{
-                      if (($n & $m) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
-                      else $in.duplicatedKeyError($l)
-                    }.asTerm), Assign(tmpVar, readVal)).asExprOf[Unit]
+                    Block(List({
+                      if (cfg.checkFieldDuplication) {
+                        '{
+                          if (($n & $m) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
+                          else $in.duplicatedKeyError($l)
+                        }.asTerm
+                      } else Assign(n.asTerm, '{ $n & ~$m }.asTerm)
+                    }), Assign(tmpVar, readVal)).asExprOf[Unit]
               }
             '{
               if ($in.isCharBufEqualsTo($l, ${Expr(fieldInfo.mappedName)})) $readValue
@@ -1914,11 +1934,13 @@ object JsonCodecMaker {
         val discriminator =
           if (useDiscriminator) {
             cfg.discriminatorFieldName.map { fieldName =>
-              val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
-              ReadDiscriminator(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym))))
+              if (cfg.checkFieldDuplication) {
+                val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
+                ReadDiscriminator(Some(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym)))))
+              } else ReadDiscriminator(None)
             }
           } else None
-        val optDiscriminatorVar = discriminator.map(_.valDef)
+        val optDiscriminatorVar = discriminator.flatMap(_.valDefOpt)
 
         def readFieldsBlock(l: Expr[Int])(using Quotes): Expr[Unit] = // Using Quotes for w/a, see: https://github.com/lampepfl/dotty/issues/14137
           if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {

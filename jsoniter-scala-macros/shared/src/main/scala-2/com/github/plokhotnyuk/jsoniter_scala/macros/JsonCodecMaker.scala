@@ -88,6 +88,8 @@ final class stringified extends StaticAnnotation
   * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
   * @param requireDefaultFields   a flag that turn on checking of presence of fields with default and forces
   *                               serialization of them
+  * @param checkFieldDuplication  a flag that turn on checking of duplicated fields during parsing of classes (turned on
+  *                               by default)
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -115,7 +117,8 @@ class CodecMakerConfig private (
     val circeLikeObjectEncoding: Boolean,
     val decodingOnly: Boolean,
     val encodingOnly: Boolean,
-    val requireDefaultFields: Boolean) {
+    val requireDefaultFields: Boolean,
+    val checkFieldDuplication: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -185,6 +188,9 @@ class CodecMakerConfig private (
   def withRequireDefaultFields(requireDefaultFields: Boolean): CodecMakerConfig =
     copy(requireDefaultFields = requireDefaultFields)
 
+  def withCheckFieldDuplication(checkFieldDuplication: Boolean): CodecMakerConfig =
+    copy(checkFieldDuplication = checkFieldDuplication)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -210,7 +216,8 @@ class CodecMakerConfig private (
                          circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding,
                          decodingOnly: Boolean = decodingOnly,
                          encodingOnly: Boolean = encodingOnly,
-                         requireDefaultFields: Boolean = requireDefaultFields): CodecMakerConfig =
+                         requireDefaultFields: Boolean = requireDefaultFields,
+                         checkFieldDuplication: Boolean = checkFieldDuplication): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -237,7 +244,8 @@ class CodecMakerConfig private (
       circeLikeObjectEncoding = circeLikeObjectEncoding,
       decodingOnly = decodingOnly,
       encodingOnly = encodingOnly,
-      requireDefaultFields = requireDefaultFields)
+      requireDefaultFields = requireDefaultFields,
+      checkFieldDuplication = checkFieldDuplication)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -266,7 +274,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   circeLikeObjectEncoding = false,
   encodingOnly = false,
   decodingOnly = false,
-  requireDefaultFields = false) {
+  requireDefaultFields = false,
+  checkFieldDuplication = true) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -1123,10 +1132,12 @@ object JsonCodecMaker {
         if (cfg.skipUnexpectedFields) q"in.skip()"
         else q"in.unexpectedKeyError(l)"
       val skipDiscriminatorField =
-        q"""if (pd) {
-              pd = false
-              in.skip()
-            } else in.duplicatedKeyError(l)"""
+        if (cfg.checkFieldDuplication) {
+          q"""if (pd) {
+                pd = false
+                in.skip()
+              } else in.duplicatedKeyError(l)"""
+        } else q"in.skip()"
 
       def discriminatorValue(tpe: Type): String = {
         val named = tpe.typeSymbol.annotations.filter(_.tree.tpe =:= typeOf[named])
@@ -1309,7 +1320,10 @@ object JsonCodecMaker {
             i += 1
             val n = paramVarNames(i >> 5)
             val m = 1 << i
-            (fieldInfo.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
+            (fieldInfo.mappedName, {
+              if (cfg.checkFieldDuplication) q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)"
+              else q"$n &= ~$m"
+            })
         }.toMap
         val paramVars =
           paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
@@ -1377,7 +1391,7 @@ object JsonCodecMaker {
                 }"""
           }
         val discriminatorVar =
-          if (discriminator.isEmpty) EmptyTree
+          if (discriminator.isEmpty || !cfg.checkFieldDuplication) EmptyTree
           else q"var pd = true"
         q"""if (in.isNextToken('{')) {
               ..$readVars

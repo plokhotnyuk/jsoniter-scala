@@ -430,6 +430,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[BigDecimal](CodecMakerConfig.withIsStringified(true)),
         BigDecimal("1234567890.12345678901234567890"), """"1234567890.12345678901234567890"""")
     }
+    "deserialize duplicated key for case classes when checking of field duplication is disabled" in {
+      verifyDeser(make[StandardTypes](CodecMakerConfig.withCheckFieldDuplication(false)),
+        StandardTypes("VVV", BigInt(1), BigDecimal(2.0)),
+        s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""")
+    }
     "throw parse exception in case of duplicated key for case classes was detected" in {
       verifyDeserError(codecOfStandardTypes, s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""",
         """duplicated field "s", offset: 0x0000000e""")
@@ -2319,6 +2324,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(JsonCodecMaker.make[Foo](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("hint"))),
         Foo("a"), """{"hint":"a"}""")
+    }
+    "deserialize in case of duplicated discriminator field when checking for field duplication is disabled" in {
+      verifyDeser(make[List[AdtBase]](CodecMakerConfig.withCheckFieldDuplication(false)),
+        List(AAA(1)), """[{"type":"AAA","a":1,"type":"XXX"}]""")
     }
     "throw parse exception in case of duplicated discriminator field" in {
       verifyDeserError(codecOfADTList1, """[{"type":"AAA","a":1,"type":"AAA"}]""",
