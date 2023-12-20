@@ -1320,9 +1320,11 @@ object JsonCodecMaker {
             i += 1
             val n = paramVarNames(i >> 5)
             val m = 1 << i
+            val nm = ~m
             (fieldInfo.mappedName, {
               if (cfg.checkFieldDuplication) q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)"
-              else q"$n &= ~$m"
+              else if (required(fieldInfo.mappedName)) q"$n &= $nm"
+              else EmptyTree
             })
         }.toMap
         val paramVars =

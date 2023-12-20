@@ -1916,13 +1916,15 @@ object JsonCodecMaker {
                     val readVal = genReadVal(fTpe :: types, tmpVar.asExprOf[ft], fieldInfo.isStringified, false, in).asTerm
                     val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
                     val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
+                    val nm = Expr(~(1 << fieldInfo.nonTransientFieldIndex))
                     Block(List({
                       if (cfg.checkFieldDuplication) {
                         '{
                           if (($n & $m) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
                           else $in.duplicatedKeyError($l)
                         }.asTerm
-                      } else Assign(n.asTerm, '{ $n & ~$m }.asTerm)
+                      } else if (required(fieldInfo.mappedName)) Assign(n.asTerm, '{ $n & $nm }.asTerm)
+                      else '{ }.asTerm
                     }), Assign(tmpVar, readVal)).asExprOf[Unit]
               }
             '{
