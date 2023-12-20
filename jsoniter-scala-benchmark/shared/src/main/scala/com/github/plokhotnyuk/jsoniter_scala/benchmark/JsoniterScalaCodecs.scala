@@ -37,8 +37,8 @@ object JsoniterScalaCodecs {
   val intCodec: JsonValueCodec[Int] = make
   val stringCodec: JsonValueCodec[String] = make
   implicit val adtCodec: JsonValueCodec[ADTBase] =
-    make(CodecMakerConfig.withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
-  implicit val anyValsCodec: JsonValueCodec[AnyVals] = make
+    make(CodecMakerConfig.withCheckFieldDuplication(false).withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
+  implicit val anyValsCodec: JsonValueCodec[AnyVals] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make
   implicit val booleanArrayBufferCodec: JsonValueCodec[mutable.ArrayBuffer[Boolean]] = make
@@ -54,7 +54,7 @@ object JsoniterScalaCodecs {
   implicit val enumADTArrayCodec: JsonValueCodec[Array[SuitADT]] = make(CodecMakerConfig.withDiscriminatorFieldName(None))
   implicit val floatArrayCodec: JsonValueCodec[Array[Float]] = make
   implicit val geoJSONCodec: JsonValueCodec[GeoJSON.GeoJSON] = make
-  implicit val gitHubActionsAPICodec: JsonValueCodec[GitHubActionsAPI.Response] = make
+  implicit val gitHubActionsAPICodec: JsonValueCodec[GitHubActionsAPI.Response] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val instantArrayCodec: JsonValueCodec[Array[Instant]] = make
   implicit val intArrayCodec: JsonValueCodec[Array[Int]] = make
   implicit val javaEnumArrayCodec: JsonValueCodec[Array[Suit]] = make
@@ -64,7 +64,7 @@ object JsoniterScalaCodecs {
   implicit val localTimeArrayCodec: JsonValueCodec[Array[LocalTime]] = make
   implicit val monthDayArrayCodec: JsonValueCodec[Array[MonthDay]] = make
   implicit val nestedStructsCodec: JsonValueCodec[NestedStructs] =
-    make(CodecMakerConfig.withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
+    make(CodecMakerConfig.withCheckFieldDuplication(false).withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
   implicit val offsetDateTimeArrayCodec: JsonValueCodec[Array[OffsetDateTime]] = make
   implicit val offsetTimeArrayCodec: JsonValueCodec[Array[OffsetTime]] = make
   implicit val openRTB25Codec: JsonValueCodec[OpenRTB.BidRequest] = make
@@ -78,13 +78,13 @@ object JsoniterScalaCodecs {
   implicit val zoneOffsetArrayCodec: JsonValueCodec[Array[ZoneOffset]] = make
   implicit val bitSetCodec: JsonValueCodec[BitSet] =
     make(CodecMakerConfig.withBitSetValueLimit(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make
+  implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val intMapOfBooleansCodec: JsonValueCodec[IntMap[Boolean]] =
     make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  implicit val googleMapsAPICodec: JsonValueCodec[GoogleMapsAPI.DistanceMatrix] = make
+  implicit val googleMapsAPICodec: JsonValueCodec[GoogleMapsAPI.DistanceMatrix] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val mapOfIntsToBooleansCodec: JsonValueCodec[Map[Int, Boolean]] =
     make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  implicit val missingReqFieldCodec: JsonValueCodec[MissingRequiredFields] = make
+  implicit val missingReqFieldCodec: JsonValueCodec[MissingRequiredFields] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val mutableBitSetCodec: JsonValueCodec[mutable.BitSet] =
     make(CodecMakerConfig.withBitSetValueLimit(Int.MaxValue /* WARNING: It is an unsafe option for open systems */))
   implicit val mutableLongMapOfBooleansCodec: JsonValueCodec[mutable.LongMap[Boolean]] =
@@ -93,7 +93,7 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val mutableSetOfIntsCodec: JsonValueCodec[mutable.Set[Int]] =
     make(CodecMakerConfig.withSetMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  implicit val primitivesCodec: JsonValueCodec[Primitives] = make
+  implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make
-  implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make
+  implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make(CodecMakerConfig.withCheckFieldDuplication(false))
 }
