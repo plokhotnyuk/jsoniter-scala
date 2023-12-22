@@ -90,10 +90,11 @@ final class stringified extends StaticAnnotation
   *                               a key and empty object value: `{"EnumValue":{}}`
   * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
   * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
-  * @param requireDefaultFields   a flag that turn on checking of presence of fields with default values and forces
+  * @param requireDefaultFields   a flag that turns on checking of presence of fields with default values and forces
   *                               serialization of them
-  * @param checkFieldDuplication  a flag that turn on checking of duplicated fields during parsing of classes (turned on
-  *                               by default)
+  * @param checkFieldDuplication  a flag that turns on checking of duplicated fields during parsing of classes (turned
+  *                               on by default)
+  * @param scalaTransientSupport  a flag that turns on support of `scala.transient` (turned off by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -122,7 +123,8 @@ class CodecMakerConfig private[macros] (
     val decodingOnly: Boolean,
     val encodingOnly: Boolean,
     val requireDefaultFields: Boolean,
-    val checkFieldDuplication: Boolean) {
+    val checkFieldDuplication: Boolean,
+    val scalaTransientSupport: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -195,6 +197,9 @@ class CodecMakerConfig private[macros] (
   def withCheckFieldDuplication(checkFieldDuplication: Boolean): CodecMakerConfig =
     copy(checkFieldDuplication = checkFieldDuplication)
 
+  def withScalaTransientSupport(scalaTransientSupport: Boolean): CodecMakerConfig =
+    copy(scalaTransientSupport = scalaTransientSupport)
+
   private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                          javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -221,7 +226,8 @@ class CodecMakerConfig private[macros] (
                          decodingOnly: Boolean = decodingOnly,
                          encodingOnly: Boolean = encodingOnly,
                          requireDefaultFields: Boolean = requireDefaultFields,
-                         checkFieldDuplication: Boolean = checkFieldDuplication): CodecMakerConfig =
+                         checkFieldDuplication: Boolean = checkFieldDuplication,
+                         scalaTransientSupport: Boolean = scalaTransientSupport): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -249,7 +255,8 @@ class CodecMakerConfig private[macros] (
       decodingOnly = decodingOnly,
       encodingOnly = encodingOnly,
       requireDefaultFields = requireDefaultFields,
-      checkFieldDuplication = checkFieldDuplication)
+      checkFieldDuplication = checkFieldDuplication,
+      scalaTransientSupport = scalaTransientSupport)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -279,7 +286,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   encodingOnly = false,
   decodingOnly = false,
   requireDefaultFields = false,
-  checkFieldDuplication = true) {
+  checkFieldDuplication = true,
+  scalaTransientSupport = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -324,12 +332,13 @@ object CodecMakerConfig extends CodecMakerConfig(
             $exprAllowRecursiveTypes,
             $exprRequireDiscriminatorFirst,
             $exprUseScalaEnumValueId,
-            $skipNestedOptionValues,
-            $circeLikeObjectEncoding,
-            $encodingOnly,
-            $decodingOnly,
+            $exprSkipNestedOptionValues,
+            $exprCirceLikeObjectEncoding,
+            $exprEncodingOnly,
+            $exprDecodingOnly,
             $exprRequireDefaultFields,
-            $exprCheckFieldDuplication)
+            $exprCheckFieldDuplication,
+            $exprScalaTransientSupport)
         } =>
           try {
             Some(CodecMakerConfig(
@@ -354,12 +363,13 @@ object CodecMakerConfig extends CodecMakerConfig(
               extract("allowRecursiveTypes", exprAllowRecursiveTypes),
               extract("requireDiscriminatorFirst", exprRequireDiscriminatorFirst),
               extract("useScalaEnumValueId", exprUseScalaEnumValueId),
-              extract("skipNestedOptionValues", skipNestedOptionValues),
-              extract("circeLikeObjectEncoding", circeLikeObjectEncoding),
-              extract("decodingOnly", decodingOnly),
-              extract("encodingOnly", encodingOnly),
+              extract("skipNestedOptionValues", exprSkipNestedOptionValues),
+              extract("circeLikeObjectEncoding", exprCirceLikeObjectEncoding),
+              extract("decodingOnly", exprDecodingOnly),
+              extract("encodingOnly", exprEncodingOnly),
               extract("requireDefaultFields", exprRequireDefaultFields),
-              extract("checkFieldDuplication", exprCheckFieldDuplication)))
+              extract("checkFieldDuplication", exprCheckFieldDuplication),
+              extract("scalaTransientSupport", exprScalaTransientSupport)))
           } catch {
             case FromExprException(message, expr) =>
               report.warning(message, expr)
@@ -393,6 +403,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withEncodingOnly($v) } => Some(x.valueOrAbort.withEncodingOnly(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireDefaultFields($v) } => Some(x.valueOrAbort.withRequireDefaultFields(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withCheckFieldDuplication($v) } => Some(x.valueOrAbort.withCheckFieldDuplication(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withScalaTransientSupport($v) } => Some(x.valueOrAbort.withScalaTransientSupport(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -673,7 +684,8 @@ object JsonCodecMaker {
         decodingOnly = false,
         encodingOnly = false,
         requireDefaultFields = false,
-        checkFieldDuplication = true))
+        checkFieldDuplication = true,
+        scalaTransientSupport = false))
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
@@ -993,21 +1005,26 @@ object JsonCodecMaker {
           case _ => fail(s"Cannot find a primary constructor for '$tpe'")
 
         def hasSupportedAnnotation(m: Symbol): Boolean =
-          m.annotations.exists(a => a.tpe <:< TypeRepr.of[named] || a.tpe <:< TypeRepr.of[transient] ||
-            a.tpe <:< TypeRepr.of[stringified])
+          m.annotations.exists(a => a.tpe =:= TypeRepr.of[named] || a.tpe =:= TypeRepr.of[transient] ||
+            a.tpe =:= TypeRepr.of[stringified] || (cfg.scalaTransientSupport && a.tpe =:= TypeRepr.of[scala.transient]))
+
+        def supportedTransientTypeNames: String =
+          if (cfg.scalaTransientSupport) s"'${Type.show[transient]}' (or '${Type.show[scala.transient]}')"
+          else s"'${Type.show[transient]}')"
 
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"Expected that ${tpe.show} has classSymbol"))
         val annotations = tpeClassSym.fieldMembers.collect { case m: Symbol if hasSupportedAnnotation(m) =>
           val name = m.name
           val named = m.annotations.filter(_.tpe =:= TypeRepr.of[named])
           if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
-          val trans = m.annotations.filter(_.tpe =:= TypeRepr.of[transient])
-          if (trans.size > 1) warn(s"Duplicated '${TypeRepr.of[transient].show}' defined for '$name' of '${tpe.show}'.")
+          val trans = m.annotations.filter(a => a.tpe =:= TypeRepr.of[transient] ||
+            (cfg.scalaTransientSupport && a.tpe =:= TypeRepr.of[scala.transient]))
+          if (trans.size > 1) warn(s"Duplicated $supportedTransientTypeNames defined for '$name' of '${tpe.show}'.")
           val strings = m.annotations.filter(_.tpe =:= TypeRepr.of[stringified])
           if (strings.size > 1) warn(s"Duplicated '${TypeRepr.of[stringified].show}' defined for '$name' of '${tpe.show}'.")
           if ((named.nonEmpty || strings.nonEmpty) && trans.nonEmpty)
-            warn(s"Both '${Type.show[transient]}' and '${Type.show[named]}' or " +
-              s"'${Type.show[transient]}' and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
+            warn(s"Both $supportedTransientTypeNames and '${Type.show[named]}' or " +
+              s"$supportedTransientTypeNames and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
           val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
           (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap

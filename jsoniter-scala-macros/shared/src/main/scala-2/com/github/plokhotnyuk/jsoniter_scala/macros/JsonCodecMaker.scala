@@ -86,10 +86,11 @@ final class stringified extends StaticAnnotation
   *                               a key and empty object value: `{"EnumValue":{}}`
   * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
   * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
-  * @param requireDefaultFields   a flag that turn on checking of presence of fields with default and forces
+  * @param requireDefaultFields   a flag that turns on checking of presence of fields with default and forces
   *                               serialization of them
-  * @param checkFieldDuplication  a flag that turn on checking of duplicated fields during parsing of classes (turned on
-  *                               by default)
+  * @param checkFieldDuplication  a flag that turns on checking of duplicated fields during parsing of classes (turned
+  *                               on by default)
+  * @param scalaTransientSupport  a flag that turns on support of `scala.transient` (turned off by default)
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -118,7 +119,8 @@ class CodecMakerConfig private (
     val decodingOnly: Boolean,
     val encodingOnly: Boolean,
     val requireDefaultFields: Boolean,
-    val checkFieldDuplication: Boolean) {
+    val checkFieldDuplication: Boolean,
+    val scalaTransientSupport: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -191,6 +193,9 @@ class CodecMakerConfig private (
   def withCheckFieldDuplication(checkFieldDuplication: Boolean): CodecMakerConfig =
     copy(checkFieldDuplication = checkFieldDuplication)
 
+  def withScalaTransientSupport(scalaTransientSupport: Boolean): CodecMakerConfig =
+    copy(scalaTransientSupport = scalaTransientSupport)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -217,7 +222,8 @@ class CodecMakerConfig private (
                          decodingOnly: Boolean = decodingOnly,
                          encodingOnly: Boolean = encodingOnly,
                          requireDefaultFields: Boolean = requireDefaultFields,
-                         checkFieldDuplication: Boolean = checkFieldDuplication): CodecMakerConfig =
+                         checkFieldDuplication: Boolean = checkFieldDuplication,
+                         scalaTransientSupport: Boolean = scalaTransientSupport): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -245,7 +251,8 @@ class CodecMakerConfig private (
       decodingOnly = decodingOnly,
       encodingOnly = encodingOnly,
       requireDefaultFields = requireDefaultFields,
-      checkFieldDuplication = checkFieldDuplication)
+      checkFieldDuplication = checkFieldDuplication,
+      scalaTransientSupport = scalaTransientSupport)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -275,7 +282,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   encodingOnly = false,
   decodingOnly = false,
   requireDefaultFields = false,
-  checkFieldDuplication = true) {
+  checkFieldDuplication = true,
+  scalaTransientSupport = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -1082,8 +1090,12 @@ object JsonCodecMaker {
         def hasSupportedAnnotation(m: TermSymbol): Boolean = {
           m.info: Unit // to enforce the type information completeness and availability of annotations
           m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
-            a.tree.tpe =:= typeOf[stringified])
+            a.tree.tpe =:= typeOf[stringified] || (cfg.scalaTransientSupport && a.tree.tpe =:= typeOf[scala.transient]))
         }
+
+        def supportedTransientTypeNames: String =
+          if (cfg.scalaTransientSupport) s"'${typeOf[transient]}' (or '${typeOf[scala.transient]}')"
+          else s"'${typeOf[transient]}')"
 
         lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
         val getters = tpe.members.collect { case m: MethodSymbol if m.isParamAccessor && m.isGetter => m }
@@ -1092,13 +1104,14 @@ object JsonCodecMaker {
             val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
             val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
             if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$name' of '$tpe'.")
-            val trans = m.annotations.filter(_.tree.tpe =:= typeOf[transient])
-            if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$name' of '$tpe'.")
+            val trans = m.annotations.filter(a => a.tree.tpe =:= typeOf[transient]  ||
+              (cfg.scalaTransientSupport && a.tree.tpe =:= typeOf[scala.transient]))
+            if (trans.size > 1) warn(s"Duplicated $supportedTransientTypeNames defined for '$name' of '$tpe'.")
             val strings = m.annotations.filter(_.tree.tpe =:= typeOf[stringified])
             if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             if ((named.nonEmpty || strings.nonEmpty) && trans.nonEmpty) {
-              warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
-                s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
+              warn(s"Both $supportedTransientTypeNames and '${typeOf[named]}' or " +
+                s"$supportedTransientTypeNames and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
             val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
