@@ -193,7 +193,7 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos += 1
-    pos = writeString(x, 0, pos, buf, Math.min(x.length, limit - pos - 1) + pos)
+    pos = writeString(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
     if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
     buf = this.buf
     buf(pos) = '"'
@@ -478,7 +478,7 @@ final class JsonWriter private[jsoniter_scala](
     } else comma = true
     buf(pos) = '"'
     pos += 1
-    pos = writeString(x, 0, pos, buf, Math.min(x.length, limit - pos - 1) + pos)
+    pos = writeString(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
     buf(pos) = '"'
     pos + 1
   }
@@ -1433,16 +1433,18 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @tailrec
-  private[this] def writeString(s: String, from: Int, pos: Int, buf: Array[Byte], minLim: Int): Int =
+  private[this] def writeString(s: String, from: Int, pos: Int, minLim: Int, escapedChars: Array[Byte]): Int =
     if (pos < minLim) {
-      val ch = s.charAt(from).toInt
+      val ch = s.charAt(from)
       buf(pos) = ch.toByte
-      if (ch >= 0x20 && ch < 0x7F && ch != 0x22 && ch != 0x5C) writeString(s, from + 1, pos + 1, buf, minLim)
-      else writeEscapedOrEncodedString(s, from, pos, escapedChars)
-    } else if (s.length == from) pos
-    else {
-      val newPos = flushAndGrowBuf(2, pos)
-      writeString(s, from, newPos, this.buf, Math.min(s.length - from, limit - newPos - 1) + newPos)
+      if (ch >= 0x80 || escapedChars(ch.toInt) != 0) writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      else writeString(s, from + 1, pos + 1, minLim, escapedChars)
+    } else {
+      val remaining = s.length - from
+      if (remaining > 0) {
+        val newPos = flushAndGrowBuf(2, pos)
+        writeString(s, from, newPos, Math.min(remaining, limit - newPos - 1) + newPos, escapedChars)
+      } else pos
     }
 
   private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]): Int =
