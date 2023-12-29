@@ -360,6 +360,9 @@ package object core {
     *
     * BEWARE: It is a non-reentrant routine and should not be used in a nested way in the same thread.
     *
+    * No additional buffering needed for the provided output stream. Use the `preferredBufSize` option of the `config`
+    * parameter to tune the size of internal buffers.
+    *
     * @tparam A type of value to serialize
     * @param x the value to serialize
     * @param out an output stream to serialize into
@@ -380,7 +383,7 @@ package object core {
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format.
     *
     * While it is less efficient than serialization to an output stream using pooled writers but it can be safely used
-    * with a non-reentrant call is used in the same thread stack.
+    * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -402,6 +405,9 @@ package object core {
     * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format.
     *
     * BEWARE: It is a non-reentrant routine and should not be used in a nested way in the same thread.
+    *
+    * If size of serialized values is greater than 32K bytes then specify their preferred sizes in the
+    * `preferredBufSize` option of the  `config` parameter to avoid redundant re-allocations of internal buffers.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -506,6 +512,10 @@ package object core {
     *
     * BEWARE: It is a non-reentrant routine and should not be used in a nested way in the same thread.
     *
+    * When [[java.nio.DirectByteBuffer]] is passed as a parameter then internal buffers will be used.
+    * So, if size of serialized values is greater than 32K bytes then specify their preferred sizes
+    * in the `preferredBufSize` option of the  `config` parameter to avoid redundant re-allocations of internal buffers.
+    *
     * @tparam A type of value to serialize
     * @param x the value to serialize
     * @param bbuf a byte buffer where the value should be serialized
@@ -553,6 +563,9 @@ package object core {
     * Serialize the `x` argument to a string in JSON format.
     *
     * BEWARE: It is a non-reentrant routine and should not be used in a nested way in the same thread.
+    *
+    * If size of serialized values is greater than 32K bytes then specify their preferred sizes in the
+    * `preferredBufSize` option of the  `config` parameter to avoid redundant re-allocations of internal buffers.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
