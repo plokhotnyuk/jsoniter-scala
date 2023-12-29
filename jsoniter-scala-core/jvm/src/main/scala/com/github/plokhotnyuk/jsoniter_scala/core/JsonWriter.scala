@@ -1560,9 +1560,9 @@ final class JsonWriter private[jsoniter_scala](
     val ds = digits
     var q0: Int = x
     if (q0 < 0) {
+      q0 = -q0
       buf(pos) = '-'
       pos += 1
-      q0 = -q0
     }
     if (q0 < 10) {
       buf(pos) = (q0 + '0').toByte
@@ -2034,9 +2034,9 @@ final class JsonWriter private[jsoniter_scala](
     val ds = digits
     var q0: Int = x
     if (q0 < 0) {
+      q0 = -q0
       buf(pos) = '-'
       pos += 1
-      q0 = -q0
     }
     if (q0 < 100) {
       if (q0 < 10) {
@@ -2092,17 +2092,18 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(20) // Long.MinValue.toString.length
     val buf = this.buf
     val ds = digits
-    val q0 =
-      if (x >= 0) x
-      else if (x != -9223372036854775808L) {
+    var q0 = x
+    if (x < 0) {
+      q0 = -q0
+      if (q0 != x) {
         buf(pos) = '-'
         pos += 1
-        -x
       } else {
-        ByteArrayAccess.setShort(buf, pos, 0x392D)
-        pos += 2
-        223372036854775808L
+        q0 = 3372036854775808L
+        ByteArrayAccess.setInt(buf, pos, 0x3232392D)
+        pos += 4
       }
+    }
     var q = 0
     var lastPos = pos
     if (q0 < 100000000) {
@@ -2132,36 +2133,34 @@ final class JsonWriter private[jsoniter_scala](
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/FloatToDecimal.java
   private[this] def writeFloat(x: Float): Unit = count = {
-    val bits = java.lang.Float.floatToRawIntBits(x)
     var pos = ensureBufCapacity(15)
     val buf = this.buf
-    if (bits < 0) {
+    if (x < 0.0f) {
       buf(pos) = '-'
       pos += 1
     }
     if (x == 0.0f) {
       ByteArrayAccess.setInt(buf, pos, 0x302E30)
-      pos + 3
+      pos += 3
     } else {
-      val ieeeExponent = bits >> 23 & 0xFF
-      val ieeeMantissa = bits & 0x7FFFFF
-      var e2 = ieeeExponent - 150
-      var m2 = ieeeMantissa | 0x800000
+      val bits = java.lang.Float.floatToRawIntBits(x)
+      var e2 = (bits >> 23 & 0xFF) - 150
+      var m2 = bits & 0x7FFFFF | 0x800000
       var m10, e10 = 0
       if (e2 == 0) m10 = m2
-      else if (e2 >= -23 && e2 < 0 && m2 << e2 == 0) m10 = m2 >> -e2
+      else if ((e2 >= -23 && e2 < 0) && m2 << e2 == 0) m10 = m2 >> -e2
       else {
         var e10Corr, e2Corr = 0
         var cblCorr = 2
-        if (ieeeExponent == 0) {
+        if (e2 == -150) {
+          m2 &= 0x7FFFFF
           e2 = -149
-          m2 = ieeeMantissa
-          if (ieeeMantissa < 8) {
+          if (m2 < 8) {
             m2 *= 10
             e10Corr = 1
           }
-        } else if (ieeeExponent == 255) illegalNumberError(x)
-        else if (ieeeMantissa == 0 && ieeeExponent > 1) {
+        } else if (e2 == 105) illegalNumberError(x)
+        else if (m2 == 0x800000 && e2 > -149) {
           e2Corr = 131007
           cblCorr = 1
         }
@@ -2184,7 +2183,7 @@ final class JsonWriter private[jsoniter_scala](
           }
         }) {
           m10 = vb >> 2
-          val vb4 = vb & 0xFFFFFFFC
+          val vb4 = m10 << 2
           var diff = vbl - vb4
           if ((vb4 - vbr + 4 ^ diff) >= 0) diff = (vb & 0x3) + (m10 & 0x1) - 3
           m10 += ~diff >>> 31
@@ -2197,11 +2196,10 @@ final class JsonWriter private[jsoniter_scala](
       if (e10 < -3 || e10 >= 7) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         ByteArrayAccess.setShort(buf, pos, (buf(pos + 1) | 0x2E00).toShort)
-        pos =
-          if (lastPos < pos + 3) {
-            buf(lastPos) = '0'
-            lastPos + 1
-          } else lastPos
+        if (lastPos - 3 < pos) {
+          buf(lastPos) = '0'
+          pos = lastPos + 1
+        } else pos = lastPos
         ByteArrayAccess.setShort(buf, pos, 0x2D45)
         pos += 1
         if (e10 < 0) {
@@ -2210,15 +2208,15 @@ final class JsonWriter private[jsoniter_scala](
         }
         if (e10 < 10) {
           buf(pos) = (e10 + '0').toByte
-          pos + 1
-        } else write2Digits(e10, pos, buf, ds)
+          pos += 1
+        } else pos = write2Digits(e10, pos, buf, ds)
       } else if (e10 < 0) {
         val dotPos = pos + 1
         ByteArrayAccess.setInt(buf, pos, 0x30303030)
         pos -= e10
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         buf(dotPos) = '.'
-        lastPos
+        pos = lastPos
       } else if (e10 < len - 1) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         val bs = ByteArrayAccess.getLong(buf, pos)
@@ -2228,14 +2226,15 @@ final class JsonWriter private[jsoniter_scala](
         val d2 = 0x2E00L << s
         val d3 = m & bs
         ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
-        lastPos
+        pos = lastPos
       } else {
         pos += len
         writePositiveIntDigits(m10, pos, buf, ds)
         ByteArrayAccess.setShort(buf, pos, 0x302E)
-        pos + 2
+        pos += 2
       }
     }
+    pos
   }
 
   private[this] def rop(g: Long, cp: Int): Int = {
@@ -2247,37 +2246,35 @@ final class JsonWriter private[jsoniter_scala](
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
   private[this] def writeDouble(x: Double): Unit = count = {
-    val bits = java.lang.Double.doubleToRawLongBits(x)
     var pos = ensureBufCapacity(24)
     val buf = this.buf
-    if (bits < 0) {
+    if (x < 0.0) {
       buf(pos) = '-'
       pos += 1
     }
     if (x == 0.0) {
       ByteArrayAccess.setInt(buf, pos, 0x302E30)
-      pos + 3
+      pos += 3
     } else {
-      val ieeeExponent = (bits >> 52).toInt & 0x7FF
-      val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
-      var e2 = ieeeExponent - 1075
-      var m2 = ieeeMantissa | 0x10000000000000L
+      val bits = java.lang.Double.doubleToRawLongBits(x)
+      var e2 = ((bits >> 52).toInt & 0x7FF) - 1075
+      var m2 = bits & 0xFFFFFFFFFFFFFL | 0x10000000000000L
       var m10 = 0L
       var e10 = 0
       if (e2 == 0) m10 = m2
-      else if (e2 >= -52 && e2 < 0 && m2 << e2 == 0) m10 = m2 >> -e2
+      else if ((e2 >= -52 && e2 < 0) && m2 << e2 == 0) m10 = m2 >> -e2
       else {
         var e10Corr, e2Corr = 0
         var cblCorr = 2
-        if (ieeeExponent == 0) {
+        if (e2 == -1075) {
+          m2 &= 0xFFFFFFFFFFFFFL
           e2 = -1074
-          m2 = ieeeMantissa
-          if (ieeeMantissa < 3) {
+          if (m2 < 3) {
             m2 *= 10
             e10Corr = 1
           }
-        } else if (ieeeExponent == 2047) illegalNumberError(x)
-        else if (ieeeMantissa == 0 && ieeeExponent > 1) {
+        } else if (e2 == 972) illegalNumberError(x)
+        else if (m2 == 0x10000000000000L && e2 > -1074) {
           e2Corr = 131007
           cblCorr = 1
         }
@@ -2302,7 +2299,7 @@ final class JsonWriter private[jsoniter_scala](
           }
         }) {
           m10 = vb >> 2
-          val vb4 = vb & 0xFFFFFFFFFFFFFFFCL
+          val vb4 = m10 << 2
           var diff = (vbl - vb4).toInt
           if (((vb4 - vbr).toInt + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
           m10 += ~diff >>> 31
@@ -2315,11 +2312,10 @@ final class JsonWriter private[jsoniter_scala](
       if (e10 < -3 || e10 >= 7) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         ByteArrayAccess.setShort(buf, pos, (buf(pos + 1) | 0x2E00).toShort)
-        pos =
-          if (lastPos < pos + 3) {
-            buf(lastPos) = '0'
-            lastPos + 1
-          } else lastPos
+        if (lastPos - 3 < pos) {
+          buf(lastPos) = '0'
+          pos = lastPos + 1
+        } else pos = lastPos
         ByteArrayAccess.setShort(buf, pos, 0x2D45)
         pos += 1
         if (e10 < 0) {
@@ -2328,16 +2324,16 @@ final class JsonWriter private[jsoniter_scala](
         }
         if (e10 < 10) {
           buf(pos) = (e10 + '0').toByte
-          pos + 1
-        } else if (e10 < 100) write2Digits(e10, pos, buf, ds)
-        else write3Digits(e10, pos, buf, ds)
+          pos += 1
+        } else if (e10 < 100) pos = write2Digits(e10, pos, buf, ds)
+        else pos = write3Digits(e10, pos, buf, ds)
       } else if (e10 < 0) {
         val dotPos = pos + 1
         ByteArrayAccess.setInt(buf, pos, 0x30303030)
         pos -= e10
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         buf(dotPos) = '.'
-        lastPos
+        pos = lastPos
       } else if (e10 < len - 1) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         val bs = ByteArrayAccess.getLong(buf, pos)
@@ -2347,14 +2343,15 @@ final class JsonWriter private[jsoniter_scala](
         val d2 = 0x2E00L << s
         val d3 = m & bs
         ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
-        lastPos
+        pos = lastPos
       } else {
         pos += len
         writePositiveIntDigits(m10.toInt, pos, buf, ds)
         ByteArrayAccess.setShort(buf, pos, 0x302E)
-        pos + 2
+        pos += 2
       }
     }
+    pos
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
