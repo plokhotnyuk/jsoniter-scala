@@ -95,6 +95,8 @@ final class stringified extends StaticAnnotation
   * @param checkFieldDuplication  a flag that turns on checking of duplicated fields during parsing of classes (turned
   *                               on by default)
   * @param scalaTransientSupport  a flag that turns on support of `scala.transient` (turned off by default)
+  * @param inlineOneValueClasses  a flag that turns on derivation of inlined codecs for non-values classes that have
+  *                               the primary constructor with just one argument (turned off by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -124,7 +126,8 @@ class CodecMakerConfig private[macros] (
     val encodingOnly: Boolean,
     val requireDefaultFields: Boolean,
     val checkFieldDuplication: Boolean,
-    val scalaTransientSupport: Boolean) {
+    val scalaTransientSupport: Boolean,
+    val inlineOneValueClasses: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -200,6 +203,9 @@ class CodecMakerConfig private[macros] (
   def withScalaTransientSupport(scalaTransientSupport: Boolean): CodecMakerConfig =
     copy(scalaTransientSupport = scalaTransientSupport)
 
+  def withInlineOneValueClasses(inlineOneValueClasses: Boolean): CodecMakerConfig =
+    copy(inlineOneValueClasses = inlineOneValueClasses)
+
   private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                          javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -227,7 +233,8 @@ class CodecMakerConfig private[macros] (
                          encodingOnly: Boolean = encodingOnly,
                          requireDefaultFields: Boolean = requireDefaultFields,
                          checkFieldDuplication: Boolean = checkFieldDuplication,
-                         scalaTransientSupport: Boolean = scalaTransientSupport): CodecMakerConfig =
+                         scalaTransientSupport: Boolean = scalaTransientSupport,
+                         inlineOneValueClasses: Boolean = inlineOneValueClasses): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -256,7 +263,8 @@ class CodecMakerConfig private[macros] (
       encodingOnly = encodingOnly,
       requireDefaultFields = requireDefaultFields,
       checkFieldDuplication = checkFieldDuplication,
-      scalaTransientSupport = scalaTransientSupport)
+      scalaTransientSupport = scalaTransientSupport,
+      inlineOneValueClasses = inlineOneValueClasses)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -287,7 +295,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   decodingOnly = false,
   requireDefaultFields = false,
   checkFieldDuplication = true,
-  scalaTransientSupport = false) {
+  scalaTransientSupport = false,
+  inlineOneValueClasses = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -338,7 +347,8 @@ object CodecMakerConfig extends CodecMakerConfig(
             $exprDecodingOnly,
             $exprRequireDefaultFields,
             $exprCheckFieldDuplication,
-            $exprScalaTransientSupport)
+            $exprScalaTransientSupport,
+            $exprInlineOneValueClasses)
         } =>
           try {
             Some(CodecMakerConfig(
@@ -369,7 +379,8 @@ object CodecMakerConfig extends CodecMakerConfig(
               extract("encodingOnly", exprEncodingOnly),
               extract("requireDefaultFields", exprRequireDefaultFields),
               extract("checkFieldDuplication", exprCheckFieldDuplication),
-              extract("scalaTransientSupport", exprScalaTransientSupport)))
+              extract("scalaTransientSupport", exprScalaTransientSupport),
+              extract("inlineOneValueClasses", exprInlineOneValueClasses)))
           } catch {
             case FromExprException(message, expr) =>
               report.warning(message, expr)
@@ -404,6 +415,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withRequireDefaultFields($v) } => Some(x.valueOrAbort.withRequireDefaultFields(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withCheckFieldDuplication($v) } => Some(x.valueOrAbort.withCheckFieldDuplication(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withScalaTransientSupport($v) } => Some(x.valueOrAbort.withScalaTransientSupport(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withInlineOneValueClasses($v) } => Some(x.valueOrAbort.withInlineOneValueClasses(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -685,7 +697,8 @@ object JsonCodecMaker {
         encodingOnly = false,
         requireDefaultFields = false,
         checkFieldDuplication = true,
-        scalaTransientSupport = false))
+        scalaTransientSupport = false,
+        inlineOneValueClasses = false))
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
@@ -724,9 +737,7 @@ object JsonCodecMaker {
 
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 
-      def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) && tpe <:< TypeRepr.of[AnyVal]
-
-      def valueClassValue(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers(0)
+      def valueClassValueSymbol(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers(0)
 
       def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(tpe.typeSymbol.fieldMembers(0)).dealias
 
@@ -1107,6 +1118,10 @@ object JsonCodecMaker {
         })
       })
 
+      def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) &&
+        (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
+          tpe <:< TypeRepr.of[AnyVal])
+
       def genReadKey[T: Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] =
         val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(types)
@@ -1351,7 +1366,7 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
           vtpe.asType match
-            case '[vt] => genWriteKey(Select.unique(x.asTerm, valueClassValue(tpe).name).asExprOf[vt], vtpe :: types, out)
+            case '[vt] => genWriteKey(Select.unique(x.asTerm, valueClassValueSymbol(tpe).name).asExprOf[vt], vtpe :: types, out)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) '{ $out.writeKey(${x.asExprOf[Enumeration#Value]}.id) }
           else '{ $out.writeKey($x.toString) }
@@ -2794,7 +2809,7 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[ZoneOffset]) '{ $out.writeVal(${m.asExprOf[ZoneOffset]}) }
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
-          genWriteVal(Select(m.asTerm, valueClassValue(tpe)).asExpr, vtpe :: types, isStringified, None, out)
+          genWriteVal(Select(m.asTerm, valueClassValueSymbol(tpe)).asExpr, vtpe :: types, isStringified, None, out)
         } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match

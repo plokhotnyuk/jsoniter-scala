@@ -194,6 +194,7 @@ There are configurable options that can be set in compile-time:
 - Ability to disable generation of implementation for decoding or encoding
 - Ability to require fields that have defined default values
 - Ability to generate smaller and more efficient codecs for classes when checking of field duplication is not needed
+- Ability to inline non value classes which have the primary constructor with just one argument 
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible

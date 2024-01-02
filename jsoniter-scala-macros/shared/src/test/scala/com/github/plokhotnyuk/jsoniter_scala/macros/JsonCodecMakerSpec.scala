@@ -1212,6 +1212,34 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Alias.UserId], Alias.UserId("123abc"), """"123abc"""")
       verifySerDeser(make[Alias.OrderId], Alias.OrderId(123123), "123123")
     }
+    "serialize and deserialize case classes with one value classes when turned on inlining of one value classes" in {
+      case class UserId(value: String)
+
+      case class OrderId(value: Int)
+
+      case class OneValueClassTypes(uid: UserId, oid: OrderId)
+
+      verifySerDeser(make[OneValueClassTypes](CodecMakerConfig.withInlineOneValueClasses(true)),
+        OneValueClassTypes(UserId("123abc"), OrderId(123123)), """{"uid":"123abc","oid":123123}""")
+    }
+    "serialize and deserialize top-level value one value classes when turned on inlining of one value classes" in {
+      case class UserId(value: String)
+
+      case class OrderId(value: Int)
+
+      verifySerDeser(make[UserId](CodecMakerConfig.withInlineOneValueClasses(true)), UserId("123abc"), """"123abc"""")
+      verifySerDeser(make[OrderId](CodecMakerConfig.withInlineOneValueClasses(true)), OrderId(123123), "123123")
+    }
+    "serialize and deserialize arrays of one value classes when turned on inlining of one value classes" in {
+      case class UserId(value: String)
+
+      case class OrderId(value: Int)
+
+      verifySerDeser(make[Array[UserId]](CodecMakerConfig.withInlineOneValueClasses(true)),
+        _root_.scala.Array(UserId("123abc"), UserId("123def")), """["123abc","123def"]""")
+      verifySerDeser(make[Array[OrderId]](CodecMakerConfig.withInlineOneValueClasses(true)),
+        _root_.scala.Array(OrderId(123123), OrderId(123456)), "[123123,123456]")
+    }
     "serialize and deserialize case classes with options" in {
       verifySerDeser(codecOfOptions,
         Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L)),
