@@ -1258,15 +1258,17 @@ final class JsonReader private[jsoniter_scala](
     *
     * @throws JsonReaderException in cases of reaching the end of input
     */
-  def skip(): Unit = head = {
+  def skip(): Unit = {
     val b = nextToken(head)
-    if (b == '"') skipString(evenBackSlashes = true, head)
-    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
-    else if (b == 'n' || b == 't') skipFixedBytes(3, head)
-    else if (b == 'f') skipFixedBytes(4, head)
-    else if (b == '[') skipArray(0, head)
-    else if (b == '{') skipObject(0, head)
+    var pos = head
+    if (b == '"') pos = skipString(evenBackSlashes = true, pos)
+    else if ((b >= '0' && b <= '9') || b == '-') pos = skipNumber(pos)
+    else if (b == 'n' || b == 't') pos = skipFixedBytes(3, pos)
+    else if (b == 'f') pos = skipFixedBytes(4, pos)
+    else if (b == '[') pos = skipArray(0, pos)
+    else if (b == '{') pos = skipObject(0, pos)
     else decodeError("expected value")
+    head = pos
   }
 
   /**
