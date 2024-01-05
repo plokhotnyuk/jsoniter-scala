@@ -471,6 +471,7 @@ final class JsonWriter private[jsoniter_scala](
     if (x eq null) throw new NullPointerException
     val indention = this.indention
     var pos = ensureBufCapacity(indention + 4)
+    val buf = this.buf
     if (comma) {
       buf(pos) = ','
       pos += 1
@@ -479,7 +480,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     pos = writeString(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
-    buf(pos) = '"'
+    this.buf(pos) = '"'
     count = pos + 1
   }
 

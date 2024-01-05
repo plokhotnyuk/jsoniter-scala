@@ -429,6 +429,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeVal(x: String): Unit = {
     val indention = this.indention
     var pos = ensureBufCapacity(indention + 10)
+    val buf = this.buf
     if (comma) {
       buf(pos) = ','
       pos += 1
@@ -437,7 +438,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     pos = writeString(x, 0, pos, buf, Math.min(x.length, limit - pos - 1) + pos)
-    buf(pos) = '"'
+    this.buf(pos) = '"'
     count = pos + 1
   }
 
