@@ -52,7 +52,7 @@ lazy val commonSettings = Seq(
 
 lazy val jsSettings = Seq(
   scalacOptions += {
-    val localSourcesPath = baseDirectory.value.toURI
+    val localSourcesPath = (LocalRootProject / baseDirectory).value.toURI
     val remoteSourcesPath = s"https://raw.githubusercontent.com/plokhotnyuk/jsoniter-scala/${git.gitHeadCommit.value.get}/"
     val sourcesOptionName = CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => "-P:scalajs:mapSourceURI"
