@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 
+import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.switch
 import scala.util.control.NonFatal
 import scala.util.hashing.MurmurHash3
@@ -1949,12 +1950,21 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(make[Defaults](CodecMakerConfig.withTransientEmpty(false).withTransientNone(false)), Defaults(), """{}""")
     }
     "deserialize default values of case classes that defined for fields" in {
-      val codecOfDefaults: JsonValueCodec[Defaults2] = make
-      verifyDeser(codecOfDefaults, Defaults2(), """{}""")
-      verifyDeser(codecOfDefaults, Defaults2(),
+      val codecOfDefaults2: JsonValueCodec[Defaults2] = make
+      verifyDeser(codecOfDefaults2, Defaults2(), """{}""")
+      verifyDeser(codecOfDefaults2, Defaults2(),
         """{"st":null,"bi":null,"l":null,"oc":null,"e":null,"ab":null,"m":null,"mm":null,"im":null,"lm":null,"s":null,"ms":null,"bs":null,"mbs":null}""".stripMargin)
-      verifyDeser(codecOfDefaults, Defaults2(),
+      verifyDeser(codecOfDefaults2, Defaults2(),
         """{"l":[],"ab":[],"m":{},"mm":{},"im":{},"lm":{},"s":[],"ms":[],"bs":[],"mbs":[]}""")
+    }
+    "deserialize new default values of case classes without memorization" in {
+      case class Defaults3(u: UUID = new UUID(ThreadLocalRandom.current().nextLong(), ThreadLocalRandom.current().nextLong()),
+                           i: Int = ThreadLocalRandom.current().nextInt())
+
+      val codecOfDefaults3: JsonValueCodec[Defaults3] = make
+      val acc = Set.newBuilder[Defaults3]
+      verifyDeserByCheck(codecOfDefaults3, """{}""", (x: Defaults3) => acc += x)
+      acc.result().size shouldBe 4
     }
     "deserialize default values of polymorphic case classes that defined for fields" in {
       val polymorphicDefaults: JsonValueCodec[PolymorphicDefaults[Int, String]] = make
