@@ -130,10 +130,12 @@ final class JsonReader private[jsoniter_scala](
     * @return `true` if the key was found, `false` otherwise
     * @throws JsonReaderException in cases of reaching the end of input or invalid encoding of JSON key
     */
-  @tailrec
-  def skipToKey(key: String): Boolean = isCharBufEqualsTo(readKeyAsCharBuf(), key) || {
-    skip()
-    isNextToken(',', head) && skipToKey(key)
+  def skipToKey(key: String): Boolean = {
+    while (!isCharBufEqualsTo(readKeyAsCharBuf(), key)) {
+      skip()
+      if (!isNextToken(',', head)) return false
+    }
+    true
   }
 
   /**
