@@ -1952,7 +1952,8 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    var hash, b = 0
+    var hash = 0
+    var b: Byte = 0
     while ({
       if (pos >= tail) {
         pos = loadMoreOrError(pos)
