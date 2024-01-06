@@ -1561,7 +1561,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(5) // size of Int in bytes + one byte for the sign
     val buf = this.buf
     val ds = digits
-    var q0: Int = x
+    var q0 = x.toInt
     if (q0 < 0) {
       q0 = -q0
       buf(pos) = '-'
@@ -1819,7 +1819,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 2
       }
     }
-    pos += digitCount(q0)
+    pos += digitCount(q0.toLong)
     writePositiveIntDigits(q0, pos, buf, ds)
     ByteArrayAccess.setShort(buf, pos, bs)
     pos + 1
@@ -1925,7 +1925,7 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     if (q0 < 10000) write4Digits(q0, pos, buf, ds)
     else {
-      pos += digitCount(q0)
+      pos += digitCount(q0.toLong)
       writePositiveIntDigits(q0, pos, buf, ds)
       pos
     }
@@ -1947,8 +1947,8 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeNanos(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val y1 = x * 1441151881 // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+  private[this] def writeNanos(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val y1 = x * 1441151881L // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val y2 = (y1 & 0x1FFFFFFFFFFFFFFL) * 100
     var m = y1 >>> 57 << 8 | ds((y2 >>> 57).toInt) << 16 | 0x302E
     if ((y2 & 0x1FFFFF800000000L) == 0) { // check if q0 is divisible by 1000000
@@ -2040,7 +2040,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(9) // 8 bytes in long + a byte for the sign
     val buf = this.buf
     val ds = digits
-    var q0: Int = x
+    var q0 = x.toInt
     if (q0 < 0) {
       q0 = -q0
       buf(pos) = '-'
@@ -2093,7 +2093,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 2
       }
     }
-    pos += digitCount(q0)
+    pos += digitCount(q0.toLong)
     writePositiveIntDigits(q0, pos, buf, ds)
     count = pos
   }
@@ -2200,7 +2200,7 @@ final class JsonWriter private[jsoniter_scala](
         }
       }
       val ds = digits
-      val len = digitCount(m10)
+      val len = digitCount(m10.toLong)
       e10 += len - 1
       if (e10 < -3 || e10 >= 7) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
@@ -2435,6 +2435,8 @@ final class JsonWriter private[jsoniter_scala](
     if (q0 < 10) buf(pos + 1) = (q0 + '0').toByte
     else ByteArrayAccess.setShort(buf, pos, ds(q0))
   }
+
+  private[this] def illegalNumberError(x: Float): Nothing = encodeError("illegal number: " + x)
 
   private[this] def illegalNumberError(x: Double): Nothing = encodeError("illegal number: " + x)
 

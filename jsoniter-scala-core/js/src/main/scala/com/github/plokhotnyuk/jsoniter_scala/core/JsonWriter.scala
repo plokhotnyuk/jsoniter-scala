@@ -1727,7 +1727,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeByte(x: Byte): Unit = {
     var pos = ensureBufCapacity(4) // Byte.MinValue.toString.length
     val buf = this.buf
-    var q0: Int = x
+    var q0 = x.toInt
     if (q0 < 0) {
       q0 = -q0
       buf(pos) = '-'
@@ -2215,7 +2215,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(6) // Short.MinValue.toString.length
     val buf = this.buf
     val ds = digits
-    var q0: Int = x
+    var q0 = x.toInt
     if (q0 < 0) {
       q0 = -q0
       buf(pos) = '-'
@@ -2661,6 +2661,8 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos + 1) = (d >> 8).toByte
     }
   }
+
+  private[this] def illegalNumberError(x: Float): Nothing = encodeError("illegal number: " + x)
 
   private[this] def illegalNumberError(x: Double): Nothing = encodeError("illegal number: " + x)
 

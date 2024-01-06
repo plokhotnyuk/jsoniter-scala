@@ -1233,7 +1233,16 @@ final class JsonReader private[jsoniter_scala](
     * @param len the length of the char buffer to hash
     * @return the hash code for the char buffer
     */
-  def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
+  def charBufToHashCode(len: Int): Int = {
+    val cs = charBuf
+    if (cs.length < len) throw new ArrayIndexOutOfBoundsException(len)
+    var h, i = 0
+    while (i < len) {
+      h = (h << 5) + (cs(i) - h)
+      i += 1
+    }
+    h
+  }
 
   /**
     * Checks if the internal char buffer contains the given string.
@@ -2129,7 +2138,7 @@ final class JsonReader private[jsoniter_scala](
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
-    var x: Long = '0' - b
+    var x = ('0' - b).toLong
     if (isToken && x == 0) ensureNotLeadingZero()
     else {
       var pos = head
@@ -2184,7 +2193,7 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    var m10: Long = b - '0'
+    var m10 = (b - '0').toLong
     var e10 = 0
     var digits = 1
     if (isToken && m10 == 0) {
@@ -2329,7 +2338,7 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    var m10: Long = b - '0'
+    var m10 = (b - '0').toLong
     var e10 = 0
     var digits = 1
     if (isToken && m10 == 0) {
@@ -2511,7 +2520,7 @@ final class JsonReader private[jsoniter_scala](
           if (isNeg) x = -x
           BigInt(x)
         } else if (len < 19) {
-          var x: Long = buf(from) - '0'
+          var x = (buf(from) - '0').toLong
           from += 1
           while (from < pos) {
             x = x * 10 + (buf(from) - '0')
@@ -2591,7 +2600,7 @@ final class JsonReader private[jsoniter_scala](
         val isNegExp = b == '-'
         if (isNegExp || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
-        var exp: Long = b - '0'
+        var exp = (b - '0').toLong
         pos = head
         buf = this.buf
         while ((pos < tail || {
@@ -2620,7 +2629,7 @@ final class JsonReader private[jsoniter_scala](
           val fracPos = limit - fracLen
           val fracLimit = fracPos - 1
           if (digits < 19) {
-            var x: Long = buf(from) - '0'
+            var x = (buf(from) - '0').toLong
             from += 1
             while (from < fracLimit) {
               x = x * 10 + (buf(from) - '0')
@@ -2650,7 +2659,7 @@ final class JsonReader private[jsoniter_scala](
     val len = limit - p
     if (len < 19) {
       var pos = p
-      var x: Long = buf(pos) - '0'
+      var x = (buf(pos) - '0').toLong
       pos += 1
       while (pos < limit) {
         x = x * 10 + (buf(pos) - '0')
@@ -2671,7 +2680,7 @@ final class JsonReader private[jsoniter_scala](
                                    scale: Int): java.math.BigDecimal = {
     val firstBlockLimit = limit - 18
     var pos = p
-    var x1: Long = buf(pos) - '0'
+    var x1 = (buf(pos) - '0').toLong
     pos += 1
     while (pos < firstBlockLimit) {
       x1 = x1 * 10 + (buf(pos) - '0')
@@ -2793,7 +2802,7 @@ final class JsonReader private[jsoniter_scala](
       val isNegX = b == '-'
       if (isNegX) b = nextByte(head)
       if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 1)
-      var x: Long = '0' - b
+      var x = ('0' - b).toLong
       var pos = head
       var buf = this.buf
       while ((pos < tail || {
@@ -2855,7 +2864,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(pos + 1)
       b != '"'
     }) ()
-    Duration.ofSeconds(seconds, nano)
+    Duration.ofSeconds(seconds, nano.toLong)
   }
 
   private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
@@ -2900,7 +2909,7 @@ final class JsonReader private[jsoniter_scala](
       epochSecond -= offsetTotal
     }
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
-    else Instant.ofEpochSecond(epochSecond, nano)
+    else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
 
   private[this] def parseLocalDate(): LocalDate = {
@@ -3584,7 +3593,7 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(pos)
     if (b == '"') bs = new Array[Byte](bLen)
     else {
-      bits = ns(b & 0xFF)
+      bits = ns(b & 0xFF).toInt
       if (bits < 0) decodeError("expected '\"' or hex digit")
       b = nextByte(head)
       bits = bits << 4 | ns(b & 0xFF)
@@ -3645,7 +3654,7 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(pos)
     if (b == '"') bs = new Array[Byte](bLen)
     else {
-      bits = ds(b & 0xFF)
+      bits = ds(b & 0xFF).toInt
       if (bits < 0) decodeError("expected '\"' or base64 digit")
       b = nextByte(head)
       bits = bits << 6 | ds(b & 0xFF)
