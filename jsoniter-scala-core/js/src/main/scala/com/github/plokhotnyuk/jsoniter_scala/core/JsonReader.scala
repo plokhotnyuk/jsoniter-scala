@@ -2877,8 +2877,7 @@ final class JsonReader private[jsoniter_scala](
     val year = parseYearWithByte('-', 10, head)
     val month = parseMonthWithByte('-', head)
     val day = parseDayWithByte(year, month, 'T', head)
-    var epochSecond = epochDay(year, month, day) * 86400 + // 86400 == seconds per day
-      parseHourWithColon(head) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)
+    var epochSecond = epochDay(year, month, day) * 86400 + parseSecondOfDay(head) // 86400 == seconds per day
     var nano = 0
     var nanoDigitWeight = -2
     var b = nextByte(head)
@@ -2911,6 +2910,9 @@ final class JsonReader private[jsoniter_scala](
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
     else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
+
+  private[this] def parseSecondOfDay(pos: Int): Long =
+    (parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)).toLong
 
   private[this] def parseLocalDate(): LocalDate = {
     val year = parseYearWithByte('-', 9, head)
