@@ -1696,7 +1696,9 @@ final class JsonReader private[jsoniter_scala](
     val b3 = buf(pos + 2)
     val b4 = buf(pos + 3)
     val b5 = buf(pos + 4)
-    val isNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
+    var isNeg = false
+    if (b1 == '-') isNeg = true
+    else if (b1 != '+') decodeError("expected '-' or '+' or digit", pos)
     if (b2 < '0' || b2 > '9') digitError(pos + 1)
     if (b3 < '0' || b3 > '9') digitError(pos + 2)
     if (b4 < '0' || b4 > '9') digitError(pos + 3)
@@ -2035,8 +2037,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var x = b - '0'
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -2067,8 +2072,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var x = b - '0'
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -2099,8 +2107,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var x = '0' - b
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -2135,8 +2146,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var x = ('0' - b).toLong
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -2182,8 +2196,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var pos = head
     var buf = this.buf
@@ -2245,7 +2262,8 @@ final class JsonReader private[jsoniter_scala](
     }
     if ((b | 0x20) == 'e') {
       b = nextByte(pos + 1)
-      val isNegExp = b == '-'
+      var isNegExp = false
+      if (b == '-') isNegExp = true
       if (isNegExp || b == '+') b = nextByte(head)
       if (b < '0' || b > '9') numberError()
       var exp = b - '0'
@@ -2313,7 +2331,7 @@ final class JsonReader private[jsoniter_scala](
         }
         if (e2 == -1074) m2
         else if (e2 >= 972) 0x7FF0000000000000L
-        else e2 + 1075L << 52 | m2 & 0xFFFFFFFFFFFFFL
+        else (e2 + 1075).toLong << 52 | m2 & 0xFFFFFFFFFFFFFL
       } else toDouble(from, newMark, pos)
     }
 
@@ -2327,8 +2345,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var pos = head
     var buf = this.buf
@@ -2390,7 +2411,8 @@ final class JsonReader private[jsoniter_scala](
     }
     if ((b | 0x20) == 'e') {
       b = nextByte(pos + 1)
-      val isNegExp = b == '-'
+      var isNegExp = false
+      if (b == '-') isNegExp = true
       if (isNegExp || b == '+') b = nextByte(head)
       if (b < '0' || b > '9') numberError()
       var exp = b - '0'
@@ -2481,8 +2503,11 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     if (isToken && b == 'n') readNullOrNumberError(default, head)
     else {
-      val isNeg = b == '-'
-      if (isNeg) b = nextByte(head)
+      var isNeg = false
+      if (b == '-') {
+        b = nextByte(head)
+        isNeg = true
+      }
       if (b < '0' || b > '9') numberError()
       if (isToken && b == '0') {
         ensureNotLeadingZero()
@@ -2540,8 +2565,11 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     if (isToken && b == 'n') readNullOrNumberError(default, head)
     else {
-      val isNeg = b == '-'
-      if (isNeg) b = nextByte(head)
+      var isNeg = false
+      if (b == '-') {
+        b = nextByte(head)
+        isNeg = true
+      }
       if (b < '0' || b > '9') numberError()
       var pos = head
       var buf = this.buf
@@ -2597,7 +2625,8 @@ final class JsonReader private[jsoniter_scala](
       }
       if ((b | 0x20) == 'e') {
         b = nextByte(pos + 1)
-        val isNegExp = b == '-'
+        var isNegExp = false
+        if (b == '-') isNegExp = true
         if (isNegExp || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
         var exp = (b - '0').toLong
@@ -2782,13 +2811,16 @@ final class JsonReader private[jsoniter_scala](
   private[this] def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
   private[this] def parseDuration(): Duration = {
-    var seconds = 0L
-    var nano, state = 0
     var b = nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
+    var seconds = 0L
+    var nano, state = 0
     while ({
       if (state == 0) {
         if (b == 'T') {
@@ -2799,8 +2831,11 @@ final class JsonReader private[jsoniter_scala](
         if (b != 'T') tokensError('T', '"')
         b = nextByte(head)
       } else if (state == 4) tokenError('"')
-      val isNegX = b == '-'
-      if (isNegX) b = nextByte(head)
+      var isNegX = false
+      if (b == '-') {
+        b = nextByte(head)
+        isNegX = true
+      }
       if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 1)
       var x = ('0' - b).toLong
       var pos = head
@@ -3062,16 +3097,22 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parsePeriod(): Period = {
-    var years, months, days, state = 0
     var b = nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
+    var years, months, days, state = 0
     while ({
       if (state == 4) tokenError('"')
-      val isNegX = b == '-'
-      if (isNegX) b = nextByte(head)
+      var isNegX = false
+      if (b == '-') {
+        b = nextByte(head)
+        isNegX = true
+      }
       if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 0)
       var x = '0' - b
       var pos = head

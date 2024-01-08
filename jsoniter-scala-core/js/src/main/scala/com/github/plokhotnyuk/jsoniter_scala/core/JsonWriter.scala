@@ -1575,10 +1575,11 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
-  private[this] def writeBigInteger(x: BigInteger, ss: Array[BigInteger]): Unit =
-    if (x.bitLength < 64) writeLong(x.longValue)
+  private[this] def writeBigInteger(x: BigInteger, ss: Array[BigInteger]): Unit = {
+    val bitLen = x.bitLength
+    if (bitLen < 64) writeLong(x.longValue)
     else {
-      val n = calculateTenPow18SquareNumber(x)
+      val n = calculateTenPow18SquareNumber(bitLen)
       val ss1 =
         if (ss eq null) getTenPow18Squares(n)
         else ss
@@ -1586,6 +1587,7 @@ final class JsonWriter private[jsoniter_scala](
       writeBigInteger(qr(0), ss1)
       writeBigIntegerRemainder(qr(1), n - 1, ss1)
     }
+  }
 
   private[this] def writeBigIntegerRemainder(x: BigInteger, n: Int, ss: Array[BigInteger]): Unit =
     if (n < 0) count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(18), buf, digits)
@@ -1596,40 +1598,37 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeBigDecimal(x: java.math.BigDecimal): Unit = {
-    val exp = writeBigDecimal(x.unscaledValue, x.scale, 0, null)
+    var exp = writeBigDecimal(x.unscaledValue, x.scale, 0, null)
     if (exp != 0) {
       var pos = ensureBufCapacity(12)
       val buf = this.buf
       val ds = digits
       buf(pos) = 'E'
-      pos += 1
-      val q0 =
-        if (exp >= 0) {
-          buf(pos) = '+'
-          pos += 1
-          exp
-        } else {
-          buf(pos) = '-'
-          pos += 1
-          -exp
-        }
-      var q = q0.toInt
+      if (exp >= 0) {
+        buf(pos + 1) = '+'
+      } else {
+        buf(pos + 1) = '-'
+        exp = -exp
+      }
+      pos += 2
+      var q = exp.toInt
       var lastPos = pos
-      if (q0 == q) {
+      if (exp == q) {
         lastPos += digitCount(q)
         count = lastPos
       } else {
-        val q1 = q0 / 100000000
+        val q1 = exp / 100000000
         q = q1.toInt
         lastPos += digitCount(q)
-        count = write8Digits((q0 - q1 * 100000000).toInt, lastPos, buf, ds)
+        count = write8Digits((exp - q1 * 100000000).toInt, lastPos, buf, ds)
       }
       writePositiveIntDigits(q, lastPos, buf, ds)
     }
   }
 
-  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int, ss: Array[BigInteger]): Long =
-    if (x.bitLength < 64) {
+  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int, ss: Array[BigInteger]): Long = {
+    val bitLen = x.bitLength
+    if (bitLen < 64) {
       val v = x.longValue
       val pos = ensureBufCapacity(28) // Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
       count = pos
@@ -1647,7 +1646,7 @@ final class JsonWriter private[jsoniter_scala](
         exp
       }
     } else {
-      val n = calculateTenPow18SquareNumber(x)
+      val n = calculateTenPow18SquareNumber(bitLen)
       val ss1 =
         if (ss eq null) getTenPow18Squares(n)
         else ss
@@ -1656,6 +1655,7 @@ final class JsonWriter private[jsoniter_scala](
       writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss1)
       exp
     }
+  }
 
   private[this] def writeBigDecimalRemainder(x: BigInteger, scale: Int, blockScale: Int, n: Int,
                                              ss: Array[BigInteger]): Unit =
@@ -1669,8 +1669,8 @@ final class JsonWriter private[jsoniter_scala](
       writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss)
     }
 
-  private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
-    val m = Math.max((x.bitLength * 0.016723888647998956).toInt - 1, 1) // Math.max((x.bitLength * Math.log(2) / Math.log(1e18)).toInt - 1, 1)
+  private[this] def calculateTenPow18SquareNumber(bitLen: Int): Int = {
+    val m = Math.max((bitLen * 0.016723888647998956).toInt - 1, 1) // Math.max((x.bitLength * Math.log(2) / Math.log(1e18)).toInt - 1, 1)
     31 - java.lang.Integer.numberOfLeadingZeros(m)
   }
 
@@ -1871,7 +1871,8 @@ final class JsonWriter private[jsoniter_scala](
     var y = secsOfDay * 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     pos = write2Digits(y >>> 27, pos + 1, buf, ds)
     buf(pos) = ':'
-    y = (y & 0x7FFFFFF) * 15
+    y &= 0x7FFFFFF
+    y *= 15
     pos = write2Digits(y >> 25, pos + 1, buf, ds)
     buf(pos) = ':'
     pos = write2Digits((y & 0x1FFFFFF) * 15 >> 23, pos + 1, buf, ds)
@@ -2145,7 +2146,8 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos + 2) = '0'
         pos + 3
       } else {
-        y = (y & 0x7FFFFFF) * 15
+        y &= 0x7FFFFFF
+        y *= 15
         pos = write2Digits(y >> 25, pos + 1, buf, ds)
         if ((y & 0x1F80000) == 0) pos // check if totalSeconds is divisible by 60
         else {
