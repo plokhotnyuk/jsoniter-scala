@@ -3070,7 +3070,9 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b == 'Z') nextByteOrError('"', pos)
     else {
-      val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+      var isNeg = false
+      if (b == '-') isNeg = true
+      else if (b != '+') timeError(nanoDigitWeight, pos - 1)
       var offsetTotal = 0L
       if (pos + 7 < tail && {
         offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
@@ -3286,7 +3288,9 @@ final class JsonReader private[jsoniter_scala](
         nextByteOrError('"', pos)
         ZoneOffset.UTC
       } else {
-        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+        var isNeg = false
+        if (b == '-') isNeg = true
+        else if (b != '+') timeError(nanoDigitWeight, pos - 1)
         var offsetTotal = 0L
         if (pos + 7 < tail && {
           offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
@@ -3380,7 +3384,9 @@ final class JsonReader private[jsoniter_scala](
         nextByteOrError('"', pos)
         ZoneOffset.UTC
       } else {
-        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+        var isNeg = false
+        if (b == '-') isNeg = true
+        else if (b != '+') timeError(nanoDigitWeight, pos - 1)
         var offsetTotal = 0L
         if (pos + 7 < tail && {
           offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
@@ -3550,7 +3556,9 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(pos)
         ZoneOffset.UTC
       } else {
-        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+        var isNeg = false
+        if (b == '-') isNeg = true
+        else if (b != '+') timeError(nanoDigitWeight, pos - 1)
         nanoDigitWeight = -3
         var offsetTotal = 0L
         if (pos + 7 < tail && {
@@ -3635,7 +3643,9 @@ final class JsonReader private[jsoniter_scala](
       nextByteOrError('"', pos)
       ZoneOffset.UTC
     } else {
-      val isNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
+      var isNeg = false
+      if (b == '-') isNeg = true
+      else if (b != '+') decodeError("expected '+' or '-' or 'Z'")
       var offsetTotal = 0L
       if (pos + 7 < tail && {
         offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
