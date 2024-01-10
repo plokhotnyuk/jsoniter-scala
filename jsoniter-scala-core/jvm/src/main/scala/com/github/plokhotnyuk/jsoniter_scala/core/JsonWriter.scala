@@ -1457,18 +1457,17 @@ final class JsonWriter private[jsoniter_scala](
       ByteArrayAccess.setShort(buf, pos, m)
       pos += 2
       var q = 0
-      var lastPos = pos
       if (exp < 100000000) {
         q = exp.toInt
-        lastPos += digitCount(exp)
-        count = lastPos
+        pos += digitCount(exp)
+        count = pos
       } else {
         val q1 = (exp >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
         q = q1.toInt
-        lastPos += digitCount(q1)
-        count = write8Digits(exp - q1 * 100000000, lastPos, buf, ds)
+        pos += digitCount(q1)
+        count = write8Digits(exp - q1 * 100000000, pos, buf, ds)
       }
-      writePositiveIntDigits(q, lastPos, buf, ds)
+      writePositiveIntDigits(q, pos, buf, ds)
     }
   }
 
@@ -1477,17 +1476,19 @@ final class JsonWriter private[jsoniter_scala](
     if (bitLen < 64) {
       val v = x.longValue
       val pos = ensureBufCapacity(28) // Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
-      count = pos
-      writeLong(v)
-      val blockLen = (v >> 63).toInt + count - pos
+      val buf = this.buf
+      var lastPos = writeLong(v, pos, buf)
+      val digits = (v >> 63).toInt + lastPos - pos
       val dotOff = scale.toLong - blockScale
-      val exp = (blockLen - 1) - dotOff
+      val exp = (digits - 1) - dotOff
       if (scale >= 0 && exp >= -6) {
-        if (exp < 0) insertDotWithZeroes(blockLen, -1 - exp.toInt)
-        else if (dotOff > 0) insertDot(count - dotOff.toInt)
+        if (exp < 0) lastPos = insertDotWithZeroes(digits, -1 - exp.toInt, lastPos, buf)
+        else if (dotOff > 0) lastPos = insertDot(lastPos - dotOff.toInt, lastPos, buf)
+        count = lastPos
         0
       } else {
-        if (blockLen > 1 || blockScale > 0) insertDot(count - blockLen + 1)
+        if (digits > 1 || blockScale > 0) lastPos = insertDot(lastPos - digits + 1, lastPos, buf)
+        count = lastPos
         exp
       }
     } else {
@@ -1496,7 +1497,7 @@ final class JsonWriter private[jsoniter_scala](
         if (ss eq null) getTenPow18Squares(n)
         else ss
       val qr = x.divideAndRemainder(ss1(n))
-      val exp = writeBigDecimal(qr(0), scale, blockScale + (18 << n), ss1)
+      val exp = writeBigDecimal(qr(0), scale, (18 << n) + blockScale, ss1)
       writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss1)
       exp
     }
@@ -1505,12 +1506,15 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigDecimalRemainder(x: BigInteger, scale: Int, blockScale: Int, n: Int,
                                              ss: Array[BigInteger]): Unit =
     if (n < 0) {
-      count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits) // 18 digits and a place for optional dot
+      val pos = ensureBufCapacity(19) // 18 digits and a place for optional dot
+      val buf = this.buf
+      var lastPos = write18Digits(Math.abs(x.longValue), pos, buf, digits)
       val dotOff = scale - blockScale
-      if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
+      if (dotOff > 0 && dotOff <= 18) lastPos = insertDot(lastPos - dotOff, lastPos, buf)
+      count = lastPos
     } else {
       val qr = x.divideAndRemainder(ss(n))
-      writeBigDecimalRemainder(qr(0), scale, blockScale + (18 << n), n - 1, ss)
+      writeBigDecimalRemainder(qr(0), scale, (18 << n) + blockScale, n - 1, ss)
       writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss)
     }
 
@@ -1519,10 +1523,9 @@ final class JsonWriter private[jsoniter_scala](
     31 - java.lang.Integer.numberOfLeadingZeros(m)
   }
 
-  private[this] def insertDotWithZeroes(len: Int, pad: Int): Unit = {
-    var pos = count + pad + 1
-    val buf = this.buf
-    val numPos = pos - len
+  private[this] def insertDotWithZeroes(digits: Int, pad: Int, lastPos: Int, buf: Array[Byte]): Int = {
+    var pos = lastPos + pad + 1
+    val numPos = pos - digits
     val off = pad + 2
     while (pos > numPos) {
       buf(pos) = buf(pos - off)
@@ -1534,18 +1537,17 @@ final class JsonWriter private[jsoniter_scala](
       pos -= 1
     }
     ByteArrayAccess.setShort(buf, dotPos - 1, 0x2E30)
-    count += off
+    lastPos + off
   }
 
-  private[this] def insertDot(dotPos: Int): Unit = {
-    var pos = count
-    val buf = this.buf
+  private[this] def insertDot(dotPos: Int, lastPos: Int, buf: Array[Byte]): Int = {
+    var pos = lastPos
     while (pos > dotPos) {
       buf(pos) = buf(pos - 1)
       pos -= 1
     }
     buf(dotPos) = '.'
-    count += 1
+    lastPos + 1
   }
 
   private[this] def writeBoolean(x: Boolean): Unit = {
@@ -2103,9 +2105,11 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
-  private[this] def writeLong(x: Long): Unit = {
-    var pos = ensureBufCapacity(20) // Long.MinValue.toString.length
-    val buf = this.buf
+  private[this] def writeLong(x: Long): Unit =
+    count = writeLong(x, ensureBufCapacity(20), buf) // Long.MinValue.toString.length
+
+  private[this] def writeLong(x: Long, p: Int, buf: Array[Byte]): Int = {
+    var pos = p
     val ds = digits
     var q0 = x
     if (x < 0) {
@@ -2140,7 +2144,7 @@ final class JsonWriter private[jsoniter_scala](
       pos = write8Digits(q0 - q1 * 100000000, pos, buf, ds)
     }
     writePositiveIntDigits(q, lastPos, buf, ds)
-    count = pos
+    pos
   }
 
   // Based on the amazing work of Raffaello Giulietti
