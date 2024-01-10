@@ -1848,8 +1848,8 @@ final class JsonReader private[jsoniter_scala](
     } else parseSecond(loadMoreOrError(pos))
 
   private[this] def parseOptionalNanoWithDoubleQuotes(): Int = {
-    var nano = 0
     var b = nextByte(head)
+    var nano = 0
     if (b == '.') {
       var pos = head
       var buf = this.buf
@@ -3171,7 +3171,7 @@ final class JsonReader private[jsoniter_scala](
       val b = nextByte(head)
       if (b == ':') second = parseSecond(head)
       else if (b != '"') tokensError(':', '"')
-      else rollbackToken()
+      else head -= 1
     }
     val nano = parseOptionalNanoWithDoubleQuotes()
     LocalDateTime.of(year, monthDay.toByte.toInt, monthDay >> 24, hour, minute, second, nano)
@@ -3201,7 +3201,7 @@ final class JsonReader private[jsoniter_scala](
       val b = nextByte(head)
       if (b == ':') second = parseSecond(head)
       else if (b != '"') tokensError(':', '"')
-      else rollbackToken()
+      else head -= 1
     }
     LocalTime.of(hour, minute, second, parseOptionalNanoWithDoubleQuotes())
   }
@@ -3669,7 +3669,7 @@ final class JsonReader private[jsoniter_scala](
         (zoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
         zoneIds.put(k.copy, zoneId)
       }
-      zoneId
+      return zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex, pos)
     }

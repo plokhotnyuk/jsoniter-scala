@@ -1819,8 +1819,8 @@ final class JsonReader private[jsoniter_scala](
     } else parseSecond(loadMoreOrError(pos))
 
   private[this] def parseOptionalNanoWithDoubleQuotes(): Int = {
-    var nano = 0
     var b = nextByte(head)
+    var nano = 0
     if (b == '.') {
       var pos = head
       var buf = this.buf
@@ -3262,7 +3262,7 @@ final class JsonReader private[jsoniter_scala](
         (zoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
         zoneIds.put(k.copy, zoneId)
       }
-      zoneId
+      return zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex, pos)
     }
