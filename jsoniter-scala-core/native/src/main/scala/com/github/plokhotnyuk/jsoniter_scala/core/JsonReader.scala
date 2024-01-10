@@ -4840,10 +4840,10 @@ object JsonReader {
 }
 
 private class Key {
-  private var hash: Int = _
-  private var bs: Array[Byte] = _
-  private var from: Int = _
-  private var to: Int = _
+  private[this] var hash: Int = _
+  private[this] var bs: Array[Byte] = _
+  private[this] var from: Int = _
+  private[this] var to: Int = _
 
   def set(hash: Int, bs: Array[Byte], from: Int, to: Int): Unit = {
     this.hash = hash
@@ -4866,16 +4866,23 @@ private class Key {
   override def equals(obj: Any): Boolean = {
     val k = obj.asInstanceOf[Key]
     val off = from
-    val koff = k.from
+    val koff = k.fromIndex
     val len = to - off
-    k.to - koff == len && {
-      val kbs = k.bs
+    k.toIndex - koff == len && {
       val bs = this.bs
+      val kbs = k.bytes
       var i = 0
-      while (i < len && kbs(i + koff) == bs(i + off)) i += 1
+      while (i < len && kbs(koff + i) == bs(off + i)) i += 1
       i == len
     }
   }
 
+
   override def toString: String = new String(bs, 0, from, to - from)
+
+  private def bytes: Array[Byte] = bs
+
+  private def fromIndex: Int = from
+
+  private def toIndex: Int = to
 }
