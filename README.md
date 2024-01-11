@@ -22,13 +22,13 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [spray-json](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-13900K CPU @ 3.0GHz
-(max 5.8GHz, performance-cores only), RAM 64Gb DDR5-4800, Ubuntu 23.10 (Linux 6.6.6), and latest versions of JDK 17/21/23-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
+(max 5.8GHz, performance-cores only), RAM 64Gb DDR5-4800, Ubuntu 23.10 (Linux 6.6), and latest versions of JDK 17/21/23-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
 GraalVM Community JDK 17/21, and GraalVM JDK 17/21.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares libraries which supports Scala.js compiled by Scala.js 1.14.0 to ES 2015 with
+compares libraries which supports Scala.js compiled by Scala.js 1.15.0 to ES 2015 with
 GCC v20220202 optimizations applied on Intel® Core™ i7-11800H CPU @ 2.3GHz (max 4.6GHz),
-RAM 64Gb DDR4-3200, Ubuntu 23.10 (Linux 6.5).
+RAM 64Gb DDR4-3200, Ubuntu 23.10 (Linux 6.6).
 
 ## Contents
 
