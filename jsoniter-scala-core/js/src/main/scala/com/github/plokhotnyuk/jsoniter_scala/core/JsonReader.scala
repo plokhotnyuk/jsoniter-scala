@@ -1696,9 +1696,7 @@ final class JsonReader private[jsoniter_scala](
     val b3 = buf(pos + 2)
     val b4 = buf(pos + 3)
     val b5 = buf(pos + 4)
-    var isNeg = false
-    if (b1 == '-') isNeg = true
-    else if (b1 != '+') decodeError("expected '-' or '+' or digit", pos)
+    if (b1 != '-' && b1 != '+') decodeError("expected '-' or '+' or digit", pos)
     if (b2 < '0' || b2 > '9') digitError(pos + 1)
     if (b3 < '0' || b3 > '9') digitError(pos + 2)
     if (b4 < '0' || b4 > '9') digitError(pos + 3)
@@ -1722,9 +1720,9 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     head = pos + 1
-    if (isNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-    if (b != t) yearError(t, maxDigits, pos, isNeg, yearDigits)
-    if (isNeg) year = -year
+    if (b1 == '-' && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+    if (b != t) yearError(t, maxDigits, pos, b1 == '-', yearDigits)
+    if (b1 == '-') year = -year
     if (year >= 0 && year < 10000) digitError(pos)
     year
   }
@@ -2973,15 +2971,12 @@ final class JsonReader private[jsoniter_scala](
       head = pos
     }
     if (b == 'Z') nextByteOrError('"', head)
-    else {
-      var isNeg = false
-      if (b == '-') isNeg = true
-      else if (b != '+') timeError(nanoDigitWeight)
+    else if (b == '-' || b == '+') {
       var offsetTotal = parseOffsetTotalWithDoubleQuotes(head)
       if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-      if (isNeg) offsetTotal = -offsetTotal
+      if (b == '-') offsetTotal = -offsetTotal
       epochSecond -= offsetTotal
-    }
+    } else timeError(nanoDigitWeight)
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
     else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
@@ -3083,12 +3078,9 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         nextByteOrError('"', head)
         ZoneOffset.UTC
-      } else {
-        var isNeg = false
-        if (b == '-') isNeg = true
-        else if (b != '+') timeError(nanoDigitWeight)
-        toZoneOffset(isNeg, parseOffsetTotalWithDoubleQuotes(head))
-      }
+      } else if (b == '-' || b == '+') {
+        toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
+      } else timeError(nanoDigitWeight)
     OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
   }
 
@@ -3125,12 +3117,9 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         nextByteOrError('"', head)
         ZoneOffset.UTC
-      } else {
-        var isNeg = false
-        if (b == '-') isNeg = true
-        else if (b != '+') timeError(nanoDigitWeight)
-        toZoneOffset(isNeg, parseOffsetTotalWithDoubleQuotes(head))
-      }
+      } else if (b == '-' || b == '+') {
+        toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
+      } else timeError(nanoDigitWeight)
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
   }
 
@@ -3235,10 +3224,8 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         b = nextByte(head)
         ZoneOffset.UTC
-      } else {
-        var isNeg = false
-        if (b == '-') isNeg = true
-        else if (b != '+') timeError(nanoDigitWeight)
+      } else if (b == '-' || b == '+') {
+        val sb = b
         nanoDigitWeight = -3
         var offsetTotal = parseOffsetHour(head) * 3600
         b = nextByte(head)
@@ -3251,8 +3238,8 @@ final class JsonReader private[jsoniter_scala](
             b = nextByte(head)
           }
         }
-        toZoneOffset(isNeg, offsetTotal)
-      }
+        toZoneOffset(sb, offsetTotal)
+      } else timeError(nanoDigitWeight)
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (b == '[') {
       var pos = head
@@ -3310,12 +3297,9 @@ final class JsonReader private[jsoniter_scala](
     if (b == 'Z') {
       nextByteOrError('"', head)
       ZoneOffset.UTC
-    } else {
-      var isNeg = false
-      if (b == '-') isNeg = true
-      else if (b != '+') decodeError("expected '+' or '-' or 'Z'")
-      toZoneOffset(isNeg, parseOffsetTotalWithDoubleQuotes(head))
-    }
+    } else if (b == '-' || b == '+') {
+      toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
+    } else decodeError("expected '+' or '-' or 'Z'")
   }
 
   private[this] def parseOffsetTotalWithDoubleQuotes(pos: Int): Int = {
@@ -3330,20 +3314,19 @@ final class JsonReader private[jsoniter_scala](
     offsetTotal
   }
 
-  private[this] def toZoneOffset(isNeg: Boolean, offsetTotal: Int): ZoneOffset = {
+  private[this] def toZoneOffset(sb: Byte, offsetTotal: Int): ZoneOffset = {
     var qp = offsetTotal * 37283
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
       qp >>>= 25 // divide offsetTotal by 900
-      if (isNeg) qp = -qp
+      if (sb == '-') qp = -qp
       var zoneOffset = zoneOffsets(qp + 72)
-      if (zoneOffset ne null) zoneOffset
-      else {
-        zoneOffset = ZoneOffset.ofTotalSeconds(if (isNeg) -offsetTotal else offsetTotal)
+      if (zoneOffset eq null) {
+        zoneOffset = ZoneOffset.ofTotalSeconds(if (sb == '-') -offsetTotal else offsetTotal)
         zoneOffsets(qp + 72) = zoneOffset
-        zoneOffset
       }
-    } else ZoneOffset.ofTotalSeconds(if (isNeg) -offsetTotal else offsetTotal)
+      zoneOffset
+    } else ZoneOffset.ofTotalSeconds(if (sb == '-') -offsetTotal else offsetTotal)
   }
 
   private[this] def epochDay(year: Int, month: Int, day: Int): Long =
