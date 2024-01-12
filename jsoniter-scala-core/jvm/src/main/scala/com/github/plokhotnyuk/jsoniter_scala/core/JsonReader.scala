@@ -2572,18 +2572,8 @@ final class JsonReader private[jsoniter_scala](
         if ((b | 0x20) == 'e' || b == '.') numberError(pos)
         if (mark == 0) from -= newMark
         if (mark > oldMark) mark = oldMark
-        val len = pos - from
-        if (len >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
-        if (len < 19) {
-          var x = (buf(from) - '0').toLong
-          from += 1
-          while (from < pos) {
-            x = x * 10 + (buf(from) - '0')
-            from += 1
-          }
-          if (isNeg) x = -x
-          BigInt(x)
-        } else new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
+        if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
+        toBigInt(buf, from, pos, isNeg)
       }
     }
   }
@@ -2746,9 +2736,32 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
-  // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
-  // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+  private[this] def toBigInt(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean): BigInt = {
+    val len = limit - p
+    if (len < 19) {
+      var pos = p
+      var x = (buf(pos) - '0').toLong
+      pos += 1
+      while (pos < limit) {
+        x = x * 10 + (buf(pos) - '0')
+        pos += 1
+      }
+      if (isNeg) x = -x
+      BigInt(x)
+    } else if (len <= 36) toBigInt36(buf, p, limit, isNeg)
+    else new BigInt({
+      if (len <= 308) toBigInteger308(buf, p, limit, isNeg)
+      else {
+        // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
+        // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
+        // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+        val mid = len >> 1
+        val midPos = limit - mid
+        toBigDecimal(buf, p, midPos, isNeg, -mid).add(toBigDecimal(buf, midPos, limit, isNeg, 0)).unscaledValue()
+      }
+    })
+  }
+
   private[this] def toBigDecimal(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                  scale: Int): java.math.BigDecimal = {
     val len = limit - p
@@ -2763,11 +2776,51 @@ final class JsonReader private[jsoniter_scala](
       if (isNeg) x = -x
       java.math.BigDecimal.valueOf(x, scale)
     } else if (len <= 36) toBigDecimal36(buf, p, limit, isNeg, scale)
-    else if (len <= 308) toBigDecimal308(buf, p, limit, isNeg, scale)
+    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, limit, isNeg), scale)
     else {
+      // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
+      // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
+      // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
       val mid = len >> 1
       val midPos = limit - mid
       toBigDecimal(buf, p, midPos, isNeg, scale - mid).add(toBigDecimal(buf, midPos, limit, isNeg, scale))
+    }
+  }
+
+  private[this] def toBigInt36(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean): BigInt = {
+    val firstBlockLimit = limit - 18
+    var pos = p
+    var x1 = (buf(pos) - '0').toLong
+    pos += 1
+    while (pos < firstBlockLimit) {
+      x1 = x1 * 10 + (buf(pos) - '0')
+      pos += 1
+    }
+    val x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+      val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 8)) * 1000000000 + {
+      val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 17) - 48000000048L
+    val q = x1 * 1000000000000000000L
+    var l = q + x2
+    val h = Math.multiplyHigh(x1, 1000000000000000000L) + ((~l & q) >>> 63)
+    if (l >= 0 && h == 0) {
+      if (isNeg) l = -l
+      BigInt(l)
+    } else {
+      val signum =
+        if (isNeg) -1
+        else 1
+      var magnitude = this.magnitude
+      if (magnitude eq null) {
+        magnitude = new Array[Byte](128)
+        this.magnitude = magnitude
+      }
+      ByteArrayAccess.setLongReversed(magnitude, 0, h)
+      ByteArrayAccess.setLongReversed(magnitude, 8, l)
+      new BigInt(new java.math.BigInteger(signum, magnitude, 0, 16))
     }
   }
 
@@ -2809,8 +2862,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigDecimal308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
-                                    scale: Int): java.math.BigDecimal = {
+  private[this] def toBigInteger308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean): java.math.BigInteger = {
     val len = limit - p
     val last = (len * 222930821L >> 32).toInt << 3 // (len * Math.log(10) / Math.log(1L << 64)).toInt * 8
     var magnitude = this.magnitude
@@ -2862,7 +2914,7 @@ final class JsonReader private[jsoniter_scala](
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, magnitude, 0, last + 8), scale)
+    new java.math.BigInteger(signum, magnitude, 0, last + 8)
   }
 
   @tailrec
