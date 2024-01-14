@@ -64,7 +64,7 @@ object JsoniterScalaCodecs {
   implicit val localTimeArrayCodec: JsonValueCodec[Array[LocalTime]] = make
   implicit val monthDayArrayCodec: JsonValueCodec[Array[MonthDay]] = make
   implicit val nestedStructsCodec: JsonValueCodec[NestedStructs] =
-    make(CodecMakerConfig.withCheckFieldDuplication(false).withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
+    make(CodecMakerConfig.withCheckFieldDuplication(false).withTransientDefault(false).withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
   implicit val offsetDateTimeArrayCodec: JsonValueCodec[Array[OffsetDateTime]] = make
   implicit val offsetTimeArrayCodec: JsonValueCodec[Array[OffsetTime]] = make
   implicit val openRTB25Codec: JsonValueCodec[OpenRTB.BidRequest] = make
@@ -95,5 +95,6 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig.withSetMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make
-  implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make(CodecMakerConfig.withCheckFieldDuplication(false))
+  implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] =
+    make(CodecMakerConfig.withTransientDefault(false).withCheckFieldDuplication(false))
 }
