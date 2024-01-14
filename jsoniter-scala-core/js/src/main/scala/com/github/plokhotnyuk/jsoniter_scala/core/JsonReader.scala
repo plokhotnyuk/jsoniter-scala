@@ -1836,7 +1836,7 @@ final class JsonReader private[jsoniter_scala](
         nanoDigitWeight /= 10
       }
       head = pos
-      if (b != '"') nanoError(nanoDigitWeight, '"')
+      if (b != '"') nanoError(nanoDigitWeight, '"', pos - 1)
     } else if (b != '"') tokensError('.', '"')
     nano
   }
@@ -2853,20 +2853,15 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       isNeg = true
     }
-    if (b != 'P') durationOrPeriodStartError(isNeg)
-    b = nextByte(head)
     var seconds = 0L
     var nano, state = 0
+    if (b != 'P') durationOrPeriodStartError(isNeg)
+    b = nextByte(head)
+    if (b == 'T') {
+      b = nextByte(head)
+      state = 1
+    }
     while ({
-      if (state == 0) {
-        if (b == 'T') {
-          b = nextByte(head)
-          state = 1
-        }
-      } else if (state == 1) {
-        if (b != 'T') tokensError('T', '"')
-        b = nextByte(head)
-      } else if (state == 4) tokenError('"')
       var isNegX = false
       if (b == '-') {
         b = nextByte(head)
@@ -2934,10 +2929,7 @@ final class JsonReader private[jsoniter_scala](
           nanoDigitWeight /= 10
           pos += 1
         }
-        if (b != 'S') {
-          head = pos + 1
-          nanoError(nanoDigitWeight, 'S')
-        }
+        if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
         if (isNeg ^ isNegX) nano = -nano
         state = 4
       } else if (b == 'S') {
@@ -2946,7 +2938,12 @@ final class JsonReader private[jsoniter_scala](
       } else durationError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
-    }) ()
+    }) {
+      if (state == 1) {
+        if (b != 'T') tokensError('T', '"')
+        b = nextByte(head)
+      } else if (state == 4) tokenError('"')
+    }
     Duration.ofSeconds(seconds, nano.toLong)
   }
 
@@ -3146,7 +3143,6 @@ final class JsonReader private[jsoniter_scala](
     b = nextByte(head)
     var years, months, days, state = 0
     while ({
-      if (state == 4) tokenError('"')
       var isNegX = false
       if (b == '-') {
         b = nextByte(head)
@@ -3192,7 +3188,9 @@ final class JsonReader private[jsoniter_scala](
       } else periodError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
-    }) ()
+    }) {
+      if (state == 4) tokenError('"')
+    }
     Period.of(years, months, days)
   }
 
@@ -3411,9 +3409,9 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def secondError(pos: Int): Nothing = decodeError("illegal second", pos)
 
-  private[this] def nanoError(nanoDigitWeight: Int, t: Byte): Nothing = {
-    if (nanoDigitWeight == 0) tokenError(t)
-    tokenOrDigitError(t)
+  private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing = {
+    if (nanoDigitWeight == 0) tokenError(t, pos)
+    tokenOrDigitError(t, pos)
   }
 
   private[this] def timeError(nanoDigitWeight: Int): Nothing = decodeError {

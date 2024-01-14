@@ -1845,54 +1845,6 @@ final class JsonReader private[jsoniter_scala](
       b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else parseSecond(loadMoreOrError(pos))
 
-  private[this] def parseOptionalNanoWithDoubleQuotes(): Int = {
-    var b = nextByte(head)
-    var nano = 0
-    if (b == '.') {
-      var pos = head
-      var buf = this.buf
-      var nanoDigitWeight = 100000000
-      var bs = 0
-      if (pos + 9 < tail && {
-        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
-        ((bs + 0x767676 | bs) & 0x808080) == 0
-      } && {
-        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
-        pos += 3
-        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
-        nanoDigitWeight = 100000
-        ((bs + 0x767676 | bs) & 0x808080) == 0
-      } && {
-        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
-        pos += 3
-        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
-        nanoDigitWeight = 100
-        ((bs + 0x767676 | bs) & 0x808080) == 0
-      }) {
-        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
-        pos += 4
-        b = (bs >> 24).toByte
-        nanoDigitWeight = 0
-      } else {
-        while ({
-          if (pos >= tail) {
-            pos = loadMoreOrError(pos)
-            buf = this.buf
-          }
-          b = buf(pos)
-          pos += 1
-          (b >= '0' && b <= '9') && nanoDigitWeight != 0
-        }) {
-          nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
-        }
-      }
-      head = pos
-      if (b != '"') nanoError(nanoDigitWeight, '"')
-    } else if (b != '"') tokensError('.', '"')
-    nano
-  }
-
   @tailrec
   private[this] def parseOffsetHour(pos: Int): Int =
     if (pos + 1 < tail) {
@@ -2969,20 +2921,15 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       isNeg = true
     }
-    if (b != 'P') durationOrPeriodStartError(isNeg)
-    b = nextByte(head)
     var seconds = 0L
     var nano, state = 0
+    if (b != 'P') durationOrPeriodStartError(isNeg)
+    b = nextByte(head)
+    if (b == 'T') {
+      b = nextByte(head)
+      state = 1
+    }
     while ({
-      if (state == 0) {
-        if (b == 'T') {
-          b = nextByte(head)
-          state = 1
-        }
-      } else if (state == 1) {
-        if (b != 'T') tokensError('T', '"')
-        b = nextByte(head)
-      } else if (state == 4) tokenError('"')
       var isNegX = false
       if (b == '-') {
         b = nextByte(head)
@@ -3061,10 +3008,7 @@ final class JsonReader private[jsoniter_scala](
             pos += 1
           }
         }
-        if (b != 'S') {
-          head = pos + 1
-          nanoError(nanoDigitWeight, 'S')
-        }
+        if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
         if (isNeg ^ isNegX) nano = -nano
         state = 4
       } else if (b == 'S') {
@@ -3073,7 +3017,12 @@ final class JsonReader private[jsoniter_scala](
       } else durationError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
-    }) ()
+    }) {
+      if (state == 1) {
+        if (b != 'T') tokensError('T', '"')
+        b = nextByte(head)
+      } else if (state == 4) tokenError('"')
+    }
     Duration.ofSeconds(seconds, nano.toLong)
   }
 
@@ -3090,28 +3039,26 @@ final class JsonReader private[jsoniter_scala](
     var pos = head
     var buf = this.buf
     var secondOfDay = 0L
-    if (pos + 7 < tail && {
+    var b: Byte = 0
+    if (pos + 8 < tail && {
       secondOfDay = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       ((secondOfDay + 0x767A00767A00767DL | secondOfDay) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         secondOfDay *= 2561 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
         secondOfDay = ((secondOfDay & 0x3F00001F00L) * 1979120931962880L >>> 47) + (secondOfDay >> 56)
         secondOfDay < 86400
       }
-    }) pos += 8
-    else {
+    }) {
+      b = buf(pos + 8)
+      pos += 9
+    } else {
       secondOfDay = parseSecondOfDay(pos)
+      b = nextByte(head)
       pos = head
       buf = this.buf
     }
     epochSecond += secondOfDay
     var nano = 0
     var nanoDigitWeight = -2
-    if (pos >= tail) {
-      pos = loadMoreOrError(pos)
-      buf = this.buf
-    }
-    var b = buf(pos)
-    pos += 1
     if (b == '.') {
       nanoDigitWeight = 100000000
       var bs = 0
@@ -3196,8 +3143,10 @@ final class JsonReader private[jsoniter_scala](
     val year = parseYearWithByte('-', head)
     val monthDay = parseMonthDayWithT(year, head)
     var pos = head
+    var buf = this.buf
     var hour, minute, second = 0
-    if (pos + 7 < tail && {
+    var b: Byte = 0
+    if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
       dec *= 2561
@@ -3209,25 +3158,72 @@ final class JsonReader private[jsoniter_scala](
         hour < 24
       } || m << 16 == 0xE800000000000000L && {
         pos += 5
-        hour < 24
+        hour <= 24
       }
-    }) head = pos
-    else {
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
       hour = parseHourWithColon(head)
       minute = parseMinute(head)
-      val b = nextByte(head)
-      if (b == ':') second = parseSecond(head)
-      else if (b != '"') tokensError(':', '"')
-      else head -= 1
+      b = nextByte(head)
+      if (b == ':') {
+        second = parseSecond(head)
+        b = nextByte(head)
+      } else if (b != '"') tokensError(':', '"')
+      pos = head
+      buf = this.buf
     }
-    val nano = parseOptionalNanoWithDoubleQuotes()
+    var nano = 0
+    if (b == '.') {
+      var nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
+      }
+      if (b != '"') nanoError(nanoDigitWeight, '"', pos - 1)
+    } else if (b != '"') tokensError('.', '"', pos - 1)
+    head = pos
     LocalDateTime.of(year, monthDay.toByte.toInt, monthDay >> 24, hour, minute, second, nano)
   }
 
   private[this] def parseLocalTime(): LocalTime = {
     var pos = head
+    var buf = this.buf
     var hour, minute, second = 0
-    if (pos + 7 < tail && {
+    var b: Byte = 0
+    if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
       dec *= 2561
@@ -3239,18 +3235,64 @@ final class JsonReader private[jsoniter_scala](
         hour < 24
       } || m << 16 == 0xE800000000000000L && {
         pos += 5
-        hour < 24
+        hour <= 24
       }
-    }) head = pos
-    else {
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
       hour = parseHourWithColon(head)
       minute = parseMinute(head)
-      val b = nextByte(head)
-      if (b == ':') second = parseSecond(head)
-      else if (b != '"') tokensError(':', '"')
-      else head -= 1
+      b = nextByte(head)
+      if (b == ':') {
+        second = parseSecond(head)
+        b = nextByte(head)
+      } else if (b != '"') tokensError(':', '"')
+      pos = head
+      buf = this.buf
     }
-    LocalTime.of(hour, minute, second, parseOptionalNanoWithDoubleQuotes())
+    var nano = 0
+    if (b == '.') {
+      var nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
+      }
+      if (b != '"') nanoError(nanoDigitWeight, '"', pos - 1)
+    } else if (b != '"') tokensError('.', '"', pos - 1)
+    head = pos
+    LocalTime.of(hour, minute, second, nano)
   }
 
   @tailrec
@@ -3485,7 +3527,6 @@ final class JsonReader private[jsoniter_scala](
     b = nextByte(head)
     var years, months, days, state = 0
     while ({
-      if (state == 4) tokenError('"')
       var isNegX = false
       if (b == '-') {
         b = nextByte(head)
@@ -3531,7 +3572,9 @@ final class JsonReader private[jsoniter_scala](
       } else periodError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
-    }) ()
+    }) {
+      if (state == 4) tokenError('"')
+    }
     Period.of(years, months, days)
   }
 
@@ -3857,10 +3900,9 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def secondError(pos: Int): Nothing = decodeError("illegal second", pos)
 
-  private[this] def nanoError(nanoDigitWeight: Int, t: Byte): Nothing = {
-    if (nanoDigitWeight == 0) tokenError(t)
-    tokenOrDigitError(t)
-  }
+  private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing =
+    if (nanoDigitWeight == 0) tokenError(t, pos)
+    else tokenOrDigitError(t, pos)
 
   private[this] def timeError(nanoDigitWeight: Int, pos: Int): Nothing = decodeError({
     if (nanoDigitWeight == -2) "expected '.' or '+' or '-' or 'Z'"
