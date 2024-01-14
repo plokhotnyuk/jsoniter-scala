@@ -2150,14 +2150,14 @@ final class JsonReader private[jsoniter_scala](
       isNeg = true
     }
     if (b < '0' || b > '9') numberError()
-    var x = '0' - b
-    if (isToken && x == 0) {
+    var x1 = '0' - b
+    if (isToken && x1 == 0) {
       ensureNotLeadingZero()
       0L
     } else {
       var pos = head
       var buf = this.buf
-      while (x > -214748364 && (pos < tail || {
+      while (x1 > -214748364 && (pos < tail || {
         pos = loadMore(pos)
         buf = this.buf
         pos < tail
@@ -2165,10 +2165,10 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        x = x * 10 + ('0' - b)
+        x1 = x1 * 10 + ('0' - b)
         pos += 1
       }
-      var x1 = x.toLong
+      var x = x1.toLong
       while ((pos < tail || {
         pos = loadMore(pos)
         buf = this.buf
@@ -2177,19 +2177,19 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        if (x1 < -922337203685477580L || {
-          x1 = x1 * 10 + ('0' - b)
-          x1 > 0
+        if (x < -922337203685477580L || {
+          x = x * 10 + ('0' - b)
+          x > 0
         }) longOverflowError(pos)
         pos += 1
       }
       head = pos
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if (!isNeg) {
-        if (x1 == -9223372036854775808L) longOverflowError(pos - 1)
-        x1 = -x1
+        if (x == -9223372036854775808L) longOverflowError(pos - 1)
+        x = -x
       }
-      x1
+      x
     }
   }
 
@@ -2873,9 +2873,21 @@ final class JsonReader private[jsoniter_scala](
         isNegX = true
       }
       if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 1)
-      var x = ('0' - b).toLong
+      var x1 = '0' - b
       var pos = head
       var buf = this.buf
+      while (x1 > -214748364 && (pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        x1 = x1 * 10 + ('0' - b)
+        pos += 1
+      }
+      var x = x1.toLong
       while ((pos < tail || {
         pos = loadMore(pos)
         buf = this.buf
