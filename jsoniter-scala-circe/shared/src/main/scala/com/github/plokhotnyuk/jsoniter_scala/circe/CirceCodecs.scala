@@ -13,7 +13,7 @@ object CirceCodecs {
   private[this] val pool = new ThreadLocal[(Array[Byte], JsonReader, JsonWriter)] {
     override def initialValue(): (Array[Byte], JsonReader, JsonWriter) = {
       val buf = new Array[Byte](128) // should be enough for the longest zoned date time value
-      (buf, new JsonReader(buf, charBuf = new Array[Char](128)), new JsonWriter(buf))
+      new Tuple3(buf, new JsonReader(buf, charBuf = new Array[Char](128)), new JsonWriter(buf))
     }
   }
 
@@ -50,12 +50,14 @@ object CirceCodecs {
   private[this] def shortAsciiStringCodec[A](name: String, read: (JsonReader, A) => A, write: (JsonWriter, A) => Unit): Codec[A] =
     new JsonValueCodec[A] with Codec[A] {
       override def apply(x: A): Json = {
-        val (buf, _, writer) = pool.get
-        io.circe.JsoniterScalaCodec.asciiStringToJString(buf, writer.write(this, x, buf, 0, 128, WriterConfig))
+        val tlb = pool.get
+        val buf = tlb._1
+        io.circe.JsoniterScalaCodec.asciiStringToJString(buf, tlb._3.write(this, x, buf, 0, 128, WriterConfig))
       }
 
       override def apply(c: HCursor): Decoder.Result[A] = {
-        val (buf, reader, _) = pool.get
+        val tlb = pool.get
+        val buf = tlb._1
         val s = io.circe.JsoniterScalaCodec.stringValue(c)
         var len = 0
         if ((s ne null) && {
@@ -73,7 +75,7 @@ object CirceCodecs {
           buf(i + 1) = '"'
           bits < 0x80
         }) {
-          try new scala.util.Right(reader.read(this, buf, 0, len + 2, ReaderConfig))
+          try return new scala.util.Right(tlb._2.read(this, buf, 0, len + 2, ReaderConfig))
           catch {
             case _: JsonReaderException => error(c)
           }
