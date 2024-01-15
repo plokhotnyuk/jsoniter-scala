@@ -1304,14 +1304,14 @@ final class JsonWriter private[jsoniter_scala](
       val ch = s.charAt(from).toInt
       buf(pos) = ch.toByte
       if (ch >= 0x20 && ch < 0x7F && ch != 0x22 && ch != 0x5C) writeString(s, from + 1, pos + 1, buf, minLim)
-      else writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      else writeEscapedOrEncodedString(s, from, pos)
     } else if (s.length == from) pos
     else {
       val newPos = flushAndGrowBuf(2, pos)
       writeString(s, from, newPos, this.buf, Math.min(s.length - from, limit - newPos - 1) + newPos)
     }
 
-  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]): Int =
+  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int): Int =
     if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars)
     else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
 

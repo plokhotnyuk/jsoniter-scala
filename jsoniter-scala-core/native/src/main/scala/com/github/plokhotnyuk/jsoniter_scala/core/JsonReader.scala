@@ -2892,27 +2892,11 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
-  private[this] def decodeError(msg: String, bs: Int, pos: Int): Nothing = decodeError(msg, {
-    val b0 = bs.toByte
-    val b1 = (bs >> 8).toByte
-    val b2 = (bs >> 16).toByte
-    pos +
-      (if (b0 != 'n') -1
-      else if (b1 != 'u') 0
-      else if (b2 != 'l') 1
-      else 2)
-  })
+  private[this] def decodeError(msg: String, bs: Int, pos: Int): Nothing =
+    decodeError(msg, (java.lang.Integer.numberOfTrailingZeros(bs ^ 0x6C6C756E) >> 3) + pos - 1)
 
-  private[this] def tokenOrNullError(t: Byte, bs: Int, pos: Int): Nothing = tokenOrNullError(t, {
-    val b0 = bs.toByte
-    val b1 = (bs >> 8).toByte
-    val b2 = (bs >> 16).toByte
-    pos +
-      (if (b0 != 'n') -1
-      else if (b1 != 'u') 0
-      else if (b2 != 'l') 1
-      else 2)
-  })
+  private[this] def tokenOrNullError(t: Byte, bs: Int, pos: Int): Nothing =
+    tokenOrNullError(t, (java.lang.Integer.numberOfTrailingZeros(bs ^ 0x6C6C756E) >> 3) + pos - 1)
 
   private[this] def parseDuration(): Duration = {
     var b = nextByte(head)
@@ -2921,14 +2905,15 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       isNeg = true
     }
-    var seconds = 0L
-    var nano, state = 0
     if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
+    var state = 0
     if (b == 'T') {
       b = nextByte(head)
       state = 1
     }
+    var seconds = 0L
+    var nano = 0
     while ({
       var isNegX = false
       if (b == '-') {
@@ -3333,8 +3318,8 @@ final class JsonReader private[jsoniter_scala](
     val monthDay = parseMonthDayWithT(year, head)
     var pos = head
     var buf = this.buf
-    var hour, minute, second, nano = 0
-    var b: Byte = '"'
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
@@ -3366,6 +3351,7 @@ final class JsonReader private[jsoniter_scala](
       pos = head
       buf = this.buf
     }
+    var nano = 0
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
       var bs = 0
@@ -3426,8 +3412,8 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseOffsetTime(): OffsetTime = {
     var pos = head
     var buf = this.buf
-    var hour, minute, second, nano = 0
-    var b: Byte = '"'
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
@@ -3459,6 +3445,7 @@ final class JsonReader private[jsoniter_scala](
       pos = head
       buf = this.buf
     }
+    var nano = 0
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
       var bs = 0
@@ -3601,8 +3588,8 @@ final class JsonReader private[jsoniter_scala](
     val monthDay = parseMonthDayWithT(year, head)
     var pos = head
     var buf = this.buf
-    var hour, minute, second, nano = 0
-    var b: Byte = '"'
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
@@ -3634,6 +3621,7 @@ final class JsonReader private[jsoniter_scala](
       pos = head
       buf = this.buf
     }
+    var nano = 0
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
       var bs = 0
