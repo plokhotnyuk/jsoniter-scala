@@ -69,7 +69,8 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig.withCheckFieldDuplication(false).withTransientDefault(false).withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
   implicit val offsetDateTimeArrayCodec: JsonValueCodec[Array[OffsetDateTime]] = make
   implicit val offsetTimeArrayCodec: JsonValueCodec[Array[OffsetTime]] = make
-  implicit val openRTB25Codec: JsonValueCodec[OpenRTB.BidRequest] = make
+  implicit val openRTB25Codec: JsonValueCodec[OpenRTB.BidRequest] =
+    make(CodecMakerConfig.withTransientNone(false).withTransientEmpty(false))
   implicit val periodArrayCodec: JsonValueCodec[Array[Period]] = make
   implicit val shortArrayCodec: JsonValueCodec[Array[Short]] = make
   implicit val uuidArrayCodec: JsonValueCodec[Array[UUID]] = make
