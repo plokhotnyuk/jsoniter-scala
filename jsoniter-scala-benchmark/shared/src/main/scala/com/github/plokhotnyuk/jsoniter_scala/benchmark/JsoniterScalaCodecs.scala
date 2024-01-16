@@ -51,10 +51,12 @@ object JsoniterScalaCodecs {
   implicit val doubleArrayCodec: JsonValueCodec[Array[Double]] = make
   implicit val durationArrayCodec: JsonValueCodec[Array[Duration]] = make
   implicit val enumArrayCodec: JsonValueCodec[Array[SuitEnum]] = make
-  implicit val enumADTArrayCodec: JsonValueCodec[Array[SuitADT]] = make(CodecMakerConfig.withDiscriminatorFieldName(None))
+  implicit val enumADTArrayCodec: JsonValueCodec[Array[SuitADT]] =
+    make(CodecMakerConfig.withDiscriminatorFieldName(None))
   implicit val floatArrayCodec: JsonValueCodec[Array[Float]] = make
-  implicit val geoJSONCodec: JsonValueCodec[GeoJSON.GeoJSON] = make
-  implicit val gitHubActionsAPICodec: JsonValueCodec[GitHubActionsAPI.Response] = make(CodecMakerConfig.withCheckFieldDuplication(false))
+  implicit val geoJSONCodec: JsonValueCodec[GeoJSON.GeoJSON] = make(CodecMakerConfig.withTransientDefault(false))
+  implicit val gitHubActionsAPICodec: JsonValueCodec[GitHubActionsAPI.Response] =
+    make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val instantArrayCodec: JsonValueCodec[Array[Instant]] = make
   implicit val intArrayCodec: JsonValueCodec[Array[Int]] = make
   implicit val javaEnumArrayCodec: JsonValueCodec[Array[Suit]] = make
@@ -78,13 +80,16 @@ object JsoniterScalaCodecs {
   implicit val zoneOffsetArrayCodec: JsonValueCodec[Array[ZoneOffset]] = make
   implicit val bitSetCodec: JsonValueCodec[BitSet] =
     make(CodecMakerConfig.withBitSetValueLimit(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make(CodecMakerConfig.withCheckFieldDuplication(false))
+  implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] =
+    make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val intMapOfBooleansCodec: JsonValueCodec[IntMap[Boolean]] =
     make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  implicit val googleMapsAPICodec: JsonValueCodec[GoogleMapsAPI.DistanceMatrix] = make(CodecMakerConfig.withCheckFieldDuplication(false))
+  implicit val googleMapsAPICodec: JsonValueCodec[GoogleMapsAPI.DistanceMatrix] =
+    make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val mapOfIntsToBooleansCodec: JsonValueCodec[Map[Int, Boolean]] =
     make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  implicit val missingReqFieldCodec: JsonValueCodec[MissingRequiredFields] = make(CodecMakerConfig.withCheckFieldDuplication(false))
+  implicit val missingReqFieldCodec: JsonValueCodec[MissingRequiredFields] =
+    make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val mutableBitSetCodec: JsonValueCodec[mutable.BitSet] =
     make(CodecMakerConfig.withBitSetValueLimit(Int.MaxValue /* WARNING: It is an unsafe option for open systems */))
   implicit val mutableLongMapOfBooleansCodec: JsonValueCodec[mutable.LongMap[Boolean]] =
