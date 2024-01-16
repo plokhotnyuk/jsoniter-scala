@@ -26,7 +26,9 @@ import org.openjdk.jmh.annotations._
   "-XX:+AlwaysPreTouch",
   "-XX:+UseNUMA",
   "-XX:-UseAdaptiveNUMAChunkSizing",
-  "-XX:+PerfDisableSharedMem" // See https://github.com/Simonis/mmap-pause#readme
+  "-XX:+PerfDisableSharedMem", // See https://github.com/Simonis/mmap-pause#readme
+  "-XX:+UnlockExperimentalVMOptions",
+  "-XX:+TrustFinalNonStaticFields"
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
