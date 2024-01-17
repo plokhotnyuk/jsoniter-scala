@@ -3088,9 +3088,8 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         nextByteOrError('"', head)
         ZoneOffset.UTC
-      } else if (b == '-' || b == '+') {
-        toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
-      } else timeError(nanoDigitWeight)
+      } else if (b == '-' || b == '+') toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
+      else timeError(nanoDigitWeight)
     OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
   }
 
@@ -3127,9 +3126,8 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         nextByteOrError('"', head)
         ZoneOffset.UTC
-      } else if (b == '-' || b == '+') {
-        toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
-      } else timeError(nanoDigitWeight)
+      } else if (b == '-' || b == '+') toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
+      else timeError(nanoDigitWeight)
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
   }
 
@@ -3249,6 +3247,7 @@ final class JsonReader private[jsoniter_scala](
             b = nextByte(head)
           }
         }
+        if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
         toZoneOffset(sb, offsetTotal)
       } else timeError(nanoDigitWeight)
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
@@ -3308,9 +3307,8 @@ final class JsonReader private[jsoniter_scala](
     if (b == 'Z') {
       nextByteOrError('"', head)
       ZoneOffset.UTC
-    } else if (b == '-' || b == '+') {
-      toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
-    } else decodeError("expected '+' or '-' or 'Z'")
+    } else if (b == '-' || b == '+') toZoneOffset(b, parseOffsetTotalWithDoubleQuotes(head))
+    else decodeError("expected '+' or '-' or 'Z'")
   }
 
   private[this] def parseOffsetTotalWithDoubleQuotes(pos: Int): Int = {
@@ -3322,12 +3320,12 @@ final class JsonReader private[jsoniter_scala](
       b == ':'
     }) offsetTotal += parseOffsetSecondWithDoubleQuotes(head)
     else if (b != '"') tokensError(':', '"')
+    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     offsetTotal
   }
 
   private[this] def toZoneOffset(sb: Byte, offsetTotal: Int): ZoneOffset = {
     var qp = offsetTotal * 37283
-    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
       qp >>>= 25 // divide offsetTotal by 900
       if (sb == '-') qp = -qp
