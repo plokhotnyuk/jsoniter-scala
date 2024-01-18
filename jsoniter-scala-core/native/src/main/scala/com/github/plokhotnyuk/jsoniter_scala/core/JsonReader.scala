@@ -3084,18 +3084,16 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b == 'Z') nextByteOrError('"', pos)
     else if (b == '-' || b == '+') {
-      var offsetTotal = 0L
+      var offsetTotal = 0
       if (pos + 7 < tail && {
-        offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-        (offsetTotal + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L &&
-          (offsetTotal & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
-      }) {
-        offsetTotal = ((offsetTotal & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-        head = pos + 6
-      } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
-      if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-      if (b == '-') offsetTotal = -offsetTotal
-      epochSecond -= offsetTotal
+        val bs = ByteArrayAccess.getLong(buf, pos)
+        offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+        (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+      }) head = pos + 6
+      else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+      if (b == '-') epochSecond += offsetTotal
+      else epochSecond -= offsetTotal
     } else timeError(nanoDigitWeight, pos - 1)
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
     else Instant.ofEpochSecond(epochSecond, nano.toLong)

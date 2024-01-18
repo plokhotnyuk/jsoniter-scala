@@ -2981,12 +2981,9 @@ final class JsonReader private[jsoniter_scala](
       head = pos
     }
     if (b == 'Z') nextByteOrError('"', head)
-    else if (b == '-' || b == '+') {
-      var offsetTotal = parseOffsetTotalWithDoubleQuotes(head)
-      if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-      if (b == '-') offsetTotal = -offsetTotal
-      epochSecond -= offsetTotal
-    } else timeError(nanoDigitWeight)
+    else if (b == '-') epochSecond += parseOffsetTotalWithDoubleQuotes(head)
+    else if (b == '+') epochSecond -= parseOffsetTotalWithDoubleQuotes(head)
+    else timeError(nanoDigitWeight)
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
     else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
