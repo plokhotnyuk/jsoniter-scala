@@ -91,7 +91,6 @@ lazy val nativeSettings = Seq(
 
 lazy val noPublishSettings = Seq(
   publish / skip := true,
-  publishTo := None, // W/A for https://github.com/sbt/sbt/issues/7288
   mimaPreviousArtifacts := Set()
 )
 
@@ -118,9 +117,7 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
-  )
+  mimaBinaryIssueFilters := Seq()
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
@@ -264,15 +261,14 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37",
       "org.scalatest" %%% "scalatest" % "3.2.17" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq(
+      case Some((3, _)) => Seq(
+        "io.bullet" %%% "borer-derivation" % "1.13.0"
+      )
+      case _ => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
         "com.avsystem.commons" %%% "commons-core" % "2.13.2",
         "com.dslplatform" %% "dsl-json-scala" % "2.0.2"
       )
-      case Some((3, _)) => Seq(
-        "io.bullet" %%% "borer-derivation" % "1.13.0"
-      )
-      case _ => Seq()
     }),
     Compile / doc / sources := Seq()
   )
