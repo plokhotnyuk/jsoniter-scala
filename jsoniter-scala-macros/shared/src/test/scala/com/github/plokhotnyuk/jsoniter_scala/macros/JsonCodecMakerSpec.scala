@@ -16,6 +16,8 @@ case class UserId(id: String) extends AnyVal
 
 case class OrderId(value: Int) extends AnyVal
 
+case class UserIds(l: List[String]) extends AnyVal
+
 object Alias {
   type I = Int
 
@@ -1198,6 +1200,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[ValueClassTypes],
         ValueClassTypes(UserId("123abc"), OrderId(123123)), """{"uid":"123abc","oid":123123}""")
     }
+    "serialize and deserialize collection fields of value classes" in {
+      verifySerDeser(make[UserIds], UserIds(List("VVV", "WWW")), """["VVV","WWW"]""")
+    }
     "serialize and deserialize top-level value classes" in {
       verifySerDeser(make[UserId], UserId("123abc"), """"123abc"""")
       verifySerDeser(make[OrderId], OrderId(123123), "123123")
@@ -1240,6 +1245,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         _root_.scala.Array(UserId("123abc"), UserId("123def")), """["123abc","123def"]""")
       verifySerDeser(make[Array[OrderId]](CodecMakerConfig.withInlineOneValueClasses(true)),
         _root_.scala.Array(OrderId(123123), OrderId(123456)), "[123123,123456]")
+    }
+    "serialize and deserialize collection fields of one value classes" in {
+      case class UserIds(l: List[String])
+
+      verifySerDeser(make[UserIds](CodecMakerConfig.withInlineOneValueClasses(true)),
+        UserIds(List("VVV", "WWW")), """["VVV","WWW"]""")
     }
     "serialize and deserialize case classes with options" in {
       verifySerDeser(codecOfOptions,

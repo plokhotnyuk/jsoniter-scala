@@ -2809,7 +2809,9 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[ZoneOffset]) '{ $out.writeVal(${m.asExprOf[ZoneOffset]}) }
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
-          genWriteVal(Select(m.asTerm, valueClassValueSymbol(tpe)).asExpr, vtpe :: types, isStringified, None, out)
+          vtpe.asType match
+            case '[vt] =>
+              genWriteVal(Select(m.asTerm, valueClassValueSymbol(tpe)).asExprOf[vt], vtpe :: types, isStringified, None, out)
         } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
