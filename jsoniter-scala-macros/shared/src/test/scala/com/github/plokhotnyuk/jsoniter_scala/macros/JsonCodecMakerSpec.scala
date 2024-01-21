@@ -460,6 +460,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfStandardTypes, """{"s":"VVV","bi":1,"bd":2]""", "expected '}' or ',', offset: 0x00000018")
       verifyDeserError(codecOfStandardTypes, """{"s":"VVV","bi":1,"bd":2,}""", """expected '"', offset: 0x00000019""")
     }
+    "throw exception in attempt to serialize null values" in {
+      verifySerError[StandardTypes](codecOfStandardTypes, null, "", null, WriterConfig)
+    }
     "serialize and deserialize Scala classes which has a primary constructor with 'var' or 'var' parameters only" in {
       class NonCaseClass(val id: Int, var name: String) {
         override def hashCode(): Int = id * 31 + Objects.hashCode(name)
@@ -2405,9 +2408,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfADTList3, """[{"a":1,"type":123}]""", """expected '"', offset: 0x0000000f""")
     }
     "throw parse exception in case of illegal or missing discriminator" in {
-      verifyDeserError(codecOfADTList2, """[true]""", """expected '"' or '{' or null, offset: 0x00000001""")
+      verifyDeserError(codecOfADTList2, """[null]""", """expected '"' or '{', offset: 0x00000001""")
+      verifyDeserError(codecOfADTList2, """[true]""", """expected '"' or '{', offset: 0x00000001""")
       verifyDeserError(codecOfADTList2, """[{{"a":1}}]""", """expected '"', offset: 0x00000002""")
       verifyDeserError(codecOfADTList2, """[{"aaa":{"a":1}}]""", """illegal discriminator, offset: 0x00000007""")
+    }
+    "throw exception in attempt to serialize null values for ADTs" in {
+      verifySerError[List[AdtBase]](codecOfADTList1, List[AdtBase](null), "", null, WriterConfig)
+      verifySerError[List[AdtBase]](codecOfADTList2, List[AdtBase](null), "", null, WriterConfig)
+      verifySerError[List[AdtBase]](codecOfADTList3, List[AdtBase](null), "", null, WriterConfig)
     }
     "don't generate codecs for non sealed traits or abstract classes as an ADT base" in {
       assert(intercept[TestFailedException](assertCompiles {

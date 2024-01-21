@@ -1829,7 +1829,12 @@ object JsonCodecMaker {
                       val r = ${genReadSubclassesBlock(leafCaseClasses)}
                       if (in.isNextToken('}')) r
                       else in.objectEndOrCommaError()
-                    } else in.readNullOrError(default, "expected '\"' or '{' or null")"""
+                    } else {
+                      val m =
+                        if (default == null) "expected '\"' or '{'"
+                        else "expected '\"' or '{' or null"
+                      in.readNullOrError(default, m)
+                    }"""
               } else if (leafCaseClasses.nonEmpty) {
                 q"""if (in.isNextToken('{')) {
                       val l = in.readKeyAsCharBuf()
@@ -2144,7 +2149,7 @@ object JsonCodecMaker {
                       ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
                 cq"x: $subTpe => ${genWriteLeafClass(subTpe, writeDiscriminatorField)}"
               }
-          }) :+ cq"null => out.writeNull()"
+          })
           q"""x match {
                 case ..$writeSubclasses
               }"""

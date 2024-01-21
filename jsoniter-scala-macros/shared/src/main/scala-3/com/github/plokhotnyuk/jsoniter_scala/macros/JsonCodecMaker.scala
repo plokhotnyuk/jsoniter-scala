@@ -1808,7 +1808,12 @@ object JsonCodecMaker {
                 val r = ${genReadSubclassesBlock(objClasses, 'l).asExprOf[T]}
                 if ($in.isNextToken('}')) r
                 else $in.objectEndOrCommaError()
-              } else $in.readNullOrError($default, "expected '\"' or '{' or null")
+              } else {
+                val m =
+                  if ($default == null) "expected '\"' or '{'"
+                  else "expected '\"' or '{' or null"
+                $in.readNullOrError($default, m)
+              }
             }
             case Some(discrFieldName) =>
               if (cfg.requireDiscriminatorFirst) '{
@@ -3031,7 +3036,7 @@ object JsonCodecMaker {
               CaseDef(Bind(vxSym, Typed(Wildcard(), Inferred(subTpe))), None,
                 genWriteLeafClass(subTpe, Some(writeDiscriminator), Ref(vxSym)).asTerm)
             }
-          } :+ CaseDef(Literal(NullConstant()), None, '{ $out.writeNull() }.asTerm)
+          }
           Match(x.asTerm, writeSubclasses.toList).asExprOf[Unit]
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           genWriteNonAbstractScalaClass(x.asExprOf[T], types, optWriteDiscriminator, out)
