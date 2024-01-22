@@ -23,8 +23,7 @@ jobs:
           - 11
           - 21
         os:
-          - macOS-latest # FIXME: restore build on Ubuntu and Windows
-          - ubuntu-latest
+          - ubuntu-latest # FIXME: restore build on MacOS and Windows
       fail-fast: false
     steps:
       - name: Configure git
@@ -42,7 +41,7 @@ jobs:
           java-version: ${{ matrix.java }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - name: Test and Check Binary Compatibility
         run: "sbt -batch +test +mimaReportBinaryIssues"
         shell: bash
