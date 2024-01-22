@@ -41,7 +41,7 @@ jobs:
           java-version: ${{ matrix.java }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 16
       - name: Test and Check Binary Compatibility
         run: "sbt -batch +test +mimaReportBinaryIssues"
         shell: bash
