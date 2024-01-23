@@ -2934,8 +2934,9 @@ object JsonCodecMaker {
               val tx = x.asExprOf[List[t1]]
               '{
                 $out.writeArrayStart()
+                val n = Nil
                 var l = $tx
-                while (l ne Nil) {
+                while (l ne n) {
                   ${genWriteVal('{ l.head }, tpe1 :: types, isStringified, None, out)}
                   l = l.tail
                 }
