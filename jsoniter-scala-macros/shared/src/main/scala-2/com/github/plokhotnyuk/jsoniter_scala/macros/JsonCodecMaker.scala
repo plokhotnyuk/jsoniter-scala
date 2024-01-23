@@ -1992,10 +1992,9 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types, isStringified, EmptyTree)
         } else if (isOption(tpe, types.tail)) {
-          q"""$m match {
-                case _root_.scala.Some(x) => ${genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree)}
-                case _root_.scala.None => out.writeNull()
-              }"""
+          val tpe1 = typeArg1(tpe)
+          q"""if ($m ne _root_.scala.None) ${genWriteVal(q"$m.asInstanceOf[Some[$tpe1]].value", tpe1 :: types, isStringified, EmptyTree)}
+              else out.writeNull()"""
         } else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
           isMutableArraySeq(tpe)) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
