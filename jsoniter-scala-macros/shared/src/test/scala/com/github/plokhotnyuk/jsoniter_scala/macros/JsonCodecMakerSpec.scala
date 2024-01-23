@@ -1259,10 +1259,22 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Array[OrderId]](CodecMakerConfig.withInlineOneValueClasses(true)),
         _root_.scala.Array(OrderId(123123), OrderId(123456)), "[123123,123456]")
     }
-    "serialize and deserialize collection fields of one value classes" in {
+    "serialize and deserialize a collection field of one value classes" in {
       case class UserIds(l: List[String])
 
       verifySerDeser(make[UserIds](CodecMakerConfig.withInlineOneValueClasses(true)),
+        UserIds(List("VVV", "WWW")), """["VVV","WWW"]""")
+    }
+    "serialize and deserialize a generic type field of one value classes" in {
+      case class UserIds[T](l: T)
+
+      verifySerDeser(make[UserIds[List[String]]](CodecMakerConfig.withInlineOneValueClasses(true)),
+        UserIds(List("VVV", "WWW")), """["VVV","WWW"]""")
+    }
+    "serialize and deserialize a higher kind type field of one value classes" in {
+      case class UserIds[F[_], A](l: F[A])
+
+      verifySerDeser(make[UserIds[List, String]](CodecMakerConfig.withInlineOneValueClasses(true)),
         UserIds(List("VVV", "WWW")), """["VVV","WWW"]""")
     }
     "serialize and deserialize case classes with options" in {
