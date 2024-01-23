@@ -2357,12 +2357,12 @@ object JsonCodecMaker {
                 def readVal1(using Quotes) =
                   genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
 
-                genReadMapAsArray(newBuilder, x => '{ $x.addOne(($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })): Unit},
+                genReadMapAsArray(newBuilder, x => '{ $x.addOne(new Tuple2($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })): Unit},
                   x => '{ $x.result() }, in, default).asExprOf[T]
               } else {
                 def readKey(using Quotes) = genReadKey[t1](tpe1 :: types, in)
 
-                genReadMap(newBuilder, x => '{ $x.addOne(($readKey, $readVal2)): Unit },
+                genReadMap(newBuilder, x => '{ $x.addOne(new Tuple2($readKey, $readVal2)): Unit },
                   x => '{ $x.result() }, in, default).asExprOf[T]
               }
         } else if (tpe <:< TypeRepr.of[BitSet]) withDecoderFor(methodKey, default, in) { (in, default) =>
