@@ -549,11 +549,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       implicit val levelOrdering: Ordering[Level] = new Ordering[Level] {
         override def compare(x: Level, y: Level): Int = y.ordinal - x.ordinal
       }
-      val codecOfOrderedLevelTreeMap = make[_root_.scala.collection.immutable.TreeMap[Level, Int]]
-      verifySerDeser(codecOfOrderedLevelTreeMap,
+      verifySerDeser(make[_root_.scala.collection.immutable.TreeMap[Level, Int]],
         _root_.scala.collection.immutable.TreeMap[Level, Int](Level.HIGH -> 100, Level.LOW -> 10), """{"0":10,"1":100}""")
-      verifyDeserByCheck(codecOfOrderedLevelTreeMap, """{"0":10,"1":100}""",
+      verifyDeserByCheck(make[_root_.scala.collection.immutable.TreeMap[Level, Int]], """{"0":10,"1":100}""",
         check = (actual: _root_.scala.collection.immutable.TreeMap[Level, Int]) => actual.ordering shouldBe levelOrdering)
+      verifySerDeser(make[_root_.scala.collection.immutable.SortedMap[Level, Int]],
+        _root_.scala.collection.immutable.SortedMap[Level, Int](Level.HIGH -> 100, Level.LOW -> 10), """{"0":10,"1":100}""")
+      verifyDeserByCheck(make[_root_.scala.collection.immutable.SortedMap[Level, Int]], """{"0":10,"1":100}""",
+        check = (actual: _root_.scala.collection.immutable.SortedMap[Level, Int]) => actual.ordering shouldBe levelOrdering)
+      verifySerDeser(make[_root_.scala.collection.mutable.TreeMap[Level, Int]],
+        _root_.scala.collection.mutable.TreeMap[Level, Int](Level.HIGH -> 100, Level.LOW -> 10), """{"0":10,"1":100}""")
+      verifyDeserByCheck(make[_root_.scala.collection.mutable.TreeMap[Level, Int]], """{"0":10,"1":100}""",
+        check = (actual: _root_.scala.collection.mutable.TreeMap[Level, Int]) => actual.ordering shouldBe levelOrdering)
+      verifySerDeser(make[_root_.scala.collection.mutable.SortedMap[Level, Int]],
+        _root_.scala.collection.mutable.SortedMap[Level, Int](Level.HIGH -> 100, Level.LOW -> 10), """{"0":10,"1":100}""")
+      verifyDeserByCheck(make[_root_.scala.collection.mutable.SortedMap[Level, Int]], """{"0":10,"1":100}""",
+        check = (actual: _root_.scala.collection.mutable.SortedMap[Level, Int]) => actual.ordering shouldBe levelOrdering)
+      verifySerDeser(make[_root_.scala.collection.SortedMap[Level, Int]],
+        _root_.scala.collection.SortedMap[Level, Int](Level.HIGH -> 100, Level.LOW -> 10), """{"0":10,"1":100}""")
+      verifyDeserByCheck(make[_root_.scala.collection.SortedMap[Level, Int]], """{"0":10,"1":100}""",
+        check = (actual: _root_.scala.collection.SortedMap[Level, Int]) => actual.ordering shouldBe levelOrdering)
     }
     "serialize and deserialize types using a custom value codec and a custom ordering for set values" in {
       implicit val codecOfLevel: JsonValueCodec[Level] = new JsonValueCodec[Level] {
@@ -574,11 +589,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       implicit val levelOrdering: Ordering[Level] = new Ordering[Level] {
         override def compare(x: Level, y: Level): Int = y.ordinal - x.ordinal
       }
-      val codecOfOrderedLevelTreeSet = make[_root_.scala.collection.immutable.TreeSet[Level]]
-      verifySerDeser(codecOfOrderedLevelTreeSet,
+      verifySerDeser(make[_root_.scala.collection.immutable.TreeSet[Level]],
         _root_.scala.collection.immutable.TreeSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
-      verifyDeserByCheck(codecOfOrderedLevelTreeSet, """[0,1]""",
+      verifyDeserByCheck(make[_root_.scala.collection.immutable.TreeSet[Level]], """[0,1]""",
         check = (actual: _root_.scala.collection.immutable.TreeSet[Level]) => actual.ordering shouldBe levelOrdering)
+      verifySerDeser(make[_root_.scala.collection.immutable.SortedSet[Level]],
+        _root_.scala.collection.immutable.SortedSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
+      verifyDeserByCheck(make[_root_.scala.collection.immutable.SortedSet[Level]], """[0,1]""",
+        check = (actual: _root_.scala.collection.immutable.SortedSet[Level]) => actual.ordering shouldBe levelOrdering)
+      verifySerDeser(make[_root_.scala.collection.mutable.TreeSet[Level]],
+        _root_.scala.collection.mutable.TreeSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
+      verifyDeserByCheck(make[_root_.scala.collection.mutable.TreeSet[Level]], """[0,1]""",
+        check = (actual: _root_.scala.collection.mutable.TreeSet[Level]) => actual.ordering shouldBe levelOrdering)
+      verifySerDeser(make[_root_.scala.collection.mutable.SortedSet[Level]],
+        _root_.scala.collection.mutable.SortedSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
+      verifyDeserByCheck(make[_root_.scala.collection.mutable.SortedSet[Level]], """[0,1]""",
+        check = (actual: _root_.scala.collection.mutable.SortedSet[Level]) => actual.ordering shouldBe levelOrdering)
+      verifySerDeser(make[_root_.scala.collection.SortedSet[Level]],
+        _root_.scala.collection.SortedSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
+      verifyDeserByCheck(make[_root_.scala.collection.SortedSet[Level]], """[0,1]""",
+        check = (actual: _root_.scala.collection.SortedSet[Level]) => actual.ordering shouldBe levelOrdering)
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(codecOfEnums1, Enums(LocationType.GPS), """{"lt":"GPS"}""")

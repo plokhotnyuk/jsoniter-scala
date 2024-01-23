@@ -1705,7 +1705,7 @@ object JsonCodecMaker {
             tpe <:< TypeRepr.of[mutable.LongMap[_]] || tpe <:< TypeRepr.of[immutable.Seq[_]] ||
             tpe <:< TypeRepr.of[Set[_]]) withNullValueFor(tpe) {
           scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[immutable.SortedMap[_, _]]) withNullValueFor(tpe) {
+        } else if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.Map[_, _]]) withNullValueFor(tpe) {
@@ -2322,9 +2322,13 @@ object JsonCodecMaker {
           (tpe1.asType, tpe2.asType) match
             case ('[t1], '[t2]) =>
               val tDefault = default.asExprOf[T & mutable.Map[t1, t2]]
+              val tEmpty =
+                if (tpe <:< TypeRepr.of[mutable.SortedMap[_, _]]) {
+                  Apply(scalaMapEmptyNoArgs(tpe, tpe1, tpe2), List(summonOrdering(tpe1))).asExprOf[T & mutable.Map[t1, t2]]
+                } else scalaMapEmptyNoArgs(tpe, tpe1, tpe2).asExprOf[T & mutable.Map[t1, t2]]
               val newBuilder = '{
                 if ($tDefault.isEmpty) $tDefault
-                else ${scalaMapEmptyNoArgs(tpe, tpe1, tpe2).asExprOf[T & mutable.Map[t1, t2]]}
+                else $tEmpty
               }.asExprOf[T & mutable.Map[t1, t2]]
 
               def readVal2(using Quotes) =
@@ -2347,7 +2351,7 @@ object JsonCodecMaker {
               val builderNoApply =
                 TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1], TypeTree.of[t2]))
               val newBuilder =
-                (if (tpe <:< TypeRepr.of[immutable.SortedMap[_, _]]) Apply(builderNoApply, List(summonOrdering(tpe1))) // TODO: add withOrderfingFoe
+                (if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]]) Apply(builderNoApply, List(summonOrdering(tpe1)))
                 else builderNoApply).asExprOf[mutable.Builder[(t1, t2), T & collection.Map[t1, t2]]]
 
               def readVal2(using Quotes) =
