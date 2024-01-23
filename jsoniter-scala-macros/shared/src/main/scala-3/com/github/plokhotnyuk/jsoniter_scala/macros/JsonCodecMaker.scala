@@ -1875,8 +1875,9 @@ object JsonCodecMaker {
         val paramVarNum = fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
-        val paramVars = (0 to lastParamVarIndex)
-          .map(i => ValDef(symbol("p" + i, TypeRepr.of[Int], Flags.Mutable), Some(Literal(IntConstant {
+        val paramVars =
+          if (required.isEmpty && !cfg.checkFieldDuplication) Nil
+          else (0 to lastParamVarIndex).map(i => ValDef(symbol("p" + i, TypeRepr.of[Int], Flags.Mutable), Some(Literal(IntConstant {
             if (i == lastParamVarIndex) lastParamVarBits
             else -1
           }))))
@@ -1951,17 +1952,19 @@ object JsonCodecMaker {
                   case '[ft] =>
                     val tmpVar = Ref(tmpVars(fieldInfo.symbol.name).symbol)
                     val readVal = genReadVal(fTpe :: types, tmpVar.asExprOf[ft], fieldInfo.isStringified, false, in).asTerm
-                    val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
-                    val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
-                    val nm = Expr(~(1 << fieldInfo.nonTransientFieldIndex))
                     Block(List({
-                      if (cfg.checkFieldDuplication) {
-                        '{
-                          if (($n & $m) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
-                          else $in.duplicatedKeyError($l)
-                        }.asTerm
-                      } else if (required(fieldInfo.mappedName)) Assign(n.asTerm, '{ $n & $nm }.asTerm)
-                      else '{ }.asTerm
+                      val isRequired = required(fieldInfo.mappedName)
+                      if (isRequired || cfg.checkFieldDuplication) {
+                        val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
+                        val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
+                        val nm = Expr(~(1 << fieldInfo.nonTransientFieldIndex))
+                        if (cfg.checkFieldDuplication) {
+                          '{
+                            if (($n & $m) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
+                            else $in.duplicatedKeyError($l)
+                          }.asTerm
+                        } else Assign(n.asTerm, '{ $n & $nm }.asTerm)
+                      } else '{ }.asTerm
                     }), Assign(tmpVar, readVal)).asExprOf[Unit]
               }
             '{
