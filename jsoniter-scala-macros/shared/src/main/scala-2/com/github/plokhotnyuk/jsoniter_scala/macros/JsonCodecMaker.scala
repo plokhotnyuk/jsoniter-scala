@@ -1352,7 +1352,8 @@ object JsonCodecMaker {
             })
         }.toMap
         val paramVars =
-          paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
+          if (required.isEmpty && !cfg.checkFieldDuplication) Nil
+          else paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
         val checkReqVars =
           if (required.isEmpty) Nil
           else {
