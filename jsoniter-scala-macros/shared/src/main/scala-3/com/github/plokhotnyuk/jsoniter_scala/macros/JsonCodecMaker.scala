@@ -2823,7 +2823,7 @@ object JsonCodecMaker {
             case '[t1] =>
               val x = m.asExprOf[Option[t1]]
               '{
-                if ($x ne None) ${genWriteVal('{ $x.asInstanceOf[Some[t1]].value }, tpe1 :: types, isStringified, None, out)}
+                if ($x ne None) ${genWriteVal('{ $x.get }, tpe1 :: types, isStringified, None, out)}
                 else $out.writeNull()
               }
         } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
