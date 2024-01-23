@@ -2820,11 +2820,12 @@ object JsonCodecMaker {
         } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
-            case '[t1] => '{
-              ${m.asExprOf[Option[t1]]} match
-                case Some(x) => ${genWriteVal('x, tpe1 :: types, isStringified, None, out)}
-                case None => $out.writeNull()
-            }
+            case '[t1] =>
+              val x = m.asExprOf[Option[t1]]
+              '{
+                if ($x ne None) ${genWriteVal('{ $x.asInstanceOf[Some[t1]].value }, tpe1 :: types, isStringified, None, out)}
+                else $out.writeNull()
+              }
         } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
           tpe.typeSymbol.fullName == "scala.IArray$package$.IArray" ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
