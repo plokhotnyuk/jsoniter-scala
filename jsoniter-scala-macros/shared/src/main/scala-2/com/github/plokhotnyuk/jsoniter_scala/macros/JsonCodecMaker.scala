@@ -1649,7 +1649,7 @@ object JsonCodecMaker {
                 if (v < 0 || v >= ${cfg.bitSetValueLimit}) in.decodeError("illegal value for bit set")
                 val i = v >>> 6
                 if (i >= x.length) x = _root_.java.util.Arrays.copyOf(x, _root_.java.lang.Integer.highestOneBit(i) << 1)
-                x(i) |= 1L << v""",
+                x(i) = x(i) | 1L << v""",
             if (tpe <:< typeOf[mutable.BitSet]) q"_root_.scala.collection.mutable.BitSet.fromBitMaskNoCopy(x)"
             else q"_root_.scala.collection.immutable.BitSet.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default) {
