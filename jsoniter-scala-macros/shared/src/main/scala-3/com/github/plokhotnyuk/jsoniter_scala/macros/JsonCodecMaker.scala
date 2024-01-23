@@ -2377,7 +2377,7 @@ object JsonCodecMaker {
                   if (v < 0 || v >= ${Expr(cfg.bitSetValueLimit)}) $in.decodeError("illegal value for bit set")
                   val xi = v >>> 6
                   if (xi >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(xi) << 1)
-                  x(xi) |= 1L << v
+                  x(xi) = x(xi) | 1L << v
                   $in.isNextToken(',')
                 }) ()
                 if ($in.isCurrentToken(']')) ${
