@@ -28,6 +28,12 @@ object Alias {
   case class OrderId(value: I) extends AnyVal
 }
 
+object Generic {
+  case class UserId[S](id: S) extends AnyVal
+
+  case class OrderId[I](value: I) extends AnyVal
+}
+
 object UserId2 {
   type Opaque = Base with Tag
 
@@ -1221,6 +1227,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Alias.UserId], Alias.UserId("123abc"), """"123abc"""")
       verifySerDeser(make[Alias.OrderId], Alias.OrderId(123123), "123123")
     }
+    "serialize and deserialize value classes with generic type values" in {
+      verifySerDeser(make[Generic.UserId[String]], Generic.UserId[String]("123abc"), """"123abc"""")
+      verifySerDeser(make[Generic.OrderId[Int]], Generic.OrderId[Int](123123), "123123")
+    }    
     "serialize and deserialize case classes with one value classes when turned on inlining of one value classes" in {
       case class UserId(value: String)
 
