@@ -2068,8 +2068,9 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[List[_]]) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           q"""out.writeArrayStart()
+              val n = _root_.scala.Nil
               var l: _root_.scala.collection.immutable.List[$tpe1] = x
-              while (l ne _root_.scala.Nil) {
+              while (l ne n) {
                 ..${genWriteVal(q"l.head", tpe1 :: types, isStringified, EmptyTree)}
                 l = l.tail
               }
