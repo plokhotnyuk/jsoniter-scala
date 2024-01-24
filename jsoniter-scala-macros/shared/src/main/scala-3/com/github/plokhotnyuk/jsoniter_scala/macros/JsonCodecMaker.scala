@@ -2219,10 +2219,8 @@ object JsonCodecMaker {
                   }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }, default.asExprOf[immutable.ArraySeq[t1]], (x, i, l) => '{
-                  immutable.ArraySeq.unsafeWrapArray[t1]({
-                    if ($i == $l) $x
-                    else ${shrinkArray(x, i)}
-                  })
+                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
+                  immutable.ArraySeq.unsafeWrapArray[t1]($x)
                 }.asExprOf[immutable.ArraySeq[t1]], in).asExprOf[T]
               } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) {
                 genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
@@ -2232,10 +2230,8 @@ object JsonCodecMaker {
                   }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }, default.asExprOf[mutable.ArraySeq[t1]], (x, i, l) => '{
-                  mutable.ArraySeq.make[t1]({
-                    if ($i == $l) $x
-                    else ${shrinkArray(x, i)}
-                  })
+                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
+                  mutable.ArraySeq.make[t1]($x)
                 }.asExprOf[mutable.ArraySeq[t1]], in).asExprOf[T]
               } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
                 genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
@@ -2245,10 +2241,8 @@ object JsonCodecMaker {
                   }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }, default.asExprOf[IArray[t1]], (x, i, l) => '{
-                  IArray.unsafeFromArray[t1]({
-                    if ($i == $l) $x
-                    else ${shrinkArray(x, i)}
-                  })
+                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
+                  IArray.unsafeFromArray[t1]($x)
                 }.asExprOf[IArray[t1]], in).asExprOf[T]
               } else {
                 genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
@@ -2258,8 +2252,8 @@ object JsonCodecMaker {
                   }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }, default.asExprOf[Array[t1]], (x, i, l) => '{
-                  if ($i == $l) $x
-                  else ${shrinkArray(x, i)}
+                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
+                  $x
                 }.asExprOf[Array[t1]], in).asExprOf[T]
               }
         } else if (tpe <:< TypeRepr.of[immutable.IntMap[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
