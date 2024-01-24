@@ -1567,18 +1567,14 @@ object JsonCodecMaker {
                 i += 1""",
             {
               if (isImmutableArraySeq(tpe)) {
-                q"""_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1]({
-                      if (i == l) x
-                      else $shrinkArray
-                    })"""
+                q"""if (i != l) x = $shrinkArray
+                    _root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1](x)"""
               } else if (isMutableArraySeq(tpe)) {
-                q"""_root_.scala.collection.mutable.ArraySeq.make[$tpe1]({
-                      if (i == l) x
-                      else $shrinkArray
-                    })"""
+                q"""if (i != l) x = $shrinkArray
+                    _root_.scala.collection.mutable.ArraySeq.make[$tpe1](x)"""
               } else {
-                q"""if (i == l) x
-                    else $shrinkArray"""
+                q"""if (i != l) x = $shrinkArray
+                    x"""
               }
             })
         } else if (tpe <:< typeOf[immutable.IntMap[_]]) withDecoderFor(methodKey, default) {
