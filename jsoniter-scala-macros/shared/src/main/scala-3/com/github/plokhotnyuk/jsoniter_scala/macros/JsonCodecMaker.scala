@@ -1960,8 +1960,8 @@ object JsonCodecMaker {
                         val nm = Expr(~(1 << fieldInfo.nonTransientFieldIndex))
                         if (cfg.checkFieldDuplication) {
                           '{
-                            if (($n & $m) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
-                            else $in.duplicatedKeyError($l)
+                            if (($n & $m) == 0) $in.duplicatedKeyError($l)
+                            ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
                           }.asTerm
                         } else Assign(n.asTerm, '{ $n & $nm }.asTerm)
                       } else '{ }.asTerm
