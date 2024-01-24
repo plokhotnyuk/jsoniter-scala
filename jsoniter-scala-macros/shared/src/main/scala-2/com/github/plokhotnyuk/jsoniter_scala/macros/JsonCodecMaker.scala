@@ -1346,8 +1346,10 @@ object JsonCodecMaker {
             val m = 1 << i
             val nm = ~m
             (fieldInfo.mappedName, {
-              if (cfg.checkFieldDuplication) q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)"
-              else if (required(fieldInfo.mappedName)) q"$n &= $nm"
+              if (cfg.checkFieldDuplication) {
+                q"""if (($n & $m) == 0) in.duplicatedKeyError(l)
+                    $n ^= $m"""
+              } else if (required(fieldInfo.mappedName)) q"$n &= $nm"
               else EmptyTree
             })
         }.toMap
