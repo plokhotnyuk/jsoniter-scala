@@ -1480,7 +1480,7 @@ final class JsonWriter private[jsoniter_scala](
       } else { // 110110uuuuccccbb 110111bbbbaaaaaa (UTF-16 chars) -> 11110ddd 10ddcccc 10bbbbbb 10aaaaaa (UTF-8 bytes), where ddddd = uuuu + 1
         if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
         val ch2 = s.charAt(from + 1)
-        if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
+        if ((ch2 & 0xFC00) != 0xDC00) illegalSurrogateError()
         val cp = (ch1 << 10) + (ch2 - 56613888) // -56613888 == 0x10000 - (0xD800 << 10) - 0xDC00
         buf(pos) = (cp >> 18 | 0xF0).toByte
         buf(pos + 1) = (cp >> 12 & 0x3F | 0x80).toByte
@@ -1511,7 +1511,7 @@ final class JsonWriter private[jsoniter_scala](
       } else {
         if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
         val ch2 = s.charAt(from + 1).toInt
-        if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
+        if ((ch2 & 0xFC00) != 0xDC00) illegalSurrogateError()
         writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf), buf), posLim, escapedChars)
       }
     }
