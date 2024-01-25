@@ -23,14 +23,14 @@ class VerifyingSpec extends AnyWordSpec with Matchers {
 
   def verifySerError[T](codec: JsonValueCodec[T], obj: T, json: String, msg: String, cfg: WriterConfig = WriterConfig): Unit = {
     val len = json.getBytes(UTF_8).length
-    assert(intercept[Throwable](verifyDirectByteBufferSer(codec, obj, len, cfg, json))
-      .getMessage.contains(msg))
-    assert(intercept[Throwable](verifyHeapByteBufferSer(codec, obj, len, cfg, json))
-      .getMessage.contains(msg))
-    assert(intercept[Throwable](verifyOutputStreamSer(codec, obj, cfg, json))
-      .getMessage.contains(msg))
-    assert(intercept[Throwable](verifyArraySer(codec, obj, cfg, json))
-      .getMessage.contains(msg))
+    val r1 = intercept[Throwable](verifyDirectByteBufferSer(codec, obj, len, cfg, json))
+    if (msg != null) assert(r1.getMessage.contains(msg))
+    val r2 = intercept[Throwable](verifyHeapByteBufferSer(codec, obj, len, cfg, json))
+    if (msg != null) assert(r2.getMessage.contains(msg))
+    val r3 = intercept[Throwable](verifyOutputStreamSer(codec, obj, cfg, json))
+    if (msg != null) assert(r3.getMessage.contains(msg))
+    val r4 = intercept[Throwable](verifyArraySer(codec, obj, cfg, json))
+    if (msg != null) assert(r4.getMessage.contains(msg))
   }
 
   def verifyDeser[T](codec: JsonValueCodec[T], obj: T, json: String): Unit =

@@ -130,10 +130,12 @@ final class JsonReader private[jsoniter_scala](
     * @return `true` if the key was found, `false` otherwise
     * @throws JsonReaderException in cases of reaching the end of input or invalid encoding of JSON key
     */
-  @tailrec
-  def skipToKey(key: String): Boolean = isCharBufEqualsTo(readKeyAsCharBuf(), key) || {
-    skip()
-    isNextToken(',', head) && skipToKey(key)
+  def skipToKey(key: String): Boolean = {
+    while (!isCharBufEqualsTo(readKeyAsCharBuf(), key)) {
+      skip()
+      if (!isNextToken(',', head)) return false
+    }
+    true
   }
 
   /**
@@ -1257,7 +1259,15 @@ final class JsonReader private[jsoniter_scala](
     * @param len the length of the char buffer to hash
     * @return the hash code for the char buffer
     */
-  def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
+  def charBufToHashCode(len: Int): Int = {
+    val cs = charBuf
+    var h, i = 0
+    while (i < len) {
+      h = (h << 5) + (cs(i) - h)
+      i += 1
+    }
+    h
+  }
 
   /**
     * Checks if the internal char buffer contains the given string.
@@ -1281,15 +1291,17 @@ final class JsonReader private[jsoniter_scala](
     *
     * @throws JsonReaderException in cases of reaching the end of input
     */
-  def skip(): Unit = head = {
+  def skip(): Unit = {
     val b = nextToken(head)
-    if (b == '"') skipString(evenBackSlashes = true, head)
-    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
-    else if (b == 'n' || b == 't') skipFixedBytes(3, head)
-    else if (b == 'f') skipFixedBytes(4, head)
-    else if (b == '[') skipArray(0, head)
-    else if (b == '{') skipObject(0, head)
+    var pos = head
+    if (b == '"') pos = skipString(evenBackSlashes = true, pos)
+    else if ((b >= '0' && b <= '9') || b == '-') pos = skipNumber(pos)
+    else if (b == 'n' || b == 't') pos = skipFixedBytes(3, pos)
+    else if (b == 'f') pos = skipFixedBytes(4, pos)
+    else if (b == '[') pos = skipArray(0, pos)
+    else if (b == '{') pos = skipObject(0, pos)
     else decodeError("expected value")
+    head = pos
   }
 
   /**
@@ -1704,7 +1716,7 @@ final class JsonReader private[jsoniter_scala](
       } else parseNon4DigitYearWithByte(t, 9, year + 0x30303030, pos)
     } else parseYearWithByte(t, loadMoreOrError(pos))
 
-  private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Byte, bs: Int, p: Int): Int = {
+  private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, bs: Int, p: Int): Int = {
     val b1 = bs.toByte
     if (b1 >= '0' && b1 <= '9') fourDigitYearWithByteError(t, p, bs)
     var pos = p
@@ -1713,7 +1725,7 @@ final class JsonReader private[jsoniter_scala](
     val b3 = (bs >> 16).toByte
     val b4 = (bs >> 24).toByte
     val b5 = buf(pos + 4)
-    val isNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
+    if (b1 != '-' && b1 != '+') decodeError("expected '-' or '+' or digit", pos)
     if (b2 < '0' || b2 > '9') digitError(pos + 1)
     if (b3 < '0' || b3 > '9') digitError(pos + 2)
     if (b4 < '0' || b4 > '9') digitError(pos + 3)
@@ -1737,9 +1749,9 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     head = pos + 1
-    if (isNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-    if (b != t) yearError(t, maxDigits, pos, isNeg, yearDigits)
-    if (isNeg) year = -year
+    if (b1 == '-' && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+    if (b != t) yearError(t, maxDigits, pos, b1 == '-', yearDigits)
+    if (b1 == '-') year = -year
     if (year >= 0 && year < 10000) digitError(pos)
     year
   }
@@ -1833,54 +1845,6 @@ final class JsonReader private[jsoniter_scala](
       b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else parseSecond(loadMoreOrError(pos))
 
-  private[this] def parseOptionalNanoWithDoubleQuotes(): Int = {
-    var nano = 0
-    var b = nextByte(head)
-    if (b == '.') {
-      var pos = head
-      var buf = this.buf
-      var nanoDigitWeight = 100000000
-      var bs = 0
-      if (pos + 9 < tail && {
-        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
-        ((bs + 0x767676 | bs) & 0x808080) == 0
-      } && {
-        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
-        pos += 3
-        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
-        nanoDigitWeight = 100000
-        ((bs + 0x767676 | bs) & 0x808080) == 0
-      } && {
-        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
-        pos += 3
-        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
-        nanoDigitWeight = 100
-        ((bs + 0x767676 | bs) & 0x808080) == 0
-      }) {
-        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
-        pos += 4
-        b = (bs >> 24).toByte
-        nanoDigitWeight = 0
-      } else {
-        while ({
-          if (pos >= tail) {
-            pos = loadMoreOrError(pos)
-            buf = this.buf
-          }
-          b = buf(pos)
-          pos += 1
-          (b >= '0' && b <= '9') && nanoDigitWeight != 0
-        }) {
-          nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
-        }
-      }
-      head = pos
-      if (b != '"') nanoError(nanoDigitWeight, '"')
-    } else if (b != '"') tokensError('.', '"')
-    nano
-  }
-
   @tailrec
   private[this] def parseOffsetHour(pos: Int): Int =
     if (pos + 1 < tail) {
@@ -1948,7 +1912,8 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    var hash, b = 0
+    var hash = 0
+    var b: Byte = 0
     while ({
       if (pos >= tail) {
         pos = loadMoreOrError(pos)
@@ -2036,8 +2001,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var x = b - '0'
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -2068,8 +2036,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var x = b - '0'
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -2100,8 +2071,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var x = '0' - b
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -2136,10 +2110,13 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
-    var x: Long = '0' - b
+    var x = ('0' - b).toLong
     if (isToken && x == 0) ensureNotLeadingZero()
     else {
       var pos = head
@@ -2201,8 +2178,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var pos = head
     var buf = this.buf
@@ -2212,7 +2192,7 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    var m10: Long = b - '0'
+    var m10 = (b - '0').toLong
     var e10 = 0
     var digits = 1
     if (isToken && m10 == 0) {
@@ -2264,7 +2244,8 @@ final class JsonReader private[jsoniter_scala](
     }
     if ((b | 0x20) == 'e') {
       b = nextByte(pos + 1)
-      val isNegExp = b == '-'
+      var isNegExp = false
+      if (b == '-') isNegExp = true
       if (isNegExp || b == '+') b = nextByte(head)
       if (b < '0' || b > '9') numberError()
       var exp = b - '0'
@@ -2332,7 +2313,7 @@ final class JsonReader private[jsoniter_scala](
         }
         if (e2 == -1074) m2
         else if (e2 >= 972) 0x7FF0000000000000L
-        else e2 + 1075L << 52 | m2 & 0xFFFFFFFFFFFFFL
+        else (e2 + 1075).toLong << 52 | m2 & 0xFFFFFFFFFFFFFL
       } else toDouble(from, newMark, pos)
     }
 
@@ -2346,8 +2327,11 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var pos = head
     var buf = this.buf
@@ -2357,7 +2341,7 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    var m10: Long = b - '0'
+    var m10 = (b - '0').toLong
     var e10 = 0
     var digits = 1
     if (isToken && m10 == 0) {
@@ -2409,7 +2393,8 @@ final class JsonReader private[jsoniter_scala](
     }
     if ((b | 0x20) == 'e') {
       b = nextByte(pos + 1)
-      val isNegExp = b == '-'
+      var isNegExp = false
+      if (b == '-') isNegExp = true
       if (isNegExp || b == '+') b = nextByte(head)
       if (b < '0' || b > '9') numberError()
       var exp = b - '0'
@@ -2488,8 +2473,11 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     if (isToken && b == 'n') readNullOrNumberError(default, head)
     else {
-      val isNeg = b == '-'
-      if (isNeg) b = nextByte(head)
+      var isNeg = false
+      if (b == '-') {
+        b = nextByte(head)
+        isNeg = true
+      }
       if (b < '0' || b > '9') numberError()
       if (isToken && b == '0') {
         ensureNotLeadingZero()
@@ -2531,18 +2519,8 @@ final class JsonReader private[jsoniter_scala](
         if ((b | 0x20) == 'e' || b == '.') numberError(pos)
         if (mark == 0) from -= newMark
         if (mark > oldMark) mark = oldMark
-        val len = pos - from
-        if (len >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
-        if (len < 19) {
-          var x: Long = buf(from) - '0'
-          from += 1
-          while (from < pos) {
-            x = x * 10 + (buf(from) - '0')
-            from += 1
-          }
-          if (isNeg) x = -x
-          BigInt(x)
-        } else new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
+        if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
+        toBigInt(buf, from, pos, isNeg)
       }
     }
   }
@@ -2554,8 +2532,11 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     if (isToken && b == 'n') readNullOrNumberError(default, head)
     else {
-      val isNeg = b == '-'
-      if (isNeg) b = nextByte(head)
+      var isNeg = false
+      if (b == '-') {
+        b = nextByte(head)
+        isNeg = true
+      }
       if (b < '0' || b > '9') numberError()
       var pos = head
       var buf = this.buf
@@ -2647,10 +2628,11 @@ final class JsonReader private[jsoniter_scala](
       }
       if ((b | 0x20) == 'e') {
         b = nextByte(pos + 1)
-        val isNegExp = b == '-'
+        var isNegExp = false
+        if (b == '-') isNegExp = true
         if (isNegExp || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
-        var exp: Long = b - '0'
+        var exp = (b - '0').toLong
         pos = head
         buf = this.buf
         while ((pos < tail || {
@@ -2679,7 +2661,7 @@ final class JsonReader private[jsoniter_scala](
           val fracPos = limit - fracLen
           val fracLimit = fracPos - 1
           if (digits < 19) {
-            var x: Long = buf(from) - '0'
+            var x = (buf(from) - '0').toLong
             from += 1
             while (from < fracLimit) {
               x = x * 10 + (buf(from) - '0')
@@ -2701,15 +2683,38 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
-  // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
-  // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+  private[this] def toBigInt(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean): BigInt = {
+    val len = limit - p
+    if (len < 19) {
+      var pos = p
+      var x = (buf(pos) - '0').toLong
+      pos += 1
+      while (pos < limit) {
+        x = x * 10 + (buf(pos) - '0')
+        pos += 1
+      }
+      if (isNeg) x = -x
+      BigInt(x)
+    } else if (len <= 36) toBigInt36(buf, p, limit, isNeg)
+    else new BigInt({
+      if (len <= 308) toBigInteger308(buf, p, limit, isNeg)
+      else {
+        // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
+        // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
+        // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+        val mid = len >> 1
+        val midPos = limit - mid
+        toBigDecimal(buf, p, midPos, isNeg, -mid).add(toBigDecimal(buf, midPos, limit, isNeg, 0)).unscaledValue()
+      }
+    })
+  }
+
   private[this] def toBigDecimal(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
                                  scale: Int): java.math.BigDecimal = {
     val len = limit - p
     if (len < 19) {
       var pos = p
-      var x: Long = buf(pos) - '0'
+      var x = (buf(pos) - '0').toLong
       pos += 1
       while (pos < limit) {
         x = x * 10 + (buf(pos) - '0')
@@ -2718,11 +2723,51 @@ final class JsonReader private[jsoniter_scala](
       if (isNeg) x = -x
       java.math.BigDecimal.valueOf(x, scale)
     } else if (len <= 36) toBigDecimal36(buf, p, limit, isNeg, scale)
-    else if (len <= 308) toBigDecimal308(buf, p, limit, isNeg, scale)
+    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, limit, isNeg), scale)
     else {
+      // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
+      // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
+      // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
       val mid = len >> 1
       val midPos = limit - mid
       toBigDecimal(buf, p, midPos, isNeg, scale - mid).add(toBigDecimal(buf, midPos, limit, isNeg, scale))
+    }
+  }
+
+  private[this] def toBigInt36(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean): BigInt = {
+    val firstBlockLimit = limit - 18
+    var pos = p
+    var x1 = (buf(pos) - '0').toLong
+    pos += 1
+    while (pos < firstBlockLimit) {
+      x1 = x1 * 10 + (buf(pos) - '0')
+      pos += 1
+    }
+    val x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+      val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 8)) * 1000000000 + {
+      val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 17) - 48000000048L
+    val q = x1 * 1000000000000000000L
+    var l = q + x2
+    val h = NativeMath.multiplyHigh(x1, 1000000000000000000L) + ((~l & q) >>> 63)
+    if (l >= 0 && h == 0) {
+      if (isNeg) l = -l
+      BigInt(l)
+    } else {
+      val signum =
+        if (isNeg) -1
+        else 1
+      var magnitude = this.magnitude
+      if (magnitude eq null) {
+        magnitude = new Array[Byte](128)
+        this.magnitude = magnitude
+      }
+      ByteArrayAccess.setLongReversed(magnitude, 0, h)
+      ByteArrayAccess.setLongReversed(magnitude, 8, l)
+      new BigInt(new java.math.BigInteger(signum, magnitude, 0, 16))
     }
   }
 
@@ -2730,7 +2775,7 @@ final class JsonReader private[jsoniter_scala](
                                    scale: Int): java.math.BigDecimal = {
     val firstBlockLimit = limit - 18
     var pos = p
-    var x1: Long = buf(pos) - '0'
+    var x1 = (buf(pos) - '0').toLong
     pos += 1
     while (pos < firstBlockLimit) {
       x1 = x1 * 10 + (buf(pos) - '0')
@@ -2764,8 +2809,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigDecimal308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean,
-                                    scale: Int): java.math.BigDecimal = {
+  private[this] def toBigInteger308(buf: Array[Byte], p: Int, limit: Int, isNeg: Boolean): java.math.BigInteger = {
     val len = limit - p
     val last = (len * 222930821L >> 32).toInt << 3 // (len * Math.log(10) / Math.log(1L << 64)).toInt * 8
     var magnitude = this.magnitude
@@ -2817,7 +2861,7 @@ final class JsonReader private[jsoniter_scala](
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, magnitude, 0, last + 8), scale)
+    new java.math.BigInteger(signum, magnitude, 0, last + 8)
   }
 
   @tailrec
@@ -2848,50 +2892,36 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
-  private[this] def decodeError(msg: String, bs: Int, pos: Int): Nothing = decodeError(msg, {
-    val b0 = bs.toByte
-    val b1 = (bs >> 8).toByte
-    val b2 = (bs >> 16).toByte
-    pos +
-      (if (b0 != 'n') -1
-      else if (b1 != 'u') 0
-      else if (b2 != 'l') 1
-      else 2)
-  })
+  private[this] def decodeError(msg: String, bs: Int, pos: Int): Nothing =
+    decodeError(msg, (java.lang.Integer.numberOfTrailingZeros(bs ^ 0x6C6C756E) >> 3) + pos - 1)
 
-  private[this] def tokenOrNullError(t: Byte, bs: Int, pos: Int): Nothing = tokenOrNullError(t, {
-    val b0 = bs.toByte
-    val b1 = (bs >> 8).toByte
-    val b2 = (bs >> 16).toByte
-    pos +
-      (if (b0 != 'n') -1
-      else if (b1 != 'u') 0
-      else if (b2 != 'l') 1
-      else 2)
-  })
+  private[this] def tokenOrNullError(t: Byte, bs: Int, pos: Int): Nothing =
+    tokenOrNullError(t, (java.lang.Integer.numberOfTrailingZeros(bs ^ 0x6C6C756E) >> 3) + pos - 1)
 
   private[this] def parseDuration(): Duration = {
-    var seconds = 0L
-    var nano, state = 0
     var b = nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
+    var state = 0
+    if (b == 'T') {
+      b = nextByte(head)
+      state = 1
+    }
+    var seconds = 0L
+    var nano = 0
     while ({
-      if (state == 0) {
-        if (b == 'T') {
-          b = nextByte(head)
-          state = 1
-        }
-      } else if (state == 1) {
-        if (b != 'T') tokensError('T', '"')
+      var isNegX = false
+      if (b == '-') {
         b = nextByte(head)
-      } else if (state == 4) tokenError('"')
-      val isNegX = b == '-'
-      if (isNegX) b = nextByte(head)
+        isNegX = true
+      }
       if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 1)
-      var x: Long = '0' - b
+      var x = ('0' - b).toLong
       var pos = head
       var buf = this.buf
       while ((pos < tail || {
@@ -2963,10 +2993,7 @@ final class JsonReader private[jsoniter_scala](
             pos += 1
           }
         }
-        if (b != 'S') {
-          head = pos + 1
-          nanoError(nanoDigitWeight, 'S')
-        }
+        if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
         if (isNeg ^ isNegX) nano = -nano
         state = 4
       } else if (b == 'S') {
@@ -2975,8 +3002,13 @@ final class JsonReader private[jsoniter_scala](
       } else durationError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
-    }) ()
-    Duration.ofSeconds(seconds, nano)
+    }) {
+      if (state == 1) {
+        if (b != 'T') tokensError('T', '"')
+        b = nextByte(head)
+      } else if (state == 4) tokenError('"')
+    }
+    Duration.ofSeconds(seconds, nano.toLong)
   }
 
   private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
@@ -2988,32 +3020,30 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseInstant(): Instant = {
     val year = parseInstantYearWithDash(head)
     val monthDay = parseMonthDayWithT(year, head)
-    var epochSecond = epochDay(year, monthDay.toByte, monthDay >> 24) * 86400 // 86400 == seconds per day
+    var epochSecond = epochDay(year, monthDay.toByte.toInt, monthDay >> 24) * 86400 // 86400 == seconds per day
     var pos = head
     var buf = this.buf
     var secondOfDay = 0L
-    if (pos + 7 < tail && {
+    var b: Byte = 0
+    if (pos + 8 < tail && {
       secondOfDay = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       ((secondOfDay + 0x767A00767A00767DL | secondOfDay) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         secondOfDay *= 2561 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
         secondOfDay = ((secondOfDay & 0x3F00001F00L) * 1979120931962880L >>> 47) + (secondOfDay >> 56)
         secondOfDay < 86400
       }
-    }) pos += 8
-    else {
+    }) {
+      b = buf(pos + 8)
+      pos += 9
+    } else {
       secondOfDay = parseSecondOfDay(pos)
+      b = nextByte(head)
       pos = head
       buf = this.buf
     }
     epochSecond += secondOfDay
     var nano = 0
     var nanoDigitWeight = -2
-    if (pos >= tail) {
-      pos = loadMoreOrError(pos)
-      buf = this.buf
-    }
-    var b = buf(pos)
-    pos += 1
     if (b == '.') {
       nanoDigitWeight = 100000000
       var bs = 0
@@ -3053,27 +3083,24 @@ final class JsonReader private[jsoniter_scala](
       }
     }
     if (b == 'Z') nextByteOrError('"', pos)
-    else {
-      val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
-      var offsetTotal = 0L
+    else if (b == '-' || b == '+') {
+      var offsetTotal = 0
       if (pos + 7 < tail && {
-        offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-        (offsetTotal + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L &&
-          (offsetTotal & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
-      }) {
-        offsetTotal = ((offsetTotal & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-        head = pos + 6
-      } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
-      if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-      if (isNeg) offsetTotal = -offsetTotal
-      epochSecond -= offsetTotal
-    }
+        val bs = ByteArrayAccess.getLong(buf, pos)
+        offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+        (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+      }) head = pos + 6
+      else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+      if (b == '-') epochSecond += offsetTotal
+      else epochSecond -= offsetTotal
+    } else timeError(nanoDigitWeight, pos - 1)
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
-    else Instant.ofEpochSecond(epochSecond, nano)
+    else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
 
-  private[this] def parseSecondOfDay(pos: Int): Int =
-    parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)
+  private[this] def parseSecondOfDay(pos: Int): Long =
+    (parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)).toLong
 
   private[this] def parseLocalDate(): LocalDate = {
     val year = parseYearWithByte('-', head)
@@ -3083,7 +3110,7 @@ final class JsonReader private[jsoniter_scala](
       val bs = ByteArrayAccess.getLong(buf, pos)
       (bs + 0x60C00060EL & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && (bs & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && { // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         val monthDay = ((bs & 0xF03000F01L) * 2561 >> 8).toInt
-        month = monthDay.toByte
+        month = monthDay.toByte.toInt
         day = monthDay >> 24
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
       }
@@ -3099,61 +3126,156 @@ final class JsonReader private[jsoniter_scala](
     val year = parseYearWithByte('-', head)
     val monthDay = parseMonthDayWithT(year, head)
     var pos = head
+    var buf = this.buf
     var hour, minute, second = 0
-    if (pos + 7 < tail && {
+    var b: Byte = 0
+    if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
       dec *= 2561
-      hour = (dec >> 8).toByte
-      minute = (dec >> 32).toByte
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
       m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
         second = (dec >> 56).toInt
         hour < 24
       } || m << 16 == 0xE800000000000000L && {
         pos += 5
-        hour < 24
+        hour <= 24
       }
-    }) head = pos
-    else {
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
       hour = parseHourWithColon(head)
       minute = parseMinute(head)
-      val b = nextByte(head)
-      if (b == ':') second = parseSecond(head)
-      else if (b != '"') tokensError(':', '"')
-      else rollbackToken()
+      b = nextByte(head)
+      if (b == ':') {
+        second = parseSecond(head)
+        b = nextByte(head)
+      } else if (b != '"') tokensError(':', '"')
+      pos = head
+      buf = this.buf
     }
-    LocalDateTime.of(year, monthDay.toByte, monthDay >> 24, hour, minute, second,
-      parseOptionalNanoWithDoubleQuotes())
+    var nano = 0
+    if (b == '.') {
+      var nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
+      }
+      if (b != '"') nanoError(nanoDigitWeight, '"', pos - 1)
+    } else if (b != '"') tokensError('.', '"', pos - 1)
+    head = pos
+    LocalDateTime.of(year, monthDay.toByte.toInt, monthDay >> 24, hour, minute, second, nano)
   }
 
   private[this] def parseLocalTime(): LocalTime = {
     var pos = head
+    var buf = this.buf
     var hour, minute, second = 0
-    if (pos + 7 < tail && {
+    var b: Byte = 0
+    if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
       dec *= 2561
-      hour = (dec >> 8).toByte
-      minute = (dec >> 32).toByte
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
       m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
         second = (dec >> 56).toInt
         hour < 24
       } || m << 16 == 0xE800000000000000L && {
         pos += 5
-        hour < 24
+        hour <= 24
       }
-    }) head = pos
-    else {
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
       hour = parseHourWithColon(head)
       minute = parseMinute(head)
-      val b = nextByte(head)
-      if (b == ':') second = parseSecond(head)
-      else if (b != '"') tokensError(':', '"')
-      else rollbackToken()
+      b = nextByte(head)
+      if (b == ':') {
+        second = parseSecond(head)
+        b = nextByte(head)
+      } else if (b != '"') tokensError(':', '"')
+      pos = head
+      buf = this.buf
     }
-    LocalTime.of(hour, minute, second, parseOptionalNanoWithDoubleQuotes())
+    var nano = 0
+    if (b == '.') {
+      var nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
+      }
+      if (b != '"') nanoError(nanoDigitWeight, '"', pos - 1)
+    } else if (b != '"') tokensError('.', '"', pos - 1)
+    head = pos
+    LocalTime.of(hour, minute, second, nano)
   }
 
   @tailrec
@@ -3161,7 +3283,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos + 7 < tail) {
       val bs = ByteArrayAccess.getLong(buf, pos) - 0x2230302D30302D2DL
       val monthDay = (bs * 2561 >> 24).toInt
-      val month = monthDay.toByte
+      val month = monthDay.toByte.toInt
       val day = monthDay >> 24
       head = pos + 8
       if (((bs + 0x767C00767E0000L | bs) & 0xFF8080FF8080FFFFL) != 0) monthDayError(pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
@@ -3176,7 +3298,7 @@ final class JsonReader private[jsoniter_scala](
       val bs = ByteArrayAccess.getLong(buf, pos)
       (bs + 0x60C00060EL & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && (bs & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && { // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         monthDay = ((bs & 0xF03000F01L) * 2561 >> 8).toInt
-        val month = monthDay.toByte
+        val month = monthDay.toByte.toInt
         val day = monthDay >> 24
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
       }
@@ -3194,15 +3316,15 @@ final class JsonReader private[jsoniter_scala](
     val monthDay = parseMonthDayWithT(year, head)
     var pos = head
     var buf = this.buf
-    var hour, minute, second, nano = 0
-    var b: Byte = '"'
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
       dec *= 2561
-      hour = (dec >> 8).toByte
-      minute = (dec >> 32).toByte
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
       m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
         second = (dec >> 56).toInt
@@ -3227,6 +3349,7 @@ final class JsonReader private[jsoniter_scala](
       pos = head
       buf = this.buf
     }
+    var nano = 0
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
       var bs = 0
@@ -3269,34 +3392,32 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         nextByteOrError('"', pos)
         ZoneOffset.UTC
-      } else {
-        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
-        var offsetTotal = 0L
+      } else if (b == '-' || b == '+') {
+        var offsetTotal = 0
         if (pos + 7 < tail && {
-          offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-          (offsetTotal + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L &&
-            (offsetTotal & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
-        }) {
-          offsetTotal = ((offsetTotal & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-          head = pos + 6
-        } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
-        toZoneOffset(isNeg, offsetTotal.toInt)
-      }
-    OffsetDateTime.of(year, monthDay.toByte, monthDay >> 24, hour, minute, second, nano, zoneOffset)
+          val bs = ByteArrayAccess.getLong(buf, pos)
+          offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+        }) head = pos + 6
+        else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+        toZoneOffset(b, offsetTotal)
+      } else timeError(nanoDigitWeight, pos - 1)
+    OffsetDateTime.of(year, monthDay.toByte.toInt, monthDay >> 24, hour, minute, second, nano, zoneOffset)
   }
 
   private[this] def parseOffsetTime(): OffsetTime = {
     var pos = head
     var buf = this.buf
-    var hour, minute, second, nano = 0
-    var b: Byte = '"'
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
       dec *= 2561
-      hour = (dec >> 8).toByte
-      minute = (dec >> 32).toByte
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
       m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
         second = (dec >> 56).toInt
@@ -3321,6 +3442,7 @@ final class JsonReader private[jsoniter_scala](
       pos = head
       buf = this.buf
     }
+    var nano = 0
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
       var bs = 0
@@ -3363,33 +3485,36 @@ final class JsonReader private[jsoniter_scala](
       if (b == 'Z') {
         nextByteOrError('"', pos)
         ZoneOffset.UTC
-      } else {
-        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
-        var offsetTotal = 0L
+      } else if (b == '-' || b == '+') {
+        var offsetTotal = 0
         if (pos + 7 < tail && {
-          offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-          (offsetTotal + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L &&
-            (offsetTotal & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
-        }) {
-          offsetTotal = ((offsetTotal & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-          head = pos + 6
-        } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
-        toZoneOffset(isNeg, offsetTotal.toInt)
-      }
+          val bs = ByteArrayAccess.getLong(buf, pos)
+          offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+        }) head = pos + 6
+        else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+        toZoneOffset(b, offsetTotal)
+      } else timeError(nanoDigitWeight, pos - 1)
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
   }
 
   private[this] def parsePeriod(): Period = {
-    var years, months, days, state = 0
     var b = nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
+    var years, months, days, state = 0
     while ({
-      if (state == 4) tokenError('"')
-      val isNegX = b == '-'
-      if (isNegX) b = nextByte(head)
+      var isNegX = false
+      if (b == '-') {
+        b = nextByte(head)
+        isNegX = true
+      }
       if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 0)
       var x = '0' - b
       var pos = head
@@ -3430,7 +3555,9 @@ final class JsonReader private[jsoniter_scala](
       } else periodError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
-    }) ()
+    }) {
+      if (state == 4) tokenError('"')
+    }
     Period.of(years, months, days)
   }
 
@@ -3441,7 +3568,7 @@ final class JsonReader private[jsoniter_scala](
       ((yearMonth + 0x767E0076767676L | yearMonth) & 0xFF8080FF80808080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         yearMonth *= 2561
         year = (yearMonth.toInt >> 8 & 0xFF00FF) * 6553601 >> 16
-        month = (yearMonth >> 48).toByte
+        month = (yearMonth >> 48).toByte.toInt
         month >= 1 && month <= 12
       }
     }) head = pos + 8
@@ -3457,15 +3584,15 @@ final class JsonReader private[jsoniter_scala](
     val monthDay = parseMonthDayWithT(year, head)
     var pos = head
     var buf = this.buf
-    var hour, minute, second, nano = 0
-    var b: Byte = '"'
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
     if (pos + 8 < tail && {
       var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
       val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
       dec *= 2561
-      hour = (dec >> 8).toByte
-      minute = (dec >> 32).toByte
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
       m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         pos += 8
         second = (dec >> 56).toInt
@@ -3490,6 +3617,7 @@ final class JsonReader private[jsoniter_scala](
       pos = head
       buf = this.buf
     }
+    var nano = 0
     if (nanoDigitWeight == -2 && b == '.') {
       nanoDigitWeight = 100000000
       var bs = 0
@@ -3528,24 +3656,23 @@ final class JsonReader private[jsoniter_scala](
         }
       }
     }
-    val localDateTime = LocalDateTime.of(year, monthDay.toByte, monthDay >> 24, hour, minute, second, nano)
+    val localDateTime = LocalDateTime.of(year, monthDay.toByte.toInt, monthDay >> 24, hour, minute, second, nano)
     val zoneOffset =
       if (b == 'Z') {
         b = nextByte(pos)
         ZoneOffset.UTC
-      } else {
-        val isNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight, pos - 1))
+      } else if (b == '-' || b == '+') {
+        val sb = b
         nanoDigitWeight = -3
-        var offsetTotal = 0L
+        var offsetTotal = 0
         if (pos + 7 < tail && {
-          offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-          b = (offsetTotal >> 40).toByte
-          (offsetTotal + 0x60A00060EL & 0xF0F0FFF0F0L) == 0x30303A3030L &&
-            (offsetTotal & 0xF0F0FFF0F0L) == 0x30303A3030L && b != ':'
-        }) {
-          offsetTotal = ((offsetTotal & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-          head = pos + 6
-        } else {
+          val bs = ByteArrayAccess.getLong(buf, pos)
+          offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          b = (bs >> 40).toByte
+          (bs + 0x60A00060EL & 0xF0F0FFF0F0L) == 0x30303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            (bs & 0xF0F0FFF0F0L) == 0x30303A3030L && b != ':' && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+        }) head = pos + 6
+        else {
           offsetTotal = parseOffsetHour(pos) * 3600
           b = nextByte(head)
           if (b == ':') {
@@ -3557,9 +3684,10 @@ final class JsonReader private[jsoniter_scala](
               b = nextByte(head)
             }
           }
+          if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
         }
-        toZoneOffset(isNeg, offsetTotal.toInt)
-      }
+        toZoneOffset(sb, offsetTotal)
+      } else timeError(nanoDigitWeight, pos - 1)
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (b == '[') {
       pos = head
@@ -3607,7 +3735,7 @@ final class JsonReader private[jsoniter_scala](
         (zoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
         zoneIds.put(k.copy, zoneId)
       }
-      zoneId
+      return zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex, pos)
     }
@@ -3618,19 +3746,17 @@ final class JsonReader private[jsoniter_scala](
     if (b == 'Z') {
       nextByteOrError('"', pos)
       ZoneOffset.UTC
-    } else {
-      val isNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
-      var offsetTotal = 0L
+    } else if (b == '-' || b == '+') {
+      var offsetTotal = 0
       if (pos + 7 < tail && {
-        offsetTotal = ByteArrayAccess.getLong(buf, pos) // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
-        (offsetTotal + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L &&
-          (offsetTotal & 0xFFF0F0FFF0F0L) == 0x2230303A3030L
-      }) {
-        offsetTotal = ((offsetTotal & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
-        head = pos + 6
-      } else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
-      toZoneOffset(isNeg, offsetTotal.toInt)
-    }
+        val bs = ByteArrayAccess.getLong(buf, pos)
+        offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+        (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+      }) head = pos + 6
+      else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+      toZoneOffset(b, offsetTotal)
+    } else decodeError("expected '+' or '-' or 'Z'")
   }
 
   private[this] def parseOffsetTotalWithDoubleQuotes(pos: Int): Int = {
@@ -3642,23 +3768,22 @@ final class JsonReader private[jsoniter_scala](
       b == ':'
     }) offsetTotal += parseOffsetSecondWithDoubleQuotes(head)
     else if (b != '"') tokensError(':', '"')
+    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     offsetTotal
   }
 
-  private[this] def toZoneOffset(isNeg: Boolean, offsetTotal: Int): ZoneOffset = {
+  private[this] def toZoneOffset(sb: Byte, offsetTotal: Int): ZoneOffset = {
     var qp = offsetTotal * 37283
-    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
       qp >>>= 25 // divide offsetTotal by 900
-      if (isNeg) qp = -qp
+      if (sb == '-') qp = -qp
       var zoneOffset = zoneOffsets(qp + 72)
-      if (zoneOffset ne null) zoneOffset
-      else {
-        zoneOffset = ZoneOffset.ofTotalSeconds(if (isNeg) -offsetTotal else offsetTotal)
+      if (zoneOffset eq null) {
+        zoneOffset = ZoneOffset.ofTotalSeconds(if (sb == '-') -offsetTotal else offsetTotal)
         zoneOffsets(qp + 72) = zoneOffset
-        zoneOffset
       }
-    } else ZoneOffset.ofTotalSeconds(if (isNeg) -offsetTotal else offsetTotal)
+      zoneOffset
+    } else ZoneOffset.ofTotalSeconds(if (sb == '-') -offsetTotal else offsetTotal)
   }
 
   private[this] def epochDay(year: Int, month: Int, day: Int): Long =
@@ -3758,10 +3883,9 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def secondError(pos: Int): Nothing = decodeError("illegal second", pos)
 
-  private[this] def nanoError(nanoDigitWeight: Int, t: Byte): Nothing = {
-    if (nanoDigitWeight == 0) tokenError(t)
-    tokenOrDigitError(t)
-  }
+  private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing =
+    if (nanoDigitWeight == 0) tokenError(t, pos)
+    else tokenOrDigitError(t, pos)
 
   private[this] def timeError(nanoDigitWeight: Int, pos: Int): Nothing = decodeError({
     if (nanoDigitWeight == -2) "expected '.' or '+' or '-' or 'Z'"
@@ -4048,7 +4172,7 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(pos)
     if (b == '"') bs = new Array[Byte](bLen)
     else {
-      bits = ns(b & 0xFF)
+      bits = ns(b & 0xFF).toInt
       if (bits < 0) decodeError("expected '\"' or hex digit")
       b = nextByte(head)
       bits = bits << 4 | ns(b & 0xFF)
@@ -4109,7 +4233,7 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(pos)
     if (b == '"') bs = new Array[Byte](bLen)
     else {
-      bits = ds(b & 0xFF)
+      bits = ds(b & 0xFF).toInt
       if (bits < 0) decodeError("expected '\"' or base64 digit")
       b = nextByte(head)
       bits = bits << 6 | ds(b & 0xFF)
@@ -4776,10 +4900,10 @@ object JsonReader {
 }
 
 private class Key {
-  private var hash: Int = _
-  private var bs: Array[Byte] = _
-  private var from: Int = _
-  private var to: Int = _
+  private[this] var hash: Int = _
+  private[this] var bs: Array[Byte] = _
+  private[this] var from: Int = _
+  private[this] var to: Int = _
 
   def set(hash: Int, bs: Array[Byte], from: Int, to: Int): Unit = {
     this.hash = hash
@@ -4802,16 +4926,22 @@ private class Key {
   override def equals(obj: Any): Boolean = {
     val k = obj.asInstanceOf[Key]
     val off = from
-    val koff = k.from
+    val koff = k.fromIndex
     val len = to - off
-    k.to - koff == len && {
-      val kbs = k.bs
+    k.toIndex - koff == len && {
       val bs = this.bs
+      val kbs = k.bytes
       var i = 0
-      while (i < len && kbs(i + koff) == bs(i + off)) i += 1
+      while (i < len && kbs(koff + i) == bs(off + i)) i += 1
       i == len
     }
   }
 
   override def toString: String = new String(bs, 0, from, to - from)
+
+  private def bytes: Array[Byte] = bs
+
+  private def fromIndex: Int = from
+
+  private def toIndex: Int = to
 }

@@ -90,8 +90,13 @@ final class stringified extends StaticAnnotation
   *                               a key and empty object value: `{"EnumValue":{}}`
   * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
   * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
-  * @param requireDefaultFields   a flag that turn on checking of presence of fields with default values and forces
+  * @param requireDefaultFields   a flag that turns on checking of presence of fields with default values and forces
   *                               serialization of them
+  * @param checkFieldDuplication  a flag that turns on checking of duplicated fields during parsing of classes (turned
+  *                               on by default)
+  * @param scalaTransientSupport  a flag that turns on support of `scala.transient` (turned off by default)
+  * @param inlineOneValueClasses  a flag that turns on derivation of inlined codecs for non-values classes that have
+  *                               the primary constructor with just one argument (turned off by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -119,7 +124,10 @@ class CodecMakerConfig private[macros] (
     val circeLikeObjectEncoding: Boolean,
     val decodingOnly: Boolean,
     val encodingOnly: Boolean,
-    val requireDefaultFields: Boolean) {
+    val requireDefaultFields: Boolean,
+    val checkFieldDuplication: Boolean,
+    val scalaTransientSupport: Boolean,
+    val inlineOneValueClasses: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -189,6 +197,15 @@ class CodecMakerConfig private[macros] (
   def withRequireDefaultFields(requireDefaultFields: Boolean): CodecMakerConfig =
     copy(requireDefaultFields = requireDefaultFields)
 
+  def withCheckFieldDuplication(checkFieldDuplication: Boolean): CodecMakerConfig =
+    copy(checkFieldDuplication = checkFieldDuplication)
+
+  def withScalaTransientSupport(scalaTransientSupport: Boolean): CodecMakerConfig =
+    copy(scalaTransientSupport = scalaTransientSupport)
+
+  def withInlineOneValueClasses(inlineOneValueClasses: Boolean): CodecMakerConfig =
+    copy(inlineOneValueClasses = inlineOneValueClasses)
+
   private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                          javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -214,7 +231,10 @@ class CodecMakerConfig private[macros] (
                          circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding,
                          decodingOnly: Boolean = decodingOnly,
                          encodingOnly: Boolean = encodingOnly,
-                         requireDefaultFields: Boolean = requireDefaultFields): CodecMakerConfig =
+                         requireDefaultFields: Boolean = requireDefaultFields,
+                         checkFieldDuplication: Boolean = checkFieldDuplication,
+                         scalaTransientSupport: Boolean = scalaTransientSupport,
+                         inlineOneValueClasses: Boolean = inlineOneValueClasses): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -241,7 +261,10 @@ class CodecMakerConfig private[macros] (
       circeLikeObjectEncoding = circeLikeObjectEncoding,
       decodingOnly = decodingOnly,
       encodingOnly = encodingOnly,
-      requireDefaultFields = requireDefaultFields)
+      requireDefaultFields = requireDefaultFields,
+      checkFieldDuplication = checkFieldDuplication,
+      scalaTransientSupport = scalaTransientSupport,
+      inlineOneValueClasses = inlineOneValueClasses)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -270,7 +293,10 @@ object CodecMakerConfig extends CodecMakerConfig(
   circeLikeObjectEncoding = false,
   encodingOnly = false,
   decodingOnly = false,
-  requireDefaultFields = false) {
+  requireDefaultFields = false,
+  checkFieldDuplication = true,
+  scalaTransientSupport = false,
+  inlineOneValueClasses = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -315,11 +341,14 @@ object CodecMakerConfig extends CodecMakerConfig(
             $exprAllowRecursiveTypes,
             $exprRequireDiscriminatorFirst,
             $exprUseScalaEnumValueId,
-            $skipNestedOptionValues,
-            $circeLikeObjectEncoding,
-            $encodingOnly,
-            $decodingOnly,
-            $exprRequireDefaultFields)
+            $exprSkipNestedOptionValues,
+            $exprCirceLikeObjectEncoding,
+            $exprEncodingOnly,
+            $exprDecodingOnly,
+            $exprRequireDefaultFields,
+            $exprCheckFieldDuplication,
+            $exprScalaTransientSupport,
+            $exprInlineOneValueClasses)
         } =>
           try {
             Some(CodecMakerConfig(
@@ -344,11 +373,14 @@ object CodecMakerConfig extends CodecMakerConfig(
               extract("allowRecursiveTypes", exprAllowRecursiveTypes),
               extract("requireDiscriminatorFirst", exprRequireDiscriminatorFirst),
               extract("useScalaEnumValueId", exprUseScalaEnumValueId),
-              extract("skipNestedOptionValues", skipNestedOptionValues),
-              extract("circeLikeObjectEncoding", circeLikeObjectEncoding),
-              extract("decodingOnly", decodingOnly),
-              extract("encodingOnly", encodingOnly),
-              extract("requireDefaultFields", exprRequireDefaultFields)))
+              extract("skipNestedOptionValues", exprSkipNestedOptionValues),
+              extract("circeLikeObjectEncoding", exprCirceLikeObjectEncoding),
+              extract("decodingOnly", exprDecodingOnly),
+              extract("encodingOnly", exprEncodingOnly),
+              extract("requireDefaultFields", exprRequireDefaultFields),
+              extract("checkFieldDuplication", exprCheckFieldDuplication),
+              extract("scalaTransientSupport", exprScalaTransientSupport),
+              extract("inlineOneValueClasses", exprInlineOneValueClasses)))
           } catch {
             case FromExprException(message, expr) =>
               report.warning(message, expr)
@@ -381,6 +413,9 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withDecodingOnly($v) } => Some(x.valueOrAbort.withDecodingOnly(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withEncodingOnly($v) } => Some(x.valueOrAbort.withEncodingOnly(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireDefaultFields($v) } => Some(x.valueOrAbort.withRequireDefaultFields(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withCheckFieldDuplication($v) } => Some(x.valueOrAbort.withCheckFieldDuplication(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withScalaTransientSupport($v) } => Some(x.valueOrAbort.withScalaTransientSupport(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withInlineOneValueClasses($v) } => Some(x.valueOrAbort.withInlineOneValueClasses(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -646,7 +681,6 @@ object JsonCodecMaker {
         transientEmpty = false,
         transientNone = false,
         requireCollectionFields = false,
-        requireDefaultFields = false,
         bigDecimalPrecision = 34,
         bigDecimalScaleLimit = 6178,
         bigDecimalDigitsLimit = 308,
@@ -660,7 +694,11 @@ object JsonCodecMaker {
         skipNestedOptionValues = false,
         circeLikeObjectEncoding = true,
         decodingOnly = false,
-        encodingOnly = false))
+        encodingOnly = false,
+        requireDefaultFields = false,
+        checkFieldDuplication = true,
+        scalaTransientSupport = false,
+        inlineOneValueClasses = false))
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
@@ -699,9 +737,7 @@ object JsonCodecMaker {
 
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 
-      def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) && tpe <:< TypeRepr.of[AnyVal]
-
-      def valueClassValue(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers(0)
+      def valueClassValueSymbol(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers(0)
 
       def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(tpe.typeSymbol.fieldMembers(0)).dealias
 
@@ -980,21 +1016,26 @@ object JsonCodecMaker {
           case _ => fail(s"Cannot find a primary constructor for '$tpe'")
 
         def hasSupportedAnnotation(m: Symbol): Boolean =
-          m.annotations.exists(a => a.tpe <:< TypeRepr.of[named] || a.tpe <:< TypeRepr.of[transient] ||
-            a.tpe <:< TypeRepr.of[stringified])
+          m.annotations.exists(a => a.tpe =:= TypeRepr.of[named] || a.tpe =:= TypeRepr.of[transient] ||
+            a.tpe =:= TypeRepr.of[stringified] || (cfg.scalaTransientSupport && a.tpe =:= TypeRepr.of[scala.transient]))
+
+        def supportedTransientTypeNames: String =
+          if (cfg.scalaTransientSupport) s"'${Type.show[transient]}' (or '${Type.show[scala.transient]}')"
+          else s"'${Type.show[transient]}')"
 
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"Expected that ${tpe.show} has classSymbol"))
         val annotations = tpeClassSym.fieldMembers.collect { case m: Symbol if hasSupportedAnnotation(m) =>
           val name = m.name
           val named = m.annotations.filter(_.tpe =:= TypeRepr.of[named])
           if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
-          val trans = m.annotations.filter(_.tpe =:= TypeRepr.of[transient])
-          if (trans.size > 1) warn(s"Duplicated '${TypeRepr.of[transient].show}' defined for '$name' of '${tpe.show}'.")
+          val trans = m.annotations.filter(a => a.tpe =:= TypeRepr.of[transient] ||
+            (cfg.scalaTransientSupport && a.tpe =:= TypeRepr.of[scala.transient]))
+          if (trans.size > 1) warn(s"Duplicated $supportedTransientTypeNames defined for '$name' of '${tpe.show}'.")
           val strings = m.annotations.filter(_.tpe =:= TypeRepr.of[stringified])
           if (strings.size > 1) warn(s"Duplicated '${TypeRepr.of[stringified].show}' defined for '$name' of '${tpe.show}'.")
           if ((named.nonEmpty || strings.nonEmpty) && trans.nonEmpty)
-            warn(s"Both '${Type.show[transient]}' and '${Type.show[named]}' or " +
-              s"'${Type.show[transient]}' and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
+            warn(s"Both $supportedTransientTypeNames and '${Type.show[named]}' or " +
+              s"$supportedTransientTypeNames and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
           val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
           (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
@@ -1076,6 +1117,10 @@ object JsonCodecMaker {
           case pss => pss.map(ps => createFieldInfos(ps, Nil, fieldIndex))
         })
       })
+
+      def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) &&
+        (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
+          tpe <:< TypeRepr.of[AnyVal])
 
       def genReadKey[T: Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] =
         val tpe = types.head
@@ -1215,69 +1260,104 @@ object JsonCodecMaker {
       }
 
       def genReadSet[B: Type, C: Type](newBuilder: Expr[B], readVal: Quotes ?=> Expr[B] => Expr[Unit], default: Expr[C],
-                                       result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader])(using Quotes): Expr[C] = '{
-        if ($in.isNextToken('[')) {
-          if ($in.isNextToken(']')) $default
-          else {
-            $in.rollbackToken()
-            var x = $newBuilder
-            var i = 0
-            while ({
-              ${readVal('x)}
-              i += 1
-              if (i > ${Expr(cfg.setMaxInsertNumber)}) $in.decodeError("too many set inserts")
-              $in.isNextToken(',')
-            }) ()
-            if ($in.isCurrentToken(']')) ${result('x)}
-            else $in.arrayEndOrCommaError()
-          }
-        } else $in.readNullOrTokenError($default, '[')
-      }
+                                       result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader])(using Quotes): Expr[C] =
+        if (cfg.setMaxInsertNumber == Int.MaxValue) genReadCollection(newBuilder, readVal, default, result, in)
+        else '{
+          if ($in.isNextToken('[')) {
+            if ($in.isNextToken(']')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              var i = 0
+              while ({
+                ${readVal('x)}
+                i += 1
+                if (i > ${Expr(cfg.setMaxInsertNumber)}) $in.decodeError("too many set inserts")
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken(']')) ${result('x)}
+              else $in.arrayEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '[')
+        }
 
       def genReadMap[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
                                        result: Quotes ?=> Expr[B]=>Expr[C], in: Expr[JsonReader],
-                                       default: Expr[C])(using Quotes): Expr[C] = '{
-        if ($in.isNextToken('{')) {
-          if ($in.isNextToken('}')) $default
-          else {
-            $in.rollbackToken()
-            var x = $newBuilder
-            var i = 0
-            while ({
-              ${readKV('x)}
-              i += 1
-              if (i > ${Expr(cfg.mapMaxInsertNumber)}) $in.decodeError("too many map inserts")
-              $in.isNextToken(',')
-            }) ()
-            if ($in.isCurrentToken('}')) ${result('x)}
-            else $in.objectEndOrCommaError()
-          }
-        } else $in.readNullOrTokenError($default, '{')
-      }
-
-      def genReadMapAsArray[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
-                                              result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader],
-                                              default: Expr[C])(using Quotes): Expr[C] = '{
-        if ($in.isNextToken('[')) {
-          if ($in.isNextToken(']')) $default
-          else {
-            $in.rollbackToken()
-            var x = $newBuilder
-            var i = 0
-            while ({
-              if ($in.isNextToken('[')) {
+                                       default: Expr[C])(using Quotes): Expr[C] =
+        if (cfg.setMaxInsertNumber == Int.MaxValue) '{
+          if ($in.isNextToken('{')) {
+            if ($in.isNextToken('}')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              while ({
+                ${readKV('x)}
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken('}')) ${result('x)}
+              else $in.objectEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '{')
+        } else '{
+          if ($in.isNextToken('{')) {
+            if ($in.isNextToken('}')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              var i = 0
+              while ({
                 ${readKV('x)}
                 i += 1
                 if (i > ${Expr(cfg.mapMaxInsertNumber)}) $in.decodeError("too many map inserts")
-                if (!$in.isNextToken(']')) $in.arrayEndError()
-              } else $in.readNullOrTokenError($default, '[')
-              $in.isNextToken(',')
-            }) ()
-            if ($in.isCurrentToken(']')) ${result('x)}
-            else $in.objectEndOrCommaError()
-          }
-        } else $in.readNullOrTokenError($default, '[')
-      }
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken('}')) ${result('x)}
+              else $in.objectEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '{')
+        }
+
+      def genReadMapAsArray[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
+                                              result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader],
+                                              default: Expr[C])(using Quotes): Expr[C] =
+        if (cfg.setMaxInsertNumber == Int.MaxValue) '{
+          if ($in.isNextToken('[')) {
+            if ($in.isNextToken(']')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              while ({
+                if ($in.isNextToken('[')) {
+                  ${readKV('x)}
+                  if (!$in.isNextToken(']')) $in.arrayEndError()
+                } else $in.decodeError("expected '['")
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken(']')) ${result('x)}
+              else $in.arrayEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '[')
+        } else '{
+          if ($in.isNextToken('[')) {
+            if ($in.isNextToken(']')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              var i = 0
+              while ({
+                if ($in.isNextToken('[')) {
+                  ${readKV('x)}
+                  i += 1
+                  if (i > ${Expr(cfg.mapMaxInsertNumber)}) $in.decodeError("too many map inserts")
+                  if (!$in.isNextToken(']')) $in.arrayEndError()
+                } else $in.decodeError("expected '['")
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken(']')) ${result('x)}
+              else $in.arrayEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '[')
+        }
 
       @tailrec
       def genWriteKey[T: Type](x: Expr[T], types: List[TypeRepr], out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
@@ -1321,7 +1401,7 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
           vtpe.asType match
-            case '[vt] => genWriteKey(Select.unique(x.asTerm, valueClassValue(tpe).name).asExprOf[vt], vtpe :: types, out)
+            case '[vt] => genWriteKey(Select.unique(x.asTerm, valueClassValueSymbol(tpe).name).asExprOf[vt], vtpe :: types, out)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) '{ $out.writeKey(${x.asExprOf[Enumeration#Value]}.id) }
           else '{ $out.writeKey($x.toString) }
@@ -1660,7 +1740,8 @@ object JsonCodecMaker {
             tpe <:< TypeRepr.of[mutable.LongMap[_]] || tpe <:< TypeRepr.of[immutable.Seq[_]] ||
             tpe <:< TypeRepr.of[Set[_]]) withNullValueFor(tpe) {
           scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[immutable.SortedMap[_, _]]) withNullValueFor(tpe) {
+        } else if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]] ||
+            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.Map[_, _]]) withNullValueFor(tpe) {
@@ -1687,12 +1768,15 @@ object JsonCodecMaker {
         } else if (TypeRepr.of[Null] <:< tpe) '{ null }.asExprOf[T]
         else '{ null.asInstanceOf[T] }.asExprOf[T]
 
-      case class ReadDiscriminator(valDef: ValDef) {
-        def skip(in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[Unit] = '{
-          if (${Ref(valDef.symbol).asExprOf[Boolean]}) {
-            ${Assign(Ref(valDef.symbol), Literal(BooleanConstant(false))).asExprOf[Unit]}
-            $in.skip()
-          } else $in.duplicatedKeyError($l)
+      case class ReadDiscriminator(valDefOpt: Option[ValDef]) {
+        def skip(in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[Unit] = valDefOpt match {
+          case None => '{ $in.skip() }
+          case Some(valDef) => '{
+            if (${Ref(valDef.symbol).asExprOf[Boolean]}) {
+              ${Assign(Ref(valDef.symbol), Literal(BooleanConstant(false))).asExprOf[Unit]}
+              $in.skip()
+            } else $in.duplicatedKeyError($l)
+          }
         }
       }
 
@@ -1760,7 +1844,12 @@ object JsonCodecMaker {
                 val r = ${genReadSubclassesBlock(objClasses, 'l).asExprOf[T]}
                 if ($in.isNextToken('}')) r
                 else $in.objectEndOrCommaError()
-              } else $in.readNullOrError($default, "expected '\"' or '{' or null")
+              } else {
+                val m =
+                  if ($default == null) "expected '\"' or '{'"
+                  else "expected '\"' or '{' or null"
+                $in.readNullOrError($default, m)
+              }
             }
             case Some(discrFieldName) =>
               if (cfg.requireDiscriminatorFirst) '{
@@ -1822,8 +1911,9 @@ object JsonCodecMaker {
         val paramVarNum = fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
-        val paramVars = (0 to lastParamVarIndex)
-          .map(i => ValDef(symbol("p" + i, TypeRepr.of[Int], Flags.Mutable), Some(Literal(IntConstant {
+        val paramVars =
+          if (required.isEmpty && !cfg.checkFieldDuplication) Nil
+          else (0 to lastParamVarIndex).map(i => ValDef(symbol("p" + i, TypeRepr.of[Int], Flags.Mutable), Some(Literal(IntConstant {
             if (i == lastParamVarIndex) lastParamVarBits
             else -1
           }))))
@@ -1898,12 +1988,20 @@ object JsonCodecMaker {
                   case '[ft] =>
                     val tmpVar = Ref(tmpVars(fieldInfo.symbol.name).symbol)
                     val readVal = genReadVal(fTpe :: types, tmpVar.asExprOf[ft], fieldInfo.isStringified, false, in).asTerm
-                    val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
-                    val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
-                    Block(List('{
-                      if (($n & $m) != 0) ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
-                      else $in.duplicatedKeyError($l)
-                    }.asTerm), Assign(tmpVar, readVal)).asExprOf[Unit]
+                    Block(List({
+                      val isRequired = required(fieldInfo.mappedName)
+                      if (isRequired || cfg.checkFieldDuplication) {
+                        val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
+                        val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
+                        val nm = Expr(~(1 << fieldInfo.nonTransientFieldIndex))
+                        if (cfg.checkFieldDuplication) {
+                          '{
+                            if (($n & $m) == 0) $in.duplicatedKeyError($l)
+                            ${Assign(n.asTerm, '{ $n ^ $m }.asTerm).asExprOf[Unit]}
+                          }.asTerm
+                        } else Assign(n.asTerm, '{ $n & $nm }.asTerm)
+                      } else '{ }.asTerm
+                    }), Assign(tmpVar, readVal)).asExprOf[Unit]
               }
             '{
               if ($in.isCharBufEqualsTo($l, ${Expr(fieldInfo.mappedName)})) $readValue
@@ -1914,11 +2012,13 @@ object JsonCodecMaker {
         val discriminator =
           if (useDiscriminator) {
             cfg.discriminatorFieldName.map { fieldName =>
-              val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
-              ReadDiscriminator(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym))))
+              if (cfg.checkFieldDuplication) {
+                val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
+                ReadDiscriminator(Some(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym)))))
+              } else ReadDiscriminator(None)
             }
           } else None
-        val optDiscriminatorVar = discriminator.map(_.valDef)
+        val optDiscriminatorVar = discriminator.flatMap(_.valDefOpt)
 
         def readFieldsBlock(l: Expr[Int])(using Quotes): Expr[Unit] = // Using Quotes for w/a, see: https://github.com/lampepfl/dotty/issues/14137
           if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
@@ -2155,10 +2255,8 @@ object JsonCodecMaker {
                   }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }, default.asExprOf[immutable.ArraySeq[t1]], (x, i, l) => '{
-                  immutable.ArraySeq.unsafeWrapArray[t1]({
-                    if ($i == $l) $x
-                    else ${shrinkArray(x, i)}
-                  })
+                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
+                  immutable.ArraySeq.unsafeWrapArray[t1]($x)
                 }.asExprOf[immutable.ArraySeq[t1]], in).asExprOf[T]
               } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) {
                 genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
@@ -2168,10 +2266,8 @@ object JsonCodecMaker {
                   }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }, default.asExprOf[mutable.ArraySeq[t1]], (x, i, l) => '{
-                  mutable.ArraySeq.make[t1]({
-                    if ($i == $l) $x
-                    else ${shrinkArray(x, i)}
-                  })
+                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
+                  mutable.ArraySeq.make[t1]($x)
                 }.asExprOf[mutable.ArraySeq[t1]], in).asExprOf[T]
               } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
                 genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
@@ -2181,10 +2277,8 @@ object JsonCodecMaker {
                   }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }, default.asExprOf[IArray[t1]], (x, i, l) => '{
-                  IArray.unsafeFromArray[t1]({
-                    if ($i == $l) $x
-                    else ${shrinkArray(x, i)}
-                  })
+                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
+                  IArray.unsafeFromArray[t1]($x)
                 }.asExprOf[IArray[t1]], in).asExprOf[T]
               } else {
                 genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
@@ -2194,8 +2288,8 @@ object JsonCodecMaker {
                   }
                   $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }, default.asExprOf[Array[t1]], (x, i, l) => '{
-                  if ($i == $l) $x
-                  else ${shrinkArray(x, i)}
+                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
+                  $x
                 }.asExprOf[Array[t1]], in).asExprOf[T]
               }
         } else if (tpe <:< TypeRepr.of[immutable.IntMap[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
@@ -2252,15 +2346,20 @@ object JsonCodecMaker {
                 genReadMap(newBuilder, x => Assign(x.asTerm, '{ $x.updated($in.readKeyAsLong(), $readVal) }.asTerm).asExprOf[Unit],
                   identity, in, default.asExprOf[immutable.LongMap[t1]]).asExprOf[T]
               }
-        } else if (tpe <:< TypeRepr.of[mutable.Map[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[mutable.Map[_, _]] ||
+            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           (tpe1.asType, tpe2.asType) match
             case ('[t1], '[t2]) =>
               val tDefault = default.asExprOf[T & mutable.Map[t1, t2]]
+              val tEmpty =
+                if (tpe <:< TypeRepr.of[mutable.SortedMap[_, _]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) {
+                  Apply(scalaMapEmptyNoArgs(tpe, tpe1, tpe2), List(summonOrdering(tpe1))).asExprOf[T & mutable.Map[t1, t2]]
+                } else scalaMapEmptyNoArgs(tpe, tpe1, tpe2).asExprOf[T & mutable.Map[t1, t2]]
               val newBuilder = '{
                 if ($tDefault.isEmpty) $tDefault
-                else ${scalaMapEmptyNoArgs(tpe, tpe1, tpe2).asExprOf[T & mutable.Map[t1, t2]]}
+                else $tEmpty
               }.asExprOf[T & mutable.Map[t1, t2]]
 
               def readVal2(using Quotes) =
@@ -2283,7 +2382,7 @@ object JsonCodecMaker {
               val builderNoApply =
                 TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1], TypeTree.of[t2]))
               val newBuilder =
-                (if (tpe <:< TypeRepr.of[immutable.SortedMap[_, _]]) Apply(builderNoApply, List(summonOrdering(tpe1))) // TODO: add withOrderfingFoe
+                (if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]]) Apply(builderNoApply, List(summonOrdering(tpe1)))
                 else builderNoApply).asExprOf[mutable.Builder[(t1, t2), T & collection.Map[t1, t2]]]
 
               def readVal2(using Quotes) =
@@ -2293,12 +2392,12 @@ object JsonCodecMaker {
                 def readVal1(using Quotes) =
                   genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
 
-                genReadMapAsArray(newBuilder, x => '{ $x.addOne(($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })): Unit},
+                genReadMapAsArray(newBuilder, x => '{ $x.addOne(new Tuple2($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })): Unit},
                   x => '{ $x.result() }, in, default).asExprOf[T]
               } else {
                 def readKey(using Quotes) = genReadKey[t1](tpe1 :: types, in)
 
-                genReadMap(newBuilder, x => '{ $x.addOne(($readKey, $readVal2)): Unit },
+                genReadMap(newBuilder, x => '{ $x.addOne(new Tuple2($readKey, $readVal2)): Unit },
                   x => '{ $x.result() }, in, default).asExprOf[T]
               }
         } else if (tpe <:< TypeRepr.of[BitSet]) withDecoderFor(methodKey, default, in) { (in, default) =>
@@ -2314,9 +2413,9 @@ object JsonCodecMaker {
                 while ({
                   val v = $readVal
                   if (v < 0 || v >= ${Expr(cfg.bitSetValueLimit)}) $in.decodeError("illegal value for bit set")
-                  val xi = v >>> 6
-                  if (xi >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(xi) << 1)
-                  x(xi) |= 1L << v
+                  val i = v >>> 6
+                  if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
+                  x(i) = x(i) | 1L << v
                   $in.isNextToken(',')
                 }) ()
                 if ($in.isCurrentToken(']')) ${
@@ -2753,15 +2852,18 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[ZoneOffset]) '{ $out.writeVal(${m.asExprOf[ZoneOffset]}) }
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
-          genWriteVal(Select(m.asTerm, valueClassValue(tpe)).asExpr, vtpe :: types, isStringified, None, out)
+          vtpe.asType match
+            case '[vt] =>
+              genWriteVal(Select(m.asTerm, valueClassValueSymbol(tpe)).asExprOf[vt], vtpe :: types, isStringified, None, out)
         } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
-            case '[t1] => '{
-              ${m.asExprOf[Option[t1]]} match
-                case Some(x) => ${genWriteVal('x, tpe1 :: types, isStringified, None, out)}
-                case None => $out.writeNull()
-            }
+            case '[t1] =>
+              val x = m.asExprOf[Option[t1]]
+              '{
+                if ($x ne None) ${genWriteVal('{ $x.get }, tpe1 :: types, isStringified, None, out)}
+                else $out.writeNull()
+              }
         } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
           tpe.typeSymbol.fullName == "scala.IArray$package$.IArray" ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
@@ -2846,7 +2948,8 @@ object JsonCodecMaker {
                   genWriteMapAsArrayScala213(tx, writeVal1, writeVal2, out)
                 } else genWriteMapScala213(tx, (out, k) => '{ $out.writeKey($k) }, writeVal2, out)
               }
-        } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[collection.Map[_, _]] ||
+            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           (tpe1.asType, tpe2.asType) match
@@ -2870,8 +2973,9 @@ object JsonCodecMaker {
               val tx = x.asExprOf[List[t1]]
               '{
                 $out.writeArrayStart()
+                val n = Nil
                 var l = $tx
-                while (l ne Nil) {
+                while (l ne n) {
                   ${genWriteVal('{ l.head }, tpe1 :: types, isStringified, None, out)}
                   l = l.tail
                 }
@@ -2973,7 +3077,7 @@ object JsonCodecMaker {
               CaseDef(Bind(vxSym, Typed(Wildcard(), Inferred(subTpe))), None,
                 genWriteLeafClass(subTpe, Some(writeDiscriminator), Ref(vxSym)).asTerm)
             }
-          } :+ CaseDef(Literal(NullConstant()), None, '{ $out.writeNull() }.asTerm)
+          }
           Match(x.asTerm, writeSubclasses.toList).asExprOf[Unit]
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           genWriteNonAbstractScalaClass(x.asExprOf[T], types, optWriteDiscriminator, out)

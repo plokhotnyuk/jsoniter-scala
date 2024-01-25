@@ -86,8 +86,13 @@ final class stringified extends StaticAnnotation
   *                               a key and empty object value: `{"EnumValue":{}}`
   * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
   * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
-  * @param requireDefaultFields   a flag that turn on checking of presence of fields with default and forces
+  * @param requireDefaultFields   a flag that turns on checking of presence of fields with default and forces
   *                               serialization of them
+  * @param checkFieldDuplication  a flag that turns on checking of duplicated fields during parsing of classes (turned
+  *                               on by default)
+  * @param scalaTransientSupport  a flag that turns on support of `scala.transient` (turned off by default)
+  * @param inlineOneValueClasses  a flag that turns on derivation of inlined codecs for non-values classes that have
+  *                               the primary constructor with just one argument (turned off by default)
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -115,7 +120,10 @@ class CodecMakerConfig private (
     val circeLikeObjectEncoding: Boolean,
     val decodingOnly: Boolean,
     val encodingOnly: Boolean,
-    val requireDefaultFields: Boolean) {
+    val requireDefaultFields: Boolean,
+    val checkFieldDuplication: Boolean,
+    val scalaTransientSupport: Boolean,
+    val inlineOneValueClasses: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -185,6 +193,15 @@ class CodecMakerConfig private (
   def withRequireDefaultFields(requireDefaultFields: Boolean): CodecMakerConfig =
     copy(requireDefaultFields = requireDefaultFields)
 
+  def withCheckFieldDuplication(checkFieldDuplication: Boolean): CodecMakerConfig =
+    copy(checkFieldDuplication = checkFieldDuplication)
+
+  def withScalaTransientSupport(scalaTransientSupport: Boolean): CodecMakerConfig =
+    copy(scalaTransientSupport = scalaTransientSupport)
+
+  def withInlineOneValueClasses(inlineOneValueClasses: Boolean): CodecMakerConfig =
+    copy(inlineOneValueClasses = inlineOneValueClasses)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -210,7 +227,10 @@ class CodecMakerConfig private (
                          circeLikeObjectEncoding: Boolean = circeLikeObjectEncoding,
                          decodingOnly: Boolean = decodingOnly,
                          encodingOnly: Boolean = encodingOnly,
-                         requireDefaultFields: Boolean = requireDefaultFields): CodecMakerConfig =
+                         requireDefaultFields: Boolean = requireDefaultFields,
+                         checkFieldDuplication: Boolean = checkFieldDuplication,
+                         scalaTransientSupport: Boolean = scalaTransientSupport,
+                         inlineOneValueClasses: Boolean = inlineOneValueClasses): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -237,7 +257,10 @@ class CodecMakerConfig private (
       circeLikeObjectEncoding = circeLikeObjectEncoding,
       decodingOnly = decodingOnly,
       encodingOnly = encodingOnly,
-      requireDefaultFields = requireDefaultFields)
+      requireDefaultFields = requireDefaultFields,
+      checkFieldDuplication = checkFieldDuplication,
+      scalaTransientSupport = scalaTransientSupport,
+      inlineOneValueClasses = inlineOneValueClasses)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -266,7 +289,10 @@ object CodecMakerConfig extends CodecMakerConfig(
   circeLikeObjectEncoding = false,
   encodingOnly = false,
   decodingOnly = false,
-  requireDefaultFields = false) {
+  requireDefaultFields = false,
+  checkFieldDuplication = true,
+  scalaTransientSupport = false,
+  inlineOneValueClasses = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -566,8 +592,6 @@ object JsonCodecMaker {
 
       def isTuple(tpe: Type): Boolean = tupleSymbols(tpe.typeSymbol)
 
-      def isValueClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass
-
       def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
       def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
@@ -669,6 +693,9 @@ object JsonCodecMaker {
 
       def isMutableArraySeq(tpe: Type): Boolean =
         isScala213 && tpe.typeSymbol.fullName == "scala.collection.mutable.ArraySeq"
+
+      def isCollisionProofHashMap(tpe: Type): Boolean =
+        isScala213 && tpe.typeSymbol.fullName == "scala.collection.mutable.CollisionProofHashMap"
 
       def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
 
@@ -780,6 +807,80 @@ object JsonCodecMaker {
         }
       }
 
+      case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
+                           defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
+
+      case class ClassInfo(tpe: Type, paramLists: List[List[FieldInfo]]) {
+        val fields: List[FieldInfo] = paramLists.flatten
+      }
+
+      val classInfos = new mutable.LinkedHashMap[Type, ClassInfo]
+
+      def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
+        case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
+
+        def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
+          case m: MethodSymbol if m.isPrimaryConstructor => m // FIXME: sometime it cannot be accessed from the place of the `make` call
+        }.getOrElse(fail(s"Cannot find a primary constructor for '$tpe'"))
+
+        def hasSupportedAnnotation(m: TermSymbol): Boolean = {
+          m.info: Unit // to enforce the type information completeness and availability of annotations
+          m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
+            a.tree.tpe =:= typeOf[stringified] || (cfg.scalaTransientSupport && a.tree.tpe =:= typeOf[scala.transient]))
+        }
+
+        def supportedTransientTypeNames: String =
+          if (cfg.scalaTransientSupport) s"'${typeOf[transient]}' (or '${typeOf[scala.transient]}')"
+          else s"'${typeOf[transient]}')"
+
+        lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
+        val getters = tpe.members.collect { case m: MethodSymbol if m.isParamAccessor && m.isGetter => m }
+        val annotations = tpe.members.collect {
+          case m: TermSymbol if hasSupportedAnnotation(m) =>
+            val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
+            val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
+            if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$name' of '$tpe'.")
+            val trans = m.annotations.filter(a => a.tree.tpe =:= typeOf[transient]  ||
+              (cfg.scalaTransientSupport && a.tree.tpe =:= typeOf[scala.transient]))
+            if (trans.size > 1) warn(s"Duplicated $supportedTransientTypeNames defined for '$name' of '$tpe'.")
+            val strings = m.annotations.filter(_.tree.tpe =:= typeOf[stringified])
+            if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
+            if ((named.nonEmpty || strings.nonEmpty) && trans.nonEmpty) {
+              warn(s"Both $supportedTransientTypeNames and '${typeOf[named]}' or " +
+                s"$supportedTransientTypeNames and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
+            }
+            val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
+            (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
+        }.toMap
+        ClassInfo(tpe, {
+          var i = 0
+          getPrimaryConstructor(tpe).paramLists.map(_.flatMap { p =>
+            i += 1
+            val symbol = p.asTerm
+            val name = decodeName(symbol)
+            val annotationOption = annotations.get(name)
+            if (annotationOption.exists(_.transient)) None
+            else {
+              val fieldNameMapper: String => String = n => cfg.fieldNameMapper.lift(n).getOrElse(n)
+              val mappedName = annotationOption.fold(fieldNameMapper(name))(_.partiallyMappedName)
+              val tmpName = TermName("_" + symbol.name)
+              val getter = getters.find(_.name == symbol.name).getOrElse {
+                fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
+              }
+              val defaultValue =
+                if (!cfg.requireDefaultFields && symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
+                else None
+              val isStringified = annotationOption.exists(_.stringified)
+              Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, paramType(tpe, symbol), isStringified))
+            }
+          })
+        })
+      })
+
+      def isValueClass(tpe: Type): Boolean = !isConstType(tpe) &&
+        (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
+          tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass)
+
       def genReadKey(types: List[Type]): Tree = {
         val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(types)
@@ -876,61 +977,99 @@ object JsonCodecMaker {
             } else in.readNullOrTokenError(default, '[')"""
 
       def genReadSet(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
-        q"""if (in.isNextToken('[')) {
-              if (in.isNextToken(']')) default
-              else {
-                in.rollbackToken()
-                ..$newBuilder
-                var i = 0
-                while ({
-                  ..$readVal
-                  i += 1
-                  if (i > ${cfg.setMaxInsertNumber}) in.decodeError("too many set inserts")
-                  in.isNextToken(',')
-                }) ()
-                if (in.isCurrentToken(']')) $result
-                else in.arrayEndOrCommaError()
-              }
-            } else in.readNullOrTokenError(default, '[')"""
+        if (cfg.setMaxInsertNumber == Int.MaxValue) genReadArray(newBuilder, readVal, result)
+        else {
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  var i = 0
+                  while ({
+                    ..$readVal
+                    i += 1
+                    if (i > ${cfg.setMaxInsertNumber}) in.decodeError("too many set inserts")
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) $result
+                  else in.arrayEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '[')"""
+        }
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
-        q"""if (in.isNextToken('{')) {
-              if (in.isNextToken('}')) default
-              else {
-                in.rollbackToken()
-                ..$newBuilder
-                var i = 0
-                while ({
-                  ..$readKV
-                  i += 1
-                  if (i > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")
-                  in.isNextToken(',')
-                }) ()
-                if (in.isCurrentToken('}')) $result
-                else in.objectEndOrCommaError()
-              }
-            } else in.readNullOrTokenError(default, '{')"""
-
-      def genReadMapAsArray(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
-        q"""if (in.isNextToken('[')) {
-              if (in.isNextToken(']')) default
-              else {
-                in.rollbackToken()
-                ..$newBuilder
-                var i = 0
-                while ({
-                  if (in.isNextToken('[')) {
+        if (cfg.setMaxInsertNumber == Int.MaxValue) {
+          q"""if (in.isNextToken('{')) {
+                if (in.isNextToken('}')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  while ({
+                    ..$readKV
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken('}')) $result
+                  else in.objectEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '{')"""
+        } else {
+          q"""if (in.isNextToken('{')) {
+                if (in.isNextToken('}')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  var i = 0
+                  while ({
                     ..$readKV
                     i += 1
                     if (i > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")
-                    if (!in.isNextToken(']')) in.arrayEndError()
-                  } else in.readNullOrTokenError(default, '[')
-                  in.isNextToken(',')
-                }) ()
-                if (in.isCurrentToken(']')) $result
-                else in.objectEndOrCommaError()
-              }
-            } else in.readNullOrTokenError(default, '[')"""
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken('}')) $result
+                  else in.objectEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '{')"""
+        }
+
+      def genReadMapAsArray(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
+        if (cfg.setMaxInsertNumber == Int.MaxValue) {
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  while ({
+                    if (in.isNextToken('[')) {
+                      ..$readKV
+                      if (!in.isNextToken(']')) in.arrayEndError()
+                    } else in.decodeError("expected '['")
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) $result
+                  else in.arrayEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '[')"""
+        } else {
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  var i = 0
+                  while ({
+                    if (in.isNextToken('[')) {
+                      ..$readKV
+                      i += 1
+                      if (i > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")
+                      if (!in.isNextToken(']')) in.arrayEndError()
+                    } else in.decodeError("expected '['")
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) $result
+                  else in.arrayEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '[')"""
+        }
 
       @tailrec
       def genWriteKey(x: Tree, types: List[Type]): Tree = {
@@ -1054,79 +1193,16 @@ object JsonCodecMaker {
         }
       }
 
-      case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
-                           defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
-
-      case class ClassInfo(tpe: Type, paramLists: List[List[FieldInfo]]) {
-        val fields: List[FieldInfo] = paramLists.flatten
-      }
-
-      val classInfos = new mutable.LinkedHashMap[Type, ClassInfo]
-
-      def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
-        case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
-
-        def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
-          case m: MethodSymbol if m.isPrimaryConstructor => m // FIXME: sometime it cannot be accessed from the place of the `make` call
-        }.getOrElse(fail(s"Cannot find a primary constructor for '$tpe'"))
-
-        def hasSupportedAnnotation(m: TermSymbol): Boolean = {
-          m.info: Unit // to enforce the type information completeness and availability of annotations
-          m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
-            a.tree.tpe =:= typeOf[stringified])
-        }
-
-        lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
-        val getters = tpe.members.collect { case m: MethodSymbol if m.isParamAccessor && m.isGetter => m }
-        val annotations = tpe.members.collect {
-          case m: TermSymbol if hasSupportedAnnotation(m) =>
-            val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
-            val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
-            if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$name' of '$tpe'.")
-            val trans = m.annotations.filter(_.tree.tpe =:= typeOf[transient])
-            if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$name' of '$tpe'.")
-            val strings = m.annotations.filter(_.tree.tpe =:= typeOf[stringified])
-            if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
-            if ((named.nonEmpty || strings.nonEmpty) && trans.nonEmpty) {
-              warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
-                s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
-            }
-            val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
-            (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
-        }.toMap
-        ClassInfo(tpe, {
-          var i = 0
-          getPrimaryConstructor(tpe).paramLists.map(_.flatMap { p =>
-            i += 1
-            val symbol = p.asTerm
-            val name = decodeName(symbol)
-            val annotationOption = annotations.get(name)
-            if (annotationOption.exists(_.transient)) None
-            else {
-              val fieldNameMapper: String => String = n => cfg.fieldNameMapper.lift(n).getOrElse(n)
-              val mappedName = annotationOption.fold(fieldNameMapper(name))(_.partiallyMappedName)
-              val tmpName = TermName("_" + symbol.name)
-              val getter = getters.find(_.name == symbol.name).getOrElse {
-                fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
-              }
-              val defaultValue =
-                if (!cfg.requireDefaultFields && symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
-                else None
-              val isStringified = annotationOption.exists(_.stringified)
-              Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, paramType(tpe, symbol), isStringified))
-            }
-          })
-        })
-      })
-
       val unexpectedFieldHandler =
         if (cfg.skipUnexpectedFields) q"in.skip()"
         else q"in.unexpectedKeyError(l)"
       val skipDiscriminatorField =
-        q"""if (pd) {
-              pd = false
-              in.skip()
-            } else in.duplicatedKeyError(l)"""
+        if (cfg.checkFieldDuplication) {
+          q"""if (pd) {
+                pd = false
+                in.skip()
+              } else in.duplicatedKeyError(l)"""
+        } else q"in.skip()"
 
       def discriminatorValue(tpe: Type): String = {
         val named = tpe.typeSymbol.annotations.filter(_.tree.tpe =:= typeOf[named])
@@ -1309,10 +1385,18 @@ object JsonCodecMaker {
             i += 1
             val n = paramVarNames(i >> 5)
             val m = 1 << i
-            (fieldInfo.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
+            val nm = ~m
+            (fieldInfo.mappedName, {
+              if (cfg.checkFieldDuplication) {
+                q"""if (($n & $m) == 0) in.duplicatedKeyError(l)
+                    $n ^= $m"""
+              } else if (required(fieldInfo.mappedName)) q"$n &= $nm"
+              else EmptyTree
+            })
         }.toMap
         val paramVars =
-          paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
+          if (required.isEmpty && !cfg.checkFieldDuplication) Nil
+          else paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
         val checkReqVars =
           if (required.isEmpty) Nil
           else {
@@ -1377,7 +1461,7 @@ object JsonCodecMaker {
                 }"""
           }
         val discriminatorVar =
-          if (discriminator.isEmpty) EmptyTree
+          if (discriminator.isEmpty || !cfg.checkFieldDuplication) EmptyTree
           else q"var pd = true"
         q"""if (in.isNextToken('{')) {
               ..$readVars
@@ -1526,18 +1610,14 @@ object JsonCodecMaker {
                 i += 1""",
             {
               if (isImmutableArraySeq(tpe)) {
-                q"""_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1]({
-                      if (i == l) x
-                      else $shrinkArray
-                    })"""
+                q"""if (i != l) x = $shrinkArray
+                    _root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1](x)"""
               } else if (isMutableArraySeq(tpe)) {
-                q"""_root_.scala.collection.mutable.ArraySeq.make[$tpe1]({
-                      if (i == l) x
-                      else $shrinkArray
-                    })"""
+                q"""if (i != l) x = $shrinkArray
+                    _root_.scala.collection.mutable.ArraySeq.make[$tpe1](x)"""
               } else {
-                q"""if (i == l) x
-                    else $shrinkArray"""
+                q"""if (i != l) x = $shrinkArray
+                    x"""
               }
             })
         } else if (tpe <:< typeOf[immutable.IntMap[_]]) withDecoderFor(methodKey, default) {
@@ -1573,7 +1653,7 @@ object JsonCodecMaker {
             genReadMapAsArray(newBuilder,
               q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
           } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsLong(), $readVal)")
-        } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[mutable.Map[_, _]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2] }"
@@ -1590,14 +1670,14 @@ object JsonCodecMaker {
           if (cfg.mapAsArray) {
             val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
             val readKV =
-              if (isScala213) q"x.addOne(($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
-              else q"x += (($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
+              if (isScala213) q"x.addOne(new _root_.scala.Tuple2($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
+              else q"x += new _root_.scala.Tuple2($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })"
             genReadMapAsArray(newBuilder, readKV, q"x.result()")
           } else {
             val readKey = genReadKey(tpe1 :: types)
             val readKV =
-              if (isScala213) q"x.addOne(($readKey, $readVal2))"
-              else q"x += (($readKey, $readVal2))"
+              if (isScala213) q"x.addOne(new _root_.scala.Tuple2($readKey, $readVal2))"
+              else q"x += new _root_.scala.Tuple2($readKey, $readVal2)"
             genReadMap(newBuilder, readKV, q"x.result()")
           }
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
@@ -1609,7 +1689,7 @@ object JsonCodecMaker {
                 if (v < 0 || v >= ${cfg.bitSetValueLimit}) in.decodeError("illegal value for bit set")
                 val i = v >>> 6
                 if (i >= x.length) x = _root_.java.util.Arrays.copyOf(x, _root_.java.lang.Integer.highestOneBit(i) << 1)
-                x(i) |= 1L << v""",
+                x(i) = x(i) | 1L << v""",
             if (tpe <:< typeOf[mutable.BitSet]) q"_root_.scala.collection.mutable.BitSet.fromBitMaskNoCopy(x)"
             else q"_root_.scala.collection.immutable.BitSet.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default) {
@@ -1789,7 +1869,12 @@ object JsonCodecMaker {
                       val r = ${genReadSubclassesBlock(leafCaseClasses)}
                       if (in.isNextToken('}')) r
                       else in.objectEndOrCommaError()
-                    } else in.readNullOrError(default, "expected '\"' or '{' or null")"""
+                    } else {
+                      val m =
+                        if (default == null) "expected '\"' or '{'"
+                        else "expected '\"' or '{' or null"
+                      in.readNullOrError(default, m)
+                    }"""
               } else if (leafCaseClasses.nonEmpty) {
                 q"""if (in.isNextToken('{')) {
                       val l = in.readKeyAsCharBuf()
@@ -1947,10 +2032,8 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types, isStringified, EmptyTree)
         } else if (isOption(tpe, types.tail)) {
-          q"""$m match {
-                case _root_.scala.Some(x) => ${genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree)}
-                case _root_.scala.None => out.writeNull()
-              }"""
+          q"""if ($m ne _root_.scala.None) ${genWriteVal(q"$m.get", typeArg1(tpe) :: types, isStringified, EmptyTree)}
+              else out.writeNull()"""
         } else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
           isMutableArraySeq(tpe)) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
@@ -2003,7 +2086,7 @@ object JsonCodecMaker {
               genWriteMapAsArray(q"x", writeVal1, writeVal2)
             } else genWriteMap(q"x", q"out.writeKey(kv._1)", writeVal2)
           }
-        } else if (tpe <:< typeOf[collection.Map[_, _]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[collection.Map[_, _]] || isCollisionProofHashMap(tpe)) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           if (isScala213) {
@@ -2024,8 +2107,9 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[List[_]]) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           q"""out.writeArrayStart()
+              val n = _root_.scala.Nil
               var l: _root_.scala.collection.immutable.List[$tpe1] = x
-              while (l ne _root_.scala.Nil) {
+              while (l ne n) {
                 ..${genWriteVal(q"l.head", tpe1 :: types, isStringified, EmptyTree)}
                 l = l.tail
               }
@@ -2104,7 +2188,7 @@ object JsonCodecMaker {
                       ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
                 cq"x: $subTpe => ${genWriteLeafClass(subTpe, writeDiscriminatorField)}"
               }
-          }) :+ cq"null => out.writeNull()"
+          })
           q"""x match {
                 case ..$writeSubclasses
               }"""

@@ -52,7 +52,7 @@ lazy val commonSettings = Seq(
 
 lazy val jsSettings = Seq(
   scalacOptions += {
-    val localSourcesPath = baseDirectory.value.toURI
+    val localSourcesPath = (LocalRootProject / baseDirectory).value.toURI
     val remoteSourcesPath = s"https://raw.githubusercontent.com/plokhotnyuk/jsoniter-scala/${git.gitHeadCommit.value.get}/"
     val sourcesOptionName = CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => "-P:scalajs:mapSourceURI"
@@ -91,7 +91,6 @@ lazy val nativeSettings = Seq(
 
 lazy val noPublishSettings = Seq(
   publish / skip := true,
-  publishTo := None, // W/A for https://github.com/sbt/sbt/issues/7288
   mimaPreviousArtifacts := Set()
 )
 
@@ -118,9 +117,7 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
-  )
+  mimaBinaryIssueFilters := Seq()
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
@@ -179,6 +176,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
       )
       case _ => Seq()
     }) ++ Seq(
+      "com.epam.deltix" % "dfp" % "1.0.1" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.17" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test
     )
@@ -244,35 +242,34 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     }),
     libraryDependencies ++= Seq(
       "io.spray" %% "spray-json" % "1.3.6",
-      "org.playframework" %%% "play-json" % "3.0.1",
+      "org.playframework" %%% "play-json" % "3.0.2",
       "dev.zio" %%% "zio-json" % "0.6.2",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
-      "com.lihaoyi" %%% "upickle" % "3.1.3",
+      "com.lihaoyi" %%% "upickle" % "3.1.4",
       "io.circe" %%% "circe-generic" % "0.14.6",
       "io.circe" %%% "circe-parser" % "0.14.6",
       "io.circe" %%% "circe-jawn" % "0.14.6",
-      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.3",
+      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.6",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M4",
       "org.json4s" %% "json4s-native" % "4.1.0-M4",
       "com.rallyhealth" %% "weepickle-v1" % "1.9.1",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.16.0",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.16.0",
-      "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.16.0",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.16.1",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.16.1",
+      "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.16.1",
       "org.openjdk.jmh" % "jmh-core" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37",
       "org.scalatest" %%% "scalatest" % "3.2.17" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq(
+      case Some((3, _)) => Seq(
+        "io.bullet" %%% "borer-derivation" % "1.13.0"
+      )
+      case _ => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
-        "com.avsystem.commons" %%% "commons-core" % "2.13.1",
+        "com.avsystem.commons" %%% "commons-core" % "2.13.2",
         "com.dslplatform" %% "dsl-json-scala" % "2.0.2"
       )
-      case Some((3, _)) => Seq(
-        "io.bullet" %%% "borer-derivation" % "1.12.0"
-      )
-      case _ => Seq()
     }),
     Compile / doc / sources := Seq()
   )

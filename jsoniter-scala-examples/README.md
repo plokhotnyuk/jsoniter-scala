@@ -41,7 +41,7 @@ curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 source ~/.bashrc
 nvm install 16
 sudo sysctl kernel.perf_event_paranoid=1
-scala-cli --power package --js example01.sc --force -o example01.js
+scala-cli --power package --js --js-mode release example01.sc --force -o example01.js
 ls -l ./example01.js
 perf stat -r 100 node ./example01.js > /dev/null
 ```
