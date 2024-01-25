@@ -3911,7 +3911,7 @@ final class JsonReader private[jsoniter_scala](
                 if (buf(pos + 6) != '\\') illegalEscapeSequenceError(pos + 6)
                 if (buf(pos + 7) != 'u') illegalEscapeSequenceError(pos + 7)
                 val ch2 = readEscapedUnicode(pos + 8, buf)
-                if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
+                if (ch1 >= 0xDC00 || (ch2 & 0xFC00) != 0xDC00) decodeError("illegal surrogate character pair", pos + 11)
                 charBuf(i + 1) = ch2
                 parseEncodedString(i + 2, lim, charBuf, pos + 12)
               } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
