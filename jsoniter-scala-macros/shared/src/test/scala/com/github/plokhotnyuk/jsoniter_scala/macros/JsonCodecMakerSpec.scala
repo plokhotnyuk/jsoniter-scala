@@ -668,14 +668,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           }
 
         def encodeValue(x: Long, out: JsonWriter): _root_.scala.Unit =
-          if (x > 9007199254740992L || x < -9007199254740992L) out.writeValAsString(x)
+          if (x > 4503599627370496L || x < -4503599627370496L) out.writeValAsString(x)
           else out.writeVal(x)
       }
       val codecOfLongList = make[List[Long]]
-      verifyDeser(codecOfLongList, List(1L, 9007199254740992L, 9007199254740993L),
-        """["1",9007199254740992,"9007199254740993"]""")
-      verifySer(codecOfLongList, List(1L, 9007199254740992L, 9007199254740993L),
-        """[1,9007199254740992,"9007199254740993"]""")
+      verifyDeser(codecOfLongList, List(1L, 4503599627370496L, 4503599627370497L),
+        """["001",4503599627370496,"4503599627370497"]""")
+      verifySer(codecOfLongList, List(1L, 4503599627370496L, 4503599627370497L),
+        """[1,4503599627370496,"4503599627370497"]""")
     }
     "serialize and deserialize outer types using custom value codecs for boolean type" in {
       implicit val customCodecOfBoolean: JsonValueCodec[_root_.scala.Boolean] = new JsonValueCodec[_root_.scala.Boolean] {
