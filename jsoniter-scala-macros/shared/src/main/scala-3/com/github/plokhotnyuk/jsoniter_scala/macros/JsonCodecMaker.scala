@@ -1705,7 +1705,8 @@ object JsonCodecMaker {
             tpe <:< TypeRepr.of[mutable.LongMap[_]] || tpe <:< TypeRepr.of[immutable.Seq[_]] ||
             tpe <:< TypeRepr.of[Set[_]]) withNullValueFor(tpe) {
           scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]]) withNullValueFor(tpe) {
+        } else if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]] ||
+            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.Map[_, _]]) withNullValueFor(tpe) {
@@ -2310,14 +2311,15 @@ object JsonCodecMaker {
                 genReadMap(newBuilder, x => Assign(x.asTerm, '{ $x.updated($in.readKeyAsLong(), $readVal) }.asTerm).asExprOf[Unit],
                   identity, in, default.asExprOf[immutable.LongMap[t1]]).asExprOf[T]
               }
-        } else if (tpe <:< TypeRepr.of[mutable.Map[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[mutable.Map[_, _]] ||
+            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           (tpe1.asType, tpe2.asType) match
             case ('[t1], '[t2]) =>
               val tDefault = default.asExprOf[T & mutable.Map[t1, t2]]
               val tEmpty =
-                if (tpe <:< TypeRepr.of[mutable.SortedMap[_, _]]) {
+                if (tpe <:< TypeRepr.of[mutable.SortedMap[_, _]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) {
                   Apply(scalaMapEmptyNoArgs(tpe, tpe1, tpe2), List(summonOrdering(tpe1))).asExprOf[T & mutable.Map[t1, t2]]
                 } else scalaMapEmptyNoArgs(tpe, tpe1, tpe2).asExprOf[T & mutable.Map[t1, t2]]
               val newBuilder = '{
@@ -2911,7 +2913,8 @@ object JsonCodecMaker {
                   genWriteMapAsArrayScala213(tx, writeVal1, writeVal2, out)
                 } else genWriteMapScala213(tx, (out, k) => '{ $out.writeKey($k) }, writeVal2, out)
               }
-        } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[collection.Map[_, _]] ||
+            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           (tpe1.asType, tpe2.asType) match

@@ -71,6 +71,11 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySer(make[IArrayDefaults](CodecMakerConfig.withTransientEmpty(false)),
         IArrayDefaults(aa = IArray[IArray[Int]](), a = IArray[BigInt]()), """{"aa":[],"a":[]}""")
     }
+    "serialize and deserialize new collection types" in {
+      verifySerDeser(make[collection.mutable.CollisionProofHashMap[String, Int]],
+        collection.mutable.CollisionProofHashMap[String, Int]("WWW" -> 1, "VVV" -> 2),
+        """{"WWW":1,"VVV":2}""")
+    }
     "don't generate codecs for union types with proper compilation error" in {
       assert(intercept[TestFailedException](assertCompiles {
         """type ABC = "A" | "B" | "C"

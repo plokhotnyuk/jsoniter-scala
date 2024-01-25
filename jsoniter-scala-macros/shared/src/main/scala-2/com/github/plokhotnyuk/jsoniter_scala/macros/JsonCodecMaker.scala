@@ -694,6 +694,9 @@ object JsonCodecMaker {
       def isMutableArraySeq(tpe: Type): Boolean =
         isScala213 && tpe.typeSymbol.fullName == "scala.collection.mutable.ArraySeq"
 
+      def isCollisionProofHashMap(tpe: Type): Boolean =
+        isScala213 && tpe.typeSymbol.fullName == "scala.collection.mutable.CollisionProofHashMap"
+
       def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
 
       def checkRecursionInTypes(types: List[Type]): Unit =
@@ -1612,7 +1615,7 @@ object JsonCodecMaker {
             genReadMapAsArray(newBuilder,
               q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
           } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsLong(), $readVal)")
-        } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[mutable.Map[_, _]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2] }"
@@ -2045,7 +2048,7 @@ object JsonCodecMaker {
               genWriteMapAsArray(q"x", writeVal1, writeVal2)
             } else genWriteMap(q"x", q"out.writeKey(kv._1)", writeVal2)
           }
-        } else if (tpe <:< typeOf[collection.Map[_, _]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[collection.Map[_, _]] || isCollisionProofHashMap(tpe)) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           if (isScala213) {
