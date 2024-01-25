@@ -1260,69 +1260,104 @@ object JsonCodecMaker {
       }
 
       def genReadSet[B: Type, C: Type](newBuilder: Expr[B], readVal: Quotes ?=> Expr[B] => Expr[Unit], default: Expr[C],
-                                       result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader])(using Quotes): Expr[C] = '{
-        if ($in.isNextToken('[')) {
-          if ($in.isNextToken(']')) $default
-          else {
-            $in.rollbackToken()
-            var x = $newBuilder
-            var i = 0
-            while ({
-              ${readVal('x)}
-              i += 1
-              if (i > ${Expr(cfg.setMaxInsertNumber)}) $in.decodeError("too many set inserts")
-              $in.isNextToken(',')
-            }) ()
-            if ($in.isCurrentToken(']')) ${result('x)}
-            else $in.arrayEndOrCommaError()
-          }
-        } else $in.readNullOrTokenError($default, '[')
-      }
+                                       result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader])(using Quotes): Expr[C] =
+        if (cfg.setMaxInsertNumber == Int.MaxValue) genReadCollection(newBuilder, readVal, default, result, in)
+        else '{
+          if ($in.isNextToken('[')) {
+            if ($in.isNextToken(']')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              var i = 0
+              while ({
+                ${readVal('x)}
+                i += 1
+                if (i > ${Expr(cfg.setMaxInsertNumber)}) $in.decodeError("too many set inserts")
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken(']')) ${result('x)}
+              else $in.arrayEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '[')
+        }
 
       def genReadMap[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
                                        result: Quotes ?=> Expr[B]=>Expr[C], in: Expr[JsonReader],
-                                       default: Expr[C])(using Quotes): Expr[C] = '{
-        if ($in.isNextToken('{')) {
-          if ($in.isNextToken('}')) $default
-          else {
-            $in.rollbackToken()
-            var x = $newBuilder
-            var i = 0
-            while ({
-              ${readKV('x)}
-              i += 1
-              if (i > ${Expr(cfg.mapMaxInsertNumber)}) $in.decodeError("too many map inserts")
-              $in.isNextToken(',')
-            }) ()
-            if ($in.isCurrentToken('}')) ${result('x)}
-            else $in.objectEndOrCommaError()
-          }
-        } else $in.readNullOrTokenError($default, '{')
-      }
-
-      def genReadMapAsArray[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
-                                              result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader],
-                                              default: Expr[C])(using Quotes): Expr[C] = '{
-        if ($in.isNextToken('[')) {
-          if ($in.isNextToken(']')) $default
-          else {
-            $in.rollbackToken()
-            var x = $newBuilder
-            var i = 0
-            while ({
-              if ($in.isNextToken('[')) {
+                                       default: Expr[C])(using Quotes): Expr[C] =
+        if (cfg.setMaxInsertNumber == Int.MaxValue) '{
+          if ($in.isNextToken('{')) {
+            if ($in.isNextToken('}')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              while ({
+                ${readKV('x)}
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken('}')) ${result('x)}
+              else $in.objectEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '{')
+        } else '{
+          if ($in.isNextToken('{')) {
+            if ($in.isNextToken('}')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              var i = 0
+              while ({
                 ${readKV('x)}
                 i += 1
                 if (i > ${Expr(cfg.mapMaxInsertNumber)}) $in.decodeError("too many map inserts")
-                if (!$in.isNextToken(']')) $in.arrayEndError()
-              } else $in.readNullOrTokenError($default, '[')
-              $in.isNextToken(',')
-            }) ()
-            if ($in.isCurrentToken(']')) ${result('x)}
-            else $in.objectEndOrCommaError()
-          }
-        } else $in.readNullOrTokenError($default, '[')
-      }
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken('}')) ${result('x)}
+              else $in.objectEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '{')
+        }
+
+      def genReadMapAsArray[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
+                                              result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader],
+                                              default: Expr[C])(using Quotes): Expr[C] =
+        if (cfg.setMaxInsertNumber == Int.MaxValue) '{
+          if ($in.isNextToken('[')) {
+            if ($in.isNextToken(']')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              while ({
+                if ($in.isNextToken('[')) {
+                  ${readKV('x)}
+                  if (!$in.isNextToken(']')) $in.arrayEndError()
+                } else $in.decodeError("expected '['")
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken(']')) ${result('x)}
+              else $in.arrayEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '[')
+        } else '{
+          if ($in.isNextToken('[')) {
+            if ($in.isNextToken(']')) $default
+            else {
+              $in.rollbackToken()
+              var x = $newBuilder
+              var i = 0
+              while ({
+                if ($in.isNextToken('[')) {
+                  ${readKV('x)}
+                  i += 1
+                  if (i > ${Expr(cfg.mapMaxInsertNumber)}) $in.decodeError("too many map inserts")
+                  if (!$in.isNextToken(']')) $in.arrayEndError()
+                } else $in.decodeError("expected '['")
+                $in.isNextToken(',')
+              }) ()
+              if ($in.isCurrentToken(']')) ${result('x)}
+              else $in.arrayEndOrCommaError()
+            }
+          } else $in.readNullOrTokenError($default, '[')
+        }
 
       @tailrec
       def genWriteKey[T: Type](x: Expr[T], types: List[TypeRepr], out: Expr[JsonWriter])(using Quotes): Expr[Unit] =

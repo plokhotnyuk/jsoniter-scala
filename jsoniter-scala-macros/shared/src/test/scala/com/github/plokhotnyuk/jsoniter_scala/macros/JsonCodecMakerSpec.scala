@@ -1693,6 +1693,20 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfImmutableMaps, """{"m":{"1":1.1,},"hm":{},"sm":{}""",
         """expected '"', offset: 0x0000000e""")
     }
+    "throw parse exception in case of JSON array of JSON arrays is not properly started/closed or with leading/trailing comma" in {
+      val codecOfMapAsArray = make[_root_.scala.collection.Map[Int, _root_.scala.Boolean]](CodecMakerConfig.withMapAsArray(true))
+      verifyDeserError(codecOfMapAsArray, """{[1,true]]""", """expected '[' or null, offset: 0x00000000""")
+      verifyDeserError(codecOfMapAsArray, """[,[1,true]]""", """expected '[', offset: 0x00000001""")
+      verifyDeserError(codecOfMapAsArray, """[[1,true,]]""", """expected ']', offset: 0x00000008""")
+      verifyDeserError(codecOfMapAsArray, """[[1,true]}""", """expected ']' or ',', offset: 0x00000009""")
+      verifyDeserError(codecOfMapAsArray, """[[1,true],]""", """expected '[', offset: 0x0000000a""")
+      val codecOfMapAsArray2 = make[_root_.scala.collection.Map[Int, _root_.scala.Boolean]](CodecMakerConfig.withMapAsArray(true).withMapMaxInsertNumber(Int.MaxValue))
+      verifyDeserError(codecOfMapAsArray2, """{[1,true]]""", """expected '[' or null, offset: 0x00000000""")
+      verifyDeserError(codecOfMapAsArray2, """[,[1,true]]""", """expected '[', offset: 0x00000001""")
+      verifyDeserError(codecOfMapAsArray2, """[[1,true,]]""", """expected ']', offset: 0x00000008""")
+      verifyDeserError(codecOfMapAsArray2, """[[1,true]}""", """expected ']' or ',', offset: 0x00000009""")
+      verifyDeserError(codecOfMapAsArray2, """[[1,true],]""", """expected '[', offset: 0x0000000a""")
+    }
     "throw parse exception in case of illegal keys found during deserialization of maps" in {
       verifyDeserError(codecOfMutableMaps, """{"m":{"1.1":{"null":"2"}}""", "illegal number, offset: 0x0000000e")
     }

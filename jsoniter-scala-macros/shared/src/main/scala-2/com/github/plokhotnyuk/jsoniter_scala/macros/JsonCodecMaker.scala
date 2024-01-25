@@ -977,61 +977,99 @@ object JsonCodecMaker {
             } else in.readNullOrTokenError(default, '[')"""
 
       def genReadSet(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
-        q"""if (in.isNextToken('[')) {
-              if (in.isNextToken(']')) default
-              else {
-                in.rollbackToken()
-                ..$newBuilder
-                var i = 0
-                while ({
-                  ..$readVal
-                  i += 1
-                  if (i > ${cfg.setMaxInsertNumber}) in.decodeError("too many set inserts")
-                  in.isNextToken(',')
-                }) ()
-                if (in.isCurrentToken(']')) $result
-                else in.arrayEndOrCommaError()
-              }
-            } else in.readNullOrTokenError(default, '[')"""
+        if (cfg.setMaxInsertNumber == Int.MaxValue) genReadArray(newBuilder, readVal, result)
+        else {
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  var i = 0
+                  while ({
+                    ..$readVal
+                    i += 1
+                    if (i > ${cfg.setMaxInsertNumber}) in.decodeError("too many set inserts")
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) $result
+                  else in.arrayEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '[')"""
+        }
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
-        q"""if (in.isNextToken('{')) {
-              if (in.isNextToken('}')) default
-              else {
-                in.rollbackToken()
-                ..$newBuilder
-                var i = 0
-                while ({
-                  ..$readKV
-                  i += 1
-                  if (i > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")
-                  in.isNextToken(',')
-                }) ()
-                if (in.isCurrentToken('}')) $result
-                else in.objectEndOrCommaError()
-              }
-            } else in.readNullOrTokenError(default, '{')"""
-
-      def genReadMapAsArray(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
-        q"""if (in.isNextToken('[')) {
-              if (in.isNextToken(']')) default
-              else {
-                in.rollbackToken()
-                ..$newBuilder
-                var i = 0
-                while ({
-                  if (in.isNextToken('[')) {
+        if (cfg.setMaxInsertNumber == Int.MaxValue) {
+          q"""if (in.isNextToken('{')) {
+                if (in.isNextToken('}')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  while ({
+                    ..$readKV
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken('}')) $result
+                  else in.objectEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '{')"""
+        } else {
+          q"""if (in.isNextToken('{')) {
+                if (in.isNextToken('}')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  var i = 0
+                  while ({
                     ..$readKV
                     i += 1
                     if (i > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")
-                    if (!in.isNextToken(']')) in.arrayEndError()
-                  } else in.readNullOrTokenError(default, '[')
-                  in.isNextToken(',')
-                }) ()
-                if (in.isCurrentToken(']')) $result
-                else in.objectEndOrCommaError()
-              }
-            } else in.readNullOrTokenError(default, '[')"""
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken('}')) $result
+                  else in.objectEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '{')"""
+        }
+
+      def genReadMapAsArray(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
+        if (cfg.setMaxInsertNumber == Int.MaxValue) {
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  while ({
+                    if (in.isNextToken('[')) {
+                      ..$readKV
+                      if (!in.isNextToken(']')) in.arrayEndError()
+                    } else in.decodeError("expected '['")
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) $result
+                  else in.arrayEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '[')"""
+        } else {
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) default
+                else {
+                  in.rollbackToken()
+                  ..$newBuilder
+                  var i = 0
+                  while ({
+                    if (in.isNextToken('[')) {
+                      ..$readKV
+                      i += 1
+                      if (i > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")
+                      if (!in.isNextToken(']')) in.arrayEndError()
+                    } else in.decodeError("expected '['")
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) $result
+                  else in.arrayEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '[')"""
+        }
 
       @tailrec
       def genWriteKey(x: Tree, types: List[Type]): Tree = {
