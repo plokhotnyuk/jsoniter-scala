@@ -1729,7 +1729,7 @@ object JsonCodecMaker {
             case '[t1] => '{ (null: ::[t1]) }.asExprOf[T]
         }
         else if (tpe <:< TypeRepr.of[List[_]] || tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) '{ Nil }.asExprOf[T]
-        else if (tpe <:< TypeRepr.of[collection.SortedSet[_]]) withNullValueFor(tpe) {
+        else if (tpe <:< TypeRepr.of[collection.SortedSet[_]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[_]]) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
@@ -2511,6 +2511,8 @@ object JsonCodecMaker {
               val emptyCollection = {
                 if (tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
                   Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1)))
+                } else if (tpe <:< TypeRepr.of[mutable.PriorityQueue[_]]) {
+                  Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1)))
                 } else scalaCollectionEmptyNoArgs(tpe, tpe1)
               }.asExprOf[T & mutable.Growable[t1]]
               genReadCollection('{
