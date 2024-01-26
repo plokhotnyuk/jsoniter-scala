@@ -10,6 +10,12 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySerDeser(make[_root_.scala.collection.mutable.CollisionProofHashMap[String, Int]],
         _root_.scala.collection.mutable.CollisionProofHashMap[String, Int]("WWW" -> 1, "VVV" -> 2),
         """{"WWW":1,"VVV":2}""")
+      verifySerDeser(make[_root_.scala.collection.immutable.TreeSeqMap[String, Int]],
+        _root_.scala.collection.immutable.TreeSeqMap[String, Int]("WWW" -> 1, "VVV" -> 2),
+        """{"WWW":1,"VVV":2}""")
+      verifySerDeser(make[_root_.scala.collection.immutable.VectorMap[String, Int]],
+        _root_.scala.collection.immutable.VectorMap[String, Int]("WWW" -> 1, "VVV" -> 2),
+        """{"WWW":1,"VVV":2}""")
     }
   }
 }
