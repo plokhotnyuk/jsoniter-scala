@@ -1325,13 +1325,13 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
         else if (isOption(tpe, types.tail)) q"_root_.scala.None"
-        else if (tpe <:< typeOf[mutable.BitSet]) q"${scalaCollectionCompanion(tpe)}.empty"
-        else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty")
+        else if (tpe <:< typeOf[mutable.BitSet]) q"new _root_.scala.collection.mutable.BitSet"
+        else if (tpe <:< typeOf[collection.BitSet]) withNullValueFor(tpe)(q"_root_.scala.collection.immutable.BitSet.empty")
         else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[::[_]]) q"null"
         else if (tpe <:< typeOf[List[_]] || tpe.typeSymbol == typeOf[Seq[_]].typeSymbol) q"_root_.scala.Nil"
         else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[immutable.LongMap[_]] ||
-          tpe <:< typeOf[immutable.Seq[_]] || tpe <:< typeOf[Set[_]]) withNullValueFor(tpe) {
+          tpe <:< typeOf[immutable.Seq[_]] || tpe <:< typeOf[immutable.Set[_]]) withNullValueFor(tpe) {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         } else if (tpe <:< typeOf[immutable.Map[_, _]]) withNullValueFor(tpe) {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
