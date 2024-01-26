@@ -176,7 +176,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
       )
       case _ => Seq()
     }) ++ Seq(
-      "com.epam.deltix" % "dfp" % "1.0.1" % Test,
+      "com.epam.deltix" % "dfp" % "1.0.2" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.17" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test
     )
