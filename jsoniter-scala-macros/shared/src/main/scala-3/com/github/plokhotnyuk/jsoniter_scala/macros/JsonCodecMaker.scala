@@ -1744,6 +1744,10 @@ object JsonCodecMaker {
             tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExprOf[T]
+        } else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[_, _]]) withNullValueFor(tpe) {
+          (typeArg1(tpe).asType, typeArg2(tpe).asType) match
+            case ('[t1], '[t2]) =>
+              '{ immutable.TreeSeqMap.empty[t1, t2] }.asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.Map[_, _]]) withNullValueFor(tpe) {
           scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) {
@@ -2379,10 +2383,12 @@ object JsonCodecMaker {
           val tpe2 = typeArg2(tpe)
           (tpe1.asType, tpe2.asType) match
             case ('[t1], '[t2]) =>
-              val builderNoApply =
+              def builderNoApply =
                 TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1], TypeTree.of[t2]))
+
               val newBuilder =
                 (if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]]) Apply(builderNoApply, List(summonOrdering(tpe1)))
+                else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[_, _]]) '{ immutable.TreeSeqMap.newBuilder[t1, t2] }.asTerm
                 else builderNoApply).asExprOf[mutable.Builder[(t1, t2), T & collection.Map[t1, t2]]]
 
               def readVal2(using Quotes) =
