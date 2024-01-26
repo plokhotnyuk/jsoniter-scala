@@ -16,6 +16,10 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySerDeser(make[_root_.scala.collection.immutable.VectorMap[String, Int]],
         _root_.scala.collection.immutable.VectorMap[String, Int]("WWW" -> 1, "VVV" -> 2),
         """{"WWW":1,"VVV":2}""")
+      verifySerDeser(make[_root_.scala.collection.immutable.LazyList[Int]],
+        _root_.scala.collection.immutable.LazyList[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[_root_.scala.collection.mutable.Stack[Int]],
+        _root_.scala.collection.mutable.Stack[Int](1, 2), """[1,2]""")
       verifySerDeser(make[_root_.scala.collection.mutable.ArrayDeque[Int]],
         _root_.scala.collection.mutable.ArrayDeque[Int](1, 2), """[1,2]""")
       verifySer(make[_root_.scala.collection.mutable.PriorityQueue[Int]],
