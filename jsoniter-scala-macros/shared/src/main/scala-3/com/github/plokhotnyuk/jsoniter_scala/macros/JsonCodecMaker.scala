@@ -1722,13 +1722,11 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[java.lang.Double]) '{ java.lang.Double.valueOf(0d) }.asExprOf[T]
         else if (isOption(tpe, types.tail)) '{ None }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }.asExprOf[T]
-        else if (tpe <:< TypeRepr.of[immutable.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty }.asExprOf[T])
-        else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ collection.BitSet.empty }.asExprOf[T])
+        else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty }.asExprOf[T])
         else if (tpe <:< TypeRepr.of[::[_]]) {
           typeArg1(tpe).asType match
             case '[t1] => '{ (null: ::[t1]) }.asExprOf[T]
-        }
-        else if (tpe <:< TypeRepr.of[List[_]] || tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) '{ Nil }.asExprOf[T]
+        } else if (tpe <:< TypeRepr.of[List[_]] || tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) '{ Nil }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[collection.SortedSet[_]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[_]]) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1))).asExprOf[T]
@@ -1737,11 +1735,11 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.IntMap[_]] || tpe <:< TypeRepr.of[immutable.LongMap[_]] ||
-            tpe <:< TypeRepr.of[mutable.LongMap[_]] || tpe <:< TypeRepr.of[immutable.Seq[_]] ||
-            tpe <:< TypeRepr.of[Set[_]]) withNullValueFor(tpe) {
+            tpe <:< TypeRepr.of[immutable.Seq[_]] || tpe <:< TypeRepr.of[immutable.Set[_]]) withNullValueFor(tpe) {
           scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]] ||
-            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) withNullValueFor(tpe) {
+        } else if (tpe <:< TypeRepr.of[mutable.LongMap[_]]) scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
+        else if (tpe <:< TypeRepr.of[collection.SortedMap[_, _]] ||
+            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[_, _]]) {
           val tpe1 = typeArg1(tpe)
           Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[_, _]]) withNullValueFor(tpe) {
