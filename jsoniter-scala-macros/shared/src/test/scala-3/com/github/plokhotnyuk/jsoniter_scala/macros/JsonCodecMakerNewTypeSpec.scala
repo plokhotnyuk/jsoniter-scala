@@ -75,6 +75,12 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySerDeser(make[collection.mutable.CollisionProofHashMap[String, Int]],
         collection.mutable.CollisionProofHashMap[String, Int]("WWW" -> 1, "VVV" -> 2),
         """{"WWW":1,"VVV":2}""")
+      verifySerDeser(make[collection.immutable.TreeSeqMap[String, Int]],
+        collection.immutable.TreeSeqMap[String, Int]("WWW" -> 1, "VVV" -> 2),
+        """{"WWW":1,"VVV":2}""")
+      verifySerDeser(make[collection.immutable.VectorMap[String, Int]],
+        collection.immutable.VectorMap[String, Int]("WWW" -> 1, "VVV" -> 2),
+        """{"WWW":1,"VVV":2}""")
     }
     "don't generate codecs for union types with proper compilation error" in {
       assert(intercept[TestFailedException](assertCompiles {
