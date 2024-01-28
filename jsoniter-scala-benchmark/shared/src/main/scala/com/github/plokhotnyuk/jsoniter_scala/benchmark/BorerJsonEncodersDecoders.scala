@@ -67,8 +67,8 @@ object BorerJsonEncodersDecoders {
   implicit val Codec(zoneOffsetEnc: Encoder[ZoneOffset], zoneOffsetDec: Decoder[ZoneOffset]) =
     stringCodec(ZoneOffset.of)
   implicit val Codec(gitHubActionsAPIEnc: Encoder[GitHubActionsAPI.Response], gitHubActionsAPIDec: Decoder[GitHubActionsAPI.Response]) = {
-    import Decoder.StringBooleans._
-    import Encoder.StringBooleans._
+    import Decoder.StringBooleans.booleanDecoder
+    import Encoder.StringBooleans.booleanEncoder
 
     implicit val c1: Codec[GitHubActionsAPI.Artifact] = deriveCodec
     deriveCodec[GitHubActionsAPI.Response]
@@ -129,7 +129,7 @@ object BorerJsonEncodersDecoders {
     }
   }
   implicit val Codec(twitterAPIEnc: Encoder[TwitterAPI.Tweet], twitterAPIDec: Decoder[TwitterAPI.Tweet]) = {
-    import io.bullet.borer.NullOptions._
+    import io.bullet.borer.NullOptions.{encoder, decoder}
 
     implicit val c1: Codec[TwitterAPI.UserMentions] = deriveCodec
     implicit val c2: Codec[TwitterAPI.Urls] = deriveCodec
