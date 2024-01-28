@@ -263,7 +263,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.scalatest" %%% "scalatest" % "3.2.17" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq(
-        "io.bullet" %%% "borer-derivation" % "1.13.0"
+        "io.bullet" %%% "borer-derivation" % "1.14.0"
       )
       case _ => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
