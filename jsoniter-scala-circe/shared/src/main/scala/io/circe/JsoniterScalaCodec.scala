@@ -35,6 +35,39 @@ object JsoniterScalaCodec {
     } else new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
   })
 
+  val defaultNumberSerializer: (JsonWriter, JsonNumber) => Unit = (out: JsonWriter, x: JsonNumber) => x match {
+    case l: JsonLong => out.writeVal(l.value)
+    case f: JsonFloat => out.writeVal(f.value)
+    case d: JsonDouble => out.writeVal(d.value)
+    case bd: JsonBigDecimal => out.writeVal(bd.value)
+    case _ => out.writeRawVal(x.toString.getBytes(StandardCharsets.UTF_8))
+  }
+
+  val jsCompatibleNumberSerializer: (JsonWriter, JsonNumber) => Unit = (out: JsonWriter, x: JsonNumber) => x match {
+    case l: JsonLong =>
+      val v = l.value
+      if (v >= -4503599627370496L && v < 4503599627370496L) out.writeVal(v)
+      else out.writeValAsString(v)
+    case f: JsonFloat => out.writeVal(f.value)
+    case d: JsonDouble => out.writeVal(d.value)
+    case bd: JsonBigDecimal =>
+      val v = bd.value
+      val bl = v.unscaledValue.bitLength
+      val s = v.scale
+      if (bl <= 52 && s >= -256 && s <= 256) out.writeVal(v)
+      else out.writeValAsString(v)
+    case _ => x.toBigDecimal match {
+      case Some(bd) =>
+        val u = bd.underlying
+        val bl = u.unscaledValue.bitLength
+        val s = u.scale
+        if (bl <= 52 && s >= -256 && s <= 256) out.writeVal(u)
+        else out.writeValAsString(u)
+      case _ =>
+        out.writeVal(x.toString)
+    }
+  }
+
   /**
    * Converts an ASCII byte array to a JSON string.
    *
@@ -94,13 +127,27 @@ object JsoniterScalaCodec {
  * @param initialSize the initial size hint for object and array collections
  * @param doSerialize a predicate that determines whether a value should be serialized
  * @param numberParser a function that parses JSON numbers
+ * @param numberSerializer a function that serializes JSON numbers
  * @return The JSON codec
  */
 final class JsoniterScalaCodec(
     maxDepth: Int,
     initialSize: Int,
     doSerialize: Json => Boolean,
-    numberParser: JsonReader => Json) extends JsonValueCodec[Json] {
+    numberParser: JsonReader => Json,
+    numberSerializer: (JsonWriter, JsonNumber) => Unit) extends JsonValueCodec[Json] {
+
+  /**
+   * An auxiliary constructor for backward binary compatibility.
+   *
+   * @param maxDepth the maximum depth for decoding
+   * @param initialSize the initial size hint for object and array collections
+   * @param doSerialize a predicate that determines whether a value should be serialized
+   * @param numberParser a function that parses JSON numbers
+   */
+  def this(maxDepth: Int, initialSize: Int, doSerialize: Json => Boolean, numberParser: JsonReader => Json) =
+    this(maxDepth, initialSize, doSerialize, numberParser, JsoniterScalaCodec.defaultNumberSerializer)
+
   private[this] val trueValue = True
   private[this] val falseValue = False
   private[this] val emptyArrayValue = new JArray(Vector.empty)
@@ -161,7 +208,7 @@ final class JsoniterScalaCodec(
       if (str.length != 1) out.writeVal(str)
       else out.writeVal(str.charAt(0))
     case b: JBoolean => out.writeVal(b.value)
-    case n: JNumber => encodeJsonNumber(n.value, out)
+    case n: JNumber => numberSerializer(out, n.value)
     case a: JArray =>
       val depthM1 = depth - 1
       if (depthM1 < 0) out.encodeError("depth limit exceeded")
@@ -182,13 +229,5 @@ final class JsoniterScalaCodec(
       }
       out.writeObjectEnd()
     case _ => out.writeNull()
-  }
-
-  private[this] def encodeJsonNumber(x: JsonNumber, out: JsonWriter): Unit = x match {
-    case l: JsonLong => out.writeVal(l.value)
-    case f: JsonFloat => out.writeVal(f.value)
-    case d: JsonDouble => out.writeVal(d.value)
-    case bd: JsonBigDecimal => out.writeVal(bd.value)
-    case _ => out.writeRawVal(x.toString.getBytes(StandardCharsets.UTF_8))
   }
 }
