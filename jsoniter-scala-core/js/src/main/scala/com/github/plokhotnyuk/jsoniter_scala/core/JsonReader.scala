@@ -2802,11 +2802,13 @@ final class JsonReader private[jsoniter_scala](
       pos += 9
       first = Math.max(first - 1, 0)
       var i = last
-      while (i >= first) {
+      while ({
         x += (magnitude(i) & 0xFFFFFFFFL) * 1000000000
         magnitude(i) = x.toInt
-        x >>>= 32
         i -= 1
+        i >= first
+      }) {
+        x >>>= 32
       }
     }
     val bs = new Array[Byte](last + 1 << 2)

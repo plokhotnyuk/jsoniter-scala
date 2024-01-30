@@ -2844,13 +2844,17 @@ final class JsonReader private[jsoniter_scala](
       first = Math.max(first - 8, 0)
       var i = last
       val q = 1000000000000000000L
-      while (i >= first) {
-        val m = ByteArrayAccess.getLong(magnitude, i)
-        val p = m * q
-        x += p
+      var m, mq = 0L
+      while ({
+        m = ByteArrayAccess.getLong(magnitude, i)
+        mq = m * q
+        x += mq
         ByteArrayAccess.setLong(magnitude, i, x)
-        x = NativeMath.unsignedMultiplyHigh(m, q) + ((~x & p) >>> 63)
         i -= 8
+        i >= first
+      }) {
+        x = (~x & mq) >>> 63
+        x += NativeMath.unsignedMultiplyHigh(m, q)
       }
     }
     var i = 0
