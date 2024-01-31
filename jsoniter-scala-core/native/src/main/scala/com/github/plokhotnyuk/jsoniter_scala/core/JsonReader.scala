@@ -2244,9 +2244,8 @@ final class JsonReader private[jsoniter_scala](
     }
     if ((b | 0x20) == 'e') {
       b = nextByte(pos + 1)
-      var isNegExp = false
-      if (b == '-') isNegExp = true
-      if (isNegExp || b == '+') b = nextByte(head)
+      val sb = b
+      if (b == '-' || b == '+') b = nextByte(head)
       if (b < '0' || b > '9') numberError()
       var exp = b - '0'
       pos = head
@@ -2262,7 +2261,7 @@ final class JsonReader private[jsoniter_scala](
         if (exp < 214748364) exp = exp * 10 + (b - '0')
         pos += 1
       }
-      if (isNegExp) exp = -exp
+      if (sb == '-') exp = -exp
       e10 += exp
     }
     head = pos
@@ -2393,9 +2392,8 @@ final class JsonReader private[jsoniter_scala](
     }
     if ((b | 0x20) == 'e') {
       b = nextByte(pos + 1)
-      var isNegExp = false
-      if (b == '-') isNegExp = true
-      if (isNegExp || b == '+') b = nextByte(head)
+      val sb = b
+      if (b == '-' || b == '+') b = nextByte(head)
       if (b < '0' || b > '9') numberError()
       var exp = b - '0'
       pos = head
@@ -2411,7 +2409,7 @@ final class JsonReader private[jsoniter_scala](
         if (exp < 214748364) exp = exp * 10 + (b - '0')
         pos += 1
       }
-      if (isNegExp) exp = -exp
+      if (sb == '-') exp = -exp
       e10 += exp
     }
     head = pos
@@ -2628,9 +2626,8 @@ final class JsonReader private[jsoniter_scala](
       }
       if ((b | 0x20) == 'e') {
         b = nextByte(pos + 1)
-        var isNegExp = false
-        if (b == '-') isNegExp = true
-        if (isNegExp || b == '+') b = nextByte(head)
+        val sb = b
+        if (b == '-' || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
         var exp = (b - '0').toLong
         pos = head
@@ -2647,10 +2644,9 @@ final class JsonReader private[jsoniter_scala](
           if (exp > 2147483648L) numberError(pos)
           pos += 1
         }
-        scale =
-          if (isNegExp) exp.toInt
-          else if (exp == 2147483648L) numberError(pos - 1)
-          else -exp.toInt
+        if (sb == '-') scale = exp.toInt
+        else if (exp == 2147483648L) numberError(pos - 1)
+        else scale = -exp.toInt
       }
       head = pos
       if (mark == 0) from -= newMark
