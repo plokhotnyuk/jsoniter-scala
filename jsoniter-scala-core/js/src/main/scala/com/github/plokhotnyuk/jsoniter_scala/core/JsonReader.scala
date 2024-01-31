@@ -2619,7 +2619,7 @@ final class JsonReader private[jsoniter_scala](
         val sb = b
         if (b == '-' || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
-        var exp = (b - '0').toLong
+        scale = '0' - b
         pos = head
         buf = this.buf
         while ((pos < tail || {
@@ -2630,13 +2630,14 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          exp = exp * 10 + (b - '0')
-          if (exp > 2147483648L) numberError(pos)
+          if (scale < -214748364 || {
+            scale = scale * 10 + ('0' - b)
+            scale > 0
+          }) numberError(pos)
           pos += 1
         }
-        if (sb == '-') scale = exp.toInt
-        else if (exp == 2147483648L) numberError(pos - 1)
-        else scale = -exp.toInt
+        if (sb == '-') scale = -scale
+        if (scale == -2147483648) numberError(pos - 1)
       }
       head = pos
       if (mark == 0) from -= newMark
@@ -2646,7 +2647,21 @@ final class JsonReader private[jsoniter_scala](
           val limit = from + digits + 1
           val fracPos = limit - fracLen
           val fracLimit = fracPos - 1
-          if (digits < 19) {
+          if (digits < 10) {
+            var x = buf(from) - '0'
+            from += 1
+            while (from < fracLimit) {
+              x = x * 10 + (buf(from) - '0')
+              from += 1
+            }
+            from += 1
+            while (from < limit) {
+              x = x * 10 + (buf(from) - '0')
+              from += 1
+            }
+            if (isNeg) x = -x
+            java.math.BigDecimal.valueOf(x.toLong, scale + fracLen)
+          } else if (digits < 19) {
             var x = (buf(from) - '0').toLong
             from += 1
             while (from < fracLimit) {
