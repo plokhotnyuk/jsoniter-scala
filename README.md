@@ -261,7 +261,7 @@ When your input comes from the network or disks much more efficient ways are to 
 - byte arrays using `readFromArray`/`writeToArray`
 - byte sub-arrays using `readFromSubArray`/`writeToSubArray`
 - `java.nio.ByteBuffer` instances using `readFromByteBuffer`/`writeToByteBuffer`
-- `java.io.InputString`/`java.io.OutputStream` instances using `readFromStream`/`writeToStream`
+- `java.io.InputStream`/`java.io.OutputStream` instances using `readFromStream`/`writeToStream`
 
 Also, parsing from bytes will check `UTF-8` encoding and throw an error in case of malformed bytes.
 
