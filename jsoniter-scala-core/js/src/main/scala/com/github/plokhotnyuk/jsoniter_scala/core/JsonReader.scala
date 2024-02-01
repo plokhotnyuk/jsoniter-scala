@@ -2446,8 +2446,9 @@ final class JsonReader private[jsoniter_scala](
     var x: Float =
       if (e10 == 0 && m10 < 922337203685477580L) m10.toFloat
       else if (m10 < 4294967296L && e10 >= digits - 23 && e10 <= 19 - digits) {
-        (if (e10 < 0) m10 / pow10Doubles(-e10)
-        else m10 * pow10Doubles(e10)).toFloat
+        val pow10 = pow10Doubles
+        (if (e10 < 0) m10 / pow10(-e10)
+        else m10 * pow10(e10)).toFloat
       } else toFloat(m10, e10, from, newMark, pos)
     if (isNeg) x = -x
     if (mark > oldMark) mark = oldMark
@@ -3373,11 +3374,11 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
-  private[this] def periodError(state: Int, pos: Int): Nothing = decodeError((state: @switch) match {
+  private[this] def periodError(state: Int, pos: Int): Nothing = decodeError(state match {
     case 0 => "expected 'Y' or 'M' or 'W' or 'D' or digit"
     case 1 => "expected 'M' or 'W' or 'D' or digit"
     case 2 => "expected 'W' or 'D' or digit"
-    case 3 => "expected 'D' or digit"
+    case _ => "expected 'D' or digit"
   }, pos)
 
   private[this] def durationOrPeriodStartError(isNeg: Boolean): Nothing = decodeError {
@@ -3393,11 +3394,11 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
 
-  private[this] def durationError(state: Int, pos: Int): Nothing = decodeError((state: @switch) match {
+  private[this] def durationError(state: Int, pos: Int): Nothing = decodeError(state match {
     case 0 => "expected 'D' or digit"
     case 1 => "expected 'H' or 'M' or 'S or '.' or digit"
     case 2 => "expected 'M' or 'S or '.' or digit"
-    case 3 => "expected 'S or '.' or digit"
+    case _ => "expected 'S or '.' or digit"
   }, pos)
 
   private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, isNeg: Boolean, yearDigits: Int): Nothing = {

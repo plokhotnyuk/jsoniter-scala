@@ -1701,7 +1701,7 @@ final class JsonReader private[jsoniter_scala](
         year = (year * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
         head = pos + 5
         year
-      } else parseNon4DigitYearWithByte('-', 10, year + 0x30303030, pos)
+      } else parseNon4DigitYearWithByte('-', 10, year, pos)
     } else parseInstantYearWithDash(loadMoreOrError(pos))
 
   @tailrec
@@ -1713,27 +1713,22 @@ final class JsonReader private[jsoniter_scala](
         year = (year * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
         head = pos + 5
         year
-      } else parseNon4DigitYearWithByte(t, 9, year + 0x30303030, pos)
+      } else parseNon4DigitYearWithByte(t, 9, year, pos)
     } else parseYearWithByte(t, loadMoreOrError(pos))
 
-  private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, bs: Int, p: Int): Int = {
+  private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, y: Int, p: Int): Int = {
+    val bs = y + 0x30303030
     val b1 = bs.toByte
-    if (b1 >= '0' && b1 <= '9') fourDigitYearWithByteError(t, p, bs)
-    var pos = p
+    if (b1 != '-' && b1 != '+') fourDigitYearWithByteError(t, p, bs)
+    var pos = p + 1
     var buf = this.buf
-    val b2 = (bs >> 8).toByte
-    val b3 = (bs >> 16).toByte
-    val b4 = (bs >> 24).toByte
-    val b5 = buf(pos + 4)
-    if (b1 != '-' && b1 != '+') decodeError("expected '-' or '+' or digit", pos)
-    if (b2 < '0' || b2 > '9') digitError(pos + 1)
-    if (b3 < '0' || b3 > '9') digitError(pos + 2)
-    if (b4 < '0' || b4 > '9') digitError(pos + 3)
-    if (b5 < '0' || b5 > '9') digitError(pos + 4)
-    var year = b2 * 1000 + b3 * 100 + b4 * 10 + b5 - 53328 // 53328 == '0' * 1111
+    var year = ByteArrayAccess.getInt(buf, pos) - 0x30303030
+    val m = (year + 0x76767676 | year) & 0x80808080 // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+    if (m != 0) digitError((java.lang.Integer.numberOfTrailingZeros(m) >> 3) + pos)
+    year = (year * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
+    pos += 4
     var yearDigits = 4
     var b: Byte = 0
-    pos += 5
     while ({
       if (pos >= tail) {
         pos = loadMoreOrError(pos)
@@ -2416,8 +2411,9 @@ final class JsonReader private[jsoniter_scala](
     var x: Float =
       if (e10 == 0 && m10 < 922337203685477580L) m10.toFloat
       else if (m10 < 4294967296L && e10 >= digits - 23 && e10 <= 19 - digits) {
-        (if (e10 < 0) m10 / pow10Doubles(-e10)
-        else m10 * pow10Doubles(e10)).toFloat
+        val pow10 = pow10Doubles
+        (if (e10 < 0) m10 / pow10(-e10)
+        else m10 * pow10(e10)).toFloat
       } else toFloat(m10, e10, from, newMark, pos)
     if (isNeg) x = -x
     if (mark > oldMark) mark = oldMark
@@ -3814,24 +3810,27 @@ final class JsonReader private[jsoniter_scala](
     (year & 0x3) == 0 && (year * -1030792151 - 2061584303 > -1975684958 || (year & 0xF) == 0) // year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 
   private[this] def fourDigitYearWithByteError(t: Byte, pos: Int, bs: Int): Nothing = {
-    val b2 = (bs >> 8).toByte
-    val b3 = (bs >> 16).toByte
-    val b4 = (bs >> 24).toByte
-    if (b2 < '0' || b2 > '9') digitError(pos + 1)
-    if (b3 < '0' || b3 > '9') digitError(pos + 2)
-    if (b4 < '0' || b4 > '9') digitError(pos + 3)
-    tokenError(t, pos + 4)
+    val b1 = bs.toByte
+    if (b1 >= '0' && b1 <= '9') {
+      val b2 = (bs >> 8).toByte
+      val b3 = (bs >> 16).toByte
+      val b4 = (bs >> 24).toByte
+      if (b2 < '0' || b2 > '9') digitError(pos + 1)
+      if (b3 < '0' || b3 > '9') digitError(pos + 2)
+      if (b4 < '0' || b4 > '9') digitError(pos + 3)
+      tokenError(t, pos + 4)
+    } else decodeError("expected '-' or '+' or digit", pos)
   }
 
   private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
 
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
-  private[this] def periodError(state: Int, pos: Int): Nothing = decodeError((state: @switch) match {
+  private[this] def periodError(state: Int, pos: Int): Nothing = decodeError(state match {
     case 0 => "expected 'Y' or 'M' or 'W' or 'D' or digit"
     case 1 => "expected 'M' or 'W' or 'D' or digit"
     case 2 => "expected 'W' or 'D' or digit"
-    case 3 => "expected 'D' or digit"
+    case _ => "expected 'D' or digit"
   }, pos)
 
   private[this] def durationOrPeriodStartError(isNeg: Boolean): Nothing = decodeError {
@@ -3847,11 +3846,11 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
 
-  private[this] def durationError(state: Int, pos: Int): Nothing = decodeError((state: @switch) match {
+  private[this] def durationError(state: Int, pos: Int): Nothing = decodeError(state match {
     case 0 => "expected 'D' or digit"
     case 1 => "expected 'H' or 'M' or 'S or '.' or digit"
     case 2 => "expected 'M' or 'S or '.' or digit"
-    case 3 => "expected 'S or '.' or digit"
+    case _ => "expected 'S or '.' or digit"
   }, pos)
 
   private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, isNeg: Boolean, yearDigits: Int): Nothing = {
