@@ -1717,9 +1717,8 @@ final class JsonReader private[jsoniter_scala](
     } else parseYearWithByte(t, loadMoreOrError(pos))
 
   private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, y: Int, p: Int): Int = {
-    val bs = y + 0x30303030
-    val b1 = bs.toByte
-    if (b1 != '-' && b1 != '+') fourDigitYearWithByteError(t, p, bs)
+    val b1 = (y + 0x30).toByte
+    if (b1 != '-' && b1 != '+') fourDigitYearWithByteError(t, p, y)
     var pos = p + 1
     var buf = this.buf
     var year = ByteArrayAccess.getInt(buf, pos) - 0x30303030
@@ -3805,17 +3804,11 @@ final class JsonReader private[jsoniter_scala](
   private[this] def isLeap(year: Int): Boolean =
     (year & 0x3) == 0 && (year * -1030792151 - 2061584303 > -1975684958 || (year & 0xF) == 0) // year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 
-  private[this] def fourDigitYearWithByteError(t: Byte, pos: Int, bs: Int): Nothing = {
-    val b1 = bs.toByte
-    if (b1 >= '0' && b1 <= '9') {
-      val b2 = (bs >> 8).toByte
-      val b3 = (bs >> 16).toByte
-      val b4 = (bs >> 24).toByte
-      if (b2 < '0' || b2 > '9') digitError(pos + 1)
-      if (b3 < '0' || b3 > '9') digitError(pos + 2)
-      if (b4 < '0' || b4 > '9') digitError(pos + 3)
-      tokenError(t, pos + 4)
-    } else decodeError("expected '-' or '+' or digit", pos)
+  private[this] def fourDigitYearWithByteError(t: Byte, pos: Int, y: Int): Nothing = {
+    val m = (y + 0x76767676 | y) & 0x80808080
+    if (m == 0) tokenError(t, pos + 4)
+    else if (m.toByte != 0) decodeError("expected '-' or '+' or digit", pos)
+    else digitError((java.lang.Integer.numberOfTrailingZeros(m) >> 3) + pos)
   }
 
   private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
