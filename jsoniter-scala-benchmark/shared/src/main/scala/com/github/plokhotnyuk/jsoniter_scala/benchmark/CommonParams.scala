@@ -27,6 +27,7 @@ import org.openjdk.jmh.annotations._
   "-XX:+UseNUMA",
   "-XX:-UseAdaptiveNUMAChunkSizing",
   "-XX:+PerfDisableSharedMem", // See https://github.com/Simonis/mmap-pause#readme
+  "-XX:-TieredCompilation",
   "-XX:+UnlockExperimentalVMOptions",
   "-XX:+TrustFinalNonStaticFields"
 ))
