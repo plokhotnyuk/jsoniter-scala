@@ -132,6 +132,19 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
+   * Writes an underlying Decimal64 representation as a JSON key.
+   *
+   * @param x the underlying Decimal64 representation
+   * @throws JsonWriterException if the value is non-finite
+   */
+  def writeDecimal64Key(x: Long): Unit = {
+    writeOptionalCommaAndIndentionBeforeKey()
+    writeBytes('"')
+    writeDecimal64(x)
+    writeParenthesesWithColon()
+  }
+
+  /**
    * Writes a `BigInt` value as a JSON key.
    *
    * @param x the `BigInt` value to write
@@ -698,6 +711,17 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
+   * Writes an underlying Decimal64 representation as a JSON number.
+   *
+   * @param x the underlying Decimal64 representation
+   * @throws JsonWriterException if the value is non-finite
+   */
+  def writeDecimal64Val(x: Long): Unit = {
+    writeOptionalCommaAndIndentionBeforeValue()
+    writeDecimal64(x)
+  }
+
+  /**
    * Writes a `BigDecimal` value as a JSON string value.
    *
    * @param x the `BigDecimal` value to write
@@ -805,6 +829,19 @@ final class JsonWriter private[jsoniter_scala](
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeDouble(x)
+    writeBytes('"')
+  }
+
+  /**
+   * Writes an underlying Decimal64 representation as a JSON number.
+   *
+   * @param x the underlying Decimal64 representation
+   * @throws JsonWriterException if the value is non-finite
+   */
+  def writeDecimal64ValAsString(x: Long): Unit = {
+    writeOptionalCommaAndIndentionBeforeValue()
+    writeBytes('"')
+    writeDecimal64(x)
     writeBytes('"')
   }
 
@@ -2372,6 +2409,39 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
+  private[this] def writeDecimal64(x: Long): Unit = {
+    var pos = ensureBufCapacity(22)
+    val buf = this.buf
+    var m10 = x & 0x001FFFFFFFFFFFFFL
+    var e10 = (x >> 53).toInt
+    if ((x & 0x6000000000000000L) == 0x6000000000000000L) {
+      if ((x & 0x7800000000000000L) == 0x7800000000000000L) illegalDecimal64NumberError(x)
+      m10 = (x & 0x0007FFFFFFFFFFFFL) | 0x0020000000000000L
+      if (m10 > 9999999999999999L) m10 = 0
+      e10 = (x >> 51).toInt
+    }
+    e10 = (e10 & 0x3FF) - 398
+    if (x < 0) {
+      buf(pos) = '-'
+      pos += 1
+    }
+    pos = writeLong(m10, pos, buf)
+    if (e10 != 0) {
+      ByteArrayAccess.setShort(buf, pos, 0x2D65)
+      pos += 1
+      if (e10 < 0) {
+        e10 = -e10
+        pos += 1
+      }
+      if (e10 < 10) {
+        buf(pos) = (e10 + '0').toByte
+        pos += 1
+      } else if (e10 < 100) pos = write2Digits(e10, pos, buf, digits)
+      else pos = write3Digits(e10, pos, buf, digits)
+    }
+    count = pos
+  }
+
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
     val x = Math.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
     Math.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
@@ -2448,6 +2518,8 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def illegalNumberError(x: Float): Nothing = encodeError("illegal number: " + x)
 
   private[this] def illegalNumberError(x: Double): Nothing = encodeError("illegal number: " + x)
+
+  private[this] def illegalDecimal64NumberError(x: Long): Nothing = encodeError("illegal Decimal64 number: " + x)
 
   private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
