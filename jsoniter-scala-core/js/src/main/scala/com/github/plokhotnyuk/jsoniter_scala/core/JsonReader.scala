@@ -1253,15 +1253,14 @@ final class JsonReader private[jsoniter_scala](
     */
   def isCharBufEqualsTo(len: Int, s: String): Boolean = {
     if (s eq null) throw new NullPointerException
-    s.length == len && {
-      val charBuf = this.charBuf
-      var i = 0
-      while (i < len) {
-        if (s.charAt(i) != charBuf(i)) return false
-        i += 1
-      }
-      true
+    if (s.length != len) return false
+    val charBuf = this.charBuf
+    var i = 0
+    while (i < len) {
+      if (s.charAt(i) != charBuf(i)) return false
+      i += 1
     }
+    true
   }
 
   /**

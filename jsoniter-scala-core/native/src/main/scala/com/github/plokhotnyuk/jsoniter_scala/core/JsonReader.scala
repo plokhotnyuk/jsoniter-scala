@@ -1276,7 +1276,8 @@ final class JsonReader private[jsoniter_scala](
     * @param s the string to match
     * @return `true` if the char buffer contains `s`, `false` otherwise
     */
-  def isCharBufEqualsTo(len: Int, s: String): Boolean = s.length == len && {
+  def isCharBufEqualsTo(len: Int, s: String): Boolean = {
+    if (s.length != len) return false
     val charBuf = this.charBuf
     var i = 0
     while (i < len) {
