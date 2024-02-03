@@ -3543,7 +3543,7 @@ final class JsonReader private[jsoniter_scala](
                 case 'f' => '\f'
                 case '\\' => '\\'
                 case '/' => '/'
-                case _ => illegalEscapeSequenceError(pos + 1)
+                case _ => escapeSequenceError(pos + 1)
               }
               parseEncodedString(i + 1, lim, charBuf, pos + 2)
             } else if (remaining > 5) {
@@ -3551,8 +3551,8 @@ final class JsonReader private[jsoniter_scala](
               charBuf(i) = ch1
               if (ch1 < 0xD800 || ch1 > 0xDFFF) parseEncodedString(i + 1, lim, charBuf, pos + 6)
               else if (remaining > 11) {
-                if (buf(pos + 6) != '\\') illegalEscapeSequenceError(pos + 6)
-                if (buf(pos + 7) != 'u') illegalEscapeSequenceError(pos + 7)
+                if (buf(pos + 6) != '\\') escapeSequenceError(pos + 6)
+                if (buf(pos + 7) != 'u') escapeSequenceError(pos + 7)
                 val ch2 = readEscapedUnicode(pos + 8, buf)
                 if (ch1 >= 0xDC00 || (ch2 & 0xFC00) != 0xDC00) decodeError("illegal surrogate character pair", pos + 11)
                 charBuf(i + 1) = ch2
@@ -3600,7 +3600,7 @@ final class JsonReader private[jsoniter_scala](
     if (remaining > 0) {
       val b1 = buf(pos)
       if (b1 >= 0) {
-        if (b1 == '"') decodeError("illegal value for char", pos)
+        if (b1 == '"') decodeError("illegal character", pos)
         else if (b1 != '\\') { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
           if (b1 < ' ') unescapedControlCharacterError(pos)
           head = pos + 1
@@ -3618,11 +3618,11 @@ final class JsonReader private[jsoniter_scala](
               case '"' => '"'
               case '/' => '/'
               case '\\' => '\\'
-              case _ => illegalEscapeSequenceError(pos + 1)
+              case _ => escapeSequenceError(pos + 1)
             }
           } else if (remaining > 5) {
             val ch = readEscapedUnicode(pos + 2, buf)
-            if (ch >= 0xD800 && ch <= 0xDFFF) decodeError("illegal surrogate character", pos + 5)
+            if (ch >= 0xD800 && ch <= 0xDFFF) surrogateCharacterError(pos + 5)
             head = pos + 6
             ch
           } else parseChar(loadMoreOrError(pos))
@@ -3644,7 +3644,7 @@ final class JsonReader private[jsoniter_scala](
           head = pos + 3
           ch
         } else parseChar(loadMoreOrError(pos))
-      } else if ((b1 >> 3) == -2) decodeError("illegal surrogate character", pos + 3)
+      } else if ((b1 >> 3) == -2) surrogateCharacterError(pos + 3)
       else malformedBytesError(b1, pos)
     } else parseChar(loadMoreOrError(pos))
   }
@@ -3798,7 +3798,11 @@ final class JsonReader private[jsoniter_scala](
     hexDigitError(pos + 1)
   }
 
-  private[this] def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
+  private[this] def characterError(pos: Int): Nothing = decodeError("illegal character", pos)
+
+  private[this] def escapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
+
+  private[this] def surrogateCharacterError(pos: Int): Nothing = decodeError("illegal surrogate character", pos)
 
   private[this] def unescapedControlCharacterError(pos: Int): Nothing = decodeError("unescaped control character", pos)
 

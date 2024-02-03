@@ -2329,7 +2329,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("", "unexpected end of input, offset: 0x00000000")
       checkError(""""""", "unexpected end of input, offset: 0x00000001")
       checkError(""""\""", "unexpected end of input, offset: 0x00000002")
-      checkError("""""""", "illegal value for char, offset: 0x00000001")
+      checkError("""""""", "illegal character, offset: 0x00000001")
       checkError2(Array[Byte](0x22.toByte, 0xC0.toByte), "unexpected end of input, offset: 0x00000002")
       checkError2(Array[Byte](0x22.toByte, 0xE0.toByte, 0x80.toByte), "unexpected end of input, offset: 0x00000003")
     }
