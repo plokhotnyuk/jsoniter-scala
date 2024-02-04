@@ -2068,10 +2068,10 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    var isNeg = false
+    var isPos = true
     if (b == '-') {
       b = nextByte(head)
-      isNeg = true
+      isPos = false
     }
     if (b < '0' || b > '9') numberError()
     var x = '0' - b
@@ -2095,7 +2095,7 @@ final class JsonReader private[jsoniter_scala](
       }
       head = pos
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-      if (!isNeg) {
+      if (isPos) {
         if (x == -2147483648) intOverflowError(pos - 1)
         x = -x
       }
@@ -2107,10 +2107,10 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    var isNeg = false
+    var isPos = true
     if (b == '-') {
       b = nextByte(head)
-      isNeg = true
+      isPos = false
     }
     if (b < '0' || b > '9') numberError()
     var x = ('0' - b).toLong
@@ -2152,7 +2152,7 @@ final class JsonReader private[jsoniter_scala](
       }
       head = pos
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-      if (!isNeg) {
+      if (isPos) {
         if (x == -9223372036854775808L) longOverflowError(pos - 1)
         x = -x
       }
