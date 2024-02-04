@@ -3122,7 +3122,7 @@ final class JsonReader private[jsoniter_scala](
         hour < 24
       } || m << 16 == 0xE800000000000000L && {
         pos += 5
-        hour <= 24
+        hour < 24
       }
     }) {
       b = buf(pos)
@@ -3199,7 +3199,7 @@ final class JsonReader private[jsoniter_scala](
         hour < 24
       } || m << 16 == 0xE800000000000000L && {
         pos += 5
-        hour <= 24
+        hour < 24
       }
     }) {
       b = buf(pos)

@@ -1143,6 +1143,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         assert(intercept[JsonReaderException](reader(json).readKeyAsLocalDateTime()).getMessage.startsWith(error))
       }
 
+      checkError(""""2008-01-20T24:24"   """, "illegal hour, offset: 0x0000000d")
       checkError(""""""", "unexpected end of input, offset: 0x00000001")
       checkError(""""2008-01-20T07:24:33""", "unexpected end of input, offset: 0x00000014")
       checkError(""""+1000000000-01-20T07:24:33"""", "expected '-', offset: 0x0000000b")
@@ -1247,12 +1248,13 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         reader(s"""$ws"$s":$ws""").readKeyAsLocalTime() shouldBe x
       }
     }
-    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+    "throw parsing exception for empty input and illegal or broken LocalTime string" in {
       def checkError(json: String, error: String): Unit = {
         assert(intercept[JsonReaderException](reader(json).readLocalTime(null)).getMessage.startsWith(error))
         assert(intercept[JsonReaderException](reader(json).readKeyAsLocalTime()).getMessage.startsWith(error))
       }
 
+      checkError(""""24:24"   """, "illegal hour, offset: 0x00000002")
       checkError(""""""", "unexpected end of input, offset: 0x00000001")
       checkError(""""07:24:33""", "unexpected end of input, offset: 0x00000009")
       checkError(""""24:24:33"""", "illegal hour, offset: 0x00000002")
