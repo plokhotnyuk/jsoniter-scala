@@ -680,8 +680,11 @@ The released version of Scala.js benchmarks is available [here](https://plokhotn
 ### Run compilation time benchmarks
 
 Use the [circe-argonaut-compile-times](https://github.com/stephennancekivell/circe-argonaut-compile-times) project to 
-compare compilation time of jsoniter-scala for deeply nested data structures with other JSON parsers like argonaut, 
+compare compilation time of jsoniter-scala for deeply nested product types with other JSON parsers like argonaut, 
 play-json, and circe in 3 modes: auto, semi-auto, and derivation.
+
+For Scala 3 use the [scala3-compile-tests](https://github.com/pme123/scala3-compile-tests) project to compare
+compilation time of jsoniter-scala for Scala 3 enumerations (sum types) with circe in semi-auto mode.
 
 ### Publish locally
 
