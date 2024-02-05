@@ -2857,27 +2857,27 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseDuration(): Duration = {
     var b = nextByte(head)
-    var isNeg = false
+    var s = 0
     if (b == '-') {
       b = nextByte(head)
-      isNeg = true
+      s = -1
     }
-    if (b != 'P') durationOrPeriodStartError(isNeg)
+    if (b != 'P') durationOrPeriodStartError(s)
     b = nextByte(head)
-    var state = 0
+    var state = -1
     if (b == 'T') {
       b = nextByte(head)
-      state = 1
+      state = 0
     }
     var seconds = 0L
     var nano = 0
     while ({
-      var isNegX = false
+      var sx = s
       if (b == '-') {
         b = nextByte(head)
-        isNegX = true
+        sx = ~sx
       }
-      if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 1)
+      if (b < '0' || b > '9') durationOrPeriodDigitError(s, sx, state)
       var x1 = '0' - b
       var pos = head
       var buf = this.buf
@@ -2907,22 +2907,22 @@ final class JsonReader private[jsoniter_scala](
         }) durationError(pos)
         pos += 1
       }
-      if (!(isNeg ^ isNegX)) {
+      if (sx == 0) {
         if (x == -9223372036854775808L) durationError(pos)
         x = -x
       }
-      if (b == 'D' && state <= 0) {
+      if (b == 'D' && state < 0) {
         if (x < -106751991167300L || x > 106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
         seconds = x * 86400
-        state = 1
-      } else if (b == 'H' && state <= 1) {
+        state = 0
+      } else if (b == 'H' && state <= 0) {
         if (x < -2562047788015215L || x > 2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
         seconds = sumSeconds(x * 3600, seconds, pos)
-        state = 2
-      } else if (b == 'M' && state <= 2) {
+        state = 1
+      } else if (b == 'M' && state <= 1) {
         if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
         seconds = sumSeconds(x * 60, seconds, pos)
-        state = 3
+        state = 2
       } else if (b == '.') {
         pos += 1
         seconds = sumSeconds(x, seconds, pos)
@@ -2940,19 +2940,19 @@ final class JsonReader private[jsoniter_scala](
           pos += 1
         }
         if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
-        if (isNeg ^ isNegX) nano = -nano
-        state = 4
+        nano = (nano ^ sx) - sx
+        state = 3
       } else if (b == 'S') {
         seconds = sumSeconds(x, seconds, pos)
-        state = 4
+        state = 3
       } else durationError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
     }) {
-      if (state == 1) {
+      if (state == 0) {
         if (b != 'T') tokensError('T', '"')
         b = nextByte(head)
-      } else if (state == 4) tokenError('"')
+      } else if (state == 3) tokenError('"')
     }
     Duration.ofSeconds(seconds, nano.toLong)
   }
@@ -3139,21 +3139,21 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parsePeriod(): Period = {
     var b = nextByte(head)
-    var isNeg = false
+    var s = 0
     if (b == '-') {
       b = nextByte(head)
-      isNeg = true
+      s = -1
     }
-    if (b != 'P') durationOrPeriodStartError(isNeg)
+    if (b != 'P') durationOrPeriodStartError(s)
     b = nextByte(head)
     var years, months, days, state = 0
     while ({
-      var isNegX = false
+      var sx = s
       if (b == '-') {
         b = nextByte(head)
-        isNegX = true
+        sx = ~sx
       }
-      if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 0)
+      if (b < '0' || b > '9') durationOrPeriodDigitError(s, sx, state)
       var x = '0' - b
       var pos = head
       var buf = this.buf
@@ -3171,7 +3171,7 @@ final class JsonReader private[jsoniter_scala](
         }) periodError(pos)
         pos += 1
       }
-      if (!(isNeg ^ isNegX)) {
+      if (sx == 0) {
         if (x == -2147483648) periodError(pos)
         x = -x
       }
@@ -3186,10 +3186,10 @@ final class JsonReader private[jsoniter_scala](
         days = x * 7
         state = 3
       } else if (b == 'D') {
-        val ds = x.toLong + days
-        days = ds.toInt
+        val d = days
+        days += x
         state = 4
-        if (ds != days) periodError(pos)
+        if (((x ^ days) & (d ^ days)) < 0) periodError(pos)
       } else periodError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
@@ -3376,23 +3376,23 @@ final class JsonReader private[jsoniter_scala](
     case _ => "expected 'D' or digit"
   }, pos)
 
-  private[this] def durationOrPeriodStartError(isNeg: Boolean): Nothing = decodeError {
-    if (isNeg) "expected 'P'"
+  private[this] def durationOrPeriodStartError(s: Int): Nothing = decodeError {
+    if (s < 0) "expected 'P'"
     else "expected 'P' or '-'"
   }
 
-  private[this] def durationOrPeriodDigitError(isNegX: Boolean, isNumReq: Boolean): Nothing = decodeError {
-    if (isNegX) "expected digit"
-    else if (isNumReq) "expected '-' or digit"
+  private[this] def durationOrPeriodDigitError(s: Int, sx: Int, state: Int): Nothing = decodeError {
+    if ((s ^ sx) < 0) "expected digit"
+    else if (state <= 0) "expected '-' or digit"
     else "expected '\"' or '-' or digit"
   }
 
   private[this] def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
 
   private[this] def durationError(state: Int, pos: Int): Nothing = decodeError(state match {
-    case 0 => "expected 'D' or digit"
-    case 1 => "expected 'H' or 'M' or 'S or '.' or digit"
-    case 2 => "expected 'M' or 'S or '.' or digit"
+    case -1 => "expected 'D' or digit"
+    case 0 => "expected 'H' or 'M' or 'S or '.' or digit"
+    case 1 => "expected 'M' or 'S or '.' or digit"
     case _ => "expected 'S or '.' or digit"
   }, pos)
 
@@ -3414,10 +3414,9 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def secondError(pos: Int): Nothing = decodeError("illegal second", pos)
 
-  private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing = {
+  private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing =
     if (nanoDigitWeight == 0) tokenError(t, pos)
-    tokenOrDigitError(t, pos)
-  }
+    else tokenOrDigitError(t, pos)
 
   private[this] def timeError(nanoDigitWeight: Int): Nothing = decodeError {
     if (nanoDigitWeight == -2) "expected '.' or '+' or '-' or 'Z'"
