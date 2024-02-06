@@ -1472,15 +1472,17 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = (ch1 >> 6 | 0xC0).toByte
         buf(pos + 1) = (ch1 & 0x3F | 0x80).toByte
         writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-      } else if (ch1 < 0xD800 || ch1 > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
+      } else if ((ch1 & 0xF800) != 0xD800) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
         buf(pos) = (ch1 >> 12 | 0xE0).toByte
         buf(pos + 1) = (ch1 >> 6 & 0x3F | 0x80).toByte
         buf(pos + 2) = (ch1 & 0x3F | 0x80).toByte
         writeEncodedString(s, from + 1, to, pos + 3, posLim, escapedChars)
       } else { // 110110uuuuccccbb 110111bbbbaaaaaa (UTF-16 chars) -> 11110ddd 10ddcccc 10bbbbbb 10aaaaaa (UTF-8 bytes), where ddddd = uuuu + 1
-        if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
-        val ch2 = s.charAt(from + 1)
-        if ((ch2 & 0xFC00) != 0xDC00) illegalSurrogateError()
+        var ch2 = 0
+        if (ch1 >= 0xDC00 || from + 1 >= to || {
+          ch2 = s.charAt(from + 1).toInt
+          (ch2 & 0xFC00) != 0xDC00
+        }) illegalSurrogateError()
         val cp = (ch1 << 10) + (ch2 - 56613888) // -56613888 == 0x10000 - (0xD800 << 10) - 0xDC00
         buf(pos) = (cp >> 18 | 0xF0).toByte
         buf(pos + 1) = (cp >> 12 & 0x3F | 0x80).toByte
@@ -1506,12 +1508,14 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos + 1) = esc
           writeEscapedString(s, from + 1, to, pos + 2, posLim, escapedChars)
         } else writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
-      } else if (ch1 < 0xD800 || ch1 > 0xDFFF) {
+      } else if ((ch1 & 0xF800) != 0xD800) {
         writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1, pos, buf), posLim, escapedChars)
       } else {
-        if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
-        val ch2 = s.charAt(from + 1).toInt
-        if ((ch2 & 0xFC00) != 0xDC00) illegalSurrogateError()
+        var ch2 = 0
+        if (ch1 >= 0xDC00 || from + 1 >= to || {
+          ch2 = s.charAt(from + 1).toInt
+          (ch2 & 0xFC00) != 0xDC00
+        }) illegalSurrogateError()
         writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf), buf), posLim, escapedChars)
       }
     }
@@ -1532,13 +1536,13 @@ final class JsonWriter private[jsoniter_scala](
         pos += 2
       } else pos = writeEscapedUnicode(ch.toByte, pos, buf)
     } else if (config.escapeUnicode) {
-      if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
+      if ((ch & 0xF800) == 0xD800) illegalSurrogateError()
       pos = writeEscapedUnicode(ch, pos, buf)
     } else if (ch < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
       buf(pos) = (ch >> 6 | 0xC0).toByte
       buf(pos + 1) = (ch & 0x3F | 0x80).toByte
       pos += 2
-    } else if (ch < 0xD800 || ch > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
+    } else if ((ch & 0xF800) != 0xD800) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
       buf(pos) = (ch >> 12 | 0xE0).toByte
       buf(pos + 1) = (ch >> 6 & 0x3F | 0x80).toByte
       buf(pos + 2) = (ch & 0x3F | 0x80).toByte
