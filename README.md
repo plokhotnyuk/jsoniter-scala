@@ -530,6 +530,12 @@ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 for i in $(ls /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor); do echo performance | sudo tee $i; done
 ```
 
+Stop un-needed applications and services, then clear cache memory to improve system performance. One way to clear cache memory
+on Linux without having to reboot the system:
+```sh
+free -m -h && sudo echo 3 > /proc/sys/vm/drop_caches && free -m -h
+```
+
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](https://openjdk.java.net/projects/code-tools/jmh/)
 
