@@ -1720,7 +1720,7 @@ final class JsonReader private[jsoniter_scala](
     }
     head = pos + 1
     if (b1 == '-' && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-    if (b != t) yearError(t, maxDigits, pos, b1 == '-', yearDigits)
+    if (b != t) yearError(t, maxDigits, pos, b1, yearDigits)
     if (b1 == '-') year = -year
     if (year >= 0 && year < 10000) digitError(pos)
     year
@@ -2922,28 +2922,27 @@ final class JsonReader private[jsoniter_scala](
         if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
         seconds = sumSeconds(x * 60, seconds, pos)
         state = 2
-      } else if (b == '.') {
-        pos += 1
+      } else if (b == 'S' || b == '.') {
         seconds = sumSeconds(x, seconds, pos)
-        var nanoDigitWeight = 100000000
-        while ({
-          if (pos >= tail) {
-            pos = loadMoreOrError(pos)
-            buf = this.buf
-          }
-          b = buf(pos)
-          (b >= '0' && b <= '9') && nanoDigitWeight != 0
-        }) {
-          nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight /= 10
+        state = 3
+        if (b == '.') {
           pos += 1
+          var nanoDigitWeight = 100000000
+          while ({
+            if (pos >= tail) {
+              pos = loadMoreOrError(pos)
+              buf = this.buf
+            }
+            b = buf(pos)
+            (b >= '0' && b <= '9') && nanoDigitWeight != 0
+          }) {
+            nano += (b - '0') * nanoDigitWeight
+            nanoDigitWeight /= 10
+            pos += 1
+          }
+          if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
+          nano = (nano ^ sx) - sx
         }
-        if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
-        nano = (nano ^ sx) - sx
-        state = 3
-      } else if (b == 'S') {
-        seconds = sumSeconds(x, seconds, pos)
-        state = 3
       } else durationError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
@@ -3170,10 +3169,8 @@ final class JsonReader private[jsoniter_scala](
         }) periodError(pos)
         pos += 1
       }
-      if (sx == 0) {
-        if (x == -2147483648) periodError(pos)
-        x = -x
-      }
+      x = sx - (x ^ sx)
+      if ((sx | x) == -2147483648) periodError(pos)
       if (b == 'Y' && state <= 0) {
         years = x
         state = 1
@@ -3390,13 +3387,13 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def durationError(state: Int, pos: Int): Nothing = decodeError(state match {
     case -1 => "expected 'D' or digit"
-    case 0 => "expected 'H' or 'M' or 'S or '.' or digit"
-    case 1 => "expected 'M' or 'S or '.' or digit"
-    case _ => "expected 'S or '.' or digit"
+    case 0 => "expected 'H' or 'M' or 'S' or '.' or digit"
+    case 1 => "expected 'M' or 'S' or '.' or digit"
+    case _ => "expected 'S' or '.' or digit"
   }, pos)
 
-  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, isNeg: Boolean, yearDigits: Int): Nothing = {
-    if (!isNeg && yearDigits == 4) digitError(pos)
+  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, b: Byte, yearDigits: Int): Nothing = {
+    if (b != '-' && yearDigits == 4) digitError(pos)
     if (yearDigits == maxDigits) tokenError(t, pos)
     tokenOrDigitError(t, pos)
   }
