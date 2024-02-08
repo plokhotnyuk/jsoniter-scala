@@ -2418,6 +2418,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "throw parsing exception on byte overflow" in {
       checkError("128", "value is too large for byte, offset: 0x00000002",
         "value is too large for byte, offset: 0x00000003")
+      checkError("128.", "value is too large for byte, offset: 0x00000002",
+        "value is too large for byte, offset: 0x00000003")
+      checkError("128e", "value is too large for byte, offset: 0x00000002",
+        "value is too large for byte, offset: 0x00000003")
+      checkError("128E", "value is too large for byte, offset: 0x00000002",
+        "value is too large for byte, offset: 0x00000003")
       checkError("-129", "value is too large for byte, offset: 0x00000003",
         "value is too large for byte, offset: 0x00000004")
       checkError("12345", "value is too large for byte, offset: 0x00000003",
@@ -2467,6 +2473,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "throw parsing exception on short overflow" in {
       checkError("32768", "value is too large for short, offset: 0x00000004",
         "value is too large for short, offset: 0x00000005")
+      checkError("32768.", "value is too large for short, offset: 0x00000004",
+        "value is too large for short, offset: 0x00000005")
+      checkError("32768e", "value is too large for short, offset: 0x00000004",
+        "value is too large for short, offset: 0x00000005")
+      checkError("32768E", "value is too large for short, offset: 0x00000004",
+        "value is too large for short, offset: 0x00000005")
       checkError("-32769", "value is too large for short, offset: 0x00000005",
         "value is too large for short, offset: 0x00000006")
       checkError("12345678901", "value is too large for short, offset: 0x00000005",
@@ -2515,6 +2527,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "throw parsing exception on int overflow" in {
       checkError("2147483648", "value is too large for int, offset: 0x00000009",
+        "value is too large for int, offset: 0x0000000a")
+      checkError("2147483648.", "value is too large for int, offset: 0x00000009",
+        "value is too large for int, offset: 0x0000000a")
+      checkError("2147483648e", "value is too large for int, offset: 0x00000009",
+        "value is too large for int, offset: 0x0000000a")
+      checkError("2147483648E", "value is too large for int, offset: 0x00000009",
         "value is too large for int, offset: 0x0000000a")
       checkError("-2147483649", "value is too large for int, offset: 0x0000000a",
         "value is too large for int, offset: 0x0000000b")
@@ -2568,6 +2586,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "throw parsing exception on long overflow" in {
       checkError("9223372036854775808", "value is too large for long, offset: 0x00000012",
+        "value is too large for long, offset: 0x00000013")
+      checkError("9223372036854775808.", "value is too large for long, offset: 0x00000012",
+        "value is too large for long, offset: 0x00000013")
+      checkError("9223372036854775808e", "value is too large for long, offset: 0x00000012",
+        "value is too large for long, offset: 0x00000013")
+      checkError("9223372036854775808E", "value is too large for long, offset: 0x00000012",
         "value is too large for long, offset: 0x00000013")
       checkError("-9223372036854775809", "value is too large for long, offset: 0x00000013",
         "value is too large for long, offset: 0x00000014")
@@ -2877,6 +2901,15 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "throw parsing exception for values with more than max allowed digits" in {
       checkError("9" * 308,
+        "value exceeds limit for number of digits, offset: 0x00000133",
+        "value exceeds limit for number of digits, offset: 0x00000134")
+      checkError("9" * 308 + ".",
+        "value exceeds limit for number of digits, offset: 0x00000133",
+        "value exceeds limit for number of digits, offset: 0x00000134")
+      checkError("9" * 308 + "e",
+        "value exceeds limit for number of digits, offset: 0x00000133",
+        "value exceeds limit for number of digits, offset: 0x00000134")
+      checkError("9" * 308 + "E",
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
       checkError(s"-${"9" * 308}",

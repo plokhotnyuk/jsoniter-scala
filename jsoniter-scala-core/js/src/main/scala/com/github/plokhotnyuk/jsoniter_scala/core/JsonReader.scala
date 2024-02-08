@@ -2060,8 +2060,8 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       x ^= s
       x -= s
-      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if (x == 128) byteOverflowError(pos - 1)
+      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
     }
     x.toByte
   }
@@ -2096,8 +2096,8 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       x ^= s
       x -= s
-      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if (x == 32768) shortOverflowError(pos - 1)
+      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
     }
     x.toShort
   }
@@ -2134,8 +2134,8 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       x ^= s
       x -= s
-      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if ((s & x) == -2147483648) intOverflowError(pos - 1)
+      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
     }
     x
   }
@@ -2184,11 +2184,11 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       head = pos
-      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if (isPos) {
         if (x == -9223372036854775808L) longOverflowError(pos - 1)
         x = -x
       }
+      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       x
     }
   }
@@ -2541,10 +2541,10 @@ final class JsonReader private[jsoniter_scala](
           b >= '0' && b <= '9'
         }) pos += 1
         head = pos
-        if ((b | 0x20) == 'e' || b == '.') numberError(pos)
         if (mark == 0) from -= newMark
         if (mark > oldMark) mark = oldMark
         if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
+        if ((b | 0x20) == 'e' || b == '.') numberError(pos)
         toBigInt(buf, from, pos, s)
       }
     }
