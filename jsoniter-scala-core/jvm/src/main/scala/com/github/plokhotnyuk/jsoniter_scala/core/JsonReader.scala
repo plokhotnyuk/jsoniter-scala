@@ -3751,16 +3751,16 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toZoneOffset(sb: Byte, offsetTotal: Int): ZoneOffset = {
     var qp = offsetTotal * 37283
+    val s = sb << 29 >> 31
     if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
-      qp >>>= 25 // divide offsetTotal by 900
-      if (sb == '-') qp = -qp
-      var zoneOffset = zoneOffsets(qp + 72)
+      qp = ((qp >>> 25) ^ s) - s + 72 // divide offsetTotal by 900
+      var zoneOffset = zoneOffsets(qp)
       if (zoneOffset eq null) {
-        zoneOffset = ZoneOffset.ofTotalSeconds(if (sb == '-') -offsetTotal else offsetTotal)
-        zoneOffsets(qp + 72) = zoneOffset
+        zoneOffset = ZoneOffset.ofTotalSeconds((offsetTotal ^ s) - s)
+        zoneOffsets(qp) = zoneOffset
       }
       zoneOffset
-    } else ZoneOffset.ofTotalSeconds(if (sb == '-') -offsetTotal else offsetTotal)
+    } else ZoneOffset.ofTotalSeconds((offsetTotal ^ s) - s)
   }
 
   private[this] def epochDay(year: Int, month: Int, day: Int): Long =
