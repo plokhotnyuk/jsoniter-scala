@@ -2239,8 +2239,11 @@ final class JsonReader private[jsoniter_scala](
     }
     if ((b | 0x20) == 'e') {
       b = nextByte(pos + 1)
-      val sb = b
-      if (b == '-' || b == '+') b = nextByte(head)
+      var s = 0
+      if (b == '-' || b == '+') {
+        s = b << 29 >> 31
+        b = nextByte(head)
+      }
       if (b < '0' || b > '9') numberError()
       var exp = b - '0'
       pos = head
@@ -2256,7 +2259,8 @@ final class JsonReader private[jsoniter_scala](
         if (exp < 214748364) exp = exp * 10 + (b - '0')
         pos += 1
       }
-      if (sb == '-') exp = -exp
+      exp ^= s
+      exp -= s
       e10 += exp
     }
     head = pos
@@ -2387,8 +2391,11 @@ final class JsonReader private[jsoniter_scala](
     }
     if ((b | 0x20) == 'e') {
       b = nextByte(pos + 1)
-      val sb = b
-      if (b == '-' || b == '+') b = nextByte(head)
+      var s = 0
+      if (b == '-' || b == '+') {
+        s = b << 29 >> 31
+        b = nextByte(head)
+      }
       if (b < '0' || b > '9') numberError()
       var exp = b - '0'
       pos = head
@@ -2404,7 +2411,8 @@ final class JsonReader private[jsoniter_scala](
         if (exp < 214748364) exp = exp * 10 + (b - '0')
         pos += 1
       }
-      if (sb == '-') exp = -exp
+      exp ^= s
+      exp -= s
       e10 += exp
     }
     head = pos
@@ -2622,8 +2630,11 @@ final class JsonReader private[jsoniter_scala](
       }
       if ((b | 0x20) == 'e') {
         b = nextByte(pos + 1)
-        val sb = b
-        if (b == '-' || b == '+') b = nextByte(head)
+        var s = 0
+        if (b == '-' || b == '+') {
+          s = b << 29 >> 31
+          b = nextByte(head)
+        }
         if (b < '0' || b > '9') numberError()
         scale = '0' - b
         pos = head
@@ -2642,7 +2653,8 @@ final class JsonReader private[jsoniter_scala](
           }) numberError(pos)
           pos += 1
         }
-        if (sb == '-') scale = -scale
+        scale ^= s
+        scale -= s
         if (scale == -2147483648) numberError(pos - 1)
       }
       head = pos
