@@ -47,7 +47,6 @@ val jsonCodec: JsonValueCodec[Unit] = new JsonValueCodec[Unit] {
   }
 }
 
-val config = ReaderConfig.withPreferredBufSize(1024 * 1024).withPreferredCharBufSize(1024 * 1024)
-try readFromStream(System.in, config)(jsonCodec) catch {
+try readFromStream(System.in)(jsonCodec) catch {
   case ex: Throwable => ex.printStackTrace(System.err)
 }

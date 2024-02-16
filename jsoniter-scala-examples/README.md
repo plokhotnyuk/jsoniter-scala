@@ -137,7 +137,7 @@ No GC options are used to speed up JSON validation for all supported builds.
 ```sh
 scala-cli --power package --assembly example02.sc --force -o example02.jar
 ls -l ./example02.jar
-time ./example02.jar -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseEpsilonGC -J-Xms16m -J-Xmx16m -J-XX:+AlwaysPreTouch < test.json 2> /dev/null
+time ./example02.jar -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseEpsilonGC -J-Xms8m -J-Xmx8m -J-XX:+AlwaysPreTouch < test.json 2> /dev/null
 ```
 Expected output:
 ```text
