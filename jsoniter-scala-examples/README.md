@@ -70,7 +70,7 @@ Expected output:
 ```sh
 sudo apt install linux-tools-common linux-tools-generic gcc zlib1g-dev
 sudo sysctl kernel.perf_event_paranoid=1
-scala-cli --power package --jvm graalvm --native-image example01.sc --force -o example01_graalvm.bin -- --no-fallback
+scala-cli --power package --graalvm-jvm-id graalvm-java21:21.0.1 --native-image example01.sc --force -o example01_graalvm.bin -- --no-fallback
 ls -l ./example01_graalvm.bin
 perf stat -r 100 ./example01_graalvm.bin > /dev/null
 ```
@@ -157,7 +157,7 @@ sys 	0m0.017s
 ### Build GraalVM native image, print its size, and measure its start up time
 
 ```sh
-scala-cli --power package --jvm graalvm --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon
+scala-cli --power package --graalvm-jvm-id graalvm-java21:21.0.1 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon
 ls -l ./example02_graalvm.bin
 time ./example02_graalvm.bin < test.json 2> /dev/null
 ```
