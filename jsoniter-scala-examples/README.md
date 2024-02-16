@@ -126,4 +126,46 @@ Expected output:
 ## RFC-8259 validation (example02)
 
 An example of a command line application that reads the system input, parses and validates JSON according to the latest
-specification and in case of any error prints it to the system error output
+specification and in case of any error prints it to the system error output.
+
+### Build uber jar, print its size, and measure its start up time
+
+```sh
+scala-cli --power package --assembly example02.sc --force -o example02.jar
+ls -l ./example02.jar
+time ./example02.jar <test.json 2> /dev/null
+```
+Expected output:
+```text
+real	0m0.087s
+user	0m0.112s
+sys 	0m0.022s
+```
+
+### Build GraalVM native image, print its size, and measure its start up time
+
+```sh
+scala-cli --power package --jvm graalvm --native-image example02.sc --force -o example02_graalvm.bin
+ls -l ./example02_graalvm.bin
+time ./example02_graalvm.bin <test.json 2> /dev/null
+```
+Expected output:
+```text
+real	0m0.004s
+user	0m0.000s
+sys 	0m0.003s
+```
+
+### Build Scala Native image, print its size, and measure its start up time
+
+```sh
+scala-cli --power package --native-version 0.4.16 --native example02.sc --force -o example02_native.bin
+ls -l ./example02_native.bin
+time ./example02_native.bin <test.json 2> /dev/null
+```
+Expected output:
+```text
+real	0m0.004s
+user	0m0.004s
+sys 	0m0.000s
+```

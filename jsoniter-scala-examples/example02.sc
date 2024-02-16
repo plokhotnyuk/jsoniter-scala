@@ -7,7 +7,7 @@ val jsonCodec: JsonValueCodec[Unit] = new JsonValueCodec[Unit] {
 
   override def encodeValue(x: Unit, out: JsonWriter): Unit = ???
 
-  override def nullValue(): Unit = ()
+  override def nullValue: Unit = ()
 
   private[this] def decode(in: JsonReader, depth: Int): Unit = {
     val b = in.nextToken()
@@ -43,10 +43,11 @@ val jsonCodec: JsonValueCodec[Unit] = new JsonValueCodec[Unit] {
         }) ()
         if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
       }
-    } else in.readNullOrError(nullValue(), "expected JSON value")
+    } else in.readNullOrError(nullValue, "expected JSON value")
   }
 }
 
-try readFromStream(System.in)(jsonCodec) catch {
+val config = ReaderConfig.withPreferredBufSize(1024 * 1024).withPreferredCharBufSize(1024 * 1024)
+try readFromStream(System.in, config)(jsonCodec) catch {
   case ex: Throwable => ex.printStackTrace(System.err)
 }
