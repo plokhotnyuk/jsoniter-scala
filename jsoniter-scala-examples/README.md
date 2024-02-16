@@ -18,20 +18,20 @@ Expected output:
 ```text
  Performance counter stats for './example01.jar' (100 runs):
 
-            290.69 msec task-clock                       #    2.253 CPUs utilized               ( +-  0.29% )
-             2,284      context-switches                 #    7.857 K/sec                       ( +-  0.82% )
-                16      cpu-migrations                   #   55.041 /sec                        ( +-  1.88% )
-            22,293      page-faults                      #   76.690 K/sec                       ( +-  0.13% )
-     1,176,204,955      cycles                           #    4.046 GHz                         ( +-  0.26% )
-     1,589,502,677      instructions                     #    1.35  insn per cycle              ( +-  0.14% )
-       310,676,528      branches                         #    1.069 G/sec                       ( +-  0.15% )
-         9,647,703      branch-misses                    #    3.11% of all branches             ( +-  0.20% )
-                        TopdownL1                 #     13.4 %  tma_backend_bound      
-                                                  #     35.1 %  tma_bad_speculation    
-                                                  #     30.7 %  tma_frontend_bound     
-                                                  #     20.8 %  tma_retiring             ( +-  0.12% )
+            164,40 msec task-clock                       #    1,532 CPUs utilized               ( +-  0,18% )
+               823      context-switches                 #    5,006 K/sec                       ( +-  0,29% )
+                14      cpu-migrations                   #   85,160 /sec                        ( +-  2,47% )
+            10 073      page-faults                      #   61,273 K/sec                       ( +-  0,06% )
+       739 505 378      cycles                           #    4,498 GHz                         ( +-  0,20% )
+       911 793 014      instructions                     #    1,23  insn per cycle              ( +-  0,06% )
+       179 997 789      branches                         #    1,095 G/sec                       ( +-  0,06% )
+         7 171 265      branch-misses                    #    3,98% of all branches             ( +-  0,11% )
+                        TopdownL1                 #     13,5 %  tma_backend_bound      
+                                                  #     34,9 %  tma_bad_speculation    
+                                                  #     32,5 %  tma_frontend_bound     
+                                                  #     19,0 %  tma_retiring             ( +-  0,10% )
 
-          0.129034 +- 0.000284 seconds time elapsed  ( +-  0.22% )
+          0,107341 +- 0,000322 seconds time elapsed  ( +-  0,30% )
 ```
 
 ### Build Scala JS output, print its size, and measure its start up time with `node`
@@ -47,22 +47,22 @@ perf stat -r 100 node ./example01.js > /dev/null
 ```
 Expected output:
 ```text
- Performance counter stats for 'node example01.js' (100 runs):
+ Performance counter stats for 'node ./example01.js' (100 runs):
 
-             39.90 msec task-clock                       #    1.000 CPUs utilized               ( +-  0.14% )
-                21      context-switches                 #  526.382 /sec                        ( +-  0.67% )
-                 0      cpu-migrations                   #    0.000 /sec                      
-             4,485      page-faults                      #  112.420 K/sec                       ( +-  0.01% )
-       179,377,726      cycles                           #    4.496 GHz                         ( +-  0.09% )
-       306,298,806      instructions                     #    1.71  insn per cycle              ( +-  0.01% )
-        53,631,726      branches                         #    1.344 G/sec                       ( +-  0.01% )
-         1,543,919      branch-misses                    #    2.88% of all branches             ( +-  0.02% )
-                        TopdownL1                 #     15.0 %  tma_backend_bound      
-                                                  #     19.7 %  tma_bad_speculation    
-                                                  #     32.1 %  tma_frontend_bound     
-                                                  #     33.3 %  tma_retiring             ( +-  0.09% )
+             31,00 msec task-clock                       #    0,990 CPUs utilized               ( +-  0,25% )
+                25      context-switches                 #  806,523 /sec                        ( +- 10,21% )
+                 1      cpu-migrations                   #   32,261 /sec                        ( +- 13,03% )
+             3 361      page-faults                      #  108,429 K/sec                       ( +-  0,03% )
+       145 717 779      cycles                           #    4,701 GHz                         ( +-  0,22% )
+       231 347 563      instructions                     #    1,59  insn per cycle              ( +-  0,15% )
+        40 439 616      branches                         #    1,305 G/sec                       ( +-  0,15% )
+         1 344 209      branch-misses                    #    3,32% of all branches             ( +-  0,05% )
+                        TopdownL1                 #     14,2 %  tma_backend_bound      
+                                                  #     20,0 %  tma_bad_speculation    
+                                                  #     34,7 %  tma_frontend_bound     
+                                                  #     31,1 %  tma_retiring             ( +-  0,20% )
 
-         0.0399045 +- 0.0000686 seconds time elapsed  ( +-  0.17% )
+          0,031317 +- 0,000465 seconds time elapsed  ( +-  1,49% )
 ```
 
 ### Build GraalVM native image, print its size, and measure its start up time
@@ -78,20 +78,20 @@ Expected output:
 ```text
  Performance counter stats for './example01_graalvm.bin' (100 runs):
 
-              2.08 msec task-clock                       #    0.952 CPUs utilized               ( +-  2.44% )
-                11      context-switches                 #    5.299 K/sec                       ( +-  2.60% )
-                 0      cpu-migrations                   #    0.000 /sec                      
-               707      page-faults                      #  340.580 K/sec                       ( +-  0.02% )
-         8,252,478      cycles                           #    3.975 GHz                         ( +-  1.12% )
-        12,924,310      instructions                     #    1.57  insn per cycle              ( +-  0.07% )
-         2,547,675      branches                         #    1.227 G/sec                       ( +-  0.05% )
-            28,162      branch-misses                    #    1.11% of all branches             ( +- 13.33% )
-                        TopdownL1                 #     28.2 %  tma_backend_bound      
-                                                  #      8.9 %  tma_bad_speculation    
-                                                  #     29.9 %  tma_frontend_bound     
-                                                  #     33.0 %  tma_retiring             ( +-  1.11% )
+              1,93 msec task-clock                       #    0,898 CPUs utilized               ( +-  1,11% )
+                10      context-switches                 #    5,170 K/sec                       ( +-  7,95% )
+                 0      cpu-migrations                   #    0,000 /sec                      
+               703      page-faults                      #  363,484 K/sec                       ( +-  0,04% )
+         8 279 606      cycles                           #    4,281 GHz                         ( +-  1,23% )
+        12 248 386      instructions                     #    1,48  insn per cycle              ( +-  1,00% )
+         2 378 672      branches                         #    1,230 G/sec                       ( +-  0,88% )
+            24 150      branch-misses                    #    1,02% of all branches             ( +-  0,71% )
+                        TopdownL1                 #     30,1 %  tma_backend_bound      
+                                                  #      8,9 %  tma_bad_speculation    
+                                                  #     29,9 %  tma_frontend_bound     
+                                                  #     31,1 %  tma_retiring             ( +-  1,23% )
 
-         0.0021795 +- 0.0000496 seconds time elapsed  ( +-  2.28% )
+          0,002154 +- 0,000177 seconds time elapsed  ( +-  8,20% )
 ```
 
 ### Build Scala Native image, print its size, and measure its start up time
@@ -107,20 +107,20 @@ Expected output:
 ```text
  Performance counter stats for './example01_native.bin' (100 runs):
 
-              0.93 msec task-clock                       #    0.839 CPUs utilized               ( +-  3.56% )
-                 0      context-switches                 #    0.000 /sec                      
-                 0      cpu-migrations                   #    0.000 /sec                      
-               288      page-faults                      #  310.746 K/sec                       ( +-  0.04% )
-         3,675,480      cycles                           #    3.966 GHz                         ( +-  0.49% )
-         5,686,617      instructions                     #    1.55  insn per cycle              ( +-  0.05% )
-         1,028,321      branches                         #    1.110 G/sec                       ( +-  0.05% )
-            16,672      branch-misses                    #    1.62% of all branches             ( +-  0.42% )
-                        TopdownL1                 #     24.7 %  tma_backend_bound      
-                                                  #     11.2 %  tma_bad_speculation    
-                                                  #     30.2 %  tma_frontend_bound     
-                                                  #     33.9 %  tma_retiring             ( +-  0.25% )
+              0,77 msec task-clock                       #    0,766 CPUs utilized               ( +-  0,88% )
+                 0      context-switches                 #    0,000 /sec                      
+                 0      cpu-migrations                   #    0,000 /sec                      
+               258      page-faults                      #  333,144 K/sec                       ( +-  0,08% )
+         3 381 379      cycles                           #    4,366 GHz                         ( +-  0,96% )
+         5 367 398      instructions                     #    1,59  insn per cycle              ( +-  0,59% )
+           972 469      branches                         #    1,256 G/sec                       ( +-  0,56% )
+            16 431      branch-misses                    #    1,69% of all branches             ( +-  0,49% )
+                        TopdownL1                 #     25,0 %  tma_backend_bound      
+                                                  #     11,8 %  tma_bad_speculation    
+                                                  #     29,5 %  tma_frontend_bound     
+                                                  #     33,7 %  tma_retiring             ( +-  0,95% )
 
-         0.0011042 +- 0.0000401 seconds time elapsed  ( +-  3.63% )
+          0,001011 +- 0,000114 seconds time elapsed  ( +- 11,23% )
 ```
 
 ## RFC-8259 validation (example02)
