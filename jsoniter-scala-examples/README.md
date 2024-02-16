@@ -128,26 +128,30 @@ Expected output:
 An example of a command line application that reads the system input, parses and validates JSON according to the latest
 specification and in case of any error prints it to the system error output.
 
+Scala.js build is missing because it doesn't support reading from the system input.
+
+No GC options are used to speed up JSON validation for all supported builds.
+
 ### Build uber jar, print its size, and measure its start up time
 
 ```sh
 scala-cli --power package --assembly example02.sc --force -o example02.jar
 ls -l ./example02.jar
-time ./example02.jar <test.json 2> /dev/null
+time ./example02.jar -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseEpsilonGC -J-Xms16m -J-Xmx16m -J-XX:+AlwaysPreTouch < test.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	0m0.087s
-user	0m0.112s
-sys 	0m0.022s
+real	0m0.085s
+user	0m0.110s
+sys 	0m0.017s
 ```
 
 ### Build GraalVM native image, print its size, and measure its start up time
 
 ```sh
-scala-cli --power package --jvm graalvm --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback
+scala-cli --power package --jvm graalvm --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon
 ls -l ./example02_graalvm.bin
-time ./example02_graalvm.bin <test.json 2> /dev/null
+time ./example02_graalvm.bin < test.json 2> /dev/null
 ```
 Expected output:
 ```text
@@ -159,13 +163,13 @@ sys 	0m0.003s
 ### Build Scala Native image, print its size, and measure its start up time
 
 ```sh
-scala-cli --power package --native-version 0.4.16 --native example02.sc --force -o example02_native.bin
+scala-cli --power package --native-version 0.4.16 --native example02.sc --native-gc none --force -o example02_native.bin
 ls -l ./example02_native.bin
-time ./example02_native.bin <test.json 2> /dev/null
+time ./example02_native.bin < test.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	0m0.004s
-user	0m0.004s
+real	0m0.003s
+user	0m0.003s
 sys 	0m0.000s
 ```
