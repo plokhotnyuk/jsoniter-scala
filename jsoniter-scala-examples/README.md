@@ -132,7 +132,7 @@ Scala.js build is missing because it doesn't support reading from the system inp
 
 No GC options are used to speed up JSON validation for all supported builds.
 
-Also, this script was tested with big (megabytes) and huge (gygabytes) inputs that could be downloaded and unpacked using 
+Also, this script was tested with large (megabytes) and huge (gigabytes) inputs that could be downloaded and unpacked using 
 following commands:
 ```sh
 wget https://raw.githubusercontent.com/json-iterator/test-data/master/large-file.json
