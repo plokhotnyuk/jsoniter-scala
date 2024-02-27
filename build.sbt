@@ -142,7 +142,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.2", "2.13.13", "2.12.18"),
+    crossScalaVersions := Seq("3.3.2", "2.13.13", "2.12.19"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test,
       "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.18.0" % Test,
@@ -169,7 +169,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.2", "2.13.13", "2.12.18"),
+    crossScalaVersions := Seq("3.3.2", "2.13.13", "2.12.19"),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
@@ -212,7 +212,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.2", "2.13.13", "2.12.18"),
+    crossScalaVersions := Seq("3.3.2", "2.13.13", "2.12.19"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.6",
       "io.circe" %%% "circe-parser" % "0.14.6" % Test,
