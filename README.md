@@ -514,7 +514,7 @@ sbt ";dependencyUpdates; reload plugins; dependencyUpdates; reload return"
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt -java-home /usr/lib/jvm/jdk-11 ++2.13.12 clean coverage jsoniter-scala-coreJVM/test jsoniter-scala-circeJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageReport
+sbt -java-home /usr/lib/jvm/jdk-11 ++2.13.13 clean coverage jsoniter-scala-coreJVM/test jsoniter-scala-circeJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageReport
 sbt -java-home /usr/lib/jvm/jdk-11 clean +test +mimaReportBinaryIssues
 ```
 
