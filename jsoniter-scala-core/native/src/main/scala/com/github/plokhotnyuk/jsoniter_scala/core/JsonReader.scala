@@ -2241,7 +2241,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(pos + 1)
       var s = 0
       if (b == '-' || b == '+') {
-        s = b << 29 >> 31
+        s = '+' - b >> 31
         b = nextByte(head)
       }
       if (b < '0' || b > '9') numberError()
@@ -2393,7 +2393,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(pos + 1)
       var s = 0
       if (b == '-' || b == '+') {
-        s = b << 29 >> 31
+        s = '+' - b >> 31
         b = nextByte(head)
       }
       if (b < '0' || b > '9') numberError()
@@ -2632,7 +2632,7 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(pos + 1)
         var s = 0
         if (b == '-' || b == '+') {
-          s = b << 29 >> 31
+          s = '+' - b >> 31
           b = nextByte(head)
         }
         if (b < '0' || b > '9') numberError()
@@ -3759,7 +3759,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toZoneOffset(sb: Byte, offsetTotal: Int): ZoneOffset = {
     var qp = offsetTotal * 37283
-    val s = sb << 29 >> 31
+    val s = '+' - sb >> 31
     if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
       qp = ((qp >>> 25) ^ s) - s + 72 // divide offsetTotal by 900
       var zoneOffset = zoneOffsets(qp)
