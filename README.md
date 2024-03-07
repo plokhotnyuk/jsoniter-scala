@@ -318,10 +318,11 @@ Usages of jsoniter-scala in OSS libraries:
 - [pekko-http-json](https://github.com/pjfanning/pekko-http-json) - integrates some of the best JSON libs in Scala with Pekko HTTP 
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
   instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
-- [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/)
-  tooling for Scala
 - [scalatest-json](https://github.com/stephennancekivell/scalatest-json) - Scalatest matchers with appropriate equality 
   and descriptive error messages
+- [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/)
+  tooling for Scala  
+- [sttp-oauth2](https://github.com/ocadotechnology/sttp-oauth2) - OAuth2 client library implemented in Scala using sttp 
 - [tapir](https://tapir.softwaremill.com/en/latest/endpoint/json.html#jsoniter-scala) - Typed API descRiptions
 
 Also, for usages in other OSS projects see the `Dependents` section of [peoject's Scala Index page](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala)
