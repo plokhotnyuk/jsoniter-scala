@@ -314,6 +314,7 @@ Usages of jsoniter-scala in OSS libraries:
   booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types
 - [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala) - implicitly converts typeclass encoders to kafka Serializer, Deserializer, Serde
 - [logging4s](https://github.com/logging4s/logging4s) - structured logging for Scala 3
+- [neotype](https://github.com/kitlangton/neotype) - a friendly newtype library for Scala 3 
 - [pekko-http-json](https://github.com/pjfanning/pekko-http-json) - integrates some of the best JSON libs in Scala with Pekko HTTP 
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
   instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
