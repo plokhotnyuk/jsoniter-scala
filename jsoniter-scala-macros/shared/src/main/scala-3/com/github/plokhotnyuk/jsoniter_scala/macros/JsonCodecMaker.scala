@@ -3084,7 +3084,7 @@ object JsonCodecMaker {
                 genWriteLeafClass(subTpe, Some(writeDiscriminator), Ref(vxSym)).asTerm)
             }
           }
-          Match(x.asTerm, writeSubclasses.toList).asExprOf[Unit]
+          Match('{$x: @scala.unchecked}.asTerm, writeSubclasses.toList).asExprOf[Unit]
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           genWriteNonAbstractScalaClass(x.asExprOf[T], types, optWriteDiscriminator, out)
         } else if (isConstType(tpe)) getWriteConstType(tpe, isStringified, out)
