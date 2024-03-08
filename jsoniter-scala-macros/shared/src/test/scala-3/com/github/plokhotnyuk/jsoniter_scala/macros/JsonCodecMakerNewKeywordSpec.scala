@@ -38,9 +38,9 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         given [A : JsonValueCodec, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] =
           JsonCodecMaker.make
 
-      implicit val aCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
-      implicit val bCodec: JsonValueCodec[String] = JsonCodecMaker.make
-      implicit val cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+      given aCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
+      given bCodec: JsonValueCodec[String] = JsonCodecMaker.make
+      given cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
       verifySerDeser(summon[JsonValueCodec[GenDoc[Boolean, String, Int]]],
         GenDoc(true, Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
     }
@@ -59,7 +59,7 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       trait ConfigurableJsonValueCodec[A] extends JsonValueCodec[A]
 
       object ConfigurableJsonValueCodec:
-        inline def derived[A](implicit inline config: CodecMakerConfig): ConfigurableJsonValueCodec[A] = new:
+        inline def derived[A](using inline config: CodecMakerConfig): ConfigurableJsonValueCodec[A] = new:
           private val impl = JsonCodecMaker.make[A](config)
           export impl._
 

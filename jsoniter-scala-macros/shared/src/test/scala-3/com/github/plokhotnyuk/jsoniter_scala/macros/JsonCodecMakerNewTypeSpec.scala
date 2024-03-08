@@ -103,7 +103,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
     "serialize and deserialize Scala3 opaque types using custom value codecs" in {
       case class Period(start: Year, end: Year)
 
-      implicit val yearCodec: JsonValueCodec[Year] = new JsonValueCodec[Year] {
+      given yearCodec: JsonValueCodec[Year] = new JsonValueCodec[Year] {
         def decodeValue(in: JsonReader, default: Year): Year = Year(in.readInt()) match {
           case x: Some[Year] => x.value
           case _ => in.decodeError("expected year > 1900")

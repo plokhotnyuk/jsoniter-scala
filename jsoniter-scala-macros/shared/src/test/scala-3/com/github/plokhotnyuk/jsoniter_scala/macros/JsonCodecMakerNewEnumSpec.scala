@@ -102,7 +102,7 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
         List(Planet.Mercury, Planet.Mars), """["Mercury","Mars"]""")
     }
     "serialize and deserialize Scala3 enums using a custom codec" in {
-      implicit val codecOfMediaType: JsonValueCodec[MediaType] = new JsonValueCodec[MediaType] {
+      given codecOfMediaType: JsonValueCodec[MediaType] = new JsonValueCodec[MediaType] {
         override val nullValue: MediaType = null
 
         override def decodeValue(in: JsonReader, default: MediaType): MediaType = in.readByte() match {
