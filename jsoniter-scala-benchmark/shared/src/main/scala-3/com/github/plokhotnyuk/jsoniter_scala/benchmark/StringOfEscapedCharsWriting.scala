@@ -24,7 +24,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonEscapeNonAsciiMapper.writeValueAsBytes(obj)
+    jacksonEscapeNonAsciiMapper.get.writeValueAsBytes(obj)
   }
 
   @Benchmark
@@ -33,7 +33,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    escapeNonAsciiMapper.writeValueAsBytes(Extraction.decompose(obj))
+    escapeNonAsciiMapper.get.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark

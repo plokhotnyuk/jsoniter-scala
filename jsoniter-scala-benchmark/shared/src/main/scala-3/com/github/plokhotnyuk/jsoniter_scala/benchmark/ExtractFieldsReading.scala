@@ -33,7 +33,7 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
   def jacksonScala(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[ExtractFields](jsonBytes)
+    jacksonMapper.get.readValue[ExtractFields](jsonBytes)
   }
 
   @Benchmark
@@ -43,7 +43,7 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[ExtractFields]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[ExtractFields]
   }
 
   @Benchmark

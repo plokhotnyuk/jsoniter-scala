@@ -52,7 +52,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.writeValueAsBytes(obj)
+    jacksonMapper.get.writeValueAsBytes(obj)
   }
 /* FIXME: json4s.jackson serializes empty collections
   @Benchmark
@@ -61,7 +61,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    mapper.writeValueAsBytes(Extraction.decompose(obj))
+    mapper.get.writeValueAsBytes(Extraction.decompose(obj))
   }
 */
 /* FIXME: json4s.native serializes empty collections

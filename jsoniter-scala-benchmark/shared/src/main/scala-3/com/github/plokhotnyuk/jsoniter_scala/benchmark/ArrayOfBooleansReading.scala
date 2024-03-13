@@ -30,7 +30,7 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
   def jacksonScala(): Array[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[Boolean]](jsonBytes)
+    jacksonMapper.get.readValue[Array[Boolean]](jsonBytes)
   }
 
   @Benchmark
@@ -40,7 +40,7 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[Boolean]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[Boolean]]
   }
 
   @Benchmark

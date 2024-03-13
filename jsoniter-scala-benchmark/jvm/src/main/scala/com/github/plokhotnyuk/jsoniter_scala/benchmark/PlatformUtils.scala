@@ -12,14 +12,14 @@ object PlatformUtils {
 
   def toInstant(x: Timestamp): Instant = x.toInstant
 
-  private[this] val prettyPrintMapper = new ObjectMapper {
+  private[this] val prettyPrintMapper = ThreadLocal.withInitial(() => new ObjectMapper {
     registerModule(new PlayJsonMapperModule(JsonParserSettings.settings))
     configure(SerializationFeature.INDENT_OUTPUT, true)
     setDefaultPrettyPrinter {
       val indenter = new DefaultIndenter("  ", "\n")
       new DefaultPrettyPrinter().withObjectIndenter(indenter).withArrayIndenter(indenter)
     }
-  }
+  })
 
-  def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.writeValueAsBytes(jsValue)
+  def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.get.writeValueAsBytes(jsValue)
 }

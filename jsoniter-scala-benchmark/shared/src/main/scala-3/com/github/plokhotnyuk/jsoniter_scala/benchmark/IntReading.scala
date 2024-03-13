@@ -30,7 +30,7 @@ class IntReading extends IntBenchmark {
   def jacksonScala(): Int = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Int](jsonBytes)
+    jacksonMapper.get.readValue[Int](jsonBytes)
   }
 
   @Benchmark
@@ -40,7 +40,7 @@ class IntReading extends IntBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Int]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Int]
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark

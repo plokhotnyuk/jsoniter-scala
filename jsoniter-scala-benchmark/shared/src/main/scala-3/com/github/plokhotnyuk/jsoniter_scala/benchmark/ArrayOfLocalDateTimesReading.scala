@@ -33,7 +33,7 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   def jacksonScala(): Array[LocalDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[LocalDateTime]](jsonBytes)
+    jacksonMapper.get.readValue[Array[LocalDateTime]](jsonBytes)
   }
 
   @Benchmark
@@ -43,7 +43,7 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JavaTimeJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[LocalDateTime]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[LocalDateTime]]
   }
 
   @Benchmark

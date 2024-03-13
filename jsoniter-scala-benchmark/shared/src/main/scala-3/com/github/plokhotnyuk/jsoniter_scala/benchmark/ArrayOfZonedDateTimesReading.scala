@@ -31,7 +31,7 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
   def jacksonScala(): Array[ZonedDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[ZonedDateTime]](jsonBytes)
+    jacksonMapper.get.readValue[Array[ZonedDateTime]](jsonBytes)
   }
 
   @Benchmark
@@ -41,7 +41,7 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JavaTimeJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[ZonedDateTime]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[ZonedDateTime]]
   }
 
   @Benchmark

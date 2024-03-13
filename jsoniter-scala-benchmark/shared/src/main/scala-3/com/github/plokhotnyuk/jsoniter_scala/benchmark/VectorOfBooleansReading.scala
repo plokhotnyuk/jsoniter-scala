@@ -30,7 +30,7 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   def jacksonScala(): Vector[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Vector[Boolean]](jsonBytes)
+    jacksonMapper.get.readValue[Vector[Boolean]](jsonBytes)
   }
 
   @Benchmark
@@ -40,7 +40,7 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Vector[Boolean]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Vector[Boolean]]
   }
 
   @Benchmark

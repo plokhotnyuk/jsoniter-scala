@@ -42,7 +42,7 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonBooleanAsStringMapper.writeValueAsBytes(obj)
+    jacksonBooleanAsStringMapper.get.writeValueAsBytes(obj)
   }
 
   @Benchmark
@@ -51,7 +51,7 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    mapper.writeValueAsBytes(Extraction.decompose(obj))
+    mapper.get.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark

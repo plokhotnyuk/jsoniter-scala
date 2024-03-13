@@ -47,7 +47,7 @@ class BigDecimalWriting extends BigDecimalBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.writeValueAsBytes(obj)
+    jacksonMapper.get.writeValueAsBytes(obj)
   }
 
   @Benchmark
@@ -56,7 +56,7 @@ class BigDecimalWriting extends BigDecimalBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    bigNumberMapper.writeValueAsBytes(Extraction.decompose(obj))
+    bigNumberMapper.get.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark

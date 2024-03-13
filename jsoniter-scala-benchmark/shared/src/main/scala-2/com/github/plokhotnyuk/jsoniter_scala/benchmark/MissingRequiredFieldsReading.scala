@@ -66,7 +66,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     try {
-      jacksonMapper.readValue[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
+      jacksonMapper.get.readValue[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
     } catch {
       case ex: MismatchedInputException => ex.getMessage
     }
@@ -79,7 +79,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
     try {
-      mapper.readValue[JValue](jsonBytes, jValueType).extract[MissingRequiredFields].toString// toString shouldn't be called
+      mapper.get.readValue[JValue](jsonBytes, jValueType).extract[MissingRequiredFields].toString// toString shouldn't be called
     } catch {
       case ex: MappingException => ex.getMessage
     }

@@ -49,7 +49,7 @@ class NestedStructsReading extends NestedStructsBenchmark {
   def jacksonScala(): NestedStructs = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[NestedStructs](jsonBytes)
+    jacksonMapper.get.readValue[NestedStructs](jsonBytes)
   }
 
   @Benchmark
@@ -58,7 +58,7 @@ class NestedStructsReading extends NestedStructsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[NestedStructs]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[NestedStructs]
   }
 
   @Benchmark

@@ -46,7 +46,7 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   def jacksonScala(): mutable.ArrayBuffer[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[mutable.ArrayBuffer[Boolean]](jsonBytes)
+    jacksonMapper.get.readValue[mutable.ArrayBuffer[Boolean]](jsonBytes)
   }
 
   @Benchmark
@@ -55,7 +55,7 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[mutable.ArrayBuffer[Boolean]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[mutable.ArrayBuffer[Boolean]]
   }
 
   @Benchmark

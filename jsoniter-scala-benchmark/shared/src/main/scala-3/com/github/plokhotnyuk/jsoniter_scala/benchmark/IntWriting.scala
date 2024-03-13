@@ -32,7 +32,7 @@ class IntWriting extends IntBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.writeValueAsBytes(obj)
+    jacksonMapper.get.writeValueAsBytes(obj)
   }
 
   @Benchmark

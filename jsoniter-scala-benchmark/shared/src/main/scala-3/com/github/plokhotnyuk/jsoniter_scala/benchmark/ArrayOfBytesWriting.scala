@@ -33,7 +33,7 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonByteArrayMapper.writeValueAsBytes(obj)
+    jacksonByteArrayMapper.get.writeValueAsBytes(obj)
   }
 
   @Benchmark
@@ -42,7 +42,7 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    mapper.writeValueAsBytes(Extraction.decompose(obj))
+    mapper.get.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark

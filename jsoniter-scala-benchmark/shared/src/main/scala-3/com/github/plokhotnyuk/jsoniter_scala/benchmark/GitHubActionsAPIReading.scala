@@ -32,7 +32,7 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   def jacksonScala(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[GitHubActionsAPI.Response](jsonBytes)
+    jacksonMapper.get.readValue[GitHubActionsAPI.Response](jsonBytes)
   }
 
   @Benchmark
@@ -42,7 +42,7 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.GitHubActionsAPIJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[GitHubActionsAPI.Response]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[GitHubActionsAPI.Response]
   }
 
   @Benchmark

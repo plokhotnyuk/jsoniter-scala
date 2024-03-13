@@ -26,7 +26,7 @@ class BitSetReading extends BitSetBenchmark {
   def jacksonScala(): BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[BitSet](jsonBytes)
+    jacksonMapper.get.readValue[BitSet](jsonBytes)
   }
 
   @Benchmark
@@ -36,7 +36,7 @@ class BitSetReading extends BitSetBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Set[Int]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Set[Int]]
   }
 
   @Benchmark

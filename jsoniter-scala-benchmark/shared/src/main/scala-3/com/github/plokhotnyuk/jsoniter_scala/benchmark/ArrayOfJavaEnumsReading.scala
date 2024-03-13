@@ -33,7 +33,7 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
   def jacksonScala(): Array[Suit] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[Suit]](jsonBytes)
+    jacksonMapper.get.readValue[Array[Suit]](jsonBytes)
   }
 
   @Benchmark
@@ -43,7 +43,7 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[Suit]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[Suit]]
   }
 
   @Benchmark

@@ -74,19 +74,19 @@ object JacksonSerDesers {
     }
   }
 
-  val jacksonMapper: ObjectMapper with ClassTagExtensions = createJacksonMapper()
-  val jacksonPrettyMapper: ObjectMapper with ClassTagExtensions = createJacksonMapper(indentOutput = true)
-  val jacksonEscapeNonAsciiMapper: ObjectMapper with ClassTagExtensions = createJacksonMapper(escapeNonAscii = true)
-  val jacksonByteArrayMapper: ObjectMapper with ClassTagExtensions = {
+  val jacksonMapper: ThreadLocal[ObjectMapper with ClassTagExtensions] = ThreadLocal.withInitial(() => createJacksonMapper())
+  val jacksonPrettyMapper: ThreadLocal[ObjectMapper with ClassTagExtensions] = ThreadLocal.withInitial(() => createJacksonMapper(indentOutput = true))
+  val jacksonEscapeNonAsciiMapper: ThreadLocal[ObjectMapper with ClassTagExtensions] = ThreadLocal.withInitial(() => createJacksonMapper(escapeNonAscii = true))
+  val jacksonByteArrayMapper: ThreadLocal[ObjectMapper with ClassTagExtensions] = ThreadLocal.withInitial(() => {
     val jm = createJacksonMapper()
     jm.registerModule(new SimpleModule().addSerializer(classOf[Array[Byte]], new ByteArraySerializer))
     jm
-  }
-  val jacksonBooleanAsStringMapper: ObjectMapper with ClassTagExtensions = {
+  })
+  val jacksonBooleanAsStringMapper: ThreadLocal[ObjectMapper with ClassTagExtensions] = ThreadLocal.withInitial(() => {
     val jm = createJacksonMapper()
     jm.registerModule(new SimpleModule().addSerializer(classOf[Boolean], new StringifiedBooleanSerializer))
     jm
-  }
+  })
 }
 
 class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]]) {

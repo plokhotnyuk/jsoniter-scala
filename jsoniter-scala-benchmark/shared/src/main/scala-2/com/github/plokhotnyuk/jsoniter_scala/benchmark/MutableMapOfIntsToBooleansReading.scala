@@ -40,7 +40,7 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
     import com.fasterxml.jackson.module.scala.JavaTypeable.gen2JavaTypeable
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[mutable.Map[Int, Boolean]](jsonBytes)
+    jacksonMapper.get.readValue[mutable.Map[Int, Boolean]](jsonBytes)
   }
 
   @Benchmark
@@ -49,7 +49,7 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[mutable.Map[Int, Boolean]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[mutable.Map[Int, Boolean]]
   }
 
   @Benchmark

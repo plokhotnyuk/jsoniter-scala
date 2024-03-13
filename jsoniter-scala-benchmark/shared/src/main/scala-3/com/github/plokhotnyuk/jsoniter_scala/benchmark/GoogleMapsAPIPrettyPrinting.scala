@@ -26,7 +26,7 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonPrettyMapper.writeValueAsBytes(obj)
+    jacksonPrettyMapper.get.writeValueAsBytes(obj)
   }
 
   @Benchmark
@@ -35,7 +35,7 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    prettyPrintMapper.writeValueAsBytes(Extraction.decompose(obj))
+    prettyPrintMapper.get.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark

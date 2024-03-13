@@ -43,7 +43,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
   def jacksonScala(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[BidRequest](jsonBytes)
+    jacksonMapper.get.readValue[BidRequest](jsonBytes)
   }
 
   @Benchmark
@@ -52,7 +52,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[BidRequest]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[BidRequest]
   }
 
   @Benchmark

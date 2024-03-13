@@ -42,7 +42,7 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   def jacksonScala(): Array[MonthDay] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[MonthDay]](jsonBytes)
+    jacksonMapper.get.readValue[Array[MonthDay]](jsonBytes)
   }
 
   @Benchmark
@@ -51,7 +51,7 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JavaTimeJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[MonthDay]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[MonthDay]]
   }
 
   @Benchmark

@@ -32,7 +32,7 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   def jacksonScala(): Array[UUID] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[UUID]](jsonBytes)
+    jacksonMapper.get.readValue[Array[UUID]](jsonBytes)
   }
 
   @Benchmark
@@ -42,7 +42,7 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[UUID]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[UUID]]
   }
 
   @Benchmark

@@ -33,7 +33,7 @@ class PrimitivesReading extends PrimitivesBenchmark {
   def jacksonScala(): Primitives = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Primitives](jsonBytes)
+    jacksonMapper.get.readValue[Primitives](jsonBytes)
   }
 
   @Benchmark
@@ -43,7 +43,7 @@ class PrimitivesReading extends PrimitivesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Primitives]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Primitives]
   }
 
   @Benchmark

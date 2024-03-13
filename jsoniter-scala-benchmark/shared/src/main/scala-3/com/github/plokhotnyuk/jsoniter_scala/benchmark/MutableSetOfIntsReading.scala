@@ -31,7 +31,7 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   def jacksonScala(): mutable.Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[mutable.Set[Int]](jsonBytes)
+    jacksonMapper.get.readValue[mutable.Set[Int]](jsonBytes)
   }
 
   @Benchmark
@@ -41,7 +41,7 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[mutable.Set[Int]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[mutable.Set[Int]]
   }
 
   @Benchmark

@@ -47,7 +47,7 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   def jacksonScala(): Array[BigDecimal] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[BigDecimal]](jsonBytes)
+    jacksonMapper.get.readValue[Array[BigDecimal]](jsonBytes)
   }
 
   @Benchmark
@@ -56,7 +56,7 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    bigNumberMapper.readValue[JValue](jsonBytes, jValueType).extract[Array[BigDecimal]]
+    bigNumberMapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[BigDecimal]]
   }
 
   @Benchmark

@@ -48,7 +48,7 @@ class Base64Reading extends Base64Benchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[Byte]](jsonBytes)
+    jacksonMapper.get.readValue[Array[Byte]](jsonBytes)
   }
 
   @Benchmark
@@ -57,7 +57,7 @@ class Base64Reading extends Base64Benchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Json4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[Byte]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[Byte]]
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark

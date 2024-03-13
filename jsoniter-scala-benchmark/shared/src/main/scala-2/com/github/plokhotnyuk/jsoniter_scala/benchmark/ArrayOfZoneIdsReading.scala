@@ -41,7 +41,7 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
   def jacksonScala(): Array[ZoneId] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[ZoneId]](jsonBytes)
+    jacksonMapper.get.readValue[Array[ZoneId]](jsonBytes)
   }
 
   @Benchmark
@@ -50,7 +50,7 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JavaTimeJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[ZoneId]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[ZoneId]]
   }
 
   @Benchmark

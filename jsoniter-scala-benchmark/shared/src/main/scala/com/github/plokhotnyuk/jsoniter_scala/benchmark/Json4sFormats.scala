@@ -172,9 +172,9 @@ object Json4sJacksonMappers {
       }
   }
 
-  val mapper: ObjectMapper = mapper()
-  val bigNumberMapper: ObjectMapper = mapper(useBigNumber = true)
-  val prettyPrintMapper: ObjectMapper = mapper(indentOutput = true)
-  val escapeNonAsciiMapper: ObjectMapper = mapper(escapeNonAscii = true)
-  val jValueType: JavaType = mapper.constructType(classOf[JValue])
+  val mapper: ThreadLocal[ObjectMapper] = ThreadLocal.withInitial(() => mapper())
+  val bigNumberMapper: ThreadLocal[ObjectMapper] = ThreadLocal.withInitial(() => mapper(useBigNumber = true))
+  val prettyPrintMapper: ThreadLocal[ObjectMapper] = ThreadLocal.withInitial(() => mapper(indentOutput = true))
+  val escapeNonAsciiMapper: ThreadLocal[ObjectMapper] = ThreadLocal.withInitial(() => mapper(escapeNonAscii = true))
+  val jValueType: JavaType = mapper.get.constructType(classOf[JValue])
 }

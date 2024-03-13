@@ -45,7 +45,7 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   def jacksonScala(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonEscapeNonAsciiMapper.readValue[String](jsonBytes)
+    jacksonEscapeNonAsciiMapper.get.readValue[String](jsonBytes)
   }
 
   @Benchmark
@@ -54,7 +54,7 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[String]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[String]
   }
 /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
   @Benchmark

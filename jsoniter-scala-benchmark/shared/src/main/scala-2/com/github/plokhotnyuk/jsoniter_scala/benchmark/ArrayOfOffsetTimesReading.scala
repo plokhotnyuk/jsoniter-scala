@@ -49,7 +49,7 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
   def jacksonScala(): Array[OffsetTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[OffsetTime]](jsonBytes)
+    jacksonMapper.get.readValue[Array[OffsetTime]](jsonBytes)
   }
 
   @Benchmark
@@ -58,7 +58,7 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JavaTimeJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[OffsetTime]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[OffsetTime]]
   }
 
   @Benchmark

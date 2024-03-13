@@ -34,7 +34,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.writeValueAsBytes(obj)
+    jacksonMapper.get.writeValueAsBytes(obj)
   }
 /* FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
   @Benchmark
@@ -43,7 +43,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    mapper.writeValueAsBytes(Extraction.decompose(obj))
+    mapper.get.writeValueAsBytes(Extraction.decompose(obj))
   }
 */
 /* FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection

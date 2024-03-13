@@ -33,7 +33,7 @@ class AnyValsReading extends AnyValsBenchmark {
   def jacksonScala(): AnyVals = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[AnyVals](jsonBytes)
+    jacksonMapper.get.readValue[AnyVals](jsonBytes)
   }
 
   @Benchmark
@@ -43,7 +43,7 @@ class AnyValsReading extends AnyValsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyValsJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[AnyVals]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[AnyVals]
   }
 
   @Benchmark

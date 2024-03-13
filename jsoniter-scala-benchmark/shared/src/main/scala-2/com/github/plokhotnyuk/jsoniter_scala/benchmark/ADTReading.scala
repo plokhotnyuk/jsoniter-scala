@@ -42,7 +42,7 @@ class ADTReading extends ADTBenchmark {
   def jacksonScala(): ADTBase = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[ADTBase](jsonBytes)
+    jacksonMapper.get.readValue[ADTBase](jsonBytes)
   }
 
   @Benchmark
@@ -51,7 +51,7 @@ class ADTReading extends ADTBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ADTJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[ADTBase]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[ADTBase]
   }
 
   @Benchmark

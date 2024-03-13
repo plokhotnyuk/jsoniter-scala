@@ -38,7 +38,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   def jacksonScala(): Array[Float] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[Float]](jsonBytes)
+    jacksonMapper.get.readValue[Array[Float]](jsonBytes)
   }
 
   @Benchmark
@@ -48,7 +48,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BigDecimalJson4sFormat._
 
-    bigNumberMapper.readValue[JValue](jsonBytes, jValueType).extract[Array[Float]]
+    bigNumberMapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[Float]]
   }
 
   @Benchmark

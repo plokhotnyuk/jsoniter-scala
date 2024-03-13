@@ -32,7 +32,7 @@ class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
   def jacksonScala(): Array[ZoneOffset] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[ZoneOffset]](jsonBytes)
+    jacksonMapper.get.readValue[Array[ZoneOffset]](jsonBytes)
   }
 
   @Benchmark
@@ -42,7 +42,7 @@ class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JavaTimeJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[ZoneOffset]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[ZoneOffset]]
   }
 
   @Benchmark

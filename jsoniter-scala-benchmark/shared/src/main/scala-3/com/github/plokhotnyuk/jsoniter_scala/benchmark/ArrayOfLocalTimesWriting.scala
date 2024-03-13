@@ -34,7 +34,7 @@ class ArrayOfLocalTimesWriting extends ArrayOfLocalTimesBenchmark {
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.writeValueAsBytes(obj)
+    jacksonMapper.get.writeValueAsBytes(obj)
   }
 
   @Benchmark
@@ -43,7 +43,7 @@ class ArrayOfLocalTimesWriting extends ArrayOfLocalTimesBenchmark {
     import org.json4s._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    mapper.writeValueAsBytes(Extraction.decompose(obj))
+    mapper.get.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark

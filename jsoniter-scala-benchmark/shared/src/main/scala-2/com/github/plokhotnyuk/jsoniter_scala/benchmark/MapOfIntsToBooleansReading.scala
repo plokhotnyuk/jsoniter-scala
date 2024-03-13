@@ -38,7 +38,7 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   def jacksonScala(): Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Map[Int, Boolean]](jsonBytes)
+    jacksonMapper.get.readValue[Map[Int, Boolean]](jsonBytes)
   }
 
   @Benchmark
@@ -47,7 +47,7 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Map[Int, Boolean]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Map[Int, Boolean]]
   }
 
   @Benchmark

@@ -30,7 +30,7 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
   def jacksonScala(): Array[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[Int]](jsonBytes)
+    jacksonMapper.get.readValue[Array[Int]](jsonBytes)
   }
 
   @Benchmark
@@ -40,7 +40,7 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[Int]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[Int]]
   }
 
   @Benchmark

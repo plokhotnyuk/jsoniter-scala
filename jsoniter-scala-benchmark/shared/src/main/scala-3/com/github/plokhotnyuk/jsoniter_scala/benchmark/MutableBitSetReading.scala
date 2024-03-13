@@ -26,7 +26,7 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
   def jacksonScala(): mutable.BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[mutable.BitSet](jsonBytes)
+    jacksonMapper.get.readValue[mutable.BitSet](jsonBytes)
   }
 
   @Benchmark
@@ -36,7 +36,7 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Set[Int]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Set[Int]]
   }
 
   @Benchmark

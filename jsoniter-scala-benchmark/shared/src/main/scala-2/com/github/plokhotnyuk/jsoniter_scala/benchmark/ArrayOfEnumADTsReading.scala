@@ -49,7 +49,7 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   def jacksonScala(): Array[SuitADT] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Array[SuitADT]](jsonBytes)
+    jacksonMapper.get.readValue[Array[SuitADT]](jsonBytes)
   }
 
   @Benchmark
@@ -58,7 +58,7 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[SuitADT]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Array[SuitADT]]
   }
 
   @Benchmark

@@ -34,7 +34,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   def jacksonScala(): Seq[Tweet] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
+    jacksonMapper.get.readValue[Seq[Tweet]](jsonBytes)
   }
 /* FIXME: json4s.jackson throws org.json4s.MappingException: No usable value for entities
   @Benchmark
@@ -44,7 +44,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[Seq[Tweet]]
+    mapper.get.readValue[JValue](jsonBytes, jValueType).extract[Seq[Tweet]]
   }
 */
 /* FIXME: json4s.native throws org.json4s.MappingException: No usable value for entities
