@@ -160,6 +160,7 @@ object Json4sJacksonMappers {
       .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
       .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
       .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
+      .recyclerPool(JsonRecyclerPools.threadLocalPool())
       .build()
     new ObjectMapper(jsonFactory)
       .registerModule(new Json4sScalaModule)

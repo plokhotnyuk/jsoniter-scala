@@ -178,7 +178,6 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   @Benchmark
   def weePickle(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-    import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
     import com.rallyhealth.weepickle.v1.core.TransformException
 

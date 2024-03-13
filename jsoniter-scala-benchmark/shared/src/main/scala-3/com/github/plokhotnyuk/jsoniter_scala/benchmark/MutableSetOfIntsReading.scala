@@ -87,7 +87,7 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
 
   @Benchmark
   def weePickle(): mutable.Set[Int] = {
-    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 
     FromJson(jsonBytes).transform(ToScala[mutable.Set[Int]])

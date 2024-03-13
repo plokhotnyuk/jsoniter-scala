@@ -116,7 +116,6 @@ class OpenRTBReading extends OpenRTBBenchmark {
   @Benchmark
   def weePickle(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-    import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 
     FromJson(jsonBytes).transform(ToScala[BidRequest])

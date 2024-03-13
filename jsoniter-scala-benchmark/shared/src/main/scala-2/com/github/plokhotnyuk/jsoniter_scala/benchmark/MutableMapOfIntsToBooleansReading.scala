@@ -89,7 +89,7 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def weePickle(): mutable.Map[Int, Boolean] = {
-    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 
     FromJson(jsonBytes).transform(ToScala[mutable.Map[Int, Boolean]])

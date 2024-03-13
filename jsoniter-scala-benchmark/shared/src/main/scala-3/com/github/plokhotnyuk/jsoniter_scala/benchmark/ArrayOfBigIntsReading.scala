@@ -97,7 +97,7 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
 
   @Benchmark
   def weePickle(): Array[BigInt] = {
-    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 
     FromJson(jsonBytes).transform(ToScala[Array[BigInt]])

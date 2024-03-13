@@ -110,7 +110,6 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   @Benchmark
   def weePickle(): Seq[Tweet] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-    import com.rallyhealth.weejson.v1.jackson.FromJson
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 
     FromJson(jsonBytes).transform(ToScala[Seq[Tweet]])

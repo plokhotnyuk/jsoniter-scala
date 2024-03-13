@@ -1,21 +1,25 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.core.json.JsonWriteFeature
-import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, StreamReadFeature, StreamWriteFeature}
-import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
+import com.fasterxml.jackson.core.{JsonFactoryBuilder, JsonGenerator, StreamReadFeature, StreamWriteFeature}
+import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter, JsonRecyclerPools}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrinter
-import com.rallyhealth.weejson.v1.jackson.JsonGeneratorOps
+import com.rallyhealth.weejson.v1.jackson.{JsonGeneratorOps, JsonParserOps}
 import com.rallyhealth.weepickle.v1.WeePickle._
 import com.rallyhealth.weepickle.v1.core.Visitor
 
 import java.time._
 
 object WeePickleFromTos extends WeePickleFromTos2 {
-  def defaultJsonFactoryBuilder: JsonFactoryBuilder = JsonFactory.builder().asInstanceOf[JsonFactoryBuilder]
+  def defaultJsonFactoryBuilder: JsonFactoryBuilder = new JsonFactoryBuilder()
     .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
     .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
+    .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
+    .recyclerPool(JsonRecyclerPools.threadLocalPool())
+
+  object FromJson extends JsonParserOps(defaultJsonFactoryBuilder.build())
 
   object ToJson extends JsonGeneratorOps(defaultJsonFactoryBuilder.build())
 

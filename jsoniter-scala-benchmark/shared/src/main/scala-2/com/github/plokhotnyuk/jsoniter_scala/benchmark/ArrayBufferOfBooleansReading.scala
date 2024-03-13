@@ -108,7 +108,7 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
 
   @Benchmark
   def weePickle(): mutable.ArrayBuffer[Boolean] = {
-    import com.rallyhealth.weejson.v1.jackson.FromJson
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 
     FromJson(jsonBytes).transform(ToScala[mutable.ArrayBuffer[Boolean]])

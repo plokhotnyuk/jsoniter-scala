@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.json.JsonWriteFeature
-import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
+import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter, JsonRecyclerPools}
 import com.fasterxml.jackson.core._
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.jsontype.NamedType
@@ -29,6 +29,7 @@ object JacksonSerDesers {
       .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
       .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
       .streamReadConstraints(StreamReadConstraints.builder().maxNumberLength(Int.MaxValue).build()) /* WARNING: It is an unsafe option for open systems */
+      .recyclerPool(JsonRecyclerPools.threadLocalPool())
       .build()
     new ObjectMapper(jsonFactory) with ClassTagExtensions {
       addMixIn(classOf[GeoJSON.GeoJSON], classOf[MixIn])
