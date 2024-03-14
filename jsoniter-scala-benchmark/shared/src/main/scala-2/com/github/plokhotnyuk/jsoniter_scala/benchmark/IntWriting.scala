@@ -53,10 +53,10 @@ class IntWriting extends IntBenchmark {
   @Benchmark
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
-    import org.json4s.jackson.Serialization._
-    import java.nio.charset.StandardCharsets.UTF_8
+    import org.json4s._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    write(Int.box(obj)).getBytes(UTF_8)
+    mapper.writeValueAsBytes(Extraction.decompose(obj))
   }
 
   @Benchmark
