@@ -59,10 +59,17 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       trait ConfigurableJsonValueCodec[A] extends JsonValueCodec[A]
 
       object ConfigurableJsonValueCodec:
-        inline def derived[A](using inline config: CodecMakerConfig): ConfigurableJsonValueCodec[A] = new:
+        inline def derived[A](using inline config: CodecMakerConfig = CodecMakerConfig): ConfigurableJsonValueCodec[A] = new:
           private val impl = JsonCodecMaker.make[A](config)
           export impl._
 
+      {
+        enum TestEnum derives ConfigurableJsonValueCodec:
+          case Value1
+          case Value2(string: String)
+
+        verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"type":"Value2","string":"VVV"}""")
+      }
       {
         inline given CodecMakerConfig = CodecMakerConfig.withDiscriminatorFieldName(Some("name"))
 
@@ -72,7 +79,6 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
 
         verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"name":"Value2","string":"VVV"}""")
       }
-
       {
         inline given CodecMakerConfig = CodecMakerConfig.withDiscriminatorFieldName(Some("hint")).withFieldNameMapper {
           case "string" => "str"
