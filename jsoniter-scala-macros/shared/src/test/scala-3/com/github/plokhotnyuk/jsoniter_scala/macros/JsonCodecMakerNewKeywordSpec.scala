@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
@@ -22,8 +23,8 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
 
       case class RootPathFiles(files: List[String])
 
-      given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
-      given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
+      given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = make
+      given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = make
       verifySerDeser(summon[JsonValueCodec[DeResult[RootPathFiles]]],
         DeResult[RootPathFiles](true, RootPathFiles(List("VVV")), "WWW"),
         """{"isSucceed":true,"data":{"files":["VVV"]},"message":"WWW"}""")
@@ -35,12 +36,11 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
 
       object GenDoc:
-        given [A : JsonValueCodec, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] =
-          JsonCodecMaker.make
+        given [A : JsonValueCodec, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] = make
 
-      given aCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
-      given bCodec: JsonValueCodec[String] = JsonCodecMaker.make
-      given cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+      given aCodec: JsonValueCodec[Boolean] = make
+      given bCodec: JsonValueCodec[String] = make
+      given cCodec: JsonValueCodec[Int] = make
       verifySerDeser(summon[JsonValueCodec[GenDoc[Boolean, String, Int]]],
         GenDoc(true, Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
     }
