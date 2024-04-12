@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
@@ -22,8 +23,8 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
 
       case class RootPathFiles(files: List[String])
 
-      given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = JsonCodecMaker.make
-      given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = JsonCodecMaker.make
+      given codecOfDeResult1: JsonValueCodec[DeResult[Option[String]]] = make
+      given codecOfDeResult2: JsonValueCodec[DeResult[RootPathFiles]] = make
       verifySerDeser(summon[JsonValueCodec[DeResult[RootPathFiles]]],
         DeResult[RootPathFiles](true, RootPathFiles(List("VVV")), "WWW"),
         """{"isSucceed":true,"data":{"files":["VVV"]},"message":"WWW"}""")
@@ -35,12 +36,11 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
 
       object GenDoc:
-        given [A : JsonValueCodec, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] =
-          JsonCodecMaker.make
+        given [A : JsonValueCodec, B : JsonValueCodec, C : JsonValueCodec]: JsonValueCodec[GenDoc[A, B, C]] = make
 
-      given aCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
-      given bCodec: JsonValueCodec[String] = JsonCodecMaker.make
-      given cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+      given aCodec: JsonValueCodec[Boolean] = make
+      given bCodec: JsonValueCodec[String] = make
+      given cCodec: JsonValueCodec[Int] = make
       verifySerDeser(summon[JsonValueCodec[GenDoc[Boolean, String, Int]]],
         GenDoc(true, Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
     }
@@ -90,6 +90,38 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
 
         verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"hint":"Value2","str":"VVV"}""")
       }
+    }
+    "serialize and deserialize option types using a custom codec to handle missing fields and 'null' values differently" in {
+      object CustomOptionCodecs {
+        inline given optionCodec[A](using inline config: CodecMakerConfig = CodecMakerConfig): JsonValueCodec[Option[A]] =
+          new JsonValueCodec[Option[A]] {
+            private val aCodec = make[A](config)
+
+            override def decodeValue(in: JsonReader, default: Option[A]): Option[A] =
+              if (in.isNextToken('n')) in.readNullOrError(None, "expected 'null' or JSON value")
+              else {
+                in.rollbackToken()
+                Some(aCodec.decodeValue(in, aCodec.nullValue))
+              }
+
+            override def encodeValue(x: Option[A], out: JsonWriter): Unit =
+              if (x eq None) out.writeNull()
+              else aCodec.encodeValue(x.get, out)
+
+            override def nullValue: Option[A] = None
+          }
+      }
+
+      case class Ex(opt: Option[String] = Some("hiya"), level: Option[Int] = Some(10))
+
+      inline given codecMakerConfig: CodecMakerConfig = CodecMakerConfig.withIsStringified(true)
+
+      import CustomOptionCodecs.given
+
+      val codecOfEx = make[Ex](CodecMakerConfig.withTransientNone(false))
+      verifySerDeser(codecOfEx, Ex(None, None), """{"opt":null,"level":null}""")
+      verifySerDeser(codecOfEx, Ex(Some("hiya"), Some(10)), """{}""")
+      verifySerDeser(codecOfEx, Ex(Some("pakikisama"), Some(5)), """{"opt":"pakikisama","level":"5"}""")
     }
   }
 }

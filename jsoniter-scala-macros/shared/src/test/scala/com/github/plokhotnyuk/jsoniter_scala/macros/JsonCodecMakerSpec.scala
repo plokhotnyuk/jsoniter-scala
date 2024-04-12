@@ -531,6 +531,37 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize Java enumerations as key in maps" in {
       verifySerDeser(make[Map[Level, Int]], Map(Level.HIGH -> 0), """{"HIGH":0}""")
     }
+    "serialize and deserialize option types using a custom codec to handle missing fields and 'null' values differently" in {
+      case class Ex(opt: Option[String] = _root_.scala.Some("hiya"), level: Option[Int] = _root_.scala.Some(10))
+
+      object CustomOptionCodecs {
+        implicit val intCodec: JsonValueCodec[Int] = make[Int]
+        implicit val stringCodec: JsonValueCodec[String] = make[String]
+
+        implicit def optionCodec[A](implicit aCodec: JsonValueCodec[A]): JsonValueCodec[Option[A]] =
+          new JsonValueCodec[Option[A]] {
+            override def decodeValue(in: JsonReader, default: Option[A]): Option[A] =
+              if (in.isNextToken('n')) in.readNullOrError(_root_.scala.None, "expected 'null' or JSON value")
+              else {
+                in.rollbackToken()
+                _root_.scala.Some(aCodec.decodeValue(in, aCodec.nullValue))
+              }
+
+            override def encodeValue(x: Option[A], out: JsonWriter): _root_.scala.Unit =
+              if (x eq _root_.scala.None) out.writeNull()
+              else aCodec.encodeValue(x.get, out)
+
+            override def nullValue: Option[A] = _root_.scala.None
+          }
+      }
+
+      import CustomOptionCodecs._
+
+      val codecOfEx = make[Ex](CodecMakerConfig.withTransientNone(false))
+      verifySerDeser(codecOfEx, Ex(_root_.scala.None, _root_.scala.None), """{"opt":null,"level":null}""")
+      verifySerDeser(codecOfEx, Ex(_root_.scala.Some("hiya"), _root_.scala.Some(10)), """{}""")
+      verifySerDeser(codecOfEx, Ex(_root_.scala.Some("pakikisama"), _root_.scala.Some(5)), """{"opt":"pakikisama","level":5}""")
+    }
     "serialize and deserialize types using a custom key codec and a custom ordering for map keys" in {
       implicit val codecOfLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
         override def decodeKey(in: JsonReader): Level = in.readKeyAsInt() match {
