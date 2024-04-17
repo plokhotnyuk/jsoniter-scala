@@ -490,8 +490,11 @@ object Version {
 
 ## How to develop
 
-Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
-creating pull requests (fixes and improvements to docs, code, and tests are highly appreciated).
+Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, 
+or contribute by creating pull requests (improvements to docs, code, and tests are highly appreciated).
+
+Currently, the `gh-pages` branch contains a lot of historycal data of benchmark results, so to
+avoid cloing 10Gb of them use `--single-branch` branch option to fetch sources only.
 
 If developing on a fork, make sure to download the git tags (required by the sbt build):
 ```sh
@@ -499,7 +502,7 @@ git remote add upstream git@github.com:plokhotnyuk/jsoniter-scala.git
 git fetch --tags upstream
 ```
 
-Prerequisites for building of Scala.js and Scala Native modules are Clang 16.x and Node.js 16.x.
+Prerequisites for building of Scala.js and Scala Native modules are Clang 18.x and Node.js 16.x.
 The following sequence of commands works for me:
 ```sh
 sudo apt install clang libstdc++-12-dev libgc-dev 
