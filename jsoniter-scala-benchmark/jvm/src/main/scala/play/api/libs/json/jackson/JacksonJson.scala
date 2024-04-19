@@ -278,7 +278,7 @@ private[json] case class JacksonJson(jsonConfig: JsonConfig) {
     .builder()
     .asInstanceOf[JsonFactoryBuilder]
     .streamReadConstraints(streamReadConstraints)
-    .recyclerPool(JsonRecyclerPools.threadLocalPool())
+    .recyclerPool(JsonRecyclerPools.newConcurrentDequePool())
     .build()
   private val mapper = new ObjectMapper(jsonFactory).registerModule(new PlayJsonMapperModule(jsonConfig))
 

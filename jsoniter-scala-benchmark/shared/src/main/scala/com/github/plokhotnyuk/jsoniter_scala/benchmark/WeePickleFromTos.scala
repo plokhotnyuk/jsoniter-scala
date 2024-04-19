@@ -17,7 +17,7 @@ object WeePickleFromTos extends WeePickleFromTos2 {
     .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
     .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
     .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
-    .recyclerPool(JsonRecyclerPools.threadLocalPool())
+    .recyclerPool(JsonRecyclerPools.newConcurrentDequePool())
 
   object FromJson extends JsonParserOps(defaultJsonFactoryBuilder.build())
 

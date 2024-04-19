@@ -29,7 +29,7 @@ object JacksonSerDesers {
       .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
       .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
       .streamReadConstraints(StreamReadConstraints.builder().maxNumberLength(Int.MaxValue).build()) /* WARNING: It is an unsafe option for open systems */
-      .recyclerPool(JsonRecyclerPools.threadLocalPool())
+      .recyclerPool(JsonRecyclerPools.newConcurrentDequePool())
       .build()
     new ObjectMapper(jsonFactory) with ClassTagExtensions {
       addMixIn(classOf[GeoJSON.GeoJSON], classOf[MixIn])
