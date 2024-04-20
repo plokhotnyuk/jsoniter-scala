@@ -610,9 +610,15 @@ sbt jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof
 You will get the profile in the `jsoniter-scala-benchmark/jvm/target/jfr-reports` directory.
 
 To run benchmarks with recordings by [Async profiler](https://github.com/jvm-profiling-tools/async-profiler), extract
-binaries to `/opt/async-profiler` directory and use command like this:
+binaries to `/opt/async-profiler` directory and set the following runtime variables to capture kernel frames:
 ```sh
-sbt -java-home /usr/lib/jvm/openjdk-21 jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/lib/libasyncProfiler.so" -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" --p size=128 -wi 5 -i 10 jsoniterScala'
+sudo sysctl kernel.perf_event_paranoid=1
+sudo sysctl kernel.kptr_restrict=0
+```
+
+Then use command like this:
+```sh
+sbt -java-home /usr/lib/jvm/jdk-21 jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/lib/libasyncProfiler.so" -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" --p size=128 -wi 5 -i 10 jsoniterScala'
 ```
 Now you can open direct and reverse flame graphs in the `jsoniter-scala-benchmark/jvmtarget/async-reports` directory.
 
