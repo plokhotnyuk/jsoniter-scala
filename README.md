@@ -537,7 +537,13 @@ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 for i in $(ls /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor); do echo performance | sudo tee $i; done
 ```
 
-Stop un-needed applications and services, then clear cache memory to improve system performance. One way to clear cache memory
+Stop un-needed applications and services. List of running services can be printed by:
+```sh
+sudo service --status-all | grep '\[ + \]'
+sudo systemctl list-units --state running
+```
+
+Then clear cache memory to improve system performance. One way to clear cache memory
 on Linux without having to reboot the system:
 ```sh
 free -m -h && sudo echo 3 > /proc/sys/vm/drop_caches && free -m -h
