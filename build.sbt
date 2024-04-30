@@ -242,7 +242,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     }),
     libraryDependencies ++= Seq(
       "io.spray" %% "spray-json" % "1.3.6",
-      "org.playframework" %%% "play-json" % "3.0.2",
+      "org.playframework" %%% "play-json" % "3.0.3",
       "dev.zio" %%% "zio-json" % "0.6.2",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
       "com.lihaoyi" %%% "upickle" % "3.3.0",
