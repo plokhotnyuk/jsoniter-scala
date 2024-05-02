@@ -159,6 +159,14 @@ case class Stringified(
   @stringified o: Option[Int],
   @stringified l: List[Int])
 
+trait TopProperty extends Any
+
+trait Property extends Any with TopProperty
+
+case class DoubleProperty(value: Double) extends AnyVal with Property
+
+case class StringProperty(value: String) extends AnyVal with Property
+
 case class Defaults(
   st: String = "VVV",
   i: Int = 1,
@@ -900,6 +908,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }
       verifySerDeser(make[OpaqueTypes],
         OpaqueTypes(UserId2.Opaque("123abc"), OrderId2.Opaque(123123)), """{"uid":"123abc","oid":123123}""")
+    }
+    "serialize and deserialize non-sealed trait using a custom value codec" in {
+      implicit val customCodecOfProperty: JsonValueCodec[Property] =
+        new JsonValueCodec[Property] {
+          def nullValue: Property = null
+
+          def decodeValue(in: JsonReader, default: Property): Property = {
+            val t = in.nextToken()
+            in.rollbackToken()
+            if (t == '"') StringProperty(in.readString(null))
+            else DoubleProperty(in.readDouble())
+          }
+
+          def encodeValue(x: Property, out: JsonWriter): _root_.scala.Unit = x match {
+            case DoubleProperty(i) => out.writeVal(i)
+            case StringProperty(s) => out.writeVal(s)
+          }
+        }
+      val codecOfPropertyMap = make[Map[String, Property]]
+      verifySerDeser(codecOfPropertyMap, Map("a" -> DoubleProperty(4.0), "b" -> StringProperty("bar")), """{"a":4.0,"b":"bar"}""")
     }
     "serialize and deserialize outer types using custom value codecs for nested types" in {
       implicit val customCodecOfEither1: JsonValueCodec[Either[String, Int]] =
