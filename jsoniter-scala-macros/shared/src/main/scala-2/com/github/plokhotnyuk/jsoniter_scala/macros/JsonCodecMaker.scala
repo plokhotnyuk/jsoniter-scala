@@ -618,41 +618,6 @@ object JsonCodecMaker {
         case _ => false
       }
 
-      def adtLeafClasses(adtBaseTpe: Type): List[Type] = {
-        def collectRecursively(tpe: Type): List[Type] = {
-          val tpeClass = tpe.typeSymbol.asClass
-          val leafTpes = tpeClass.knownDirectSubclasses.toList.flatMap { s =>
-            val classSymbol = s.asClass
-            val typeParams = classSymbol.typeParams
-            val subTpe =
-              if (typeParams.isEmpty) classSymbol.toType
-              else {
-                val typeParamsAndArgs = tpeClass.typeParams.map(_.toString).zip(tpe.typeArgs).toMap
-                val typeArgs = typeParams.map(s => typeParamsAndArgs.getOrElse(s.toString, fail {
-                  s"Cannot resolve generic type(s) for `${classSymbol.toType}`. Please provide a custom implicitly accessible codec for it."
-                }))
-                classSymbol.toType.substituteTypes(typeParams, typeArgs)
-              }
-            if (isSealedClass(subTpe)) collectRecursively(subTpe)
-            else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
-            else fail(if (s.isAbstract) {
-              "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
-                s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
-            } else {
-              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
-                s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
-            })
-          }
-          if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
-          else leafTpes
-        }
-
-        val classes = collectRecursively(adtBaseTpe).distinct
-        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
-          "Please add them or provide a custom implicitly accessible codec for the ADT base.")
-        classes
-      }
-
       def companion(tpe: Type): Symbol = {
         val comp = tpe.typeSymbol.companion
         if (comp.isModule) comp
@@ -880,6 +845,44 @@ object JsonCodecMaker {
       def isValueClass(tpe: Type): Boolean = !isConstType(tpe) &&
         (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
           tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass)
+
+      def adtLeafClasses(adtBaseTpe: Type): List[Type] = {
+        def collectRecursively(tpe: Type): List[Type] = {
+          val tpeClass = tpe.typeSymbol.asClass
+          val leafTpes = tpeClass.knownDirectSubclasses.toList.flatMap { s =>
+            val classSymbol = s.asClass
+            val typeParams = classSymbol.typeParams
+            val subTpe =
+              if (typeParams.isEmpty) classSymbol.toType
+              else {
+                val typeParamsAndArgs = tpeClass.typeParams.map(_.toString).zip(tpe.typeArgs).toMap
+                val typeArgs = typeParams.map(s => typeParamsAndArgs.getOrElse(s.toString, fail {
+                  s"Cannot resolve generic type(s) for `${classSymbol.toType}`. Please provide a custom implicitly accessible codec for it."
+                }))
+                classSymbol.toType.substituteTypes(typeParams, typeArgs)
+              }
+            if (isSealedClass(subTpe)) collectRecursively(subTpe)
+            else if (isValueClass(subTpe)) {
+              fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
+                s"supported as leaf classes for ADT with base '$adtBaseTpe'.")
+            } else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
+            else fail(if (s.isAbstract) {
+              "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
+                s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
+            } else {
+              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
+                s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
+            })
+          }
+          if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
+          else leafTpes
+        }
+
+        val classes = collectRecursively(adtBaseTpe).distinct
+        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
+          "Please add them or provide a custom implicitly accessible codec for the ADT base.")
+        classes
+      }
 
       def genReadKey(types: List[Type]): Tree = {
         val tpe = types.head

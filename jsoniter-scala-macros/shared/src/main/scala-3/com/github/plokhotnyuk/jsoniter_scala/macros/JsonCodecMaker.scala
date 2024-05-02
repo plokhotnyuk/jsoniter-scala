@@ -755,87 +755,6 @@ object JsonCodecMaker {
       def isEnumOrModuleValue(tpe: TypeRepr): Boolean = tpe.isSingleton &&
         (tpe.typeSymbol.flags.is(Flags.Module) || tpe.termSymbol.flags.is(Flags.Enum))
 
-      def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = { // TODO: explore yet one variant with mirrors
-        def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
-                                 binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
-          if (fromNudeChildTarg.typeSymbol.isTypeParam) { // TODO: check for paramRef instead ?
-            val paramName = fromNudeChildTarg.typeSymbol.name
-            binding.get(paramName) match
-              case None => binding.updated(paramName, parentTarg)
-              case Some(oldBinding) =>
-                if (oldBinding =:= parentTarg) binding
-                else fail(s"Type parameter $paramName in class ${child.name} appeared in the constructor of " +
-                  s"${tpe.show} two times differently, with ${oldBinding.show} and ${parentTarg.show}")
-          } else if (fromNudeChildTarg <:< parentTarg) binding // TODO: assure parentTag is covariant, get covariance from type parameters
-          else {
-            (fromNudeChildTarg, parentTarg) match
-              case (AppliedType(ctycon, ctargs), AppliedType(ptycon, ptargs)) =>
-                ctargs.zip(ptargs).foldLeft(resolveParentTypeArg(child, ctycon, ptycon, binding)) { (b, e) =>
-                  resolveParentTypeArg(child, e._1, e._2, b)
-                }
-              case _ => fail(s"Failed unification of type parameters of ${tpe.show} from child $child - " +
-                  s"${fromNudeChildTarg.show} and ${parentTarg.show}")
-          }
-
-        def resolveParentTypeArgs(child: Symbol, nudeChildParentTags: List[TypeRepr], parentTags: List[TypeRepr],
-                                  binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
-          nudeChildParentTags.zip(parentTags).foldLeft(binding)((s, e) => resolveParentTypeArg(child, e._1, e._2, s))
-
-        tpe.typeSymbol.children.map { sym =>
-          if (sym.isType) {
-            if (sym.name == "<local child>") // problem - we have no other way to find this other return the name
-              fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a " +
-                "custom implicitly accessible codec")
-            val nudeSubtype = TypeIdent(sym).tpe
-            val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(tpe.typeSymbol))
-            nudeSubtype.memberType(sym.primaryConstructor) match
-              case MethodType(_, _, resTp) => resTp
-              case PolyType(names, bounds, resPolyTp) =>
-                val targs = typeArgs(tpe)
-                val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, targs, Map.empty)
-                val ctArgs = names.map { name =>
-                  tpBinding.getOrElse(name, fail(s"Type parameter $name of $sym can't be deduced from " +
-                    s"type arguments of ${tpe.show}. Please provide a custom implicitly accessible codec for it."))
-                }
-                val polyRes = resPolyTp match
-                  case MethodType(_, _, resTp) => resTp
-                  case other => other // hope we have no multiple typed param lists yet.
-                if (ctArgs.isEmpty) polyRes
-                else polyRes match
-                  case AppliedType(base, _) => base.appliedTo(ctArgs)
-                  case AnnotatedType(AppliedType(base, _), annot) => AnnotatedType(base.appliedTo(ctArgs), annot)
-                  case _ => polyRes.appliedTo(ctArgs)
-              case other => fail(s"Primary constructior for ${tpe.show} is not MethodType or PolyType but $other")
-          } else if (sym.isTerm) Ref(sym).tpe
-          else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of " +
-            s"them for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base. " +
-            s"Failed symbol: $sym (fullName=${sym.fullName})\n")
-        }
-      }
-
-      def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
-        def collectRecursively(tpe: TypeRepr): Seq[TypeRepr] =
-          val leafTpes = adtChildren(tpe).flatMap { subTpe =>
-            if (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type]) subTpe :: Nil
-            else if (isSealedClass(subTpe)) collectRecursively(subTpe)
-            else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
-            else fail(if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
-              "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
-                s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
-            } else {
-              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
-                s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
-            })
-          }
-          if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
-          else leafTpes
-
-        val classes = collectRecursively(adtBaseTpe).distinct
-        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '${adtBaseTpe.show}'. " +
-          "Please add them or provide a custom implicitly accessible codec for the ADT base.")
-        classes
-      }
-
       def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< TypeRepr.of[Option[_]] &&
         (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< TypeRepr.of[Option[_]]))
 
@@ -1121,6 +1040,90 @@ object JsonCodecMaker {
       def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) &&
         (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
           tpe <:< TypeRepr.of[AnyVal])
+
+      def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = { // TODO: explore yet one variant with mirrors
+        def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
+                                 binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
+          if (fromNudeChildTarg.typeSymbol.isTypeParam) { // TODO: check for paramRef instead ?
+            val paramName = fromNudeChildTarg.typeSymbol.name
+            binding.get(paramName) match
+              case None => binding.updated(paramName, parentTarg)
+              case Some(oldBinding) =>
+                if (oldBinding =:= parentTarg) binding
+                else fail(s"Type parameter $paramName in class ${child.name} appeared in the constructor of " +
+                  s"${tpe.show} two times differently, with ${oldBinding.show} and ${parentTarg.show}")
+          } else if (fromNudeChildTarg <:< parentTarg) binding // TODO: assure parentTag is covariant, get covariance from type parameters
+          else {
+            (fromNudeChildTarg, parentTarg) match
+              case (AppliedType(ctycon, ctargs), AppliedType(ptycon, ptargs)) =>
+                ctargs.zip(ptargs).foldLeft(resolveParentTypeArg(child, ctycon, ptycon, binding)) { (b, e) =>
+                  resolveParentTypeArg(child, e._1, e._2, b)
+                }
+              case _ => fail(s"Failed unification of type parameters of ${tpe.show} from child $child - " +
+                s"${fromNudeChildTarg.show} and ${parentTarg.show}")
+          }
+
+        def resolveParentTypeArgs(child: Symbol, nudeChildParentTags: List[TypeRepr], parentTags: List[TypeRepr],
+                                  binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
+          nudeChildParentTags.zip(parentTags).foldLeft(binding)((s, e) => resolveParentTypeArg(child, e._1, e._2, s))
+
+        tpe.typeSymbol.children.map { sym =>
+          if (sym.isType) {
+            if (sym.name == "<local child>") // problem - we have no other way to find this other return the name
+              fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a " +
+                "custom implicitly accessible codec")
+            val nudeSubtype = TypeIdent(sym).tpe
+            val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(tpe.typeSymbol))
+            nudeSubtype.memberType(sym.primaryConstructor) match
+              case MethodType(_, _, resTp) => resTp
+              case PolyType(names, bounds, resPolyTp) =>
+                val targs = typeArgs(tpe)
+                val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, targs, Map.empty)
+                val ctArgs = names.map { name =>
+                  tpBinding.getOrElse(name, fail(s"Type parameter $name of $sym can't be deduced from " +
+                    s"type arguments of ${tpe.show}. Please provide a custom implicitly accessible codec for it."))
+                }
+                val polyRes = resPolyTp match
+                  case MethodType(_, _, resTp) => resTp
+                  case other => other // hope we have no multiple typed param lists yet.
+                if (ctArgs.isEmpty) polyRes
+                else polyRes match
+                  case AppliedType(base, _) => base.appliedTo(ctArgs)
+                  case AnnotatedType(AppliedType(base, _), annot) => AnnotatedType(base.appliedTo(ctArgs), annot)
+                  case _ => polyRes.appliedTo(ctArgs)
+              case other => fail(s"Primary constructior for ${tpe.show} is not MethodType or PolyType but $other")
+          } else if (sym.isTerm) Ref(sym).tpe
+          else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of " +
+            s"them for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base. " +
+            s"Failed symbol: $sym (fullName=${sym.fullName})\n")
+        }
+      }
+
+      def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
+        def collectRecursively(tpe: TypeRepr): Seq[TypeRepr] =
+          val leafTpes = adtChildren(tpe).flatMap { subTpe =>
+            if (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type]) subTpe :: Nil
+            else if (isSealedClass(subTpe)) collectRecursively(subTpe)
+            else if (isValueClass(subTpe)) {
+              fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
+                s"supported as leaf classes for ADT with base '${adtBaseTpe.show}'.")
+            } else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
+            else fail(if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
+              "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
+                s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
+            } else {
+              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
+                s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
+            })
+          }
+          if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
+          else leafTpes
+
+        val classes = collectRecursively(adtBaseTpe).distinct
+        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '${adtBaseTpe.show}'. " +
+          "Please add them or provide a custom implicitly accessible codec for the ADT base.")
+        classes
+      }
 
       def genReadKey[T: Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] =
         val tpe = types.head

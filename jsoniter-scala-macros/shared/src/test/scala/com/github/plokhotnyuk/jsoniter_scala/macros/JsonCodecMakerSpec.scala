@@ -2922,6 +2922,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         else "Type parameter A of class FooImpl can't be deduced from type arguments of Foo[[A >: scala.Nothing <: scala.Any] => Bar[A]]. Please provide a custom implicitly accessible codec for it."
       })
     }
+    "don't generate codecs when 'AnyVal' or one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are leaf types of the ADT base" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait X extends Any
+          |case class D(value: Double) extends X
+          |make[X](CodecMakerConfig.withInlineOneValueClasses(true))""".stripMargin
+      }).getMessage.contains {
+        "'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not supported as leaf classes for ADT with base 'X'."
+      })
+    }
     "don't generate codecs that cannot parse own output" in {
       assert(intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[Arrays](CodecMakerConfig.withRequireCollectionFields(true))"
