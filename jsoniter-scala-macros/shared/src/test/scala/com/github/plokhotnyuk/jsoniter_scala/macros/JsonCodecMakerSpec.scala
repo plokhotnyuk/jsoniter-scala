@@ -922,14 +922,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           }
 
           def encodeValue(x: Property, out: JsonWriter): _root_.scala.Unit = x match {
-            case DoubleProperty(i) => out.writeVal(i)
+            case DoubleProperty(d) => out.writeVal(d)
             case StringProperty(s) => out.writeVal(s)
           }
         }
-      val codecOfPropertyMap = make[Map[String, Property]]
-      verifySerDeser(codecOfPropertyMap, Map("a" -> DoubleProperty(4.0), "b" -> StringProperty("bar")), """{"a":4.0,"b":"bar"}""")
+      verifySerDeser(make[Map[String, Property]],
+        Map("a" -> DoubleProperty(4.0), "b" -> StringProperty("bar")), """{"a":4.0,"b":"bar"}""")
     }
-    "serialize and deserialize outer types using custom value codecs for nested types" in {
+    "serialize and deserialize using custom value codecs for `Either` type" in {
       implicit val customCodecOfEither1: JsonValueCodec[Either[String, Int]] =
         new JsonValueCodec[Either[String, Int]] {
           def nullValue: Either[String, Int] = null
@@ -946,8 +946,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             case Left(s) => out.writeVal(s)
           }
         }
-      val codecOfEitherList = make[List[Either[String, Int]]]
-      verifySerDeser(codecOfEitherList, List(Right(1), Left("VVV")), """[1,"VVV"]""")
+      verifySerDeser(make[List[Either[String, Int]]], List(Right(1), Left("VVV")), """[1,"VVV"]""")
       implicit val customCodecOfEither2: JsonValueCodec[Either[String, StandardTypes]] =
         new JsonValueCodec[Either[String, StandardTypes]] {
           def nullValue: Either[String, StandardTypes] = null
@@ -979,6 +978,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfOuterTypes, OuterTypes("X", Left("fatal error")), """{"s":"X","st":"fatal error"}""")
       verifySerDeser(codecOfOuterTypes, OuterTypes("X", Left("error")), """{"s":"X"}""") // st matches with default value
       verifySerDeser(codecOfOuterTypes, OuterTypes("X"), """{"s":"X"}""")
+    }
+    "serialize and deserialize using custom value codecs for enums" in {
       implicit object codecOfLocationType extends JsonValueCodec[LocationType.LocationType] {
         def nullValue: LocationType.LocationType = null
 
