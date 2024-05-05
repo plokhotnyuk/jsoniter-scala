@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.core.{JsonFactoryBuilder, JsonGenerator, StreamReadFeature, StreamWriteFeature}
-import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter, JsonRecyclerPools}
+import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrinter
@@ -13,11 +13,10 @@ import com.rallyhealth.weepickle.v1.core.Visitor
 import java.time._
 
 object WeePickleFromTos extends WeePickleFromTos2 {
-  def defaultJsonFactoryBuilder: JsonFactoryBuilder = new JsonFactoryBuilder()
+  private[this] def defaultJsonFactoryBuilder: JsonFactoryBuilder = new JsonFactoryBuilder()
     .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
     .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
     .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
-    .recyclerPool(JsonRecyclerPools.threadLocalPool())
 
   object FromJson extends JsonParserOps(defaultJsonFactoryBuilder.build())
 
