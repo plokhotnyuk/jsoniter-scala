@@ -267,7 +267,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       )
       case _ => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
-        "com.avsystem.commons" %%% "commons-core" % "2.15.0",
+        "com.avsystem.commons" %%% "commons-core" % "2.16.0",
         "com.dslplatform" %% "dsl-json-scala" % "2.0.2"
       )
     }),
