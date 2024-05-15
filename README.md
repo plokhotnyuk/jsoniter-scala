@@ -324,7 +324,7 @@ Usages of jsoniter-scala in OSS libraries:
 - [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/)
   tooling for Scala
 - [sttp](https://github.com/softwaremill/sttp) - the Scala HTTP client you always wanted! 
-- [sttp-oauth2](https://github.com/ocadotechnology/sttp-oauth2) - OAuth2 client library implemented in Scala using sttp 
+- [sttp-oauth2](https://github.com/polyvariant/sttp-oauth2) - OAuth2 client library implemented in Scala using sttp 
 - [tapir](https://tapir.softwaremill.com/en/latest/endpoint/json.html#jsoniter-scala) - Typed API descRiptions
 
 Also, for usages in other OSS projects see the `Dependents` section of [peoject's Scala Index page](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala)
