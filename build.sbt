@@ -249,7 +249,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-generic" % "0.14.7",
       "io.circe" %%% "circe-parser" % "0.14.7",
       "io.circe" %%% "circe-jawn" % "0.14.7",
-      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.18",
+      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.19",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M5",
       "org.json4s" %% "json4s-native" % "4.1.0-M5",
       "com.rallyhealth" %% "weepickle-v1" % "1.9.1",
