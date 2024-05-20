@@ -16,7 +16,8 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val doubleWriter: Writer[Double] = numWriter[Double]
   implicit val floatWriter: Writer[Float] = numWriter[Float]
   implicit val longWriter: Writer[Long] = numWriter[Long]
-  @annotation.nowarn implicit lazy val adtReadWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
+  @annotation.nowarn implicit lazy val adtReadWriter: ReadWriter[ADTBase] =
+    ReadWriter.merge(tagName, macroRW[X], macroRW[Y], macroRW[Z])
   implicit val anyValsReadWriter: ReadWriter[AnyVals] = {
     implicit val v1: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
     implicit val v2: ReadWriter[ShortVal] = readwriter[Short].bimap(_.a, ShortVal.apply)
@@ -32,16 +33,16 @@ object UPickleReaderWriters extends AttributeTagged {
     readwriter[String].bimap(Base64.getEncoder.encodeToString, Base64.getDecoder.decode)
   implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
   implicit val simpleGeometryReadWriter: ReadWriter[GeoJSON.SimpleGeometry] =
-    ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+    ReadWriter.merge(tagName, macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
       macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon])
   implicit val geometryReadWriter: ReadWriter[GeoJSON.Geometry] =
-    ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+    ReadWriter.merge(tagName, macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
       macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon],
       macroRW[GeoJSON.GeometryCollection])
   implicit val simpleGeoJsonReadWriter: ReadWriter[GeoJSON.SimpleGeoJSON] =
-    ReadWriter.merge(macroRW[GeoJSON.Feature])
+    ReadWriter.merge(tagName, macroRW[GeoJSON.Feature])
   implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] =
-    ReadWriter.merge(macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
+    ReadWriter.merge(tagName, macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
   implicit val gitHubActionsAPIFromTos: ReadWriter[GitHubActionsAPI.Response] = {
     implicit val v1: ReadWriter[Boolean] =
       ReadWriter.join(strReader(x => java.lang.Boolean.parseBoolean(x.toString)), strWriter[Boolean])
@@ -144,11 +145,11 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW
   }
 
-  override def annotate[V](rw: Reader[V], n: String): TaggedReader.Leaf[V] =
-    new TaggedReader.Leaf[V](simpleName(n), rw)
+  override def annotate[V](rw: Reader[V], key: String, value: String): TaggedReader.Leaf[V] =
+    new TaggedReader.Leaf[V](tagName, simpleName(value), rw)
 
-  override def annotate[V](rw: ObjectWriter[V], n: String, checker: Annotator.Checker): TaggedWriter[V] =
-    new TaggedWriter.Leaf[V](checker, simpleName(n), rw)
+  override def annotate[V](rw: ObjectWriter[V], key: String, value: String, checker: Annotator.Checker): TaggedWriter[V] =
+    new TaggedWriter.Leaf[V](checker, tagName, simpleName(value), rw)
 
   override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
     implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
