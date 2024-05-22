@@ -1,7 +1,6 @@
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
-import sbt._
-import scala.sys.process._
-import com.typesafe.tools.mima.core._
+import sbt.*
+import scala.sys.process.*
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
 
@@ -283,7 +282,7 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins({
     if (assemblyJSBenchmarks) Seq(JSDependenciesPlugin)
     else Seq(JSDependenciesPlugin, ScalaJSBundlerPlugin)
-  }:_*)
+  }*)
   .settings(jsSettings)
   .settings(
     libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.10.0",
@@ -291,6 +290,8 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main")
   )
   .settings({
-    if (assemblyJSBenchmarks) Seq(scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.NoModule) }, Test / test := {})
+    if (assemblyJSBenchmarks) Seq(scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.NoModule)
+    }, Test / test := {})
     else Seq(Test / requireJsDomEnv := true)
-  }:_*)
+  }*)
