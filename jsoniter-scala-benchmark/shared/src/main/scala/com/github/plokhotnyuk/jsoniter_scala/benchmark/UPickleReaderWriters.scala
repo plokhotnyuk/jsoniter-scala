@@ -159,17 +159,17 @@ object UPickleReaderWriters extends AttributeTagged {
       override def visitNull(index: Int): Option[T] = None
     }
 
-  private def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
+  private[this] def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
     override val expectedMsg = "expected string"
 
     override def visitString(s: CharSequence, index: Int): T = f(s)
   }
 
-  private def strWriter[V]: Writer[V] = new Writer[V] {
+  private[this] def strWriter[V]: Writer[V] = new Writer[V] {
     def write0[R](out: Visitor[_, R], v: V): R = out.visitString(v.toString, -1)
   }
 
-  private def numReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
+  private[this] def numReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
     override val expectedMsg = "expected number"
 
     override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): T = f(s)
