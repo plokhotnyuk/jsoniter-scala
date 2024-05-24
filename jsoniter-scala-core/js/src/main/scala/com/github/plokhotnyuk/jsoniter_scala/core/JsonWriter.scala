@@ -1325,8 +1325,7 @@ final class JsonWriter private[jsoniter_scala](
       remaining -= step
     }
     count = pos
-    writeBytes('"')
-    writeColon()
+    writeParenthesesWithColon()
   }
 
   private[this] def writeLongNonEscapedAsciiVal(x: String): Unit = {
