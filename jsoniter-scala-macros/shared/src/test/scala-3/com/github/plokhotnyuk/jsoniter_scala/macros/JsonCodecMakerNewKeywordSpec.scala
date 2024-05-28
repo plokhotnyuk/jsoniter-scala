@@ -56,15 +56,8 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       })
     }
     "serialize and deserialize classes defined with `derives` keyword and different compile-time configurations" in {
-      trait ConfigurableJsonValueCodec[A] extends JsonValueCodec[A]
-
-      object ConfigurableJsonValueCodec:
-        inline def derived[A](using inline config: CodecMakerConfig = CodecMakerConfig): ConfigurableJsonValueCodec[A] = new:
-          private val impl = JsonCodecMaker.make[A](config)
-          export impl._
-
       {
-        enum TestEnum derives ConfigurableJsonValueCodec:
+        enum TestEnum derives ConfiguredJsonValueCodec:
           case Value1
           case Value2(string: String)
 
@@ -73,7 +66,7 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       {
         inline given CodecMakerConfig = CodecMakerConfig.withDiscriminatorFieldName(Some("name"))
 
-        enum TestEnum derives ConfigurableJsonValueCodec:
+        enum TestEnum derives ConfiguredJsonValueCodec:
           case Value1
           case Value2(string: String)
 
@@ -84,7 +77,7 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
           case "string" => "str"
         }
 
-        enum TestEnum derives ConfigurableJsonValueCodec:
+        enum TestEnum derives ConfiguredJsonValueCodec:
           case Value1
           case Value2(string: String)
 
