@@ -97,6 +97,10 @@ final class stringified extends StaticAnnotation
   * @param scalaTransientSupport  a flag that turns on support of `scala.transient` (turned off by default)
   * @param inlineOneValueClasses  a flag that turns on derivation of inlined codecs for non-values classes that have
   *                               the primary constructor with just one argument (turned off by default)
+  * @param alwaysEmitDiscriminator a flag that causes the discriminator field and value to always be serialized, even
+  *                               when the codec derived is for an ADT leaf class and not the ADT base class. Note that
+  *                               this flag has no effect on generated decoders -- that is this flag does NOT cause
+  *                               decoders to start requiring the discriminator field when they are not strictly necessary
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -127,7 +131,8 @@ class CodecMakerConfig private[macros] (
     val requireDefaultFields: Boolean,
     val checkFieldDuplication: Boolean,
     val scalaTransientSupport: Boolean,
-    val inlineOneValueClasses: Boolean) {
+    val inlineOneValueClasses: Boolean,
+    val alwaysEmitDiscriminator: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -139,6 +144,9 @@ class CodecMakerConfig private[macros] (
 
   def withDiscriminatorFieldName(discriminatorFieldName: Option[String]): CodecMakerConfig =
     copy(discriminatorFieldName = discriminatorFieldName)
+
+  def withAlwaysEmitDiscriminator(alwaysEmitDiscriminator: Boolean): CodecMakerConfig =
+    copy(alwaysEmitDiscriminator = alwaysEmitDiscriminator)
 
   def withIsStringified(isStringified: Boolean): CodecMakerConfig = copy(isStringified = isStringified)
 
@@ -234,7 +242,8 @@ class CodecMakerConfig private[macros] (
                          requireDefaultFields: Boolean = requireDefaultFields,
                          checkFieldDuplication: Boolean = checkFieldDuplication,
                          scalaTransientSupport: Boolean = scalaTransientSupport,
-                         inlineOneValueClasses: Boolean = inlineOneValueClasses): CodecMakerConfig =
+                         inlineOneValueClasses: Boolean = inlineOneValueClasses,
+                         alwaysEmitDiscriminator: Boolean = alwaysEmitDiscriminator): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -264,7 +273,8 @@ class CodecMakerConfig private[macros] (
       requireDefaultFields = requireDefaultFields,
       checkFieldDuplication = checkFieldDuplication,
       scalaTransientSupport = scalaTransientSupport,
-      inlineOneValueClasses = inlineOneValueClasses)
+      inlineOneValueClasses = inlineOneValueClasses,
+      alwaysEmitDiscriminator = alwaysEmitDiscriminator)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -296,7 +306,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   requireDefaultFields = false,
   checkFieldDuplication = true,
   scalaTransientSupport = false,
-  inlineOneValueClasses = false) {
+  inlineOneValueClasses = false,
+  alwaysEmitDiscriminator = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -348,7 +359,8 @@ object CodecMakerConfig extends CodecMakerConfig(
             $exprRequireDefaultFields,
             $exprCheckFieldDuplication,
             $exprScalaTransientSupport,
-            $exprInlineOneValueClasses)
+            $exprInlineOneValueClasses,
+            $exprAlwaysEmitDiscriminator)
         } =>
           try {
             Some(CodecMakerConfig(
@@ -380,7 +392,9 @@ object CodecMakerConfig extends CodecMakerConfig(
               extract("requireDefaultFields", exprRequireDefaultFields),
               extract("checkFieldDuplication", exprCheckFieldDuplication),
               extract("scalaTransientSupport", exprScalaTransientSupport),
-              extract("inlineOneValueClasses", exprInlineOneValueClasses)))
+              extract("inlineOneValueClasses", exprInlineOneValueClasses),
+              extract("alwaysEmitDiscriminator", exprAlwaysEmitDiscriminator),
+            ))
           } catch {
             case FromExprException(message, expr) =>
               report.warning(message, expr)
@@ -416,6 +430,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withCheckFieldDuplication($v) } => Some(x.valueOrAbort.withCheckFieldDuplication(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withScalaTransientSupport($v) } => Some(x.valueOrAbort.withScalaTransientSupport(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withInlineOneValueClasses($v) } => Some(x.valueOrAbort.withInlineOneValueClasses(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withAlwaysEmitDiscriminator($v) } => Some(x.valueOrAbort.withAlwaysEmitDiscriminator(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -698,7 +713,8 @@ object JsonCodecMaker {
         requireDefaultFields = false,
         checkFieldDuplication = true,
         scalaTransientSupport = false,
-        inlineOneValueClasses = false))
+        inlineOneValueClasses = false,
+        alwaysEmitDiscriminator = false))
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
@@ -747,6 +763,15 @@ object JsonCodecMaker {
       }
 
       def isSealedClass(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Sealed)
+
+      def hasSealedParent(tpe: TypeRepr): Boolean = {
+        if (isSealedClass(tpe)) true
+        else {
+          tpe.baseClasses.exists { baseClassSymbol =>
+            baseClassSymbol.flags.is(Flags.Sealed)
+          }
+        }
+      }
 
       def isConstType(tpe: TypeRepr): Boolean = tpe match
         case ConstantType(_) => true
@@ -3055,7 +3080,7 @@ object JsonCodecMaker {
           }
           if (writeFields.isEmpty) fail(s"Expected that ${tpe.show} should be an applied type")
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
-        } else if (isSealedClass(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (isSealedClass(tpe) || (cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m, out) { (out, x) =>
           def genWriteLeafClass(subTpe: TypeRepr, discriminator: Option[WriteDiscriminator], vx: Term): Expr[Unit] =
             subTpe.asType match
               case '[st] =>
