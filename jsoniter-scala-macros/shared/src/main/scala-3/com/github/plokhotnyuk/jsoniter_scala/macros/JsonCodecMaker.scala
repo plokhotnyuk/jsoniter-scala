@@ -764,14 +764,8 @@ object JsonCodecMaker {
 
       def isSealedClass(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Sealed)
 
-      def hasSealedParent(tpe: TypeRepr): Boolean = {
-        if (isSealedClass(tpe)) true
-        else {
-          tpe.baseClasses.exists { baseClassSymbol =>
-            baseClassSymbol.flags.is(Flags.Sealed)
-          }
-        }
-      }
+      def hasSealedParent(tpe: TypeRepr): Boolean =
+        isSealedClass(tpe) || tpe.baseClasses.exists(_.flags.is(Flags.Sealed))
 
       def isConstType(tpe: TypeRepr): Boolean = tpe match
         case ConstantType(_) => true

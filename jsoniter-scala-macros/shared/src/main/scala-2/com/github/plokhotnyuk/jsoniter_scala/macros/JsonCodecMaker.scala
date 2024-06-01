@@ -624,14 +624,9 @@ object JsonCodecMaker {
 
       def isSealedClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed
 
-      def hasSealedParent(tpe: Type): Boolean = {
-        if (!tpe.typeSymbol.isClass) false
-        else {
-          val classSymbol = tpe.typeSymbol.asClass
-          classSymbol.isSealed || classSymbol.baseClasses.exists { baseClassSymbol =>
-            baseClassSymbol.isClass && baseClassSymbol.asClass.isSealed
-          }
-        }
+      def hasSealedParent(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
+        val classSymbol = tpe.typeSymbol.asClass
+        classSymbol.isSealed || classSymbol.baseClasses.exists(s => s.isClass && s.asClass.isSealed)
       }
 
       def isConstType(tpe: Type): Boolean = tpe match {
