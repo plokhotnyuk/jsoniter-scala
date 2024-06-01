@@ -2295,6 +2295,91 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'"""
       })
     }
+    "serialize (but don't require on deserialization) discriminators for ADT leaf codecs when alwaysEmitDiscriminator is enabled" in {
+      sealed trait MyAdt
+      case class FooLeaf(x: Int, y: String) extends MyAdt
+      case class BarLeaf(a: String, b: Int) extends MyAdt
+      @named("baz")
+      case class BazLeaf(x: String, z: Double) extends MyAdt
+      sealed abstract class Intermediate extends MyAdt {
+        def tag: String
+      }
+      final case class Alpha(tag: String, a: Long) extends Intermediate
+      final case class Beta(tag: String, b: Double) extends Intermediate
+      @named("aa")
+      final case class AlwaysEmitInCompanion(c: String, d: Double) extends MyAdt
+      object AlwaysEmitInCompanion {
+        implicit val alwaysEmitCodec: JsonValueCodec[AlwaysEmitInCompanion] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
+      }
+
+      val defaultBaseAdtCodec: JsonValueCodec[MyAdt] = make[MyAdt]
+      val alwaysEmitBaseAdtCodec: JsonValueCodec[MyAdt] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
+      verifySerDeser(defaultBaseAdtCodec, FooLeaf(12, "VV"), """{"type":"FooLeaf","x":12,"y":"VV"}""")
+      verifySerDeser(alwaysEmitBaseAdtCodec, FooLeaf(12, "VV"), """{"type":"FooLeaf","x":12,"y":"VV"}""")
+      verifySerDeser(alwaysEmitBaseAdtCodec, BazLeaf("BB", 1.2), """{"type":"baz","x":"BB","z":1.2}""")
+      verifySerDeser(defaultBaseAdtCodec, BazLeaf("BB", 1.2), """{"type":"baz","x":"BB","z":1.2}""")
+      verifySerDeser(defaultBaseAdtCodec, Alpha("ttt", 1000L), """{"type":"Alpha","tag":"ttt","a":1000}""")
+      verifySerDeser(alwaysEmitBaseAdtCodec, Alpha("ttt", 1000L), """{"type":"Alpha","tag":"ttt","a":1000}""")
+      verifySerDeser(defaultBaseAdtCodec, AlwaysEmitInCompanion("ccc", 3.4), """{"type":"aa","c":"ccc","d":3.4}""")
+      verifySerDeser(alwaysEmitBaseAdtCodec, AlwaysEmitInCompanion("ccc", 3.4), """{"type":"aa","c":"ccc","d":3.4}""")
+      verifyDeserError(defaultBaseAdtCodec, """{"x":12,"y":"VV"}""", """expected key: "type"""")
+      verifyDeserError(alwaysEmitBaseAdtCodec, """{"x":12,"y":"VV"}""", """expected key: "type"""")
+
+      val defaultBarLeafCodec: JsonValueCodec[BarLeaf] = make
+      val alwaysEmitBarLeafCodec: JsonValueCodec[BarLeaf] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
+      verifySerDeser(defaultBarLeafCodec, BarLeaf("AA",13), """{"a":"AA","b":13}""")
+      verifySerDeser(alwaysEmitBarLeafCodec, BarLeaf("AA", 13), """{"type":"BarLeaf","a":"AA","b":13}""")
+      verifyDeser(alwaysEmitBarLeafCodec, BarLeaf("AA", 13), """{"a":"AA","b":13}""")
+      verifyDeser(defaultBarLeafCodec, BarLeaf("AA", 13), """{"a":"AA","b":13}""")
+
+      val defaultBazLeafCodec: JsonValueCodec[BazLeaf] = make
+      val alwaysEmitBazLeafCodec: JsonValueCodec[BazLeaf] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
+      verifySerDeser(defaultBazLeafCodec, BazLeaf("BB", 1.2), """{"x":"BB","z":1.2}""")
+      verifySerDeser(alwaysEmitBazLeafCodec, BazLeaf("BB", 1.2), """{"type":"baz","x":"BB","z":1.2}""")
+      verifyDeser(alwaysEmitBazLeafCodec, BazLeaf("BB", 1.2), """{"x":"BB","z":1.2}""")
+
+      val defaultListBazLeafCodec: JsonValueCodec[List[BazLeaf]] = make
+      val alwaysEmitListBazLeafCodec: JsonValueCodec[List[BazLeaf]] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
+      verifySerDeser(defaultListBazLeafCodec, List(BazLeaf("BB", 1.2)), """[{"x":"BB","z":1.2}]""")
+      verifySerDeser(alwaysEmitListBazLeafCodec, List(BazLeaf("BB", 1.2)), """[{"type":"baz","x":"BB","z":1.2}]""")
+      verifyDeser(alwaysEmitListBazLeafCodec, List(BazLeaf("BB", 1.2)), """[{"x":"BB","z":1.2}]""")
+
+      val defaultIntermediateCodec: JsonValueCodec[Intermediate] = make
+      val alwaysEmitIntermediateCodec: JsonValueCodec[Intermediate] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
+      verifySerDeser(defaultIntermediateCodec, Alpha("ttt", 1000L), """{"type":"Alpha","tag":"ttt","a":1000}""")
+      verifySerDeser(alwaysEmitIntermediateCodec, Alpha("ttt", 1000L), """{"type":"Alpha","tag":"ttt","a":1000}""")
+      verifySerDeser(defaultIntermediateCodec, Beta("ttt", 2.3), """{"type":"Beta","tag":"ttt","b":2.3}""")
+      verifySerDeser(alwaysEmitIntermediateCodec, Beta("ttt", 2.3), """{"type":"Beta","tag":"ttt","b":2.3}""")
+      verifyDeserError(defaultIntermediateCodec, """{"tag":"ttt","b":2.3}""", """expected key: "type"""")
+      verifyDeserError(alwaysEmitIntermediateCodec, """{"tag":"ttt","b":2.3}""", """expected key: "type"""")
+
+      // Don't change behavior for standalone classes that are not a member of an ADT
+      case class Standalone(f: String, g: Int)
+      val defaultStandaloneCodec: JsonValueCodec[Standalone] = make
+      val alwaysEmitStandaloneCodec: JsonValueCodec[Standalone] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
+      verifySerDeser(defaultStandaloneCodec, Standalone("FF", 99), """{"f":"FF","g":99}""")
+      verifySerDeser(alwaysEmitStandaloneCodec, Standalone("FF", 99), """{"f":"FF","g":99}""")
+
+      // Make sure we compose well with alwaysEmit codecs defined in companion class
+      final case class Composed(refined: AlwaysEmitInCompanion, otherRefined: FooLeaf, unrefined: MyAdt)
+      val defaultComposedCodec: JsonValueCodec[Composed] = make
+      val alwaysEmitComposedCodec: JsonValueCodec[Composed] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
+      val instance = Composed(AlwaysEmitInCompanion("aeic", 4.5), FooLeaf(19, "foo"), BazLeaf("bb", 3.7))
+      // Even though we are using the default non-always-emit config, we should pick up the implicit codec for AlwaysEmitInCompanion
+      // from the companion object
+      verifySerDeser(defaultComposedCodec, instance,
+        """{"refined":{"type":"aa","c":"aeic","d":4.5},"otherRefined":{"x":19,"y":"foo"},"unrefined":{"type":"baz","x":"bb","z":3.7}}""")
+      // With always emit all of the fields should have their type disciminator emitted
+      verifySerDeser(alwaysEmitComposedCodec, instance,
+        """{"refined":{"type":"aa","c":"aeic","d":4.5},"otherRefined":{"type":"FooLeaf","x":19,"y":"foo"},"unrefined":{"type":"baz","x":"bb","z":3.7}}""")
+      // With always emit we still shouldn't require discriminators where they are not necessary
+      verifyDeser(alwaysEmitComposedCodec, instance,
+        """{"refined":{"c":"aeic","d":4.5},"otherRefined":{"x":19,"y":"foo"},"unrefined":{"type":"baz","x":"bb","z":3.7}}""")
+      // But we should still require type discriminators where they ARE necessary, in the `unrefined` field
+      verifyDeserError(alwaysEmitComposedCodec,
+        """{"refined":{"c":"aeic","d":4.5},"otherRefined":{"x":19,"y":"foo"},"unrefined":{"x":"bb","z":3.7}}""", """expected key: "type"""")
+
+    }
     "deserialize and throw non-implemented error for serialization with decodingOnly" in {
       val decodingOnlyCodec = make[Int](CodecMakerConfig.withDecodingOnly(true))
       verifyDeser(decodingOnlyCodec, 1, "1")
