@@ -728,6 +728,8 @@ object JsonCodecMaker {
               report.errorAndAbort("'requireDefaultFields' and 'transientDefault' cannot be 'true' simultaneously")
             if (cfg.circeLikeObjectEncoding && cfg.discriminatorFieldName.nonEmpty)
               report.errorAndAbort("'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'")
+            if (cfg.alwaysEmitDiscriminator && cfg.discriminatorFieldName.isEmpty)
+              report.errorAndAbort("'discriminatorFieldName' should not be 'None' when 'alwaysEmitDiscriminator' is 'true'")
             if (cfg.decodingOnly && cfg.encodingOnly)
               report.errorAndAbort("'decodingOnly' and 'encodingOnly' cannot be 'true' simultaneously")
             cfg

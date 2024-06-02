@@ -2249,6 +2249,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"type":"CCC","a":1,"b":"VVV"}""")
       verifySerDeser(make[DDD.type](CodecMakerConfig.withAlwaysEmitDiscriminator(true)), DDD, """{"type":"DDD"}""")
     }
+    "don't generate codecs for CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None).withAlwaysEmitDiscriminator(true) compile-time configuration" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait A
+          |case class B(y: Int) extends A
+          |JsonCodecMaker.make[B](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None).withAlwaysEmitDiscriminator(true))""".stripMargin
+      }).getMessage.contains {
+        "'discriminatorFieldName' should not be 'None' when 'alwaysEmitDiscriminator' is 'true'"
+      })
+    }
     "deserialize ADTs with extra fields" in {
       sealed trait Base
 
