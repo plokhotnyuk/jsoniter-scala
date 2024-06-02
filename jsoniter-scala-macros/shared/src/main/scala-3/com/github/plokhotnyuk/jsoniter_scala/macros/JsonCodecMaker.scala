@@ -2597,22 +2597,6 @@ object JsonCodecMaker {
               ${genReadJavaEnumValue(javaEnumValues(tpe), '{ $in.enumValueError(l) }, in, 'l) }
             } else $in.readNullOrTokenError($default, '"')
           }
-        } else if (isEnumOrModuleValue(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
-          '{
-            if ($in.isNextToken('{')) {
-              $in.rollbackToken()
-              $in.skip()
-              ${Ref(tpe.termSymbol).asExprOf[T]}
-            } else $in.readNullOrTokenError($default, '{')
-          }
-        } else if (tpe =:= TypeRepr.of[None.type]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          '{
-            if ($in.isNextToken('{')) {
-              $in.rollbackToken()
-              $in.skip()
-              ${'{ None }.asExprOf[T]}
-            } else $in.readNullOrTokenError($default, '{')
-          }
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           val indexedTypes = typeArgs(tpe)
           var i = 0
@@ -2640,6 +2624,22 @@ object JsonCodecMaker {
           '{
             if ($in.isNextToken('[')) ${readCreateBlock.asExprOf[T]}
             else $in.readNullOrTokenError($default, '[')
+          }
+        } else if (isEnumOrModuleValue(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
+          '{
+            if ($in.isNextToken('{')) {
+              $in.rollbackToken()
+              $in.skip()
+              ${Ref(tpe.termSymbol).asExprOf[T]}
+            } else $in.readNullOrTokenError($default, '{')
+          }
+        } else if (tpe =:= TypeRepr.of[None.type]) withDecoderFor(methodKey, default, in) { (in, default) =>
+          '{
+            if ($in.isNextToken('{')) {
+              $in.rollbackToken()
+              $in.skip()
+              ${'{ None }.asExprOf[T]}
+            } else $in.readNullOrTokenError($default, '{')
           }
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           genReadSealedClass(types, in, default, isStringified)
@@ -3058,12 +3058,6 @@ object JsonCodecMaker {
             if (encodingRequired) '{ $out.writeVal(($tx.name: String)) }
             else '{ $out.writeNonEscapedAsciiVal(($tx.name: String)) }
           }
-        } else if (isEnumOrModuleValue(tpe) || tpe =:= TypeRepr.of[None.type]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          '{
-            $out.writeObjectStart()
-            ${optWriteDiscriminator.fold('{})(_.write(out))}
-            $out.writeObjectEnd()
-          }
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           var i = 0
           val writeFields = typeArgs(tpe).map { te =>
@@ -3074,6 +3068,13 @@ object JsonCodecMaker {
           }
           if (writeFields.isEmpty) fail(s"Expected that ${tpe.show} should be an applied type")
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
+        } else if ((isEnumOrModuleValue(tpe) || tpe =:= TypeRepr.of[None.type]) &&
+          !(cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m, out) { (out, x) =>
+          '{
+            $out.writeObjectStart()
+            ${optWriteDiscriminator.fold('{})(_.write(out))}
+            $out.writeObjectEnd()
+          }
         } else if (isSealedClass(tpe) || (cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m, out) { (out, x) =>
           def genWriteLeafClass(subTpe: TypeRepr, discriminator: Option[WriteDiscriminator], vx: Term): Expr[Unit] =
             subTpe.asType match

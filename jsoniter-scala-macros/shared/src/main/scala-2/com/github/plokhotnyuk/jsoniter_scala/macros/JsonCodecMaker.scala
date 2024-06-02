@@ -1807,12 +1807,6 @@ object JsonCodecMaker {
                 val l = in.readStringAsCharBuf()
                 ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}
               } else in.readNullOrTokenError(default, '"')"""
-        } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
-          q"""if (in.isNextToken('{')) {
-                in.rollbackToken()
-                in.skip()
-                ${tpe.typeSymbol.asClass.module}
-              } else in.readNullOrTokenError(default, '{')"""
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default) {
           val indexedTypes = tpe.typeArgs
           val readFields = indexedTypes.tail.foldLeft[Tree] {
@@ -1834,6 +1828,12 @@ object JsonCodecMaker {
                 if (in.isNextToken(']')) new $tpe(..$params)
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
+        } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
+          q"""if (in.isNextToken('{')) {
+                in.rollbackToken()
+                in.skip()
+                ${tpe.typeSymbol.asClass.module}
+              } else in.readNullOrTokenError(default, '{')"""
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default) {
           val leafClasses = adtLeafClasses(tpe)
           val discriminatorError = cfg.discriminatorFieldName
@@ -2169,10 +2169,6 @@ object JsonCodecMaker {
             if (encodingRequired) q"out.writeVal(x.name)"
             else q"out.writeNonEscapedAsciiVal(x.name)"
           }
-        } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
-          q"""out.writeObjectStart()
-              ..$discriminator
-              out.writeObjectEnd()"""
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
           val writeFields = tpe.typeArgs.map {
             var i = 0
@@ -2183,6 +2179,10 @@ object JsonCodecMaker {
           q"""out.writeArrayStart()
               ..$writeFields
               out.writeArrayEnd()"""
+        } else if (tpe.typeSymbol.isModuleClass && !(cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m) {
+          q"""out.writeObjectStart()
+              ..$discriminator
+              out.writeObjectEnd()"""
         } else if (isSealedClass(tpe) || (cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m) {
           def genWriteLeafClass(subTpe: Type, discriminator: Tree): Tree =
             if (subTpe != tpe) genWriteVal(q"x", subTpe :: types, isStringified, discriminator)

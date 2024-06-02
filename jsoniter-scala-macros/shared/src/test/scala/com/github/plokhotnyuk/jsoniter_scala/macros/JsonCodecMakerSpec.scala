@@ -2222,13 +2222,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfRequiredAfterOptionalFields, """{"f1":1,"f2":2}""",
         """missing required field "f4", offset: 0x0000000e""")
     }
-    "serialize and deserialize ADTs using ASCII discriminator field & value" in {
+    "serialize and deserialize case class ADTs using discriminator" in {
       verifySerDeser(codecOfADTList1, List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
         """[{"type":"AAA","a":1},{"type":"BBB","a":1},{"type":"CCC","a":1,"b":"VVV"},{"type":"DDD"}]""")
       verifySerDeser(codecOfADTList2, List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
         """[{"AAA":{"a":1}},{"BBB":{"a":1}},{"CCC":{"a":1,"b":"VVV"}},"DDD"]""")
       verifySerDeser(make[List[AdtBase]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("t"))),
         List(CCC(2, "WWW"), CCC(1, "VVV")), """[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""")
+    }
+    "serialize and deserialize case object ADTs without discriminator" in {
       verifySerDeser(makeWithoutDiscriminator[List[Weapon]], List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""")
       verifySerDeser(make[List[Weapon]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
         List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""")
@@ -2238,6 +2240,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[BBB], BBB(BigInt(1)), """{"a":1}""")
       verifySerDeser(make[CCC], CCC(1, "VVV"), """{"a":1,"b":"VVV"}""")
       verifySerDeser(make[DDD.type], DDD, """{}""")
+    }
+    "serialize and deserialize product types with enforced discriminators even if their codecs are derived not from the base ADT type" in {
+      verifySerDeser(make[AAA](CodecMakerConfig.withAlwaysEmitDiscriminator(true)), AAA(1), """{"type":"AAA","a":1}""")
+      verifySerDeser(make[BBB](CodecMakerConfig.withAlwaysEmitDiscriminator(true)), BBB(BigInt(1)),
+        """{"type":"BBB","a":1}""")
+      verifySerDeser(make[CCC](CodecMakerConfig.withAlwaysEmitDiscriminator(true)), CCC(1, "VVV"),
+        """{"type":"CCC","a":1,"b":"VVV"}""")
+      verifySerDeser(make[DDD.type](CodecMakerConfig.withAlwaysEmitDiscriminator(true)), DDD, """{"type":"DDD"}""")
     }
     "deserialize ADTs with extra fields" in {
       sealed trait Base
