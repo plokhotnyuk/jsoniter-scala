@@ -2627,20 +2627,12 @@ object JsonCodecMaker {
             if ($in.isNextToken('[')) ${readCreateBlock.asExprOf[T]}
             else $in.readNullOrTokenError($default, '[')
           }
-        } else if (isEnumOrModuleValue(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (isEnumOrModuleValue(tpe) || tpe =:= TypeRepr.of[None.type]) withDecoderFor(methodKey, default, in) { (in, default) =>
           '{
             if ($in.isNextToken('{')) {
               $in.rollbackToken()
               $in.skip()
-              ${Ref(tpe.termSymbol).asExprOf[T]}
-            } else $in.readNullOrTokenError($default, '{')
-          }
-        } else if (tpe =:= TypeRepr.of[None.type]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          '{
-            if ($in.isNextToken('{')) {
-              $in.rollbackToken()
-              $in.skip()
-              ${'{ None }.asExprOf[T]}
+              ${if (tpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[T] else Ref(tpe.termSymbol).asExprOf[T]}
             } else $in.readNullOrTokenError($default, '{')
           }
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
