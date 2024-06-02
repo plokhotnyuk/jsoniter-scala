@@ -1914,6 +1914,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for case classes with field that have duplicated @named annotation" in {
       assert(intercept[TestFailedException](assertCompiles {
         """case class DuplicatedNamed(@named("x") @named("y") z: Int)
+          |
           |JsonCodecMaker.make[DuplicatedNamed]""".stripMargin
       }).getMessage.contains {
         "Duplicated 'com.github.plokhotnyuk.jsoniter_scala.macros.named' defined for 'z' of 'DuplicatedNamed'."
@@ -1922,7 +1923,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for ADT leaf case classes that have duplicated @named annotation" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait Z
+          |
           |@named("x") @named("y") case class DuplicatedNamed(z: Int) extends Z
+          |
           |JsonCodecMaker.make[Z]""".stripMargin
       }).getMessage.contains {
         "Duplicated 'com.github.plokhotnyuk.jsoniter_scala.macros.named' defined for 'DuplicatedNamed'."
@@ -1937,10 +1940,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.discriminatorFieldName' option.""".stripMargin.replace('\n', ' ')
       assert(intercept[TestFailedException](assertCompiles {
         """case class DuplicatedJsonName(x: Int, @named("x") z: Int)
+          |
           |JsonCodecMaker.make[DuplicatedJsonName]""".stripMargin
       }).getMessage.contains(expectedError))
       assert(intercept[TestFailedException](assertCompiles {
         """case class DuplicatedJsonName(y: Int, z: Int)
+          |
           |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig.withFieldNameMapper { case _ => "x" })""".stripMargin
       }).getMessage.contains(expectedError))
     }
@@ -1969,6 +1974,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for recursive types by default" in {
       assert(intercept[TestFailedException](assertCompiles {
         """case class Recursive(r: Recursive)
+          |
           |JsonCodecMaker.make[Recursive]""".stripMargin
       }).getMessage.contains {
         """Recursive type(s) detected: 'Recursive'. Please consider using a custom implicitly accessible codec for this
@@ -1978,9 +1984,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
       assert(intercept[TestFailedException](assertCompiles {
         """case class NonRecursive(r1: Recursive1)
+          |
           |case class Recursive1(r2: Recursive2)
+          |
           |case class Recursive2(r3: Recursive3)
+          |
           |case class Recursive3(r1: Recursive1)
+          |
           |JsonCodecMaker.make[NonRecursive]""".stripMargin
       }).getMessage.contains {
         """Recursive type(s) detected: 'Recursive1', 'Recursive2', 'Recursive3'. Please consider using a custom
@@ -1990,6 +2000,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
       assert(intercept[TestFailedException](assertCompiles {
         """case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
+          |
           |JsonCodecMaker.make[HigherKindedType[Option]]""".stripMargin
       }).getMessage.contains(
         s"""Recursive type(s) detected: ${
@@ -2252,7 +2263,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None).withAlwaysEmitDiscriminator(true) compile-time configuration" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait A
+          |
           |case class B(y: Int) extends A
+          |
           |JsonCodecMaker.make[B](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None).withAlwaysEmitDiscriminator(true))""".stripMargin
       }).getMessage.contains {
         "'discriminatorFieldName' should not be 'None' when 'alwaysEmitDiscriminator' is 'true'"
@@ -2313,91 +2326,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }).getMessage.contains {
         """'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'"""
       })
-    }
-    "serialize (but don't require on deserialization) discriminators for ADT leaf codecs when alwaysEmitDiscriminator is enabled" in {
-      sealed trait MyAdt
-      case class FooLeaf(x: Int, y: String) extends MyAdt
-      case class BarLeaf(a: String, b: Int) extends MyAdt
-      @named("baz")
-      case class BazLeaf(x: String, z: Double) extends MyAdt
-      sealed abstract class Intermediate extends MyAdt {
-        def tag: String
-      }
-      final case class Alpha(tag: String, a: Long) extends Intermediate
-      final case class Beta(tag: String, b: Double) extends Intermediate
-      @named("aa")
-      final case class AlwaysEmitInCompanion(c: String, d: Double) extends MyAdt
-      object AlwaysEmitInCompanion {
-        implicit val alwaysEmitCodec: JsonValueCodec[AlwaysEmitInCompanion] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
-      }
-
-      val defaultBaseAdtCodec: JsonValueCodec[MyAdt] = make[MyAdt]
-      val alwaysEmitBaseAdtCodec: JsonValueCodec[MyAdt] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
-      verifySerDeser(defaultBaseAdtCodec, FooLeaf(12, "VV"), """{"type":"FooLeaf","x":12,"y":"VV"}""")
-      verifySerDeser(alwaysEmitBaseAdtCodec, FooLeaf(12, "VV"), """{"type":"FooLeaf","x":12,"y":"VV"}""")
-      verifySerDeser(alwaysEmitBaseAdtCodec, BazLeaf("BB", 1.2), """{"type":"baz","x":"BB","z":1.2}""")
-      verifySerDeser(defaultBaseAdtCodec, BazLeaf("BB", 1.2), """{"type":"baz","x":"BB","z":1.2}""")
-      verifySerDeser(defaultBaseAdtCodec, Alpha("ttt", 1000L), """{"type":"Alpha","tag":"ttt","a":1000}""")
-      verifySerDeser(alwaysEmitBaseAdtCodec, Alpha("ttt", 1000L), """{"type":"Alpha","tag":"ttt","a":1000}""")
-      verifySerDeser(defaultBaseAdtCodec, AlwaysEmitInCompanion("ccc", 3.4), """{"type":"aa","c":"ccc","d":3.4}""")
-      verifySerDeser(alwaysEmitBaseAdtCodec, AlwaysEmitInCompanion("ccc", 3.4), """{"type":"aa","c":"ccc","d":3.4}""")
-      verifyDeserError(defaultBaseAdtCodec, """{"x":12,"y":"VV"}""", """expected key: "type"""")
-      verifyDeserError(alwaysEmitBaseAdtCodec, """{"x":12,"y":"VV"}""", """expected key: "type"""")
-
-      val defaultBarLeafCodec: JsonValueCodec[BarLeaf] = make
-      val alwaysEmitBarLeafCodec: JsonValueCodec[BarLeaf] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
-      verifySerDeser(defaultBarLeafCodec, BarLeaf("AA",13), """{"a":"AA","b":13}""")
-      verifySerDeser(alwaysEmitBarLeafCodec, BarLeaf("AA", 13), """{"type":"BarLeaf","a":"AA","b":13}""")
-      verifyDeser(alwaysEmitBarLeafCodec, BarLeaf("AA", 13), """{"a":"AA","b":13}""")
-      verifyDeser(defaultBarLeafCodec, BarLeaf("AA", 13), """{"a":"AA","b":13}""")
-
-      val defaultBazLeafCodec: JsonValueCodec[BazLeaf] = make
-      val alwaysEmitBazLeafCodec: JsonValueCodec[BazLeaf] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
-      verifySerDeser(defaultBazLeafCodec, BazLeaf("BB", 1.2), """{"x":"BB","z":1.2}""")
-      verifySerDeser(alwaysEmitBazLeafCodec, BazLeaf("BB", 1.2), """{"type":"baz","x":"BB","z":1.2}""")
-      verifyDeser(alwaysEmitBazLeafCodec, BazLeaf("BB", 1.2), """{"x":"BB","z":1.2}""")
-
-      val defaultListBazLeafCodec: JsonValueCodec[List[BazLeaf]] = make
-      val alwaysEmitListBazLeafCodec: JsonValueCodec[List[BazLeaf]] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
-      verifySerDeser(defaultListBazLeafCodec, List(BazLeaf("BB", 1.2)), """[{"x":"BB","z":1.2}]""")
-      verifySerDeser(alwaysEmitListBazLeafCodec, List(BazLeaf("BB", 1.2)), """[{"type":"baz","x":"BB","z":1.2}]""")
-      verifyDeser(alwaysEmitListBazLeafCodec, List(BazLeaf("BB", 1.2)), """[{"x":"BB","z":1.2}]""")
-
-      val defaultIntermediateCodec: JsonValueCodec[Intermediate] = make
-      val alwaysEmitIntermediateCodec: JsonValueCodec[Intermediate] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
-      verifySerDeser(defaultIntermediateCodec, Alpha("ttt", 1000L), """{"type":"Alpha","tag":"ttt","a":1000}""")
-      verifySerDeser(alwaysEmitIntermediateCodec, Alpha("ttt", 1000L), """{"type":"Alpha","tag":"ttt","a":1000}""")
-      verifySerDeser(defaultIntermediateCodec, Beta("ttt", 2.3), """{"type":"Beta","tag":"ttt","b":2.3}""")
-      verifySerDeser(alwaysEmitIntermediateCodec, Beta("ttt", 2.3), """{"type":"Beta","tag":"ttt","b":2.3}""")
-      verifyDeserError(defaultIntermediateCodec, """{"tag":"ttt","b":2.3}""", """expected key: "type"""")
-      verifyDeserError(alwaysEmitIntermediateCodec, """{"tag":"ttt","b":2.3}""", """expected key: "type"""")
-
-      // Don't change behavior for standalone classes that are not a member of an ADT
-      case class Standalone(f: String, g: Int)
-      val defaultStandaloneCodec: JsonValueCodec[Standalone] = make
-      val alwaysEmitStandaloneCodec: JsonValueCodec[Standalone] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
-      verifySerDeser(defaultStandaloneCodec, Standalone("FF", 99), """{"f":"FF","g":99}""")
-      verifySerDeser(alwaysEmitStandaloneCodec, Standalone("FF", 99), """{"f":"FF","g":99}""")
-
-      // Make sure we compose well with alwaysEmit codecs defined in companion class
-      final case class Composed(refined: AlwaysEmitInCompanion, otherRefined: FooLeaf, unrefined: MyAdt)
-      val defaultComposedCodec: JsonValueCodec[Composed] = make
-      val alwaysEmitComposedCodec: JsonValueCodec[Composed] = make(CodecMakerConfig.withAlwaysEmitDiscriminator(true))
-      val instance = Composed(AlwaysEmitInCompanion("aeic", 4.5), FooLeaf(19, "foo"), BazLeaf("bb", 3.7))
-      // Even though we are using the default non-always-emit config, we should pick up the implicit codec for AlwaysEmitInCompanion
-      // from the companion object
-      verifySerDeser(defaultComposedCodec, instance,
-        """{"refined":{"type":"aa","c":"aeic","d":4.5},"otherRefined":{"x":19,"y":"foo"},"unrefined":{"type":"baz","x":"bb","z":3.7}}""")
-      // With always emit all of the fields should have their type disciminator emitted
-      verifySerDeser(alwaysEmitComposedCodec, instance,
-        """{"refined":{"type":"aa","c":"aeic","d":4.5},"otherRefined":{"type":"FooLeaf","x":19,"y":"foo"},"unrefined":{"type":"baz","x":"bb","z":3.7}}""")
-      // With always emit we still shouldn't require discriminators where they are not necessary
-      verifyDeser(alwaysEmitComposedCodec, instance,
-        """{"refined":{"c":"aeic","d":4.5},"otherRefined":{"x":19,"y":"foo"},"unrefined":{"type":"baz","x":"bb","z":3.7}}""")
-      // But we should still require type discriminators where they ARE necessary, in the `unrefined` field
-      verifyDeserError(alwaysEmitComposedCodec,
-        """{"refined":{"c":"aeic","d":4.5},"otherRefined":{"x":19,"y":"foo"},"unrefined":{"x":"bb","z":3.7}}""", """expected key: "type"""")
-
     }
     "deserialize and throw non-implemented error for serialization with decodingOnly" in {
       val decodingOnlyCodec = make[Int](CodecMakerConfig.withDecodingOnly(true))
@@ -2651,8 +2579,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for non sealed traits or abstract classes as an ADT base" in {
       assert(intercept[TestFailedException](assertCompiles {
         """trait X1799
+          |
           |case class A1799(i: Int) extends X1799
+          |
           |case object B1799 extends X1799
+          |
           |JsonCodecMaker.make[X1799]""".stripMargin
       }).getMessage.contains {
         """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'X1799' or
@@ -2660,8 +2591,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
       assert(intercept[TestFailedException](assertCompiles {
         """abstract class X
+          |
           |case class A(i: Int) extends X
+          |
           |case object B extends X
+          |
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage.contains {
         """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'X' or
@@ -2671,10 +2605,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for ADTs that have intermediate non-sealed traits or abstract classes" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X
+          |
           |sealed abstract class AX extends X
+          |
           |abstract class BX extends X
+          |
           |case class A(i: Int) extends AX
+          |
           |case object B extends BX
+          |
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage.contains {
         """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
@@ -2682,10 +2621,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X
+          |
           |sealed trait AX extends X
+          |
           |trait BX extends X
+          |
           |case class A(i: Int) extends AX
+          |
           |case object B extends BX
+          |
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage.contains {
         """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
@@ -2695,6 +2639,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for ADT bases without leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X1859 extends Product with Serializable
+          |
           |JsonCodecMaker.make[X1859]""".stripMargin
       }).getMessage.contains {
         """Cannot find leaf classes for ADT base 'X1859'. Please add them or provide a custom implicitly
@@ -2702,6 +2647,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
       assert(intercept[TestFailedException](assertCompiles {
         """sealed abstract class X extends Product with Serializable
+          |
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage.contains {
         """Cannot find leaf classes for ADT base 'X'. Please add them or provide a custom implicitly
@@ -2711,8 +2657,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for case objects which are mapped to the same discriminator value" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X extends Product with Serializable
+          |
           |case object A extends X
+          |
           |case object B extends X
+          |
           |JsonCodecMaker.make[X](CodecMakerConfig.withAdtLeafClassNameMapper(_ => "Z"))""".stripMargin
       }).getMessage.contains {
         """Duplicated discriminator defined for ADT base 'X': 'Z'. Values for leaf classes of ADT that are returned by
@@ -2721,8 +2670,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait Data extends Product with Serializable
+          |
           |case class Data1(i: Int, s: String) extends Data
+          |
           |case object Data1 extends Data
+          |
           |val c = make[Data]""".stripMargin
       }).getMessage.contains {
         """Duplicated discriminator defined for ADT base 'Data': 'Data1'. Values for leaf classes of ADT that are
@@ -2733,7 +2685,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for case classes with fields that the same name as discriminator name" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait DuplicatedJsonName extends Product with Serializable
+          |
           |case class A(x: Int) extends DuplicatedJsonName
+          |
           |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("x")))""".stripMargin
       }).getMessage.contains {
         """Duplicated JSON key(s) defined for 'A': 'x'. Keys are derived from field names of the class that are mapped
@@ -2910,6 +2864,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for first-order types that are specified using 'Any' type parameter" in {
       assert(intercept[TestFailedException](assertCompiles {
         """case class FirstOrder[A](a: A)
+          |
           |JsonCodecMaker.make[FirstOrder[_]]""".stripMargin
       }).getMessage.contains {
         if (ScalaVersionCheck.isScala2) {
@@ -2997,6 +2952,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for case classes with non public parameters of the primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {
         """case class MultiListOfArgsWithNonPublicParam(i: Int)(l: Long)
+          |
           |JsonCodecMaker.make[MultiListOfArgsWithNonPublicParam]""".stripMargin
       }).getMessage.contains {
         if (ScalaVersionCheck.isScala2) "'l' parameter of 'MultiListOfArgsWithNonPublicParam' should be defined as 'val' or 'var' in the primary constructor."
@@ -3006,6 +2962,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for classes with parameters in a primary constructor that have no accessor for read" in {
       assert(intercept[TestFailedException](assertCompiles {
         """class ParamHasNoAccessor(val i: Int, a: String)
+          |
           |JsonCodecMaker.make[ParamHasNoAccessor]""".stripMargin
       }).getMessage.contains {
         if (ScalaVersionCheck.isScala2) "'a' parameter of 'ParamHasNoAccessor' should be defined as 'val' or 'var' in the primary constructor."
@@ -3015,12 +2972,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs when all generic type parameters cannot be resolved" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait Foo[F[_]] extends Product with Serializable
+          |
           |case class FooImpl[F[_], A](fa: F[A], as: Vector[A]) extends Foo[F]
+          |
           |sealed trait Bar[A] extends Product with Serializable
+          |
           |case object Baz extends Bar[Int]
+          |
           |case object Qux extends Bar[String]
+          |
           |val v = FooImpl[Bar, String](Qux, Vector.empty[String])
-          |val c = make[Foo[Bar]]""".stripMargin
+          |val c = JsonCodecMaker.make[Foo[Bar]]""".stripMargin
       }).getMessage.contains {
         if (ScalaVersionCheck.isScala2) "Cannot resolve generic type(s) for `FooImpl[F,A]`. Please provide a custom implicitly accessible codec for it."
         else "Type parameter A of class FooImpl can't be deduced from type arguments of Foo[[A >: scala.Nothing <: scala.Any] => Bar[A]]. Please provide a custom implicitly accessible codec for it."
@@ -3029,8 +2991,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs when 'AnyVal' or one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are leaf types of the ADT base" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X extends Any
+          |
           |case class D(value: Double) extends X
-          |make[X](CodecMakerConfig.withInlineOneValueClasses(true))""".stripMargin
+          |
+          |JsonCodecMaker.make[X](CodecMakerConfig.withInlineOneValueClasses(true))""".stripMargin
       }).getMessage.contains {
         "'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not supported as leaf classes for ADT with base 'X'."
       })
