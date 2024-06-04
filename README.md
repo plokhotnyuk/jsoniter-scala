@@ -546,7 +546,8 @@ sudo systemctl list-units --state running
 Then clear cache memory to improve system performance. One way to clear cache memory
 on Linux without having to reboot the system:
 ```sh
-free -m -h && sudo echo 3 > /proc/sys/vm/drop_caches && free -m -h
+sudo su
+free -m -h && sync && echo 3 > /proc/sys/vm/drop_caches && free -m -h
 ```
 
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check
