@@ -27,9 +27,9 @@ lazy val commonSettings = Seq(
     "-unchecked",
     "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => Seq("-language:higherKinds")
-    case Some((3, _)) => Seq("-Xcheck-macros", "-explain")
-    case _ => Seq()
+    case Some((2, 12)) => Seq("-language:higherKinds", "-opt:l:method")
+    case Some((2, 13)) => Seq("-opt:l:method")
+    case _ => Seq("-Xcheck-macros", "-explain")
   }),
   compileOrder := CompileOrder.JavaThenScala,
   Test / testOptions += Tests.Argument("-oDF"),
@@ -51,14 +51,19 @@ lazy val commonSettings = Seq(
 )
 
 lazy val jsSettings = Seq(
-  scalacOptions += {
+  scalacOptions ++= {
     val localSourcesPath = (LocalRootProject / baseDirectory).value.toURI
     val remoteSourcesPath = s"https://raw.githubusercontent.com/plokhotnyuk/jsoniter-scala/${git.gitHeadCommit.value.get}/"
-    val sourcesOptionName = CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => "-P:scalajs:mapSourceURI"
-      case _ => "-scalajs-mapSourceURI"
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq(
+        s"-P:scalajs:mapSourceURI:$localSourcesPath->$remoteSourcesPath",
+        "-P:scalajs:genStaticForwardersForNonTopLevelObjects"
+      )
+      case _ => Seq(
+        s"-scalajs-mapSourceURI:$localSourcesPath->$remoteSourcesPath",
+        "-scalajs-genStaticForwardersForNonTopLevelObjects"
+      )
     }
-    s"$sourcesOptionName:$localSourcesPath->$remoteSourcesPath"
   },
   libraryDependencies ++= Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
@@ -81,6 +86,10 @@ lazy val jsSettings = Seq(
 )
 
 lazy val nativeSettings = Seq(
+  scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, _)) => Seq("-P:scalanative:genStaticForwardersForNonTopLevelObjects")
+    case _ => Seq("-scalanative-genStaticForwardersForNonTopLevelObjects")
+  }),
   libraryDependencies ++= Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
   ),
