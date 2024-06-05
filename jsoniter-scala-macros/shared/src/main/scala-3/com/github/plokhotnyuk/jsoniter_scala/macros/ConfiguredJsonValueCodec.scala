@@ -8,7 +8,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
  * A compile-time configuration can be provided by an `inline given CodecMakerConfig` value, which needs to be visible
  * in the scope, and defined/imported before the `... derives ...` syntax usage.
  *
- * To avoid overhead in runtime use it only for top-level and big commonly used data structures.
+ * BEWARE: Using of this class requires _runtime_ scope for the `jsoniter-scala-macros` dependency.
+ *
+ * Also, to avoid overhead in runtime use it only for top-level and big commonly used data structures.
  */
 trait ConfiguredJsonValueCodec[A] extends JsonValueCodec[A]
 
