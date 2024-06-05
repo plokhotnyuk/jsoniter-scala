@@ -86,10 +86,7 @@ lazy val jsSettings = Seq(
 )
 
 lazy val nativeSettings = Seq(
-  scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, _)) => Seq("-P:scalanative:genStaticForwardersForNonTopLevelObjects")
-    case _ => Seq("-scalanative-genStaticForwardersForNonTopLevelObjects")
-  }),
+  scalacOptions ++= Seq("-P:scalanative:genStaticForwardersForNonTopLevelObjects"),
   libraryDependencies ++= Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
   ),
