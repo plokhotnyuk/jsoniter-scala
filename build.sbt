@@ -66,7 +66,7 @@ lazy val jsSettings = Seq(
     }
   },
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
   scalaJSLinkerConfig ~= {
     _.withSemantics({
@@ -88,7 +88,7 @@ lazy val jsSettings = Seq(
 lazy val nativeSettings = Seq(
   scalacOptions ++= Seq("-P:scalanative:genStaticForwardersForNonTopLevelObjects"),
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
   //nativeMode := "release-full", // Uncomment and test with these options
   //nativeLTO := "thin",
@@ -152,14 +152,14 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(
     crossScalaVersions := Seq("3.3.3", "2.13.14", "2.12.19"),
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.18.0" % Test,
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.12.0" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.18.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.18" % Test
     )
   )
   .platformsSettings(JSPlatform, NativePlatform)(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
+      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
     )
   )
 
@@ -186,7 +186,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
     }) ++ Seq(
       "com.epam.deltix" % "dfp" % "1.0.3" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.18" % Test,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.12.0" % Test
     )
   )
 
