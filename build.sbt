@@ -1,6 +1,7 @@
 import com.typesafe.tools.mima.core.{DirectMissingMethodProblem, ProblemFilters}
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt.*
+import scala.scalanative.build.*
 import scala.sys.process.*
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
@@ -90,8 +91,11 @@ lazy val nativeSettings = Seq(
   libraryDependencies ++= Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
-  //nativeMode := "release-full", // Uncomment and test with these options
-  //nativeLTO := "thin",
+  nativeConfig ~= {
+    _.withMode(Mode.releaseFast) // FIXME: Some unit tests fail for `Mode.releaseFull`
+      .withLTO(LTO.none)
+      .withGC(GC.immix)
+  },
   coverageEnabled := false // FIXME: Unexpected linking error
 )
 
