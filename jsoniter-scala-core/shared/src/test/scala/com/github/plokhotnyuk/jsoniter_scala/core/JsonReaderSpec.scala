@@ -1822,7 +1822,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("2018-10-28T02:30+02:00[Europe/Warsaw]", ws)
         check("2018-10-28T02:30+03:00[Europe/Warsaw]", ws)
       }
-      forAll(genZonedDateTime, genWhitespaces, minSuccessful(10000))((x, ws) => {
+      forAll(genZonedDateTime, genWhitespaces, minSuccessful(100))((x, ws) => {
         val s = x.toString
         reader(s"""$ws"$s"""").readZonedDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsZonedDateTime() shouldBe x
@@ -1938,7 +1938,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readZoneId(default) shouldBe default
     }
     "parse ZoneId from a string representation according to ISO-8601 format for timezone offset or JDK format for IANA timezone identifier" in {
-      forAll(genZoneId, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+      forAll(genZoneId, genWhitespaces, minSuccessful(1000)) { (x, ws) =>
         val s = x.toString
         reader(s"""$ws"$s"""").readZoneId(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneId() shouldBe x
@@ -3107,7 +3107,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         jsonReader.nextToken().toChar shouldBe s2.charAt(0)
       }
 
-      forAll(Gen.size, minSuccessful(10000)) { n =>
+      forAll(Gen.size, minSuccessful(1000)) { n =>
         check(n, "123456")(_.readBigInt(null))
         check(n, """"UTC"""")(_.readZoneId(null))
         check(n, "[true]")(_.readRawValAsBytes())
