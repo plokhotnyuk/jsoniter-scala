@@ -92,7 +92,7 @@ lazy val nativeSettings = Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
   nativeConfig ~= {
-    _.withMode(Mode.releaseFast) // FIXME: Some unit tests fail for `Mode.releaseFull`
+    _.withMode(Mode.releaseSize) // FIXME: Some unit tests fail for `Mode.releaseFull`
       .withLTO(LTO.none)
       .withGC(GC.immix)
   },
