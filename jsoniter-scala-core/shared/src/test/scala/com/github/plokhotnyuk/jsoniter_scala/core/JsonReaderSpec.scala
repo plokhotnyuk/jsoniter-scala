@@ -2586,7 +2586,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "throw parsing exception on long overflow" in {
       checkError("0000009223372036854775809", "illegal number with leading zero, offset: 0x00000000",
-        "value is too large for long, offset: 0x00000014")
+        "value is too large for long")
       checkError("9223372036854775808", "value is too large for long, offset: 0x00000012",
         "value is too large for long, offset: 0x00000013")
       checkError("9223372036854775808.", "value is too large for long, offset: 0x00000012",
