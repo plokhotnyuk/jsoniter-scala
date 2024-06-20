@@ -2999,7 +2999,8 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(head)
       } else if (state == 3) tokenError('"')
     }
-    Duration.ofSeconds(seconds, nano.toLong)
+    if (nano == 0) Duration.ofSeconds(seconds)
+    else Duration.ofSeconds(seconds, nano.toLong)
   }
 
   private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
