@@ -1311,7 +1311,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int): Int =
-    if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars)
+    if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars, lowerCaseHexDigits)
     else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
 
   @tailrec
@@ -1328,7 +1328,7 @@ final class JsonWriter private[jsoniter_scala](
         } else if (esc > 0) {
           ByteArrayAccess.setShort(buf, pos, (esc << 8 | 0x5C).toShort)
           writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-        } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
+        } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf, lowerCaseHexDigits), posLim, escapedChars)
       } else if (ch1 < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
         ByteArrayAccess.setShort(buf, pos, (ch1 >> 6 | (ch1 << 8 & 0x3F00) | 0x80C0).toShort)
         writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
@@ -1348,29 +1348,29 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   @tailrec
-  private[this] def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
+  private[this] def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte], ds: Array[Short]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), limit - 12, escapedChars)
+    else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), limit - 12, escapedChars, ds)
     else {
       val ch1 = s.charAt(from).toInt
       if (ch1 < 0x80) {
         val esc = escapedChars(ch1)
         if (esc == 0) {
           buf(pos) = ch1.toByte
-          writeEscapedString(s, from + 1, to, pos + 1, posLim, escapedChars)
+          writeEscapedString(s, from + 1, to, pos + 1, posLim, escapedChars, ds)
         } else if (esc > 0) {
           ByteArrayAccess.setShort(buf, pos, (esc << 8 | 0x5C).toShort)
-          writeEscapedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-        } else writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
+          writeEscapedString(s, from + 1, to, pos + 2, posLim, escapedChars, ds)
+        } else writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf, ds), posLim, escapedChars, ds)
       } else if ((ch1 & 0xF800) != 0xD800) {
-        writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1, pos, buf), posLim, escapedChars)
+        writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1, pos, buf, ds), posLim, escapedChars, ds)
       } else {
         var ch2 = 0
         if (ch1 >= 0xDC00 || from + 1 >= to || {
           ch2 = s.charAt(from + 1).toInt
           (ch2 & 0xFC00) != 0xDC00
         }) illegalSurrogateError()
-        writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf), buf), posLim, escapedChars)
+        writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf, ds), buf, ds), posLim, escapedChars, ds)
       }
     }
 
@@ -1406,8 +1406,7 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
-  private[this] def writeEscapedUnicode(ch: Int, pos: Int, buf: Array[Byte]): Int = {
-    val ds = lowerCaseHexDigits
+  private[this] def writeEscapedUnicode(ch: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     ByteArrayAccess.setShort(buf, pos, 0x755C)
     val d1 = ds(ch >> 8)
     val d2 = ds(ch & 0xFF) << 16
@@ -1415,8 +1414,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 6
   }
 
-  private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val ds = lowerCaseHexDigits
+  private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     ByteArrayAccess.setInt(buf, pos, 0x3030755C)
     ByteArrayAccess.setShort(buf, pos + 4, ds(b & 0xFF))
     pos + 6
