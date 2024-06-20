@@ -2633,9 +2633,9 @@ final class JsonReader private[jsoniter_scala](
       }
       if ((b | 0x20) == 'e') {
         b = nextByte(pos + 1)
-        var s = 0
+        var ss = 0
         if (b == '-' || b == '+') {
-          s = '+' - b >> 31
+          ss = '+' - b >> 31
           b = nextByte(head)
         }
         if (b < '0' || b > '9') numberError()
@@ -2656,8 +2656,8 @@ final class JsonReader private[jsoniter_scala](
           }) numberError(pos)
           pos += 1
         }
-        scale ^= s
-        scale -= s
+        scale ^= ss
+        scale -= ss
         if (scale == -2147483648) numberError(pos - 1)
       }
       head = pos
