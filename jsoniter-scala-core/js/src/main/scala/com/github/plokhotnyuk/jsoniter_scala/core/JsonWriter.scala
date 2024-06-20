@@ -1605,12 +1605,12 @@ final class JsonWriter private[jsoniter_scala](
       val buf = this.buf
       val ds = digits
       buf(pos) = 'E'
-      if (exp >= 0) {
-        buf(pos + 1) = '+'
-      } else {
-        buf(pos + 1) = '-'
+      var sb: Byte = '+'
+      if (exp < 0) {
+        sb = '-'
         exp = -exp
       }
+      buf(pos + 1) = sb
       pos += 2
       var q = exp.toInt
       if (exp == q) {
