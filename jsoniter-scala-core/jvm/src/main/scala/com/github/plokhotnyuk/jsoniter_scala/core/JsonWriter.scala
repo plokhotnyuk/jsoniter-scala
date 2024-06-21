@@ -1691,10 +1691,7 @@ final class JsonWriter private[jsoniter_scala](
     var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     val adjust400YearCycles = ((marchZeroDay + 1) * 7525902 >> 40).toInt // ((marchZeroDay + 1) / 146097).toInt - 1
     marchZeroDay -= adjust400YearCycles * 146097L
-    var year = { // ((marchZeroDay * 400 + 591) / 146097).toInt
-      val pa = marchZeroDay * 400 + 591
-      ((Math.multiplyHigh(pa, 4137408090565272301L) >> 15) + (pa >> 63)).toInt
-    }
+    var year = (Math.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
     var year365 = year * 365L
     var year1374389535 = year * 1374389535L
     var century = (year1374389535 >> 37).toInt
