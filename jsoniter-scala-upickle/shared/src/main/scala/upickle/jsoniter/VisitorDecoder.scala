@@ -3,6 +3,7 @@ package upickle.jsoniter
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import upickle.core.Visitor
 
+import java.lang.Double
 import java.nio.charset.StandardCharsets
 
 final class VisitorDecoder[J](maxDepth: Int,
@@ -97,7 +98,7 @@ object VisitorNumberReader {
       } else {
         in.setMark()
         val y = in.readDouble() // readDouble() returns Double.Infinity if too large
-        if (y.isFinite) { // https://github.com/openjdk/jdk/pull/9238
+        if (Double.isFinite(y)) { // https://github.com/openjdk/jdk/pull/9238
           v.visitFloat64(y, -1)
           // in.setMark(); in.rollbackToMark() // clear mark needed ???
         }
