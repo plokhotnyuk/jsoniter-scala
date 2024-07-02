@@ -162,7 +162,7 @@ view of an error context
 - Support of JVMs for Java 11+ versions
 - Support of compilation to a native image by GraalVM
 - Support of Scala.js 1.0+ for all supported Scala versions
-- Support of Scala Native 0.4+ for all supported Scala versions
+- Support of Scala Native 0.5+ for all supported Scala versions
 - Suppressing of all WartRemover warnings of generated codecs for Scala 2.12 and 2.13 
 
 There are configurable options that can be set in compile-time:
@@ -214,6 +214,10 @@ supports JDK 8+ and native image compilation with earlier versions of GraalVM.
 
 The [**v2.13.3.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.3.2) release is the last version that
 supports Scala 2.11.
+
+The [**v2.30.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.30.2) release is the last version that
+supports Scala Native 0.4+.
+
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master)
 and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).

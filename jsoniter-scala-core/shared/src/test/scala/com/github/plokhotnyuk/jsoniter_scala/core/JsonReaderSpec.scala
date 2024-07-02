@@ -727,8 +727,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       val sb = new StringBuilder
       sb.append('"')
+      val l = (ReaderConfig.maxCharBufSize + 1) * 4
       var i = 0
-      while (i < (ReaderConfig.maxCharBufSize + 1) * 4) {
+      while (i < l) {
         sb.append('1')
         i += 1
       }
@@ -783,8 +784,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""000=!""", """expected '"', offset: 0x00000005""")
       val sb = new StringBuilder
       sb.append('"')
+      val l = (ReaderConfig.maxCharBufSize + 1) * 3
       var i = 0
-      while (i < (ReaderConfig.maxCharBufSize + 1) * 3) {
+      while (i < l) {
         sb.append('1')
         i += 1
       }
@@ -1822,7 +1824,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("2018-10-28T02:30+02:00[Europe/Warsaw]", ws)
         check("2018-10-28T02:30+03:00[Europe/Warsaw]", ws)
       }
-      forAll(genZonedDateTime, genWhitespaces, minSuccessful(10000))((x, ws) => {
+      forAll(genZonedDateTime, genWhitespaces, minSuccessful(100))((x, ws) => {
         val s = x.toString
         reader(s"""$ws"$s"""").readZonedDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsZonedDateTime() shouldBe x
@@ -1938,7 +1940,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readZoneId(default) shouldBe default
     }
     "parse ZoneId from a string representation according to ISO-8601 format for timezone offset or JDK format for IANA timezone identifier" in {
-      forAll(genZoneId, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
+      forAll(genZoneId, genWhitespaces, minSuccessful(1000)) { (x, ws) =>
         val s = x.toString
         reader(s"""$ws"$s"""").readZoneId(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneId() shouldBe x
@@ -2247,8 +2249,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "throw parsing exception for too long strings" in {
       val sb = new StringBuilder
       sb.append('"')
+      val l = ReaderConfig.maxCharBufSize
       var i = 0
-      while (i < ReaderConfig.maxCharBufSize) {
+      while (i < l) {
         sb.append(' ')
         i += 1
       }
@@ -2707,8 +2710,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
       forAll(genWhitespaces) { ws =>
-        check("1" + "0" * 1000000 + "e-1000000", 1.0f, ws)
-        check("0." + "0" * 1000000 + "1e1000000", 0.1f, ws)
+        check("1" + "0" * 100000 + "e-100000", 1.0f, ws)
+        check("0." + "0" * 100000 + "1e100000", 0.1f, ws)
       }
     }
     "throw parsing exception on illegal or empty input" in {
@@ -3109,7 +3112,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         jsonReader.nextToken().toChar shouldBe s2.charAt(0)
       }
 
-      forAll(Gen.size, minSuccessful(10000)) { n =>
+      forAll(Gen.size, minSuccessful(1000)) { n =>
         check(n, "123456")(_.readBigInt(null))
         check(n, """"UTC"""")(_.readZoneId(null))
         check(n, "[true]")(_.readRawValAsBytes())

@@ -1,6 +1,7 @@
 import com.typesafe.tools.mima.core.{DirectMissingMethodProblem, ProblemFilters}
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt.*
+import scala.scalanative.build.*
 import scala.sys.process.*
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
@@ -66,7 +67,7 @@ lazy val jsSettings = Seq(
     }
   },
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
   scalaJSLinkerConfig ~= {
     _.withSemantics({
@@ -88,10 +89,14 @@ lazy val jsSettings = Seq(
 lazy val nativeSettings = Seq(
   scalacOptions ++= Seq("-P:scalanative:genStaticForwardersForNonTopLevelObjects"),
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
-  //nativeMode := "release-full", // Uncomment and test with these options
-  //nativeLTO := "thin",
+  nativeConfig ~= {
+    _.withMode(Mode.releaseFast) // TODO: test with `Mode.releaseSize` and `Mode.releaseFull`
+      .withLTO(LTO.none)
+      .withGC(GC.immix)
+  },
+  mimaPreviousArtifacts := Set(), // FIXME: remove after release with Scala Native 0.5 support
   coverageEnabled := false // FIXME: Unexpected linking error
 )
 
@@ -152,14 +157,14 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(
     crossScalaVersions := Seq("3.3.3", "2.13.14", "2.12.19"),
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-17" % "3.2.18.0" % Test,
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.12.0" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.18.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.18" % Test
     )
   )
   .platformsSettings(JSPlatform, NativePlatform)(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
+      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
     )
   )
 
@@ -186,7 +191,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
     }) ++ Seq(
       "com.epam.deltix" % "dfp" % "1.0.3" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.18" % Test,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0" % Test
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.12.0" % Test
     )
   )
 
@@ -222,8 +227,8 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(
     crossScalaVersions := Seq("3.3.3", "2.13.14", "2.12.19"),
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.7",
-      "io.circe" %%% "circe-parser" % "0.14.7" % Test,
+      "io.circe" %%% "circe-core" % "0.14.9",
+      "io.circe" %%% "circe-parser" % "0.14.9" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.18" % Test
     )
   )
@@ -254,9 +259,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "dev.zio" %%% "zio-json" % "0.7.1",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
       "com.lihaoyi" %%% "upickle" % "3.3.1",
-      "io.circe" %%% "circe-generic" % "0.14.8",
-      "io.circe" %%% "circe-parser" % "0.14.8",
-      "io.circe" %%% "circe-jawn" % "0.14.8",
+      "io.circe" %%% "circe-generic" % "0.14.9",
+      "io.circe" %%% "circe-parser" % "0.14.9",
+      "io.circe" %%% "circe-jawn" % "0.14.9",
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.23",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M5",
       "org.json4s" %% "json4s-native" % "4.1.0-M5",
