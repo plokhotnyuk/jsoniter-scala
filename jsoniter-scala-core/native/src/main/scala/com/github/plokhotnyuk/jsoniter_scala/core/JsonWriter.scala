@@ -1311,7 +1311,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int): Int =
-    if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars)
+    if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars, lowerCaseHexDigits)
     else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
 
   @tailrec
@@ -1328,7 +1328,7 @@ final class JsonWriter private[jsoniter_scala](
         } else if (esc > 0) {
           ByteArrayAccess.setShort(buf, pos, (esc << 8 | 0x5C).toShort)
           writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-        } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
+        } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf, lowerCaseHexDigits), posLim, escapedChars)
       } else if (ch1 < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
         ByteArrayAccess.setShort(buf, pos, (ch1 >> 6 | (ch1 << 8 & 0x3F00) | 0x80C0).toShort)
         writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
@@ -1348,29 +1348,29 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   @tailrec
-  private[this] def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
+  private[this] def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte], ds: Array[Short]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), limit - 12, escapedChars)
+    else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), limit - 12, escapedChars, ds)
     else {
       val ch1 = s.charAt(from).toInt
       if (ch1 < 0x80) {
         val esc = escapedChars(ch1)
         if (esc == 0) {
           buf(pos) = ch1.toByte
-          writeEscapedString(s, from + 1, to, pos + 1, posLim, escapedChars)
+          writeEscapedString(s, from + 1, to, pos + 1, posLim, escapedChars, ds)
         } else if (esc > 0) {
           ByteArrayAccess.setShort(buf, pos, (esc << 8 | 0x5C).toShort)
-          writeEscapedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-        } else writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
+          writeEscapedString(s, from + 1, to, pos + 2, posLim, escapedChars, ds)
+        } else writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf, ds), posLim, escapedChars, ds)
       } else if ((ch1 & 0xF800) != 0xD800) {
-        writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1, pos, buf), posLim, escapedChars)
+        writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1, pos, buf, ds), posLim, escapedChars, ds)
       } else {
         var ch2 = 0
         if (ch1 >= 0xDC00 || from + 1 >= to || {
           ch2 = s.charAt(from + 1).toInt
           (ch2 & 0xFC00) != 0xDC00
         }) illegalSurrogateError()
-        writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf), buf), posLim, escapedChars)
+        writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf, ds), buf, ds), posLim, escapedChars, ds)
       }
     }
 
@@ -1406,8 +1406,7 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
-  private[this] def writeEscapedUnicode(ch: Int, pos: Int, buf: Array[Byte]): Int = {
-    val ds = lowerCaseHexDigits
+  private[this] def writeEscapedUnicode(ch: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     ByteArrayAccess.setShort(buf, pos, 0x755C)
     val d1 = ds(ch >> 8)
     val d2 = ds(ch & 0xFF) << 16
@@ -1415,8 +1414,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 6
   }
 
-  private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val ds = lowerCaseHexDigits
+  private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     ByteArrayAccess.setInt(buf, pos, 0x3030755C)
     ByteArrayAccess.setShort(buf, pos + 4, ds(b & 0xFF))
     pos + 6
@@ -1693,10 +1691,7 @@ final class JsonWriter private[jsoniter_scala](
     var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     val adjust400YearCycles = ((marchZeroDay + 1) * 7525902 >> 40).toInt // ((marchZeroDay + 1) / 146097).toInt - 1
     marchZeroDay -= adjust400YearCycles * 146097L
-    var year = { // ((marchZeroDay * 400 + 591) / 146097).toInt
-      val pa = marchZeroDay * 400 + 591
-      ((NativeMath.multiplyHigh(pa, 4137408090565272301L) >> 15) + (pa >> 63)).toInt
-    }
+    var year = (NativeMath.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
     var year365 = year * 365L
     var year1374389535 = year * 1374389535L
     var century = (year1374389535 >> 37).toInt
@@ -2193,27 +2188,24 @@ final class JsonWriter private[jsoniter_scala](
         val vb = rop(g, cb << h)
         val vbl = rop(g, cb - cblCorr << h) + vbCorr
         val vbr = rop(g, cb + 2 << h) - vbCorr
+        var diff = 0
         if (vb < 400 || {
           m10 = (vb * 107374183L >> 32).toInt // divide a positive int by 40
           val vb40 = m10 * 40
-          val diff = vbl - vb40
-          (vb40 - vbr + 40 ^ diff) >= 0 || {
-            m10 += ~diff >>> 31
-            e10 += 1
-            false
-          }
+          diff = vbl - vb40
+          (vb40 - vbr + 40 ^ diff) >= 0
         }) {
           m10 = vb >> 2
           val vb4 = m10 << 2
-          var diff = vbl - vb4
+          diff = vbl - vb4
           if ((vb4 - vbr + 4 ^ diff) >= 0) diff = (vb & 0x3) + (m10 & 0x1) - 3
-          m10 += ~diff >>> 31
-          e10 -= e10Corr
-        }
+        } else e10Corr = -1
+        m10 += ~diff >>> 31
+        e10 -= e10Corr
       }
-      val ds = digits
       val len = digitCount(m10.toLong)
       e10 += len - 1
+      val ds = digits
       if (e10 < -3 || e10 >= 7) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         ByteArrayAccess.setShort(buf, pos, (buf(pos + 1) | 0x2E00).toShort)
@@ -2235,9 +2227,8 @@ final class JsonWriter private[jsoniter_scala](
         val dotPos = pos + 1
         ByteArrayAccess.setInt(buf, pos, 0x30303030)
         pos -= e10
-        val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        pos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         buf(dotPos) = '.'
-        pos = lastPos
       } else if (e10 < len - 1) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         val bs = ByteArrayAccess.getLong(buf, pos)
@@ -2267,7 +2258,7 @@ final class JsonWriter private[jsoniter_scala](
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
   private[this] def writeDouble(x: Double): Unit = {
-    var pos = ensureBufCapacity(24)
+    var pos = ensureBufCapacity(25) // -1.2898455142673966E-135.toString.length + 1
     val buf = this.buf
     if (x < 0.0) {
       buf(pos) = '-'
@@ -2300,6 +2291,7 @@ final class JsonWriter private[jsoniter_scala](
           cblCorr = 1
         }
         e10 = e2 * 315653 - e2Corr >> 20
+        val gs = JsonWriter.gs
         val i = e10 + 324 << 1
         val g1 = gs(i)
         val g0 = gs(i + 1)
@@ -2309,27 +2301,24 @@ final class JsonWriter private[jsoniter_scala](
         val vb = rop(g1, g0, cb << h)
         val vbl = rop(g1, g0, cb - cblCorr << h) + vbCorr
         val vbr = rop(g1, g0, cb + 2 << h) - vbCorr
+        var diff = 0
         if (vb < 400 || {
           m10 = NativeMath.multiplyHigh(vb, 461168601842738792L) // divide a positive long by 40
           val vb40 = m10 * 40
-          val diff = (vbl - vb40).toInt
-          ((vb40 - vbr).toInt + 40 ^ diff) >= 0 || {
-            m10 += ~diff >>> 31
-            e10 += 1
-            false
-          }
+          diff = (vbl - vb40).toInt
+          ((vb40 - vbr).toInt + 40 ^ diff) >= 0
         }) {
           m10 = vb >> 2
           val vb4 = m10 << 2
-          var diff = (vbl - vb4).toInt
+          diff = (vbl - vb4).toInt
           if (((vb4 - vbr).toInt + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
-          m10 += ~diff >>> 31
-          e10 -= e10Corr
-        }
+        } else e10Corr = -1
+        m10 += ~diff >>> 31
+        e10 -= e10Corr
       }
-      val ds = digits
       val len = digitCount(m10)
       e10 += len - 1
+      val ds = digits
       if (e10 < -3 || e10 >= 7) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         ByteArrayAccess.setShort(buf, pos, (buf(pos + 1) | 0x2E00).toShort)
@@ -2352,9 +2341,8 @@ final class JsonWriter private[jsoniter_scala](
         val dotPos = pos + 1
         ByteArrayAccess.setInt(buf, pos, 0x30303030)
         pos -= e10
-        val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        pos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         buf(dotPos) = '.'
-        pos = lastPos
       } else if (e10 < len - 1) {
         val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         val bs = ByteArrayAccess.getLong(buf, pos)
