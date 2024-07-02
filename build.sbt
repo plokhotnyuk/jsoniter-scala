@@ -92,7 +92,7 @@ lazy val nativeSettings = Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
   nativeConfig ~= {
-    _.withMode(Mode.releaseFull)
+    _.withMode(Mode.releaseFast) // TODO: test with `Mode.releaseSize` and `Mode.releaseFull`
       .withLTO(LTO.none)
       .withGC(GC.immix)
   },
@@ -227,8 +227,8 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(
     crossScalaVersions := Seq("3.3.3", "2.13.14", "2.12.19"),
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.7",
-      "io.circe" %%% "circe-parser" % "0.14.7" % Test,
+      "io.circe" %%% "circe-core" % "0.14.9",
+      "io.circe" %%% "circe-parser" % "0.14.9" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.18" % Test
     )
   )
@@ -259,9 +259,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "dev.zio" %%% "zio-json" % "0.7.1",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
       "com.lihaoyi" %%% "upickle" % "3.3.1",
-      "io.circe" %%% "circe-generic" % "0.14.8",
-      "io.circe" %%% "circe-parser" % "0.14.8",
-      "io.circe" %%% "circe-jawn" % "0.14.8",
+      "io.circe" %%% "circe-generic" % "0.14.9",
+      "io.circe" %%% "circe-parser" % "0.14.9",
+      "io.circe" %%% "circe-jawn" % "0.14.9",
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.23",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M5",
       "org.json4s" %% "json4s-native" % "4.1.0-M5",
