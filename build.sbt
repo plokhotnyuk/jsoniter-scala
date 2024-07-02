@@ -139,6 +139,9 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-circeJVM`,
     `jsoniter-scala-circeJS`,
     `jsoniter-scala-circeNative`,
+    `jsoniter-scala-upickleJVM`,
+    `jsoniter-scala-upickleJS`,
+    `jsoniter-scala-upickleNative`,
     `jsoniter-scala-macrosJVM`,
     `jsoniter-scala-macrosJS`,
     `jsoniter-scala-macrosNative`,
@@ -226,6 +229,34 @@ lazy val `jsoniter-scala-circeJS` = `jsoniter-scala-circe`.js
   .settings(jsSettings)
 
 lazy val `jsoniter-scala-circeNative` = `jsoniter-scala-circe`.native
+  .settings(nativeSettings)
+
+lazy val `jsoniter-scala-upickle` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
+  .crossType(CrossType.Full)
+  .dependsOn(`jsoniter-scala-core`)
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    crossScalaVersions := Seq("3.3.3", "2.13.14", "2.12.19"),
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %%% "upickle-core" % "3.3.1",
+      "org.scalatest" %%% "scalatest" % "3.2.18" % Test
+    )
+  )
+
+lazy val `jsoniter-scala-upickleJVM` = `jsoniter-scala-upickle`.jvm
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.junit.jupiter" % "junit-jupiter" % "5.10.2" % Test,
+      "org.skyscreamer" % "jsonassert" % "1.5.1" % Test,
+      "com.lihaoyi" %%% "ujson" % "3.3.1" % Test
+    )
+  )
+
+lazy val `jsoniter-scala-upickleJS` = `jsoniter-scala-upickle`.js
+  .settings(jsSettings)
+
+lazy val `jsoniter-scala-upickleNative` = `jsoniter-scala-upickle`.native
   .settings(nativeSettings)
 
 lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
