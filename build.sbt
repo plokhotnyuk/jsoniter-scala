@@ -96,7 +96,6 @@ lazy val nativeSettings = Seq(
       .withLTO(LTO.none)
       .withGC(GC.immix)
   },
-  mimaPreviousArtifacts := Set(), // FIXME: remove after release with Scala Native 0.5 support
   coverageEnabled := false // FIXME: Unexpected linking error
 )
 
