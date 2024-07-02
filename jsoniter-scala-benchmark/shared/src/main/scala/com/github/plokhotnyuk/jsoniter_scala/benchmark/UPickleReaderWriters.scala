@@ -13,9 +13,21 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val bigDecimalWriter: Writer[BigDecimal] = numWriter[BigDecimal]
   implicit val bigIntReader: Reader[BigInt] = numReader(s => BigInt(s.toString))
   implicit val bigIntWriter: Writer[BigInt] = numWriter[BigInt]
-  implicit val doubleWriter: Writer[Double] = numWriter[Double]
-  implicit val floatWriter: Writer[Float] = numWriter[Float]
-  implicit val longWriter: Writer[Long] = numWriter[Long]
+  implicit val doubleWriter: Writer[Double] = new Writer[Double] {
+    def write0[R](out: Visitor[_, R], v: Double): R =
+      if (v.toLong.toDouble != v) out.visitFloat64(v, -1)
+      else out.visitFloat64String(v.toString, -1)
+  }
+  implicit val floatWriter: Writer[Float] = new Writer[Float] {
+    def write0[R](out: Visitor[_, R], v: Float): R =
+      if (v.toInt.toFloat != v) out.visitFloat32(v, -1)
+      else out.visitFloat64String(v.toString, -1)
+  }
+  implicit val longWriter: Writer[Long] = new Writer[Long] {
+    def write0[R](out: Visitor[_, R], v: Long): R =
+      if (v > -4503599627370496L && v < 4503599627370496L) out.visitInt64(v, -1)
+      else out.visitFloat64String(v.toString, -1)
+  }
   @annotation.nowarn implicit lazy val adtReadWriter: ReadWriter[ADTBase] =
     ReadWriter.merge(tagName, macroRW[X], macroRW[Y], macroRW[Z])
   implicit val anyValsReadWriter: ReadWriter[AnyVals] = {
