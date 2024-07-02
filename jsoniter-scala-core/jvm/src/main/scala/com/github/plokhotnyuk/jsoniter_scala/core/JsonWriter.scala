@@ -2258,7 +2258,7 @@ final class JsonWriter private[jsoniter_scala](
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
   private[this] def writeDouble(x: Double): Unit = {
-    var pos = ensureBufCapacity(24)
+    var pos = ensureBufCapacity(25) // -1.2898455142673966E-135.toString.length + 1
     val buf = this.buf
     if (x < 0.0) {
       buf(pos) = '-'
