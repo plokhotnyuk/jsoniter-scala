@@ -3,12 +3,12 @@ package upickle.jsoniter
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToString
 import org.junit.jupiter.api.Test
 import org.skyscreamer.jsonassert.JSONAssert
-import ujson.{Arr, Null, Obj}
+import ujson.{Arr, Null, Obj, Value}
 
 import scala.language.implicitConversions
 
 class VisitorEncoderTest {
-  val arr: Arr =
+  val arr: Value =
     Arr(0, 1, "bloop",
       3, Null, 5.5d,
       Arr("a", "b", "c"),
