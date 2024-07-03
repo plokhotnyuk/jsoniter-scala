@@ -4,6 +4,30 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter
 import upickle.core.{ArrVisitor, ObjVisitor, StringVisitor, Visitor}
 
 class JsonWriterVisitor(writer: JsonWriter) extends Visitor[Any, JsonWriter] {
+  private[this] val objVisitor = new ObjVisitor[Any, JsonWriter] {
+    override def visitKey(index: Int): Visitor[?, ?] = StringVisitor
+
+    override def visitKeyValue(v: Any): Unit = writer.writeKey(v.toString)
+
+    override def subVisitor: Visitor[?, ?] = JsonWriterVisitor.this
+
+    override def visitValue(v: Any, index: Int): Unit = ()
+
+    override def visitEnd(index: Int): JsonWriter = {
+      writer.writeObjectEnd()
+      writer
+    }
+  }
+  private[this] val arrVisitor = new ArrVisitor[Any, JsonWriter] {
+    override def subVisitor: Visitor[?, ?] = JsonWriterVisitor.this
+
+    override def visitValue(v: Any, index: Int): Unit = ()
+
+    override def visitEnd(index: Int): JsonWriter = {
+      writer.writeArrayEnd()
+      writer
+    }
+  }
 
   override def visitNull(index: Int): JsonWriter = {
     writer.writeNull()
@@ -50,34 +74,18 @@ class JsonWriterVisitor(writer: JsonWriter) extends Visitor[Any, JsonWriter] {
       if (offset == 0 && bytes.length <= len) bytes
       else bytes.slice(offset, offset + len)
 
-    writer.writeBase64Val(trimmed, true)
+    writer.writeBase64Val(trimmed, doPadding = true)
     writer
   }
 
   override def visitArray(length: Int, index: Int): ArrVisitor[Any, JsonWriter] = {
     writer.writeArrayStart()
-    new ArrVisitor[Any, JsonWriter] {
-      override def subVisitor: Visitor[?, ?] = JsonWriterVisitor.this
-      override def visitValue(v: Any, index: Int): Unit = ()
-      override def visitEnd(index: Int): JsonWriter = {
-        writer.writeArrayEnd()
-        writer
-      }
-    }
+    arrVisitor
   }
 
   override def visitObject(length: Int, jsonableKeys: Boolean, index: Int): ObjVisitor[Any, JsonWriter] = {
     writer.writeObjectStart()
-    new ObjVisitor[Any, JsonWriter] {
-      override def visitKey(index: Int): Visitor[?, ?] = StringVisitor
-      override def visitKeyValue(v: Any): Unit = writer.writeKey(v.toString)
-      override def subVisitor: Visitor[?, ?] = JsonWriterVisitor.this
-      override def visitValue(v: Any, index: Int): Unit = ()
-      override def visitEnd(index: Int): JsonWriter = {
-        writer.writeObjectEnd()
-        writer
-      }
-    }
+    objVisitor
   }
 
   override def visitFloat32(d: Float, index: Int): JsonWriter = {
