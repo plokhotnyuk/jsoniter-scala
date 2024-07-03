@@ -1,9 +1,8 @@
-package upickle.jsoniter
+package com.github.plokhotnyuk.jsoniter_scala.upickle
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import upickle.core.Visitor
 
-import java.lang.Double
 import java.nio.charset.StandardCharsets
 
 final class VisitorDecoder[J](maxDepth: Int,
@@ -47,7 +46,7 @@ final class VisitorDecoder[J](maxDepth: Int,
       val depthM1 = depth - 1
       if (depthM1 < 0) in.decodeError("depth limit exceeded")
       val isEmpty = in.isNextToken('}')
-      val objV = v.visitObject(if (isEmpty) 0 else -1, true, -1).narrow
+      val objV = v.visitObject(if (isEmpty) 0 else -1, jsonableKeys = true, -1).narrow
       if (!isEmpty) {
         in.rollbackToken()
         var key = "?"
@@ -98,7 +97,7 @@ object VisitorNumberReader {
       } else {
         in.setMark()
         val y = in.readDouble() // readDouble() returns Double.Infinity if too large
-        if (Double.isFinite(y)) { // https://github.com/openjdk/jdk/pull/9238
+        if (java.lang.Double.isFinite(y)) { // https://github.com/openjdk/jdk/pull/9238
           v.visitFloat64(y, -1)
           // in.setMark(); in.rollbackToMark() // clear mark needed ???
         }

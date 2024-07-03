@@ -1,7 +1,6 @@
-package upickle.jsoniter
+package com.github.plokhotnyuk.jsoniter_scala.upickle
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReaderException, JsonValueCodec, readFromString}
-import com.github.plokhotnyuk.jsoniter_scala.upickle.JsoniterScalaCodec
 import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows, assertTrue}
 import org.junit.jupiter.api.Test
 import ujson.StringRenderer

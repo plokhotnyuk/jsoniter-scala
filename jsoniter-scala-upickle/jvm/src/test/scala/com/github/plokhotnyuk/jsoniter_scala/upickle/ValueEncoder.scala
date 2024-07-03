@@ -1,4 +1,4 @@
-package upickle.jsoniter
+package com.github.plokhotnyuk.jsoniter_scala.upickle
 
 import ujson.Value
 
