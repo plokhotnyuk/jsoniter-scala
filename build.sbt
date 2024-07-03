@@ -260,7 +260,6 @@ lazy val `jsoniter-scala-upickleJVM` = `jsoniter-scala-upickle`.jvm
   .settings(
     libraryDependencies ++= Seq(
       "org.junit.jupiter" % "junit-jupiter" % "5.10.2" % Test,
-      "org.skyscreamer" % "jsonassert" % "1.5.1" % Test,
       "com.lihaoyi" %%% "ujson" % "3.3.1" % Test
     )
   )
