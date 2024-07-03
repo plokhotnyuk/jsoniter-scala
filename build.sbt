@@ -253,7 +253,8 @@ lazy val `jsoniter-scala-upickle` = crossProject(JVMPlatform, JSPlatform, Native
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "upickle-core" % "3.3.1",
       "org.scalatest" %%% "scalatest" % "3.2.18" % Test
-    )
+    ),
+    mimaPreviousArtifacts := Set() // FIXME: remove after the first stable release of `jsoniter-scala-upickle`
   )
 
 lazy val `jsoniter-scala-upickleJVM` = `jsoniter-scala-upickle`.jvm
