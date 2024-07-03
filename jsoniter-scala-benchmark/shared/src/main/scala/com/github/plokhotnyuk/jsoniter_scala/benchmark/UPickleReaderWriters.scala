@@ -44,17 +44,18 @@ object UPickleReaderWriters extends AttributeTagged {
   val base64ReadWriter: ReadWriter[Array[Byte]] =
     readwriter[String].bimap(Base64.getEncoder.encodeToString, Base64.getDecoder.decode)
   implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
-  implicit val simpleGeometryReadWriter: ReadWriter[GeoJSON.SimpleGeometry] =
-    ReadWriter.merge(tagName, macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
-      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon])
-  implicit val geometryReadWriter: ReadWriter[GeoJSON.Geometry] =
-    ReadWriter.merge(tagName, macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
-      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon],
-      macroRW[GeoJSON.GeometryCollection])
-  implicit val simpleGeoJsonReadWriter: ReadWriter[GeoJSON.SimpleGeoJSON] =
-    ReadWriter.merge(tagName, macroRW[GeoJSON.Feature])
-  implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] =
+  implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] = {
+    implicit val v1: ReadWriter[GeoJSON.SimpleGeometry] =
+      ReadWriter.merge(tagName, macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+        macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon])
+    implicit val v2: ReadWriter[GeoJSON.Geometry] =
+      ReadWriter.merge(tagName, macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+        macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon],
+        macroRW[GeoJSON.GeometryCollection])
+    implicit val v3: ReadWriter[GeoJSON.SimpleGeoJSON] =
+      ReadWriter.merge(tagName, macroRW[GeoJSON.Feature])
     ReadWriter.merge(tagName, macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
+  }
   implicit val gitHubActionsAPIFromTos: ReadWriter[GitHubActionsAPI.Response] = {
     implicit val v1: ReadWriter[Boolean] =
       ReadWriter.join(strReader(x => java.lang.Boolean.parseBoolean(x.toString)), strWriter[Boolean])
