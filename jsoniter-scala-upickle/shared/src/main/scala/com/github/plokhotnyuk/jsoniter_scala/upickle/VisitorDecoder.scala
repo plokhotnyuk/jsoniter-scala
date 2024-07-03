@@ -98,11 +98,11 @@ object VisitorNumberReader {
         in.setMark()
         val y = in.readDouble() // readDouble() returns Double.Infinity if too large
         if (java.lang.Double.isFinite(y)) { // https://github.com/openjdk/jdk/pull/9238
-          v.visitFloat64(y, -1)
-          // in.setMark(); in.rollbackToMark() // clear mark needed ???
-        }
-        // alt: readBigDecimal and check BigDecimal.isDecimalDouble
-        else {
+          val x = v.visitFloat64(y, -1)
+          in.setMark()
+          in.rollbackToMark()
+          x
+        } else {
           in.rollbackToMark()
           v.visitString(new String(in.readRawValAsBytes(), StandardCharsets.US_ASCII), -1) // see: ujson/JsVisitor.scala#L33
           // alt: v.visitFloat64StringParts(new String(in.readRaw...), -1, -1, -1)
