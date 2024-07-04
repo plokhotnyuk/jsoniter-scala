@@ -140,7 +140,7 @@ wget https://webtpa-public-access.s3.us-west-2.amazonaws.com/subfolder/2023_06_4
 gunzip 2023_06_430_65B0_in_network_rates.json.gz
 ```
 
-### Build uber jar, print its size, and measure its start up time
+### Build uber jar, print its size, and measure its running time
 
 ```sh
 scala-cli --power package --assembly example02.sc --force -o example02.jar
@@ -154,7 +154,7 @@ user	1m3,442s
 sys	0m3,448s
 ```
 
-### Build GraalVM native image, print its size, and measure its start up time
+### Build GraalVM native image, print its size, and measure its running time
 
 ```sh
 scala-cli --power package --graalvm-jvm-id graalvm-java21:21.0.1 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon
@@ -168,7 +168,7 @@ user	1m46,471s
 sys	0m3,436s
 ```
 
-### Build Scala Native image, print its size, and measure its start up time
+### Build Scala Native image, print its size, and measure its running time
 
 ```sh
 scala-cli --power package --native-version 0.5.4 --native example02.sc --native-mode release-full --native-gc none --native-lto thin --force -o example02_native.bin
