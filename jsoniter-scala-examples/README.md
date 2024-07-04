@@ -145,13 +145,13 @@ gunzip 2023_06_430_65B0_in_network_rates.json.gz
 ```sh
 scala-cli --power package --assembly example02.sc --force -o example02.jar
 ls -l ./example02.jar
-time ./example02.jar -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseEpsilonGC -J-Xms8m -J-Xmx8m -J-XX:+AlwaysPreTouch < test.json 2> /dev/null
+time ./example02.jar -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseEpsilonGC -J-Xms8m -J-Xmx8m -J-XX:+AlwaysPreTouch < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	0m0.085s
-user	0m0.110s
-sys 	0m0.017s
+real	1m6,675s
+user	1m3,442s
+sys	0m3,448s
 ```
 
 ### Build GraalVM native image, print its size, and measure its start up time
@@ -159,25 +159,25 @@ sys 	0m0.017s
 ```sh
 scala-cli --power package --graalvm-jvm-id graalvm-java21:21.0.1 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon
 ls -l ./example02_graalvm.bin
-time ./example02_graalvm.bin < test.json 2> /dev/null
+time ./example02_graalvm.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	0m0.004s
-user	0m0.000s
-sys 	0m0.003s
+real	1m50,180s
+user	1m46,471s
+sys	0m3,436s
 ```
 
 ### Build Scala Native image, print its size, and measure its start up time
 
 ```sh
-scala-cli --power package --native-version 0.5.4 --native example02.sc --native-mode release-full --native-gc none --force -o example02_native.bin
+scala-cli --power package --native-version 0.5.4 --native example02.sc --native-mode release-full --native-gc none --native-lto thin --force -o example02_native.bin
 ls -l ./example02_native.bin
-time ./example02_native.bin < test.json 2> /dev/null
+time ./example02_native.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	0m0.003s
-user	0m0.003s
-sys 	0m0.000s
+real	1m25,513s
+user	1m21,669s
+sys	0m3,832s
 ```
