@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 val jsonCodec: JsonValueCodec[Unit] = new JsonValueCodec[Unit] {
   override def decodeValue(in: JsonReader, default: Unit): Unit = decode(in, 1024) // Max depth is 1024
 
-  override def encodeValue(x: Unit, out: JsonWriter): Unit = ???
+  override def encodeValue(x: Unit, out: JsonWriter): Unit = ()
 
   override def nullValue: Unit = ()
 
@@ -13,13 +13,13 @@ val jsonCodec: JsonValueCodec[Unit] = new JsonValueCodec[Unit] {
     val b = in.nextToken()
     if (b == '"') {
       in.rollbackToken()
-      in.readStringAsCharBuf()
+      val _ = in.readStringAsCharBuf()
     } else if (b == 'f' || b == 't') {
       in.rollbackToken()
-      in.readBoolean()
+      val _ = in.readBoolean()
     } else if ((b >= '0' && b <= '9') || b == '-') {
       in.rollbackToken()
-      in.readFloat()
+      val _ = in.readFloat()
     } else if (b == '[') {
       val depthM1 = depth - 1
       if (depthM1 < 0) in.decodeError("depth limit exceeded")
