@@ -540,6 +540,10 @@ commands to print current and set the `performance` mode:
 cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 for i in $(ls /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor); do echo performance | sudo tee $i; done
 ```
+Then view your CPU frequency with:
+```sh
+cat /proc/cpuinfo | grep -i mhz
+```
 
 Stop un-needed applications and services. List of running services can be printed by:
 ```sh
