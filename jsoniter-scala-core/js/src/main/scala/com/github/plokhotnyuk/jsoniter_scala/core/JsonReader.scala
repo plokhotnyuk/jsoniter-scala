@@ -2244,7 +2244,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (m10 < 922337203685477580L) {
-          m10 = m10 * 10 + (b - '0')
+          m10 = (m10 << 3) + (m10 << 1) + (b - '0')
           digits += 1
         } else e10 += 1
         pos += 1
@@ -2263,7 +2263,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (m10 < 922337203685477580L) {
-          m10 = m10 * 10 + (b - '0')
+          m10 = (m10 << 3) + (m10 << 1) + (b - '0')
           digits += 1
         }
         noFracDigits = false
@@ -2392,7 +2392,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (m10 < 922337203685477580L) {
-          m10 = m10 * 10 + (b - '0')
+          m10 = (m10 << 3) + (m10 << 1) + (b - '0')
           digits += 1
         } else e10 += 1
         pos += 1
@@ -2411,7 +2411,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (m10 < 922337203685477580L) {
-          m10 = m10 * 10 + (b - '0')
+          m10 = (m10 << 3) + (m10 << 1) + (b - '0')
           digits += 1
         }
         noFracDigits = false
@@ -2665,12 +2665,12 @@ final class JsonReader private[jsoniter_scala](
             var x = (buf(from) - '0').toLong
             from += 1
             while (from < fracLimit) {
-              x = x * 10 + (buf(from) - '0')
+              x = (x << 3) + (x << 1) + (buf(from) - '0')
               from += 1
             }
             from += 1
             while (from < limit) {
-              x = x * 10 + (buf(from) - '0')
+              x = (x << 3) + (x << 1) + (buf(from) - '0')
               from += 1
             }
             if (s != 0) x = -x
@@ -2697,7 +2697,7 @@ final class JsonReader private[jsoniter_scala](
       }
       var x1 = x.toLong
       while (pos < limit) {
-        x1 = x1 * 10 + (buf(pos) - '0')
+        x1 = (x1 << 3) + (x1 << 1) + (buf(pos) - '0')
         pos += 1
       }
       if (s != 0) x1 = -x1
@@ -2729,7 +2729,7 @@ final class JsonReader private[jsoniter_scala](
       }
       var x1 = x.toLong
       while (pos < limit) {
-        x1 = x1 * 10 + (buf(pos) - '0')
+        x1 = (x1 << 3) + (x1 << 1) + (buf(pos) - '0')
         pos += 1
       }
       if (s != 0) x1 = -x1
@@ -2758,19 +2758,20 @@ final class JsonReader private[jsoniter_scala](
     var x1 = x.toLong
     val limit2 = limit - 18
     while (pos < limit2) {
-      x1 = x1 * 10 + (buf(pos) - '0')
+      x1 = (x1 << 3) + (x1 << 1) + (buf(pos) - '0')
       pos += 1
     }
     var x2 =
-      (buf(pos) * 10 + buf(pos + 1)) * 10000000000000000L +
-        ((buf(pos + 2) * 10 + buf(pos + 3)) * 1000000 +
-          (buf(pos + 4) * 10 + buf(pos + 5)) * 10000 +
-          (buf(pos + 6) * 10 + buf(pos + 7)) * 100 +
-          (buf(pos + 8) * 10 + buf(pos + 9))) * 100000000L +
-        ((buf(pos + 10) * 10 + buf(pos + 11)) * 1000000 +
-          (buf(pos + 12) * 10 + buf(pos + 13)) * 10000 +
-          (buf(pos + 14) * 10 + buf(pos + 15)) * 100 +
-          buf(pos + 16) * 10 + buf(pos + 17)) - 5333333333333333328L // 5333333333333333328L == '0' * 111111111111111111L
+      ((buf(pos) * 10 + buf(pos + 1) - 528) * 10000000 + // 528 == '0' * 11
+        ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
+          (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
+          (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
+          buf(pos + 8) - 53333328)) * 1000000000L + // 53333328 == '0' * 1111111
+        ((buf(pos + 9) * 10 + buf(pos + 10) - 528) * 10000000 + // 528 == '0' * 11
+          ((buf(pos + 11) * 10 + buf(pos + 12)) * 100000 +
+            (buf(pos + 13) * 10 + buf(pos + 14)) * 1000 +
+            (buf(pos + 15) * 10 + buf(pos + 16)) * 10 +
+            buf(pos + 17) - 53333328)) // 53333328 == '0' * 1111111
     if (s != 0) {
       x1 = -x1
       x2 = -x2
@@ -2796,18 +2797,18 @@ final class JsonReader private[jsoniter_scala](
     val firstBlockLimit = len % 9 + p
     var pos = p
     while (pos < firstBlockLimit) {
-      x = x * 10 + (buf(pos) - '0')
+      x = (x << 3) + (x << 1) + (buf(pos) - '0')
       pos += 1
     }
     magnitude(last) = x.toInt
     var first = last
     while (pos < limit) {
       x =
-        (buf(pos) * 10 + buf(pos + 1)) * 10000000L +
+        (buf(pos) * 10 + buf(pos + 1) - 528) * 10000000 + // 528 == '0' * 11
           ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
             (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
             (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
-            buf(pos + 8)) - 5333333328L // 5333333328L == '0' * 111111111L
+            buf(pos + 8) - 53333328) // 53333328 == '0' * 1111111
       pos += 9
       first = Math.max(first - 1, 0)
       var i = last
@@ -2901,7 +2902,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (x < -922337203685477580L || {
-          x = x * 10 + ('0' - b)
+          x = (x << 3) + (x << 1) + ('0' - b)
           x > 0
         }) durationError(pos)
         pos += 1
