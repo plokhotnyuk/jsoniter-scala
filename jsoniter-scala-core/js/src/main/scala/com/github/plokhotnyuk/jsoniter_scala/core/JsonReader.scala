@@ -2921,7 +2921,7 @@ final class JsonReader private[jsoniter_scala](
         state = 1
       } else if (b == 'M' && state <= 1) {
         if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
-        seconds = sumSeconds(x * 60, seconds, pos)
+        seconds = sumSeconds(((x << 4) - x) << 2, seconds, pos)
         state = 2
       } else if (b == 'S' || b == '.') {
         seconds = sumSeconds(x, seconds, pos)
