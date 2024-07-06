@@ -2178,7 +2178,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (x < -922337203685477580L || {
-          x = x * 10 + ('0' - b)
+          x = (x << 3) + (x << 1) + ('0' - b)
           x > 0
         }) longOverflowError(pos)
         pos += 1
