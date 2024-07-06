@@ -2453,7 +2453,7 @@ final class JsonWriter private[jsoniter_scala](
           m2 &= 0xFFFFFFFFFFFFFL
           e2 = -1074
           if (m2 < 3) {
-            m2 *= 10
+            m2 = (m2 << 3) + (m2 << 1)
             e10Corr = 1
           }
         } else if (e2 == 972) illegalNumberError(x)
@@ -2467,22 +2467,22 @@ final class JsonWriter private[jsoniter_scala](
         val g1 = gs(i)
         val g0 = gs(i + 1)
         val h = (e10 * -108853 >> 15) + e2 + 2
-        val cb = m2 << 2
+        val cbh = m2 << (h + 2)
         val vbCorr = (m2.toInt & 0x1) - 1
-        val vb = rop(g1, g0, cb << h)
-        val vbl = rop(g1, g0, cb - cblCorr << h) + vbCorr
-        val vbr = rop(g1, g0, cb + 2 << h) - vbCorr
+        val vb = rop(g1, g0, cbh)
+        val vbl = rop(g1, g0, cbh - (cblCorr << h))
+        val vbr = rop(g1, g0, cbh + (2 << h))
         var diff = 0
         if (vb < 400 || {
           m10 = vb / 40
-          val vb40 = m10 * 40
-          diff = (vbl - vb40).toInt
-          ((vb40 - vbr).toInt + 40 ^ diff) >= 0
+          val vb40 = (m10 << 5) + (m10 << 3)
+          diff = (vbl - vb40).toInt + vbCorr
+          ((vb40 - vbr).toInt + vbCorr + 40 ^ diff) >= 0
         }) {
           m10 = vb >> 2
           val vb4 = m10 << 2
-          diff = (vbl - vb4).toInt
-          if (((vb4 - vbr).toInt + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
+          diff = (vbl - vb4).toInt + vbCorr
+          if (((vb4 - vbr).toInt + vbCorr + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
         } else e10Corr = -1
         m10 += ~diff >>> 31
         e10 -= e10Corr
