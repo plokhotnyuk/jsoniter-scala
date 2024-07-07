@@ -707,7 +707,7 @@ open scala-3-fullopt.html
 
 Then select the batch mode with storing results in a `.zip` file.
 
-Use the following command for merging unpacked results from browsers: `jq -s '[.[][]]' firefox/*.json firefox.json` 
+Use the following command for merging unpacked results from browsers: `jq -s '[.[][]]' firefox/*.json >firefox.json` 
 
 The released version of Scala.js benchmarks is available [here](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fullopt.html).
 
