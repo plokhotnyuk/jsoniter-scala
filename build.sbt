@@ -1,4 +1,4 @@
-import com.typesafe.tools.mima.core.{DirectMissingMethodProblem, ProblemFilters}
+import com.typesafe.tools.mima.core.*
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt.*
 import scala.scalanative.build.*
@@ -128,7 +128,7 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
+    ProblemFilters.exclude[IncompatibleSignatureProblem]("io.circe.JsoniterScalaCodec.asciiStringToJString") // FIXME: remove after the next release
   )
 )
 

@@ -2,7 +2,6 @@ package io.circe
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.Json._
-import java.nio.charset.StandardCharsets
 import java.util
 import scala.collection.immutable.VectorBuilder
 
@@ -40,7 +39,7 @@ object JsoniterScalaCodec {
     case f: JsonFloat => out.writeVal(f.value)
     case d: JsonDouble => out.writeVal(d.value)
     case bd: JsonBigDecimal => out.writeVal(bd.value)
-    case _ => out.writeRawVal(x.toString.getBytes(StandardCharsets.UTF_8))
+    case _ => out.writeNonEscapedAsciiVal(x.toString)
   }
 
   val jsCompatibleNumberSerializer: (JsonWriter, JsonNumber) => Unit = (out: JsonWriter, x: JsonNumber) => x match {
@@ -58,13 +57,13 @@ object JsoniterScalaCodec {
       else out.writeValAsString(v)
     case _ => x.toBigDecimal match {
       case Some(bd) =>
-        val u = bd.underlying
+        val u = bd.bigDecimal
         val bl = u.unscaledValue.bitLength
         val s = u.scale
         if (bl <= 52 && s >= -256 && s <= 256) out.writeVal(u)
         else out.writeValAsString(u)
       case _ =>
-        out.writeVal(x.toString)
+        out.writeNonEscapedAsciiVal(x.toString)
     }
   }
 
@@ -75,7 +74,7 @@ object JsoniterScalaCodec {
    * @param len the length of the byte array
    * @return a JSON string
    */
-  def asciiStringToJString[A](buf: Array[Byte], len: Int): Json = new JString(StringUtil.toString(buf, len))
+  def asciiStringToJString(buf: Array[Byte], len: Int): Json = new JString(StringUtil.toString(buf, len))
 
   /**
    * Extracts a `String` value from a JSON cursor.
