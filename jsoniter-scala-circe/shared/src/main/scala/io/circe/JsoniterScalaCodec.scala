@@ -2,6 +2,7 @@ package io.circe
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.Json._
+import java.nio.charset.StandardCharsets
 import java.util
 import scala.collection.immutable.VectorBuilder
 
@@ -39,7 +40,7 @@ object JsoniterScalaCodec {
     case f: JsonFloat => out.writeVal(f.value)
     case d: JsonDouble => out.writeVal(d.value)
     case bd: JsonBigDecimal => out.writeVal(bd.value)
-    case _ => out.writeNonEscapedAsciiVal(x.toString)
+    case _ => out.writeRawVal(x.toString.getBytes(StandardCharsets.UTF_8))
   }
 
   val jsCompatibleNumberSerializer: (JsonWriter, JsonNumber) => Unit = (out: JsonWriter, x: JsonNumber) => x match {
