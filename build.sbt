@@ -249,8 +249,8 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     crossScalaVersions := Seq("3.3.3", "2.13.14"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((3, _)) => Seq("-Yretain-trees", "-Xmax-inlines:100")
-      case _ => Seq()
+      case Some((2, _)) => Seq()
+      case _ => Seq("-Yretain-trees", "-Xmax-inlines:100")
     }),
     libraryDependencies ++= Seq(
       "io.spray" %% "spray-json" % "1.3.6",
@@ -274,13 +274,13 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37",
       "org.scalatest" %%% "scalatest" % "3.2.19" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((3, _)) => Seq(
-        "io.bullet" %%% "borer-derivation" % "1.14.1"
-      )
-      case _ => Seq(
+      case Some((2, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
         "com.avsystem.commons" %%% "commons-core" % "2.16.0",
         "com.dslplatform" %% "dsl-json-scala" % "2.0.2"
+      )
+      case _ => Seq(
+        "io.bullet" %%% "borer-derivation" % "1.14.1"
       )
     }),
     Compile / doc / sources := Seq()
