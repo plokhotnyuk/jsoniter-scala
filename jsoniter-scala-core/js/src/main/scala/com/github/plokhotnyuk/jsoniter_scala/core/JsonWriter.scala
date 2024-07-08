@@ -1784,12 +1784,12 @@ final class JsonWriter private[jsoniter_scala](
         var q = hours.toInt
         var lastPos = pos
         if (hours == q) {
-          lastPos += digitCount(hours)
+          lastPos += digitCount(q)
           pos = lastPos
         } else {
           val q1 = hours / 100000000
           q = q1.toInt
-          lastPos += digitCount(q1)
+          lastPos += digitCount(q)
           pos = write8Digits((hours - q1 * 100000000).toInt, lastPos, buf, ds)
         }
         writePositiveIntDigits(q, lastPos, buf, ds)
@@ -2559,8 +2559,9 @@ final class JsonWriter private[jsoniter_scala](
     ((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a >>> 32) + a
   }
 
-  private[this] def digitCount(q0: Long): Int =
-    if (q0.toInt == q0) digitCount(q0.toInt)
+  private[this] def digitCount(q0: Long): Int = {
+    val q = q0.toInt
+    if (q == q0) digitCount(q)
     else if (q0 < 10000000000L) {
       if (q0 < 1000000000L) 9
       else 10
@@ -2573,10 +2574,8 @@ final class JsonWriter private[jsoniter_scala](
     } else if (q0 < 10000000000000000L) {
       if (q0 < 1000000000000000L) 15
       else 16
-    } else {
-      if (q0 < 100000000000000000L) 17
-      else 18
-    }
+    } else 17
+  }
 
   private[this] def digitCount(x: Int): Int =
     if (x < 100) (9 - x >>> 31) + 1
