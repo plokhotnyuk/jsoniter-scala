@@ -2478,7 +2478,7 @@ final class JsonWriter private[jsoniter_scala](
           diff = (vbl - vb4).toInt + vbCorr
           if (((vb4 - vbr).toInt + vbCorr + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
         } else e10Corr = -1
-        m10 += ~diff >>> 31
+        if (diff >= 0) m10 += 1
         e10 -= e10Corr
       }
       val len = digitCount(m10)
@@ -2534,13 +2534,10 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
     val x = multiplyHigh(g0, cp) + (g1 * cp >>> 1)
-    multiplyHigh(g1, cp) + {
-      if (x < 0) 1
-      else 0
-    } | {
-      if (-x != x) 1
-      else 0
-    }
+    var y = multiplyHigh(g1, cp)
+    if (x < 0) y += 1
+    if (-x != x) y |= 1
+    y
   }
 
   private[this] def multiplyHigh(x: Long, y: Long): Long = { // Karatsuba technique for two positive longs
@@ -2553,23 +2550,20 @@ final class JsonWriter private[jsoniter_scala](
     ((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a >>> 32) + a
   }
 
-  private[this] def digitCount(q0: Long): Int = {
-    val q = q0.toInt
-    if (q == q0) digitCount(q)
-    else if (q0 < 10000000000L) {
-      if (q0 < 1000000000L) 9
-      else 10
-    } else if (q0 < 1000000000000L) {
-      if (q0 < 100000000000L) 11
-      else 12
-    } else if (q0 < 100000000000000L) {
-      if (q0 < 10000000000000L) 13
-      else 14
-    } else if (q0 < 10000000000000000L) {
-      if (q0 < 1000000000000000L) 15
+  private[this] def digitCount(q0: Long): Int =
+    if (q0 >= 1000000000000000L) {
+      if (q0 >= 10000000000000000L) 17
       else 16
-    } else 17
-  }
+    } else if (q0 >= 10000000000000L) {
+      if (q0 >= 100000000000000L) 15
+      else 14
+    } else if (q0 >= 100000000000L) {
+      if (q0 >= 1000000000000L) 13
+      else 12
+    } else if (q0 >= 1000000000L) {
+      if (q0 >= 10000000000L) 11
+      else 10
+    } else digitCount(q0.toInt)
 
   private[this] def digitCount(x: Int): Int =
     if (x < 100) (9 - x >>> 31) + 1
