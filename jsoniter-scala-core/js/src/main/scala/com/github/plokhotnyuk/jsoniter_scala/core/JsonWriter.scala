@@ -1980,14 +1980,12 @@ final class JsonWriter private[jsoniter_scala](
     var q0 = x
     if (x < 0) {
       q0 = -q0
-      if (q0 != x) {
-        buf(pos) = '-'
-        pos += 1
-      } else {
+      buf(pos) = '-'
+      pos += 1
+      if (q0 == x) {
         q0 = 147483648
-        buf(pos) = '-'
-        buf(pos + 1) = '2'
-        pos += 2
+        buf(pos) = '2'
+        pos += 1
       }
     }
     pos += digitCount(q0)
@@ -2249,14 +2247,12 @@ final class JsonWriter private[jsoniter_scala](
     var q0 = x
     if (x < 0) {
       q0 = -q0
-      if (q0 != x) {
-        buf(pos) = '-'
-        pos += 1
-      } else {
+      buf(pos) = '-'
+      pos += 1
+      if (q0 == x) {
         q0 = 147483648
-        buf(pos) = '-'
-        buf(pos + 1) = '2'
-        pos += 2
+        buf(pos) = '2'
+        pos += 1
       }
     }
     pos += digitCount(q0)
@@ -2273,16 +2269,14 @@ final class JsonWriter private[jsoniter_scala](
     var q0 = x
     if (x < 0) {
       q0 = -q0
-      if (q0 != x) {
-        buf(pos) = '-'
-        pos += 1
-      } else {
+      buf(pos) = '-'
+      pos += 1
+      if (q0 == x) {
         q0 = 3372036854775808L
-        buf(pos) = '-'
-        buf(pos + 1) = '9'
+        buf(pos) = '9'
+        buf(pos + 1) = '2'
         buf(pos + 2) = '2'
-        buf(pos + 3) = '2'
-        pos += 4
+        pos += 3
       }
     }
     var q = q0.toInt
