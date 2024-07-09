@@ -1608,10 +1608,9 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '-'
           pos += 1
         }
-        var q = 0
+        var q = hours.toInt
         var lastPos = pos
-        if (hours < 100000000) {
-          q = hours.toInt
+        if (hours == q) {
           lastPos += digitCount(hours)
           pos = lastPos
         } else {
