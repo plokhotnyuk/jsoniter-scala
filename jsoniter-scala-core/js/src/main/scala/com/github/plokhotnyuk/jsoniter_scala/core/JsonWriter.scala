@@ -1617,7 +1617,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += digitCount(q)
         count = pos
       } else {
-        val q1 = exp / 100000000
+        val q1 = (exp >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
         q = q1.toInt
         pos += digitCount(q)
         count = write8Digits((exp - q1 * 100000000).toInt, pos, buf, ds)
@@ -2206,10 +2206,10 @@ final class JsonWriter private[jsoniter_scala](
     pos + 8
   }
 
-  private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 / 100000000
-    write8Digits((q0 - q1 * 100000000).toInt, {
-      val q2 = q1 / 100000000
+  private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = x / 100000000
+    write8Digits((x - q1 * 100000000).toInt, {
+      val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
       write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
     }, buf, ds)
   }
@@ -2291,7 +2291,7 @@ final class JsonWriter private[jsoniter_scala](
         lastPos += digitCount(q)
         pos = lastPos
       } else {
-        val q2 = q1 / 100000000
+        val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
         q = q2.toInt
         lastPos += digitCount(q)
         pos = write8Digits((q1 - q2 * 100000000).toInt, lastPos, buf, ds)
@@ -2572,13 +2572,13 @@ final class JsonWriter private[jsoniter_scala](
     else if (x < 100000000) (9999999 - x >>> 31) + 7
     else (999999999 - x >>> 31) + 9
 
-  private[this] def writeSignificantFractionDigits(q: Long, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var q0 = q.toInt
+  private[this] def writeSignificantFractionDigits(x: Long, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var q0 = x.toInt
     var pos = p
     var posLim = pl
-    if (q0 != q) {
-      val q1 = (q / 100000000).toInt // divide a positive long by 100000000
-      val r1 = (q - q1 * 100000000L).toInt
+    if (q0 != x) {
+      val q1 = (x / 100000000).toInt // divide a positive long by 100000000
+      val r1 = (x - q1 * 100000000L).toInt
       val posm8 = pos - 8
       if (r1 == 0) {
         q0 = q1
