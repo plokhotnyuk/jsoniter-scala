@@ -1787,10 +1787,9 @@ final class JsonWriter private[jsoniter_scala](
           lastPos += digitCount(q)
           pos = lastPos
         } else {
-          val q1 = hours / 100000000
-          q = q1.toInt
+          q = ((hours >>> 8) * 2.56e-6).toInt
           lastPos += digitCount(q)
-          pos = write8Digits((hours - q1 * 100000000).toInt, lastPos, buf, ds)
+          pos = write8Digits((hours - q * 100000000L).toInt, lastPos, buf, ds)
         }
         writePositiveIntDigits(q, lastPos, buf, ds)
         buf(pos) = 'H'
@@ -2588,7 +2587,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = p
     var posLim = pl
     if (q0 != x) {
-      val q1 = (x / 100000000).toInt // divide a positive long by 100000000
+      val q1 = ((x >>> 8) * 2.56e-6).toInt // divide a positive long by 100000000
       val r1 = (x - q1 * 100000000L).toInt
       val posm8 = pos - 8
       if (r1 == 0) {
