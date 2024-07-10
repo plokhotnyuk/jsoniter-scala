@@ -1617,7 +1617,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += digitCount(q)
         count = pos
       } else {
-        val q1 = (exp >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
+        val q1 = (exp >>> 8) * 1441151881 >>> 49 // divide a small positive long by 100000000
         q = q1.toInt
         pos += digitCount(q)
         count = write8Digits((exp - q1 * 100000000).toInt, pos, buf, ds)
@@ -2209,7 +2209,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = x / 100000000
     write8Digits((x - q1 * 100000000).toInt, {
-      val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
+      val q2 = (q1 >>> 8) * 1441151881 >>> 49 // divide a small positive long by 100000000
       write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
     }, buf, ds)
   }
@@ -2291,7 +2291,7 @@ final class JsonWriter private[jsoniter_scala](
         lastPos += digitCount(q)
         pos = lastPos
       } else {
-        val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
+        val q2 = (q1 >>> 8) * 1441151881 >>> 49 // divide a small positive long by 100000000
         q = q2.toInt
         lastPos += digitCount(q)
         pos = write8Digits((q1 - q2 * 100000000).toInt, lastPos, buf, ds)
@@ -2434,12 +2434,12 @@ final class JsonWriter private[jsoniter_scala](
       pos += 3
     } else {
       val bits = java.lang.Double.doubleToLongBits(x)
-      var e2 = ((bits >> 52).toInt & 0x7FF) - 1075
+      var e2 = ((bits >>> 52).toInt & 0x7FF) - 1075
       var m2 = bits & 0xFFFFFFFFFFFFFL | 0x10000000000000L
       var m10 = 0L
       var e10 = 0
       if (e2 == 0) m10 = m2
-      else if ((e2 >= -52 && e2 < 0) && m2 << e2 == 0) m10 = m2 >> -e2
+      else if ((e2 >= -52 && e2 < 0) && m2 << e2 == 0) m10 = m2 >>> -e2
       else {
         var e10Corr, e2Corr = 0
         var cblCorr = 2
@@ -2466,15 +2466,26 @@ final class JsonWriter private[jsoniter_scala](
         val vb = rop(g1, g0, cbh)
         val vbl = rop(g1, g0, cbh - (cblCorr << h))
         val vbr = rop(g1, g0, cbh + (2 << h))
+        val m10i = vb >>> 2
         var diff = 0
         if (vb < 400 || {
-          m10 = vb / 40
-          val vb40 = (m10 << 5) + (m10 << 3)
+          m10 = (vb >>> 1) + m10i // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
+          m10 += m10 >>> 4
+          m10 += m10 >>> 8
+          m10 += m10 >>> 16
+          m10 += m10 >>> 32
+          var vb40 = m10 & 0xFFFFFFFFFFFFFFE0L
+          m10 >>>= 5
+          vb40 += m10 << 3
           diff = (vbl - vb40).toInt + vbCorr
-          ((vb40 - vbr).toInt + vbCorr + 40 ^ diff) >= 0
+          ((if ((vb - vb40).toInt >= 40) {
+            m10 += 1
+            diff -= 40
+            80
+          } else 40) + (vb40 - vbr).toInt + vbCorr ^ diff) >= 0
         }) {
-          m10 = vb >> 2
-          val vb4 = m10 << 2
+          m10 = m10i
+          val vb4 = vb & 0xFFFFFFFFFFFFFFFCL
           diff = (vbl - vb4).toInt + vbCorr
           if (((vb4 - vbr).toInt + vbCorr + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
         } else e10Corr = -1

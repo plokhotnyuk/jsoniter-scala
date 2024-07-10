@@ -3908,7 +3908,7 @@ final class JsonReader private[jsoniter_scala](
     var j = i
     val dl = d.toInt
     if (dl != d) {
-      val dh = (d >> 32).toInt
+      val dh = (d >>> 32).toInt
       var shift = 32 - java.lang.Integer.numberOfLeadingZeros(dh) & 0x1C
       while (shift >= 0) {
         charBuf(j) = ds(dh >> shift & 0xF)
