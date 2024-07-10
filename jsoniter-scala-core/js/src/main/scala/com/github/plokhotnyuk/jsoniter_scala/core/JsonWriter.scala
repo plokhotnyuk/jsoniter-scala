@@ -2206,10 +2206,10 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = x / 100000000
-    write8Digits((x - q1 * 100000000).toInt, {
-      val q2 = (q1 >>> 8) * 1441151881 >>> 49 // divide a small positive long by 100000000
-      write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
+    val q1 = ((x >>> 8) * 2.56e-6).toLong
+    write8Digits((x - q1 * 100000000L).toInt, {
+      val q2 = (q1 >>> 8) * 1441151881L >>> 49 // divide a small positive long by 100000000
+      write8Digits((q1 - q2 * 100000000L).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
     }, buf, ds)
   }
 
@@ -2280,11 +2280,29 @@ final class JsonWriter private[jsoniter_scala](
     }
     var q = q0.toInt
     var lastPos = pos
+    var posCorr = 0
     if (q0 == q) {
       lastPos += digitCount(q)
       pos = lastPos
     } else {
-      val q1 = q0 / 100000000
+      if (q0 >= 1000000000000000000L) {
+        var z = q0
+        q0 = (q0 >>> 1) + (q0 >>> 2) // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
+        q0 += q0 >>> 4
+        q0 += q0 >>> 8
+        q0 += q0 >>> 16
+        q0 += q0 >>> 32
+        z -= q0 & 0xFFFFFFFFFFFFFFF8L
+        q0 >>>= 3
+        var r = (z - (q0 << 1)).toInt
+        if (r >= 10) {
+          q0 += 1
+          r -= 10
+        }
+        buf(pos + 18) = (r + '0').toByte
+        posCorr = 1
+      }
+      val q1 = ((q0 >>> 8) * 2.56e-6).toLong // divide a positive long by 100000000
       q = q1.toInt
       if (q1 == q) {
         lastPos += digitCount(q)
@@ -2298,7 +2316,7 @@ final class JsonWriter private[jsoniter_scala](
       pos = write8Digits((q0 - q1 * 100000000).toInt, pos, buf, ds)
     }
     writePositiveIntDigits(q, lastPos, buf, ds)
-    pos
+    pos + posCorr
   }
 
   // Based on the amazing work of Raffaello Giulietti
