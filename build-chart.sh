@@ -7,7 +7,7 @@ echo ', "JDK 21":'
 jq -c . < jdk-21.json
 echo ', "JDK 24":'
 jq -c . < jdk-24.json
-echo ', "GraalVM CE JDK 17:'
+echo ', "GraalVM CE JDK 17":'
 jq -c . < graalvm-community-jdk-17.json
 echo ', "GraalVM CE JDK 21":'
 jq -c . < graalvm-community-jdk-21.json
