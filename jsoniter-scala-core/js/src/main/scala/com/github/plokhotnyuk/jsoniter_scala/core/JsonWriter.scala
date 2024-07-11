@@ -1791,7 +1791,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos += digitCount(q)
           pos = lastPos
         } else {
-          q = ((hours >>> 8) * 2.56e-6).toInt
+          q = ((hours >>> 8) * 2.56e-6).toInt // divide a medium positive long by 100000000
           lastPos += digitCount(q)
           pos = write8Digits((hours - q * 100000000L).toInt, lastPos, buf, ds)
         }
@@ -2210,7 +2210,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = ((x >>> 8) * 2.56e-6).toLong
+    val q1 = ((x >>> 8) * 2.56e-6).toLong  // divide a medium positive long by 100000000
     write8Digits((x - q1 * 100000000L).toInt, {
       val q2 = (q1 >>> 8) * 1441151881L >>> 49 // divide a small positive long by 100000000
       write8Digits((q1 - q2 * 100000000L).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
@@ -2306,7 +2306,7 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos + 18) = (r + '0').toByte
         posCorr = 1
       }
-      val q1 = ((q0 >>> 8) * 2.56e-6).toLong // divide a positive long by 100000000
+      val q1 = ((q0 >>> 8) * 2.56e-6).toLong // divide a medium positive long by 100000000
       q = q1.toInt
       if (q1 == q) {
         lastPos += digitCount(q)
@@ -2609,7 +2609,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = p
     var posLim = pl
     if (q0 != x) {
-      val q1 = ((x >>> 8) * 2.56e-6).toInt // divide a positive long by 100000000
+      val q1 = ((x >>> 8) * 2.56e-6).toInt  // divide a medium positive long by 100000000
       val r1 = (x - q1 * 100000000L).toInt
       val posm8 = pos - 8
       if (r1 == 0) {
