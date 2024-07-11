@@ -1617,6 +1617,7 @@ final class JsonReader private[jsoniter_scala](
     throw new JsonReaderException(new String(charBuf, 0, i), cause, config.throwReaderExceptionWithStackTrace)
   }
 
+  @inline
   @tailrec
   private[this] def nextByte(pos: Int): Byte =
     if (pos < tail) {
@@ -1624,6 +1625,7 @@ final class JsonReader private[jsoniter_scala](
       buf(pos)
     } else nextByte(loadMoreOrError(pos))
 
+  @inline
   @tailrec
   private[this] def nextByteOrError(t: Byte, pos: Int): Unit =
     if (pos < tail) {
@@ -1658,6 +1660,7 @@ final class JsonReader private[jsoniter_scala](
       b == t || ((b == ' ' || b == '\n' || (b | 0x4) == '\r') && nextToken(pos + 1) == t)
     } else isNextToken(t, loadMoreOrError(pos))
 
+  @inline
   private[this] def isCurrentToken(t: Byte, pos: Int): Boolean = {
     if (pos == 0) illegalTokenOperation()
     buf(pos - 1) == t
@@ -2499,6 +2502,7 @@ final class JsonReader private[jsoniter_scala](
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
   // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
   // https://doc.lagout.org/security/Hackers%20Delight.pdf
+  @inline
   private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long = {
     val xl = x & 0xFFFFFFFFL
     val xh = x >>> 32
@@ -2684,6 +2688,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
+  @inline
   private[this] def toBigInt(buf: Array[Byte], p: Int, limit: Int, s: Int): BigInt = {
     val len = limit - p
     if (len < 19) {
@@ -3646,6 +3651,7 @@ final class JsonReader private[jsoniter_scala](
     parseChar(loadMoreOrError(pos))
   }
 
+  @inline
   private[this] def readEscapedUnicode(pos: Int, buf: Array[Byte]): Char = {
     val ns = nibbles
     val x =
@@ -3927,6 +3933,7 @@ final class JsonReader private[jsoniter_scala](
     i + 2
   }
 
+  @inline
   private[this] def putHexInt(d: Int, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
     charBuf(i) = ds(d >>> 28)
     charBuf(i + 1) = ds(d >> 24 & 0xF)
@@ -3948,6 +3955,7 @@ final class JsonReader private[jsoniter_scala](
     charBufLen
   }
 
+  @inline
   private[this] def ensureCharBufCapacity(required: Int): Unit =
     if (charBuf.length < required) growCharBuf(required): Unit
 
