@@ -1771,8 +1771,12 @@ final class JsonWriter private[jsoniter_scala](
       val effectiveTotalSecs =
         if (totalSecs < 0) (-nano >> 31) - totalSecs
         else totalSecs
-      val hours = effectiveTotalSecs / 3600
-      val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
+      var hours = 0L
+      var secsOfHour = effectiveTotalSecs.toInt
+      if (effectiveTotalSecs >= 3600) {
+        hours = effectiveTotalSecs / 3600
+        secsOfHour = (effectiveTotalSecs - (hours << 12) + (hours << 9) - (hours << 4)).toInt // (effectiveTotalSecs - hours * 3600).toInt
+      }
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
       val seconds = secsOfHour - minutes * 60
       val ds = digits
