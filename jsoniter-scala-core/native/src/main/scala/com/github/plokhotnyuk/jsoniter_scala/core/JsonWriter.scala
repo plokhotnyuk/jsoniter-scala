@@ -1669,16 +1669,16 @@ final class JsonWriter private[jsoniter_scala](
       val epochDay = NativeMath.multiplyHigh(epochSecond, 1749024623285053783L) >> 13 // epochSecond / 86400
       val marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
       var year = (NativeMath.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
-      var year365 = year * 365L
+      var days = year * 365L
       var year1374389535 = year * 1374389535L
       var century = (year1374389535 >> 37).toInt
-      var marchDayOfYear = (marchZeroDay - year365).toInt - (year >> 2) + century - (century >> 2)
+      var marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
       if (marchDayOfYear < 0) {
-        year365 -= 365
+        days -= 365
         year1374389535 -= 1374389535
         year -= 1
         century = (year1374389535 >> 37).toInt
-        marchDayOfYear = (marchZeroDay - year365).toInt - (year >> 2) + century - (century >> 2)
+        marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
       }
       val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
       val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
@@ -1695,16 +1695,16 @@ final class JsonWriter private[jsoniter_scala](
     val adjust400YearCycles = ((marchZeroDay + 1) * 7525902 >> 40).toInt // ((marchZeroDay + 1) / 146097).toInt - 1
     marchZeroDay -= adjust400YearCycles * 146097L
     var year = (NativeMath.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
-    var year365 = year * 365L
+    var days = year * 365L
     var year1374389535 = year * 1374389535L
     var century = (year1374389535 >> 37).toInt
-    var marchDayOfYear = (marchZeroDay - year365).toInt - (year >> 2) + century - (century >> 2)
+    var marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
     if (marchDayOfYear < 0) {
-      year365 -= 365
+      days -= 365
       year1374389535 -= 1374389535
       year -= 1
       century = (year1374389535 >> 37).toInt
-      marchDayOfYear = (marchZeroDay - year365).toInt - (year >> 2) + century - (century >> 2)
+      marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
     }
     val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
     val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1

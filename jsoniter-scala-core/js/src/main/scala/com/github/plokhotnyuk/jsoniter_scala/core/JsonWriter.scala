@@ -1836,31 +1836,54 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeInstant(x: Instant): Unit = {
     val epochSecond = x.getEpochSecond
-    val epochDay =
-      (if (epochSecond >= 0) epochSecond
-      else epochSecond - 86399) / 86400
-    var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
-    var adjust400YearCycles = 0
-    if (marchZeroDay < 0) {
-      adjust400YearCycles = ((marchZeroDay + 1) / 146097).toInt - 1
-      marchZeroDay -= adjust400YearCycles * 146097L
-    }
-    var year = ((marchZeroDay * 400 + 591) / 146097).toInt
-    var year365 = year * 365L
-    var century = year / 100
-    var marchDayOfYear = (marchZeroDay - year365).toInt - (year >> 2) + century - (century >> 2)
-    if (marchDayOfYear < 0) {
-      year365 -= 365
-      year -= 1
-      century = year / 100
-      marchDayOfYear = (marchZeroDay - year365).toInt - (year >> 2) + century - (century >> 2)
+    var year, adjust400YearCycles, marchDayOfYear, secsOfDay = 0
+    if (epochSecond > -316224000000L && epochSecond < 316224000000L) { // the fast path from -10000 to 10000 years
+      val epochDay =
+        ((if (epochSecond >= 0) epochSecond
+        else epochSecond - 86399) * 1.1574074074074073E-5).toInt
+      var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
+      if (marchZeroDay < 0) {
+        adjust400YearCycles = ((marchZeroDay + 1) * 6.844767517471269E-6).toInt - 1
+        marchZeroDay -= adjust400YearCycles * 146097
+      }
+      year = ((marchZeroDay * 400 + 591) * 6.844767517471269E-6).toInt
+      var days = year * 365
+      var century = year / 100
+      marchDayOfYear = marchZeroDay - days - (year >> 2) + century - (century >> 2)
+      if (marchDayOfYear < 0) {
+        days -= 365
+        year -= 1
+        century = year / 100
+        marchDayOfYear = marchZeroDay - days - (year >> 2) + century - (century >> 2)
+      }
+      secsOfDay = (epochSecond - epochDay * 86400).toInt
+    } else {
+      val epochDay =
+        (if (epochSecond >= 0) epochSecond
+        else epochSecond - 86399) / 86400
+      var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
+      if (marchZeroDay < 0) {
+        adjust400YearCycles = ((marchZeroDay + 1) / 146097).toInt - 1
+        marchZeroDay -= adjust400YearCycles * 146097L
+      }
+      year = ((marchZeroDay * 400 + 591) / 146097).toInt
+      var days = year * 365L
+      var century = year / 100
+      marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
+      if (marchDayOfYear < 0) {
+        days -= 365
+        year -= 1
+        century = year / 100
+        marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
+      }
+      secsOfDay = (epochSecond - epochDay * 86400).toInt
     }
     val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
     val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     val m = 9 - marchMonth >> 4
     val month = (m & -9 | 3) + marchMonth
     year += adjust400YearCycles * 400 - m
-    writeInstant(year, month, day, (epochSecond - epochDay * 86400).toInt, x.getNano)
+    writeInstant(year, month, day, secsOfDay, x.getNano)
   }
 
   private[this] def writeInstant(year: Int, month: Int, day: Int, secsOfDay: Int, nano: Int): Unit = {
