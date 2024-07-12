@@ -2041,7 +2041,9 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeYearMonth(x.getYear, x.getMonthValue, pos + 1, buf, ds)
+    pos = writeYear(x.getYear, pos + 1, buf, ds)
+    buf(pos) = '-'
+    pos = write2Digits(x.getMonthValue, pos + 1, buf, ds)
     buf(pos) = '"'
     count = pos + 1
   }
@@ -2094,12 +2096,6 @@ final class JsonWriter private[jsoniter_scala](
     pos = write2Digits(x.getMonthValue, pos + 1, buf, ds)
     buf(pos) = '-'
     write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
-  }
-
-  private[this] def writeYearMonth(year: Int, month: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val pos = writeYear(year, p, buf, ds)
-    buf(pos) = '-'
-    write2Digits(month, pos + 1, buf, ds)
   }
 
   @inline
