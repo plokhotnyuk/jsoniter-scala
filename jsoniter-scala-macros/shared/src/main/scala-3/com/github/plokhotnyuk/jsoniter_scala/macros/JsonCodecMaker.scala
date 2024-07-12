@@ -1786,7 +1786,7 @@ object JsonCodecMaker {
           tpe match
             case ConstantType(c) => Literal(c).asExprOf[T]
             case _ => cannotFindValueCodecError(tpe)
-        } else if (isEnumOrModuleValue(tpe)) Ref(tpe.termSymbol).asExprOf[T]
+        } else if (isEnumOrModuleValue(tpe)) Ref(tpe.termSymbol).asExprOf[T] // FIXME: add support of non top-level defiend enums
         else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
@@ -2632,7 +2632,7 @@ object JsonCodecMaker {
             if ($in.isNextToken('{')) {
               $in.rollbackToken()
               $in.skip()
-              ${if (tpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[T] else Ref(tpe.termSymbol).asExprOf[T]}
+              ${if (tpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[T] else Ref(tpe.termSymbol).asExprOf[T]}  // FIXME: add support of non top-level defiend enums
             } else $in.readNullOrTokenError($default, '{')
           }
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>

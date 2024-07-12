@@ -84,5 +84,17 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"hint":"Value2","str":"VVV"}""")
       }
     }
+    "serialize and deserialize a complex generic types defined with `derives` keyword and a custom compile-time configurations" in {
+      verifySerDeser(make[LinkedList[Int]](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        LinkedList.Node2[Int](2, LinkedList.Node[Int](1, LinkedList.End)),
+        """{"type":"Node2","value":2,"next":{"value":1,"next":{"type":"End"}}}""")
+    }
   }
 }
+
+inline given CodecMakerConfig = CodecMakerConfig.withAllowRecursiveTypes(true)
+
+enum LinkedList[+T] derives ConfiguredJsonValueCodec: // Borrowed from https://github.com/com-lihaoyi/upickle/pull/607
+  case End
+  case Node(value: T, next: LinkedList[T])
+  case Node2(value: T, next: Node[T])
