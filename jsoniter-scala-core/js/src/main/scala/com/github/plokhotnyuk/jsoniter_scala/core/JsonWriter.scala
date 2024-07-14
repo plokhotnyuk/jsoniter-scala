@@ -1780,7 +1780,9 @@ final class JsonWriter private[jsoniter_scala](
       var hours = 0L
       var secsOfHour = effectiveTotalSecs.toInt
       if (effectiveTotalSecs >= 3600) {
-        hours = effectiveTotalSecs / 3600
+        hours =
+          if (effectiveTotalSecs >= 4503599627370496L) effectiveTotalSecs / 3600
+          else (effectiveTotalSecs * 2.777777777777778E-4).toLong
         secsOfHour = (effectiveTotalSecs - (hours << 12) + (hours << 9) - (hours << 4)).toInt // (effectiveTotalSecs - hours * 3600).toInt
       }
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
@@ -1797,7 +1799,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos += digitCount(q)
           pos = lastPos
         } else {
-          q = ((hours >>> 8) * 2.56e-6).toInt // divide a medium positive long by 100000000
+          q = (hours * 1e-8).toInt // divide a medium positive long by 100000000
           lastPos += digitCount(q)
           pos = write8Digits((hours - q * 100000000L).toInt, lastPos, buf, ds)
         }
@@ -2641,6 +2643,7 @@ final class JsonWriter private[jsoniter_scala](
     else if (x < 100000000) (9999999 - x >>> 31) + 7
     else (999999999 - x >>> 31) + 9
 
+  @inline
   private[this] def writeSignificantFractionDigits(x: Long, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var q0 = x.toInt
     var pos = p
@@ -2661,6 +2664,7 @@ final class JsonWriter private[jsoniter_scala](
     writeSignificantFractionDigits(q0, pos, posLim, buf, ds)
   }
 
+  @inline
   private[this] def writeSignificantFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var q0 = q
     var q1, r1 = 0
@@ -2684,6 +2688,7 @@ final class JsonWriter private[jsoniter_scala](
     lastPos
   }
 
+  @inline
   private[this] def writeFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
     var q0 = q
     var pos = p
