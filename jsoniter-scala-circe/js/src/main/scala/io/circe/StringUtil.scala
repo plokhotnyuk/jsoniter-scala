@@ -9,6 +9,6 @@ private[circe] object StringUtil {
       s.append(buf(i).toChar)
       i += 1
     }
-    s.toString
+    new String(s)
   }
 }
