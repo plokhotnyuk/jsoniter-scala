@@ -257,7 +257,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.playframework" %%% "play-json" % "3.0.4",
       "dev.zio" %%% "zio-json" % "0.7.1",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
-      "com.lihaoyi" %%% "upickle" % "3.3.1",
+      "com.lihaoyi" %%% "upickle" % "4.0.0",
       "io.circe" %%% "circe-generic" % "0.14.9",
       "io.circe" %%% "circe-parser" % "0.14.9",
       "io.circe" %%% "circe-jawn" % "0.14.9",
