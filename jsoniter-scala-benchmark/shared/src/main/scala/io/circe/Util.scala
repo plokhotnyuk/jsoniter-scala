@@ -40,6 +40,11 @@ object Util {
 
   def deepDropEmptyValues(json: Json): Json = json.foldWith(dropEmptyValueFolder)
 
-  def toJObject(fields: (String, Json)*): Json =
-    Json.obj(fields.filterNot { case (_, v) => v.isNull || (v.isArray && v.asInstanceOf[JArray].value.isEmpty) }: _*)
+  def toJObject(fields: (String, Json)*): Json = new JObject(JsonObject.fromLinkedHashMap {
+    val map = new util.LinkedHashMap[String, Json]
+    fields.foreach { case (k, v) =>
+      if (!(v.isNull || v.isArray && v.asInstanceOf[JArray].value.isEmpty)) map.put(k, v)
+    }
+    map
+  })
 }
