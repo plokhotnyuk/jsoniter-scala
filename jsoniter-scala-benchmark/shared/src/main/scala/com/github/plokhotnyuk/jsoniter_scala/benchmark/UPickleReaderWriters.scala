@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import upickle.AttributeTagged
-import upickle.core.{Annotator, Visitor}
+import upickle.core.Visitor
 import java.time._
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
@@ -148,20 +148,6 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW
   }
 
-  override def annotate[V](rw: Reader[V], key: String, value: String): TaggedReader.Leaf[V] =
-    new TaggedReader.Leaf[V](tagName, simpleName(value), rw)
-
-  override def annotate[V](rw: ObjectWriter[V], key: String, value: String, checker: Annotator.Checker): TaggedWriter[V] =
-    new TaggedWriter.Leaf[V](checker, tagName, simpleName(value), rw)
-
-  override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
-    implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
-
-  override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-    new Reader.Delegate[Any, Option[T]](implicitly[Reader[T]].map(x => new Some(x))) {
-      override def visitNull(index: Int): Option[T] = None
-    }
-
   private[this] def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
     override val expectedMsg = "expected string"
 
@@ -181,6 +167,4 @@ object UPickleReaderWriters extends AttributeTagged {
   private[this] def numWriter[V]: Writer[V] = new Writer[V] {
     def write0[R](out: Visitor[_, R], v: V): R = out.visitFloat64String(v.toString, -1)
   }
-
-  private[this] def simpleName(s: String): String = s.substring(s.lastIndexOf('.') + 1)
 }

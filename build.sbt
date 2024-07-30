@@ -20,7 +20,7 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  scalaVersion := "3.3.3",
+  scalaVersion := "2.13.14",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -247,7 +247,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.3", "2.13.14"),
+    crossScalaVersions := Seq("3.4.2", "2.13.14"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq("-Yretain-trees", "-Xmax-inlines:100")
@@ -257,13 +257,13 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.playframework" %%% "play-json" % "3.0.4",
       "dev.zio" %%% "zio-json" % "0.7.1",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
-      "com.lihaoyi" %%% "upickle" % "3.3.1",
+      "com.lihaoyi" %%% "upickle" % "4.0.0",
       "io.circe" %%% "circe-generic" % "0.14.9",
       "io.circe" %%% "circe-parser" % "0.14.9",
       "io.circe" %%% "circe-jawn" % "0.14.9",
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.23",
-      "org.json4s" %% "json4s-jackson" % "4.1.0-M5",
-      "org.json4s" %% "json4s-native" % "4.1.0-M5",
+      "org.json4s" %% "json4s-jackson" % "4.1.0-M6",
+      "org.json4s" %% "json4s-native" % "4.1.0-M6",
       "com.rallyhealth" %% "weepickle-v1" % "1.9.1",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.17.2",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.17.2",
