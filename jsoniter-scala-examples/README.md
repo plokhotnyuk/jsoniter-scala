@@ -171,13 +171,13 @@ sys	0m3,436s
 ### Build Scala Native image, print its size, and measure its running time
 
 ```sh
-scala-cli --power package --native-version 0.5.4 --native example02.sc --native-mode release-full --native-gc none --native-lto thin --force -o example02_native.bin
+scala-cli --power package --native-version 0.5.4 --native example02.sc --native-mode release-full --native-gc none --native-lto thin --native-multithreading=false --force -o example02_native.bin
 ls -l ./example02_native.bin
 time ./example02_native.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	1m25,513s
-user	1m21,669s
-sys	0m3,832s
+real	1m27,921s
+user	1m22,861s
+sys	0m4,003s
 ```
