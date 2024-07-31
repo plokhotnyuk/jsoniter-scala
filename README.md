@@ -701,7 +701,7 @@ Other benchmarks with results for jsoniter-scala:
 
 Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module:
 ```sh
-sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-11 jsoniter-scala-benchmarkJS/fullOptJS
+sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-11 ++3.4.2 jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
