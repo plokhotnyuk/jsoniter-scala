@@ -18,7 +18,6 @@ object Util {
 
     def onArray(value: Vector[Json]): Json = {
       val builder = Vector.newBuilder[Json]
-      builder.sizeHint(value.size)
       value.foreach(v => if (!v.isNull) builder.addOne(v.foldWith(this)))
       val vec = builder.result()
       if (vec.isEmpty) Null
@@ -26,7 +25,7 @@ object Util {
     }
 
     def onObject(value: JsonObject): Json = new JObject(JsonObject.fromLinkedHashMap {
-      val map = new util.LinkedHashMap[String, Json]
+      val map = new util.LinkedHashMap[String, Json](value.size << 1, 0.5f)
       value.toIterable.foreach { case (k, v) =>
         lazy val folded = v.foldWith(this)
         if (!{
@@ -41,8 +40,10 @@ object Util {
   def deepDropEmptyValues(json: Json): Json = json.foldWith(dropEmptyValueFolder)
 
   def toJObject(fields: (String, Json)*): Json = new JObject(JsonObject.fromLinkedHashMap {
-    val map = new util.LinkedHashMap[String, Json]
-    fields.foreach { case (k, v) =>
+    val map = new util.LinkedHashMap[String, Json](fields.size << 1, 0.5f)
+    val it = fields.iterator
+    while (it.hasNext) {
+      val (k, v) = it.next()
       if (!(v.isNull || v.isArray && v.asInstanceOf[JArray].value.isEmpty)) map.put(k, v)
     }
     map

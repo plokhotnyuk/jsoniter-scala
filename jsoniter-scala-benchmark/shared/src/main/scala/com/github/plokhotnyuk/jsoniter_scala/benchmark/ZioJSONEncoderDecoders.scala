@@ -133,7 +133,7 @@ object ZioJSONEncoderDecoders {
       var i: Int = 0
       if (Lexer.firstArrayElement(in)) {
         while ({
-          builder += decoder.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in)
+          builder.addOne(decoder.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in))
           i += 1
           Lexer.nextArrayElement(trace, in)
         }) ()

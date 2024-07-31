@@ -1,10 +1,11 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import spray.json._
+
 import java.time._
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Base64, UUID}
-import scala.collection.immutable.{ArraySeq, Map}
+import scala.collection.immutable.{ArraySeq, Map, TreeMap}
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -1256,14 +1257,14 @@ object SprayFormats extends DefaultJsonProtocol {
         else {
           val es = json.asInstanceOf[JsArray].elements
           val buf = new mutable.ArrayBuffer[T](es.size)
-          es.foreach(e => buf += e.convertTo[T])
+          es.foreach(e => buf.addOne(e.convertTo[T]))
           buf
         }
 
       def write(buf: mutable.ArrayBuffer[T]): JsValue = {
         val vs = Vector.newBuilder[JsValue]
-        buf.foreach(x => vs += x.toJson)
-        JsArray(vs.result())
+        buf.foreach(x => vs.addOne(x.toJson))
+        new JsArray(vs.result())
       }
     }
 
@@ -1271,16 +1272,22 @@ object SprayFormats extends DefaultJsonProtocol {
     new RootJsonFormat[ArraySeq[T]] {
       def read(json: JsValue): ArraySeq[T] = json match {
         case ja: JsArray =>
-          val b = ArraySeq.newBuilder[T]
-          ja.elements.foreach(e => b += e.convertTo[T])
-          b.result()
+          val v = ja.elements
+          val a = new Array[T](v.size)
+          v.foreach {
+            var i = 0
+            e =>
+              a(i) = e.convertTo[T]
+              i += 1
+          }
+          ArraySeq.unsafeWrapArray(a)
         case _ => deserializationError(s"Expected JSON array")
       }
 
       def write(as: ArraySeq[T]): JsValue = {
         val vs = Vector.newBuilder[JsValue]
-        as.foreach(x => vs += x.toJson)
-        JsArray(vs.result())
+        as.foreach(x => vs.addOne(x.toJson))
+        new JsArray(vs.result())
       }
     }
 
@@ -1288,7 +1295,14 @@ object SprayFormats extends DefaultJsonProtocol {
     if (x == d) JsNull
     else x.toJson
 
-  private[this] def toJsObject(fields: (String, JsValue)*): JsObject = JsObject(fields.filterNot { case (_, v) =>
-    (v eq JsNull) || (v.isInstanceOf[JsArray] && v.asInstanceOf[JsArray].elements.isEmpty)
-  }:_*)
+  private[this] def toJsObject(fields: (String, JsValue)*): JsObject = JsObject {
+    val builder = TreeMap.newBuilder[String, JsValue](Ordering.String)
+    val it = fields.iterator
+    while (it.hasNext) {
+      val kv = it.next()
+      val v = kv._2
+      if (!((v eq JsNull) || (v.isInstanceOf[JsArray] && v.asInstanceOf[JsArray].elements.isEmpty))) builder.addOne(kv)
+    }
+    builder.result()
+  }
 }

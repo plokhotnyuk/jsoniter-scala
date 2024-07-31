@@ -47,37 +47,37 @@ object AnyValsJson4sFormats {
     new CustomSerializer[ByteVal](_ => ({
       case JInt(x) if x.isValidByte => new ByteVal(x.toByte)
     }, {
-      case x: ByteVal => JInt(BigInt(x.a))
+      case x: ByteVal => new JLong(x.a.toLong)
     })) +
     new CustomSerializer[ShortVal](_ => ({
       case JInt(x) if x.isValidShort => new ShortVal(x.toShort)
     }, {
-      case x: ShortVal => JInt(BigInt(x.a))
+      case x: ShortVal => new JLong(x.a.toLong)
     })) +
     new CustomSerializer[IntVal](_ => ({
       case JInt(x) if x.isValidInt => new IntVal(x.toInt)
     }, {
-      case x: IntVal => JInt(x.a)
+      case x: IntVal => new JLong(x.a.toLong)
     })) +
     new CustomSerializer[LongVal](_ => ({
-      case JInt(x) if x.isValidLong => new LongVal(x.toInt)
+      case JInt(x) if x.isValidLong => new LongVal(x.toLong)
     }, {
-      case x: LongVal => JInt(x.a)
+      case x: LongVal => new JLong(x.a)
     })) +
     new CustomSerializer[FloatVal](_ => ({
       case JDecimal(x) => new FloatVal(x.toFloat)
     }, {
-      case x: FloatVal => JDecimal(BigDecimal(x.a))
+      case x: FloatVal => new JDecimal(BigDecimal(x.a))
     })) +
     new CustomSerializer[DoubleVal](_ => ({
-      case JDouble(x) => new DoubleVal(x.toFloat)
+      case JDouble(x) => new DoubleVal(x)
     }, {
-      case x: DoubleVal => JDecimal(x.a)
+      case x: DoubleVal => new JDecimal(x.a)
     })) +
     new CustomSerializer[CharVal](_ => ({
       case JString(x) if x.length == 1 => new CharVal(x.charAt(0))
     }, {
-      case x: CharVal => JString(x.a.toString)
+      case x: CharVal => new JString(x.a.toString)
     }))
 }
 
@@ -106,10 +106,10 @@ object GeoJsonJson4sFormats {
         classOf[GeoJSON.MultiLineString], classOf[GeoJSON.Polygon], classOf[GeoJSON.MultiPolygon],
         classOf[GeoJSON.GeometryCollection], classOf[GeoJSON.Feature], classOf[GeoJSON.FeatureCollection]))
   } +
-    new CustomSerializer[Tuple2[Double, Double]](_ => ({
+    new CustomSerializer[(Double, Double)](_ => ({
       case JArray(JDouble(x) :: JDouble(y) :: Nil) => new Tuple2[Double, Double](x, y)
     }, {
-      case (x: Double, y: Double) => JArray(JDouble(x) :: JDouble(y) :: Nil)
+      case (x: Double, y: Double) => new JArray(new JDouble(x) :: new JDouble(y) :: Nil)
     }))
 }
 

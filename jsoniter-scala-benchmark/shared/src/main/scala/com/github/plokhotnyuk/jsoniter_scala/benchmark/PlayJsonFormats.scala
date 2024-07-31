@@ -6,44 +6,44 @@ import java.util.concurrent.ConcurrentHashMap
 import play.api.libs.json._
 import scala.collection.immutable.{BitSet, IndexedSeq, IntMap, Map, Seq}
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.control.NonFatal
 
 object PlayJsonFormats {
   def stringFormat[A](name: String)(f: String => A): Format[A] = new Format[A] {
     override def reads(js: JsValue): JsResult[A] =
-      Try(JsSuccess(f(js.asInstanceOf[JsString].value))).getOrElse(JsError(s"expected.${name}string"))
+      try new JsSuccess(f(js.asInstanceOf[JsString].value)) catch {
+        case NonFatal(_) => JsError(s"expected.${name}string")
+      }
 
     override def writes(v: A): JsValue = JsString(v.toString)
   }
 
   implicit def mutableMapReads[A, B](implicit mapReads: Reads[Map[A, B]]): Reads[mutable.Map[A, B]] =
-    Reads[mutable.Map[A, B]](js => JsSuccess(js.as[Map[A, B]].foldLeft(mutable.Map.empty[A, B]) {
-      (m, p) => m += ((p._1, p._2))
-    }))
+    Reads[mutable.Map[A, B]](js => new JsSuccess(js.as[Map[A, B]].foldLeft(mutable.Map.empty[A, B])(_.addOne(_))))
 
   implicit def mutableLongMapFormat[A](implicit mapReads: Reads[Map[Long, A]],
                                        aWrites: Writes[A]): Format[mutable.LongMap[A]] =
     new Format[mutable.LongMap[A]] {
       override def reads(js: JsValue): JsResult[mutable.LongMap[A]] =
-        JsSuccess(js.as[Map[Long, A]].foldLeft(mutable.LongMap.empty[A]) { (m, p) =>
+        new JsSuccess(js.as[Map[Long, A]].foldLeft(mutable.LongMap.empty[A]) { (m, p) =>
           m.update(p._1, p._2)
           m
         })
 
       override def writes(v: mutable.LongMap[A]): JsValue =
         Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {
-          (m, p) => m += ((p._1.toString, aWrites.writes(p._2)))
+          (m, p) => m.addOne((p._1.toString, aWrites.writes(p._2)))
         })
     }
 
   implicit def intMapFormat[A](implicit mapReads: Reads[Map[Int, A]], aWrites: Writes[A]): Format[IntMap[A]] =
     new Format[IntMap[A]] {
       override def reads(js: JsValue): JsResult[IntMap[A]] =
-        JsSuccess(js.as[Map[Int, A]].foldLeft(IntMap.empty[A])((m, p) => m.updated(p._1, p._2)))
+        new JsSuccess(js.as[Map[Int, A]].foldLeft(IntMap.empty[A])((m, p) => m.updated(p._1, p._2)))
 
       override def writes(v: IntMap[A]): JsValue =
         Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {
-          (m, p) => m += ((p._1.toString, aWrites.writes(p._2)))
+          (m, p) => m.addOne((p._1.toString, aWrites.writes(p._2)))
         })
     }
 
@@ -51,9 +51,13 @@ object PlayJsonFormats {
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
   implicit def tuple2Format[A, B](implicit aFormat: Format[A], bFormat: Format[B]): Format[(A, B)] =
     new Format[(A, B)] {
-      override def reads(js: JsValue): JsResult[(A, B)] = Try(readsUnsafe(js)).getOrElse(JsError("expected.jsarray"))
+      override def reads(js: JsValue): JsResult[(A, B)] =
+        try readsUnsafe(js) catch {
+          case NonFatal(_) => JsError("expected.jsarray")
+        }
 
-      override def writes(tuple: (A, B)): JsValue = JsArray(Seq(aFormat.writes(tuple._1), bFormat.writes(tuple._2)))
+      override def writes(tuple: (A, B)): JsValue =
+        new JsArray(Array(aFormat.writes(tuple._1), bFormat.writes(tuple._2)))
 
       private[this] def readsUnsafe(js: JsValue): JsResult[(A, B)] = {
         val arr = js.asInstanceOf[JsArray]
@@ -63,10 +67,11 @@ object PlayJsonFormats {
 
   val base64Format: Format[Array[Byte]] = new Format[Array[Byte]] {
     override def reads(js: JsValue): JsResult[Array[Byte]] =
-      Try(JsSuccess(Base64.getDecoder.decode(js.asInstanceOf[JsString].value)))
-        .getOrElse(JsError(s"expected.base64string"))
+      try new JsSuccess(Base64.getDecoder.decode(js.asInstanceOf[JsString].value)) catch {
+        case NonFatal(_) => JsError("expected.base64string")
+      }
 
-    override def writes(v: Array[Byte]): JsValue = JsString(Base64.getEncoder.encodeToString(v))
+    override def writes(v: Array[Byte]): JsValue = new JsString(Base64.getEncoder.encodeToString(v))
   }
 
   implicit val charFormat: Format[Char] = stringFormat("char") { case s if s.length == 1 => s.charAt(0) }
@@ -159,11 +164,11 @@ object PlayJsonFormats {
     )
   })
   implicit val bitSetFormat: Format[BitSet] = Format(
-    Reads(js => JsSuccess(BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
-    Writes((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
+    Reads(js => new JsSuccess(BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
+    Writes((es: BitSet) => new JsArray(es.toArray.map(v => new JsNumber(BigDecimal(v))))))
   implicit val mutableBitSetFormat: Format[mutable.BitSet] = Format(
-    Reads(js => JsSuccess(mutable.BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
-    Writes((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
+    Reads(js => new JsSuccess(mutable.BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
+    Writes((es: mutable.BitSet) => new JsArray(es.toArray.map(v => new JsNumber(BigDecimal(v))))))
   implicit val primitivesFormat: Format[Primitives] = Format({
     for {
       b <- (__ \ "b").read[Byte]
@@ -179,11 +184,11 @@ object PlayJsonFormats {
     toJsObject(
       "b" -> Json.toJson(x.b),
       "s" -> Json.toJson(x.s),
-      "i" -> JsNumber(x.i),
-      "l" -> JsNumber(x.l),
+      "i" -> new JsNumber(x.i),
+      "l" -> new JsNumber(x.l),
       "bl" -> JsBoolean(x.bl),
       "ch" -> Json.toJson(x.ch),
-      "dbl" -> JsNumber(x.dbl),
+      "dbl" -> new JsNumber(x.dbl),
       "f" -> Json.toJson(x.f)
     )
   })
@@ -194,8 +199,8 @@ object PlayJsonFormats {
     } yield ExtractFields(s, i)
   }, (x: ExtractFields) => {
     toJsObject(
-      "s" -> JsString(x.s),
-      "i" -> JsNumber(x.i)
+      "s" -> new JsString(x.s),
+      "i" -> new JsNumber(x.i)
     )
   })
   val geoJSONFormat: Format[GeoJSON.GeoJSON] = {
@@ -205,7 +210,7 @@ object PlayJsonFormats {
       } yield GeoJSON.Point(coordinates)
     }, (x: GeoJSON.Point) => {
       toJsObject(
-        "type" -> JsString("Point"),
+        "type" -> new JsString("Point"),
         "coordinates" -> Json.toJson(x.coordinates)
       )
     })
@@ -215,7 +220,7 @@ object PlayJsonFormats {
       } yield GeoJSON.MultiPoint(coordinates)
     }, (x: GeoJSON.MultiPoint) => {
       toJsObject(
-        "type" -> JsString("MultiPoint"),
+        "type" -> new JsString("MultiPoint"),
         "coordinates" -> Json.toJson(x.coordinates)
       )
     })
@@ -225,7 +230,7 @@ object PlayJsonFormats {
       } yield GeoJSON.LineString(coordinates)
     }, (x: GeoJSON.LineString) => {
       toJsObject(
-        "type" -> JsString("LineString"),
+        "type" -> new JsString("LineString"),
         "coordinates" -> Json.toJson(x.coordinates)
       )
     })
@@ -235,7 +240,7 @@ object PlayJsonFormats {
       } yield GeoJSON.MultiLineString(coordinates)
     }, (x: GeoJSON.MultiLineString) => {
       toJsObject(
-        "type" -> JsString("MultiLineString"),
+        "type" -> new JsString("MultiLineString"),
         "coordinates" -> Json.toJson(x.coordinates)
       )
     })
@@ -245,7 +250,7 @@ object PlayJsonFormats {
       } yield GeoJSON.Polygon(coordinates)
     }, (x: GeoJSON.Polygon) => {
       toJsObject(
-        "type" -> JsString("Polygon"),
+        "type" -> new JsString("Polygon"),
         "coordinates" -> Json.toJson(x.coordinates)
       )
     })
@@ -255,7 +260,7 @@ object PlayJsonFormats {
       } yield GeoJSON.MultiPolygon(coordinates)
     }, (x: GeoJSON.MultiPolygon) => {
       toJsObject(
-        "type" -> JsString("MultiPolygon"),
+        "type" -> new JsString("MultiPolygon"),
         "coordinates" -> Json.toJson(x.coordinates)
       )
     })
@@ -281,7 +286,7 @@ object PlayJsonFormats {
       } yield GeoJSON.GeometryCollection(geometries)
     }, (x: GeoJSON.GeometryCollection) => {
       toJsObject(
-        "type" -> JsString("GeometryCollection"),
+        "type" -> new JsString("GeometryCollection"),
         "geometries" -> Json.toJson(x.geometries)
       )
     })
@@ -311,7 +316,7 @@ object PlayJsonFormats {
       } yield GeoJSON.Feature(properties, geometry, bbox)
     }, (x: GeoJSON.Feature) => {
       toJsObject(
-        "type" -> JsString("Feature"),
+        "type" -> new JsString("Feature"),
         "properties" -> Json.toJson(x.properties),
         "geometry" -> Json.toJson(x.geometry)(v9), // FIXME: Passing an explicit format due to compilation error with Scala 3
         "bbox" -> Json.toJson(x.bbox)
@@ -330,7 +335,7 @@ object PlayJsonFormats {
       } yield GeoJSON.FeatureCollection(features, bbox)
     }, (x: GeoJSON.FeatureCollection) => {
       toJsObject(
-        "type" -> JsString("FeatureCollection"),
+        "type" -> new JsString("FeatureCollection"),
         "features" -> Json.toJson(x.features),
         "bbox" -> Json.toJson(x.bbox)
       )
@@ -363,12 +368,12 @@ object PlayJsonFormats {
         created_at, expires_at)
     }, (x: GitHubActionsAPI.Artifact) => {
       toJsObject(
-        "id" -> JsNumber(x.id),
-        "node_id" -> JsString(x.node_id),
-        "name" -> JsString(x.name),
-        "size_in_bytes" -> JsNumber(x.size_in_bytes),
-        "url" -> JsString(x.url),
-        "archive_download_url" -> JsString(x.archive_download_url),
+        "id" -> new JsNumber(x.id),
+        "node_id" -> new JsString(x.node_id),
+        "name" -> new JsString(x.name),
+        "size_in_bytes" -> new JsNumber(x.size_in_bytes),
+        "url" -> new JsString(x.url),
+        "archive_download_url" -> new JsString(x.archive_download_url),
         "expired" -> Json.toJson(x.expired),
         "created_at" -> Json.toJson(x.created_at),
         "expires_at" -> Json.toJson(x.expires_at)
@@ -381,7 +386,7 @@ object PlayJsonFormats {
       } yield GitHubActionsAPI.Response(total_count, artifacts)
     }, (x: GitHubActionsAPI.Response) => {
       toJsObject(
-        "total_count" -> JsNumber(x.total_count),
+        "total_count" -> new JsNumber(x.total_count),
         "artifacts" -> Json.toJson(x.artifacts)
       )
     })
@@ -394,8 +399,8 @@ object PlayJsonFormats {
       } yield GoogleMapsAPI.Value(text, value)
     }, (x: GoogleMapsAPI.Value) => {
       toJsObject(
-        "text" -> JsString(x.text),
-        "value" -> JsNumber(x.value)
+        "text" -> new JsString(x.text),
+        "value" -> new JsNumber(x.value)
       )
     })
     implicit val v2: Format[GoogleMapsAPI.Elements] = Format({
@@ -408,7 +413,7 @@ object PlayJsonFormats {
       toJsObject(
         "distance" -> Json.toJson(x.distance),
         "duration" -> Json.toJson(x.duration),
-        "status" -> JsString(x.status)
+        "status" -> new JsString(x.status)
       )
     })
     implicit val v3: Format[GoogleMapsAPI.Rows] = Format({
@@ -432,7 +437,7 @@ object PlayJsonFormats {
         "destination_addresses" -> Json.toJson(x.destination_addresses),
         "origin_addresses" -> Json.toJson(x.origin_addresses),
         "rows" -> Json.toJson(x.rows),
-        "status" -> JsString(x.status)
+        "status" -> new JsString(x.status)
       )
     })
   }
@@ -478,7 +483,7 @@ object PlayJsonFormats {
       } yield OpenRTB.Deal(id, bidfloor, bidfloorcur, at, wseat, wadomain)
     }, (x: OpenRTB.Deal) => {
       toJsObject(
-        "id" -> JsString(x.id),
+        "id" -> new JsString(x.id),
         "bidfloor" -> toJson(x.bidfloor, 0.0),
         "bidfloorcur" -> toJson(x.bidfloorcur, "USD"),
         "at" -> Json.toJson(x.at),
@@ -494,8 +499,8 @@ object PlayJsonFormats {
       } yield OpenRTB.Metric(type_, value, vendor)
     }, (x: OpenRTB.Metric) => {
       toJsObject(
-        "type" -> JsString(x.`type`),
-        "value" -> JsNumber(x.value),
+        "type" -> new JsString(x.`type`),
+        "value" -> new JsNumber(x.value),
         "vendor" -> Json.toJson(x.vendor)
       )
     })
@@ -652,7 +657,7 @@ object PlayJsonFormats {
       } yield OpenRTB.Native(request, ver, api, battr)
     }, (x: OpenRTB.Native) => {
       toJsObject(
-        "request" -> JsString(x.request),
+        "request" -> new JsString(x.request),
         "ver" -> Json.toJson(x.ver),
         "api" -> Json.toJson(x.api),
         "battr" -> Json.toJson(x.battr)
@@ -827,7 +832,7 @@ object PlayJsonFormats {
         tagid, bidfloor, bidfloorcur, clickbrowser, secure, iframebuster, exp)
     }, (x: OpenRTB.Imp) => {
       toJsObject(
-        "id" -> JsString(x.id),
+        "id" -> new JsString(x.id),
         "metric" -> Json.toJson(x.metric),
         "banner" -> Json.toJson(x.banner),
         "video" -> Json.toJson(x.video),
@@ -1051,7 +1056,7 @@ object PlayJsonFormats {
         bcat, badv, bapp, source, reqs)
     }, (x: OpenRTB.BidRequest) => {
       toJsObject(
-        "id" -> JsString(x.id),
+        "id" -> new JsString(x.id),
         "imp" -> Json.toJson(x.imp),
         "site" -> Json.toJson(x.site),
         "app" -> Json.toJson(x.app),
@@ -1084,8 +1089,8 @@ object PlayJsonFormats {
     }, (x: TwitterAPI.Urls) => {
       toJsObject(
         "url" -> JsString(x.url),
-        "expanded_url" -> JsString(x.expanded_url),
-        "display_url" -> JsString(x.display_url),
+        "expanded_url" -> new JsString(x.expanded_url),
+        "display_url" -> new JsString(x.display_url),
         "indices" -> Json.toJson(x.indices),
       )
     })
@@ -1113,10 +1118,10 @@ object PlayJsonFormats {
       } yield TwitterAPI.UserMentions(screen_name, name, id, id_str, indices)
     }, (x: TwitterAPI.UserMentions) => {
       toJsObject(
-        "screen_name" -> JsString(x.screen_name),
-        "name" -> JsString(x.name),
-        "id" -> JsNumber(x.id),
-        "id_str" -> JsString(x.id_str),
+        "screen_name" -> new JsString(x.screen_name),
+        "name" -> new JsString(x.name),
+        "id" -> new JsNumber(x.id),
+        "id_str" -> new JsString(x.id_str),
         "indices" -> Json.toJson(x.indices),
       )
     })
@@ -1189,40 +1194,40 @@ object PlayJsonFormats {
         translator_type)
     }, (x: TwitterAPI.User) => {
       toJsObject(
-        "id" -> JsNumber(x.id),
-        "id_str" -> JsString(x.id_str),
-        "name" -> JsString(x.name),
-        "screen_name" -> JsString(x.screen_name),
-        "location" -> JsString(x.location),
-        "description" -> JsString(x.description),
-        "url" -> JsString(x.url),
+        "id" -> new JsNumber(x.id),
+        "id_str" -> new JsString(x.id_str),
+        "name" -> new JsString(x.name),
+        "screen_name" -> new JsString(x.screen_name),
+        "location" -> new JsString(x.location),
+        "description" -> new JsString(x.description),
+        "url" -> new JsString(x.url),
         "entities" -> Json.toJson(x.entities),
         "protected" -> JsBoolean(x.`protected`),
-        "followers_count" -> JsNumber(x.followers_count),
-        "friends_count" -> JsNumber(x.friends_count),
-        "listed_count" -> JsNumber(x.listed_count),
-        "created_at" -> JsString(x.created_at),
-        "favourites_count" -> JsNumber(x.favourites_count),
-        "utc_offset" -> JsNumber(x.utc_offset),
-        "time_zone" -> JsString(x.time_zone),
+        "followers_count" -> new JsNumber(x.followers_count),
+        "friends_count" -> new JsNumber(x.friends_count),
+        "listed_count" -> new JsNumber(x.listed_count),
+        "created_at" -> new JsString(x.created_at),
+        "favourites_count" -> new JsNumber(x.favourites_count),
+        "utc_offset" -> new JsNumber(x.utc_offset),
+        "time_zone" -> new JsString(x.time_zone),
         "geo_enabled" -> JsBoolean(x.geo_enabled),
         "verified" -> JsBoolean(x.verified),
-        "statuses_count" -> JsNumber(x.statuses_count),
-        "lang" -> JsString(x.lang),
+        "statuses_count" -> new JsNumber(x.statuses_count),
+        "lang" -> new JsString(x.lang),
         "contributors_enabled" -> JsBoolean(x.contributors_enabled),
         "is_translator" -> JsBoolean(x.is_translator),
         "is_translation_enabled" -> JsBoolean(x.is_translation_enabled),
-        "profile_background_color" -> JsString(x.profile_background_color),
-        "profile_background_image_url" -> JsString(x.profile_background_image_url),
-        "profile_background_image_url_https" -> JsString(x.profile_background_image_url_https),
+        "profile_background_color" -> new JsString(x.profile_background_color),
+        "profile_background_image_url" -> new JsString(x.profile_background_image_url),
+        "profile_background_image_url_https" -> new JsString(x.profile_background_image_url_https),
         "profile_background_tile" -> JsBoolean(x.profile_background_tile),
-        "profile_image_url" -> JsString(x.profile_image_url),
-        "profile_image_url_https" -> JsString(x.profile_image_url_https),
-        "profile_banner_url" -> JsString(x.profile_banner_url),
-        "profile_link_color" -> JsString(x.profile_link_color),
-        "profile_sidebar_border_color" -> JsString(x.profile_sidebar_border_color),
-        "profile_sidebar_fill_color" -> JsString(x.profile_sidebar_fill_color),
-        "profile_text_color" -> JsString(x.profile_text_color),
+        "profile_image_url" -> new JsString(x.profile_image_url),
+        "profile_image_url_https" -> new JsString(x.profile_image_url_https),
+        "profile_banner_url" -> new JsString(x.profile_banner_url),
+        "profile_link_color" -> new JsString(x.profile_link_color),
+        "profile_sidebar_border_color" -> new JsString(x.profile_sidebar_border_color),
+        "profile_sidebar_fill_color" -> new JsString(x.profile_sidebar_fill_color),
+        "profile_text_color" -> new JsString(x.profile_text_color),
         "profile_use_background_image" -> JsBoolean(x.profile_use_background_image),
         "has_extended_profile" -> JsBoolean(x.has_extended_profile),
         "default_profile" -> JsBoolean(x.default_profile),
@@ -1230,7 +1235,7 @@ object PlayJsonFormats {
         "following" -> JsBoolean(x.following),
         "follow_request_sent" -> JsBoolean(x.follow_request_sent),
         "notifications" -> JsBoolean(x.notifications),
-        "translator_type" -> JsString(x.translator_type)
+        "translator_type" -> new JsString(x.translator_type)
       )
     })
     implicit val v7: Format[TwitterAPI.RetweetedStatus] = Format({
@@ -1265,13 +1270,13 @@ object PlayJsonFormats {
         favorite_count, favorited, retweeted, possibly_sensitive, lang)
     }, (x: TwitterAPI.RetweetedStatus) => {
       toJsObject(
-        "created_at" -> JsString(x.created_at),
-        "id" -> JsNumber(x.id),
-        "id_str" -> JsString(x.id_str),
-        "text" -> JsString(x.text),
+        "created_at" -> new JsString(x.created_at),
+        "id" -> new JsNumber(x.id),
+        "id_str" -> new JsString(x.id_str),
+        "text" -> new JsString(x.text),
         "truncated" -> JsBoolean(x.truncated),
         "entities" -> Json.toJson(x.entities),
-        "source" -> JsString(x.source),
+        "source" -> new JsString(x.source),
         "in_reply_to_status_id" -> Json.toJson(x.in_reply_to_status_id),
         "in_reply_to_status_id_str" -> Json.toJson(x.in_reply_to_status_id_str),
         "in_reply_to_user_id" -> Json.toJson(x.in_reply_to_user_id),
@@ -1282,12 +1287,12 @@ object PlayJsonFormats {
         "place" -> Json.toJson(x.place),
         "contributors" -> Json.toJson(x.contributors),
         "is_quote_status" -> JsBoolean(x.is_quote_status),
-        "retweet_count" -> JsNumber(x.retweet_count),
-        "favorite_count" -> JsNumber(x.favorite_count),
+        "retweet_count" -> new JsNumber(x.retweet_count),
+        "favorite_count" -> new JsNumber(x.favorite_count),
         "favorited" -> JsBoolean(x.favorited),
         "retweeted" -> JsBoolean(x.retweeted),
         "possibly_sensitive" -> JsBoolean(x.possibly_sensitive),
-        "lang" -> JsString(x.lang)
+        "lang" -> new JsString(x.lang)
       )
     })
     Format({
@@ -1323,13 +1328,13 @@ object PlayJsonFormats {
         retweeted, possibly_sensitive, lang)
     }, (x: TwitterAPI.Tweet) => {
       toJsObject(
-        "created_at" -> JsString(x.created_at),
-        "id" -> JsNumber(x.id),
-        "id_str" -> JsString(x.id_str),
-        "text" -> JsString(x.text),
+        "created_at" -> new JsString(x.created_at),
+        "id" -> new JsNumber(x.id),
+        "id_str" -> new JsString(x.id_str),
+        "text" -> new JsString(x.text),
         "truncated" -> JsBoolean(x.truncated),
         "entities" -> Json.toJson(x.entities),
-        "source" -> JsString(x.source),
+        "source" -> new JsString(x.source),
         "in_reply_to_status_id" -> Json.toJson(x.in_reply_to_status_id),
         "in_reply_to_status_id_str" -> Json.toJson(x.in_reply_to_status_id_str),
         "in_reply_to_user_id" -> Json.toJson(x.in_reply_to_user_id),
@@ -1341,12 +1346,12 @@ object PlayJsonFormats {
         "contributors" -> Json.toJson(x.contributors),
         "retweeted_status" -> Json.toJson(x.retweeted_status),
         "is_quote_status" -> JsBoolean(x.is_quote_status),
-        "retweet_count" -> JsNumber(x.retweet_count),
-        "favorite_count" -> JsNumber(x.favorite_count),
+        "retweet_count" -> new JsNumber(x.retweet_count),
+        "favorite_count" -> new JsNumber(x.favorite_count),
         "favorited" -> JsBoolean(x.favorited),
         "retweeted" -> JsBoolean(x.retweeted),
         "possibly_sensitive" -> JsBoolean(x.possibly_sensitive),
-        "lang" -> JsString(x.lang)
+        "lang" -> new JsString(x.lang)
       )
     })
   }

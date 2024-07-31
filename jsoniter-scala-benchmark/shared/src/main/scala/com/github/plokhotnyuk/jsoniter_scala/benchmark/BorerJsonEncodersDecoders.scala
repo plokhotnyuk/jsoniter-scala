@@ -6,7 +6,6 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import io.bullet.borer.{AdtEncodingStrategy, Codec, Decoder, Encoder, Reader, Writer}
-import io.bullet.borer.Borer.Error._
 import io.bullet.borer.Json.DecodingConfig
 import io.bullet.borer.derivation.ArrayBasedCodecs
 import io.bullet.borer.derivation.MapBasedCodecs._
