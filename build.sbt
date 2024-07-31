@@ -250,7 +250,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("3.4.2", "2.13.14"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
-      case _ => Seq("-Yretain-trees", "-Xmax-inlines:100")
+      case _ => Seq("-source:3.3", "-Yretain-trees", "-Xmax-inlines:100")
     }),
     libraryDependencies ++= Seq(
       "io.spray" %% "spray-json" % "1.3.6",
