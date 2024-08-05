@@ -5,20 +5,11 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, ReaderConfig, Writ
 import smithy4s.{Blob, Schema, Timestamp}
 import smithy4s.json.Json
 import smithy4s.schema.Schema._
-
 import java.time.Instant
 import java.util.UUID
 import scala.collection.immutable.{ArraySeq, Seq}
 
 object Smithy4sJCodecs {
-  private[this] def toOptList[A](xs: List[A]): Option[List[A]] =
-    if (xs.isEmpty) None
-    else Some(xs)
-
-  private[this] def toOpt[A](x: A, default: A): Option[A] =
-    if (x == default) None
-    else Some(x)
-
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
@@ -43,11 +34,11 @@ object Smithy4sJCodecs {
     string.required[AnyVals]("ch", _.ch.a.toString),
     double.required[AnyVals]("dbl", _.dbl.a),
     float.required[AnyVals]("f", _.f.a)
-  )((b, s, i, l, bl, st, dbl, f) => AnyVals(ByteVal(b), ShortVal(s), IntVal(i), LongVal(l), BooleanVal(bl),
-    CharVal({
+  )((b, s, i, l, bl, st, dbl, f) => AnyVals(new ByteVal(b), new ShortVal(s), new IntVal(i), new LongVal(l), new BooleanVal(bl),
+    new CharVal({
       if (st.length == 1) st.charAt(0)
       else sys.error("illegal char")
-    }), DoubleVal(dbl), FloatVal(f))))
+    }), new DoubleVal(dbl), new FloatVal(f))))
   implicit val arrayOfBigDecimalsJCodec: JsonCodec[Array[BigDecimal]] =
     Json.deriveJsonCodec(bijection(indexedSeq(bigdecimal), (x: IndexedSeq[BigDecimal]) => x match {
       case x: ArraySeq[BigDecimal] => x.unsafeArray.asInstanceOf[Array[BigDecimal]]
@@ -948,4 +939,14 @@ object Smithy4sJCodecs {
     bijection(list(tweetSchema), (x: List[TwitterAPI.Tweet]) => x.toSeq, (x: Seq[TwitterAPI.Tweet]) => x.toList)
   })
   implicit val vectorOfBooleansJCodec: JsonCodec[Vector[Boolean]] = Json.deriveJsonCodec(vector(boolean))
+
+  @inline
+  private[this] def toOptList[A](xs: List[A]): Option[List[A]] =
+    if (xs.isEmpty) None
+    else Some(xs)
+
+  @inline
+  private[this] def toOpt[A](x: A, default: A): Option[A] =
+    if (x == default) None
+    else Some(x)
 }

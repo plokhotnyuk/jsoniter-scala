@@ -8,14 +8,16 @@ import scala.collection.immutable.{BitSet, IndexedSeq, IntMap, Map, Seq}
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
-object PlayJsonFormats {
+object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
+  private[this] val __ = JsPath
+
   def stringFormat[A](name: String)(f: String => A): Format[A] = new Format[A] {
     override def reads(js: JsValue): JsResult[A] =
       try new JsSuccess(f(js.asInstanceOf[JsString].value)) catch {
         case NonFatal(_) => JsError(s"expected.${name}string")
       }
 
-    override def writes(v: A): JsValue = JsString(v.toString)
+    override def writes(v: A): JsValue = new JsString(v.toString)
   }
 
   implicit def mutableMapReads[A, B](implicit mapReads: Reads[Map[A, B]]): Reads[mutable.Map[A, B]] =
@@ -79,17 +81,17 @@ object PlayJsonFormats {
     for {
       s <- (__ \ "s").read[String]
       i <- (__ \ "i").read[Int]
-    } yield MissingRequiredFields(s, i)
+    } yield new MissingRequiredFields(s, i)
   }, (x: MissingRequiredFields) => {
     toJsObject(
-      "s" -> JsString(x.s),
-      "i" -> JsNumber(x.i)
+      "s" -> new JsString(x.s),
+      "i" -> new JsNumber(x.i)
     )
   })
   implicit lazy val nestedStructsFormat: Format[NestedStructs] = Format({
     for {
       n <- (__ \ "n").lazyReadNullable(nestedStructsFormat)
-    } yield NestedStructs(n)
+    } yield new NestedStructs(n)
   }, (x: NestedStructs) => {
     toJsObject(
       "n" -> Json.toJson(x.n)
@@ -99,31 +101,31 @@ object PlayJsonFormats {
     val v1: Format[X] = Format({
       for {
         a <- (__ \ "a").read[Int]
-      } yield X(a)
+      } yield new X(a)
     }, (x: X) => {
       toJsObject(
-        "type" -> JsString("X"),
-        "a" -> JsNumber(x.a)
+        "type" -> new JsString("X"),
+        "a" -> new JsNumber(x.a)
       )
     })
     val v2: Format[Y] = Format({
       for {
         b <- (__ \ "b").read[String]
-      } yield Y(b)
+      } yield new Y(b)
     }, (x: Y) => {
       toJsObject(
-        "type" -> JsString("Y"),
-        "b" -> JsString(x.b)
+        "type" -> new JsString("Y"),
+        "b" -> new JsString(x.b)
       )
     })
     val v3: Format[Z] = Format({
       for {
         l <- (__ \ "l").lazyRead[ADTBase](adtBaseFormat)
         r <- (__ \ "r").lazyRead[ADTBase](adtBaseFormat)
-      } yield Z(l, r)
+      } yield new Z(l, r)
     }, (x: Z) => {
       toJsObject(
-        "type" -> JsString("Z"),
+        "type" -> new JsString("Z"),
         "l" -> Json.toJson(x.l)(adtBaseFormat),
         "r" -> Json.toJson(x.r)(adtBaseFormat)
       )
@@ -149,17 +151,17 @@ object PlayJsonFormats {
       ch <- (__ \ "ch").read[Char]
       dbl <- (__ \ "dbl").read[Double]
       f <- (__ \ "f").read[Float]
-    } yield AnyVals(ByteVal(b), ShortVal(s), IntVal(i), LongVal(l), BooleanVal(bl), CharVal(ch), DoubleVal(dbl),
-      FloatVal(f))
+    } yield new AnyVals(new ByteVal(b), new ShortVal(s), new IntVal(i), new LongVal(l), new BooleanVal(bl), new CharVal(ch),
+      new DoubleVal(dbl), new FloatVal(f))
   }, (x: AnyVals) => {
     toJsObject(
       "b" -> Json.toJson(x.b.a),
       "s" -> Json.toJson(x.s.a),
-      "i" -> JsNumber(x.i.a),
-      "l" -> JsNumber(x.l.a),
+      "i" -> new JsNumber(x.i.a),
+      "l" -> new JsNumber(x.l.a),
       "bl" -> JsBoolean(x.bl.a),
       "ch" -> Json.toJson(x.ch.a),
-      "dbl" -> JsNumber(x.dbl.a),
+      "dbl" -> new JsNumber(x.dbl.a),
       "f" -> Json.toJson(x.f.a)
     )
   })
@@ -179,7 +181,7 @@ object PlayJsonFormats {
       ch <- (__ \ "ch").read[Char]
       dbl <- (__ \ "dbl").read[Double]
       f <- (__ \ "f").read[Float]
-    } yield Primitives(b, s, i, l, bl, ch, dbl, f)
+    } yield new Primitives(b, s, i, l, bl, ch, dbl, f)
   }, (x: Primitives) => {
     toJsObject(
       "b" -> Json.toJson(x.b),
@@ -196,7 +198,7 @@ object PlayJsonFormats {
     for {
       s <- (__ \ "s").read[String]
       i <- (__ \ "i").read[Int]
-    } yield ExtractFields(s, i)
+    } yield new ExtractFields(s, i)
   }, (x: ExtractFields) => {
     toJsObject(
       "s" -> new JsString(x.s),
@@ -207,7 +209,7 @@ object PlayJsonFormats {
     val v1: Format[GeoJSON.Point] = Format({
       for {
         coordinates <- (__ \ "coordinates").read[(Double, Double)]
-      } yield GeoJSON.Point(coordinates)
+      } yield new GeoJSON.Point(coordinates)
     }, (x: GeoJSON.Point) => {
       toJsObject(
         "type" -> new JsString("Point"),
@@ -217,7 +219,7 @@ object PlayJsonFormats {
     val v2: Format[GeoJSON.MultiPoint] = Format({
       for {
         coordinates <- (__ \ "coordinates").read[IndexedSeq[(Double, Double)]]
-      } yield GeoJSON.MultiPoint(coordinates)
+      } yield new GeoJSON.MultiPoint(coordinates)
     }, (x: GeoJSON.MultiPoint) => {
       toJsObject(
         "type" -> new JsString("MultiPoint"),
@@ -227,7 +229,7 @@ object PlayJsonFormats {
     val v3: Format[GeoJSON.LineString] = Format({
       for {
         coordinates <- (__ \ "coordinates").read[IndexedSeq[(Double, Double)]]
-      } yield GeoJSON.LineString(coordinates)
+      } yield new GeoJSON.LineString(coordinates)
     }, (x: GeoJSON.LineString) => {
       toJsObject(
         "type" -> new JsString("LineString"),
@@ -237,7 +239,7 @@ object PlayJsonFormats {
     val v4: Format[GeoJSON.MultiLineString] = Format({
       for {
         coordinates <- (__ \ "coordinates").read[IndexedSeq[IndexedSeq[(Double, Double)]]]
-      } yield GeoJSON.MultiLineString(coordinates)
+      } yield new GeoJSON.MultiLineString(coordinates)
     }, (x: GeoJSON.MultiLineString) => {
       toJsObject(
         "type" -> new JsString("MultiLineString"),
@@ -247,7 +249,7 @@ object PlayJsonFormats {
     val v5: Format[GeoJSON.Polygon] = Format({
       for {
         coordinates <- (__ \ "coordinates").read[IndexedSeq[IndexedSeq[(Double, Double)]]]
-      } yield GeoJSON.Polygon(coordinates)
+      } yield new GeoJSON.Polygon(coordinates)
     }, (x: GeoJSON.Polygon) => {
       toJsObject(
         "type" -> new JsString("Polygon"),
@@ -257,7 +259,7 @@ object PlayJsonFormats {
     val v6: Format[GeoJSON.MultiPolygon] = Format({
       for {
         coordinates <- (__ \ "coordinates").read[IndexedSeq[IndexedSeq[IndexedSeq[(Double, Double)]]]]
-      } yield GeoJSON.MultiPolygon(coordinates)
+      } yield new GeoJSON.MultiPolygon(coordinates)
     }, (x: GeoJSON.MultiPolygon) => {
       toJsObject(
         "type" -> new JsString("MultiPolygon"),
@@ -283,7 +285,7 @@ object PlayJsonFormats {
     val v8: Format[GeoJSON.GeometryCollection] = Format({
       for {
         geometries <- (__ \ "geometries").read[IndexedSeq[GeoJSON.SimpleGeometry]]
-      } yield GeoJSON.GeometryCollection(geometries)
+      } yield new GeoJSON.GeometryCollection(geometries)
     }, (x: GeoJSON.GeometryCollection) => {
       toJsObject(
         "type" -> new JsString("GeometryCollection"),
@@ -313,7 +315,7 @@ object PlayJsonFormats {
         properties <- (__ \ "properties").read[Map[String, String]]
         geometry <- (__ \ "geometry").read[GeoJSON.Geometry](v9) // FIXME: Passing an explicit format due to compilation error with Scala 3
         bbox <- (__ \ "bbox").readNullable[(Double, Double, Double, Double)]
-      } yield GeoJSON.Feature(properties, geometry, bbox)
+      } yield new GeoJSON.Feature(properties, geometry, bbox)
     }, (x: GeoJSON.Feature) => {
       toJsObject(
         "type" -> new JsString("Feature"),
@@ -332,7 +334,7 @@ object PlayJsonFormats {
       for {
         features <- (__ \ "features").read[IndexedSeq[GeoJSON.SimpleGeoJSON]]
         bbox <- (__ \ "bbox").readNullable[(Double, Double, Double, Double)]
-      } yield GeoJSON.FeatureCollection(features, bbox)
+      } yield new GeoJSON.FeatureCollection(features, bbox)
     }, (x: GeoJSON.FeatureCollection) => {
       toJsObject(
         "type" -> new JsString("FeatureCollection"),
@@ -364,7 +366,7 @@ object PlayJsonFormats {
         expired <- (__ \ "expired").read[Boolean]
         created_at <- (__ \ "created_at").read[Instant]
         expires_at <- (__ \ "expires_at").read[Instant]
-      } yield GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url, expired,
+      } yield new GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url, expired,
         created_at, expires_at)
     }, (x: GitHubActionsAPI.Artifact) => {
       toJsObject(
@@ -383,7 +385,7 @@ object PlayJsonFormats {
       for {
         total_count <- (__ \ "total_count").read[Int]
         artifacts <- (__ \ "artifacts").read[Seq[GitHubActionsAPI.Artifact]]
-      } yield GitHubActionsAPI.Response(total_count, artifacts)
+      } yield new GitHubActionsAPI.Response(total_count, artifacts)
     }, (x: GitHubActionsAPI.Response) => {
       toJsObject(
         "total_count" -> new JsNumber(x.total_count),
@@ -396,7 +398,7 @@ object PlayJsonFormats {
       for {
         text <- (__ \ "text").read[String]
         value <- (__ \ "value").read[Int]
-      } yield GoogleMapsAPI.Value(text, value)
+      } yield new GoogleMapsAPI.Value(text, value)
     }, (x: GoogleMapsAPI.Value) => {
       toJsObject(
         "text" -> new JsString(x.text),
@@ -408,7 +410,7 @@ object PlayJsonFormats {
         distance <- (__ \ "distance").read[GoogleMapsAPI.Value]
         duration <- (__ \ "duration").read[GoogleMapsAPI.Value]
         status <- (__ \ "status").read[String]
-      } yield GoogleMapsAPI.Elements(distance, duration, status)
+      } yield new GoogleMapsAPI.Elements(distance, duration, status)
     }, (x: GoogleMapsAPI.Elements) => {
       toJsObject(
         "distance" -> Json.toJson(x.distance),
@@ -419,7 +421,7 @@ object PlayJsonFormats {
     implicit val v3: Format[GoogleMapsAPI.Rows] = Format({
       for {
         elements <- (__ \ "elements").readWithDefault[IndexedSeq[GoogleMapsAPI.Elements]](Vector.empty)
-      } yield GoogleMapsAPI.Rows(elements)
+      } yield new GoogleMapsAPI.Rows(elements)
     }, (x: GoogleMapsAPI.Rows) => {
       toJsObject(
         "elements" -> Json.toJson(x.elements)
@@ -431,7 +433,7 @@ object PlayJsonFormats {
         origin_addresses <- (__ \ "origin_addresses").readWithDefault[IndexedSeq[String]](Vector.empty)
         rows <- (__ \ "rows").readWithDefault[IndexedSeq[GoogleMapsAPI.Rows]](Vector.empty)
         status <- (__ \ "status").read[String]
-      } yield GoogleMapsAPI.DistanceMatrix(destination_addresses, origin_addresses, rows, status)
+      } yield new GoogleMapsAPI.DistanceMatrix(destination_addresses, origin_addresses, rows, status)
     }, (x: GoogleMapsAPI.DistanceMatrix) => {
       toJsObject(
         "destination_addresses" -> Json.toJson(x.destination_addresses),
@@ -447,7 +449,7 @@ object PlayJsonFormats {
         id <- (__ \ "id").readNullable[String]
         name <- (__ \ "name").readNullable[String]
         value <- (__ \ "value").readNullable[String]
-      } yield OpenRTB.Segment(id, name, value)
+      } yield new OpenRTB.Segment(id, name, value)
     }, (x: OpenRTB.Segment) => {
       toJsObject(
         "id" -> Json.toJson(x.id),
@@ -462,7 +464,7 @@ object PlayJsonFormats {
         wratio <- (__ \ "wratio").readNullable[Int]
         hratio <- (__ \ "hratio").readNullable[Int]
         wmin <- (__ \ "wmin").readNullable[Int]
-      } yield OpenRTB.Format(w, h, wratio, hratio, wmin)
+      } yield new OpenRTB.Format(w, h, wratio, hratio, wmin)
     }, (x: OpenRTB.Format) => {
       toJsObject(
         "w" -> Json.toJson(x.w),
@@ -480,7 +482,7 @@ object PlayJsonFormats {
         at <- (__ \ "at").readNullable[Int]
         wseat <- (__ \ "wseat").readWithDefault[List[String]](Nil)
         wadomain <- (__ \ "wadomain").readWithDefault[List[String]](Nil)
-      } yield OpenRTB.Deal(id, bidfloor, bidfloorcur, at, wseat, wadomain)
+      } yield new OpenRTB.Deal(id, bidfloor, bidfloorcur, at, wseat, wadomain)
     }, (x: OpenRTB.Deal) => {
       toJsObject(
         "id" -> new JsString(x.id),
@@ -496,7 +498,7 @@ object PlayJsonFormats {
         type_ <- (__ \ "type").read[String]
         value <- (__ \ "value").read[Double]
         vendor <- (__ \ "vendor").readNullable[String]
-      } yield OpenRTB.Metric(type_, value, vendor)
+      } yield new OpenRTB.Metric(type_, value, vendor)
     }, (x: OpenRTB.Metric) => {
       toJsObject(
         "type" -> new JsString(x.`type`),
@@ -522,7 +524,7 @@ object PlayJsonFormats {
         api <- (__ \ "api").readWithDefault[List[Int]](Nil)
         id <- (__ \ "id").readNullable[String]
         vcm <- (__ \ "vcm").readNullable[Int]
-      } yield OpenRTB.Banner(format, w, h, wmax, hmax, wmin, hmin, btype, battr, pos, mimes, topframe, expdir, api, id,
+      } yield new OpenRTB.Banner(format, w, h, wmax, hmax, wmin, hmin, btype, battr, pos, mimes, topframe, expdir, api, id,
         vcm)
     }, (x: OpenRTB.Banner) => {
       toJsObject(
@@ -564,7 +566,7 @@ object PlayJsonFormats {
         feed <- (__ \ "feed").readNullable[Int]
         stitched <- (__ \ "stitched").readNullable[Int]
         nvol <- (__ \ "nvol").readNullable[Int]
-      } yield OpenRTB.Audio(mimes, minduration, maxduration, protocols, startdelay, sequence, battr, maxextended,
+      } yield new OpenRTB.Audio(mimes, minduration, maxduration, protocols, startdelay, sequence, battr, maxextended,
         minbitrate, maxbitrate, delivery, companionad, api, companiontype, maxseq, feed, stitched, nvol)
     }, (x: OpenRTB.Audio) => {
       toJsObject(
@@ -615,7 +617,7 @@ object PlayJsonFormats {
         companionad <- (__ \ "companionad").readWithDefault[List[OpenRTB.Banner]](Nil)
         api <- (__ \ "api").readWithDefault[List[Int]](Nil)
         companiontype <- (__ \ "companiontype").readWithDefault[List[Int]](Nil)
-      } yield OpenRTB.Video(mimes, minduration, maxduration, protocols, protocol, w, h, startdelay, placement,
+      } yield new OpenRTB.Video(mimes, minduration, maxduration, protocols, protocol, w, h, startdelay, placement,
         linearity, skip, skipmin, skipafter, sequence, battr, maxextended, minbitrate, maxbitrate, boxingallowed,
         playbackmethod, playbackend, delivery, pos, companionad, api, companiontype)
     }, (x: OpenRTB.Video) => {
@@ -654,7 +656,7 @@ object PlayJsonFormats {
         ver <- (__ \ "ver").readNullable[String]
         api <- (__ \ "api").readWithDefault[List[Int]](Nil)
         battr <- (__ \ "battr").readWithDefault[List[Int]](Nil)
-      } yield OpenRTB.Native(request, ver, api, battr)
+      } yield new OpenRTB.Native(request, ver, api, battr)
     }, (x: OpenRTB.Native) => {
       toJsObject(
         "request" -> new JsString(x.request),
@@ -667,7 +669,7 @@ object PlayJsonFormats {
       for {
         private_auction <- (__ \ "private_auction").readWithDefault[Int](0)
         deals <- (__ \ "deals").readWithDefault[List[OpenRTB.Deal]](Nil)
-      } yield OpenRTB.Pmp(private_auction, deals)
+      } yield new OpenRTB.Pmp(private_auction, deals)
     }, (x: OpenRTB.Pmp) => {
       toJsObject(
         "private_auction" -> toJson(x.private_auction, 0),
@@ -680,7 +682,7 @@ object PlayJsonFormats {
         name <- (__ \ "name").readNullable[String]
         cat <- (__ \ "cat").readWithDefault[List[String]](Nil)
         domain <- (__ \ "domain").readNullable[String]
-      } yield OpenRTB.Producer(id, name, cat, domain)
+      } yield new OpenRTB.Producer(id, name, cat, domain)
     }, (x: OpenRTB.Producer) => {
       toJsObject(
         "id" -> Json.toJson(x.id),
@@ -694,7 +696,7 @@ object PlayJsonFormats {
         id <- (__ \ "id").readNullable[String]
         name <- (__ \ "name").readNullable[String]
         segment <- (__ \ "segment").readWithDefault[List[OpenRTB.Segment]](Nil)
-      } yield OpenRTB.Data(id, name, segment)
+      } yield new OpenRTB.Data(id, name, segment)
     }, (x: OpenRTB.Data) => {
       toJsObject(
         "id" -> Json.toJson(x.id),
@@ -729,7 +731,7 @@ object PlayJsonFormats {
         language <- (__ \ "language").readNullable[String]
         embeddable <- (__ \ "embeddable").readNullable[Int]
         data <- (__ \ "data").readNullable[OpenRTB.Data]
-      } yield OpenRTB.Content(id, episode, title, series, season, artist, genre, album, isrc, producer, url, cat, prodq,
+      } yield new OpenRTB.Content(id, episode, title, series, season, artist, genre, album, isrc, producer, url, cat, prodq,
         videoquality, context, contentrating, userrating, qagmediarating, keywords, livestream, sourcerelationship, len,
         language, embeddable, data)
     }, (x: OpenRTB.Content) => {
@@ -766,7 +768,7 @@ object PlayJsonFormats {
         name <- (__ \ "name").readNullable[String]
         cat <- (__ \ "cat").readWithDefault[List[String]](Nil)
         domain <- (__ \ "domain").readNullable[String]
-      } yield OpenRTB.Publisher(id, name, cat, domain)
+      } yield new OpenRTB.Publisher(id, name, cat, domain)
     }, (x: OpenRTB.Publisher) => {
       toJsObject(
         "id" -> Json.toJson(x.id),
@@ -790,7 +792,7 @@ object PlayJsonFormats {
         city <- (__ \ "city").readNullable[String]
         zip <- (__ \ "zip").readNullable[String]
         utcoffset <- (__ \ "utcoffset").readNullable[String]
-      } yield OpenRTB.Geo(lat, lon, type_, accuracy, lastfix, ipservice, country, region, regionfips104, metro, city,
+      } yield new OpenRTB.Geo(lat, lon, type_, accuracy, lastfix, ipservice, country, region, regionfips104, metro, city,
         zip, utcoffset)
     }, (x: OpenRTB.Geo) => {
       toJsObject(
@@ -828,7 +830,7 @@ object PlayJsonFormats {
         secure <- (__ \ "secure").readWithDefault[Int](0)
         iframebuster <- (__ \ "iframebuster").readWithDefault[List[String]](Nil)
         exp <- (__ \ "exp").readNullable[Int]
-      } yield OpenRTB.Imp(id, metric, banner, video, audio, native, pmp, displaymanager, displaymanagerver, instl,
+      } yield new OpenRTB.Imp(id, metric, banner, video, audio, native, pmp, displaymanager, displaymanagerver, instl,
         tagid, bidfloor, bidfloorcur, clickbrowser, secure, iframebuster, exp)
     }, (x: OpenRTB.Imp) => {
       toJsObject(
@@ -867,7 +869,7 @@ object PlayJsonFormats {
         publisher <- (__ \ "publisher").readNullable[OpenRTB.Publisher]
         content <- (__ \ "content").readNullable[OpenRTB.Content]
         keywords <- (__ \ "keywords").readNullable[String]
-      } yield OpenRTB.Site(id, name, domain, cat, sectioncat, pagecat, page, ref, search, mobile, privacypolicy,
+      } yield new OpenRTB.Site(id, name, domain, cat, sectioncat, pagecat, page, ref, search, mobile, privacypolicy,
         publisher, content, keywords)
     }, (x: OpenRTB.Site) => {
       toJsObject(
@@ -903,7 +905,7 @@ object PlayJsonFormats {
         publisher <- (__ \ "publisher").readNullable[OpenRTB.Publisher]
         content <- (__ \ "content").readNullable[OpenRTB.Content]
         keywords <- (__ \ "keywords").readNullable[String]
-      } yield OpenRTB.App(id, name, bundle, domain, storeurl, cat, sectioncat, pagecat, ver, privacypolicy, paid,
+      } yield new OpenRTB.App(id, name, bundle, domain, storeurl, cat, sectioncat, pagecat, ver, privacypolicy, paid,
         publisher, content, keywords)
     }, (x: OpenRTB.App) => {
       toJsObject(
@@ -954,7 +956,7 @@ object PlayJsonFormats {
         dpidmd5 <- (__ \ "dpidmd5").readNullable[String]
         macsha1 <- (__ \ "macsha1").readNullable[String]
         macmd5 <- (__ \ "macmd5").readNullable[String]
-      } yield OpenRTB.Device(ua, geo, dnt, lmt, ip, devicetype, make, model, os, osv, hwv, h, w, ppi, pxratio, js,
+      } yield new OpenRTB.Device(ua, geo, dnt, lmt, ip, devicetype, make, model, os, osv, hwv, h, w, ppi, pxratio, js,
         geofetch, flashver, language, carrier, mccmnc, connectiontype, ifa, didsha1, didmd5, dpidsha1, dpidmd5, macsha1,
         macmd5)
     }, (x: OpenRTB.Device) => {
@@ -1000,7 +1002,7 @@ object PlayJsonFormats {
         customdata <- (__ \ "customdata").readNullable[String]
         geo <- (__ \ "geo").readNullable[OpenRTB.Geo]
         data <- (__ \ "data").readNullable[OpenRTB.Data]
-      } yield OpenRTB.User(id, buyeruid, yob, gender, keywords, customdata, geo, data)
+      } yield new OpenRTB.User(id, buyeruid, yob, gender, keywords, customdata, geo, data)
     }, (x: OpenRTB.User) => {
       toJsObject(
         "id" -> Json.toJson(x.id),
@@ -1018,7 +1020,7 @@ object PlayJsonFormats {
         fd <- (__ \ "fd").readNullable[Int]
         tid <- (__ \ "tid").readNullable[String]
         pchain <- (__ \ "pchain").readNullable[String]
-      } yield OpenRTB.Source(fd, tid, pchain)
+      } yield new OpenRTB.Source(fd, tid, pchain)
     }, (x: OpenRTB.Source) => {
       toJsObject(
         "fd" -> Json.toJson(x.fd),
@@ -1029,8 +1031,8 @@ object PlayJsonFormats {
     implicit val v21: Format[OpenRTB.Reqs] = Format({
       for {
         coppa <- (__ \ "coppa").read[Int]
-      } yield OpenRTB.Reqs(coppa)
-    }, (x: OpenRTB.Reqs) => toJsObject("coppa" -> JsNumber(x.coppa)))
+      } yield new OpenRTB.Reqs(coppa)
+    }, (x: OpenRTB.Reqs) => toJsObject("coppa" -> new JsNumber(x.coppa)))
     Format({
       for {
         id <- (__ \ "id").read[String]
@@ -1052,7 +1054,7 @@ object PlayJsonFormats {
         bapp <- (__ \ "bapp").readWithDefault[List[String]](Nil)
         source <- (__ \ "source").readNullable[OpenRTB.Source]
         reqs <- (__ \ "reqs").readNullable[OpenRTB.Reqs]
-      } yield OpenRTB.BidRequest(id, imp, site, app, device, user, test, at, tmax, wset, bset, allimps, cur, wlang,
+      } yield new OpenRTB.BidRequest(id, imp, site, app, device, user, test, at, tmax, wset, bset, allimps, cur, wlang,
         bcat, badv, bapp, source, reqs)
     }, (x: OpenRTB.BidRequest) => {
       toJsObject(
@@ -1085,23 +1087,23 @@ object PlayJsonFormats {
         expanded_url <- (__ \ "expanded_url").read[String]
         display_url <- (__ \ "display_url").read[String]
         indices <- (__ \ "indices").readWithDefault[Seq[Int]](Nil)
-      } yield TwitterAPI.Urls(url, expanded_url, display_url, indices)
+      } yield new TwitterAPI.Urls(url, expanded_url, display_url, indices)
     }, (x: TwitterAPI.Urls) => {
       toJsObject(
-        "url" -> JsString(x.url),
+        "url" -> new JsString(x.url),
         "expanded_url" -> new JsString(x.expanded_url),
         "display_url" -> new JsString(x.display_url),
         "indices" -> Json.toJson(x.indices),
       )
     })
     implicit val v2: Format[TwitterAPI.Url] = Format({
-      (__ \ "urls").readWithDefault[Seq[TwitterAPI.Urls]](Nil).map(TwitterAPI.Url.apply)
+      (__ \ "urls").readWithDefault[Seq[TwitterAPI.Urls]](Nil).map(x => new TwitterAPI.Url(x))
     }, (x: TwitterAPI.Url) => toJsObject("urls" -> Json.toJson(x.urls)))
     implicit val v3: Format[TwitterAPI.UserEntities] = Format({
       for {
         url <- (__ \ "url").read[TwitterAPI.Url]
         description <- (__ \ "description").read[TwitterAPI.Url]
-      } yield TwitterAPI.UserEntities(url, description)
+      } yield new TwitterAPI.UserEntities(url, description)
     }, (x: TwitterAPI.UserEntities) => {
       toJsObject(
         "url" -> Json.toJson(x.url),
@@ -1115,7 +1117,7 @@ object PlayJsonFormats {
         id <- (__ \ "id").read[Long]
         id_str <- (__ \ "id_str").read[String]
         indices <- (__ \ "indices").readWithDefault[Seq[Int]](Nil)
-      } yield TwitterAPI.UserMentions(screen_name, name, id, id_str, indices)
+      } yield new TwitterAPI.UserMentions(screen_name, name, id, id_str, indices)
     }, (x: TwitterAPI.UserMentions) => {
       toJsObject(
         "screen_name" -> new JsString(x.screen_name),
@@ -1131,7 +1133,7 @@ object PlayJsonFormats {
         symbols <- (__ \ "symbols").readWithDefault[Seq[String]](Nil)
         user_mentions <- (__ \ "user_mentions").readWithDefault[Seq[TwitterAPI.UserMentions]](Nil)
         urls <- (__ \ "urls").readWithDefault[Seq[TwitterAPI.Urls]](Nil)
-      } yield TwitterAPI.Entities(hashtags, symbols, user_mentions, urls)
+      } yield new TwitterAPI.Entities(hashtags, symbols, user_mentions, urls)
     }, (x: TwitterAPI.Entities) => {
       toJsObject(
         "hashtags" -> Json.toJson(x.hashtags),
@@ -1184,7 +1186,7 @@ object PlayJsonFormats {
         follow_request_sent <- (__ \ "follow_request_sent").read[Boolean]
         notifications <- (__ \ "notifications").read[Boolean]
         translator_type <- (__ \ "translator_type").read[String]
-      } yield TwitterAPI.User(id, id_str, name, screen_name, location, description, url, entities, protected_,
+      } yield new TwitterAPI.User(id, id_str, name, screen_name, location, description, url, entities, protected_,
         followers_count, friends_count, listed_count, created_at, favourites_count, utc_offset, time_zone, geo_enabled,
         verified, statuses_count, lang, contributors_enabled, is_translator, is_translation_enabled,
         profile_background_color, profile_background_image_url, profile_background_image_url_https,
@@ -1264,7 +1266,7 @@ object PlayJsonFormats {
         retweeted <- (__ \ "retweeted").read[Boolean]
         possibly_sensitive <- (__ \ "possibly_sensitive").read[Boolean]
         lang <- (__ \ "lang").read[String]
-      } yield TwitterAPI.RetweetedStatus(created_at, id, id_str, text, truncated, entities, source,
+      } yield new TwitterAPI.RetweetedStatus(created_at, id, id_str, text, truncated, entities, source,
         in_reply_to_status_id, in_reply_to_status_id_str, in_reply_to_user_id, in_reply_to_user_id_str,
         in_reply_to_screen_name, user, geo, coordinates, place, contributors, is_quote_status, retweet_count,
         favorite_count, favorited, retweeted, possibly_sensitive, lang)
@@ -1322,7 +1324,7 @@ object PlayJsonFormats {
         retweeted <- (__ \ "retweeted").read[Boolean]
         possibly_sensitive <- (__ \ "possibly_sensitive").read[Boolean]
         lang <- (__ \ "lang").read[String]
-      } yield TwitterAPI.Tweet(created_at, id, id_str, text, truncated, entities, source, in_reply_to_status_id,
+      } yield new TwitterAPI.Tweet(created_at, id, id_str, text, truncated, entities, source, in_reply_to_status_id,
         in_reply_to_status_id_str, in_reply_to_user_id, in_reply_to_user_id_str, in_reply_to_screen_name, user, geo,
         coordinates, place, contributors, retweeted_status, is_quote_status, retweet_count, favorite_count, favorited,
         retweeted, possibly_sensitive, lang)
@@ -1374,27 +1376,20 @@ object PlayJsonFormats {
     (s: String) => m(s)
   }
   implicit val javaEnumFormat: Format[Suit] = stringFormat("suitenum")(Suit.valueOf)
-  implicit val durationFormat: Format[Duration] = stringFormat("instant")(Duration.parse)
-  implicit lazy val instantFormat: Format[Instant] = stringFormat("instant")(Instant.parse)
-  implicit val localDateTimeFormat: Format[LocalDateTime] = stringFormat("localdatetime")(LocalDateTime.parse)
-  implicit val localDateFormat: Format[LocalDate] = stringFormat("localdate")(LocalDate.parse)
-  implicit val localTimeFormat: Format[LocalTime] = stringFormat("localtime")(LocalTime.parse)
   implicit val monthDayFormat: Format[MonthDay] = stringFormat("monthday")(MonthDay.parse)
-  implicit val offsetDateTimeFormat: Format[OffsetDateTime] = stringFormat("offsetdatetime")(OffsetDateTime.parse)
   implicit val offsetTimeFormat: Format[OffsetTime] = stringFormat("offsettime")(OffsetTime.parse)
-  implicit val periodFormat: Format[Period] = stringFormat("period")(Period.parse)
   implicit val yearFormat: Format[Year] = stringFormat("year")(Year.parse)
   implicit val yearMonthFormat: Format[YearMonth] = stringFormat("yearmonth")(YearMonth.parse)
   implicit val zoneOffsetFormat: Format[ZoneOffset] = stringFormat("zoneoffset")(ZoneOffset.of)
-  implicit val zoneIdFormat: Format[ZoneId] = stringFormat("zoneid")(ZoneId.of)
-  implicit val zonedDateTimeFormat: Format[ZonedDateTime] = stringFormat("zoneddatetime")(ZonedDateTime.parse)
 
   def toJsObject(fields: (String, JsValue)*): JsObject = JsObject(fields.filterNot { case (_, v) =>
     (v eq JsNull) || (v.isInstanceOf[JsArray] && v.asInstanceOf[JsArray].value.isEmpty)
   })
 
+  @inline
   private[this] def readType: Reads[String] = (__ \ "type").read[String]
 
+  @inline
   private[this] def toJson[T](x: T, d: T)(implicit tjs: Writes[T]): JsValue =
     if (x == d) JsNull
     else tjs.writes(x)

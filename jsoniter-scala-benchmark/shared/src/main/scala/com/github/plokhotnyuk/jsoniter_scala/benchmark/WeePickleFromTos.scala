@@ -9,7 +9,6 @@ import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrin
 import com.rallyhealth.weejson.v1.jackson.{JsonGeneratorOps, JsonParserOps}
 import com.rallyhealth.weepickle.v1.WeePickle._
 import com.rallyhealth.weepickle.v1.core.Visitor
-
 import java.time._
 
 object WeePickleFromTos extends WeePickleFromTos2 {
@@ -138,7 +137,6 @@ trait WeePickleFromTos2 {
   }
   implicit val yearMonthFromTo: FromTo[YearMonth] = fromTo[String].bimap(_.toString, YearMonth.parse)
   implicit val yearFromTo: FromTo[Year] = fromTo[String].bimap(_.toString, Year.parse)
-  implicit val zoneIdFromTo: FromTo[ZoneId] = fromTo[String].bimap(_.toString, ZoneId.of)
   implicit val zoneOffsetFromTo: FromTo[ZoneOffset] = fromTo[String].bimap(_.toString, ZoneOffset.of)
 
   val fromNonBinaryByteArray: From[Array[Byte]] = ArrayFrom[Byte](new From[Byte] {

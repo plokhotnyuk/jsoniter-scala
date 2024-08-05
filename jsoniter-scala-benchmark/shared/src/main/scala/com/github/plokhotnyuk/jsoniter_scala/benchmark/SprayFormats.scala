@@ -59,7 +59,7 @@ object SprayFormats extends DefaultJsonProtocol {
       ("i", JsNumber(x.i.a)),
       ("l", JsNumber(x.l.a)),
       ("bl", JsBoolean(x.bl.a)),
-      ("ch", JsString(x.ch.a.toString)),
+      ("ch", new JsString(x.ch.a.toString)),
       ("dbl", JsNumber(x.dbl.a)),
       ("f", JsNumber(x.f.a))
     )
@@ -186,14 +186,14 @@ object SprayFormats extends DefaultJsonProtocol {
 
       override def write(x: GitHubActionsAPI.Artifact): JsValue = JsObject(
         ("id", JsNumber(x.id)),
-        ("node_id", JsString(x.node_id)),
-        ("name", JsString(x.name)),
+        ("node_id", new JsString(x.node_id)),
+        ("name", new JsString(x.name)),
         ("size_in_bytes", JsNumber(x.size_in_bytes)),
-        ("url", JsString(x.url)),
-        ("archive_download_url", JsString(x.archive_download_url)),
-        ("expired", JsString(x.expired.toString)),
-        ("created_at", JsString(x.created_at.toString)),
-        ("expires_at", JsString(x.expires_at.toString)))
+        ("url", new JsString(x.url)),
+        ("archive_download_url", new JsString(x.archive_download_url)),
+        ("expired", new JsString(x.expired.toString)),
+        ("created_at", new JsString(x.created_at.toString)),
+        ("expires_at", new JsString(x.expires_at.toString)))
     }
     jsonFormat2(GitHubActionsAPI.Response.apply)
   }
@@ -257,9 +257,9 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: TwitterAPI.Urls): JsValue = toJsObject(
-        ("url", JsString(x.url)),
-        ("expanded_url", JsString(x.expanded_url)),
-        ("display_url", JsString(x.display_url)),
+        ("url", new JsString(x.url)),
+        ("expanded_url", new JsString(x.expanded_url)),
+        ("display_url", new JsString(x.display_url)),
         ("indices", x.indices.toJson)
       )
     }
@@ -333,39 +333,39 @@ object SprayFormats extends DefaultJsonProtocol {
 
       override def write(x: TwitterAPI.User): JsValue = toJsObject(
         ("id", JsNumber(x.id)),
-        ("id_str", JsString(x.id_str)),
-        ("name", JsString(x.name)),
-        ("screen_name", JsString(x.screen_name)),
-        ("location", JsString(x.location)),
-        ("description", JsString(x.description)),
-        ("url", JsString(x.url)),
+        ("id_str", new JsString(x.id_str)),
+        ("name", new JsString(x.name)),
+        ("screen_name", new JsString(x.screen_name)),
+        ("location", new JsString(x.location)),
+        ("description", new JsString(x.description)),
+        ("url", new JsString(x.url)),
         ("entities", x.entities.toJson),
         ("protected", JsBoolean(x.`protected`)),
         ("followers_count", JsNumber(x.followers_count)),
         ("friends_count", JsNumber(x.friends_count)),
         ("listed_count", JsNumber(x.listed_count)),
-        ("created_at", JsString(x.created_at)),
+        ("created_at", new JsString(x.created_at)),
         ("favourites_count", JsNumber(x.favourites_count)),
         ("utc_offset", JsNumber(x.utc_offset)),
-        ("time_zone", JsString(x.time_zone)),
+        ("time_zone", new JsString(x.time_zone)),
         ("geo_enabled", JsBoolean(x.geo_enabled)),
         ("verified", JsBoolean(x.verified)),
         ("statuses_count", JsNumber(x.statuses_count)),
-        ("lang", JsString(x.lang)),
+        ("lang", new JsString(x.lang)),
         ("contributors_enabled", JsBoolean(x.contributors_enabled)),
         ("is_translator", JsBoolean(x.is_translator)),
         ("is_translation_enabled", JsBoolean(x.is_translation_enabled)),
-        ("profile_background_color", JsString(x.profile_background_color)),
-        ("profile_background_image_url", JsString(x.profile_background_image_url)),
-        ("profile_background_image_url_https", JsString(x.profile_background_image_url_https)),
+        ("profile_background_color", new JsString(x.profile_background_color)),
+        ("profile_background_image_url", new JsString(x.profile_background_image_url)),
+        ("profile_background_image_url_https", new JsString(x.profile_background_image_url_https)),
         ("profile_background_tile", JsBoolean(x.profile_background_tile)),
-        ("profile_image_url", JsString(x.profile_image_url)),
-        ("profile_image_url_https", JsString(x.profile_image_url_https)),
-        ("profile_banner_url", JsString(x.profile_banner_url)),
-        ("profile_link_color", JsString(x.profile_link_color)),
-        ("profile_sidebar_border_color", JsString(x.profile_sidebar_border_color)),
-        ("profile_sidebar_fill_color", JsString(x.profile_sidebar_fill_color)),
-        ("profile_text_color", JsString(x.profile_text_color)),
+        ("profile_image_url", new JsString(x.profile_image_url)),
+        ("profile_image_url_https", new JsString(x.profile_image_url_https)),
+        ("profile_banner_url", new JsString(x.profile_banner_url)),
+        ("profile_link_color", new JsString(x.profile_link_color)),
+        ("profile_sidebar_border_color", new JsString(x.profile_sidebar_border_color)),
+        ("profile_sidebar_fill_color", new JsString(x.profile_sidebar_fill_color)),
+        ("profile_text_color", new JsString(x.profile_text_color)),
         ("profile_use_background_image", JsBoolean(x.profile_use_background_image)),
         ("has_extended_profile", JsBoolean(x.has_extended_profile)),
         ("default_profile", JsBoolean(x.default_profile)),
@@ -373,7 +373,7 @@ object SprayFormats extends DefaultJsonProtocol {
         ("following", JsBoolean(x.following)),
         ("follow_request_sent", JsBoolean(x.follow_request_sent)),
         ("notifications", JsBoolean(x.notifications)),
-        ("translator_type", JsString(x.translator_type))
+        ("translator_type", new JsString(x.translator_type))
       )
     }
     implicit val jf5: RootJsonFormat[TwitterAPI.UserMentions] = new RootJsonFormat[TwitterAPI.UserMentions] {
@@ -389,10 +389,10 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: TwitterAPI.UserMentions): JsValue = toJsObject(
-        ("screen_name", JsString(x.screen_name)),
-        ("name", JsString(x.name)),
+        ("screen_name", new JsString(x.screen_name)),
+        ("name", new JsString(x.name)),
         ("id", JsNumber(x.id)),
-        ("id_str", JsString(x.id_str)),
+        ("id_str", new JsString(x.id_str)),
         ("indices", x.indices.toJson)
       )
     }
@@ -446,13 +446,13 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: TwitterAPI.RetweetedStatus): JsValue = toJsObject(
-        ("created_at", JsString(x.created_at)),
+        ("created_at", new JsString(x.created_at)),
         ("id", JsNumber(x.id)),
-        ("id_str", JsString(x.id_str)),
-        ("text", JsString(x.text)),
+        ("id_str", new JsString(x.id_str)),
+        ("text", new JsString(x.text)),
         ("truncated", JsBoolean(x.truncated)),
         ("entities", x.entities.toJson),
-        ("source", JsString(x.source)),
+        ("source", new JsString(x.source)),
         ("in_reply_to_status_id", x.in_reply_to_status_id.toJson),
         ("in_reply_to_status_id_str", x.in_reply_to_status_id_str.toJson),
         ("in_reply_to_user_id", x.in_reply_to_status_id_str.toJson),
@@ -469,7 +469,7 @@ object SprayFormats extends DefaultJsonProtocol {
         ("favorited", JsBoolean(x.favorited)),
         ("retweeted", JsBoolean(x.retweeted)),
         ("possibly_sensitive", JsBoolean(x.possibly_sensitive)),
-        ("lang", JsString(x.lang))
+        ("lang", new JsString(x.lang))
       )
     }
     new RootJsonFormat[TwitterAPI.Tweet] {
@@ -505,13 +505,13 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: TwitterAPI.Tweet): JsValue = toJsObject(
-        ("created_at", JsString(x.created_at)),
+        ("created_at", new JsString(x.created_at)),
         ("id", JsNumber(x.id)),
-        ("id_str", JsString(x.id_str)),
-        ("text", JsString(x.text)),
+        ("id_str", new JsString(x.id_str)),
+        ("text", new JsString(x.text)),
         ("truncated", JsBoolean(x.truncated)),
         ("entities", x.entities.toJson),
-        ("source", JsString(x.source)),
+        ("source", new JsString(x.source)),
         ("in_reply_to_status_id", x.in_reply_to_status_id.toJson),
         ("in_reply_to_status_id_str", x.in_reply_to_status_id_str.toJson),
         ("in_reply_to_user_id", x.in_reply_to_status_id_str.toJson),
@@ -529,7 +529,7 @@ object SprayFormats extends DefaultJsonProtocol {
         ("favorited", JsBoolean(x.favorited)),
         ("retweeted", JsBoolean(x.retweeted)),
         ("possibly_sensitive", JsBoolean(x.possibly_sensitive)),
-        ("lang", JsString(x.lang))
+        ("lang", new JsString(x.lang))
       )
     }
   }
@@ -882,7 +882,7 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: OpenRTB.Deal): JsValue = toJsObject(
-        ("id", JsString(x.id)),
+        ("id", new JsString(x.id)),
         ("bidfloor", toJson(x.bidfloor, 0.0)),
         ("bidfloorcur", toJson(x.bidfloorcur, "USD")),
         ("at", x.at.toJson),
@@ -936,7 +936,7 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: OpenRTB.Native): JsValue = toJsObject(
-        ("request", JsString(x.request)),
+        ("request", new JsString(x.request)),
         ("ver", x.ver.toJson),
         ("api", x.api.toJson),
         ("battr", x.battr.toJson)
@@ -1103,7 +1103,7 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: OpenRTB.Metric): JsValue = toJsObject(
-        ("type", JsString(x.`type`)),
+        ("type", new JsString(x.`type`)),
         ("value", JsNumber(x.value)),
         ("vendor", x.vendor.toJson)
       )
@@ -1133,7 +1133,7 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: OpenRTB.Imp): JsValue = toJsObject(
-        ("id", JsString(x.id)),
+        ("id", new JsString(x.id)),
         ("metric", x.metric.toJson),
         ("banner", x.banner.toJson),
         ("video", x.video.toJson),
@@ -1201,7 +1201,7 @@ object SprayFormats extends DefaultJsonProtocol {
       }
 
       override def write(x: OpenRTB.BidRequest): JsValue = toJsObject(
-        ("id", JsString(x.id)),
+        ("id", new JsString(x.id)),
         ("imp", x.imp.toJson),
         ("site", x.site.toJson),
         ("app", x.app.toJson),
@@ -1291,6 +1291,7 @@ object SprayFormats extends DefaultJsonProtocol {
       }
     }
 
+  @inline
   private[this] def toJson[T: JsonWriter](x: T, d: T): JsValue =
     if (x == d) JsNull
     else x.toJson

@@ -141,6 +141,6 @@ object BorerJsonEncodersDecoders {
   }
   implicit val Codec(uuidEnc: Encoder[UUID], uuidDec: Decoder[UUID]) = stringCodec(UUID.fromString)
 
-  def stringCodec[T](f: String => T): Codec[T] =
+  private[this] def stringCodec[T](f: String => T): Codec[T] =
     new Codec((w: Writer, value: T) => w.writeString(value.toString), (r: Reader) => f(r.readString()))
 }
