@@ -48,13 +48,7 @@ object CirceEncodersDecoders {
       Encoder.encodeString.contramap[Array[Byte]](Base64.getEncoder.encodeToString))
   implicit val bidRequestC3c: Codec[OpenRTB.BidRequest] = {
     implicit val c21: Codec[OpenRTB.Segment] =
-      Codec.from((c: HCursor) => for {
-        id <- c.downField("id").as[Option[String]]
-        name <- c.downField("name").as[Option[String]]
-        value <- c.downField("value").as[Option[String]]
-      } yield {
-        new OpenRTB.Segment(id, name, value)
-      }, (x: OpenRTB.Segment) => Util.toJObject(
+      Codec.from(deriveDecoder, (x: OpenRTB.Segment) => Util.toJObject(
         ("id", x.id.asJson),
         ("name", x.name.asJson),
         ("value", x.value.asJson)
@@ -72,23 +66,7 @@ object CirceEncodersDecoders {
         ("segment", x.segment.asJson)
       ))
     implicit val c19: Codec[OpenRTB.Geo] =
-      Codec.from((c: HCursor) => for {
-        lat <- c.downField("lat").as[Option[Double]]
-        lon <- c.downField("lon").as[Option[Double]]
-        type_ <- c.downField("type").as[Option[Int]]
-        accuracy <- c.downField("accuracy").as[Option[Int]]
-        lastfix <- c.downField("lastfix").as[Option[Int]]
-        ipservice <- c.downField("ipservice").as[Option[Int]]
-        country <- c.downField("country").as[Option[String]]
-        region <- c.downField("region").as[Option[String]]
-        regionfips104 <- c.downField("regionfips104").as[Option[String]]
-        metro <- c.downField("metro").as[Option[String]]
-        city <- c.downField("city").as[Option[String]]
-        zip <- c.downField("zip").as[Option[String]]
-        utcoffset <- c.downField("utcoffset").as[Option[String]]
-      } yield {
-        new OpenRTB.Geo(lat, lon, type_, accuracy, lastfix, ipservice, country, region, regionfips104, metro, city, zip, utcoffset)
-      }, (x: OpenRTB.Geo) => Util.toJObject(
+      Codec.from(deriveDecoder, (x: OpenRTB.Geo) => Util.toJObject(
         ("lat", x.lat.asJson),
         ("lon", x.lon.asJson),
         ("type", x.`type`.asJson),
@@ -104,18 +82,7 @@ object CirceEncodersDecoders {
         ("utcoffset", x.utcoffset.asJson),
       ))
     implicit val c18: Codec[OpenRTB.User] =
-      Codec.from((c: HCursor) => for {
-        id <- c.downField("id").as[Option[String]]
-        buyeruid <- c.downField("buyeruid").as[Option[String]]
-        yob <- c.downField("yob").as[Option[Int]]
-        gender <- c.downField("gender").as[Option[String]]
-        keywords <- c.downField("keywords").as[Option[String]]
-        customdata <- c.downField("customdata").as[Option[String]]
-        geo <- c.downField("geo").as[Option[OpenRTB.Geo]]
-        data <- c.downField("data").as[Option[OpenRTB.Data]]
-      } yield {
-        new OpenRTB.User(id, buyeruid, yob, gender, keywords, customdata, geo, data)
-      }, (x: OpenRTB.User) => Util.toJObject(
+      Codec.from(deriveDecoder, (x: OpenRTB.User) => Util.toJObject(
         ("id", x.id.asJson),
         ("buyeruid", x.buyeruid.asJson),
         ("yob", x.yob.asJson),
@@ -126,41 +93,7 @@ object CirceEncodersDecoders {
         ("data", x.data.asJson),
       ))
     implicit val c17: Codec[OpenRTB.Device] =
-      Codec.from((c: HCursor) => for {
-        ua <- c.downField("ua").as[Option[String]]
-        geo <- c.downField("geo").as[Option[OpenRTB.Geo]]
-        dnt <- c.downField("dnt").as[Option[Int]]
-        lmt <- c.downField("lmt").as[Option[Int]]
-        ip <- c.downField("ip").as[Option[String]]
-        devicetype <- c.downField("devicetype").as[Option[Int]]
-        make <- c.downField("make").as[Option[String]]
-        model <- c.downField("model").as[Option[String]]
-        os <- c.downField("os").as[Option[String]]
-        osv <- c.downField("osv").as[Option[String]]
-        hwv <- c.downField("hwv").as[Option[String]]
-        h <- c.downField("h").as[Option[Int]]
-        w <- c.downField("w").as[Option[Int]]
-        ppi <- c.downField("ppi").as[Option[Int]]
-        pxratio <- c.downField("pxratio").as[Option[Double]]
-        js <- c.downField("js").as[Option[Int]]
-        geofetch <- c.downField("geofetch").as[Option[Int]]
-        flashver <- c.downField("flashver").as[Option[String]]
-        language <- c.downField("language").as[Option[String]]
-        carrier <- c.downField("carrier").as[Option[String]]
-        mccmnc <- c.downField("mccmnc").as[Option[String]]
-        connectiontype <- c.downField("connectiontype").as[Option[Int]]
-        ifa <- c.downField("ifa").as[Option[String]]
-        didsha1 <- c.downField("didsha1").as[Option[String]]
-        didmd5 <- c.downField("didmd5").as[Option[String]]
-        dpidsha1 <- c.downField("dpidsha1").as[Option[String]]
-        dpidmd5 <- c.downField("dpidmd5").as[Option[String]]
-        macsha1 <- c.downField("macsha1").as[Option[String]]
-        macmd5 <- c.downField("macmd5").as[Option[String]]
-      } yield {
-        new OpenRTB.Device(ua, geo, dnt, lmt, ip, devicetype, make, model, os, osv, hwv, h, w, ppi, pxratio, js,
-          geofetch, flashver, language, carrier, mccmnc, connectiontype, ifa, didsha1, didmd5, dpidsha1, dpidmd5,
-          macsha1, macmd5)
-      }, (x: OpenRTB.Device) => Util.toJObject(
+      Codec.from(deriveDecoder, (x: OpenRTB.Device) => Util.toJObject(
         ("ua", x.ua.asJson),
         ("geo", x.geo.asJson),
         ("dnt", x.dnt.asJson),
@@ -377,15 +310,7 @@ object CirceEncodersDecoders {
         ("deals", x.deals.asJson)
       ))
     implicit val c9: Codec[OpenRTB.Format] =
-      Codec.from((c: HCursor) => for {
-        w <- c.downField("w").as[Option[Int]]
-        h <- c.downField("h").as[Option[Int]]
-        wratio <- c.downField("wratio").as[Option[Int]]
-        hratio <- c.downField("hratio").as[Option[Int]]
-        wmin <- c.downField("wmin").as[Option[Int]]
-      } yield {
-        new OpenRTB.Format(w, h, wratio, hratio, wmin)
-      }, (x: OpenRTB.Format) => Util.toJObject(
+      Codec.from(deriveDecoder, (x: OpenRTB.Format) => Util.toJObject(
         ("w", x.w.asJson),
         ("h", x.h.asJson),
         ("wratio", x.wratio.asJson),
@@ -552,13 +477,7 @@ object CirceEncodersDecoders {
         ("companiontype", x.companiontype.asJson)
       ))
     implicit val c4: Codec[OpenRTB.Metric] =
-      Codec.from((c: HCursor) => for {
-        type_ <- c.downField("type").as[String]
-        value <- c.downField("value").as[Double]
-        vendor <- c.downField("vendor").as[Option[String]]
-      } yield {
-        new OpenRTB.Metric(type_, value, vendor)
-      }, (x: OpenRTB.Metric) => Util.toJObject(
+      Codec.from(deriveDecoder, (x: OpenRTB.Metric) => Util.toJObject(
         ("type", Json.fromString(x.`type`)),
         ("value", x.value.asJson),
         ("vendor", x.vendor.asJson)
@@ -606,13 +525,7 @@ object CirceEncodersDecoders {
       ))
     implicit val c2: Codec[OpenRTB.Reqs] = deriveCodec
     implicit val c1: Codec[OpenRTB.Source] =
-      Codec.from((c: HCursor) => for {
-        fd <- c.downField("fd").as[Option[Int]]
-        tid <- c.downField("tid").as[Option[String]]
-        pchain <- c.downField("pchain").as[Option[String]]
-      } yield {
-        new OpenRTB.Source(fd, tid, pchain)
-      }, (x: OpenRTB.Source) => Util.toJObject(
+      Codec.from(deriveDecoder, (x: OpenRTB.Source) => Util.toJObject(
         ("fd", x.fd.asJson),
         ("tid", x.tid.asJson),
         ("pchain", x.pchain.asJson)

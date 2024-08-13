@@ -83,10 +83,10 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
       i <- (__ \ "i").read[Int]
     } yield new MissingRequiredFields(s, i)
   }, (x: MissingRequiredFields) => {
-    toJsObject(
+    JsObject(Array(
       "s" -> new JsString(x.s),
       "i" -> new JsNumber(x.i)
-    )
+    ))
   })
   implicit lazy val nestedStructsFormat: Format[NestedStructs] = Format({
     for {
@@ -154,7 +154,7 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
     } yield new AnyVals(new ByteVal(b), new ShortVal(s), new IntVal(i), new LongVal(l), new BooleanVal(bl), new CharVal(ch),
       new DoubleVal(dbl), new FloatVal(f))
   }, (x: AnyVals) => {
-    toJsObject(
+    JsObject(Array(
       "b" -> Json.toJson(x.b.a),
       "s" -> Json.toJson(x.s.a),
       "i" -> new JsNumber(x.i.a),
@@ -163,7 +163,7 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
       "ch" -> Json.toJson(x.ch.a),
       "dbl" -> new JsNumber(x.dbl.a),
       "f" -> Json.toJson(x.f.a)
-    )
+    ))
   })
   implicit val bitSetFormat: Format[BitSet] = Format(
     Reads(js => new JsSuccess(BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
@@ -183,7 +183,7 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
       f <- (__ \ "f").read[Float]
     } yield new Primitives(b, s, i, l, bl, ch, dbl, f)
   }, (x: Primitives) => {
-    toJsObject(
+    JsObject(Array(
       "b" -> Json.toJson(x.b),
       "s" -> Json.toJson(x.s),
       "i" -> new JsNumber(x.i),
@@ -192,7 +192,7 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
       "ch" -> Json.toJson(x.ch),
       "dbl" -> new JsNumber(x.dbl),
       "f" -> Json.toJson(x.f)
-    )
+    ))
   })
   implicit val extractFieldsFormat: Format[ExtractFields] = Format({
     for {
@@ -200,10 +200,10 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
       i <- (__ \ "i").read[Int]
     } yield new ExtractFields(s, i)
   }, (x: ExtractFields) => {
-    toJsObject(
+    JsObject(Array(
       "s" -> new JsString(x.s),
       "i" -> new JsNumber(x.i)
-    )
+    ))
   })
   val geoJSONFormat: Format[GeoJSON.GeoJSON] = {
     val v1: Format[GeoJSON.Point] = Format({
@@ -211,10 +211,10 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
         coordinates <- (__ \ "coordinates").read[(Double, Double)]
       } yield new GeoJSON.Point(coordinates)
     }, (x: GeoJSON.Point) => {
-      toJsObject(
+      JsObject(Array(
         "type" -> new JsString("Point"),
         "coordinates" -> Json.toJson(x.coordinates)
-      )
+      ))
     })
     val v2: Format[GeoJSON.MultiPoint] = Format({
       for {
@@ -352,9 +352,6 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
     })
   }
   implicit val gitHubActionsAPIFormat: Format[GitHubActionsAPI.Response] = {
-    implicit val v1: Format[Boolean] = stringFormat[Boolean]("boolean") { s =>
-      "true" == s || "false" != s && sys.error("")
-    }
     implicit val v2: Format[GitHubActionsAPI.Artifact] = Format({
       for {
         id <- (__ \ "id").read[Long]
@@ -363,23 +360,23 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
         size_in_bytes <- (__ \ "size_in_bytes").read[Long]
         url <- (__ \ "url").read[String]
         archive_download_url <- (__ \ "archive_download_url").read[String]
-        expired <- (__ \ "expired").read[Boolean]
+        expired <- (__ \ "expired").read[String].map(s => "true" == s || "false" != s && sys.error(""))
         created_at <- (__ \ "created_at").read[Instant]
         expires_at <- (__ \ "expires_at").read[Instant]
       } yield new GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url, expired,
         created_at, expires_at)
     }, (x: GitHubActionsAPI.Artifact) => {
-      toJsObject(
+      JsObject(Array(
         "id" -> new JsNumber(x.id),
         "node_id" -> new JsString(x.node_id),
         "name" -> new JsString(x.name),
         "size_in_bytes" -> new JsNumber(x.size_in_bytes),
         "url" -> new JsString(x.url),
         "archive_download_url" -> new JsString(x.archive_download_url),
-        "expired" -> Json.toJson(x.expired),
+        "expired" -> new JsString(if (x.expired) "true" else "false"),
         "created_at" -> Json.toJson(x.created_at),
         "expires_at" -> Json.toJson(x.expires_at)
-      )
+      ))
     })
     Format({
       for {
@@ -400,10 +397,10 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
         value <- (__ \ "value").read[Int]
       } yield new GoogleMapsAPI.Value(text, value)
     }, (x: GoogleMapsAPI.Value) => {
-      toJsObject(
+      JsObject(Array(
         "text" -> new JsString(x.text),
         "value" -> new JsNumber(x.value)
-      )
+      ))
     })
     implicit val v2: Format[GoogleMapsAPI.Elements] = Format({
       for {
@@ -412,11 +409,11 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
         status <- (__ \ "status").read[String]
       } yield new GoogleMapsAPI.Elements(distance, duration, status)
     }, (x: GoogleMapsAPI.Elements) => {
-      toJsObject(
+      JsObject(Array(
         "distance" -> Json.toJson(x.distance),
         "duration" -> Json.toJson(x.duration),
         "status" -> new JsString(x.status)
-      )
+      ))
     })
     implicit val v3: Format[GoogleMapsAPI.Rows] = Format({
       for {
@@ -1032,7 +1029,7 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
       for {
         coppa <- (__ \ "coppa").read[Int]
       } yield new OpenRTB.Reqs(coppa)
-    }, (x: OpenRTB.Reqs) => toJsObject("coppa" -> new JsNumber(x.coppa)))
+    }, (x: OpenRTB.Reqs) => JsObject(Array("coppa" -> new JsNumber(x.coppa))))
     Format({
       for {
         id <- (__ \ "id").read[String]
