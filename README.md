@@ -699,15 +699,16 @@ Other benchmarks with results for jsoniter-scala:
 
 ### Run Scala.js benchmarks
 
-Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module:
+Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module for Scala 2.13 and Scala 3:
 ```sh
-sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-11 ++3.4.2 jsoniter-scala-benchmarkJS/fullOptJS
+sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-11 +jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
 ```sh
 cd jsoniter-scala-benchmark/js
 open scala-3-fullopt.html
+open scala-2.13-fullopt.html
 ```
 
 Then select the batch mode with storing results in a `.zip` file.
