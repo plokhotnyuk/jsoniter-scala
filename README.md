@@ -286,7 +286,13 @@ For more use cases of jsoniter-scala, please, check out tests:
 - [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
 - [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
 
-Also, all Scala 3 only features are tested by specs in [this directory](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros).
+All Scala 3 only features are tested by specs in [this directory](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros).
+
+```text
+NOTE: Until official docs will be published, please, use all these tests as tutorials and how-tos to help in your 
+journey to become happy users. Also, they are recommended to skim through for checking of your expectation before
+selection of this library among others.
+```
 
 You can use the following on-line services to generate an initial version of your data structures from JSON
 samples:
