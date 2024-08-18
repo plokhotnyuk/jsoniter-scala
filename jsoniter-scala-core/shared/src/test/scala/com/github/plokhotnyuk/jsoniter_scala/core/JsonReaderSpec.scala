@@ -9,9 +9,11 @@ import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+import org.scalacheck.Gen.choose
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
 import java.time.format.DateTimeParseException
 import scala.collection.AbstractIterator
 import scala.util.Random
@@ -2399,6 +2401,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsByte() shouldBe n
     }
 
+    def check2(s: String, ws: String): Unit = {
+      val n = s.toByte
+      reader(s"""$ws"$s":""").readKeyAsByte() shouldBe n
+      reader(s"""$ws"$s"""").readStringAsByte() shouldBe n
+    }
+
     def checkError(s: String, error1: String, error2: String): Unit = {
       assert(intercept[JsonReaderException](reader(s).readByte()).getMessage.startsWith(error1))
       assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsByte()).getMessage.startsWith(error2))
@@ -2407,6 +2415,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
     "parse valid byte values" in {
       forAll(arbitrary[Byte], genWhitespaces, minSuccessful(10000))(check)
+    }
+    "parse keys and strigified values with leading zeros" in {
+      forAll(arbitrary[Byte].map(x => f"$x%05d"), genWhitespaces, minSuccessful(1000))(check2)
     }
     "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
       checkError("123.0", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")
@@ -2454,6 +2465,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsShort() shouldBe n
     }
 
+    def check2(s: String, ws: String): Unit = {
+      val n = s.toShort
+      reader(s"""$ws"$s":""").readKeyAsShort() shouldBe n
+      reader(s"""$ws"$s"""").readStringAsShort() shouldBe n
+    }
+
     def checkError(s: String, error1: String, error2: String): Unit = {
       assert(intercept[JsonReaderException](reader(s).readShort()).getMessage.startsWith(error1))
       assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsShort()).getMessage.startsWith(error2))
@@ -2462,6 +2479,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
     "parse valid short values" in {
       forAll(arbitrary[Short], genWhitespaces, minSuccessful(10000))(check)
+    }
+    "parse keys and strigified values with leading zeros" in {
+      forAll(arbitrary[Short].map(x => f"$x%07d"), genWhitespaces, minSuccessful(1000))(check2)
     }
     "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
       checkError("12345.0", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
@@ -2509,6 +2529,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsInt() shouldBe n
     }
 
+    def check2(s: String, ws: String): Unit = {
+      val n = s.toInt
+      reader(s"""$ws"$s":""").readKeyAsInt() shouldBe n
+      reader(s"""$ws"$s"""").readStringAsInt() shouldBe n
+    }
+
     def checkError(s: String, error1: String, error2: String): Unit = {
       assert(intercept[JsonReaderException](reader(s).readInt()).getMessage.startsWith(error1))
       assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsInt()).getMessage.startsWith(error2))
@@ -2517,6 +2543,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
     "parse valid int values" in {
       forAll(arbitrary[Int], genWhitespaces, minSuccessful(10000))(check)
+    }
+    "parse keys and strigified values with leading zeros" in {
+      forAll(arbitrary[Int].map(x => f"$x%011d"), genWhitespaces, minSuccessful(1000))(check2)
     }
     "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
       checkError("123456789.0", "illegal number, offset: 0x00000009", "illegal number, offset: 0x0000000a")
@@ -2568,6 +2597,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsLong() shouldBe n
     }
 
+    def check2(s: String, ws: String): Unit = {
+      val n = s.toLong
+      reader(s"""$ws"$s":""").readKeyAsLong() shouldBe n
+      reader(s"""$ws"$s"""").readStringAsLong() shouldBe n
+    }
+
     def checkError(s: String, error1: String, error2: String): Unit = {
       assert(intercept[JsonReaderException](reader(s).readLong()).getMessage.startsWith(error1))
       assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsLong()).getMessage.startsWith(error2))
@@ -2576,6 +2611,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
     "parse valid long values" in {
       forAll(arbitrary[Long], genWhitespaces, minSuccessful(10000))(check)
+    }
+    "parse keys and strigified values with leading zeros" in {
+      forAll(arbitrary[Long].map(x => f"$x%021d"), genWhitespaces, minSuccessful(1000))(check2)
     }
     "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
       checkError("1234567890123456789.0", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
@@ -2628,7 +2666,13 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsFloat() shouldBe n
     }
 
-    def check2(s: String, n: Float, ws: String): Unit = {
+    def check2(s: String, ws: String): Unit = {
+      val n = s.toFloat
+      reader(s"""$ws"$s":""").readKeyAsFloat() shouldBe n
+      reader(s"""$ws"$s"""").readStringAsFloat() shouldBe n
+    }
+
+    def check3(s: String, n: Float, ws: String): Unit = {
       assert(reader(ws + s).readFloat().equals(n)) // compare boxed values here to avoid false positives when 0.0f == -0.0f returns true
       assert(reader(s"""$ws"$s":""").readKeyAsFloat().equals(n))
       assert(reader(s"""$ws"$s"""").readStringAsFloat().equals(n))
@@ -2702,10 +2746,22 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-12345678901234567890e-12345678901234567890", -0.0f, ws)
       }
     }
+    "parse keys and strigified values with leading zeros in mantissas and exponents" in {
+      forAll(arbitrary[Float], choose(1, 7), genWhitespaces, minSuccessful(1000)) { (x, z, ws) =>
+        check2({
+          val s = x.toString
+          if (x < 0) s.replace("-", "-" + "0" * z)
+          else "0" * z + {
+            if (s.contains('-')) s.replace("-", "-" + "0" * z)
+            else s.replace("E", "E" + "0" * z)
+          }
+        }, ws)
+      }
+    }
     "parse positive and negative zeroes" in {
       forAll(genWhitespaces) { ws =>
-        check2("0.0", 0.0f, ws)
-        check2("-0.0", -0.0f, ws)
+        check3("0.0", 0.0f, ws)
+        check3("-0.0", -0.0f, ws)
       }
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
@@ -2752,7 +2808,13 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsDouble() shouldBe n
     }
 
-    def check2(s: String, n: Double, ws: String): Unit = {
+    def check2(s: String, ws: String): Unit = {
+      val n = s.toDouble
+      reader(s"""$ws"$s":""").readKeyAsDouble() shouldBe n
+      reader(s"""$ws"$s"""").readStringAsDouble() shouldBe n
+    }
+
+    def check3(s: String, n: Double, ws: String): Unit = {
       assert(reader(ws + s).readDouble().equals(n)) // compare boxed values here to avoid false positives when 0.0 == -0.0 returns true
       assert(reader(s"""$ws"$s":""").readKeyAsDouble().equals(n))
       assert(reader(s"""$ws"$s"""").readStringAsDouble().equals(n))
@@ -2822,10 +2884,22 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-1234567890123456789e-12345678901234567890", -0.0, ws)
       }
     }
+    "parse keys and strigified values with leading zeros in mantissas and exponents" in {
+      forAll(arbitrary[Double], choose(1, 7), genWhitespaces, minSuccessful(1000)) { (x, z, ws) =>
+        check2({
+          val s = x.toString
+          if (x < 0) s.replace("-", "-" + "0" * z)
+          else "0" * z + {
+            if (s.contains('-')) s.replace("-", "-" + "0" * z)
+            else s.replace("E", "E" + "0" * z)
+          }
+        }, ws)
+      }
+    }
     "parse positive and negative zeroes" in {
       forAll(genWhitespaces) { ws =>
-        check2("0.0", 0.0, ws)
-        check2("-0.0", -0.0, ws)
+        check3("0.0", 0.0, ws)
+        check3("-0.0", -0.0, ws)
       }
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
@@ -2885,6 +2959,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsBigInt(null, Int.MaxValue) shouldBe n
     }
 
+    def check2(s: String, ws: String): Unit = {
+      val n = BigInt(s)
+      reader(s"""$ws"$s":""").readKeyAsBigInt(Int.MaxValue) shouldBe n
+      reader(s"""$ws"$s"""").readStringAsBigInt(null, Int.MaxValue) shouldBe n
+    }
+
     def checkError(s: String, error1: String, error2: String): Unit = {
       assert(intercept[JsonReaderException](reader(s).readBigInt(null)).getMessage.startsWith(error1))
       assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsBigInt()).getMessage.startsWith(error2))
@@ -2896,6 +2976,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
     "parse valid number values" in {
       forAll(genBigInt, genWhitespaces, minSuccessful(10000))(check)
+    }
+    "parse keys and strigified values with leading zeros" in {
+      forAll(arbitrary[Long].map(x => f"$x%099d"), genWhitespaces, minSuccessful(10000))(check2)
     }
     "parse big number values without overflow up to limits" in {
       forAll(genWhitespaces) { ws =>
@@ -2977,6 +3060,17 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       compare(reader(s"""$ws"$s"""").readStringAsBigDecimal(null, mc, scaleLimit, digitsLimit), n)
     }
 
+    def check2(s: String, mc: MathContext, scaleLimit: Int, digitsLimit: Int, ws: String): Unit = {
+      def compare(a: BigDecimal, b: BigDecimal): Unit = {
+        a.bigDecimal shouldBe b.bigDecimal
+        a.mc shouldBe b.mc
+      }
+
+      val n = BigDecimal(s, mc)
+      compare(reader(s"""$ws"$s":""").readKeyAsBigDecimal(mc, scaleLimit, digitsLimit), n)
+      compare(reader(s"""$ws"$s"""").readStringAsBigDecimal(null, mc, scaleLimit, digitsLimit), n)
+    }
+
     def checkError(s: String, error1: String, error2: String): Unit = {
       assert(intercept[JsonReaderException](reader(s).readBigDecimal(null)).getMessage.startsWith(error1))
       assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsBigDecimal()).getMessage.startsWith(error2))
@@ -3015,6 +3109,18 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
         check("1E-2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max negative scale that can be parsed
+      }
+    }
+    "parse keys and strigified values with leading zeros in mantissas and exponents" in {
+      forAll(genBigDecimal, choose(1, 7), genWhitespaces, minSuccessful(1000)) { (x, z, ws) =>
+        check2({
+          val s = x.toString
+          if (x < 0) s.replace("-", "-" + "0" * z)
+          else "0" * z + {
+            if (s.contains('-')) s.replace("-", "-" + "0" * z)
+            else s
+          }
+        }, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
       }
     }
     "throw number format exception for too big mantissa" in {
