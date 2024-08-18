@@ -838,15 +838,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             }
             buf(i + 1) = '"'
             bits < 0x80
-          }) readFromSubArrayReentrant(buf, 0, len + 2, ReaderConfig)(defaultCodec)
-          else in.decodeError("illegal offset date time")
+          }) {
+            try {
+              return readFromSubArrayReentrant(buf, 0, len + 2, ReaderConfig)(defaultCodec)
+            } catch {
+              case NonFatal(_) => ()
+            }
+          }
+          in.decodeError("illegal offset date time")
         }
 
         def encodeValue(x: OffsetDateTime, out: JsonWriter): _root_.scala.Unit = out.writeVal(x)
       }
-      verifyDeser(make[Array[OffsetDateTime]],
+      val codecOfArrayOfOffsetDateTimes = make[Array[OffsetDateTime]]
+      verifyDeser(codecOfArrayOfOffsetDateTimes,
         _root_.scala.Array(OffsetDateTime.parse("2020-01-01T12:34:56.789+08:00")),
         """["2020-01-01T12:34:56.789\u002B08:00"]""")
+      verifyDeserError(codecOfArrayOfOffsetDateTimes,
+        """["x020-01-01T12:34:56.789-08:00"]""", "illegal offset date time, offset: 0x0000001f")
+      verifyDeserError(codecOfArrayOfOffsetDateTimes,
+        """["2020-01-01ї12:34:56.789-08:00"]""", "illegal offset date time, offset: 0x00000020")
     }
     "serialize and deserialize ADTs with case object values using a custom codec" in {
       implicit val codecOfVersion: JsonValueCodec[Version] = new JsonValueCodec[Version] {

@@ -497,6 +497,48 @@ object Version {
 }
 ```
 
+10. When parsing to `java.time.*` values escaped encoding of ASCII characters is not supported.
+The workaround is to use custom codecs which parse those values as strings and then convert them to corresponding types,
+like here:
+```scala
+implicit val customCodecOfOffsetDateTime: JsonValueCodec[OffsetDateTime] = new JsonValueCodec[OffsetDateTime] {
+  private[this] val defaultCodec: JsonValueCodec[OffsetDateTime] = JsonCodecMaker.make[OffsetDateTime]
+  private[this] val maxLen = 44 // should be enough for the longest offset date time value
+  private[this] val pool = new ThreadLocal[Array[Byte]] {
+    override def initialValue(): Array[Byte] = new Array[Byte](maxLen + 2)
+  }
+
+  def nullValue: OffsetDateTime = null
+
+  def decodeValue(in: JsonReader, default: OffsetDateTime): OffsetDateTime = {
+    val buf = pool.get
+    val s = in.readString(null)
+    val len = s.length
+    if (len <= maxLen && {
+      buf(0) = '"'
+      var bits, i = 0
+      while (i < len) {
+        val ch = s.charAt(i)
+        buf(i + 1) = ch.toByte
+        bits |= ch
+        i += 1
+      }
+      buf(i + 1) = '"'
+      bits < 0x80
+    }) {
+      try {
+        return readFromSubArrayReentrant(buf, 0, len + 2, ReaderConfig)(defaultCodec)
+      } catch {
+        case NonFatal(_) => ()
+      }
+    }
+    in.decodeError("illegal offset date time")
+  }
+
+  def encodeValue(x: OffsetDateTime, out: JsonWriter): Unit = out.writeVal(x)
+}
+```
+
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, 
