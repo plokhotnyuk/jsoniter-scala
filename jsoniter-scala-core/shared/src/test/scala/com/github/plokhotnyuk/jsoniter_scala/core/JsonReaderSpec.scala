@@ -2750,10 +2750,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(arbitrary[Float], choose(1, 7), genWhitespaces, minSuccessful(1000)) { (x, z, ws) =>
         check2({
           val s = x.toString
-          if (x < 0) s.replace("-", "-" + "0" * z)
-          else "0" * z + {
-            if (s.contains('-')) s.replace("-", "-" + "0" * z)
-            else s.replace("E", "E" + "0" * z)
+          if (x < 0) s.replace("-", "-" + zeros(z))
+          else zeros(z) + {
+            if (s.contains('-')) s.replace("-", "-" + zeros(z))
+            else s.replace("E", "E" + zeros(z))
           }
         }, ws)
       }
@@ -2766,8 +2766,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
       forAll(genWhitespaces) { ws =>
-        check("1" + "0" * 100000 + "e-100000", 1.0f, ws)
-        check("0." + "0" * 100000 + "1e100000", 0.1f, ws)
+        check("1" + millionZeros + "e-1000000", 1.0f, ws)
+        check("0." + millionZeros + "1e1000000", 0.1f, ws)
       }
     }
     "throw parsing exception on illegal or empty input" in {
@@ -2888,10 +2888,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(arbitrary[Double], choose(1, 7), genWhitespaces, minSuccessful(1000)) { (x, z, ws) =>
         check2({
           val s = x.toString
-          if (x < 0) s.replace("-", "-" + "0" * z)
-          else "0" * z + {
-            if (s.contains('-')) s.replace("-", "-" + "0" * z)
-            else s.replace("E", "E" + "0" * z)
+          if (x < 0) s.replace("-", "-" + zeros(z))
+          else zeros(z) + {
+            if (s.contains('-')) s.replace("-", "-" + zeros(z))
+            else s.replace("E", "E" + zeros(z))
           }
         }, ws)
       }
@@ -2904,8 +2904,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
       forAll(genWhitespaces) { ws =>
-        check("1" + "0" * 1000000 + "e-1000000", 1.0, ws)
-        check("0." + "0" * 1000000 + "1e1000000", 0.1, ws)
+        check("1" + millionZeros + "e-1000000", 1.0, ws)
+        check("0." + millionZeros + "1e1000000", 0.1, ws)
       }
     }
     "throw parsing exception on illegal or empty input" in {
@@ -2978,29 +2978,32 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(genBigInt, genWhitespaces, minSuccessful(10000))(check)
     }
     "parse keys and strigified values with leading zeros" in {
-      forAll(arbitrary[Long].map(x => f"$x%099d"), genWhitespaces, minSuccessful(10000))(check2)
+      forAll(genBigInt, choose(1, 7), genWhitespaces, minSuccessful(1000))((x, z, ws) => check2({
+        val s = x.toString
+        if (x < 0) s.replace("-", "-" + zeros(z))
+        else zeros(z) + s
+      }, ws))
     }
     "parse big number values without overflow up to limits" in {
       forAll(genWhitespaces) { ws =>
-        val bigNumber = "9" * 1000
         check(BigInt(bigNumber), ws)
         check(BigInt(s"-$bigNumber"), ws)
       }
     }
     "throw parsing exception for values with more than max allowed digits" in {
-      checkError("9" * 308,
+      checkError(fill('9', 308),
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
-      checkError("9" * 308 + ".",
+      checkError(fill('9', 308) + ".",
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
-      checkError("9" * 308 + "e",
+      checkError(fill('9', 308) + "e",
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
-      checkError("9" * 308 + "E",
+      checkError(fill('9', 308) + "E",
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
-      checkError(s"-${"9" * 308}",
+      checkError(s"-${fill('9', 308)}",
         "value exceeds limit for number of digits, offset: 0x00000134",
         "value exceeds limit for number of digits, offset: 0x00000135")
     }
@@ -3088,7 +3091,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse big number values without overflow up to limits" in {
       forAll(genWhitespaces) { ws =>
-        check("1234567890" * 30, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check(fill('9', 300), bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
         check("12345e67", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
         check("-12345e67", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
         check("12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
@@ -3100,7 +3103,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse small number values without underflow up to limits" in {
       forAll(genWhitespaces) { ws =>
-        check(s"0.${"0" * 100}1234567890123456789012345678901234",
+        check(s"0.${zeros(100)}1234567890123456789012345678901234",
           bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
         check("12345e-67", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
         check("-12345e-67", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
@@ -3115,28 +3118,28 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(genBigDecimal, choose(1, 7), genWhitespaces, minSuccessful(1000)) { (x, z, ws) =>
         check2({
           val s = x.toString
-          if (x < 0) s.replace("-", "-" + "0" * z)
-          else "0" * z + {
-            if (s.contains('-')) s.replace("-", "-" + "0" * z)
+          if (x < 0) s.replace("-", "-" + zeros(z))
+          else zeros(z) + {
+            if (s.contains('-')) s.replace("-", "-" + zeros(z))
             else s
           }
         }, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
       }
     }
     "throw number format exception for too big mantissa" in {
-      checkError("9" * 308,
+      checkError(fill('9', 308),
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
-      checkError(s"-${"9" * 308}",
+      checkError(s"-${fill('9', 308)}",
         "value exceeds limit for number of digits, offset: 0x00000134",
         "value exceeds limit for number of digits, offset: 0x00000135")
-      checkError(s"${"9" * 154}.${"9" * 154}",
+      checkError(s"${fill('9', 154)}.${fill('9', 154)}",
         "value exceeds limit for number of digits, offset: 0x00000134",
         "value exceeds limit for number of digits, offset: 0x00000135")
-      checkError(s"0.${"0" * 307}",
+      checkError(s"0.${zeros(307)}",
         "value exceeds limit for number of digits, offset: 0x00000134",
         "value exceeds limit for number of digits, offset: 0x00000135")
-      checkError(s"${"9" * 308}.${"0" * 307}",
+      checkError(s"${fill('9', 308)}.${zeros(307)}",
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
     }
@@ -3144,9 +3147,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(genWhitespaces) { ws =>
         check(s"1e${bigDecimalScaleLimit - 1}", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
         check(s"1e-${bigDecimalScaleLimit - 1}", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
-        check(s"${"1" * 50}e${bigDecimalScaleLimit - 17}",
+        check(s"${fill('1', 50)}e${bigDecimalScaleLimit - 17}",
           MathContext.DECIMAL128, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
-        check(s"${"1" * 50}e-${bigDecimalScaleLimit + 15}",
+        check(s"${fill('1', 50)}e-${bigDecimalScaleLimit + 15}",
           MathContext.DECIMAL128, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
       }
       checkError(s"1e$bigDecimalScaleLimit",
@@ -3209,7 +3212,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   "JsonReader.setMark and JsonReader.rollbackToMark" should {
     "store current position of parsing and return back to it" in {
       def check[A](n: Int, s2: String)(f: JsonReader => A): Unit = {
-        val jsonReader = reader("{}" + " " * n + s2)
+        val jsonReader = reader("{}" + fill(' ', n) + s2)
         jsonReader.setMark()
         jsonReader.skip()
         jsonReader.setMark()
@@ -3374,13 +3377,17 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     .withPreferredCharBufSize(Random.nextInt(32))
     .withThrowReaderExceptionWithStackTrace(true)
 
-  def tooLongNumber: String = {
-    val sb = new StringBuilder
-    var i = 0
-    while (i < ReaderConfig.maxBufSize) {
-      sb.append('1')
-      i += 1
-    }
-    sb.toString
+  val tooLongNumber: String = fill('1', ReaderConfig.maxBufSize)
+
+  val millionZeros: String = zeros(1000000)
+
+  val bigNumber: String = fill('9', 1000)
+
+  def zeros(n: Int): String = fill('0', n)
+
+  def fill(ch: Char, n: Int): String = {
+    val cs = new Array[Char](n)
+    _root_.java.util.Arrays.fill(cs, ch)
+    new String(cs)
   }
 }
