@@ -1,8 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
-
 sealed trait TrafficLight extends enumeratum.EnumEntry
 
 object TrafficLight extends enumeratum.Enum[TrafficLight] {
@@ -35,24 +32,26 @@ object MyEnum extends enumeratum.Enum[MyEnum] {
   case object MyEnumAsCheckbox extends MyEnum("checkbox")
 
   val values = findValues
-
-  implicit val codec: JsonValueCodec[MyEnum] = make(CodecMakerConfig
-    .withDiscriminatorFieldName(None)
-    .withAdtLeafClassNameMapper(x => simpleClassName(x) match {
-      case "MyEnumAsText" => "text"
-      case "MyEnumAsCheckbox" => "checkbox"
-    }))
 }
 
 class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
+  import com.github.plokhotnyuk.jsoniter_scala.core._
+  import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
+  import com.github.plokhotnyuk.jsoniter_scala.macros.NamespacePollutions._
+
   "Value codecs for Enumeratum enum" should {
     "serialize and deserialize when derived by macros" in {
-      verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
-        List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["Red","Yellow","Green"]""")
-      verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)
+      verifySerDeser(make[_root_.scala.List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
+        _root_.scala.List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["Red","Yellow","Green"]""")
+      verifySerDeser(make[_root_.scala.List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)
         .withAdtLeafClassNameMapper(x => simpleClassName(x).toLowerCase)),
-        List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["red","yellow","green"]""")
-      verifySerDeser(make[List[MyEnum]], List(MyEnum.MyEnumAsText, MyEnum.MyEnumAsCheckbox), """["text","checkbox"]""")
+        _root_.scala.List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["red","yellow","green"]""")
+      verifySerDeser(make[_root_.scala.List[MyEnum]](CodecMakerConfig
+        .withDiscriminatorFieldName(_root_.scala.None)
+        .withAdtLeafClassNameMapper(x => simpleClassName(x) match {
+          case "MyEnumAsText" => "text"
+          case "MyEnumAsCheckbox" => "checkbox"
+        })), _root_.scala.List(MyEnum.MyEnumAsText, MyEnum.MyEnumAsCheckbox), """["text","checkbox"]""")
     }
     "serialize and deserialize when injected by implicit vals as custom value codecs" in {
       implicit val codecOfMediaType: JsonValueCodec[MediaType] = new JsonValueCodec[MediaType] {
@@ -68,19 +67,19 @@ class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
         override def encodeValue(x: MediaType, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.value)
       }
 
-      verifySerDeser(make[List[MediaType]],
-        List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
+      verifySerDeser(make[_root_.scala.List[MediaType]],
+        _root_.scala.List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
     }
   }
   "Key codecs for Enumeratum enum" should {
 /* FIXME: add generation of key codes for simple value enums
     "serialize and deserialize when derived by macros" in {
-      verifySerDeser[Map[TrafficLight, Boolean]](make[Map[TrafficLight, Boolean]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
-        Map(TrafficLight.Red -> true, TrafficLight.Yellow -> false, TrafficLight.Green -> true),
+      verifySerDeser[_root_.scala.collection.Map[TrafficLight, _root_.scala.Boolean]](make[_root_.scala.collection.Map[TrafficLight, _root_.scala.Boolean]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
+        _root_.scala.collection.Map(TrafficLight.Red -> true, TrafficLight.Yellow -> false, TrafficLight.Green -> true),
         """{"Red":true,"Yellow":false,"Green":true}""")
-      verifySerDeser[Map[TrafficLight, Boolean]](make[Map[TrafficLight, Boolean]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)
+      verifySerDeser[_root_.scala.collection.Map[TrafficLight, _root_.scala.Boolean]](make[_root_.scala.collection.Map[TrafficLight, _root_.scala.Boolean]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)
         .withAdtLeafClassNameMapper(x => simpleClassName(x).toLowerCase)),
-        Map(TrafficLight.Red -> true, TrafficLight.Yellow -> false, TrafficLight.Green -> true),
+        _root_.scala.collection.Map(TrafficLight.Red -> true, TrafficLight.Yellow -> false, TrafficLight.Green -> true),
         """{"red":true,"yellow":false,"green":true}""")
     }
 */
@@ -96,8 +95,8 @@ class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
         override def encodeKey(x: MediaType, out: JsonWriter): _root_.scala.Unit = out.writeKey(x.value)
       }
 
-      verifySerDeser[Map[MediaType, Boolean]](make[Map[MediaType, Boolean]],
-        Map(MediaType.`text/json` -> true, MediaType.`text/html` -> false, MediaType.`application/jpeg` -> false),
+      verifySerDeser[_root_.scala.collection.Map[MediaType, _root_.scala.Boolean]](make[_root_.scala.collection.Map[MediaType, _root_.scala.Boolean]],
+        _root_.scala.collection.Map(MediaType.`text/json` -> true, MediaType.`text/html` -> false, MediaType.`application/jpeg` -> false),
         """{"1":true,"2":false,"3":false}""")
     }
   }
