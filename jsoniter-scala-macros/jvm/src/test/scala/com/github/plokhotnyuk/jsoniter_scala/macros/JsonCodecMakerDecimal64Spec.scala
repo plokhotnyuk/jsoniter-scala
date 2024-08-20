@@ -6,17 +6,20 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import java.math.MathContext
 
 class JsonCodecMakerDecimal64Spec extends VerifyingSpec {
-  import Decimal64Codec._
+  import com.github.plokhotnyuk.jsoniter_scala.macros.Decimal64Codec._
+  import com.github.plokhotnyuk.jsoniter_scala.macros.NamespacePollutions._
 
   "Decimal64Codec" should {
     "deserialize both numeric and string representation of numbers to canonized Decimal64 values" in {
-      verifyDeser(make[List[Decimal64]],
-        List(Decimal64.ONE_TENTH, Decimal64.MILLION, Decimal64.fromLong(4503599627370497L), Decimal64.parse("1.23456789e+309"), Decimal64.MAX_VALUE, Decimal64.parse("0.12345678901234565")),
+      verifyDeser(make[_root_.scala.List[Decimal64]],
+        _root_.scala.List(Decimal64.ONE_TENTH, Decimal64.MILLION, Decimal64.fromLong(4503599627370497L),
+          Decimal64.parse("1.23456789e+309"), Decimal64.MAX_VALUE, Decimal64.parse("0.12345678901234565")),
         """[0.1,"001000000",4503599627370497,1.23456789e+309,"9999999999999999e+369",0.12345678901234565]""")
     }
     "serialize Decimal64 values into numeric or string representation depending on number of mantissa bits of canonized in-memory representation" in {
-      verifySer(make[List[Decimal64]],
-        List(Decimal64.ONE_TENTH, Decimal64.MILLION, Decimal64.fromLong(4503599627370497L), Decimal64.parse("1.23456789e+309"), Decimal64.MAX_VALUE, Decimal64.parse("0.12345678901234565")),
+      verifySer(make[_root_.scala.List[Decimal64]],
+        _root_.scala.List(Decimal64.ONE_TENTH, Decimal64.MILLION, Decimal64.fromLong(4503599627370497L),
+          Decimal64.parse("1.23456789e+309"), Decimal64.MAX_VALUE, Decimal64.parse("0.12345678901234565")),
         """[0.1,1E+6,"4503599627370497","1.23456789E+309","9.999999999999999E+384",0.1234567890123456]""")
     }
   }
@@ -30,8 +33,8 @@ object Decimal64Codec {
         in.readStringAsBigDecimal(null)
       } else {
         in.rollbackToken()
-        in.readBigDecimal(null)
-      }).bigDecimal.plus(MathContext.DECIMAL64))))
+        in.readBigDecimal(null, MathContext.DECIMAL64, JsonReader.bigDecimalScaleLimit, JsonReader.bigDecimalDigitsLimit)
+      }).bigDecimal)))
 
     override def encodeValue(x: Decimal64, out: JsonWriter): Unit = {
       val cx = Decimal64Utils.canonize(Decimal64.toUnderlying(x))

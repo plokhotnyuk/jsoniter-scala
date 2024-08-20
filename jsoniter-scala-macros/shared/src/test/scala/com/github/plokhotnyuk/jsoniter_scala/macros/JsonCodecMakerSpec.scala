@@ -6,7 +6,6 @@ import java.util.{Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
-
 import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.switch
 import scala.util.control.NonFatal
@@ -284,7 +283,7 @@ object Version {
 }
 
 class JsonCodecMakerSpec extends VerifyingSpec {
-  import NamespacePollutions._
+  import com.github.plokhotnyuk.jsoniter_scala.macros.NamespacePollutions._
 
   //given CodecMakerConfig.PrintCodec with {}
   //implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}

@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import scala.annotation.tailrec
 
 class JsonCodecMakerJVMSpec extends VerifyingSpec {
-  import NamespacePollutions._
+  import com.github.plokhotnyuk.jsoniter_scala.macros.NamespacePollutions._
 
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize JVM-only collection types" in {

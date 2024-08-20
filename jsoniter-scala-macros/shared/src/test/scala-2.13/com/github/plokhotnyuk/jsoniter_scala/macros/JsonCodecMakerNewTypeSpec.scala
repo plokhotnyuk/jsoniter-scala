@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 
 class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
-  import NamespacePollutions._
+  import com.github.plokhotnyuk.jsoniter_scala.macros.NamespacePollutions._
 
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize new collection types" in {
