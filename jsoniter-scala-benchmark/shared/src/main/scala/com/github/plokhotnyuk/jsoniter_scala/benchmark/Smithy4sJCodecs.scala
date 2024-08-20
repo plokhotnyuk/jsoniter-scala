@@ -15,10 +15,11 @@ object Smithy4sJCodecs {
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   private[this] val datetime: Schema[Timestamp] = timestamp.addHints(smithy.api.TimestampFormat.DATE_TIME.widen)
   private[this] val adtSchema: Schema[ADTBase] = recursive {
-    val xAlt = struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X")
-    val yAlt = struct(string.required[Y]("b", _.b))(Y.apply).oneOf[ADTBase]("Y")
-    val zAlt = struct(adtSchema.required[Z]("l", _.l), adtSchema.required[Z]("r", _.r))(Z.apply).oneOf[ADTBase]("Z")
-    union(xAlt, yAlt, zAlt) {
+    union(
+      struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X"),
+      struct(string.required[Y]("b", _.b))(Y.apply).oneOf[ADTBase]("Y"),
+      struct(adtSchema.required[Z]("l", _.l), adtSchema.required[Z]("r", _.r))(Z.apply).oneOf[ADTBase]("Z")
+    ) {
       case _: X => 0
       case _: Y => 1
       case _: Z => 2
@@ -108,15 +109,20 @@ object Smithy4sJCodecs {
   )(ExtractFields.apply))
   implicit val geoJsonJCodec: JsonCodec[GeoJSON.GeoJSON] = Json.deriveJsonCodec {
     val coordinatesSchema: Schema[(Double, Double)] =
-      bijection(list(double), (x: List[Double]) => x match {
-        case (x: Double) :: (y: Double) :: Nil => (x, y)
-        case _ => sys.error("expecting array of 2 numbers")
-      }, (x: (Double, Double)) => x._1 :: x._2 :: Nil)
+      bijection(indexedSeq(double), (x: IndexedSeq[Double]) => x match {
+        case x: ArraySeq[Double] if x.length == 2 =>
+          val u = x.unsafeArray.asInstanceOf[Array[Double]]
+          (u(0), u(1))
+        case _ =>
+          sys.error("expecting array of 2 numbers")
+      }, (x: (Double, Double)) => ArraySeq.unsafeWrapArray(Array[Double](x._1, x._2)))
     val bboxSchema: Schema[(Double, Double, Double, Double)] =
-      bijection(list(double), (x: List[Double]) => x match {
-        case (x1: Double) :: (y1: Double) :: (x2: Double) :: (y2: Double) :: Nil => (x1, y1, x2, y2)
+      bijection(indexedSeq(double), (x: IndexedSeq[Double]) => x match {
+        case x: ArraySeq[Double] if x.length == 2 =>
+          val u = x.unsafeArray.asInstanceOf[Array[Double]]
+          (u(0), u(1), u(2), u(3))
         case _ => sys.error("expecting array of 4 numbers")
-      }, (x: (Double, Double, Double, Double)) => x._1 :: x._2 :: x._3 :: x._4 :: Nil)
+      }, (x: (Double, Double, Double, Double)) => ArraySeq.unsafeWrapArray(Array[Double](x._1, x._2, x._3, x._4)))
     val pointSchema: Schema[GeoJSON.Point] =
       struct(
         coordinatesSchema.required[GeoJSON.Point]("coordinates", _.coordinates),
@@ -143,13 +149,14 @@ object Smithy4sJCodecs {
           .required[GeoJSON.MultiPolygon]("coordinates", _.coordinates),
       )(GeoJSON.MultiPolygon.apply)
     val simpleGeometrySchema: Schema[GeoJSON.SimpleGeometry] =  {
-      val pointAlt = pointSchema.oneOf[GeoJSON.SimpleGeometry]("Point")
-      val multiPointAlt = multiPointSchema.oneOf[GeoJSON.SimpleGeometry]("MultiPoint")
-      val lineStringAlt = lineStringSchema.oneOf[GeoJSON.SimpleGeometry]("LineString")
-      val multiLineStringAlt = multiLineStringSchema.oneOf[GeoJSON.SimpleGeometry]("MultiLineString")
-      val polygonAlt = polygonSchema.oneOf[GeoJSON.SimpleGeometry]("Polygon")
-      val multiPolygonAlt = multiPolygonSchema.oneOf[GeoJSON.SimpleGeometry]("MultiPolygon")
-      union(pointAlt, multiPointAlt, lineStringAlt, multiLineStringAlt, polygonAlt, multiPolygonAlt) {
+      union(
+        pointSchema.oneOf[GeoJSON.SimpleGeometry]("Point"),
+        multiPointSchema.oneOf[GeoJSON.SimpleGeometry]("MultiPoint"),
+        lineStringSchema.oneOf[GeoJSON.SimpleGeometry]("LineString"),
+        multiLineStringSchema.oneOf[GeoJSON.SimpleGeometry]("MultiLineString"),
+        polygonSchema.oneOf[GeoJSON.SimpleGeometry]("Polygon"),
+        multiPolygonSchema.oneOf[GeoJSON.SimpleGeometry]("MultiPolygon")
+      ) {
         case _: GeoJSON.Point => 0
         case _: GeoJSON.MultiPoint => 1
         case _: GeoJSON.LineString => 2
@@ -162,15 +169,16 @@ object Smithy4sJCodecs {
       struct(
         indexedSeq(simpleGeometrySchema).required[GeoJSON.GeometryCollection]("geometries", _.geometries),
       )(GeoJSON.GeometryCollection.apply)
-    val geometrySchema: Schema[GeoJSON.Geometry] = {
-      val pointAlt = pointSchema.oneOf[GeoJSON.Geometry]("Point")
-      val multiPointAlt = multiPointSchema.oneOf[GeoJSON.Geometry]("MultiPoint")
-      val lineStringAlt = lineStringSchema.oneOf[GeoJSON.Geometry]("LineString")
-      val multiLineStringAlt = multiLineStringSchema.oneOf[GeoJSON.Geometry]("MultiLineString")
-      val polygonAlt = polygonSchema.oneOf[GeoJSON.Geometry]("Polygon")
-      val multiPolygonAlt = multiPolygonSchema.oneOf[GeoJSON.Geometry]("MultiPolygon")
-      val geometryCollectionAlt = geometryCollectionSchema.oneOf[GeoJSON.Geometry]("GeometryCollection")
-      union(pointAlt, multiPointAlt, lineStringAlt, multiLineStringAlt, polygonAlt, multiPolygonAlt, geometryCollectionAlt) {
+    val geometrySchema: Schema[GeoJSON.Geometry] =
+      union(
+        pointSchema.oneOf[GeoJSON.Geometry]("Point"),
+        multiPointSchema.oneOf[GeoJSON.Geometry]("MultiPoint"),
+        lineStringSchema.oneOf[GeoJSON.Geometry]("LineString"),
+        multiLineStringSchema.oneOf[GeoJSON.Geometry]("MultiLineString"),
+        polygonSchema.oneOf[GeoJSON.Geometry]("Polygon"),
+        multiPolygonSchema.oneOf[GeoJSON.Geometry]("MultiPolygon"),
+        geometryCollectionSchema.oneOf[GeoJSON.Geometry]("GeometryCollection")
+      ) {
         case _: GeoJSON.Point => 0
         case _: GeoJSON.MultiPoint => 1
         case _: GeoJSON.LineString => 2
@@ -179,27 +187,27 @@ object Smithy4sJCodecs {
         case _: GeoJSON.MultiPolygon => 5
         case _: GeoJSON.GeometryCollection => 6
       }.addHints(Discriminated("type"))
-    }
     val featureSchema: Schema[GeoJSON.Feature] =
       struct(
         map(string, string).required[GeoJSON.Feature]("properties", _.properties),
         geometrySchema.required[GeoJSON.Feature]("geometry", _.geometry),
         bboxSchema.optional[GeoJSON.Feature]("bbox", _.bbox)
       )((properties, geometry, bbox) => GeoJSON.Feature(properties, geometry, bbox))
-    val simpleGeoJSONSchema: Schema[GeoJSON.SimpleGeoJSON] = {
-      val featureAlt = featureSchema.oneOf[GeoJSON.SimpleGeoJSON]("Feature")
-      union(featureAlt) {
+    val simpleGeoJSONSchema: Schema[GeoJSON.SimpleGeoJSON] =
+      union(
+        featureSchema.oneOf[GeoJSON.SimpleGeoJSON]("Feature")
+      ) {
         case _: GeoJSON.Feature => 0
       }.addHints(Discriminated("type"))
-    }
     val featureCollectionSchema: Schema[GeoJSON.FeatureCollection] =
       struct(
         indexedSeq(simpleGeoJSONSchema).required[GeoJSON.FeatureCollection]("features", _.features),
         bboxSchema.optional[GeoJSON.FeatureCollection]("bbox", _.bbox)
       )(GeoJSON.FeatureCollection.apply)
-    val featureAlt = featureSchema.oneOf[GeoJSON.GeoJSON]("Feature")
-    val featureCollectionAlt = featureCollectionSchema.oneOf[GeoJSON.GeoJSON]("FeatureCollection")
-    union(featureAlt, featureCollectionAlt) {
+    union(
+      featureSchema.oneOf[GeoJSON.GeoJSON]("Feature"),
+      featureCollectionSchema.oneOf[GeoJSON.GeoJSON]("FeatureCollection")
+    ) {
       case _: GeoJSON.Feature => 0
       case _: GeoJSON.FeatureCollection => 1
     }.addHints(Discriminated("type"))

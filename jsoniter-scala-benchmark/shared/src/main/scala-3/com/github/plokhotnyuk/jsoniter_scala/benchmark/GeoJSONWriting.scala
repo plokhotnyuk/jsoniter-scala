@@ -104,7 +104,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
     import spray.json._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    obj.toJson(geoJSONJsonFormat).compactPrint.getBytes(UTF_8)
+    obj.toJson.compactPrint.getBytes(UTF_8)
   }
 
   @Benchmark

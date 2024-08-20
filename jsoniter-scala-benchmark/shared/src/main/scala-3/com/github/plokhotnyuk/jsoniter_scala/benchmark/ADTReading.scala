@@ -95,7 +95,7 @@ class ADTReading extends ADTBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._
 
-    JsonParser(jsonBytes).convertTo[ADTBase](adtBaseJsonFormat)
+    JsonParser(jsonBytes).convertTo[ADTBase]
   }
 
   @Benchmark

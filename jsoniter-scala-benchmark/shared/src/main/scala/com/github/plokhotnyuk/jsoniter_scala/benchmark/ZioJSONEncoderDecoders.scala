@@ -18,39 +18,52 @@ object ZioJSONEncoderDecoders {
     DeriveJsonCodec.gen
   }
   implicit lazy val nestedStructsC3c: JsonCodec[NestedStructs] = DeriveJsonCodec.gen
-  implicit lazy val openRTBBidRequestC3c: JsonCodec[OpenRTB.BidRequest] = {
-    implicit lazy val c1: JsonCodec[OpenRTB.Segment] = DeriveJsonCodec.gen
-    implicit lazy val c2: JsonCodec[OpenRTB.Format] = DeriveJsonCodec.gen
-    implicit lazy val c3: JsonCodec[OpenRTB.Deal] = DeriveJsonCodec.gen
-    implicit lazy val c4: JsonCodec[OpenRTB.Metric] = DeriveJsonCodec.gen
-    implicit lazy val c5: JsonCodec[OpenRTB.Banner] = DeriveJsonCodec.gen
-    implicit lazy val c6: JsonCodec[OpenRTB.Audio] = DeriveJsonCodec.gen
-    implicit lazy val c7: JsonCodec[OpenRTB.Video] = DeriveJsonCodec.gen
-    implicit lazy val c8: JsonCodec[OpenRTB.Native] = DeriveJsonCodec.gen
-    implicit lazy val c9: JsonCodec[OpenRTB.Pmp] = DeriveJsonCodec.gen
-    implicit lazy val c10: JsonCodec[OpenRTB.Producer] = DeriveJsonCodec.gen
-    implicit lazy val c11: JsonCodec[OpenRTB.Data] = DeriveJsonCodec.gen
-    implicit lazy val c12: JsonCodec[OpenRTB.Content] = DeriveJsonCodec.gen
-    implicit lazy val c13: JsonCodec[OpenRTB.Publisher] = DeriveJsonCodec.gen
-    implicit lazy val c14: JsonCodec[OpenRTB.Geo] = DeriveJsonCodec.gen
-    implicit lazy val c15: JsonCodec[OpenRTB.Imp] = DeriveJsonCodec.gen
-    implicit lazy val c16: JsonCodec[OpenRTB.Site] = DeriveJsonCodec.gen
-    implicit lazy val c17: JsonCodec[OpenRTB.App] = DeriveJsonCodec.gen
-    implicit lazy val c18: JsonCodec[OpenRTB.Device] = DeriveJsonCodec.gen
-    implicit lazy val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
-    implicit lazy val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
-    implicit lazy val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
-    DeriveJsonCodec.gen
+  implicit val openRTBBidRequestC3c: JsonCodec[OpenRTB.BidRequest] = {
+    def genOpenRTBBidRequestC3c1: JsonCodec[OpenRTB.BidRequest] = {
+      implicit val c1: JsonCodec[OpenRTB.Segment] = DeriveJsonCodec.gen
+      implicit val c2: JsonCodec[OpenRTB.Format] = DeriveJsonCodec.gen
+      implicit val c3: JsonCodec[OpenRTB.Deal] = DeriveJsonCodec.gen
+      implicit val c4: JsonCodec[OpenRTB.Metric] = DeriveJsonCodec.gen
+      implicit val c5: JsonCodec[OpenRTB.Banner] = DeriveJsonCodec.gen
+      implicit val c6: JsonCodec[OpenRTB.Audio] = DeriveJsonCodec.gen
+      implicit val c7: JsonCodec[OpenRTB.Video] = DeriveJsonCodec.gen
+      implicit val c8: JsonCodec[OpenRTB.Native] = DeriveJsonCodec.gen
+      implicit val c9: JsonCodec[OpenRTB.Pmp] = DeriveJsonCodec.gen
+
+      def genOpenRTBBidRequestC3c2: JsonCodec[OpenRTB.BidRequest] = {
+        implicit val c10: JsonCodec[OpenRTB.Producer] = DeriveJsonCodec.gen
+        implicit val c11: JsonCodec[OpenRTB.Data] = DeriveJsonCodec.gen
+        implicit val c12: JsonCodec[OpenRTB.Content] = DeriveJsonCodec.gen
+        implicit val c13: JsonCodec[OpenRTB.Publisher] = DeriveJsonCodec.gen
+        implicit val c14: JsonCodec[OpenRTB.Geo] = DeriveJsonCodec.gen
+        implicit val c15: JsonCodec[OpenRTB.Imp] = DeriveJsonCodec.gen
+        implicit val c16: JsonCodec[OpenRTB.Site] = DeriveJsonCodec.gen
+        implicit val c17: JsonCodec[OpenRTB.App] = DeriveJsonCodec.gen
+        implicit val c18: JsonCodec[OpenRTB.Device] = DeriveJsonCodec.gen
+        implicit val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
+        implicit val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
+        implicit val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
+        DeriveJsonCodec.gen
+      }
+
+      genOpenRTBBidRequestC3c2
+    }
+
+    genOpenRTBBidRequestC3c1
   }
-  implicit lazy val twitterAPIC3c: JsonCodec[TwitterAPI.Tweet] = {
-    implicit val c1: JsonCodec[TwitterAPI.UserMentions] = DeriveJsonCodec.gen
-    implicit val c2: JsonCodec[TwitterAPI.Urls] = DeriveJsonCodec.gen
-    implicit val c3: JsonCodec[TwitterAPI.Entities] = DeriveJsonCodec.gen
-    implicit val c4: JsonCodec[TwitterAPI.Url] = DeriveJsonCodec.gen
-    implicit val c5: JsonCodec[TwitterAPI.UserEntities] = DeriveJsonCodec.gen
-    implicit val c6: JsonCodec[TwitterAPI.User] = DeriveJsonCodec.gen
-    implicit val c7: JsonCodec[TwitterAPI.RetweetedStatus] = DeriveJsonCodec.gen
-    DeriveJsonCodec.gen
+  implicit val twitterAPIC3c: JsonCodec[TwitterAPI.Tweet] = {
+    def genTwitterAPIC3c: JsonCodec[TwitterAPI.Tweet] = {
+      implicit val c1: JsonCodec[TwitterAPI.UserMentions] = DeriveJsonCodec.gen
+      implicit val c2: JsonCodec[TwitterAPI.Urls] = DeriveJsonCodec.gen
+      implicit val c3: JsonCodec[TwitterAPI.Entities] = DeriveJsonCodec.gen
+      implicit val c4: JsonCodec[TwitterAPI.Url] = DeriveJsonCodec.gen
+      implicit val c5: JsonCodec[TwitterAPI.UserEntities] = DeriveJsonCodec.gen
+      implicit val c6: JsonCodec[TwitterAPI.User] = DeriveJsonCodec.gen
+      implicit val c7: JsonCodec[TwitterAPI.RetweetedStatus] = DeriveJsonCodec.gen
+      DeriveJsonCodec.gen
+    }
+
+    genTwitterAPIC3c
   }
   implicit val anyValsC3cr: JsonCodec[AnyVals] = {
     implicit val c1: JsonCodec[ByteVal] = JsonCodec.byte.transform(ByteVal.apply, _.a)
@@ -83,7 +96,7 @@ object ZioJSONEncoderDecoders {
     implicit val c2: JsonCodec[GitHubActionsAPI.Artifact] = DeriveJsonCodec.gen
     DeriveJsonCodec.gen
   }
-  implicit lazy val googleMapsAPIC3c: JsonCodec[GoogleMapsAPI.DistanceMatrix] = {
+  implicit val googleMapsAPIC3c: JsonCodec[GoogleMapsAPI.DistanceMatrix] = {
     implicit val c1: JsonCodec[GoogleMapsAPI.Value] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[GoogleMapsAPI.Elements] = DeriveJsonCodec.gen
     implicit val c3: JsonCodec[GoogleMapsAPI.Rows] = DeriveJsonCodec.gen
@@ -124,22 +137,8 @@ object ZioJSONEncoderDecoders {
         v
       }
     }, ClassTag(classOf[SuitEnum])))
-  implicit val arraySeqOfBooleansD5r: JsonDecoder[ArraySeq[Boolean]] = arraySeqDecoder[Boolean]
-
-  private[this] def arraySeqDecoder[A](implicit decoder: JsonDecoder[A], classTag: ClassTag[A]): JsonDecoder[ArraySeq[A]] =
-    (trace: List[JsonError], in: RetractReader) => {
-      val builder = ArraySeq.newBuilder[A]
-      Lexer.char(trace, in, '[')
-      var i: Int = 0
-      if (Lexer.firstArrayElement(in)) {
-        while ({
-          builder.addOne(decoder.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in))
-          i += 1
-          Lexer.nextArrayElement(trace, in)
-        }) ()
-      }
-      builder.result()
-    }
+  implicit val arraySeqOfBooleansD5r: JsonDecoder[ArraySeq[Boolean]] =
+    JsonDecoder.array[Boolean].map(ArraySeq.unsafeWrapArray)
 
   private[this] def throwError(msg: String, trace: List[JsonError]): Nothing =
     throw UnsafeJson(JsonError.Message(msg) :: trace)

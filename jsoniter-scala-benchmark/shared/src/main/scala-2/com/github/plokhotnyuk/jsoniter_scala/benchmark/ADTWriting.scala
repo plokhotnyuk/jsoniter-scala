@@ -112,7 +112,7 @@ class ADTWriting extends ADTBenchmark {
     import spray.json._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    obj.toJson(adtBaseJsonFormat).compactPrint.getBytes(UTF_8)
+    obj.toJson.compactPrint.getBytes(UTF_8)
   }
 
   @Benchmark

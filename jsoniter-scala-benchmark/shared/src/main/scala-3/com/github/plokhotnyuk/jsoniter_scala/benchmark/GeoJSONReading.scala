@@ -96,7 +96,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
     import spray.json._
 
-    JsonParser(jsonBytes).convertTo[GeoJSON](geoJSONJsonFormat)
+    JsonParser(jsonBytes).convertTo[GeoJSON]
   }
 
   @Benchmark
