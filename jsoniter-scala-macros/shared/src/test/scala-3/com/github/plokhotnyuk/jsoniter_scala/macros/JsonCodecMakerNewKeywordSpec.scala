@@ -89,6 +89,91 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         LinkedList.Node2[Int](2, LinkedList.Node[Int](1, LinkedList.End)),
         """{"type":"Node2","value":2,"next":{"value":1,"next":{"type":"End"}}}""")
     }
+    "serialize and deserialize an generic ADT defined with bounded leaf classes using a custom codec" in {
+      sealed trait TypeBase[T]
+
+      object TypeBase:
+        given TypeBase[Int] = new TypeBase[Int] {}
+        given TypeBase[String] = new TypeBase[String] {}
+
+      sealed trait Base[T: TypeBase]:
+        val t: T
+
+      case class A[T: TypeBase](a: T) extends Base[T]:
+        override val t: T = a
+
+      case class B[T: TypeBase](b: T) extends Base[T]:
+        override val t: T = b
+
+      given JsonValueCodec[Base[?]] = new JsonValueCodec[Base[?]] {
+        override val nullValue: Base[?] = null
+
+        override def decodeValue(in: JsonReader, default: Base[?]): Base[?] =
+          if (in.isNextToken('{')) {
+            var x: Base[?] = null
+            var p0 = 0x3
+            if (!in.isNextToken('}')) {
+              in.rollbackToken()
+              var l = -1
+              while (l < 0 || in.isNextToken(',')) {
+                l = in.readKeyAsCharBuf()
+                if (in.isCharBufEqualsTo(l, "a")) {
+                  if ((p0 & 0x1) != 0) p0 ^= 0x1
+                  else in.duplicatedKeyError(l)
+                  if (in.isNextToken('"')) {
+                    in.rollbackToken()
+                    x = new A(in.readString(null))
+                  } else {
+                    in.rollbackToken()
+                    x = new A(in.readInt())
+                  }
+                } else if (in.isCharBufEqualsTo(l, "b")) {
+                  if ((p0 & 0x2) != 0) p0 ^= 0x2
+                  else in.duplicatedKeyError(l)
+                  if (in.isNextToken('"')) {
+                    in.rollbackToken()
+                    x = new B(in.readString(null))
+                  } else {
+                    in.rollbackToken()
+                    x = new B(in.readInt())
+                  }
+                } else in.skip()
+              }
+              if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
+            }
+            if (p0 == 0x3) in.decodeError("""missing required fields: "a" or "b"""")
+            else if (p0 == 0) in.decodeError("""illegal object with "a" and "b" fields""")
+            x
+          } else in.readNullOrTokenError(default, '{')
+
+        override def encodeValue(x: Base[?], out: JsonWriter): Unit = {
+          out.writeObjectStart()
+          val t =
+            x match {
+              case a: A[?] =>
+                out.writeNonEscapedAsciiKey("a")
+                a.a
+              case b: B[?] =>
+                out.writeNonEscapedAsciiKey("b")
+                b.b
+            }
+          t match {
+            case s: String => out.writeVal(s)
+            case i: Int => out.writeVal(i)
+            case _ => out.encodeError("unexpected value type")
+          }
+          out.writeObjectEnd()
+        }
+      }
+
+      case class Group(lst: List[Base[?]])
+
+      object Group:
+        given JsonValueCodec[Group] = make(CodecMakerConfig.withInlineOneValueClasses(true))
+
+      val group = Group(List(A("Hi"), B("Bye"), A(3), B(4)))
+      verifySerDeser(summon[JsonValueCodec[Group]], group, """[{"a":"Hi"},{"b":"Bye"},{"a":3},{"b":4}]""")
+    }
   }
 }
 
