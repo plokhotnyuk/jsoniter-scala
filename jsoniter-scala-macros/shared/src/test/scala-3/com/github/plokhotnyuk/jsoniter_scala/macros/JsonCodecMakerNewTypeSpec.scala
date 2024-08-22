@@ -115,7 +115,54 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       }
       verifySerDeser(make[Period], Period(Year.from(1976), Year.from(2022)), """{"start":1976,"end":2022}""")
     }
-    "serialize and deserialize Scala3 union types using custom value codecs" in {
+    "serialize and deserialize a Scala3 union type using a custom codec" in {
+      type Value = String | Boolean | Int
+
+      given JsonValueCodec[Value] = new JsonValueCodec[Value] {
+        override val nullValue: Value = null.asInstanceOf[Value]
+
+        override def decodeValue(in: JsonReader, default: Value): Value = {
+          val x = in.nextToken()
+          if (x == '"') {
+            in.rollbackToken()
+            in.readString(null)
+          } else if (x == 't' || x == 'f' ) {
+            in.rollbackToken()
+            in.readBoolean()
+          } else {
+            in.rollbackToken()
+            in.readInt()
+          }
+        }
+
+        override def encodeValue(x: Value, out: JsonWriter): Unit =
+          x match {
+            case s: String => out.writeVal(s)
+            case b: Boolean => out.writeVal(b)
+            case i: Int => out.writeVal(i)
+          }
+      }
+
+      sealed trait Base[T]:
+        val t: T
+
+      case class A[T](a: T) extends Base[T]:
+        override val t: T = a
+
+      case class B[T](b: T) extends Base[T]:
+        override val t: T = b
+
+      case class Group(lst: List[Base[Value]])
+
+      object Group:
+        given JsonValueCodec[Base[Value]] = make
+        given JsonValueCodec[Group] = make(CodecMakerConfig.withInlineOneValueClasses(true))
+
+      val group = Group(List(A("Hi"), B("Bye"), A(3), B(4), A(true), B(false)))
+      verifySerDeser(summon[JsonValueCodec[Group]], group,
+        """[{"type":"A","a":"Hi"},{"type":"B","b":"Bye"},{"type":"A","a":3},{"type":"B","b":4},{"type":"A","a":true},{"type":"B","b":false}]""")
+    }
+    "serialize and deserialize recursive Scala3 union types using a custom value codec" in {
       type JsonPrimitive = String | Int | Double | Boolean | None.type
 
       type Rec[JA[_], JO[_], A] = A match { // FIXME: remove this workaround after adding support of recursive types
@@ -223,53 +270,6 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
 
       verifySerDeser(jsonCodec, arr("VVV", 1.2, true, obj("WWW" -> None, "XXX" -> 777)),
         """["VVV",1.2,true,{"WWW":null,"XXX":777}]""")
-    }
-    "serialize and deserialize an union types using a custom codec" in {
-      sealed trait Base[T]:
-        val t: T
-
-      case class A[T](a: T) extends Base[T]:
-        override val t: T = a
-
-      case class B[T](b: T) extends Base[T]:
-        override val t: T = b
-
-      type Value = String | Boolean | Int
-
-      given JsonValueCodec[Value] = new JsonValueCodec[Value] {
-        override val nullValue: Value = null.asInstanceOf[Value]
-
-        override def decodeValue(in: JsonReader, default: Value): Value = {
-          val x = in.nextToken()
-          if (x == '"') {
-            in.rollbackToken()
-            in.readString(null)
-          } else if (x == 't' || x == 'f' ) {
-            in.rollbackToken()
-            in.readBoolean()
-          } else {
-            in.rollbackToken()
-            in.readInt()
-          }
-        }
-
-        override def encodeValue(x: Value, out: JsonWriter): Unit =
-          x match {
-            case s: String => out.writeVal(s)
-            case b: Boolean => out.writeVal(b)
-            case i: Int => out.writeVal(i)
-          }
-      }
-
-      case class Group(lst: List[Base[Value]])
-
-      object Group:
-        given JsonValueCodec[Base[Value]] = make
-        given JsonValueCodec[Group] = make(CodecMakerConfig.withInlineOneValueClasses(true))
-
-      val group = Group(List(A("Hi"), B("Bye"), A(3), B(4), A(true), B(false)))
-      verifySerDeser(summon[JsonValueCodec[Group]], group,
-      """[{"type":"A","a":"Hi"},{"type":"B","b":"Bye"},{"type":"A","a":3},{"type":"B","b":4},{"type":"A","a":true},{"type":"B","b":false}]""")
     }
   }
 }
