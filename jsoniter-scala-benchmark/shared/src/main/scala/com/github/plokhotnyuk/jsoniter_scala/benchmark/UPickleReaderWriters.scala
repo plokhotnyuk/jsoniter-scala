@@ -19,7 +19,7 @@ object UPickleReaderWriters extends AttributeTagged {
       else out.visitFloat64String(v.toString, -1)
   }
   @annotation.nowarn implicit lazy val adtReadWriter: ReadWriter[ADTBase] =
-    ReadWriter.merge(tagName, macroRW[X], macroRW[Y], macroRW[Z])
+    ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
   implicit val anyValsReadWriter: ReadWriter[AnyVals] = {
     implicit val v1: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
     implicit val v2: ReadWriter[ShortVal] = readwriter[Short].bimap(_.a, ShortVal.apply)
@@ -36,15 +36,15 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
   implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] = {
     implicit val v1: ReadWriter[GeoJSON.SimpleGeometry] =
-      ReadWriter.merge(tagName, macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+      ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
         macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon])
     implicit val v2: ReadWriter[GeoJSON.Geometry] =
-      ReadWriter.merge(tagName, macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+      ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
         macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon],
         macroRW[GeoJSON.GeometryCollection])
     implicit val v3: ReadWriter[GeoJSON.SimpleGeoJSON] =
-      ReadWriter.merge(tagName, macroRW[GeoJSON.Feature])
-    ReadWriter.merge(tagName, macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
+      ReadWriter.merge(macroRW[GeoJSON.Feature])
+    ReadWriter.merge(macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
   }
   implicit val gitHubActionsAPIFromTos: ReadWriter[GitHubActionsAPI.Response] = {
     implicit val v1: ReadWriter[Boolean] =
