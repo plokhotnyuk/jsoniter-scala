@@ -262,5 +262,29 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySerDeser(jsonCodec, arr("VVV", 1.2, true, obj("WWW" -> None, "XXX" -> 777)),
         """["VVV",1.2,true,{"WWW":null,"XXX":777}]""")
     }
+    "don't generate codecs for non-concrete ADTs with at least one free type parameter" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait TypeBase[T]
+          |
+          |object TypeBase:
+          |  given TypeBase[Int] = new TypeBase[Int] {}
+          |  given TypeBase[String] = new TypeBase[String] {}
+          |
+          |sealed trait Base[T: TypeBase]:
+          |  val t: T
+          |
+          |case class A[T: TypeBase](a: T) extends Base[T]:
+          |  override val t: T = a
+          |
+          |case class B[T: TypeBase](b: T) extends Base[T]:
+          |  override val t: T = b
+          |
+          |JsonCodecMaker.make[Base[_]]
+          |""".stripMargin
+      }).getMessage.contains {
+        "Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes."
+      })
+    }
+
   }
 }

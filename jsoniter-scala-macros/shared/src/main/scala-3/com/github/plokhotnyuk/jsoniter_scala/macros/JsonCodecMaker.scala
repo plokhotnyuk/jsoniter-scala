@@ -1094,33 +1094,28 @@ object JsonCodecMaker {
               fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a " +
                 "custom implicitly accessible codec")
             val nudeSubtype = TypeIdent(sym).tpe
-            val memberType = nudeSubtype.memberType(sym.primaryConstructor)
-            val subTpe =
-              memberType match
-                case MethodType(_, _, resTp) => resTp
-                case PolyType(names, bounds, resPolyTp) =>
-                  val targs = typeArgs(tpe)
-                  val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(tpe.typeSymbol))
-                  val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, targs, Map.empty)
-                  val ctArgs = names.map { name =>
-                    tpBinding.getOrElse(name, fail(s"Type parameter $name of $sym can't be deduced from " +
-                      s"type arguments of ${tpe.show}. Please provide a custom implicitly accessible codec for it."))
-                  }
-                  val polyRes = resPolyTp match
-                    case MethodType(_, _, resTp) => resTp
-                    case other => other // hope we have no multiple typed param lists yet.
-                  if (ctArgs.isEmpty) polyRes
-                  else polyRes match
-                    case AppliedType(base, _) => base.appliedTo(ctArgs)
-                    case AnnotatedType(AppliedType(base, _), annot) => AnnotatedType(base.appliedTo(ctArgs), annot)
-                    case _ => polyRes.appliedTo(ctArgs)
-                case other => fail(s"Primary constructior for ${tpe.show} is not MethodType or PolyType but $other")
-            //warn(s"Found a children (\nsym=$sym\nnudeSubtype=$nudeSubtype\nmemberType=$memberType\nsubTpe=$subTpe\n)")
-            subTpe
+            val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(tpe.typeSymbol))
+            nudeSubtype.memberType(sym.primaryConstructor) match
+              case MethodType(_, _, resTp) => resTp
+              case PolyType(names, bounds, resPolyTp) =>
+                val targs = typeArgs(tpe)
+                val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, targs, Map.empty)
+                val ctArgs = names.map { name =>
+                  tpBinding.getOrElse(name, fail(s"Type parameter $name of $sym can't be deduced from " +
+                    s"type arguments of ${tpe.show}. Please provide a custom implicitly accessible codec for it."))
+                }
+                val polyRes = resPolyTp match
+                  case MethodType(_, _, resTp) => resTp
+                  case other => other // hope we have no multiple typed param lists yet.
+                if (ctArgs.isEmpty) polyRes
+                else polyRes match
+                  case AppliedType(base, _) => base.appliedTo(ctArgs)
+                  case AnnotatedType(AppliedType(base, _), annot) => AnnotatedType(base.appliedTo(ctArgs), annot)
+                  case _ => polyRes.appliedTo(ctArgs)
+              case other => fail(s"Primary constructior for ${tpe.show} is not MethodType or PolyType but $other")
           } else if (sym.isTerm) Ref(sym).tpe
-          else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of " +
-            s"them for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base. " +
-            s"Failed symbol: $sym (fullName=${sym.fullName})")
+          else fail("Only concrete (no free type parametes) Scala classes & objects are supported for ADT leaf classes. " +
+            s"Please consider using of them for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base.")
         }
       }
 
@@ -1133,13 +1128,11 @@ object JsonCodecMaker {
               fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
                 s"supported as leaf classes for ADT with base '${adtBaseTpe.show}'.")
             } else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
-            else fail(if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
-              "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
-                s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
+            else fail((if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
+              "Only sealed intermediate traits or abstract classes are supported."
             } else {
-              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
-                s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
-            })
+              "Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes."
+            }) + s" Please consider using of them for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base.")
           }
           if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
           else leafTpes

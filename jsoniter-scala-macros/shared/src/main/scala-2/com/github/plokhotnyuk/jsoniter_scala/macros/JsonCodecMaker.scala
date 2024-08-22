@@ -884,13 +884,11 @@ object JsonCodecMaker {
               fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
                 s"supported as leaf classes for ADT with base '$adtBaseTpe'.")
             } else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
-            else fail(if (s.isAbstract) {
-              "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
-                s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
+            else fail((if (s.isAbstract) {
+              "Only sealed intermediate traits or abstract classes are supported."
             } else {
-              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
-                s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
-            })
+              "Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes."
+            }) + s" Please consider using of them for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base.")
           }
           if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
           else leafTpes
