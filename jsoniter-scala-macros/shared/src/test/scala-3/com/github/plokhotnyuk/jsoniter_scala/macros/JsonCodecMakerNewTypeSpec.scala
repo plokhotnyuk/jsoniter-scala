@@ -116,31 +116,22 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySerDeser(make[Period], Period(Year.from(1976), Year.from(2022)), """{"start":1976,"end":2022}""")
     }
     "serialize and deserialize a Scala3 union type using a custom codec" in {
-      type Value = String | Boolean | Int
+      type Value = String | Boolean | Double
 
       given JsonValueCodec[Value] = new JsonValueCodec[Value] {
         override val nullValue: Value = null.asInstanceOf[Value]
 
-        override def decodeValue(in: JsonReader, default: Value): Value = {
+        override def decodeValue(in: JsonReader, default: Value): Value =
           val x = in.nextToken()
-          if (x == '"') {
-            in.rollbackToken()
-            in.readString(null)
-          } else if (x == 't' || x == 'f' ) {
-            in.rollbackToken()
-            in.readBoolean()
-          } else {
-            in.rollbackToken()
-            in.readInt()
-          }
-        }
+          in.rollbackToken()
+          if (x == '"') in.readString(null)
+          else if (x == 't' || x == 'f' ) in.readBoolean()
+          else in.readDouble()
 
-        override def encodeValue(x: Value, out: JsonWriter): Unit =
-          x match {
-            case s: String => out.writeVal(s)
-            case b: Boolean => out.writeVal(b)
-            case i: Int => out.writeVal(i)
-          }
+        override def encodeValue(x: Value, out: JsonWriter): Unit = x match
+          case s: String => out.writeVal(s)
+          case b: Boolean => out.writeVal(b)
+          case d: Double => out.writeVal(d)
       }
 
       sealed trait Base[T]:
@@ -158,9 +149,9 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         given JsonValueCodec[Base[Value]] = make
         given JsonValueCodec[Group] = make(CodecMakerConfig.withInlineOneValueClasses(true))
 
-      val group = Group(List(A("Hi"), B("Bye"), A(3), B(4), A(true), B(false)))
+      val group = Group(List(A("Hi"), B("Bye"), A(3.4), B(4.5), A(true), B(false)))
       verifySerDeser(summon[JsonValueCodec[Group]], group,
-        """[{"type":"A","a":"Hi"},{"type":"B","b":"Bye"},{"type":"A","a":3},{"type":"B","b":4},{"type":"A","a":true},{"type":"B","b":false}]""")
+        """[{"type":"A","a":"Hi"},{"type":"B","b":"Bye"},{"type":"A","a":3.4},{"type":"B","b":4.5},{"type":"A","a":true},{"type":"B","b":false}]""")
     }
     "serialize and deserialize recursive Scala3 union types using a custom value codec" in {
       type JsonPrimitive = String | Int | Double | Boolean | None.type
