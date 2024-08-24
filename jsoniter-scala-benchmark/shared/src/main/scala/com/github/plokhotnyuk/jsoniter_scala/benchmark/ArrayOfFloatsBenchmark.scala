@@ -17,6 +17,6 @@ abstract class ArrayOfFloatsBenchmark extends CommonParams {
       .map(i => (((i * 1498724053) / Math.pow(10, i % 9)).toInt * Math.pow(10, (i % 20) - 10)).toFloat).toArray
     jsonString = obj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 }

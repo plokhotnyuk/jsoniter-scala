@@ -13,6 +13,6 @@ abstract class IntBenchmark extends CommonParams {
   def setup(): Unit = {
     obj = jsonString.toInt
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array(jsonBytes.length + 128/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 }

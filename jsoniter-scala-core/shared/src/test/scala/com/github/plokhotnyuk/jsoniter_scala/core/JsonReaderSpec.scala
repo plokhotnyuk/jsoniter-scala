@@ -498,7 +498,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkError(s"nul${nonL}", """expected null, offset: 0x00000003""")
       }
     }
-    "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
+    "throw array index out-of-bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
       assert(intercept[IllegalStateException](reader("null").readNullOrError("default", "error"))
         .getMessage.startsWith("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
@@ -530,7 +530,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkError(s"nul${nonL}", """expected '"' or null, offset: 0x00000003""")
       }
     }
-    "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
+    "throw array index out-of-bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
       assert(intercept[IllegalStateException](reader("null").readNullOrError("default", "error"))
         .getMessage.startsWith("expected preceding call of 'nextToken()' or 'isNextToken()'"))
       assert(intercept[IllegalStateException](reader("null").readNullOrTokenError("default", 'e'))
@@ -547,7 +547,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       r.rollbackToken()
       assert(r.nextToken() == '"')
     }
-    "throw array index out of bounds exception in case of missing preceding call of 'nextToken()' or 'isNextToken()'" in {
+    "throw array index out-of-bounds exception in case of missing preceding call of 'nextToken()' or 'isNextToken()'" in {
       assert(intercept[IllegalStateException](reader("{}").rollbackToken())
         .getMessage.startsWith("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }

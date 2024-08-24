@@ -16,6 +16,6 @@ abstract class OpenRTBBenchmark extends CommonParams {
   def setup(): Unit = {
     jsonBytes = jsonString1.getBytes(UTF_8)
     obj = readFromArray[OpenRTB.BidRequest](jsonBytes)
-    preallocatedBuf = new Array(jsonBytes.length + 128 /*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128 /*to avoid possible out-of-bounds error*/)
   }
 }

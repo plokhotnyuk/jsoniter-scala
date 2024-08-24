@@ -17,6 +17,6 @@ abstract class ArrayOfUUIDsBenchmark extends CommonParams {
     obj = (1 to size).map(i => new UUID(i * 6971258582664805397L, i * 6971258582664805397L)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 }

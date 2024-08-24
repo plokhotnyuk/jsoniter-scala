@@ -48,7 +48,7 @@ object AVSystemCodecs {
       "Clubs" -> Clubs)
     s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   })
-  implicit val uuidGenCodec: GenCodec[UUID] = transformed(_.toString, UUID.fromString)
+  implicit val uuidGenCodec: GenCodec[UUID] = GenCodec.UuidCodec
   implicit val yearGenCodec: GenCodec[Year] = transformed(_.toString, Year.parse)
   implicit val yearMonthGenCodec: GenCodec[YearMonth] = transformed(_.toString, YearMonth.parse)
   implicit val zonedDateTimeGenCodec: GenCodec[ZonedDateTime] = transformed(_.toString, ZonedDateTime.parse)

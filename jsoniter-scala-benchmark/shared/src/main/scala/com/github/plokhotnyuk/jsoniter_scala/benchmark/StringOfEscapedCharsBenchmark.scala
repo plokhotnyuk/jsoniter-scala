@@ -36,6 +36,6 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
     jsonString1 = "\"" + obj.map(ch => f"\\u$ch%04x").mkString  + "\""
     jsonString2 = "\"" + obj.map(ch => f"\\u$ch%04X").mkString  + "\""
     jsonBytes = jsonString1.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 }

@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
 import java.util.Base64
-import java.util.concurrent.ConcurrentHashMap
 import play.api.libs.json._
 import scala.collection.immutable.{BitSet, IndexedSeq, IntMap, Map, Seq}
 import scala.collection.mutable

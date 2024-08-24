@@ -34,6 +34,6 @@ abstract class StringOfNonAsciiCharsBenchmark extends CommonParams {
     }
     jsonString = "\"" + obj + "\""
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 }

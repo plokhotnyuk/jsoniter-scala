@@ -55,6 +55,6 @@ abstract class GitHubActionsAPIBenchmark extends CommonParams {
   def setup(): Unit = {
     jsonBytes = jsonString.getBytes(UTF_8)
     obj = readFromArray[GitHubActionsAPI.Response](jsonBytes)
-    preallocatedBuf = new Array(jsonBytes.length + 128/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array(jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 }
