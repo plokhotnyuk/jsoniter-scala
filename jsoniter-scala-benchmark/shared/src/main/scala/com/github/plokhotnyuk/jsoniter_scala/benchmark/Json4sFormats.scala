@@ -1,14 +1,16 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import org.json4s._
+import org.json4s.ext.{EnumNameSerializer, UUIDSerializer}
 import java.time._
-import java.util.{Base64, UUID}
+import java.util.Base64
 import scala.reflect.ClassTag
 
 object CommonJson4sFormats {
   implicit val commonFormats: Formats = DefaultFormats +
     StringifiedFormats.stringified[Char](x => if (x.length == 1) x.charAt(0) else sys.error("char")) +
-    StringifiedFormats.stringified[UUID](UUID.fromString) +
+    UUIDSerializer +
+    new EnumNameSerializer(SuitEnum) +
     StringifiedFormats.stringified[Suit](Suit.valueOf) +
     StringifiedFormats.stringified[SuitADT] {
       val m = Map(
@@ -17,17 +19,6 @@ object CommonJson4sFormats {
         "Diamonds" -> Diamonds,
         "Clubs" -> Clubs)
       x => m.getOrElse(x, sys.error("SuitADT"))
-    } +
-    StringifiedFormats.stringified[SuitEnum.SuitEnum] {
-      val m = new java.util.concurrent.ConcurrentHashMap[String, SuitEnum.SuitEnum]
-      x => {
-        var v = m.get(x)
-        if (v eq null) {
-          v = SuitEnum.values.iterator.find(_.toString == x).getOrElse(sys.error("SuitEnum"))
-          m.put(x, v)
-        }
-        v
-      }
     }
 }
 
