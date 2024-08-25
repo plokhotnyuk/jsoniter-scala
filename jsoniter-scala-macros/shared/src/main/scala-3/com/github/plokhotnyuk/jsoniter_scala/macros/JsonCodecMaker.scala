@@ -1060,7 +1060,7 @@ object JsonCodecMaker {
 
       def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) &&
         (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
-          tpe <:< TypeRepr.of[AnyVal])
+          tpe <:< TypeRepr.of[AnyVal] && !tpe.classSymbol.fold(false)(x => defn.ScalaPrimitiveValueClasses.contains(x)))
 
       def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = { // TODO: explore yet one variant with mirrors
         def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
