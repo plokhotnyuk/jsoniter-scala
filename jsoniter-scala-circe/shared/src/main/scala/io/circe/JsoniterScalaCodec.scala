@@ -75,6 +75,7 @@ object JsoniterScalaCodec {
    * @param len the length of the byte array
    * @return a JSON string
    */
+  @inline
   def asciiStringToJString(buf: Array[Byte], len: Int): Json = new JString(StringUtil.toString(buf, len))
 
   /**
@@ -83,6 +84,7 @@ object JsoniterScalaCodec {
    * @param c the JSON cursor
    * @return the `String` value, or null if the cursor does not point to a string
    */
+  @inline
   def stringValue(c: HCursor): String = c.value match {
     case s: JString => s.value
     case _ => null
@@ -93,7 +95,8 @@ object JsoniterScalaCodec {
    *
    * @param c the JSON cursor
    * @return the `BigInt` value, or null if the cursor does not point to a number with an integer value
-   */  
+   */
+  @inline
   def bigIntValue(c: HCursor): BigInt = c.value match {
     case n: JNumber => n.value match {
       case jl: JsonLong => BigInt(jl.value)
@@ -113,7 +116,8 @@ object JsoniterScalaCodec {
    *
    * @param x the BigInt to encode
    * @return a JSON number representing the BigInt
-   */  
+   */
+  @inline
   def jsonValue(x: BigInt): Json = new JNumber({
     if (x.isValidLong) new JsonLong(x.longValue)
     else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))

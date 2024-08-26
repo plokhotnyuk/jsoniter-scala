@@ -13,8 +13,44 @@ object CirceCodecs {
   private[this] val pool = new ThreadLocal[(Array[Byte], JsonReader, JsonWriter)] {
     override def initialValue(): (Array[Byte], JsonReader, JsonWriter) = {
       val buf = new Array[Byte](128) // should be enough for the longest zoned date time value
+      buf(0) = '"'
       new Tuple3(buf, new JsonReader(buf, charBuf = new Array[Char](128)), new JsonWriter(buf))
     }
+  }
+
+  private[this] class ShortAsciiStringCodec[A](codec: JsonValueCodec[A], name: String) extends Codec[A] {
+    override def apply(x: A): Json = {
+      val tlb = pool.get
+      val buf = tlb._1
+      io.circe.JsoniterScalaCodec.asciiStringToJString(buf, tlb._3.write(codec, x, buf, 0, 128, WriterConfig))
+    }
+
+    override def apply(c: HCursor): Decoder.Result[A] = {
+      val tlb = pool.get
+      val buf = tlb._1
+      val s = io.circe.JsoniterScalaCodec.stringValue(c)
+      var len = 0
+      if ((s ne null) && {
+        len = s.length
+        len <= 126
+      } && {
+        var bits, i = 0
+        while (i < len) {
+          val ch = s.charAt(i)
+          buf(i + 1) = ch.toByte
+          bits |= ch
+          i += 1
+        }
+        buf(i + 1) = '"'
+        bits < 0x80
+      }) {
+        try return new scala.util.Right(tlb._2.read(codec, buf, 0, len + 2, ReaderConfig))
+        catch { case _: JsonReaderException => }
+      }
+      error(c)
+    }
+
+    private[this] def error(c: HCursor): Decoder.Result[A] = new scala.util.Left(DecodingFailure(name, c.history))
   }
 
  /**
@@ -33,61 +69,91 @@ object CirceCodecs {
   }
 
   // codecs for java.time.* types
-  implicit val durationC3C: Codec[Duration] = shortAsciiStringCodec("duration", _.readDuration(_), _.writeVal(_))
-  implicit val instantC3C: Codec[Instant] = shortAsciiStringCodec("instant", _.readInstant(_), _.writeVal(_))
-  implicit val localDateC3C: Codec[LocalDate] = shortAsciiStringCodec("local date", _.readLocalDate(_), _.writeVal(_))
-  implicit val localDateTimeC3C: Codec[LocalDateTime] = shortAsciiStringCodec("local date time", _.readLocalDateTime(_), _.writeVal(_))
-  implicit val localTimeC3C: Codec[LocalTime] = shortAsciiStringCodec("local time", _.readLocalTime(_), _.writeVal(_))
-  implicit val monthDayC3C: Codec[MonthDay] = shortAsciiStringCodec("month day", _.readMonthDay(_), _.writeVal(_))
-  implicit val offsetDateTimeC3C: Codec[OffsetDateTime] = shortAsciiStringCodec("offset date time", _.readOffsetDateTime(_), _.writeVal(_))
-  implicit val offsetTimeC3C: Codec[OffsetTime] = shortAsciiStringCodec("offset time", _.readOffsetTime(_), _.writeVal(_))
-  implicit val periodC3C: Codec[Period] = shortAsciiStringCodec("period", _.readPeriod(_), _.writeVal(_))
-  implicit val yearMonthC3C: Codec[YearMonth] = shortAsciiStringCodec("year month", _.readYearMonth(_), _.writeVal(_))
-  implicit val yearD5r: Decoder[Year] = shortAsciiStringCodec("year", _.readYear(_), _.writeVal(_))
-  implicit val yearE5r: Encoder[Year] = (x: Year) => Json.fromString(x.toString)
-  implicit val zonedDateTimeC3C: Codec[ZonedDateTime] = shortAsciiStringCodec("zoned date time", _.readZonedDateTime(_), _.writeVal(_))
+  implicit val durationC3C: Codec[Duration] = new ShortAsciiStringCodec(new JsonValueCodec[Duration] {
+    override def decodeValue(in: JsonReader, default: Duration): Duration = in.readDuration(default)
 
-  private[this] def shortAsciiStringCodec[A](name: String, read: (JsonReader, A) => A, write: (JsonWriter, A) => Unit): Codec[A] =
-    new JsonValueCodec[A] with Codec[A] {
-      override def apply(x: A): Json = {
-        val tlb = pool.get
-        val buf = tlb._1
-        io.circe.JsoniterScalaCodec.asciiStringToJString(buf, tlb._3.write(this, x, buf, 0, 128, WriterConfig))
-      }
+    override def encodeValue(x: Duration, out: JsonWriter): Unit = out.writeVal(x)
 
-      override def apply(c: HCursor): Decoder.Result[A] = {
-        val tlb = pool.get
-        val buf = tlb._1
-        val s = io.circe.JsoniterScalaCodec.stringValue(c)
-        var len = 0
-        if ((s ne null) && {
-          len = s.length
-          len <= 126
-        } && {
-          buf(0) = '"'
-          var bits, i = 0
-          while (i < len) {
-            val ch = s.charAt(i)
-            buf(i + 1) = ch.toByte
-            bits |= ch
-            i += 1
-          }
-          buf(i + 1) = '"'
-          bits < 0x80
-        }) {
-          try return new scala.util.Right(tlb._2.read(this, buf, 0, len + 2, ReaderConfig))
-          catch {
-            case _: JsonReaderException => error(c)
-          }
-        } else error(c)
-      }
+    override def nullValue: Duration = null
+  }, "duration")
+  implicit val instantC3C: Codec[Instant] = new ShortAsciiStringCodec(new JsonValueCodec[Instant] {
+    override def decodeValue(in: JsonReader, default: Instant): Instant = in.readInstant(default)
 
-      override def decodeValue(in: JsonReader, default: A): A = read(in, default)
+    override def encodeValue(x: Instant, out: JsonWriter): Unit = out.writeVal(x)
 
-      override def encodeValue(x: A, out: JsonWriter): Unit = write(out, x)
+    override def nullValue: Instant = null
+  }, "instant")
+  implicit val localDateC3C: Codec[LocalDate] = new ShortAsciiStringCodec(new JsonValueCodec[LocalDate] {
+    override def decodeValue(in: JsonReader, default: LocalDate): LocalDate = in.readLocalDate(default)
 
-      override val nullValue: A = null.asInstanceOf[A]
+    override def encodeValue(x: LocalDate, out: JsonWriter): Unit = out.writeVal(x)
 
-      private[this] def error(c: HCursor): Decoder.Result[A] = new scala.util.Left(DecodingFailure(name, c.history))
-    }
+    override def nullValue: LocalDate = null
+  }, "local date")
+  implicit val localDateTimeC3C: Codec[LocalDateTime] = new ShortAsciiStringCodec(new JsonValueCodec[LocalDateTime] {
+    override def decodeValue(in: JsonReader, default: LocalDateTime): LocalDateTime = in.readLocalDateTime(default)
+
+    override def encodeValue(x: LocalDateTime, out: JsonWriter): Unit = out.writeVal(x)
+
+    override def nullValue: LocalDateTime = null
+  }, "local date time")
+  implicit val localTimeC3C: Codec[LocalTime] = new ShortAsciiStringCodec(new JsonValueCodec[LocalTime] {
+    override def decodeValue(in: JsonReader, default: LocalTime): LocalTime = in.readLocalTime(default)
+
+    override def encodeValue(x: LocalTime, out: JsonWriter): Unit = out.writeVal(x)
+
+    override def nullValue: LocalTime = null
+  }, "local time")
+  implicit val monthDayC3C: Codec[MonthDay] = new ShortAsciiStringCodec(new JsonValueCodec[MonthDay] {
+    override def decodeValue(in: JsonReader, default: MonthDay): MonthDay = in.readMonthDay(default)
+
+    override def encodeValue(x: MonthDay, out: JsonWriter): Unit = out.writeVal(x)
+
+    override def nullValue: MonthDay = null
+  }, "month day")
+  implicit val offsetDateTimeC3C: Codec[OffsetDateTime] = new ShortAsciiStringCodec(new JsonValueCodec[OffsetDateTime] {
+    override def decodeValue(in: JsonReader, default: OffsetDateTime): OffsetDateTime = in.readOffsetDateTime(default)
+
+    override def encodeValue(x: OffsetDateTime, out: JsonWriter): Unit = out.writeVal(x)
+
+    override def nullValue: OffsetDateTime = null
+  }, "offset date time")
+  implicit val offsetTimeC3C: Codec[OffsetTime] = new ShortAsciiStringCodec(new JsonValueCodec[OffsetTime] {
+    override def decodeValue(in: JsonReader, default: OffsetTime): OffsetTime = in.readOffsetTime(default)
+
+    override def encodeValue(x: OffsetTime, out: JsonWriter): Unit = out.writeVal(x)
+
+    override def nullValue: OffsetTime = null
+  }, "offset time")
+  implicit val periodC3C: Codec[Period] = new ShortAsciiStringCodec(new JsonValueCodec[Period] {
+    override def decodeValue(in: JsonReader, default: Period): Period = in.readPeriod(default)
+
+    override def encodeValue(x: Period, out: JsonWriter): Unit = out.writeVal(x)
+
+    override def nullValue: Period = null
+  }, "period")
+  implicit val yearMonthC3C: Codec[YearMonth] = new ShortAsciiStringCodec(new JsonValueCodec[YearMonth] {
+    override def decodeValue(in: JsonReader, default: YearMonth): YearMonth = in.readYearMonth(default)
+
+    override def encodeValue(x: YearMonth, out: JsonWriter): Unit = out.writeVal(x)
+
+    override def nullValue: YearMonth = null
+  }, "year month")
+  implicit val (yearD5r: Decoder[Year], yearE5r: Encoder[Year]) = {
+    val codec = new ShortAsciiStringCodec(new JsonValueCodec[Year] {
+      override def decodeValue(in: JsonReader, default: Year): Year = in.readYear(default)
+
+      override def encodeValue(x: Year, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: Year = null
+    }, "year")
+    (codec, codec)
+  }
+  implicit val zonedDateTimeC3C: Codec[ZonedDateTime] = new ShortAsciiStringCodec(new JsonValueCodec[ZonedDateTime] {
+    override def decodeValue(in: JsonReader, default: ZonedDateTime): ZonedDateTime = in.readZonedDateTime(default)
+
+    override def encodeValue(x: ZonedDateTime, out: JsonWriter): Unit = out.writeVal(x)
+
+    override def nullValue: ZonedDateTime = null
+  }, "zoned date time")
 }
