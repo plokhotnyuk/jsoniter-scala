@@ -92,9 +92,9 @@ lazy val nativeSettings = Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
   nativeConfig ~= {
-    _.withMode(Mode.releaseFast) // TODO: test with `Mode.releaseSize` and `Mode.releaseFull`
+    _.withMode(Mode.releaseFast) // TODO: Test with `Mode.releaseSize` and `Mode.releaseFull`
       .withLTO(LTO.none)
-      .withGC(GC.immix)
+      .withGC(GC.boehm) // FIXME: Remove after fixing of https://github.com/scala-native/scala-native/issues/4032
   },
   coverageEnabled := false // FIXME: Unexpected linking error
 )

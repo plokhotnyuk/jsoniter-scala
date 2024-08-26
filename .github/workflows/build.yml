@@ -26,6 +26,8 @@ jobs:
           - ubuntu-latest # FIXME: restore build on MacOS and Windows
       fail-fast: false
     steps:
+      - name: Install Boehm GC for Scala Native # FIXME: Remove after fixing of https://github.com/scala-native/scala-native/issues/4032
+        run: sudo apt-get update && sudo apt-get install -y libgc-dev
       - name: Configure git
         run: "git config --global core.autocrlf false"
         shell: bash
