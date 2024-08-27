@@ -503,7 +503,7 @@ object Version {
 }
 ```
 
-10. When parsing to `java.time.*` values escaped encoding of ASCII characters is not supported.
+10. When parsing JSON strings to numeric or `java.time.*` values escaped encoding of ASCII characters is not supported.
 The workaround is to use custom codecs which parse those values as strings and then convert them to corresponding types,
 like here:
 ```scala
