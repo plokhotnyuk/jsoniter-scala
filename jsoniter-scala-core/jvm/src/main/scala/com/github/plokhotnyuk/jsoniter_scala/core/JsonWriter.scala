@@ -1816,13 +1816,11 @@ final class JsonWriter private[jsoniter_scala](
     var q0 = x
     if (x < 0) {
       q0 = -q0
-      if (q0 != x) {
-        buf(pos) = '-'
-        pos += 1
-      } else {
+      ByteArrayAccess.setShort(buf, pos, 0x322D)
+      pos += 1
+      if (q0 == x) {
         q0 = 147483648
-        ByteArrayAccess.setShort(buf, pos, 0x322D)
-        pos += 2
+        pos += 1
       }
     }
     pos += digitCount(q0.toLong)
@@ -2092,13 +2090,11 @@ final class JsonWriter private[jsoniter_scala](
     var q0 = x
     if (x < 0) {
       q0 = -q0
-      if (q0 != x) {
-        buf(pos) = '-'
-        pos += 1
-      } else {
+      ByteArrayAccess.setShort(buf, pos, 0x322D)
+      pos += 1
+      if (q0 == x) {
         q0 = 147483648
-        ByteArrayAccess.setShort(buf, pos, 0x322D)
-        pos += 2
+        pos += 1
       }
     }
     pos += digitCount(q0.toLong)
@@ -2115,13 +2111,11 @@ final class JsonWriter private[jsoniter_scala](
     var q0 = x
     if (x < 0) {
       q0 = -q0
-      if (q0 != x) {
-        buf(pos) = '-'
-        pos += 1
-      } else {
+      ByteArrayAccess.setInt(buf, pos, 0x3232392D)
+      pos += 1
+      if (q0 == x) {
         q0 = 3372036854775808L
-        ByteArrayAccess.setInt(buf, pos, 0x3232392D)
-        pos += 4
+        pos += 3
       }
     }
     var q = 0
