@@ -128,7 +128,7 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[IncompatibleSignatureProblem]("io.circe.JsoniterScalaCodec.asciiStringToJString") // FIXME: remove after the next release
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs$ShortAsciiStringCodec") // FIXME: remove after the next release
   )
 )
 
