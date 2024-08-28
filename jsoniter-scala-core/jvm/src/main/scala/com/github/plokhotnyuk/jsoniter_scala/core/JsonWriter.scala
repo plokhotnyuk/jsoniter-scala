@@ -1803,30 +1803,38 @@ final class JsonWriter private[jsoniter_scala](
     else {
       pos += 2
       val ds = digits
-      if (years != 0) pos = writePeriod(years, pos, buf, ds, 0x2259)
-      if (months != 0) pos = writePeriod(months, pos, buf, ds, 0x224D)
-      if (days != 0) pos = writePeriod(days, pos, buf, ds, 0x2244)
+      var q0 = years
+      var b: Byte = 'Y'
+      while ({
+        if (q0 != 0) {
+          if (q0 < 0) {
+            q0 = -q0
+            ByteArrayAccess.setShort(buf, pos, 0x322D)
+            pos += 1
+            if (q0 == -2147483648) {
+              q0 = 147483648
+              pos += 1
+            }
+          }
+          pos += digitCount(q0.toLong)
+          writePositiveIntDigits(q0, pos, buf, ds)
+          buf(pos) = b
+          pos += 1
+        }
+        if (b == 'Y') {
+          b = 'M'
+          q0 = months
+          true
+        } else if (b == 'M') {
+          b = 'D'
+          q0 = days
+          true
+        } else false
+      }) ()
+      buf(pos) = '"'
       pos += 1
     }
     count = pos
-  }
-
-  private[this] def writePeriod(x: Int, p: Int, buf: Array[Byte], ds: Array[Short], bs: Short): Int = {
-    var pos = p
-    var q0 = x
-    if (x < 0) {
-      q0 = -q0
-      ByteArrayAccess.setShort(buf, pos, 0x322D)
-      pos += 1
-      if (q0 == x) {
-        q0 = 147483648
-        pos += 1
-      }
-    }
-    pos += digitCount(q0.toLong)
-    writePositiveIntDigits(q0, pos, buf, ds)
-    ByteArrayAccess.setShort(buf, pos, bs)
-    pos + 1
   }
 
   private[this] def writeYear(x: Year): Unit = {
