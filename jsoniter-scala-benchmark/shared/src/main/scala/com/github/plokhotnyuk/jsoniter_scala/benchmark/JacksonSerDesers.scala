@@ -1,6 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.util.concurrent.ConcurrentHashMap
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.json.JsonWriteFeature
@@ -111,17 +110,11 @@ class SuiteEnumSerializer extends JsonSerializer[SuitEnum] {
 }
 
 class SuiteEnumDeserializer extends JsonDeserializer[SuitEnum] {
-  private[this] val m = new ConcurrentHashMap[String, SuitEnum]
-
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum = {
-    var x: SuitEnum = null
     val s = jp.getValueAsString
-    if (s ne null) {
-      x = m.get(s)
-      if (x eq null) {
-        x = SuitEnum.values.iterator.find(_.toString == s).orNull
-        m.put(s, x)
-      }
+    var x: SuitEnum = null
+    try x = SuitEnum.withName(s) catch {
+      case _: NoSuchElementException =>
     }
     if (x eq null) ctxt.handleUnexpectedToken(classOf[SuitEnum], jp)
     x

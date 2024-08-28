@@ -9,10 +9,8 @@ import io.circe.generic.semiauto._
 import io.circe.syntax._
 import java.time.Instant
 import java.util.Base64
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
-import scala.util.control.NonFatal
 
 object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true, predictSize = true)
@@ -666,13 +664,11 @@ object CirceEncodersDecoders {
     }), Encoder.encodeMapLike[Long, Boolean, mutable.Map].contramapObject((m: mutable.LongMap[Boolean]) => m))
   implicit val missingRequiredFieldsC3c: Codec[MissingRequiredFields] = deriveCodec
   implicit val nestedStructsC3c: Codec[NestedStructs] = deriveCodec
-  implicit val suitC3c: Codec[Suit] =
-    Codec.from(decodeString.emap(s => {
-      try new Right(Suit.valueOf(s)) catch {
-        case NonFatal(_) => new Left("Suit")
-      }
-    }),
-      encodeString.contramap[Suit](_.name))
+  implicit val suitC3c: Codec[Suit] = Codec.from(decodeString.emap { s =>
+    try new Right(Suit.valueOf(s)) catch {
+      case _: IllegalArgumentException => new Left("Suit")
+    }
+  }, encodeString.contramap[Suit](_.name))
   implicit val suitADTC3c: Codec[SuitADT] = Codec.from(decodeString.map {
     val m = Map(
       "Hearts" -> Hearts,
@@ -681,19 +677,10 @@ object CirceEncodersDecoders {
       "Clubs" -> Clubs)
     s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }, encodeString.contramap(_.toString))
-  implicit val suitEnumC3c: Codec[SuitEnum] = Codec.from(decodeString.emap {
-    val m = new ConcurrentHashMap[String, SuitEnum]
-    s =>
-      try {
-        var v = m.get(s)
-        if (v eq null) {
-          v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throw new IllegalArgumentException("SuitEnum"))
-          m.put(s, v)
-        }
-        new Right(v)
-      } catch {
-        case NonFatal(_) => new Left("SuitEnum")
-      }
+  implicit val suitEnumC3c: Codec[SuitEnum] = Codec.from(decodeString.emap { s =>
+    try new Right(SuitEnum.withName(s)) catch {
+      case _: NoSuchElementException => new Left("SuitEnum")
+    }
   }, encodeString.contramap(_.toString))
   implicit val primitivesC3c: Codec[Primitives] = deriveCodec
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {

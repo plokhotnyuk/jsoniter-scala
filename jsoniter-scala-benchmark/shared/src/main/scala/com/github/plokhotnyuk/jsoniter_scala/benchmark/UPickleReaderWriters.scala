@@ -5,7 +5,6 @@ import upickle.AttributeTagged
 import upickle.core.Visitor
 import java.time._
 import java.util.Base64
-import java.util.concurrent.ConcurrentHashMap
 
 object UPickleReaderWriters extends AttributeTagged {
   override val tagName: String = "type"
@@ -112,18 +111,7 @@ object UPickleReaderWriters extends AttributeTagged {
     s => m.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val suiteADTWriter: Writer[SuitADT] = strWriter[SuitADT]
-  implicit val suitEnumReader: Reader[SuitEnum] = strReader[SuitEnum]({
-    val m = new ConcurrentHashMap[String, SuitEnum]
-    (cs: CharSequence) => {
-      val s = cs.toString
-      var x = m.get(s)
-      if (x eq null) {
-        x = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throw new IllegalArgumentException("SuitEnum"))
-        m.put(s, x)
-      }
-      x
-    }
-  })
+  implicit val suitEnumReader: Reader[SuitEnum] = strReader[SuitEnum](x => SuitEnum.withName(x.toString))
   implicit val suitEnumWriter: Writer[SuitEnum] = strWriter[SuitEnum]
   implicit val suitReader: Reader[Suit] = strReader(s => Suit.valueOf(s.toString))
   implicit val suitWriter: Writer[Suit] = strWriter[Suit]

@@ -9,7 +9,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import java.math.MathContext
 import java.time._
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 
@@ -21,17 +20,7 @@ object AVSystemCodecs {
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
   implicit val anyValsGenCodec: GenCodec[AnyVals] = materializeRecursively
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
-  implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, {
-    val m = new ConcurrentHashMap[String, SuitEnum]
-    (s: String) => {
-      var x = m.get(s)
-      if (x eq null) {
-        x = SuitEnum.withName(s)
-        m.put(s, x)
-      }
-      x
-    }
-  })
+  implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, SuitEnum.withName)
   implicit val instantGenCodec: GenCodec[Instant] = transformed(_.toString, Instant.parse)
   implicit val localDateGenCodec: GenCodec[LocalDate] = transformed(_.toString, LocalDate.parse)
   implicit val localDateTimeGenCodec: GenCodec[LocalDateTime] = transformed(_.toString, LocalDateTime.parse)

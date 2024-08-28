@@ -1,9 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import spray.json._
-
 import java.time._
-import java.util.concurrent.ConcurrentHashMap
 import java.util.{Base64, UUID}
 import scala.collection.immutable.{ArraySeq, Map, TreeMap}
 import scala.collection.mutable
@@ -224,17 +222,12 @@ object SprayFormats extends DefaultJsonProtocol {
     s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val suitEnumJsonFormat: RootJsonFormat[SuitEnum.SuitEnum] = new RootJsonFormat[SuitEnum.SuitEnum] {
-    private[this] val ec = new ConcurrentHashMap[String, SuitEnum.SuitEnum]
-
     override def read(json: JsValue): SuitEnum.SuitEnum = {
       var x: SuitEnum.SuitEnum = null
       json match {
         case js: JsString =>
-          val s = js.value
-          x = ec.get(s)
-          if (x eq null) {
-            x = SuitEnum.values.iterator.find(_.toString == s).orNull
-            ec.put(s, x)
+          try x = SuitEnum.withName(js.value) catch {
+            case _: NoSuchElementException =>
           }
         case _ =>
       }

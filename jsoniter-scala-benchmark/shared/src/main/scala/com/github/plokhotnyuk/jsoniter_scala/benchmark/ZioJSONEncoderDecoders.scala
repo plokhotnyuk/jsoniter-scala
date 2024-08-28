@@ -5,7 +5,6 @@ import zio.json.JsonDecoder.{JsonError, UnsafeJson}
 import zio.json.internal.{Lexer, RetractReader, Write}
 import zio.json.{DeriveJsonCodec, JsonCodec, JsonDecoder, JsonEncoder}
 import java.util.Base64
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
@@ -125,15 +124,13 @@ object ZioJSONEncoderDecoders {
       out.write(a.toString)
       out.write('"')
     }, ClassTag(classOf[SuitEnum])), JsonDecoder.array[SuitEnum](new JsonDecoder[SuitEnum] {
-      private[this] val m = new ConcurrentHashMap[String, SuitEnum]
-
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitEnum = {
         val s = Lexer.string(trace, in).toString
-        var v = m.get(s)
-        if (v eq null) {
-          v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throwError("SuitEnum", trace))
-          m.put(s, v)
+        var v: SuitEnum = null
+        try v = SuitEnum.withName(s) catch {
+          case _: NoSuchElementException =>
         }
+        if (v eq null) throwError("SuitEnum", trace)
         v
       }
     }, ClassTag(classOf[SuitEnum])))

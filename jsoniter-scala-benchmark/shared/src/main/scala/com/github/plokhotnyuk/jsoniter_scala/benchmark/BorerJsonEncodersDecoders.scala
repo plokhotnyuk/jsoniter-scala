@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.math.MathContext
 import java.time._
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import io.bullet.borer.{AdtEncodingStrategy, Codec, Decoder, Encoder, Reader, Writer}
 import io.bullet.borer.Json.DecodingConfig
@@ -116,17 +115,7 @@ object BorerJsonEncodersDecoders {
     s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val Codec(suitEnc: Encoder[Suit], suitDec: Decoder[Suit]) = stringCodec(Suit.valueOf)
-  implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = stringCodec {
-    val m = new ConcurrentHashMap[String, SuitEnum]
-    s => {
-      var v = m.get(s)
-      if (v eq null) {
-        v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throw new IllegalArgumentException("SuitEnum"))
-        m.put(s, v)
-      }
-      v
-    }
-  }
+  implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = stringCodec(SuitEnum.withName)
   implicit val Codec(twitterAPIEnc: Encoder[TwitterAPI.Tweet], twitterAPIDec: Decoder[TwitterAPI.Tweet]) = {
     import io.bullet.borer.NullOptions.{encoder, decoder}
 
