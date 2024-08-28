@@ -2628,28 +2628,39 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private[this] def digitCount(q0: Long): Int =
-    if (q0 >= 1000000000000000L) {
-      if (q0 >= 10000000000000000L) 17
+  private[this] def digitCount(x: Long): Int =
+    if (x >= 1000000000000000L) {
+      if (x >= 10000000000000000L) 17
       else 16
-    } else if (q0 >= 10000000000000L) {
-      if (q0 >= 100000000000000L) 15
+    } else if (x >= 10000000000000L) {
+      if (x >= 100000000000000L) 15
       else 14
-    } else if (q0 >= 100000000000L) {
-      if (q0 >= 1000000000000L) 13
+    } else if (x >= 100000000000L) {
+      if (x >= 1000000000000L) 13
       else 12
-    } else if (q0 >= 1000000000L) {
-      if (q0 >= 10000000000L) 11
+    } else if (x >= 1000000000L) {
+      if (x >= 10000000000L) 11
       else 10
-    } else digitCount(q0.toInt)
+    } else digitCount(x.toInt)
 
   @inline
   private[this] def digitCount(x: Int): Int =
-    if (x < 100) (9 - x >>> 31) + 1
-    else if (x < 10000) (999 - x >>> 31) + 3
-    else if (x < 1000000) (99999 - x >>> 31) + 5
-    else if (x < 100000000) (9999999 - x >>> 31) + 7
-    else (999999999 - x >>> 31) + 9
+    if (x < 100) {
+      if (x < 10) 1
+      else 2
+    } else if (x < 10000) {
+      if (x < 1000) 3
+      else 4
+    } else if (x < 1000000) {
+      if (x < 100000) 5
+      else 6
+    } else if (x < 100000000) {
+      if (x < 10000000) 7
+      else 8
+    } else {
+      if (x < 1000000000) 9
+      else 10
+    }
 
   @inline
   private[this] def writeSignificantFractionDigits(x: Long, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int = {
@@ -2673,8 +2684,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private[this] def writeSignificantFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var q0 = q
+  private[this] def writeSignificantFractionDigits(x: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var q0 = x
     var q1, r1 = 0
     var pos = p
     while ({
@@ -2697,8 +2708,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private[this] def writeFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
-    var q0 = q
+  private[this] def writeFractionDigits(x: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
+    var q0 = x
     var pos = p
     while (pos > posLim) {
       val q1 = q0 / 100
@@ -2711,8 +2722,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private[this] def writePositiveIntDigits(q: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
-    var q0 = q
+  private[this] def writePositiveIntDigits(x: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
+    var q0 = x
     var pos = p
     while ({
       pos -= 2
