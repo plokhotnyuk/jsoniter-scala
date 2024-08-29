@@ -2375,11 +2375,11 @@ final class JsonWriter private[jsoniter_scala](
     }
     var q = q0.toInt
     var lastPos = pos
-    var posCorr = 0
     if (q0 == q) {
       lastPos += digitCount(q)
       pos = lastPos
     } else {
+      var posCorr = 0
       if (q0 >= 1000000000000000000L) {
         var z = q0
         q0 = (q0 >>> 1) + (q0 >>> 2) // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
@@ -2408,10 +2408,10 @@ final class JsonWriter private[jsoniter_scala](
         lastPos += digitCount(q)
         pos = write8Digits((q1 - q2 * 100000000).toInt, lastPos, buf, ds)
       }
-      pos = write8Digits((q0 - q1 * 100000000).toInt, pos, buf, ds)
+      pos = write8Digits((q0 - q1 * 100000000).toInt, pos, buf, ds) + posCorr
     }
     writePositiveIntDigits(q, lastPos, buf, ds)
-    pos + posCorr
+    pos
   }
 
   // Based on the amazing work of Raffaello Giulietti

@@ -2547,9 +2547,36 @@ final class JsonReader private[jsoniter_scala](
         head = pos
         if (mark == 0) from -= newMark
         if (mark > oldMark) mark = oldMark
-        if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
+        val len = pos - from
+        if (len >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
         if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-        toBigInt(buf, from, pos, s)
+        if (len < 19) {
+          var x = buf(from) - '0'
+          from += 1
+          val posM10 = pos - 10
+          while (from < posM10) {
+            x = x * 10 + (buf(from) - '0')
+            from += 1
+          }
+          var x1 = x.toLong
+          while (from < pos) {
+            x1 = (x1 << 3) + (x1 << 1) + (buf(from) - '0')
+            from += 1
+          }
+          if (s != 0) x1 = -x1
+          BigInt(x1)
+        } else new BigInt({
+          if (len <= 36) toBigDecimal36(buf, from, pos, s, 0).unscaledValue()
+          else if (len <= 308) toBigInteger308(buf, from, pos, s)
+          else {
+            // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing huge numbers
+            // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
+            // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+            val mid = len >> 1
+            val midPos = pos - mid
+            toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, pos, s, 0)).unscaledValue()
+          }
+        })
       }
     }
   }
@@ -2647,7 +2674,7 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       if (mark == 0) from -= newMark
       if (mark > oldMark) mark = oldMark
-      var x =
+      var d =
         if (fracLen != 0) {
           val limit = from + digits + 1
           val fracPos = limit - fracLen
@@ -2679,46 +2706,12 @@ final class JsonReader private[jsoniter_scala](
             }
             if (s != 0) x = -x
             java.math.BigDecimal.valueOf(x, scale + fracLen)
-          } else toBigDecimal(buf, from, fracLimit, s, scale)
-            .add(toBigDecimal(buf, fracPos, limit, s, scale + fracLen))
+          } else toBigDecimal(buf, from, fracLimit, s, scale).add(toBigDecimal(buf, fracPos, limit, s, scale + fracLen))
         } else toBigDecimal(buf, from, from + digits, s, scale)
-      if (mc.getPrecision < digits) x = x.plus(mc)
-      if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
-      new BigDecimal(x, mc)
+      if (mc.getPrecision < digits) d = d.plus(mc)
+      if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
+      new BigDecimal(d, mc)
     }
-  }
-
-  @inline
-  private[this] def toBigInt(buf: Array[Byte], p: Int, limit: Int, s: Int): BigInt = {
-    val len = limit - p
-    if (len < 19) {
-      var pos = p
-      var x = buf(pos) - '0'
-      pos += 1
-      val limit1 = limit - 10
-      while (pos < limit1) {
-        x = x * 10 + (buf(pos) - '0')
-        pos += 1
-      }
-      var x1 = x.toLong
-      while (pos < limit) {
-        x1 = (x1 << 3) + (x1 << 1) + (buf(pos) - '0')
-        pos += 1
-      }
-      if (s != 0) x1 = -x1
-      BigInt(x1)
-    } else new BigInt({
-      if (len <= 36) toBigDecimal36(buf, p, limit, s, 0).unscaledValue()
-      else if (len <= 308) toBigInteger308(buf, p, limit, s)
-      else {
-        // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
-        // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
-        // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
-        val mid = len >> 1
-        val midPos = limit - mid
-        toBigDecimal(buf, p, midPos, s, -mid).add(toBigDecimal(buf, midPos, limit, s, 0)).unscaledValue()
-      }
-    })
   }
 
   private[this] def toBigDecimal(buf: Array[Byte], p: Int, limit: Int, s: Int, scale: Int): java.math.BigDecimal = {
