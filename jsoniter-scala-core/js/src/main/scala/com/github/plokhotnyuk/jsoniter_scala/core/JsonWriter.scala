@@ -1374,7 +1374,7 @@ final class JsonWriter private[jsoniter_scala](
     val pos = ensureBufCapacity(38) // 38 == (new java.util.UUID(0, 0)).toString.length + 2
     val buf = this.buf
     val ds = lowerCaseHexDigits
-    val mostSigBits1 = (mostSigBits >> 32).toInt
+    val mostSigBits1 = (mostSigBits >>> 32).toInt
     buf(pos) = '"'
     val d1 = ds(mostSigBits1 >>> 24)
     buf(pos + 1) = d1.toByte
@@ -1403,7 +1403,7 @@ final class JsonWriter private[jsoniter_scala](
     val d8 = ds(mostSigBits2 & 0xFF)
     buf(pos + 17) = d8.toByte
     buf(pos + 18) = (d8 >> 8).toByte
-    val leastSigBits1 = (leastSigBits >> 32).toInt
+    val leastSigBits1 = (leastSigBits >>> 32).toInt
     buf(pos + 19) = '-'
     val d9 = ds(leastSigBits1 >>> 24)
     buf(pos + 20) = d9.toByte
@@ -1763,7 +1763,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeDuration(x: Duration): Unit = {
     var pos = ensureBufCapacity(40) // 40 == "PT-1111111111111111H-11M-11.111111111S".length + 2
     val buf = this.buf
-    val totalSecs = x.getSeconds
+    var totalSecs = x.getSeconds
     var nano = x.getNano
     buf(pos) = '"'
     buf(pos + 1) = 'P'
@@ -1774,22 +1774,21 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos + 1) = 'S'
       pos += 2
     } else {
-      val effectiveTotalSecs =
-        if (totalSecs < 0) (-nano >> 31) - totalSecs
-        else totalSecs
+      val isNeg = totalSecs < 0
+      if (isNeg) totalSecs = (-nano >> 31) - totalSecs
       var hours = 0L
-      var secsOfHour = effectiveTotalSecs.toInt
-      if (effectiveTotalSecs >= 3600) {
+      var secsOfHour = totalSecs.toInt
+      if (totalSecs >= 3600) {
         hours =
-          if (effectiveTotalSecs >= 4503599627370496L) effectiveTotalSecs / 3600
-          else (effectiveTotalSecs * 2.777777777777778E-4).toLong
-        secsOfHour = (effectiveTotalSecs - (hours << 12) + (hours << 9) - (hours << 4)).toInt // (effectiveTotalSecs - hours * 3600).toInt
+          if (totalSecs >= 4503599627370496L) totalSecs / 3600
+          else (totalSecs * 2.777777777777778E-4).toLong
+        secsOfHour = (totalSecs - (hours << 12) + (hours << 9) - (hours << 4)).toInt // (totalSecs - hours * 3600).toInt
       }
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
       val seconds = secsOfHour - minutes * 60
       val ds = digits
       if (hours != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
@@ -1808,7 +1807,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       if (minutes != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
@@ -1825,7 +1824,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       if ((seconds | nano) != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
@@ -1839,7 +1838,7 @@ final class JsonWriter private[jsoniter_scala](
           pos += 2
         }
         if (nano != 0) {
-          if (totalSecs < 0) nano = 1000000000 - nano
+          if (isNeg) nano = 1000000000 - nano
           val dotPos = pos
           pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, ds)
           buf(dotPos) = '.'
@@ -2024,12 +2023,13 @@ final class JsonWriter private[jsoniter_scala](
     if ((years | months | days) == 0) {
       buf(pos) = '0'
       buf(pos + 1) = 'D'
-      pos += 2
+      buf(pos + 2) = '"'
+      count = pos + 3
     } else {
       val ds = digits
-      var b: Byte = 'Y'
       var q0 = years
-      while ({
+      var b: Byte = 'Y'
+      while (true) {
         if (q0 != 0) {
           if (q0 < 0) {
             q0 = -q0
@@ -2047,18 +2047,18 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
         }
         if (b == 'Y') {
-          b = 'M'
           q0 = months
-          true
+          b = 'M'
         } else if (b == 'M') {
-          b = 'D'
           q0 = days
-          true
-        } else false
-      }) ()
+          b = 'D'
+        } else {
+          buf(pos) = '"'
+          count = pos + 1
+          return
+        }
+      }
     }
-    buf(pos) = '"'
-    count = pos + 1
   }
 
   private[this] def writeYear(x: Year): Unit = {

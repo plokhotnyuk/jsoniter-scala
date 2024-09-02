@@ -1580,7 +1580,7 @@ final class JsonWriter private[jsoniter_scala](
       ByteArrayAccess.setShort(buf, pos, ds(q0))
       pos += 2
     } else {
-      ByteArrayAccess.setInt(buf, pos, ds(q0 - 100) << 8 | 0x31)
+      ByteArrayAccess.setInt(buf, pos, ds(q0 - 100) << 8 | '1')
       pos += 3
     }
     count = pos
@@ -1589,26 +1589,25 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeDuration(x: Duration): Unit = {
     var pos = ensureBufCapacity(40) // 40 == "PT-1111111111111111H-11M-11.111111111S".length + 2
     val buf = this.buf
-    val totalSecs = x.getSeconds
+    var totalSecs = x.getSeconds
     var nano = x.getNano
     ByteArrayAccess.setLong(buf, pos, 0x225330545022L)
     if ((totalSecs | nano) == 0) pos += 6
     else {
       pos += 3
-      val effectiveTotalSecs =
-        if (totalSecs < 0) (-nano >> 31) - totalSecs
-        else totalSecs
+      val isNeg = totalSecs < 0
+      if (isNeg) totalSecs = (-nano >> 31) - totalSecs
       var hours = 0L
-      var secsOfHour = effectiveTotalSecs.toInt
-      if (effectiveTotalSecs >= 3600) {
-        hours = Math.multiplyHigh(effectiveTotalSecs >> 4, 655884233731895169L) >> 3 // divide a positive long by 3600
-        secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
+      var secsOfHour = totalSecs.toInt
+      if (totalSecs >= 3600) {
+        hours = Math.multiplyHigh(totalSecs >> 4, 655884233731895169L) >> 3 // divide a positive long by 3600
+        secsOfHour = (totalSecs - hours * 3600).toInt
       }
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
       val seconds = secsOfHour - minutes * 60
       val ds = digits
       if (hours != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
@@ -1628,7 +1627,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       if (minutes != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
@@ -1643,7 +1642,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       if ((seconds | nano) != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
@@ -1655,7 +1654,7 @@ final class JsonWriter private[jsoniter_scala](
           pos += 2
         }
         if (nano != 0) {
-          if (totalSecs < 0) nano = 1000000000 - nano
+          if (isNeg) nano = 1000000000 - nano
           val dotPos = pos
           pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, ds)
           buf(dotPos) = '.'
@@ -1805,13 +1804,13 @@ final class JsonWriter private[jsoniter_scala](
     val months = x.getMonths
     val days = x.getDays
     ByteArrayAccess.setLong(buf, pos, 0x2244305022L)
-    if ((years | months | days) == 0) pos += 5
+    if ((years | months | days) == 0) count = pos + 5
     else {
       pos += 2
       val ds = digits
       var q0 = years
       var b: Byte = 'Y'
-      while ({
+      while (true) {
         if (q0 != 0) {
           if (q0 < 0) {
             q0 = -q0
@@ -1828,19 +1827,18 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
         }
         if (b == 'Y') {
-          b = 'M'
           q0 = months
-          true
+          b = 'M'
         } else if (b == 'M') {
-          b = 'D'
           q0 = days
-          true
-        } else false
-      }) ()
-      buf(pos) = '"'
-      pos += 1
+          b = 'D'
+        } else {
+          buf(pos) = '"'
+          count = pos + 1
+          return
+        }
+      }
     }
-    count = pos
   }
 
   private[this] def writeYear(x: Year): Unit = {
