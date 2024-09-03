@@ -2061,8 +2061,7 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       head = pos
-      x ^= s
-      x -= s
+      x = (x ^ s) - s
       if (x == 128) byteOverflowError(pos - 1)
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
     }
@@ -2097,8 +2096,7 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       head = pos
-      x ^= s
-      x -= s
+      x = (x ^ s) - s
       if (x == 32768) shortOverflowError(pos - 1)
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
     }
@@ -2135,8 +2133,7 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       head = pos
-      x ^= s
-      x -= s
+      x = (x ^ s) - s
       if ((s & x) == -2147483648) intOverflowError(pos - 1)
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
     }
