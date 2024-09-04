@@ -551,11 +551,11 @@ for some `inline given` cases, but for other use cases the compiler will silentl
 To mitigate that convert methods of codec generation to `def` and explicitly derive custom codecs, like here:
 ```scala
 object Tags {
-  opaque type Tagged[+V, +Tag] = Any
+  opaque type Tagged[+V, +T] = Any
 
-  type @@[+V, +Tag] = V & Tagged[V, Tag]
+  type @@[+V, +T] = V & Tagged[V, T]
 
-  def tag[Tag]: [V] => V => V @@ Tag = [V] => (v: V) => v
+  def tag[T]: [V] => V => V @@ Tag = [V] => (v: V) => v
 }
 
 object Graph {

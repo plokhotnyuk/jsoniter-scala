@@ -4,6 +4,14 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 
+object Tags {
+  opaque type Tagged[+V, +T] = Any
+
+  type @@[+V, +T] = V & Tagged[V, T]
+
+  def tag[T]: [V] => V => V @@ T = [V] => (v: V) => v
+}
+
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
     "don't generate codecs for generic classes using anonymous given constants" in {
@@ -204,11 +212,3 @@ enum LinkedList[+T] derives ConfiguredJsonValueCodec: // Borrowed from https://g
   case End
   case Node(value: T, next: LinkedList[T])
   case Node2(value: T, next: Node[T])
-
-object Tags {
-  opaque type Tagged[+V, +Tag] = Any
-
-  type @@[+V, +Tag] = V & Tagged[V, Tag]
-
-  def tag[Tag]: [V] => V => V @@ Tag = [V] => (v: V) => v
-}
