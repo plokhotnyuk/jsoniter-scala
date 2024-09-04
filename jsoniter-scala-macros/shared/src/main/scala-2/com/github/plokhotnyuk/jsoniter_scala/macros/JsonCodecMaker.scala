@@ -851,8 +851,9 @@ object JsonCodecMaker {
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
               }
               val defaultValue =
-                if (!cfg.requireDefaultFields && symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
-                else None
+                if (!cfg.requireDefaultFields && symbol.isParamWithDefault) {
+                  Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
+                } else None
               val isStringified = annotationOption.exists(_.stringified)
               Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, paramType(tpe, symbol), isStringified))
             }

@@ -981,9 +981,10 @@ object JsonCodecMaker {
         }.toMap
         val primaryConstructor = getPrimaryConstructor(tpe)
 
-        def createFieldInfos(params: List[Symbol], typeParams: List[Symbol], fieldIndex: Boolean => Int): List[FieldInfo] =
+        def createFieldInfos(params: List[Symbol], typeParams: List[Symbol],
+                             fieldIndex: Boolean => Int): List[FieldInfo] = params.map {
           var i = 0
-          params.map { symbol =>
+          symbol =>
             i += 1
             val name = symbol.name
             val annotationOption = annotations.get(name)
@@ -1575,10 +1576,11 @@ object JsonCodecMaker {
             MethodType(List("i"))(_ => List(TypeRepr.of[Int]), _ => TypeRepr.of[String]))
           DefDef(sym, params => {
             val List(List(param)) = params
-            var i = -1
-            val cases = f.map { n =>
-              i += 1
-              CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n)))
+            val cases = f.map {
+              var i = -1
+              n =>
+                i += 1
+                CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n)))
             }
             Some(Match(param.asExprOf[Int].asTerm, cases).changeOwner(sym))
           })
@@ -1688,10 +1690,10 @@ object JsonCodecMaker {
           val sym = Symbol.newMethod(Symbol.spliceOwner, "d" + decodeMethodSyms.size,
             MethodType(List("in", "default"))(_ => List(TypeRepr.of[JsonReader], methodKey.tpe), _ => TypeRepr.of[T]))
           decodeMethodSyms.update(methodKey, sym)
-          decodeMethodDefs += DefDef(sym, params => {
+          decodeMethodDefs.addOne(DefDef(sym, params => {
             val List(List(in, default)) = params
             Some(f(in.asExprOf[JsonReader], default.asExprOf[T]).asTerm.changeOwner(sym))
-          })
+          }))
           sym
         })), List(in.asTerm, arg.asTerm)).asExprOf[T]
 
@@ -1713,10 +1715,10 @@ object JsonCodecMaker {
           val sym = Symbol.newMethod(Symbol.spliceOwner, "e" + encodeMethodSyms.size,
             MethodType(List("x", "out"))(_ => List(TypeRepr.of[T], TypeRepr.of[JsonWriter]), _ => TypeRepr.of[Unit]))
           encodeMethodSyms.update(methodKey, sym)
-          encodeMethodDefs += DefDef(sym, params => {
+          encodeMethodDefs.addOne(DefDef(sym, params => {
             val List(List(x, out)) = params
             Some(f(out.asExprOf[JsonWriter], x.asExprOf[T]).asTerm.changeOwner(sym))
-          })
+          }))
           sym
         })), List(arg.asTerm, out.asTerm)).asExprOf[Unit]
 
@@ -1951,23 +1953,24 @@ object JsonCodecMaker {
                 if (required(fieldInfo.mappedName)) acc | 1 << i
                 else acc
             })
-            var i = -1
-            paramVars.map { nValDef =>
-              i += 1
-              val n = Ref(nValDef.symbol).asExprOf[Int]
-              val reqMask = reqMasks(i)
-              if (reqMask == -1 || (i == lastParamVarIndex && reqMask == lastParamVarBits)) {
-                val fieldName =
-                  if (i == 0) '{ java.lang.Integer.numberOfTrailingZeros($n) }.asTerm
-                  else '{ java.lang.Integer.numberOfTrailingZeros($n) + ${Expr(i << 5)} }.asTerm
-                '{ if ($n != 0) $in.requiredFieldError(${Apply(nameByIndex, List(fieldName)).asExprOf[String]}) }.asTerm
-              } else {
-                val m = Expr(reqMask)
-                val fieldName =
-                  if (i == 0) '{ java.lang.Integer.numberOfTrailingZeros($n & $m) }.asTerm
-                  else '{ java.lang.Integer.numberOfTrailingZeros($n & $m) + ${Expr(i << 5)} }.asTerm
-                '{ if (($n & $m) != 0) $in.requiredFieldError(${Apply(nameByIndex, List(fieldName)).asExprOf[String]}) }.asTerm
-              }
+            paramVars.map {
+              var i = -1
+              nValDef =>
+                i += 1
+                val n = Ref(nValDef.symbol).asExprOf[Int]
+                val reqMask = reqMasks(i)
+                if (reqMask == -1 || (i == lastParamVarIndex && reqMask == lastParamVarBits)) {
+                  val fieldName =
+                    if (i == 0) '{ java.lang.Integer.numberOfTrailingZeros($n) }.asTerm
+                    else '{ java.lang.Integer.numberOfTrailingZeros($n) + ${Expr(i << 5)} }.asTerm
+                  '{ if ($n != 0) $in.requiredFieldError(${Apply(nameByIndex, List(fieldName)).asExprOf[String]}) }.asTerm
+                } else {
+                  val m = Expr(reqMask)
+                  val fieldName =
+                    if (i == 0) '{ java.lang.Integer.numberOfTrailingZeros($n & $m) }.asTerm
+                    else '{ java.lang.Integer.numberOfTrailingZeros($n & $m) + ${Expr(i << 5)} }.asTerm
+                  '{ if (($n & $m) != 0) $in.requiredFieldError(${Apply(nameByIndex, List(fieldName)).asExprOf[String]}) }.asTerm
+                }
             }.toList
           }
         val readVars = fields.map { fieldInfo =>
@@ -2598,21 +2601,22 @@ object JsonCodecMaker {
           }
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           val indexedTypes = typeArgs(tpe)
-          var i = 0
-          val valDefs = indexedTypes.map { te =>
-            i += 1
-            te.asType match
-              case '[t] =>
-                val sym = symbol("_r" + i, te)
-                val nullVal = genNullValue[t](te :: types)
-                val rhs =
-                  if (i == 1) genReadVal(te :: types, nullVal, isStringified, false, in)
-                  else '{
-                    if ($in.isNextToken(',')) {
-                      ${genReadVal(te :: types, nullVal, isStringified, false, in)}
-                    } else $in.commaError()
-                  }
-                ValDef(sym, Some(rhs.asTerm.changeOwner(sym)))
+          val valDefs = indexedTypes.map {
+            var i = 0
+            te =>
+              i += 1
+              te.asType match
+                case '[t] =>
+                  val sym = symbol("_r" + i, te)
+                  val nullVal = genNullValue[t](te :: types)
+                  val rhs =
+                    if (i == 1) genReadVal(te :: types, nullVal, isStringified, false, in)
+                    else '{
+                      if ($in.isNextToken(',')) {
+                        ${genReadVal(te :: types, nullVal, isStringified, false, in)}
+                      } else $in.commaError()
+                    }
+                  ValDef(sym, Some(rhs.asTerm.changeOwner(sym)))
           }
           val readCreateBlock = Block(valDefs, '{
             if ($in.isNextToken(']')) {
@@ -3050,12 +3054,13 @@ object JsonCodecMaker {
             else '{ $out.writeNonEscapedAsciiVal(($tx.name: String)) }
           }
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
-          var i = 0
-          val writeFields = typeArgs(tpe).map { te =>
-            i += 1
-            te.asType match
-              case '[t] =>
-                genWriteVal(Select.unique(x.asTerm, "_" + i).asExprOf[t], te :: types, isStringified, None, out).asTerm
+          val writeFields = typeArgs(tpe).map {
+            var i = 0
+            te =>
+              i += 1
+              te.asType match
+                case '[t] =>
+                  genWriteVal(Select.unique(x.asTerm, "_" + i).asExprOf[t], te :: types, isStringified, None, out).asTerm
           }
           if (writeFields.isEmpty) fail(s"Expected that ${tpe.show} should be an applied type")
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
@@ -3145,7 +3150,7 @@ object JsonCodecMaker {
 
   private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] =
     xs.foldLeft(new mutable.LinkedHashMap[K, ArrayBuffer[A]]) { (m, x) =>
-      m.getOrElseUpdate(f(x), new ArrayBuffer[A]) += x
+      m.getOrElseUpdate(f(x), new ArrayBuffer[A]).addOne(x)
       m
     }.toArray
 
