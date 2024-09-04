@@ -545,6 +545,41 @@ implicit val customCodecOfOffsetDateTime: JsonValueCodec[OffsetDateTime] = new J
 }
 ```
 
+11. Do not use `implicit def` and `inline given` methods for generation of custom codes.
+Scala 3.5.0+ shows compilation time warning `New anonymous class definition will be duplicated at each inline site`
+for some `inline given` cases, but for other use cases the compiler will silently generate duplicated codec instances.
+To mitigate that convert methods of codec generation to `def` and explicitly derive custom codecs, like here:
+```scala
+object Tags {
+  opaque type Tagged[+V, +Tag] = Any
+
+  type @@[+V, +Tag] = V & Tagged[V, Tag]
+
+  def tag[Tag]: [V] => V => V @@ Tag = [V] => (v: V) => v
+}
+
+object Graph {
+  import Tags.{@@, tag}
+
+  def tagJsonValueCodec[V, T](codec: JsonValueCodec[V]): JsonValueCodec[V @@ T] = new JsonValueCodec[V @@ T]:
+    //println("+1")
+    override def decodeValue(in: JsonReader, default: V @@ T): V @@ T = tag[T](codec.decodeValue(in, default: V))
+    override def encodeValue(x: V @@ T, out: JsonWriter): Unit = codec.encodeValue(x, out)
+    override def nullValue: V @@ T = tag[T](codec.nullValue)
+
+  trait NodeIdTag
+
+  type NodeId = Int @@ NodeIdTag
+
+  case class Node(id: NodeId, name: String)
+  case class Edge(node1: NodeId, node2: NodeId)
+
+  given JsonValueCodec[Graph.NodeId] = Graph.tagJsonValueCodec(JsonCodecMaker.make)
+  given JsonValueCodec[Graph.Node] = JsonCodecMaker.make
+  given JsonValueCodec[Graph.Edge] = JsonCodecMaker.make
+}
+```
+
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, 

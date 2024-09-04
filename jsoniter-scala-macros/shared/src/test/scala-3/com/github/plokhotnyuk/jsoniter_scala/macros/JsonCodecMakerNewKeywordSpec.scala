@@ -32,6 +32,27 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         DeResult[Option[String]](false, Option("VVV"), "WWW"),
         """{"isSucceed":false,"data":"VVV","message":"WWW"}""")
     }
+    "serialize and deserialize tagged types using a method to generate custom codecs" in {
+      import com.github.plokhotnyuk.jsoniter_scala.macros.Tags.{@@, tag}
+
+      def tagJsonValueCodec[V, T](codec: JsonValueCodec[V]): JsonValueCodec[V @@ T] = new JsonValueCodec[V @@ T]:
+        //println("+1")
+        override def decodeValue(in: JsonReader, default: V @@ T): V @@ T = tag[T](codec.decodeValue(in, default: V))
+        override def encodeValue(x: V @@ T, out: JsonWriter): Unit = codec.encodeValue(x, out)
+        override def nullValue: V @@ T = tag[T](codec.nullValue)
+
+      trait NodeIdTag
+
+      type NodeId = Int @@ NodeIdTag
+
+      case class Node(id: NodeId, name: String)
+      case class Edge(node1: NodeId, node2: NodeId)
+
+      given JsonValueCodec[NodeId] = tagJsonValueCodec(JsonCodecMaker.make)
+
+      verifySerDeser(make[Node], Node(tag[NodeIdTag](1), "VVV"), """{"id":1,"name":"VVV"}""")
+      verifySerDeser(make[Edge], Edge(tag[NodeIdTag](1), tag[NodeIdTag](2)), """{"node1":1,"node2":2}""")
+    }
     "serialize and deserialize generic classes using a given function" in {
       case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
 
@@ -183,3 +204,11 @@ enum LinkedList[+T] derives ConfiguredJsonValueCodec: // Borrowed from https://g
   case End
   case Node(value: T, next: LinkedList[T])
   case Node2(value: T, next: Node[T])
+
+object Tags {
+  opaque type Tagged[+V, +Tag] = Any
+
+  type @@[+V, +Tag] = V & Tagged[V, Tag]
+
+  def tag[Tag]: [V] => V => V @@ Tag = [V] => (v: V) => v
+}
