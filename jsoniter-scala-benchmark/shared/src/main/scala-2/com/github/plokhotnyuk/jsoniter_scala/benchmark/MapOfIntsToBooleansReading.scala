@@ -99,14 +99,13 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
     JsonParser(jsonBytes).convertTo[Map[Int, Boolean]]
   }
 */
-/* FIXME: uPickle parses maps from JSON arrays only
   @Benchmark
   def uPickle(): Map[Int, Boolean] = {
     import upickle.default._
 
     read[Map[Int, Boolean]](jsonBytes)
   }
-*/
+
   @Benchmark
   def weePickle(): Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._

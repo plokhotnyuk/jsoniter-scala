@@ -13,9 +13,9 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
-      //FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
+      //FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
       //benchmark.json4sJackson() shouldBe benchmark.obj
-      //FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
+      //FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
       //benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
@@ -33,9 +33,9 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
-      //FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
+      //FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
       //intercept[Throwable](b.json4sJackson())
-      //FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
+      //FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
       //intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())

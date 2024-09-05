@@ -17,11 +17,12 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes = "[]".getBytes(UTF_8)
+      b.jsonBytes = "-".getBytes(UTF_8)
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
@@ -30,6 +31,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
     }
   }

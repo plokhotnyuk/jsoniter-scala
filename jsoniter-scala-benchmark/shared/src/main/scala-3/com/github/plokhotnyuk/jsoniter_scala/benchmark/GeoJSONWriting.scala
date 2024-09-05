@@ -36,7 +36,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
 
     jacksonMapper.writeValueAsBytes(obj)
   }
-/* FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
+/* FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
   @Benchmark
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJsonJson4sFormats._
@@ -46,7 +46,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
     mapper.writeValueAsBytes(Extraction.decompose(obj))
   }
 */
-/* FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
+/* FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
   @Benchmark
   def json4sNative(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJsonJson4sFormats._

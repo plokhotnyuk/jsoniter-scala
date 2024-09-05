@@ -1,10 +1,14 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
+import ujson.{Bool, Obj, Value}
 import upickle.AttributeTagged
-import upickle.core.Visitor
+import upickle.core.{LinkedHashMap, Visitor}
+
 import java.time._
 import java.util.Base64
+import scala.collection.immutable.IntMap
+import scala.collection.mutable
 
 object UPickleReaderWriters extends AttributeTagged {
   override val tagName: String = "type"
@@ -135,6 +139,16 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v7: ReadWriter[TwitterAPI.RetweetedStatus] = macroRW
     macroRW
   }
+  implicit val intMapOfBooleansReaderWriter: ReadWriter[IntMap[Boolean]] = readwriter[Obj].bimap[IntMap[Boolean]](
+    x => Obj(x.foldLeft(LinkedHashMap[String, Value]()) { case (m, (k, v)) => m.put(k.toString, Bool(v)); m }),
+    x => x.value.foldLeft(IntMap.empty[Boolean]) { case (m, (k, v)) => m.updated(k.toInt, v.bool) })
+  implicit val mapOfIntsToBooleansWriter: Writer[Map[Int, Boolean]] =
+    MapWriter2(stringKeyW(IntWriter), BooleanWriter)
+  implicit val mutableLongMapOfBooleansReaderWriter: ReadWriter[mutable.LongMap[Boolean]] = readwriter[Obj].bimap[mutable.LongMap[Boolean]](
+    x => Obj(x.foldLeft(LinkedHashMap[String, Value]()) { case (m, (k, v)) => m.put(k.toString, Bool(v)); m }),
+    x => x.value.foldLeft(mutable.LongMap.empty[Boolean]) { case (m, (k, v)) => m.update(k.toLong, v.bool); m })
+  implicit val mutableMapOfIntsToBooleansWriter: Writer[mutable.Map[Int, Boolean]] =
+    MapWriter3(stringKeyW(IntWriter), BooleanWriter)
 
   private[this] def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
     override val expectedMsg = "expected string"

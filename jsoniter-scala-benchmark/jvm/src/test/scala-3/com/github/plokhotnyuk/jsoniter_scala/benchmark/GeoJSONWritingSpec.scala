@@ -12,9 +12,9 @@ class GeoJSONWritingSpec extends BenchmarkSpecBase {
       toString(b.circe()) shouldBe b.jsonString1
       toString(b.circeJsoniter()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString1
-      //FIXME: json4s.jackson throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
+      //FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
       //toString(b.json4sJackson()) shouldBe b.jsonString1
-      //FIXME: json4s.native throws org.json4s.MappingException: Can't find ScalaSig for class com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON$FeatureCollection
+      //FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
       //toString(b.json4sNative()) shouldBe b.jsonString1
       toString(b.jsoniterScala()) shouldBe b.jsonString1
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1

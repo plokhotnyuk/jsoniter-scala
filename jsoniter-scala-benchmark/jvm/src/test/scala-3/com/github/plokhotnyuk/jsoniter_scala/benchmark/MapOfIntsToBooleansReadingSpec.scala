@@ -20,14 +20,13 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.smithy4sJson() shouldBe benchmark.obj
       //FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
       //benchmark.sprayJson() shouldBe benchmark.obj
-      //FIXME: uPickle parses maps from JSON arrays only
-      //benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes = "[]".getBytes(UTF_8)
+      b.jsonBytes = "-".getBytes(UTF_8)
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
@@ -37,6 +36,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())
     }
