@@ -677,11 +677,7 @@ object CirceEncodersDecoders {
       "Clubs" -> Clubs)
     s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }, encodeString.contramap(_.toString))
-  implicit val suitEnumC3c: Codec[SuitEnum] = Codec.from(decodeString.emap { s =>
-    try new Right(SuitEnum.withName(s)) catch {
-      case _: NoSuchElementException => new Left("SuitEnum")
-    }
-  }, encodeString.contramap(_.toString))
+  implicit val suitEnumC3c: Codec[SuitEnum] = Codec.codecForEnumeration(SuitEnum)
   implicit val primitivesC3c: Codec[Primitives] = deriveCodec
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {
     import io.circe.generic.auto._
