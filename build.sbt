@@ -226,7 +226,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(
     crossScalaVersions := Seq("3.3.3", "2.13.14", "2.12.20"),
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.9",
+      "io.circe" %%% "circe-core" % "0.14.10",
       "io.circe" %%% "circe-parser" % "0.14.9" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.19" % Test
     )
