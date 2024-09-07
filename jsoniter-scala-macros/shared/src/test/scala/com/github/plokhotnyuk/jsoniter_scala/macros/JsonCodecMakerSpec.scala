@@ -282,6 +282,30 @@ object Version {
   case object `8.09` extends Version("8.9")
 }
 
+trait Aggregate {
+  type Props
+
+  implicit def propsCodec: JsonValueCodec[Props]
+}
+
+trait Events { self: Aggregate =>
+  case class MyEvent(props: Props)
+
+  // Works here
+  implicit val myEventCodec: JsonValueCodec[MyEvent] = make
+}
+
+object Person extends Aggregate with Events {
+  case class Props(name: String, age: Int)
+
+  implicit val propsCodec: JsonValueCodec[Props] = make
+
+  // FIXME: Doesn't work here
+  // Scala 3: No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for 'Events.this.Props'.
+  // Scala 2: Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'Events.this.Props' or provide a custom implicitly accessible codec for it.
+  // val myEventCodec: JsonValueCodec[MyEvent] = make
+}
+
 class JsonCodecMakerSpec extends VerifyingSpec {
   import com.github.plokhotnyuk.jsoniter_scala.macros.NamespacePollutions._
 
@@ -1302,6 +1326,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       } else {
         "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for 'A'."
       }))
+    }
+    "serialize and deserialize case classes with self-type" in {
+      import Person._
+
+      verifySerDeser(myEventCodec, MyEvent(Props("John", 42)), """{"props":{"name":"John","age":42}}""")
     }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
