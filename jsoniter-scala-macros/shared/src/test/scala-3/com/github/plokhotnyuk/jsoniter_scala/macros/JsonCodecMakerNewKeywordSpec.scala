@@ -10,6 +10,8 @@ object Tags {
   type @@[+V, +T] = V & Tagged[V, T]
 
   def tag[T]: [V] => V => V @@ T = [V] => (v: V) => v
+
+  inline given[V, T] (using c: JsonValueCodec[V]): JsonValueCodec[V @@ T] = c.asInstanceOf[JsonValueCodec[V @@ T]]
 }
 
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
@@ -43,23 +45,23 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
     "serialize and deserialize tagged types using a method to generate custom codecs" in {
       import com.github.plokhotnyuk.jsoniter_scala.macros.Tags.{@@, tag}
 
-      def tagJsonValueCodec[V, T](codec: JsonValueCodec[V]): JsonValueCodec[V @@ T] = new JsonValueCodec[V @@ T]:
-        //println("+1")
-        override def decodeValue(in: JsonReader, default: V @@ T): V @@ T = tag[T](codec.decodeValue(in, default: V))
-        override def encodeValue(x: V @@ T, out: JsonWriter): Unit = codec.encodeValue(x, out)
-        override def nullValue: V @@ T = tag[T](codec.nullValue)
+      implicit val intCodec: JsonValueCodec[Int] = make
+      implicit val stringCodec: JsonValueCodec[String] = make
 
       trait NodeIdTag
 
       type NodeId = Int @@ NodeIdTag
 
-      case class Node(id: NodeId, name: String)
-      case class Edge(node1: NodeId, node2: NodeId)
+      trait NodeNameTag
 
-      given JsonValueCodec[NodeId] = tagJsonValueCodec(JsonCodecMaker.make)
+      type NodeName = String @@ NodeNameTag
 
-      verifySerDeser(make[Node], Node(tag[NodeIdTag](1), "VVV"), """{"id":1,"name":"VVV"}""")
-      verifySerDeser(make[Edge], Edge(tag[NodeIdTag](1), tag[NodeIdTag](2)), """{"node1":1,"node2":2}""")
+      case class Node(id: NodeId, name: NodeName)
+
+      case class Edge(n1: NodeId, n2: NodeId)
+
+      verifySerDeser(make[Node], Node(tag[NodeIdTag](1), tag[NodeNameTag]("VVV")), """{"id":1,"name":"VVV"}""")
+      verifySerDeser(make[Edge], Edge(tag[NodeIdTag](1), tag[NodeIdTag](2)), """{"n1":1,"n2":2}""")
     }
     "serialize and deserialize generic classes using a given function" in {
       case class GenDoc[A, B, C](a: A, opt: Option[B], list: List[C])
