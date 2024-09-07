@@ -4,15 +4,14 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 
-object Tags {
+object Tags:
   opaque type Tagged[+V, +T] = Any
 
   type @@[+V, +T] = V & Tagged[V, T]
 
   def tag[T]: [V] => V => V @@ T = [V] => (v: V) => v
 
-  inline given[V, T] (using c: JsonValueCodec[V]): JsonValueCodec[V @@ T] = c.asInstanceOf[JsonValueCodec[V @@ T]]
-}
+  inline given[F[_], V, T](using c: F[V]): F[V @@ T] = c.asInstanceOf[F[V @@ T]]
 
 class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
@@ -43,7 +42,7 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
         """{"isSucceed":false,"data":"VVV","message":"WWW"}""")
     }
     "serialize and deserialize tagged types using a method to generate custom codecs" in {
-      import com.github.plokhotnyuk.jsoniter_scala.macros.Tags.{@@, tag}
+      import Tags.{@@, tag}
 
       implicit val intCodec: JsonValueCodec[Int] = make
       implicit val stringCodec: JsonValueCodec[String] = make
@@ -136,7 +135,7 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
       case class B[T: TypeBase](b: T) extends Base[T]:
         override val t: T = b
 
-      given JsonValueCodec[Base[?]] = new JsonValueCodec[Base[?]] {
+      given JsonValueCodec[Base[?]] = new JsonValueCodec[Base[?]]:
         override val nullValue: Base[?] = null
 
         override def decodeValue(in: JsonReader, default: Base[?]): Base[?] =
@@ -177,7 +176,7 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
             x
           } else in.readNullOrTokenError(default, '{')
 
-        override def encodeValue(x: Base[?], out: JsonWriter): Unit = {
+        override def encodeValue(x: Base[?], out: JsonWriter): Unit =
           out.writeObjectStart()
           val t =
             x match {
@@ -194,8 +193,6 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
             case _ => out.encodeError("unexpected value type")
           }
           out.writeObjectEnd()
-        }
-      }
 
       case class Group(lst: List[Base[?]])
 
