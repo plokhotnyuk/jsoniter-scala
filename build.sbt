@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core.*
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt.*
 import scala.scalanative.build.*
@@ -127,9 +126,7 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs$ShortAsciiStringCodec") // FIXME: remove after the next release
-  )
+  mimaBinaryIssueFilters := Seq()
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
@@ -161,19 +158,24 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
       "org.scalatest" %%% "scalatest" % "3.2.19" % Test
     )
   )
-  .platformsSettings(JSPlatform, NativePlatform)(
-    libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
-    )
-  )
 
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(jsSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
+    )
+  )
 
 lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
   .settings(nativeSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
+    )
+  )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
@@ -250,22 +252,22 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("3.5.1-RC2", "2.13.14"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
-      case _ => Seq("-source:3.3", "-Yretain-trees", "-Xmax-inlines:100")
+      case _ => Seq("-source:3.3", "-Xmax-inlines:100")
     }),
     libraryDependencies ++= Seq(
-      "io.spray" %% "spray-json" % "1.3.6",
-      "org.playframework" %%% "play-json" % "3.0.4",
+      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.23",
       "dev.zio" %%% "zio-json" % "0.7.3",
+      "org.playframework" %%% "play-json" % "3.0.4",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
-      "com.lihaoyi" %%% "upickle" % "4.0.1",
       "io.circe" %%% "circe-generic" % "0.14.10",
       "io.circe" %%% "circe-parser" % "0.14.10",
       "io.circe" %%% "circe-jawn" % "0.14.10",
-      "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.23",
+      "com.lihaoyi" %%% "upickle" % "4.0.1",
+      "com.rallyhealth" %% "weepickle-v1" % "1.9.1",
+      "io.spray" %% "spray-json" % "1.3.6",
       "org.json4s" %% "json4s-ext" % "4.1.0-M6",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M6",
       "org.json4s" %% "json4s-native" % "4.1.0-M6",
-      "com.rallyhealth" %% "weepickle-v1" % "1.9.1",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.18.0-rc1",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.18.0-rc1",
       "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.18.0-rc1",
