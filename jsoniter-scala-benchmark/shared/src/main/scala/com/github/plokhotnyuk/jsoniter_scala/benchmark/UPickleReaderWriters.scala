@@ -1,10 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
-import ujson.{Bool, Obj, Value}
+import ujson.Obj
 import upickle.AttributeTagged
-import upickle.core.{LinkedHashMap, Visitor}
-
+import upickle.core.Visitor
 import java.time._
 import java.util.Base64
 import scala.collection.immutable.IntMap
@@ -139,14 +138,20 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v7: ReadWriter[TwitterAPI.RetweetedStatus] = macroRW
     macroRW
   }
-  implicit val intMapOfBooleansReaderWriter: ReadWriter[IntMap[Boolean]] = readwriter[Obj].bimap[IntMap[Boolean]](
-    x => Obj(x.foldLeft(LinkedHashMap[String, Value]()) { case (m, (k, v)) => m.put(k.toString, Bool(v)); m }),
-    x => x.value.foldLeft(IntMap.empty[Boolean]) { case (m, (k, v)) => m.updated(k.toInt, v.bool) })
+  implicit val intMapOfBooleansReader: Reader[IntMap[Boolean]] =
+    reader[Obj].map[IntMap[Boolean]] {
+      _.value.foldLeft(IntMap.empty[Boolean]) { case (m, (k, v)) => m.updated(k.toInt, v.bool) }
+    }
   implicit val mapOfIntsToBooleansWriter: Writer[Map[Int, Boolean]] =
     MapWriter2(stringKeyW(IntWriter), BooleanWriter)
-  implicit val mutableLongMapOfBooleansReaderWriter: ReadWriter[mutable.LongMap[Boolean]] = readwriter[Obj].bimap[mutable.LongMap[Boolean]](
-    x => Obj(x.foldLeft(LinkedHashMap[String, Value]()) { case (m, (k, v)) => m.put(k.toString, Bool(v)); m }),
-    x => x.value.foldLeft(mutable.LongMap.empty[Boolean]) { case (m, (k, v)) => m.update(k.toLong, v.bool); m })
+  implicit val intMapOfBooleansWriter: Writer[IntMap[Boolean]] =
+    mapOfIntsToBooleansWriter.asInstanceOf[Writer[IntMap[Boolean]]]
+  implicit val mutableLongMapOfBooleansReader: Reader[mutable.LongMap[Boolean]] =
+    reader[Obj].map[mutable.LongMap[Boolean]] {
+      _.value.foldLeft(mutable.LongMap.empty[Boolean]) { case (m, (k, v)) => m.update(k.toLong, v.bool); m }
+    }
+  implicit val mutableLongMapOfBooleansWriter: Writer[mutable.LongMap[Boolean]] =
+    MapWriter3(stringKeyW(longWriter), BooleanWriter).asInstanceOf[Writer[mutable.LongMap[Boolean]]]
   implicit val mutableMapOfIntsToBooleansWriter: Writer[mutable.Map[Int, Boolean]] =
     MapWriter3(stringKeyW(IntWriter), BooleanWriter)
 
