@@ -23,7 +23,9 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
 
   @Benchmark
   def circe(): Array[ZonedDateTime] = {
-    io.circe.jawn.decodeByteArray[Array[ZonedDateTime]](jsonBytes).fold(throw _, identity)
+    import io.circe.jawn._
+
+    decodeByteArray[Array[ZonedDateTime]](jsonBytes).fold(throw _, identity)
   }
 
   @Benchmark
