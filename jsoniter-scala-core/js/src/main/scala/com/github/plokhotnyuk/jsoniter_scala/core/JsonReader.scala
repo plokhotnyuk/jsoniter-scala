@@ -2952,6 +2952,7 @@ final class JsonReader private[jsoniter_scala](
     else Duration.ofSeconds(seconds, nano.toLong)
   }
 
+  @inline
   private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
     val s = s1 + s2
     if (((s1 ^ s) & (s2 ^ s)) < 0) durationError(pos)
