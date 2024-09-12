@@ -2993,6 +2993,7 @@ final class JsonReader private[jsoniter_scala](
     else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
 
+  @inline
   private[this] def parseSecondOfDay(pos: Int): Long =
     (parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)).toLong
 
@@ -3338,6 +3339,7 @@ final class JsonReader private[jsoniter_scala](
     } else ZoneOffset.ofTotalSeconds(if (sb == '-') -offsetTotal else offsetTotal)
   }
 
+  @inline
   private[this] def epochDay(year: Int, month: Int, day: Int): Long =
     year * 365L + ((year + 3 >> 2) - {
       if (year < 0) year / 100 - year / 400
