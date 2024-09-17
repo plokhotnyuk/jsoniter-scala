@@ -15,7 +15,7 @@ object JsoniterScalaCodec {
    */
   val defaultNumberParser: JsonReader => Json = in => new JNumber({
     in.setMark()
-    var digits = 0
+    var digits = 1
     var b = in.nextByte()
     if (b == '-') b = in.nextByte()
     while ((b >= '0' && b <= '9') && in.hasRemaining()) {
@@ -24,10 +24,9 @@ object JsoniterScalaCodec {
     }
     in.rollbackToMark()
     if ((b | 0x20) != 'e' && b != '.') {
-      if (digits < 19) new JsonLong({
-        if (digits < 10) in.readInt()
-        else in.readLong()
-      }) else {
+      if (digits < 10) new JsonLong(in.readInt())
+      else if (digits < 19 || digits == 19 && b != '9') new JsonLong(in.readLong())
+      else {
         val x = in.readBigInt(null)
         if (x.isValidLong) new JsonLong(x.longValue)
         else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))

@@ -58,5 +58,10 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       val json = readFromString(jsonStr)(codec)
       writeToString(json)(codec) shouldBe jsonStrExpected
     }
+    "deserialize big numbers" in {
+      val jsonStr = "[9223372036854775808,9999999999999999999]"
+      readFromString(jsonStr) shouldBe
+        Json.arr(Json.fromBigInt(BigInt("9223372036854775808")),Json.fromBigInt(BigInt("9999999999999999999")))
+    }
   }
 }
