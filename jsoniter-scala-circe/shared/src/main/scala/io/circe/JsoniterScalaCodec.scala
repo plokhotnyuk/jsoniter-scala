@@ -15,17 +15,17 @@ object JsoniterScalaCodec {
    */
   val defaultNumberParser: JsonReader => Json = in => new JNumber({
     in.setMark()
-    var digits = 1
     var b = in.nextByte()
     if (b == '-') b = in.nextByte()
-    while ((b >= '0' && b <= '9') && in.hasRemaining()) {
-      b = in.nextByte()
+    var digits = 0
+    while ((b >= '0' && b <= '9') && {
       digits += 1
-    }
+      in.hasRemaining()
+    }) b = in.nextByte()
     in.rollbackToMark()
     if ((b | 0x20) != 'e' && b != '.') {
       if (digits < 10) new JsonLong(in.readInt())
-      else if (digits < 19 || digits == 19 && b != '9') new JsonLong(in.readLong())
+      else if (digits < 19) new JsonLong(in.readLong())
       else {
         val x = in.readBigInt(null)
         if (x.isValidLong) new JsonLong(x.longValue)
