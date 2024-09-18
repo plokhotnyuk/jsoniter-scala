@@ -2179,7 +2179,7 @@ final class JsonReader private[jsoniter_scala](
       }) {
         if (x < -922337203685477580L || {
           x = (x << 3) + (x << 1) + ('0' - b)
-          x > 0
+          x > 0L
         }) longOverflowError(pos)
         pos += 1
       }
@@ -2225,7 +2225,7 @@ final class JsonReader private[jsoniter_scala](
     var m10 = (b - '0').toLong
     var e10 = 0
     var digits = 1
-    if (isToken && m10 == 0) {
+    if (isToken && b == '0') {
       if ((pos < tail || {
         pos = loadMore(pos)
         buf = this.buf
@@ -2314,7 +2314,7 @@ final class JsonReader private[jsoniter_scala](
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
   private[this] def toDouble(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Double =
-    if (m10 == 0 || e10 < -343) 0.0
+    if (m10 == 0L || e10 < -343) 0.0
     else if (e10 >= 310) Double.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
@@ -2331,14 +2331,14 @@ final class JsonReader private[jsoniter_scala](
       val mask = -1L >>> Math.max(savedBitNum, 0)
       val halfwayDiff = (m2 & mask) - (mask >>> 1)
       if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
-        if (savedBitNum <= 0) m2 = 0
+        if (savedBitNum <= 0) m2 = 0L
         m2 >>>= truncatedBitNum
         e2 += truncatedBitNum
-        if (savedBitNum >= 0 && halfwayDiff > 0) {
+        if (savedBitNum >= 0 && halfwayDiff > 0L) {
           if (m2 == 0x1FFFFFFFFFFFFFL) {
             m2 = 0x10000000000000L
             e2 += 1
-          } else m2 += 1
+          } else m2 += 1L
         }
         if (e2 == -1074) m2
         else if (e2 >= 972) 0x7FF0000000000000L
@@ -2373,7 +2373,7 @@ final class JsonReader private[jsoniter_scala](
     var m10 = (b - '0').toLong
     var e10 = 0
     var digits = 1
-    if (isToken && m10 == 0) {
+    if (isToken && b == '0') {
       if ((pos < tail || {
         pos = loadMore(pos)
         buf = this.buf
@@ -2458,7 +2458,7 @@ final class JsonReader private[jsoniter_scala](
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
   private[this] def toFloat(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Float =
-    if (m10 == 0 || e10 < -64) 0.0f
+    if (m10 == 0L || e10 < -64) 0.0f
     else if (e10 >= 39) Float.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
@@ -2478,7 +2478,7 @@ final class JsonReader private[jsoniter_scala](
         var mf = 0
         if (savedBitNum > 0) mf = (m2 >>> truncatedBitNum).toInt
         e2 += truncatedBitNum
-        if (savedBitNum >= 0 && halfwayDiff > 0) {
+        if (savedBitNum >= 0 && halfwayDiff > 0L) {
           if (mf == 0xFFFFFF) {
             mf = 0x800000
             e2 += 1
@@ -2808,7 +2808,7 @@ final class JsonReader private[jsoniter_scala](
       first = Math.max(first - 1, 0)
       var i = last
       while ({
-        x += (magnitude(i) & 0xFFFFFFFFL) * 1000000000
+        x += (magnitude(i) & 0xFFFFFFFFL) * 1000000000L
         magnitude(i) = x.toInt
         i -= 1
         i >= first
@@ -3450,7 +3450,7 @@ final class JsonReader private[jsoniter_scala](
             ns(buf(pos + 5) & 0xFF) << 8 |
             ns(buf(pos + 6) & 0xFF) << 4 |
             ns(buf(pos + 7) & 0xFF))
-      if (mostSigBits1 < 0) hexDigitError(pos)
+      if (mostSigBits1 < 0L) hexDigitError(pos)
       if (buf(pos + 8) != '-') tokenError('-', pos + 8)
       val mostSigBits2 =
         ns(buf(pos + 9) & 0xFF) << 12 |
@@ -3486,7 +3486,7 @@ final class JsonReader private[jsoniter_scala](
             ns(buf(pos + 33) & 0xFF) << 8 |
             ns(buf(pos + 34) & 0xFF) << 4 |
             ns(buf(pos + 35) & 0xFF))
-      if (leastSigBits2 < 0) hexDigitError(pos + 24)
+      if (leastSigBits2 < 0L) hexDigitError(pos + 24)
       if (buf(pos + 36) != '"') tokenError('"', pos + 36)
       head = pos + 37
       new UUID(mostSigBits1 << 32 | mostSigBits2.toLong << 16 | mostSigBits3,

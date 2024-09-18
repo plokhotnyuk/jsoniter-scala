@@ -1622,10 +1622,10 @@ final class JsonWriter private[jsoniter_scala](
         pos += digitCount(q)
         count = pos
       } else {
-        val q1 = (exp >>> 8) * 1441151881 >>> 49 // divide a small positive long by 100000000
+        val q1 = (exp >>> 8) * 1441151881L >>> 49 // divide a small positive long by 100000000
         q = q1.toInt
         pos += digitCount(q)
-        count = write8Digits((exp - q1 * 100000000).toInt, pos, buf, ds)
+        count = write8Digits((exp - q1 * 100000000L).toInt, pos, buf, ds)
       }
       writePositiveIntDigits(q, pos, buf, ds)
     }
@@ -1877,23 +1877,23 @@ final class JsonWriter private[jsoniter_scala](
     } else {
       val epochDay =
         (if (epochSecond >= 0) epochSecond
-        else epochSecond - 86399) / 86400
-      var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
+        else epochSecond - 86399L) / 86400L
+      var marchZeroDay = epochDay + 719468L  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
       if (marchZeroDay < 0) {
-        adjust400YearCycles = ((marchZeroDay + 1) / 146097).toInt - 1
+        adjust400YearCycles = ((marchZeroDay + 1L) / 146097L).toInt - 1
         marchZeroDay -= adjust400YearCycles * 146097L
       }
-      year = ((marchZeroDay * 400 + 591) / 146097).toInt
+      year = ((marchZeroDay * 400L + 591L) / 146097L).toInt
       var days = year * 365L
       var century = year / 100
       marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
       if (marchDayOfYear < 0) {
-        days -= 365
+        days -= 365L
         year -= 1
         century = year / 100
         marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
       }
-      secsOfDay = (epochSecond - epochDay * 86400).toInt
+      secsOfDay = (epochSecond - epochDay * 86400L).toInt
     }
     val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
     val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
@@ -2391,7 +2391,7 @@ final class JsonWriter private[jsoniter_scala](
         q0 >>>= 3
         var r = (z - (q0 << 1)).toInt
         if (r >= 10) {
-          q0 += 1
+          q0 += 1L
           r -= 10
         }
         buf(pos + 18) = (r | '0').toByte
@@ -2403,12 +2403,12 @@ final class JsonWriter private[jsoniter_scala](
         lastPos += digitCount(q)
         pos = lastPos
       } else {
-        val q2 = (q1 >>> 8) * 1441151881 >>> 49 // divide a small positive long by 100000000
+        val q2 = (q1 >>> 8) * 1441151881L >>> 49 // divide a small positive long by 100000000
         q = q2.toInt
         lastPos += digitCount(q)
-        pos = write8Digits((q1 - q2 * 100000000).toInt, lastPos, buf, ds)
+        pos = write8Digits((q1 - q2 * 100000000L).toInt, lastPos, buf, ds)
       }
-      pos = write8Digits((q0 - q1 * 100000000).toInt, pos, buf, ds) + posCorr
+      pos = write8Digits((q0 - q1 * 100000000L).toInt, pos, buf, ds) + posCorr
     }
     writePositiveIntDigits(q, lastPos, buf, ds)
     pos
@@ -2595,19 +2595,19 @@ final class JsonWriter private[jsoniter_scala](
           var vb40 = m10 & 0xFFFFFFFFFFFFFFE0L
           m10 >>>= 5
           vb40 += m10 << 3
+          if ((vb - vb40).toInt >= 40) {
+            vb40 += 40L
+            m10 += 1L
+          }
           diff = (vbl - vb40).toInt + vbCorr
-          ((if ((vb - vb40).toInt >= 40) {
-            m10 += 1
-            diff -= 40
-            80
-          } else 40) + (vb40 - vbr).toInt + vbCorr ^ diff) >= 0
+          ((vb40 - vbr).toInt + vbCorr + 40 ^ diff) >= 0
         }) {
           m10 = m10i
           val vb4 = vb & 0xFFFFFFFFFFFFFFFCL
           diff = (vbl - vb4).toInt + vbCorr
           if (((vb4 - vbr).toInt + vbCorr + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
         } else e10Corr = -1
-        if (diff >= 0) m10 += 1
+        if (diff >= 0) m10 += 1L
         e10 -= e10Corr
       }
       val len = digitCount(m10)
