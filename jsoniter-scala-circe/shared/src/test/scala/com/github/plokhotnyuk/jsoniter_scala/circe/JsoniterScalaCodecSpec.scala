@@ -4,19 +4,19 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec._
-import io.circe.Json
+import io.circe.{Json, JsonNumber}
 import io.circe.parser._
 
 class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
   "JsoniterScalaCodec.jsonCodec" should {
     "deserialize json" in {
-      val jsonStr = """{"n":null,"s":"VVV","n1":1.0,"n2":2,"a":[null,"WWW",[],{}],"o":{"a":[]}}"""
+      val jsonStr = """{"n":null,"s":"VVV","n1":1.0,"n2":2,"b":true,"a":[null,"WWW",[],{},false],"o":{"a":[]}}"""
       val json = parse(jsonStr).getOrElse(null)
       readFromString(jsonStr) shouldBe json
     }
     "not deserialize invalid json" in {
-      val jsonStr = """{"n":null[]"""
-      assert(intercept[JsonReaderException](readFromString(jsonStr)).getMessage.contains("expected '}' or ','"))
+      assert(intercept[JsonReaderException](readFromString("""{"n":null[]""")).getMessage.contains("expected '}' or ','"))
+      assert(intercept[JsonReaderException](readFromString("""[null{}""")).getMessage.contains("expected ']' or ','"))
     }
     "not deserialize deeply nested json" in {
       val jsonStr1 = """[{"n":""" * 64 + "[]" + "}]" * 64
@@ -31,7 +31,7 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       readFromString(jsonStr)(codec) shouldBe json
     }
     "serialize json" in {
-      val jsonStr = """{"s":"VVV","n1":1.0,"n2":2,"a":[null,"WWW",[],{}],"o":{"a":[]}}"""
+      val jsonStr = """{"s":"VVV","n1":1.0,"n2":2,"b":true,"a":[null,"WWW",[],{},false],"o":{"a":[]}}"""
       val json = readFromString(jsonStr)
       writeToString(json) shouldBe jsonStr
     }
@@ -71,6 +71,16 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
           Json.fromBigInt(BigInt("9223372036854775809")),
           Json.fromBigInt(BigInt("9999999999999999999"))
         )
+    }
+    "serialize numbers" in {
+      val json = Json.arr(
+        Json.fromFloatOrNull(1.0f),
+        Json.fromDoubleOrNull(2.0),
+        Json.fromLong(3L),
+        Json.fromBigDecimal(BigDecimal("777e+777")),
+        Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("999e+999"))
+      )
+      writeToString(json) shouldBe "[1.0,2.0,3,7.77E+779,999e+999]"
     }
   }
 }
