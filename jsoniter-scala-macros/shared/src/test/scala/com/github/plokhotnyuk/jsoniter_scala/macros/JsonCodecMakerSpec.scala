@@ -2280,14 +2280,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[List[AdtBase]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("t"))),
         List(CCC(2, "WWW"), CCC(1, "VVV")), """[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""")
     }
-    "serialize and deserialize case class ADTs using discriminator in different positions" in {
-      verifySerDeser(make[List[AdtBase]](CodecMakerConfig.withRequireDiscriminatorFirst(false)),
+    "deserialize case class ADTs using discriminator in different positions" in {
+      verifyDeser(make[List[AdtBase]](CodecMakerConfig.withRequireDiscriminatorFirst(false)),
         List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
         """[{"type":"AAA","a":1},{"a":1,"type":"BBB"},{"a":1,"type":"CCC","b":"VVV"},{"type":"DDD"}]""")
-      verifySerDeser(make[List[AdtBase]](CodecMakerConfig.withRequireDiscriminatorFirst(false)),
-        List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
-        """[{"AAA":{"a":1}},{"BBB":{"a":1}},{"CCC":{"a":1,"b":"VVV"}},"DDD"]""")
-      verifySerDeser(make[List[AdtBase]](CodecMakerConfig
+      verifyDeser(make[List[AdtBase]](CodecMakerConfig
         .withRequireDiscriminatorFirst(false)
         .withDiscriminatorFieldName(_root_.scala.Some("t"))),
         List(CCC(2, "WWW"), CCC(1, "VVV")), """[{"a":2,"b":"WWW","t":"CCC"},{"a":1,"t":"CCC","b":"VVV"}]""")
