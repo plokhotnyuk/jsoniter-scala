@@ -2595,12 +2595,12 @@ final class JsonWriter private[jsoniter_scala](
           var vb40 = m10 & 0xFFFFFFFFFFFFFFE0L
           m10 >>>= 5
           vb40 += m10 << 3
-          diff = (vbl - vb40).toInt + vbCorr
-          ((if ((vb - vb40).toInt >= 40) {
+          if ((vb - vb40).toInt >= 40) {
+            vb40 += 40
             m10 += 1
-            diff -= 40
-            80
-          } else 40) + (vb40 - vbr).toInt + vbCorr ^ diff) >= 0
+          }
+          diff = (vbl - vb40).toInt + vbCorr
+          ((vb40 - vbr).toInt + vbCorr + 40 ^ diff) >= 0
         }) {
           m10 = m10i
           val vb4 = vb & 0xFFFFFFFFFFFFFFFCL
