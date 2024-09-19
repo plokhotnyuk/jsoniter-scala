@@ -248,7 +248,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.5.1-RC2", "2.13.14"),
+    crossScalaVersions := Seq("3.5.2-RC1", "2.13.14"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq("-source:3.3", "-Xmax-inlines:100")
