@@ -140,6 +140,18 @@ wget https://webtpa-public-access.s3.us-west-2.amazonaws.com/subfolder/2023_06_4
 gunzip 2023_06_430_65B0_in_network_rates.json.gz
 ```
 
+Speed of validation highly depends on performance of file reading on the particular disk system. Use the following command
+to measure reading speed on Linux:
+```sh
+sudo hdparm -Tt /dev/sda
+```
+Here is an example of expected output:
+```text
+/dev/sda:
+ Timing cached reads:   45532 MB in  2.00 seconds = 22806.82 MB/sec
+ Timing buffered disk reads: 2180 MB in  3.04 seconds = 716.07 MB/sec
+```
+
 ### Build uber jar, print its size, and measure its running time
 
 ```sh
