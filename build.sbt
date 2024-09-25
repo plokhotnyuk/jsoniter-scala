@@ -104,7 +104,8 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val publishSettings = Seq(
-  packageOptions += Package.ManifestAttributes("Automatic-Module-Name" -> moduleName.value.replace("-", ".")),
+  packageOptions += Package.ManifestAttributes("Automatic-Module-Name" ->
+    moduleName.value.replace("jsoniter-scala", "com.github.plokhotnyuk.jsoniter_scala").replace('-', '.')),
   mimaCheckDirection := {
     def isPatch: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
