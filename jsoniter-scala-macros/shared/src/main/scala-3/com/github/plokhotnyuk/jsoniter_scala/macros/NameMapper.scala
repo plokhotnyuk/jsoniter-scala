@@ -6,6 +6,8 @@ private[macros] sealed trait NameMapper:
   def apply(input: String)(using Quotes): Option[String]
 
 private[macros] class PartialFunctionWrapper(fun: PartialFunction[String, String]) extends NameMapper:
+  def this(f: Function[String, String]) = this { case x => f(x) }
+
   def apply(input: String)(using Quotes): Option[String] = fun.lift(input)
 
 private[macros] class ExprPartialFunctionWrapper(fun: Expr[PartialFunction[String, String]]) extends NameMapper:
@@ -18,7 +20,7 @@ private[macros] object NameMapper {
     inline def apply(pf: PartialFunction[String, String]) = PartialFunctionWrapper(pf)
 
   given Conversion[Function[String, String], NameMapper] with
-    inline def apply(f: Function[String, String]) = PartialFunctionWrapper({ case x => f(x) })
+    inline def apply(f: Function[String, String]) = PartialFunctionWrapper(f)
 
   given FromExpr[NameMapper] with {
     def unapply(x: Expr[NameMapper])(using Quotes): Option[NameMapper] = {
@@ -35,7 +37,7 @@ private[macros] object NameMapper {
 
 private[macros] object PartialFunctionWrapper {
   def toExprWrapper(x: Expr[PartialFunctionWrapper])(using Quotes): Option[ExprPartialFunctionWrapper] = x match
-    case '{ PartialFunctionWrapper($fun) } => Some(ExprPartialFunctionWrapper(fun))
+    case '{ PartialFunctionWrapper($fun: PartialFunction[String, String]) } => Some(ExprPartialFunctionWrapper(fun))
     case _ => throw new FromExprException("FieldNameExpr", x)
 }
 

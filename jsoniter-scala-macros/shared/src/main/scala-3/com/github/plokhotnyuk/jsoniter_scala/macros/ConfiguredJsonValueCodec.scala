@@ -15,6 +15,13 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 trait ConfiguredJsonValueCodec[A] extends JsonValueCodec[A]
 
 object ConfiguredJsonValueCodec:
-  inline def derived[A](using inline config: CodecMakerConfig = CodecMakerConfig): ConfiguredJsonValueCodec[A] = new:
-    private val impl = JsonCodecMaker.make[A](config)
-    export impl._
+  inline def derived[A](using inline config: CodecMakerConfig = CodecMakerConfig): ConfiguredJsonValueCodec[A] =
+    new ConfiguredJsonValueCodecWrapper(JsonCodecMaker.make[A](config))
+
+private[macros] class ConfiguredJsonValueCodecWrapper[A](impl: JsonValueCodec[A]) extends ConfiguredJsonValueCodec[A] {
+  def decodeValue(in: JsonReader, default: A): A = impl.decodeValue(in, default)
+
+  def encodeValue(x: A, out: JsonWriter): Unit = impl.encodeValue(x, out)
+
+  def nullValue: A = impl.nullValue
+}
