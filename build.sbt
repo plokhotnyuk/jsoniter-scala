@@ -270,7 +270,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.json4s" %% "json4s-ext" % "4.1.0-M7",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M7",
       "org.json4s" %% "json4s-native" % "4.1.0-M7",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.18.0-rc1",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.18.0",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.18.0",
       "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.18.0",
       "org.openjdk.jmh" % "jmh-core" % "1.37",
