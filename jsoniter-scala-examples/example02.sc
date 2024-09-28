@@ -1,4 +1,4 @@
-//> using dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.30.12"
+//> using dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.30.13"
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 
