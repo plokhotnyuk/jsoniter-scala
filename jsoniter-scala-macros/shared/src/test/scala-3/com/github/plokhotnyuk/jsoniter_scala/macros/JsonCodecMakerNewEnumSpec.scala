@@ -71,6 +71,10 @@ enum MyEnum(val value: String):
 enum RecursiveEnum:
   case Rec(val next: Option[Rec]) extends RecursiveEnum
 
+enum ClientOut(@transient val tpe: String):
+  @named("p") case Ping(@named("l") timestamp: Long) extends ClientOut("p")
+  @named("m") case Move(@named("m") move: Long) extends ClientOut("m")
+
 class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize Scala3 enums" in {
@@ -147,6 +151,10 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
       verifySerDeser(make[List[RecursiveEnum]](CodecMakerConfig.withAllowRecursiveTypes(true)),
         List(RecursiveEnum.Rec(None), RecursiveEnum.Rec(Some(RecursiveEnum.Rec(None)))),
         """[{"type":"Rec"},{"type":"Rec","next":{}}]""")
+    }
+    "serialize and deserialize Scala3 enums with a transient field" in {
+      verifySerDeser(make[List[ClientOut]](CodecMakerConfig.withDiscriminatorFieldName(Some("t"))),
+        List(ClientOut.Ping(1), ClientOut.Move(1)), """[{"t":"p","l":1},{"t":"m","m":1}]""")
     }
     "don't generate codecs for recursive Scala3 enums by default" in {
       assert(intercept[TestFailedException](assertCompiles {
