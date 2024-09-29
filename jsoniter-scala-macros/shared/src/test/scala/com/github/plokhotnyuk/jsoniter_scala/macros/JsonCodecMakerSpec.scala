@@ -1915,6 +1915,21 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"CamelCase":1,"PascalCase":2,"SnakeCase":3,"KebabCase":4,"Camel1":5,"Pascal1":6,"Snake1":7,"Kebab1":8}""",
         """missing required field "camel_case", offset: 0x00000066""")
     }
+    "serialize and deserialize with keys enforced to snake_case2 and throw parse exception when they are missing" in {
+      val codec_of_enforced_snake_case2 =
+        make[CamelPascalSnakeKebabCases](CodecMakerConfig.withFieldNameMapper(JsonCodecMaker.enforce_snake_case2))
+      verifySerDeser(codec_of_enforced_snake_case2, CamelPascalSnakeKebabCases(1, 2, 3, 4, 5, 6, 7, 8),
+        """{"camel_case":1,"pascal_case":2,"snake_case":3,"kebab_case":4,"camel1":5,"pascal1":6,"snake1":7,"kebab1":8}""")
+      verifyDeserError(codec_of_enforced_snake_case2,
+        """{"camelCase":1,"pascalCase":2,"snakeCase":3,"kebabCase":4,"camel1":5,"pascal1":6,"snake1":7,"kebab1":8}""",
+        """missing required field "camel_case", offset: 0x00000066""")
+      verifyDeserError(codec_of_enforced_snake_case2,
+        """{"camel-case":1,"pascal-case":2,"snake-case":3,"kebab-case":4,"camel-1":5,"pascal-1":6,"snake-1":7,"kebab-1":8}""",
+        """missing required field "camel_case", offset: 0x0000006e""")
+      verifyDeserError(codec_of_enforced_snake_case2,
+        """{"CamelCase":1,"PascalCase":2,"SnakeCase":3,"KebabCase":4,"Camel1":5,"Pascal1":6,"Snake1":7,"Kebab1":8}""",
+        """missing required field "camel_case", offset: 0x00000066""")
+    }
     "serialize and deserialize with keys enforced to kebab-case and throw parse exception when they are missing" in {
       val `codec-of-enforced-kebab-case` =
         make[CamelPascalSnakeKebabCases](CodecMakerConfig.withFieldNameMapper(JsonCodecMaker.`enforce-kebab-case`))
