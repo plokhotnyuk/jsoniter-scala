@@ -237,7 +237,7 @@ case class User(name: String, devices: Seq[Device])
 ```
 
 Add the core library with a "compile" scope and the macros library with "compile-internal" or "provided" scopes to your 
-list of dependencies:
+list of sbt dependencies:
 ```sbt
 libraryDependencies ++= Seq(
   // Use the %%% operator instead of %% for Scala.js and Scala Native 
@@ -245,6 +245,12 @@ libraryDependencies ++= Seq(
   // Use the "provided" scope instead when the "compile-internal" scope is not supported  
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.30.14" % "compile-internal"
 )
+```
+In the beginning of Scala CLI script use "dep" scope for the core library or "compileOnly.dep" scope for the macros
+libary:
+```scala
+//> using dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.30.14"
+//> using compileOnly.dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.30.14"
 ```
 
 Derive a codec for the top-level type that need to be parsed or serialized:
