@@ -224,9 +224,10 @@ final class JsoniterScalaCodec(
       out.writeObjectStart()
       val it = o.value.toIterable.iterator
       while (it.hasNext) {
-        val (k, v) = it.next()
+        val kv = it.next()
+        val v = kv._2
         if (doSerialize(v)) {
-          out.writeKey(k)
+          out.writeKey(kv._1)
           encode(v, out, depthM1)
         }
       }

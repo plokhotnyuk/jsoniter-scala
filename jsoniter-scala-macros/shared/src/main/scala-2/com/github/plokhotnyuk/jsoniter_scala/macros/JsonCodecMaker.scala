@@ -774,7 +774,7 @@ object JsonCodecMaker {
 
       def genReadEnumValue(enumValues: Seq[JavaEnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
         def genReadCollisions(es: collection.Seq[JavaEnumValueInfo]): Tree =
-          es.foldRight(unexpectedEnumValueHandler) { case (e, acc) =>
+          es.foldRight(unexpectedEnumValueHandler) { (e, acc) =>
             q"if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value} else $acc"
           }
 
@@ -1457,7 +1457,7 @@ object JsonCodecMaker {
         }
 
         def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
-          fs.foldRight(unexpectedFieldHandler) { case (fieldInfo, acc) =>
+          fs.foldRight(unexpectedFieldHandler) { (fieldInfo, acc) =>
             val readValue =
               if (discriminator.nonEmpty && cfg.discriminatorFieldName.contains(fieldInfo.mappedName)) discriminator
               else {
@@ -1845,7 +1845,7 @@ object JsonCodecMaker {
             else genReadVal(subTpe :: types, genNullValue(subTpe :: types), isStringified, skipDiscriminatorField)
 
           def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
-            subTpes.foldRight(discriminatorError) { case (subTpe, acc) =>
+            subTpes.foldRight(discriminatorError) { (subTpe, acc) =>
               val readVal =
                 if (cfg.discriminatorFieldName.isDefined) {
                   q"""in.rollbackToMark()
