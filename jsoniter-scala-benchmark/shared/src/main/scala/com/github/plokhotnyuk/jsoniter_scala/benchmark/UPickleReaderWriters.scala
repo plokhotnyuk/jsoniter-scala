@@ -140,7 +140,7 @@ object UPickleReaderWriters extends AttributeTagged {
   }
   implicit val intMapOfBooleansReader: Reader[IntMap[Boolean]] =
     reader[Obj].map[IntMap[Boolean]] {
-      _.value.foldLeft(IntMap.empty[Boolean]) { case (m, (k, v)) => m.updated(k.toInt, v.bool) }
+      _.value.foldLeft(IntMap.empty[Boolean]) { (m, kv) => m.updated(kv._1.toInt, kv._2.bool) }
     }
   implicit val mapOfIntsToBooleansWriter: Writer[Map[Int, Boolean]] =
     MapWriter2(stringKeyW(IntWriter), BooleanWriter)
@@ -148,7 +148,7 @@ object UPickleReaderWriters extends AttributeTagged {
     mapOfIntsToBooleansWriter.asInstanceOf[Writer[IntMap[Boolean]]]
   implicit val mutableLongMapOfBooleansReader: Reader[mutable.LongMap[Boolean]] =
     reader[Obj].map[mutable.LongMap[Boolean]] {
-      _.value.foldLeft(mutable.LongMap.empty[Boolean]) { case (m, (k, v)) => m.update(k.toLong, v.bool); m }
+      _.value.foldLeft(mutable.LongMap.empty[Boolean]) { (m, kv) => m.update(kv._1.toLong, kv._2.bool); m }
     }
   implicit val mutableLongMapOfBooleansWriter: Writer[mutable.LongMap[Boolean]] =
     MapWriter3(stringKeyW(longWriter), BooleanWriter).asInstanceOf[Writer[mutable.LongMap[Boolean]]]

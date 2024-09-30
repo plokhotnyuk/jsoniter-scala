@@ -26,12 +26,9 @@ object Util {
 
     def onObject(value: JsonObject): Json = new JObject(JsonObject.fromLinkedHashMap {
       val map = new util.LinkedHashMap[String, Json](value.size << 1, 0.5f)
-      value.toIterable.foreach { case (k, v) =>
-        lazy val folded = v.foldWith(this)
-        if (!{
-          if (v.isArray) folded
-          else v
-        }.isNull) map.put(k, folded)
+      value.toIterable.foreach { kv =>
+        val folded = kv._2.foldWith(this)
+        if (!folded.isNull) map.put(kv._1, folded)
       }
       map
     })
@@ -43,8 +40,9 @@ object Util {
     val map = new util.LinkedHashMap[String, Json](fields.size << 1, 0.5f)
     val it = fields.iterator
     while (it.hasNext) {
-      val (k, v) = it.next()
-      if (!(v.isNull || v.isArray && v.asInstanceOf[JArray].value.isEmpty)) map.put(k, v)
+      val kv = it.next()
+      val v = kv._2
+      if (!(v.isNull || v.isArray && v.asInstanceOf[JArray].value.isEmpty)) map.put(kv._1, v)
     }
     map
   })

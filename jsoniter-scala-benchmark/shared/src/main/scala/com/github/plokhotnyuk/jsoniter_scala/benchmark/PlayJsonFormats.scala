@@ -1369,7 +1369,8 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
   implicit val yearMonthFormat: Format[YearMonth] = stringFormat("yearmonth")(YearMonth.parse)
   implicit val zoneOffsetFormat: Format[ZoneOffset] = stringFormat("zoneoffset")(ZoneOffset.of)
 
-  def toJsObject(fields: (String, JsValue)*): JsObject = JsObject(fields.filterNot { case (_, v) =>
+  def toJsObject(fields: (String, JsValue)*): JsObject = JsObject(fields.filterNot { kv =>
+    val v = kv._2
     (v eq JsNull) || (v.isInstanceOf[JsArray] && v.asInstanceOf[JsArray].value.isEmpty)
   })
 
