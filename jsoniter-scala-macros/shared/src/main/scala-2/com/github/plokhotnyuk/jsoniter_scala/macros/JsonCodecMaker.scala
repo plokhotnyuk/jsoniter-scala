@@ -1387,9 +1387,9 @@ object JsonCodecMaker {
         val classInfo = getClassInfo(tpe)
         val fields = classInfo.fields
         val mappedNames = fields.map(_.mappedName)
-        checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
+        checkFieldNameCollisions(tpe, {
           if (discriminator.isEmpty) mappedNames
-          else mappedNames :+ n
+          else cfg.discriminatorFieldName.fold(mappedNames)(mappedNames :+ _)
         })
         val required: Set[String] = fields.collect {
           case fieldInfo if !(!cfg.requireDefaultFields && fieldInfo.symbol.isParamWithDefault || isOption(fieldInfo.resolvedTpe, types) ||
@@ -1451,10 +1451,9 @@ object JsonCodecMaker {
           val fTpe = fieldInfo.resolvedTpe
           q"var ${fieldInfo.tmpName}: $fTpe = ${fieldInfo.defaultValue.getOrElse(genNullValue(fTpe :: types))}"
         }
-        val readFields = cfg.discriminatorFieldName.fold(fields) { n =>
+        val readFields =
           if (discriminator.isEmpty) fields
-          else fields :+ FieldInfo(null, n, null, null, null, null, isStringified = true)
-        }
+          else cfg.discriminatorFieldName.fold(fields)(n => fields :+ FieldInfo(null, n, null, null, null, null, isStringified = true))
 
         def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
           fs.foldRight(unexpectedFieldHandler) { (fieldInfo, acc) =>

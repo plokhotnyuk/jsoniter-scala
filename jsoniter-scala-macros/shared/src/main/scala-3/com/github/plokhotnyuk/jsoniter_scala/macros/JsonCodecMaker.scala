@@ -908,10 +908,10 @@ object JsonCodecMaker {
       def genReadJavaEnumValue[E: Type](enumValues: Seq[JavaEnumValueInfo], unexpectedEnumValueHandler: Expr[E],
                                         in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[E] = {
         def genReadCollisions(es: collection.Seq[JavaEnumValueInfo]): Expr[E] =
-          es.foldRight(unexpectedEnumValueHandler) { (e, acc) => '{
+          es.foldRight(unexpectedEnumValueHandler)((e, acc) => '{
             if ($in.isCharBufEqualsTo($l, ${Expr(e.name)})) ${Ref(e.value).asExprOf[E]}
             else $acc
-          } }
+          })
 
         if (enumValues.size <= 8 && enumValues.foldLeft(0)(_ + _.name.length) <= 64) genReadCollisions(enumValues)
         else {
@@ -999,13 +999,13 @@ object JsonCodecMaker {
                 val getters = tpeClassSym.methodMember(name)
                   .filter(_.flags.is(Flags.CaseAccessor | Flags.FieldAccessor | Flags.ParamAccessor))
                 if (getters.isEmpty) { // Scala3 doesn't set FieldAccess flag for val parameters of constructor
-                  val namedMembers = tpeClassSym.methodMember(name).filter(_.paramSymss == Nil)
-                  if (namedMembers.isEmpty) fail(s"Field and getter not found: '$name' parameter of '${tpe.show}' " +
-                    s"should be defined as 'val' or 'var' in the primary constructor.")
-                  namedMembers.head.privateWithin match
-                    case None => namedMembers.head
-                    case _ => fail(s"Getter is private: '$name' paramter of '${tpe.show}' should be defined " +
-                        "as 'val' or 'var' in the primary constructor.")
+                  tpeClassSym.methodMember(name).find(_.paramSymss.isEmpty) match
+                    case None => fail(s"Field and getter not found: '$name' parameter of '${tpe.show}' " +
+                      s"should be defined as 'val' or 'var' in the primary constructor.")
+                    case Some(firstNamedMember) =>
+                      if (firstNamedMember.privateWithin.isDefined) fail(s"Getter is private: '$name' paramter of " +
+                        s"'${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")
+                      firstNamedMember
                 } else getters.head // TODO: check length ?  when we have both reader and writer getters.filter(_.paramSymss == List(List()))
               }
             val defaultValue =
@@ -1016,11 +1016,11 @@ object JsonCodecMaker {
                 val dvSelectNoTArgs = Ref(tpe.typeSymbol.companionModule).select(methodSymbol)
                 val dvSelect = methodSymbol.paramSymss match
                   case Nil => dvSelectNoTArgs
-                  case List(params) if (params.exists(_.isTypeParam)) => typeArgs(tpe) match
+                  case List(params) if params.exists(_.isTypeParam) => typeArgs(tpe) match
                     case Nil => fail(s"Expected that ${tpe.show} is an applied type")
                     case typeArgs => TypeApply(dvSelectNoTArgs, typeArgs.map(Inferred(_)))
-                  case _ => fail(s"Default method for ${symbol.name} of class ${tpe.show} have a complex " +
-                    s"parameter list: ${methodSymbol.paramSymss}")
+                  case paramss => fail(s"Default method for ${symbol.name} of class ${tpe.show} have a complex " +
+                    s"parameter list: $paramss")
                 Some(dvSelect)
               } else None
             val isStringified = annotationOption.exists(_.stringified)
@@ -1044,8 +1044,6 @@ object JsonCodecMaker {
             FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, fieldIndex(isTransient))
           }.toList
 
-        def isTypeParamsList(symbols: List[Symbol]): Boolean = symbols.exists(_.isTypeParam)
-
         val fieldIndex: Boolean => Int = {
           var i = -1
           (isTransient: Boolean) =>
@@ -1053,8 +1051,7 @@ object JsonCodecMaker {
             i
         }
         ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
-          case tps :: ps :: Nil if isTypeParamsList(tps) => createFieldInfos(ps, tps, fieldIndex) :: Nil
-          case tps :: pss if isTypeParamsList(tps) => pss.map(ps => createFieldInfos(ps, tps, fieldIndex))
+          case tps :: pss if tps.exists(_.isTypeParam) => pss.map(ps => createFieldInfos(ps, tps, fieldIndex))
           case pss => pss.map(ps => createFieldInfos(ps, Nil, fieldIndex))
         })
       })
@@ -1123,12 +1120,12 @@ object JsonCodecMaker {
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
         def collectRecursively(tpe: TypeRepr): Seq[TypeRepr] =
           val leafTpes = adtChildren(tpe).flatMap { subTpe =>
-            if (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type]) subTpe :: Nil
+            if (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type]) List(subTpe)
             else if (isSealedClass(subTpe)) collectRecursively(subTpe)
             else if (isValueClass(subTpe)) {
               fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
                 s"supported as leaf classes for ADT with base '${adtBaseTpe.show}'.")
-            } else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
+            } else if (isNonAbstractScalaClass(subTpe)) List(subTpe)
             else fail((if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
               "Only sealed intermediate traits or abstract classes are supported."
             } else {
@@ -1896,7 +1893,7 @@ object JsonCodecMaker {
               }
         }
 
-        if (currentDiscriminator == None) {
+        if (currentDiscriminator.isEmpty) {
           val (leafModuleClasses, leafCaseClasses) = leafClasses.partition { x =>
             !cfg.circeLikeObjectEncoding && (isEnumOrModuleValue(x) || x =:= TypeRepr.of[None.type])
           }
@@ -1925,8 +1922,8 @@ object JsonCodecMaker {
         val classInfo = getClassInfo(tpe)
         val fields = classInfo.fields
         val mappedNames = fields.map(_.mappedName)
-        checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
-          if (useDiscriminator) mappedNames :+ n
+        checkFieldNameCollisions(tpe, {
+          if (useDiscriminator) cfg.discriminatorFieldName.fold(mappedNames)(mappedNames :+ _)
           else mappedNames
         })
         val required = fields.collect {
@@ -1980,9 +1977,7 @@ object JsonCodecMaker {
             case '[ft] =>
               ValDef(sym, Some(fieldInfo.defaultValue.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
         }
-        val readVarsMap = fields.zip(readVars).map { case (fieldInfo, tmpVar) =>
-          (fieldInfo.symbol.name, tmpVar)
-        }.toMap
+        val readVarsMap = fields.map(_.symbol.name).zip(readVars).toMap
         var nonTransientFieldIndex = 0
         val construct = classInfo.genNew(classInfo.paramLists.map(_.foldLeft(List.newBuilder[Term]) {
           (params, fieldInfo) =>
@@ -1995,12 +1990,11 @@ object JsonCodecMaker {
               Ref(rv)
             })
         }.result))
-        val readFields = cfg.discriminatorFieldName.fold(fields) { n =>
-          if (useDiscriminator) {
+        val readFields =
+          if (useDiscriminator) cfg.discriminatorFieldName.fold(fields) { n =>
             fields :+ FieldInfo(Symbol.noSymbol, n, Symbol.noSymbol, None, TypeRepr.of[String], isTransient = false,
               isStringified = true, fields.size)
           } else fields
-        }
 
         def genReadCollisions(fieldInfos: collection.Seq[FieldInfo], tmpVars: Map[String, ValDef],
                               discriminator: Option[ReadDiscriminator], l: Expr[Int])(using Quotes): Expr[Unit] =
@@ -3110,16 +3104,16 @@ object JsonCodecMaker {
 
       val codecDef = '{ //FIXME: generate a type class instance using `ClassDef.apply` and `Symbol.newClass` calls after graduating from experimental API: https://www.scala-lang.org/blog/2022/06/21/scala-3.1.3-released.html
         new JsonValueCodec[A] {
-          def nullValue: A = ${genNullValue[A](rootTpe :: Nil)}
+          def nullValue: A = ${genNullValue[A](List(rootTpe))}
 
           def decodeValue(in: JsonReader, default: A): A = ${
             if (cfg.encodingOnly) '{ ??? }
-            else genReadVal(rootTpe :: Nil, 'default, cfg.isStringified, false, 'in)
+            else genReadVal(List(rootTpe), 'default, cfg.isStringified, false, 'in)
           }
 
           def encodeValue(x: A, out: JsonWriter): Unit = ${
             if (cfg.decodingOnly) '{ ??? }
-            else genWriteVal('x, rootTpe :: Nil, cfg.isStringified, None, 'out)
+            else genWriteVal('x, List(rootTpe), cfg.isStringified, None, 'out)
           }
         }
       }.asTerm
