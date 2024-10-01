@@ -3080,20 +3080,19 @@ object JsonCodecMaker {
 
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = cfg.discriminatorFieldName.fold {
-            val (leafModuleClasses, leafCaseClasses) = leafClasses.partition { x =>
-              !cfg.circeLikeObjectEncoding && (isEnumOrModuleValue(x) || x =:= TypeRepr.of[None.type])
-            }
-            leafCaseClasses.map { subTpe =>
-              val vxSym = Symbol.newBind(Symbol.spliceOwner, "vx", Flags.EmptyFlags, subTpe)
-              CaseDef(Bind(vxSym, Typed(Wildcard(), Inferred(subTpe))), None, '{
-                $out.writeObjectStart()
-                ${genWriteConstantKey(discriminatorValue(subTpe), out)}
-                ${genWriteLeafClass(subTpe, None, Ref(vxSym))}
-                $out.writeObjectEnd()
-              }.asTerm)
-            } ++ leafModuleClasses.map { subTpe =>
-              CaseDef(Typed(x.asTerm, Inferred(subTpe)), None,
-                genWriteConstantVal(discriminatorValue(subTpe), out).asTerm)
+            leafClasses.map { subTpe =>
+              if (!cfg.circeLikeObjectEncoding && (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type])) {
+                CaseDef(Typed(x.asTerm, Inferred(subTpe)), None,
+                  genWriteConstantVal(discriminatorValue(subTpe), out).asTerm)
+              } else {
+                val vxSym = Symbol.newBind(Symbol.spliceOwner, "vx", Flags.EmptyFlags, subTpe)
+                CaseDef(Bind(vxSym, Typed(Wildcard(), Inferred(subTpe))), None, '{
+                  $out.writeObjectStart()
+                  ${genWriteConstantKey(discriminatorValue(subTpe), out)}
+                  ${genWriteLeafClass(subTpe, None, Ref(vxSym))}
+                  $out.writeObjectEnd()
+                }.asTerm)
+              }
             }
           } { discrFieldName =>
             leafClasses.map { subTpe =>

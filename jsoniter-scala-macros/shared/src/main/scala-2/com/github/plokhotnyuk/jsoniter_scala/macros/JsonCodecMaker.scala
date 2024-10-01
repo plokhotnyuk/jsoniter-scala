@@ -2190,25 +2190,26 @@ object JsonCodecMaker {
             else genWriteNonAbstractScalaClass(types, discriminator)
 
           val leafClasses = adtLeafClasses(tpe)
-          val writeSubclasses = (cfg.discriminatorFieldName match {
-            case None =>
-              val (leafModuleClasses, leafCaseClasses) =
-                leafClasses.partition(!cfg.circeLikeObjectEncoding && _.typeSymbol.isModuleClass)
-              leafCaseClasses.map { subTpe =>
+          val writeSubclasses = cfg.discriminatorFieldName.fold {
+            leafClasses.map { subTpe =>
+              if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
+                cq"x: $subTpe => ${genWriteConstantVal(discriminatorValue(subTpe))}"
+              } else {
                 cq"""x: $subTpe =>
-                       out.writeObjectStart()
-                       ${genWriteConstantKey(discriminatorValue(subTpe))}
-                       ${genWriteLeafClass(subTpe, EmptyTree)}
-                       out.writeObjectEnd()"""
-              } ++ leafModuleClasses.map(subTpe => cq"x: $subTpe => ${genWriteConstantVal(discriminatorValue(subTpe))}")
-            case Some(discrFieldName) =>
+                     out.writeObjectStart()
+                     ${genWriteConstantKey(discriminatorValue(subTpe))}
+                     ${genWriteLeafClass(subTpe, EmptyTree)}
+                     out.writeObjectEnd()"""
+              }
+            }
+          } { discrFieldName =>
               leafClasses.map { subTpe =>
                 val writeDiscriminatorField =
                   q"""..${genWriteConstantKey(discrFieldName)}
                       ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
                 cq"x: $subTpe => ${genWriteLeafClass(subTpe, writeDiscriminatorField)}"
               }
-          })
+          }
           q"""x match {
                 case ..$writeSubclasses
               }"""
