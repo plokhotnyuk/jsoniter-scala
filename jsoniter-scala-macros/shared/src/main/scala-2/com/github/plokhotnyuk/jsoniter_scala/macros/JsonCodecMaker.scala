@@ -2222,11 +2222,16 @@ object JsonCodecMaker {
         q"""{
               @_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.All"))
               val x = new _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$rootTpe] {
+                @inline
                 def nullValue: $rootTpe = ${genNullValue(rootTpe :: Nil)}
+
+                @inline
                 def decodeValue(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $rootTpe): $rootTpe = ${
                   if (cfg.encodingOnly) q"???"
                   else genReadVal(rootTpe :: Nil, q"default", cfg.isStringified, EmptyTree)
                 }
+
+                @inline
                 def encodeValue(x: $rootTpe, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = ${
                   if (cfg.decodingOnly) q"???"
                   else genWriteVal(q"x", rootTpe :: Nil, cfg.isStringified, EmptyTree)

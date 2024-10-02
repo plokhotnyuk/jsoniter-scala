@@ -19,9 +19,12 @@ object ConfiguredJsonValueCodec:
     new ConfiguredJsonValueCodecWrapper(JsonCodecMaker.make[A](config))
 
 private[macros] class ConfiguredJsonValueCodecWrapper[A](impl: JsonValueCodec[A]) extends ConfiguredJsonValueCodec[A] {
+  @inline
   def decodeValue(in: JsonReader, default: A): A = impl.decodeValue(in, default)
 
+  @inline
   def encodeValue(x: A, out: JsonWriter): Unit = impl.encodeValue(x, out)
 
+  @inline
   def nullValue: A = impl.nullValue
 }
