@@ -158,8 +158,10 @@ final class JsoniterScalaCodec(
 
   override val nullValue: Json = JNull
 
+  @inline
   override def decodeValue(in: JsonReader, default: Json): Json = decode(in, maxDepth)
 
+  @inline
   override def encodeValue(x: Json, out: JsonWriter): Unit = encode(x, out, maxDepth)
 
   private[this] def decode(in: JsonReader, depth: Int): Json = {
@@ -194,7 +196,7 @@ final class JsoniterScalaCodec(
       if (in.isNextToken('}')) emptyObjectValue
       else {
         in.rollbackToken()
-        val x = new util.LinkedHashMap[String, Json](initialSize)
+        val x = new util.LinkedHashMap[String, Json](initialSize, 0.75f)
         while ({
           x.put(in.readKeyAsString(), decode(in, depthM1))
           in.isNextToken(',')
@@ -206,10 +208,7 @@ final class JsoniterScalaCodec(
   }
 
   private[this] def encode(x: Json, out: JsonWriter, depth: Int): Unit = x match {
-    case s: JString =>
-      val str = s.value
-      if (str.length != 1) out.writeVal(str)
-      else out.writeVal(str.charAt(0))
+    case s: JString => out.writeVal(s.value)
     case b: JBoolean => out.writeVal(b.value)
     case n: JNumber => numberSerializer(out, n.value)
     case a: JArray =>
