@@ -76,6 +76,11 @@ A bunch of SWAR technique tricks for JVM platform are based on following project
 - [Johnny Lee's article](https://johnnylee-sde.github.io/Fast-time-string-to-seconds/) - the fast time string to seconds
   conversion
 
+Big kudos to all contributors:
+
+[![GitHub contributors](https://contrib.rocks/image?repo=plokhotnyuk/jsoniter-scala)](https://github.com/plokhotnyuk/jsoniter-scala/graphs/contributors)
+
+
 ## Goals
 
 1. **Safety**: validate parsed values safely with the fail-fast approach and clear reporting, provide configurable 
