@@ -312,6 +312,7 @@ private[macros] object CompileTimeEval {
         case "enforce_snake_case" => JsonCodecMaker.enforce_snake_case
         case "enforce_snake_case2" => JsonCodecMaker.enforce_snake_case2
         case "enforce-kebab-case" => JsonCodecMaker.`enforce-kebab-case`
+        case "enforce-kebab-case2" => JsonCodecMaker.`enforce-kebab-case2`
         case _ => throw CompileTimeEvalException(s"Unknonwn JsonCodeMaker parial function field: $fieldName", t.asExpr)
       }
       operation match {

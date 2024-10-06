@@ -1945,6 +1945,21 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"CamelCase":1,"PascalCase":2,"SnakeCase":3,"KebabCase":4,"Camel1":5,"Pascal1":6,"Snake1":7,"Kebab1":8}""",
         """missing required field "camel-case", offset: 0x00000066""")
     }
+    "serialize and deserialize with keys enforced to kebab-case2 and throw parse exception when they are missing" in {
+      val `codec-of-enforced-kebab-case2` =
+        make[CamelPascalSnakeKebabCases](CodecMakerConfig.withFieldNameMapper(JsonCodecMaker.`enforce-kebab-case2`))
+      verifySerDeser(`codec-of-enforced-kebab-case2`, CamelPascalSnakeKebabCases(1, 2, 3, 4, 5, 6, 7, 8),
+        """{"camel-case":1,"pascal-case":2,"snake-case":3,"kebab-case":4,"camel1":5,"pascal1":6,"snake1":7,"kebab1":8}""")
+      verifyDeserError(`codec-of-enforced-kebab-case2`,
+        """{"camelCase":1,"pascalCase":2,"snakeCase":3,"kebabCase":4,"camel1":5,"pascal1":6,"snake1":7,"kebab1":8}""",
+        """missing required field "camel-case", offset: 0x00000066""")
+      verifyDeserError(`codec-of-enforced-kebab-case2`,
+        """{"camel_case":1,"pascal_case":2,"snake_case":3,"kebab_case":4,"camel_1":5,"pascal_1":6,"snake_1":7,"kebab_1":8}""",
+        """missing required field "camel-case", offset: 0x0000006e""")
+      verifyDeserError(`codec-of-enforced-kebab-case2`,
+        """{"CamelCase":1,"PascalCase":2,"SnakeCase":3,"KebabCase":4,"Camel1":5,"Pascal1":6,"Snake1":7,"Kebab1":8}""",
+        """missing required field "camel-case", offset: 0x00000066""")
+    }
     "serialize and deserialize with keys enforced to PascalCase and throw parse exception when they are missing" in {
       val CodecOfEnforcedPascalCase =
         make[CamelPascalSnakeKebabCases](CodecMakerConfig.withFieldNameMapper(JsonCodecMaker.EnforcePascalCase))
@@ -3219,26 +3234,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
   }
   "JsonCodecMaker.enforce-kebab-case2" should {
-    "transform camelCase names to kebab-case with joined non-alphabetic" in {
+    "transform camelCase names to kebab-case2 with joined non-alphabetic" in {
       JsonCodecMaker.`enforce-kebab-case2`("oO") shouldBe "o-o"
       JsonCodecMaker.`enforce-kebab-case2`("oOoo") shouldBe "o-ooo"
       JsonCodecMaker.`enforce-kebab-case2`("oOoo111") shouldBe "o-ooo111"
       JsonCodecMaker.`enforce-kebab-case2`("oOoo$") shouldBe "o-ooo$"
     }
-    "transform PascalCase names to kebab-case with joined non-alphabetic" in {
+    "transform PascalCase names to kebab-case2 with joined non-alphabetic" in {
       JsonCodecMaker.`enforce-kebab-case2`("Oo") shouldBe "oo"
       JsonCodecMaker.`enforce-kebab-case2`("Ooo111") shouldBe "ooo111"
       JsonCodecMaker.`enforce-kebab-case2`("OOOoo111") shouldBe "oo-ooo111"
       JsonCodecMaker.`enforce-kebab-case2`("OOOoo$") shouldBe "oo-ooo$"
     }
-    "transform snake_case names to kebab-case with joined non-alphabetic" in {
+    "transform snake_case names to kebab-case2 with joined non-alphabetic" in {
       JsonCodecMaker.`enforce-kebab-case2`("o_o") shouldBe "o-o"
       JsonCodecMaker.`enforce-kebab-case2`("o_ooo_") shouldBe "o-ooo-"
       JsonCodecMaker.`enforce-kebab-case2`("o_ooo111") shouldBe "o-ooo111"
       JsonCodecMaker.`enforce-kebab-case2`("o_ooo_111") shouldBe "o-ooo111"
       JsonCodecMaker.`enforce-kebab-case2`("o_ooo_$") shouldBe "o-ooo$"
     }
-    "transform kebab-case names to kebab-case with joined non-alphabetic" in {
+    "transform kebab-case names to kebab-case2 with joined non-alphabetic" in {
       JsonCodecMaker.`enforce-kebab-case2`("o-o") shouldBe "o-o"
       JsonCodecMaker.`enforce-kebab-case2`("o-ooo-") shouldBe "o-ooo-"
       JsonCodecMaker.`enforce-kebab-case2`("o-ooo111") shouldBe "o-ooo111"
