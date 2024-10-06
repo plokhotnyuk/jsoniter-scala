@@ -190,7 +190,8 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
     crossScalaVersions := Seq("3.3.4", "2.13.15", "2.12.20"),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+        "com.beachape" %%% "enumeratum" % "1.7.5" % Test
       )
       case _ => Seq()
     }) ++ Seq(
@@ -201,25 +202,9 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   )
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
-  .settings(
-    libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq(
-        "com.beachape" %%% "enumeratum" % "1.7.5" % Test
-      )
-      case _ => Seq()
-    })
-  )
 
 lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
   .settings(jsSettings)
-  .settings(
-    libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq(
-        "com.beachape" %%% "enumeratum" % "1.7.5" % Test
-      )
-      case _ => Seq()
-    })
-  )
 
 lazy val `jsoniter-scala-macrosNative` = `jsoniter-scala-macros`.native
   .settings(nativeSettings)
