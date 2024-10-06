@@ -37,6 +37,7 @@ object MyEnum extends enumeratum.Enum[MyEnum] {
 class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
   import com.github.plokhotnyuk.jsoniter_scala.core._
   import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
+  import com.github.plokhotnyuk.jsoniter_scala.macros.NamespacePollutions._
 
   "Value codecs for Enumeratum enum" should {
     "serialize and deserialize when derived by macros" in {
