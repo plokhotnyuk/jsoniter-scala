@@ -125,7 +125,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
           val x = in.nextToken()
           in.rollbackToken()
           if (x == '"') in.readString(null)
-          else if (x == 't' || x == 'f' ) in.readBoolean()
+          else if (x == 't' || x == 'f') in.readBoolean()
           else in.readDouble()
 
         override def encodeValue(x: Value, out: JsonWriter): Unit = x match
@@ -203,7 +203,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
             arr
           } else if (b == '{') {
             if (depth <= 0) in.decodeError("depth limit exceeded")
-            val obj = new LinkedHashMap[String, Json](8)
+            val obj = new LinkedHashMap[String, Json](8, 0.5f)
             if (!in.isNextToken('}')) {
               in.rollbackToken()
               val dp = depth - 1
@@ -248,7 +248,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
 
       def obj(values: (String, Json)*): Json =
         val len = values.length
-        val map = new LinkedHashMap[String, Json](len)
+        val map = new LinkedHashMap[String, Json](len << 1, 0.5f)
         var i = 0
         while (i < len) {
           val kv = values(i)
@@ -257,7 +257,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         }
         map.asScala
 
-      def arr(values: Json*): Json = mutable.ArrayBuffer[Json](values: _*)
+      def arr(values: Json*): Json = mutable.ArrayBuffer[Json](values*)
 
       verifySerDeser(jsonCodec, arr("VVV", 1.2, true, obj("WWW" -> None, "XXX" -> 777)),
         """["VVV",1.2,true,{"WWW":null,"XXX":777}]""")
@@ -285,6 +285,5 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         "Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes."
       })
     }
-
   }
 }

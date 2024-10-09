@@ -2200,8 +2200,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
-      case class Transient(@transient transient: String = "default", required: String) {
-        val ignored: String = s"$required-$transient"
+      case class Transient(@_root_.com.github.plokhotnyuk.jsoniter_scala.macros.transient transient: String = "default",
+                           required: String) {
+        val ignored: String = s"$required-$transient" // always transient
       }
 
       val codecOfTransient = make[Transient]
@@ -2214,7 +2215,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codecOfTransient2, Transient(required = "VVV", transient = "non-default"), """{"required":"VVV"}""")
     }
     "don't serialize and deserialize scala.transient defined fields of case classes when scala transient support is on" in {
-      case class ScalaTransient(@_root_.scala.transient transient: String = "default", required: String)
+      case class ScalaTransient(@_root_.scala.transient transient: String = "default", required: String) {
+        val ignored: String = s"$required-$transient" // always transient
+      }
 
       val codecOfScalaTransient = make[ScalaTransient](CodecMakerConfig.withScalaTransientSupport(true))
       verifySer(codecOfScalaTransient, ScalaTransient(required = "VVV"), """{"required":"VVV"}""")
