@@ -17,8 +17,9 @@ object CirceEncodersDecoders {
   val prettyPrinter: Printer = Printer.spaces2.copy(dropNullValues = true, reuseWriters = true, predictSize = true)
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
   implicit val adtC3c: Codec[ADTBase] = {
-    import io.circe.generic.auto._
-
+    implicit val c1: Codec[X] = deriveCodec
+    implicit val c2: Codec[Y] = deriveCodec
+    implicit val c3: Codec[Z] = deriveCodec
     Codec.from(Decoder.instance(c =>
       c.downField("type").as[String].flatMap {
         case "X" => c.as[X]
@@ -583,8 +584,9 @@ object CirceEncodersDecoders {
     Codec.from(Decoder.decodeArray[Int].map(arr => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */))),
       Encoder.encodeSeq[Int].contramapArray((m: mutable.BitSet) => m.toVector))
   implicit val distanceMatrixC3c: Codec[GoogleMapsAPI.DistanceMatrix] = {
-    import io.circe.generic.auto._
-
+    implicit val c1: Codec[GoogleMapsAPI.Value] = deriveCodec
+    implicit val c2: Codec[GoogleMapsAPI.Elements] = deriveCodec
+    implicit val c3: Codec[GoogleMapsAPI.Rows] = deriveCodec
     deriveCodec
   }
   implicit val gitHubActionsAPIC3c: Codec[GitHubActionsAPI.Response] = {
@@ -603,9 +605,13 @@ object CirceEncodersDecoders {
   }
   implicit val extractFieldsC3c: Codec[ExtractFields] = deriveCodec
   implicit val geoJSONC3c: Codec[GeoJSON.GeoJSON] = {
-    import io.circe.generic.auto._
-
-    implicit val c1: Codec[GeoJSON.SimpleGeometry] = Codec.from(Decoder.instance(c =>
+    implicit val c1: Codec[GeoJSON.Point] = deriveCodec
+    implicit val c2: Codec[GeoJSON.MultiPoint] = deriveCodec
+    implicit val c3: Codec[GeoJSON.LineString] = deriveCodec
+    implicit val c4: Codec[GeoJSON.MultiLineString] = deriveCodec
+    implicit val c5: Codec[GeoJSON.Polygon] = deriveCodec
+    implicit val c6: Codec[GeoJSON.MultiPolygon] = deriveCodec
+    implicit val c7: Codec[GeoJSON.SimpleGeometry] = Codec.from(Decoder.instance(c =>
       c.downField("type").as[String].flatMap {
         case "Point" => c.as[GeoJSON.Point]
         case "MultiPoint" => c.as[GeoJSON.MultiPoint]
@@ -621,7 +627,8 @@ object CirceEncodersDecoders {
         case x: GeoJSON.Polygon => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
         case x: GeoJSON.MultiPolygon => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
       })
-    implicit val c2: Codec[GeoJSON.Geometry] = Codec.from(Decoder.instance(c =>
+    implicit val c8: Codec[GeoJSON.GeometryCollection] = deriveCodec
+    implicit val c9: Codec[GeoJSON.Geometry] = Codec.from(Decoder.instance(c =>
       c.downField("type").as[String].flatMap {
         case "Point" => c.as[GeoJSON.Point]
         case "MultiPoint" => c.as[GeoJSON.MultiPoint]
@@ -639,12 +646,14 @@ object CirceEncodersDecoders {
         case x: GeoJSON.MultiPolygon => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
         case x: GeoJSON.GeometryCollection => x.asJson.mapObject(_.+:("type" -> "GeometryCollection".asJson))
       })
-    implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = Codec.from(Decoder.instance(c =>
+    implicit val c10: Codec[GeoJSON.Feature] = deriveCodec
+    implicit val c11: Codec[GeoJSON.SimpleGeoJSON] = Codec.from(Decoder.instance(c =>
       c.downField("type").as[String].flatMap {
         case "Feature" => c.as[GeoJSON.Feature]
       }), Encoder.instance {
       case x: GeoJSON.Feature => x.asJson.mapObject(_.+:("type" -> "Feature".asJson))
     })
+    implicit val c12: Codec[GeoJSON.FeatureCollection] = deriveCodec
     Codec.from(Decoder.instance(c =>
       c.downField("type").as[String].flatMap {
         case "Feature" => c.as[GeoJSON.Feature]
@@ -680,8 +689,13 @@ object CirceEncodersDecoders {
   implicit val suitEnumC3c: Codec[SuitEnum] = Codec.codecForEnumeration(SuitEnum)
   implicit val primitivesC3c: Codec[Primitives] = deriveCodec
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {
-    import io.circe.generic.auto._
-
+    implicit val c1: Codec[TwitterAPI.UserMentions] = deriveCodec
+    implicit val c2: Codec[TwitterAPI.Urls] = deriveCodec
+    implicit val c3: Codec[TwitterAPI.Entities] = deriveCodec
+    implicit val c4: Codec[TwitterAPI.Url] = deriveCodec
+    implicit val c5: Codec[TwitterAPI.UserEntities] = deriveCodec
+    implicit val c6: Codec[TwitterAPI.User] = deriveCodec
+    implicit val c7: Codec[TwitterAPI.RetweetedStatus] = deriveCodec
     deriveCodec
   }
 
