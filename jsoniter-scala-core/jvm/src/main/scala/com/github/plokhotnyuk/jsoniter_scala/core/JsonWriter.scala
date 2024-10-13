@@ -1457,18 +1457,16 @@ final class JsonWriter private[jsoniter_scala](
       }
       ByteArrayAccess.setShort(buf, pos, m)
       pos += 2
-      var q = 0
-      if (exp < 100000000) {
-        q = exp.toInt
+      var q = exp
+      if (exp < 100000000L) {
         pos += digitCount(exp)
         count = pos
       } else {
-        val q1 = (exp >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-        q = q1.toInt
-        pos += digitCount(q1)
-        count = write8Digits(exp - q1 * 100000000, pos, buf, ds)
+        q = Math.multiplyHigh(exp, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
+        pos += digitCount(q)
+        count = write8Digits(exp - q * 100000000L, pos, buf, ds)
       }
-      writePositiveIntDigits(q, pos, buf, ds)
+      writePositiveIntDigits(q.toInt, pos, buf, ds)
     }
   }
 
@@ -1611,18 +1609,17 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '-'
           pos += 1
         }
-        var q = hours.toInt
+        var q = hours
         var lastPos = pos
-        if (hours == q) {
+        if (hours < 100000000L) {
           lastPos += digitCount(hours)
           pos = lastPos
         } else {
-          val q1 = Math.multiplyHigh(hours, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
-          q = q1.toInt
-          lastPos += digitCount(q1)
-          pos = write8Digits(hours - q1 * 100000000, lastPos, buf, ds)
+          q = Math.multiplyHigh(hours, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
+          lastPos += digitCount(q)
+          pos = write8Digits(hours - q * 100000000L, lastPos, buf, ds)
         }
-        writePositiveIntDigits(q, lastPos, buf, ds)
+        writePositiveIntDigits(q.toInt, lastPos, buf, ds)
         ByteArrayAccess.setShort(buf, pos, 0x2248)
         pos += 1
       }
@@ -2030,9 +2027,11 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write8Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val y1 = x * 140737489 // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    val y2 = (y1 & 0x7FFFFFFFFFFFL) * 100
-    val y3 = (y2 & 0x7FFFFFFFFFFFL) * 100
-    val y4 = (y3 & 0x7FFFFFFFFFFFL) * 100
+    val m1 = 0x7FFFFFFFFFFFL
+    val m2 = 100L
+    val y2 = (y1 & m1) * m2
+    val y3 = (y2 & m1) * m2
+    val y4 = (y3 & m1) * m2
     val d1 = ds((y1 >> 47).toInt)
     val d2 = ds((y2 >> 47).toInt) << 16
     val d3 = ds((y3 >> 47).toInt).toLong << 32
@@ -2042,10 +2041,11 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = Math.multiplyHigh(x, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
-    val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
+    val m1 = 6189700196426901375L
+    val q1 = Math.multiplyHigh(x, m1) >>> 25 // divide a positive long by 100000000
+    val q2 = Math.multiplyHigh(q1, m1) >>> 25 // divide a positive long by 100000000
     ByteArrayAccess.setShort(buf, pos, ds(q2.toInt))
-    write8Digits(x - q1 * 100000000, write8Digits(q1 - q2 * 100000000, pos + 2, buf, ds), buf, ds)
+    write8Digits(x - q1 * 100000000L, write8Digits(q1 - q2 * 100000000L, pos + 2, buf, ds), buf, ds)
   }
 
   private[this] def writeShort(x: Short): Unit = {
@@ -2124,27 +2124,27 @@ final class JsonWriter private[jsoniter_scala](
         pos += 3
       }
     }
-    var q = 0
+    val m1 = 100000000L
+    var q2 = q0
     var lastPos = pos
-    if (q0 < 100000000) {
-      q = q0.toInt
+    if (q0 < m1) {
       lastPos += digitCount(q0)
       pos = lastPos
     } else {
-      val q1 = Math.multiplyHigh(q0, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
-      if (q1 < 100000000) {
-        q = q1.toInt
+      val m2 = 6189700196426901375L
+      val q1 = Math.multiplyHigh(q0, m2) >>> 25 // divide a positive long by 100000000
+      if (q1 < m1) {
+        q2 = q1
         lastPos += digitCount(q1)
         pos = lastPos
       } else {
-        val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-        q = q2.toInt
+        q2 = Math.multiplyHigh(q1, m2) >>> 25 // divide a small positive long by 100000000
         lastPos += digitCount(q2)
-        pos = write8Digits(q1 - q2 * 100000000, lastPos, buf, ds)
+        pos = write8Digits(q1 - q2 * m1, lastPos, buf, ds)
       }
-      pos = write8Digits(q0 - q1 * 100000000, pos, buf, ds)
+      pos = write8Digits(q0 - q1 * m1, pos, buf, ds)
     }
-    writePositiveIntDigits(q, lastPos, buf, ds)
+    writePositiveIntDigits(q2.toInt, lastPos, buf, ds)
     pos
   }
 
