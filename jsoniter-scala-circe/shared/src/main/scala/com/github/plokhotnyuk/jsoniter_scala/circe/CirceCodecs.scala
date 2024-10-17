@@ -53,21 +53,15 @@ object CirceCodecs {
     private[this] def error(c: HCursor): Decoder.Result[A] = new scala.util.Left(DecodingFailure(name, c.history))
   }
 
- /**
-   * The circe's codec for `BigInt` values.
-   *
-   * @return a JSON value representing the BigInt
-   */
-  implicit val bigIntC3c: Codec[BigInt] = new Codec[BigInt] {
-    override def apply(x: BigInt): Json = io.circe.JsoniterScalaCodec.jsonValue(x)
-
-    override def apply(c: HCursor): Decoder.Result[BigInt] = {
-      val bi = io.circe.JsoniterScalaCodec.bigIntValue(c)
-      if (bi ne null) new scala.util.Right(bi)
-      else Decoder.decodeBigInt.apply(c)
-    }
-  }
-
+  // codecs for numeric types
+  implicit val byteC3C: Codec[Byte] = io.circe.JsoniterScalaCodec.byteCodec
+  implicit val shortC3C: Codec[Short] = io.circe.JsoniterScalaCodec.shortCodec
+  implicit val intC3C: Codec[Int] = io.circe.JsoniterScalaCodec.intCodec
+  implicit val longC3C: Codec[Long] = io.circe.JsoniterScalaCodec.longCodec
+  implicit val floatC3C: Codec[Float] = io.circe.JsoniterScalaCodec.floatCodec
+  implicit val doubleC3C: Codec[Double] = io.circe.JsoniterScalaCodec.doubleCodec
+  implicit val bigIntC3C: Codec[BigInt] = io.circe.JsoniterScalaCodec.bigIntCodec
+  implicit val bigDecimalC3C: Codec[BigDecimal] =io.circe.JsoniterScalaCodec.bigDecimalCodec
   // codecs for java.time.* types
   implicit val durationC3C: Codec[Duration] = new ShortAsciiStringCodec(new JsonValueCodec[Duration] {
     override def decodeValue(in: JsonReader, default: Duration): Duration = in.readDuration(default)
@@ -139,16 +133,13 @@ object CirceCodecs {
 
     override def nullValue: YearMonth = null
   }, "year month")
-  implicit val (yearD5r: Decoder[Year], yearE5r: Encoder[Year]) = {
-    val codec = new ShortAsciiStringCodec(new JsonValueCodec[Year] {
+  implicit val yearC3C: Codec[Year] = new ShortAsciiStringCodec(new JsonValueCodec[Year] {
       override def decodeValue(in: JsonReader, default: Year): Year = in.readYear(default)
 
       override def encodeValue(x: Year, out: JsonWriter): Unit = out.writeVal(x)
 
       override def nullValue: Year = null
     }, "year")
-    (codec, codec)
-  }
   implicit val zonedDateTimeC3C: Codec[ZonedDateTime] = new ShortAsciiStringCodec(new JsonValueCodec[ZonedDateTime] {
     override def decodeValue(in: JsonReader, default: ZonedDateTime): ZonedDateTime = in.readZonedDateTime(default)
 

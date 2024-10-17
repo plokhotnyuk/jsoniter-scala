@@ -21,7 +21,6 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   @Benchmark
   def circeJsoniter(): Array[BigInt] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 

@@ -22,7 +22,6 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
 
   @Benchmark
   def circeJsoniter(): Seq[Tweet] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder

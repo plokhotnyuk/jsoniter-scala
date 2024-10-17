@@ -1,10 +1,12 @@
 package io.circe
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.Decoder.Result
 import io.circe.Json._
 import java.nio.charset.StandardCharsets
 import java.util
 import scala.collection.immutable.VectorBuilder
+import scala.util.control.NonFatal
 
 object JsoniterScalaCodec {
   /**
@@ -89,38 +91,195 @@ object JsoniterScalaCodec {
     case _ => null
   }
 
-  /**
-   * Extracts a `BigInt` value from a JSON cursor.
-   *
-   * @param c the JSON cursor
-   * @return the `BigInt` value, or null if the cursor does not point to a number with an integer value
-   */
-  @inline
-  def bigIntValue(c: HCursor): BigInt = c.value match {
-    case n: JNumber => n.value match {
-      case jl: JsonLong => BigInt(jl.value)
-      case jbd: JsonBigDecimal =>
-        val bd = jbd.value
-        if (bd.scale == 0) new BigInt(bd.unscaledValue)
-        else null
-      case _ => null
-    }
-    case _ => null
-  }
+  val byteCodec: Codec[Byte] = new Codec[Byte] {
+    private[this] val codec: JsonValueCodec[Byte] = new JsonValueCodec[Byte] {
+      override def decodeValue(in: JsonReader, default: Byte): Byte = in.readByte()
 
-  /**
-   * Encodes a `BigInt` as a JSON number.
-   *
-   * Uses a `JsonLong` if the value fits in a Long, otherwise uses a `JsonBigDecimal`.
-   *
-   * @param x the BigInt to encode
-   * @return a JSON number representing the BigInt
-   */
-  @inline
-  def jsonValue(x: BigInt): Json = new JNumber({
-    if (x.isValidLong) new JsonLong(x.longValue)
-    else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
-  })
+      override def encodeValue(x: Byte, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: Byte = 0
+    }
+
+    final def apply(c: HCursor): Result[Byte] = c.value match {
+      case Json.JNumber(number) => number.toLong match {
+        case Some(v) if v.toByte == v => new Right(v.toByte)
+        case _ => fail(c)
+      }
+      case Json.JString(string) => try new Right(readFromString(string)(codec)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Byte): Json = new JNumber(new JsonLong(x))
+
+    private[this] def fail(c: HCursor): Result[Byte] = new Left(DecodingFailure("Byte", c.history))
+  }
+  val shortCodec: Codec[Short] = new Codec[Short] {
+    private[this] val codec: JsonValueCodec[Short] = new JsonValueCodec[Short] {
+      override def decodeValue(in: JsonReader, default: Short): Short = in.readShort()
+
+      override def encodeValue(x: Short, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: Short = 0
+    }
+
+    final def apply(c: HCursor): Result[Short] = c.value match {
+      case Json.JNumber(number) => number.toLong match {
+        case Some(v) if v.toShort == v => new Right(v.toShort)
+        case _ => fail(c)
+      }
+      case Json.JString(string) => try new Right(readFromString(string)(codec)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Short): Json = new JNumber(new JsonLong(x))
+
+    private[this] def fail(c: HCursor): Result[Short] = new Left(DecodingFailure("Short", c.history))
+  }
+  val intCodec: Codec[Int] = new Codec[Int] {
+    private[this] val codec: JsonValueCodec[Int] = new JsonValueCodec[Int] {
+      override def decodeValue(in: JsonReader, default: Int): Int = in.readInt()
+
+      override def encodeValue(x: Int, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: Int = 0
+    }
+
+    final def apply(c: HCursor): Result[Int] = c.value match {
+      case Json.JNumber(number) => number.toLong match {
+        case Some(v) if v.toInt == v => new Right(v.toInt)
+        case _ => fail(c)
+      }
+      case Json.JString(string) => try new Right(readFromString(string)(codec)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Int): Json = new JNumber(new JsonLong(x))
+
+    private[this] def fail(c: HCursor): Result[Int] = new Left(DecodingFailure("Int", c.history))
+  }
+  val longCodec: Codec[Long] = new Codec[Long] {
+    private[this] val codec: JsonValueCodec[Long] = new JsonValueCodec[Long] {
+      override def decodeValue(in: JsonReader, default: Long): Long = in.readLong()
+
+      override def encodeValue(x: Long, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: Long = 0L
+    }
+
+    final def apply(c: HCursor): Result[Long] = c.value match {
+      case Json.JNumber(number) => number.toLong match {
+        case Some(v) => new Right(v)
+        case _ => fail(c)
+      }
+      case Json.JString(string) => try new Right(readFromString(string)(codec)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Long): Json = new JNumber(new JsonLong(x))
+
+    private[this] def fail(c: HCursor): Result[Long] = new Left(DecodingFailure("Long", c.history))
+  }
+  val floatCodec: Codec[Float] = new Codec[Float] {
+    private[this] val codec: JsonValueCodec[Float] = new JsonValueCodec[Float] {
+      override def decodeValue(in: JsonReader, default: Float): Float = in.readFloat()
+
+      override def encodeValue(x: Float, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: Float = 0.0f
+    }
+
+    final def apply(c: HCursor): Result[Float] = c.value match {
+      case Json.JNumber(number) => new Right(number.toFloat)
+      case Json.JString(string) => try new Right(readFromString(string)(codec)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Float): Json = new JNumber(new JsonFloat(x))
+
+    private[this] def fail(c: HCursor): Result[Float] = new Left(DecodingFailure("Float", c.history))
+  }
+  val doubleCodec: Codec[Double] = new Codec[Double] {
+    private[this] val codec: JsonValueCodec[Double] = new JsonValueCodec[Double] {
+      override def decodeValue(in: JsonReader, default: Double): Double = in.readDouble()
+
+      override def encodeValue(x: Double, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: Double = 0.0
+    }
+
+    final def apply(c: HCursor): Result[Double] = c.value match {
+      case Json.JNumber(number) => new Right(number.toDouble)
+      case Json.JString(string) => try new Right(readFromString(string)(codec)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Double): Json = new JNumber(new JsonDouble(x))
+
+    private[this] def fail(c: HCursor): Result[Double] = new Left(DecodingFailure("Double", c.history))
+  }
+  val bigIntCodec: Codec[BigInt] = new Codec[BigInt] {
+    private[this] val codec: JsonValueCodec[BigInt] = new JsonValueCodec[BigInt] {
+      override def decodeValue(in: JsonReader, default: BigInt): BigInt = in.readBigInt(default)
+
+      override def encodeValue(x: BigInt, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: BigInt = null
+    }
+
+    final def apply(c: HCursor): Result[BigInt] = c.value match {
+      case Json.JNumber(number) => number.toBigInt match {
+        case Some(v) => new Right(v)
+        case _ => fail(c)
+      }
+      case Json.JString(string) => try new Right(readFromString(string)(codec)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: BigInt): Json = new JNumber({
+      if (x.isValidLong) new JsonLong(x.longValue)
+      else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
+    })
+
+    private[this] def fail(c: HCursor): Result[BigInt] = new Left(DecodingFailure("BigInt", c.history))
+  }
+  val bigDecimalCodec: Codec[BigDecimal] = new Codec[BigDecimal] {
+    private[this] val codec: JsonValueCodec[BigDecimal] = new JsonValueCodec[BigDecimal] {
+      override def decodeValue(in: JsonReader, default: BigDecimal): BigDecimal = in.readBigDecimal(default)
+
+      override def encodeValue(x: BigDecimal, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: BigDecimal = null
+    }
+
+    final def apply(c: HCursor): Result[BigDecimal] = c.value match {
+      case Json.JNumber(number) => number.toBigDecimal match {
+        case Some(v) => new Right(v)
+        case _ => fail(c)
+      }
+      case Json.JString(string) => try new Right(readFromString(string)(codec)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: BigDecimal): Json = new JNumber(new JsonBigDecimal(x.underlying()))
+
+    private[this] def fail(c: HCursor): Result[BigDecimal] = new Left(DecodingFailure("BigDecimal", c.history))
+  }
 }
 
 /**

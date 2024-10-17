@@ -23,7 +23,6 @@ class ArrayOfZonedDateTimesWriting extends ArrayOfZonedDateTimesBenchmark {
   @Benchmark
   def circeJsoniter(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.syntax._
 
