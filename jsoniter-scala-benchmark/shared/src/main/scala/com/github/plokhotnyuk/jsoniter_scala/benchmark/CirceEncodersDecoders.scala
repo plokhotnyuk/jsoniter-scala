@@ -2,8 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
-import io.circe.Decoder._
-import io.circe.Encoder._
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
@@ -32,14 +30,14 @@ object CirceEncodersDecoders {
     })
   }
   implicit val anyValsC3c: Codec[AnyVals] = {
-    implicit val c1: Codec[ByteVal] = Codec.from(decodeByte.map(ByteVal.apply), encodeByte.contramap(_.a))
-    implicit val c2: Codec[ShortVal] = Codec.from(decodeShort.map(ShortVal.apply), encodeShort.contramap(_.a))
-    implicit val c3: Codec[IntVal] = Codec.from(decodeInt.map(IntVal.apply), encodeInt.contramap(_.a))
-    implicit val c4: Codec[LongVal] = Codec.from(decodeLong.map(LongVal.apply), encodeLong.contramap(_.a))
-    implicit val c5: Codec[BooleanVal] = Codec.from(decodeBoolean.map(BooleanVal.apply), encodeBoolean.contramap(_.a))
-    implicit val c6: Codec[CharVal] = Codec.from(decodeChar.map(CharVal.apply), encodeChar.contramap(_.a))
-    implicit val c7: Codec[DoubleVal] = Codec.from(decodeDouble.map(DoubleVal.apply), encodeDouble.contramap(_.a))
-    implicit val c8: Codec[FloatVal] = Codec.from(decodeFloat.map(FloatVal.apply), encodeFloat.contramap(_.a))
+    implicit val c1: Codec[ByteVal] = Codec.from(Decoder.decodeByte.map(ByteVal.apply), Encoder.encodeByte.contramap(_.a))
+    implicit val c2: Codec[ShortVal] = Codec.from(Decoder.decodeShort.map(ShortVal.apply), Encoder.encodeShort.contramap(_.a))
+    implicit val c3: Codec[IntVal] = Codec.from(Decoder.decodeInt.map(IntVal.apply), Encoder.encodeInt.contramap(_.a))
+    implicit val c4: Codec[LongVal] = Codec.from(Decoder.decodeLong.map(LongVal.apply), Encoder.encodeLong.contramap(_.a))
+    implicit val c5: Codec[BooleanVal] = Codec.from(Decoder.decodeBoolean.map(BooleanVal.apply), Encoder.encodeBoolean.contramap(_.a))
+    implicit val c6: Codec[CharVal] = Codec.from(Decoder.decodeChar.map(CharVal.apply), Encoder.encodeChar.contramap(_.a))
+    implicit val c7: Codec[DoubleVal] = Codec.from(Decoder.decodeDouble.map(DoubleVal.apply), Encoder.encodeDouble.contramap(_.a))
+    implicit val c8: Codec[FloatVal] = Codec.from(Decoder.decodeFloat.map(FloatVal.apply), Encoder.encodeFloat.contramap(_.a))
     deriveCodec
   }
   val base64C3c: Codec[Array[Byte]] =
@@ -575,7 +573,7 @@ object CirceEncodersDecoders {
       ("reqs", x.reqs.asJson)
     ))
   }
-  implicit val bigIntE5r: Encoder[BigInt] = encodeJsonNumber
+  implicit val bigIntE5r: Encoder[BigInt] = Encoder.encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
   implicit val bitSetC3c: Codec[BitSet] =
     Codec.from(Decoder.decodeArray[Int].map(arr => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */))),
@@ -673,19 +671,19 @@ object CirceEncodersDecoders {
     }), Encoder.encodeMapLike[Long, Boolean, mutable.Map].contramapObject((m: mutable.LongMap[Boolean]) => m))
   implicit val missingRequiredFieldsC3c: Codec[MissingRequiredFields] = deriveCodec
   implicit val nestedStructsC3c: Codec[NestedStructs] = deriveCodec
-  implicit val suitC3c: Codec[Suit] = Codec.from(decodeString.emap { s =>
+  implicit val suitC3c: Codec[Suit] = Codec.from(Decoder.decodeString.emap { s =>
     try new Right(Suit.valueOf(s)) catch {
       case _: IllegalArgumentException => new Left("Suit")
     }
-  }, encodeString.contramap[Suit](_.name))
-  implicit val suitADTC3c: Codec[SuitADT] = Codec.from(decodeString.map {
+  }, Encoder.encodeString.contramap[Suit](_.name))
+  implicit val suitADTC3c: Codec[SuitADT] = Codec.from(Decoder.decodeString.map {
     val m = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
     s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
-  }, encodeString.contramap(_.toString))
+  }, Encoder.encodeString.contramap(_.toString))
   implicit val suitEnumC3c: Codec[SuitEnum] = Codec.codecForEnumeration(SuitEnum)
   implicit val primitivesC3c: Codec[Primitives] = deriveCodec
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {

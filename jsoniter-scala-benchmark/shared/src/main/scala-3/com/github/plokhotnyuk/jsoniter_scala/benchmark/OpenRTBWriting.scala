@@ -21,7 +21,6 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
   @Benchmark
   def circeJsoniter(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.syntax._

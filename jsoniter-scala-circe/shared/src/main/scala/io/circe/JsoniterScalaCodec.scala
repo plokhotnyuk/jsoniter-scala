@@ -1,10 +1,12 @@
 package io.circe
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.Decoder.Result
 import io.circe.Json._
 import java.nio.charset.StandardCharsets
 import java.util
 import scala.collection.immutable.VectorBuilder
+import scala.util.control.NonFatal
 
 object JsoniterScalaCodec {
   /**
@@ -89,38 +91,179 @@ object JsoniterScalaCodec {
     case _ => null
   }
 
-  /**
-   * Extracts a `BigInt` value from a JSON cursor.
-   *
-   * @param c the JSON cursor
-   * @return the `BigInt` value, or null if the cursor does not point to a number with an integer value
-   */
-  @inline
-  def bigIntValue(c: HCursor): BigInt = c.value match {
-    case n: JNumber => n.value match {
-      case jl: JsonLong => BigInt(jl.value)
-      case jbd: JsonBigDecimal =>
-        val bd = jbd.value
-        if (bd.scale == 0) new BigInt(bd.unscaledValue)
-        else null
-      case _ => null
+  def byteCodec(fromString: String => Byte): Codec[Byte] = new Codec[Byte] {
+    final def apply(c: HCursor): Result[Byte] = c.value match {
+      case n: JNumber =>
+        n.value match {
+          case jl: JsonLong =>
+            val l = jl.value
+            val b = l.toByte
+            if (b == l) return new Right(b)
+          case y =>
+            val ol = y.toLong
+            if (ol ne None) {
+              val l = ol.get
+              val b = l.toByte
+              if (b == l) return new Right(b)
+            }
+        }
+        fail(c)
+      case s: JString => try new Right(fromString(s.value)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
     }
-    case _ => null
-  }
 
-  /**
-   * Encodes a `BigInt` as a JSON number.
-   *
-   * Uses a `JsonLong` if the value fits in a Long, otherwise uses a `JsonBigDecimal`.
-   *
-   * @param x the BigInt to encode
-   * @return a JSON number representing the BigInt
-   */
-  @inline
-  def jsonValue(x: BigInt): Json = new JNumber({
-    if (x.isValidLong) new JsonLong(x.longValue)
-    else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
-  })
+    final def apply(x: Byte): Json = new JNumber(new JsonLong(x))
+
+    private[this] def fail(c: HCursor): Result[Byte] = new Left(DecodingFailure("Byte", c.history))
+  }
+  def shortCodec(fromString: String => Short): Codec[Short] = new Codec[Short] {
+    final def apply(c: HCursor): Result[Short] = c.value match {
+      case n: JNumber =>
+        n.value match {
+          case jl: JsonLong =>
+            val l = jl.value
+            val s = l.toShort
+            if (s == l) return new Right(s)
+          case y =>
+            val ol = y.toLong
+            if (ol ne None) {
+              val l = ol.get
+              val s = l.toShort
+              if (s == l) return new Right(s)
+            }
+        }
+        fail(c)
+      case s: JString => try new Right(fromString(s.value)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Short): Json = new JNumber(new JsonLong(x))
+
+    private[this] def fail(c: HCursor): Result[Short] = new Left(DecodingFailure("Short", c.history))
+  }
+  def intCodec(fromString: String => Int): Codec[Int] = new Codec[Int] {
+    final def apply(c: HCursor): Result[Int] = c.value match {
+      case n: JNumber =>
+        n.value match {
+          case jl: JsonLong =>
+            val l = jl.value
+            val i = l.toInt
+            if (i == l) return new Right(i)
+          case y =>
+            val ol = y.toLong
+            if (ol ne None) {
+              val l = ol.get
+              val i = l.toInt
+              if (i == l) return new Right(i)
+            }
+        }
+        fail(c)
+      case s: JString => try new Right(fromString(s.value)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Int): Json = new JNumber(new JsonLong(x))
+
+    private[this] def fail(c: HCursor): Result[Int] = new Left(DecodingFailure("Int", c.history))
+  }
+  def longCodec(fromString: String => Long): Codec[Long] = new Codec[Long] {
+    final def apply(c: HCursor): Result[Long] = c.value match {
+      case n: JNumber => n.value match {
+        case jl: JsonLong => new Right(jl.value)
+        case x =>
+          val ol = x.toLong
+          if (ol ne None) new Right(ol.get)
+          else fail(c)
+      }
+      case s: JString => try new Right(fromString(s.value)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Long): Json = new JNumber(new JsonLong(x))
+
+    private[this] def fail(c: HCursor): Result[Long] = new Left(DecodingFailure("Long", c.history))
+  }
+  def floatCodec(fromString: String => Float): Codec[Float] = new Codec[Float] {
+    final def apply(c: HCursor): Result[Float] = c.value match {
+      case n: JNumber => new Right(n.value.toFloat)
+      case s: JString => try new Right(fromString(s.value)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Float): Json = new JNumber(new JsonFloat(x))
+
+    private[this] def fail(c: HCursor): Result[Float] = new Left(DecodingFailure("Float", c.history))
+  }
+  def doubleCodec(fromString: String => Double): Codec[Double] = new Codec[Double] {
+    final def apply(c: HCursor): Result[Double] = c.value match {
+      case n: JNumber => new Right(n.value.toDouble)
+      case s: JString => try new Right(fromString(s.value)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: Double): Json = new JNumber(new JsonDouble(x))
+
+    private[this] def fail(c: HCursor): Result[Double] = new Left(DecodingFailure("Double", c.history))
+  }
+  def bigIntCodec(fromString: String => BigInt): Codec[BigInt] = new Codec[BigInt] {
+    final def apply(c: HCursor): Result[BigInt] = try c.value match {
+      case n: JNumber => n.value match {
+        case jl: JsonLong => new Right(BigInt(jl.value))
+        case jbd: JsonBigDecimal => new Right(new BigInt({
+          val bd = jbd.value
+          if (bd.scale == 0) bd.unscaledValue
+          else bd.toBigIntegerExact
+        }))
+        case x =>
+          val obi = x.toBigInt
+          if (obi ne None) new Right(obi.get)
+          else fail(c)
+      }
+      case s: JString => new Right(fromString(s.value))
+      case _ => fail(c)
+    } catch {
+      case NonFatal(_) => fail(c)
+    }
+
+    final def apply(x: BigInt): Json = new JNumber({
+      if (x.isValidLong) new JsonLong(x.longValue)
+      else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
+    })
+
+    private[this] def fail(c: HCursor): Result[BigInt] = new Left(DecodingFailure("BigInt", c.history))
+  }
+  def bigDecimalCodec(fromString: String => BigDecimal): Codec[BigDecimal] = new Codec[BigDecimal] {
+    final def apply(c: HCursor): Result[BigDecimal] = c.value match {
+      case n: JNumber => n.value match {
+        case jl: JsonLong => new Right(new BigDecimal(new java.math.BigDecimal(jl.value)))
+        case jbd: JsonBigDecimal => new Right(new BigDecimal(jbd.value, JsonReader.bigDecimalMathContext))
+        case x => x.toBigDecimal match {
+          case Some(v) => new Right(v.apply(JsonReader.bigDecimalMathContext))
+          case _ => fail(c)
+        }
+      }
+      case s: JString => try new Right(fromString(s.value)) catch {
+        case NonFatal(_) => fail(c)
+      }
+      case _ => fail(c)
+    }
+
+    final def apply(x: BigDecimal): Json = new JNumber(new JsonBigDecimal(x.bigDecimal))
+
+    private[this] def fail(c: HCursor): Result[BigDecimal] = new Left(DecodingFailure("BigDecimal", c.history))
+  }
 }
 
 /**
@@ -134,11 +277,11 @@ object JsoniterScalaCodec {
  * @return The JSON codec
  */
 final class JsoniterScalaCodec(
-    maxDepth: Int,
-    initialSize: Int,
-    doSerialize: Json => Boolean,
-    numberParser: JsonReader => Json,
-    numberSerializer: (JsonWriter, JsonNumber) => Unit) extends JsonValueCodec[Json] {
+                                maxDepth: Int,
+                                initialSize: Int,
+                                doSerialize: Json => Boolean,
+                                numberParser: JsonReader => Json,
+                                numberSerializer: (JsonWriter, JsonNumber) => Unit) extends JsonValueCodec[Json] {
 
   /**
    * An auxiliary constructor for backward binary compatibility.

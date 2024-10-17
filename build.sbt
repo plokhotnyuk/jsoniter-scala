@@ -129,7 +129,8 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.ConfiguredJsonValueCodecWrapper")
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs.*"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.*")
   )
 )
 
@@ -219,6 +220,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.10",
       "io.circe" %%% "circe-parser" % "0.14.10" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.19" % Test
     )
   )

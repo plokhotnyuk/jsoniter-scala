@@ -381,7 +381,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsByte(): Byte = {
     nextTokenOrError('"', head)
-    val x = parseByte(isToken = false)
+    val x = readByte(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -410,7 +410,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsShort(): Short = {
     nextTokenOrError('"', head)
-    val x = parseShort(isToken = false)
+    val x = readShort(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -424,7 +424,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsInt(): Int = {
     nextTokenOrError('"', head)
-    val x = parseInt(isToken = false)
+    val x = readInt(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -438,7 +438,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsLong(): Long = {
     nextTokenOrError('"', head)
-    val x = parseLong(isToken = false)
+    val x = readLong(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -452,7 +452,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsFloat(): Float = {
     nextTokenOrError('"', head)
-    val x = parseFloat(isToken = false)
+    val x = readFloat(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -466,7 +466,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsDouble(): Double = {
     nextTokenOrError('"', head)
-    val x = parseDouble(isToken = false)
+    val x = readDouble(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -491,7 +491,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsBigInt(digitsLimit: Int): BigInt = {
     nextTokenOrError('"', head)
-    val x = parseBigInt(isToken = false, null, digitsLimit)
+    val x = readBigInt(isToken = false, null, digitsLimit)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -520,7 +520,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsBigDecimal(mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal = {
     nextTokenOrError('"', head)
-    val x = parseBigDecimal(isToken = false, null, mc, scaleLimit, digitsLimit)
+    val x = readBigDecimal(isToken = false, null, mc, scaleLimit, digitsLimit)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -546,7 +546,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or dection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Byte`
     */
-  def readByte(): Byte = parseByte(isToken = true)
+  def readByte(): Byte = readByte(isToken = true)
 
   /**
     * Reads a JSON string value into a `Char` value.
@@ -569,7 +569,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Short`
     */
-  def readShort(): Short = parseShort(isToken = true)
+  def readShort(): Short = readShort(isToken = true)
 
   /**
     * Reads a JSON value into a `Int` value.
@@ -578,7 +578,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Int`
     */
-  def readInt(): Int = parseInt(isToken = true)
+  def readInt(): Int = readInt(isToken = true)
 
   /**
     * Reads a JSON number value into a `Long` value.
@@ -587,7 +587,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Long`
     */
-  def readLong(): Long = parseLong(isToken = true)
+  def readLong(): Long = readLong(isToken = true)
 
   /**
     * Reads a JSON number value into a `Double` value.
@@ -596,7 +596,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value
     */
-  def readDouble(): Double = parseDouble(isToken = true)
+  def readDouble(): Double = readDouble(isToken = true)
 
   /**
     * Reads a JSON number value into a `Float` value.
@@ -605,7 +605,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value
     */
-  def readFloat(): Float = parseFloat(isToken = true)
+  def readFloat(): Float = readFloat(isToken = true)
 
   /**
     * Reads a JSON number value into a `BigInt` instance with the default limit of allowed digits.
@@ -618,7 +618,7 @@ final class JsonReader private[jsoniter_scala](
     *                             illegal format of JSON value or exceeding of the default limit or
     *                             when both the JSON value and the provided default value are `null`
     */
-  def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default, bigIntDigitsLimit)
+  def readBigInt(default: BigInt): BigInt = readBigInt(isToken = true, default, bigIntDigitsLimit)
 
   /**
     * Reads a JSON number value into a `BigInt` instance with the provided limit of allowed digits.
@@ -632,7 +632,7 @@ final class JsonReader private[jsoniter_scala](
     *                             illegal format of JSON value or exceeding of the default limit or
     *                             when both the JSON value and the provided default value are `null`
     */
-  def readBigInt(default: BigInt, digitsLimit: Int): BigInt = parseBigInt(isToken = true, default, digitsLimit)
+  def readBigInt(default: BigInt, digitsLimit: Int): BigInt = readBigInt(isToken = true, default, digitsLimit)
 
   /**
     * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
@@ -647,7 +647,7 @@ final class JsonReader private[jsoniter_scala](
     *                             when both the JSON value and the provided default value are `null`
     */
   def readBigDecimal(default: BigDecimal): BigDecimal =
-    parseBigDecimal(isToken = true, default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+    readBigDecimal(isToken = true, default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
   /**
     * Reads a JSON number value into a `BigDecimal` instance with the provided limit of allowed digits for mantissa,
@@ -665,7 +665,7 @@ final class JsonReader private[jsoniter_scala](
     *                             when both the JSON value and the provided default value are `null`
     */
   def readBigDecimal(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
-    parseBigDecimal(isToken = true, default, mc, scaleLimit, digitsLimit)
+    readBigDecimal(isToken = true, default, mc, scaleLimit, digitsLimit)
 
   /**
     * Reads a JSON string value into a `String` instance.
@@ -965,7 +965,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsByte(): Byte = {
     nextTokenOrError('"', head)
-    val x = parseByte(isToken = false)
+    val x = readByte(isToken = false)
     nextByteOrError('"', head)
     x
   }
@@ -979,7 +979,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsShort(): Short = {
     nextTokenOrError('"', head)
-    val x = parseShort(isToken = false)
+    val x = readShort(isToken = false)
     nextByteOrError('"', head)
     x
   }
@@ -993,7 +993,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsInt(): Int = {
     nextTokenOrError('"', head)
-    val x = parseInt(isToken = false)
+    val x = readInt(isToken = false)
     nextByteOrError('"', head)
     x
   }
@@ -1007,7 +1007,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsLong(): Long = {
     nextTokenOrError('"', head)
-    val x = parseLong(isToken = false)
+    val x = readLong(isToken = false)
     nextByteOrError('"', head)
     x
   }
@@ -1020,7 +1020,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsDouble(): Double = {
     nextTokenOrError('"', head)
-    val x = parseDouble(isToken = false)
+    val x = readDouble(isToken = false)
     nextByteOrError('"', head)
     x
   }
@@ -1033,7 +1033,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsFloat(): Float = {
     nextTokenOrError('"', head)
-    val x = parseFloat(isToken = false)
+    val x = readFloat(isToken = false)
     nextByteOrError('"', head)
     x
   }
@@ -1065,7 +1065,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsBigInt(default: BigInt, digitsLimit: Int): BigInt =
     if (isNextToken('"', head)) {
-      val x = parseBigInt(isToken = false, default, digitsLimit)
+      val x = readBigInt(isToken = false, default, digitsLimit)
       nextByteOrError('"', head)
       x
     } else readNullOrTokenError(default, '"')
@@ -1102,7 +1102,7 @@ final class JsonReader private[jsoniter_scala](
     */
   def readStringAsBigDecimal(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
     if (isNextToken('"', head)) {
-      val x = parseBigDecimal(isToken = false, default, mc, scaleLimit, digitsLimit)
+      val x = readBigDecimal(isToken = false, default, mc, scaleLimit, digitsLimit)
       nextByteOrError('"', head)
       x
     } else readNullOrTokenError(default, '"')
@@ -1992,7 +1992,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
 
-  private[this] def parseByte(isToken: Boolean): Byte = {
+  def readByte(isToken: Boolean): Byte = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
@@ -2028,7 +2028,7 @@ final class JsonReader private[jsoniter_scala](
     x.toByte
   }
 
-  private[this] def parseShort(isToken: Boolean): Short = {
+  def readShort(isToken: Boolean): Short = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
@@ -2064,7 +2064,7 @@ final class JsonReader private[jsoniter_scala](
     x.toShort
   }
 
-  private[this] def parseInt(isToken: Boolean): Int = {
+  def readInt(isToken: Boolean): Int = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
@@ -2102,7 +2102,7 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  private[this] def parseLong(isToken: Boolean): Long = {
+  def readLong(isToken: Boolean): Long = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
@@ -2169,7 +2169,7 @@ final class JsonReader private[jsoniter_scala](
     }) leadingZeroError(pos - 1)
   }
 
-  private[this] def parseDouble(isToken: Boolean): Double = {
+  def readDouble(isToken: Boolean): Double = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
@@ -2321,7 +2321,7 @@ final class JsonReader private[jsoniter_scala](
     java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
   }
 
-  private[this] def parseFloat(isToken: Boolean): Float = {
+  def readFloat(isToken: Boolean): Float = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
@@ -2472,7 +2472,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
     Math.multiplyHigh(x, y) + x + y // Use implementation that works only when both params are negative
 
-  private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
+  def readBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
@@ -2550,8 +2550,8 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal, mc: MathContext, scaleLimit: Int,
-                                    digitsLimit: Int): BigDecimal = {
+  def readBigDecimal(isToken: Boolean, default: BigDecimal, mc: MathContext, scaleLimit: Int,
+                     digitsLimit: Int): BigDecimal = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
