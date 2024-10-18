@@ -37,9 +37,14 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
     }
     "allow customization for number serialization" in {
       val codec = jsonCodec(numberSerializer = io.circe.JsoniterScalaCodec.jsCompatibleNumberSerializer)
-      val jsonStr = """{"s":"VVV","n1":1.0,"n2":4503599627370497,"a":[null,"WWW",[],{}],"o":{"a":4e+297}}"""
+      val jsonStr = """{"s":1,"n1":1.0,"n2":4503599627370497,"a":[null,"WWW",[],{}],"o":{"a":4e+297}}"""
       val json = readFromString(jsonStr)
-      writeToString(json)(codec) shouldBe """{"s":"VVV","n1":1.0,"n2":"4503599627370497","a":[null,"WWW",[],{}],"o":{"a":"4E+297"}}"""
+      writeToString(json)(codec) shouldBe """{"s":1,"n1":1.0,"n2":"4503599627370497","a":[null,"WWW",[],{}],"o":{"a":"4E+297"}}"""
+      writeToString(Json.fromFloatOrNull(3.1415927f))(codec) shouldBe "3.1415927"
+      writeToString(Json.fromDoubleOrNull(3.141592653589793))(codec) shouldBe "3.141592653589793"
+      writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("3.141592653589793")))(codec) shouldBe "3.141592653589793"
+      writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("3.14159265358979323846264338327950288419716939937510")))(codec) shouldBe """"3.14159265358979323846264338327950288419716939937510""""
+      writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("4e+297")))(codec) shouldBe """"4E+297""""
     }
     "not serialize invalid json" in {
       val json1 = parse("\"\ud800\"").getOrElse(null)
