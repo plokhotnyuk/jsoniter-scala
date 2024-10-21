@@ -114,10 +114,12 @@ object JsoniterScalaCodec {
       case _ => fail(c)
     }
 
-    final def apply(x: Byte): Json = new JNumber(new JsonLong(x))
+    @inline
+    final def apply(x: Byte): Json = JsonNumber.fromLong(x.toLong)
 
     private[this] def fail(c: HCursor): Result[Byte] = new Left(DecodingFailure("Byte", c.history))
   }
+
   def shortCodec(fromString: String => Short): Codec[Short] = new Codec[Short] {
     final def apply(c: HCursor): Result[Short] = c.value match {
       case n: JNumber =>
@@ -141,10 +143,12 @@ object JsoniterScalaCodec {
       case _ => fail(c)
     }
 
-    final def apply(x: Short): Json = new JNumber(new JsonLong(x))
+    @inline
+    final def apply(x: Short): Json = JsonNumber.fromLong(x.toLong)
 
     private[this] def fail(c: HCursor): Result[Short] = new Left(DecodingFailure("Short", c.history))
   }
+
   def intCodec(fromString: String => Int): Codec[Int] = new Codec[Int] {
     final def apply(c: HCursor): Result[Int] = c.value match {
       case n: JNumber =>
@@ -168,7 +172,8 @@ object JsoniterScalaCodec {
       case _ => fail(c)
     }
 
-    final def apply(x: Int): Json = new JNumber(new JsonLong(x))
+    @inline
+    final def apply(x: Int): Json = JsonNumber.fromLong(x.toLong)
 
     private[this] def fail(c: HCursor): Result[Int] = new Left(DecodingFailure("Int", c.history))
   }
@@ -187,10 +192,12 @@ object JsoniterScalaCodec {
       case _ => fail(c)
     }
 
-    final def apply(x: Long): Json = new JNumber(new JsonLong(x))
+    @inline
+    final def apply(x: Long): Json = JsonNumber.fromLong(x)
 
     private[this] def fail(c: HCursor): Result[Long] = new Left(DecodingFailure("Long", c.history))
   }
+
   def floatCodec(fromString: String => Float): Codec[Float] = new Codec[Float] {
     final def apply(c: HCursor): Result[Float] = c.value match {
       case n: JNumber => new Right(n.value.toFloat)
@@ -204,6 +211,7 @@ object JsoniterScalaCodec {
 
     private[this] def fail(c: HCursor): Result[Float] = new Left(DecodingFailure("Float", c.history))
   }
+
   def doubleCodec(fromString: String => Double): Codec[Double] = new Codec[Double] {
     final def apply(c: HCursor): Result[Double] = c.value match {
       case n: JNumber => new Right(n.value.toDouble)
@@ -213,6 +221,7 @@ object JsoniterScalaCodec {
       case _ => fail(c)
     }
 
+    @inline
     final def apply(x: Double): Json = new JNumber(new JsonDouble(x))
 
     private[this] def fail(c: HCursor): Result[Double] = new Left(DecodingFailure("Double", c.history))
@@ -237,13 +246,13 @@ object JsoniterScalaCodec {
       case NonFatal(_) => fail(c)
     }
 
-    final def apply(x: BigInt): Json = new JNumber({
-      if (x.isValidLong) new JsonLong(x.longValue)
-      else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
-    })
+    final def apply(x: BigInt): Json =
+      if (x.isValidLong) JsonNumber.fromLong(x.longValue)
+      else new JNumber(new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger)))
 
     private[this] def fail(c: HCursor): Result[BigInt] = new Left(DecodingFailure("BigInt", c.history))
   }
+
   def bigDecimalCodec(fromString: String => BigDecimal): Codec[BigDecimal] = new Codec[BigDecimal] {
     final def apply(c: HCursor): Result[BigDecimal] = c.value match {
       case n: JNumber => n.value match {
