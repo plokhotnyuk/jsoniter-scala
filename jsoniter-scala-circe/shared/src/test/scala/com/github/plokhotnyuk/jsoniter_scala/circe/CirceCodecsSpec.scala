@@ -12,7 +12,11 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "CirceCodecsSpec codecs" should {
     "decode and encode Byte" in {
-      Decoder[Byte].decodeJson(Json.fromString("001")).getOrElse(null) shouldBe 1.toByte
+      Decoder[Byte].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0.toByte) shouldBe 1.toByte
+      Decoder[Byte].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0.toByte) shouldBe 1.toByte
+      Decoder[Byte].decodeJson(Json.fromBigInt(1)).getOrElse(0.toByte) shouldBe 1.toByte
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0.toByte) shouldBe 1.toByte
+      Decoder[Byte].decodeJson(Json.fromString("001")).getOrElse(0.toByte) shouldBe 1.toByte
       Decoder[Byte].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Byte", Nil))
       Decoder[Byte].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Byte", Nil))
       forAll(arbitrary[Byte], minSuccessful(10000)) { x =>
@@ -26,7 +30,11 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       }
     }
     "decode and encode Short" in {
-      Decoder[Short].decodeJson(Json.fromString("001")).getOrElse(null) shouldBe 1.toShort
+      Decoder[Short].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0.toShort) shouldBe 1.toShort
+      Decoder[Short].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0.toShort) shouldBe 1.toShort
+      Decoder[Short].decodeJson(Json.fromBigInt(1)).getOrElse(0.toShort) shouldBe 1.toShort
+      Decoder[Short].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0.toShort) shouldBe 1.toShort
+      Decoder[Short].decodeJson(Json.fromString("001")).getOrElse(0.toShort) shouldBe 1.toShort
       Decoder[Short].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Short", Nil))
       Decoder[Short].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Short", Nil))
       forAll(arbitrary[Short], minSuccessful(10000)) { x =>
@@ -40,7 +48,11 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       }
     }
     "decode and encode Int" in {
-      Decoder[Int].decodeJson(Json.fromString("001")).getOrElse(null) shouldBe 1
+      Decoder[Int].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0) shouldBe 1
+      Decoder[Int].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0) shouldBe 1
+      Decoder[Int].decodeJson(Json.fromBigInt(1)).getOrElse(0) shouldBe 1
+      Decoder[Int].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0) shouldBe 1
+      Decoder[Int].decodeJson(Json.fromString("001")).getOrElse(0) shouldBe 1
       Decoder[Int].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Int", Nil))
       Decoder[Int].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Int", Nil))
       forAll(arbitrary[Int], minSuccessful(10000)) { x =>
@@ -54,7 +66,11 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       }
     }
     "decode and encode Long" in {
-      Decoder[Long].decodeJson(Json.fromString("001")).getOrElse(null) shouldBe 1L
+      Decoder[Long].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0L) shouldBe 1L
+      Decoder[Long].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0L) shouldBe 1L
+      Decoder[Long].decodeJson(Json.fromBigInt(1)).getOrElse(0L) shouldBe 1L
+      Decoder[Long].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0L) shouldBe 1L
+      Decoder[Long].decodeJson(Json.fromString("001")).getOrElse(0L) shouldBe 1L
       Decoder[Long].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Long", Nil))
       Decoder[Long].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Long", Nil))
       forAll(arbitrary[Long], minSuccessful(10000)) { x =>
@@ -68,7 +84,11 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       }
     }
     "decode and encode Float" in {
-      Decoder[Float].decodeJson(Json.fromString("001.0")).getOrElse(null) shouldBe 1.0f
+      Decoder[Float].decodeJson(Json.fromLong(1L)).getOrElse(0.0f) shouldBe 1.0f
+      Decoder[Float].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0.0f) shouldBe 1.0f
+      Decoder[Float].decodeJson(Json.fromBigInt(1)).getOrElse(0.0f) shouldBe 1.0f
+      Decoder[Float].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0.0f) shouldBe 1.0f
+      Decoder[Float].decodeJson(Json.fromString("001.0")).getOrElse(0.0f) shouldBe 1.0f
       Decoder[Float].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("Float", Nil))
       Decoder[Float].decodeJson(Json.fromString("1.0 ")) shouldBe Left(DecodingFailure("Float", Nil))
       forAll(arbitrary[Float], minSuccessful(10000)) { x =>
@@ -82,7 +102,11 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       }
     }
     "decode and encode Double" in {
-      Decoder[Double].decodeJson(Json.fromString("001.0")).getOrElse(null) shouldBe 1.0
+      Decoder[Double].decodeJson(Json.fromLong(1L)).getOrElse(0.0) shouldBe 1.0
+      Decoder[Double].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0.0) shouldBe 1.0
+      Decoder[Double].decodeJson(Json.fromBigInt(1)).getOrElse(0.0) shouldBe 1.0
+      Decoder[Double].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0.0) shouldBe 1.0
+      Decoder[Double].decodeJson(Json.fromString("001.0")).getOrElse(0.0) shouldBe 1.0
       Decoder[Double].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("Double", Nil))
       Decoder[Double].decodeJson(Json.fromString("1.0 ")) shouldBe Left(DecodingFailure("Double", Nil))
       forAll(arbitrary[Double], minSuccessful(10000)) { x =>
@@ -96,6 +120,10 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       }
     }
     "decode and encode BigInt" in {
+      Decoder[BigInt].decodeJson(Json.fromLong(1L)).getOrElse(null) shouldBe BigInt(1)
+      Decoder[BigInt].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(null) shouldBe BigInt(1)
+      Decoder[BigInt].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(null) shouldBe BigInt(1)
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1.0e+5"))).getOrElse(null) shouldBe BigInt(100000)
       Decoder[BigInt].decodeJson(Json.fromString("001")).getOrElse(null) shouldBe BigInt(1)
       Decoder[BigInt].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("BigInt", Nil))
       Decoder[BigInt].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("BigInt", Nil))
@@ -110,6 +138,10 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       }
     }
     "decode and encode BigDecimal" in {
+      Decoder[BigDecimal].decodeJson(Json.fromLong(1L)).getOrElse(null) shouldBe BigDecimal(1.0)
+      Decoder[BigDecimal].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(null) shouldBe BigDecimal(1.0)
+      Decoder[BigDecimal].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(null) shouldBe BigDecimal(1.0)
+      Decoder[BigDecimal].decodeJson(Json.fromBigInt(BigInt("1"))).getOrElse(null) shouldBe BigDecimal(1.0)
       Decoder[BigDecimal].decodeJson(Json.fromString("001.0")).getOrElse(null) shouldBe BigDecimal(1.0)
       Decoder[BigDecimal].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("BigDecimal", Nil))
       Decoder[BigDecimal].decodeJson(Json.fromString("1.0 ")) shouldBe Left(DecodingFailure("BigDecimal", Nil))
