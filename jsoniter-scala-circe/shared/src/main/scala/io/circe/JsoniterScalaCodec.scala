@@ -207,6 +207,7 @@ object JsoniterScalaCodec {
       case _ => fail(c)
     }
 
+    @inline
     final def apply(x: Float): Json = new JNumber(new JsonFloat(x))
 
     private[this] def fail(c: HCursor): Result[Float] = new Left(DecodingFailure("Float", c.history))
@@ -246,6 +247,7 @@ object JsoniterScalaCodec {
       case NonFatal(_) => fail(c)
     }
 
+    @inline
     final def apply(x: BigInt): Json =
       if (x.isValidLong) JsonNumber.fromLong(x.longValue)
       else new JNumber(new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger)))
@@ -269,6 +271,7 @@ object JsoniterScalaCodec {
       case _ => fail(c)
     }
 
+    @inline
     final def apply(x: BigDecimal): Json = new JNumber(new JsonBigDecimal(x.bigDecimal))
 
     private[this] def fail(c: HCursor): Result[BigDecimal] = new Left(DecodingFailure("BigDecimal", c.history))
