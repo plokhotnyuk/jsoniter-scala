@@ -10,37 +10,33 @@ import java.time._
  * Uses jsoniter-scala for efficient encoding and decoding.
  */
 object CirceCodecs {
-  private[this] val numberPool = new ThreadLocal[JsonReader] {
-    override def initialValue(): JsonReader = new JsonReader(buf = new Array[Byte](512), charBuf = new Array[Char](512))
-  }
-  private[this] val javaTimePool = new ThreadLocal[(Array[Byte], JsonReader, JsonWriter)] {
-    override def initialValue(): (Array[Byte], JsonReader, JsonWriter) = {
-      val buf = new Array[Byte](512) // should be enough for the longest zoned date time value
-      buf(0) = '"'
-      new Tuple3(buf, new JsonReader(buf, charBuf = new Array[Char](512)), new JsonWriter(buf))
+  private[this] val pool = new ThreadLocal[(JsonReader, Array[Byte], JsonWriter)] {
+    override def initialValue(): (JsonReader, Array[Byte], JsonWriter) = {
+      val buf = new Array[Byte](512) // should be enough for the longest number or zoned date time value
+      new Tuple3(new JsonReader(buf, charBuf = new Array[Char](512)), buf, new JsonWriter(buf))
     }
   }
-  private[this] val readerConfig =
-    ReaderConfig.withAppendHexDumpToParseException(false).withPreferredBufSize(512).withMaxBufSize(512)
-      .withPreferredCharBufSize(512).withMaxCharBufSize(512)
+  private[this] val readerConfig = ReaderConfig.withAppendHexDumpToParseException(false)
+    .withPreferredBufSize(512).withMaxBufSize(512).withPreferredCharBufSize(512).withMaxCharBufSize(512)
   private[this] val writeConfig = WriterConfig.withPreferredBufSize(512)
 
   private[this] class ShortAsciiStringCodec[A](codec: JsonValueCodec[A], name: String) extends Codec[A] {
     override def apply(x: A): Json = {
-      val tlb = javaTimePool.get
-      val buf = tlb._1
+      val tlb = pool.get
+      val buf = tlb._2
       io.circe.JsoniterScalaCodec.asciiStringToJString(buf, tlb._3.write(codec, x, buf, 0, 512, writeConfig))
     }
 
     override def apply(c: HCursor): Decoder.Result[A] = {
-      val tlb = javaTimePool.get
-      val buf = tlb._1
+      val tlb = pool.get
+      val buf = tlb._2
       val s = io.circe.JsoniterScalaCodec.stringValue(c)
       var len = 0
       if ((s ne null) && {
         len = s.length
         len <= 510
       } && {
+        buf(0) = '"'
         var bits, i = 0
         while (i < len) {
           val ch = s.charAt(i)
@@ -51,7 +47,7 @@ object CirceCodecs {
         buf(i + 1) = '"'
         bits < 0x80
       }) {
-        try return new scala.util.Right(tlb._2.read(codec, buf, 0, len + 2, readerConfig))
+        try return new scala.util.Right(tlb._1.read(codec, buf, 0, len + 2, readerConfig))
         catch { case _: JsonReaderException => }
       }
       error(c)
@@ -77,7 +73,7 @@ object CirceCodecs {
       override def nullValue: Byte = 0
     }
     s =>
-      numberPool.get.read(codec, s, readerConfig)
+      pool.get._1.read(codec, s, readerConfig)
   }
   implicit val shortC3C: Codec[Short] = io.circe.JsoniterScalaCodec.shortCodec {
     val codec: JsonValueCodec[Short] = new JsonValueCodec[Short] {
@@ -95,7 +91,7 @@ object CirceCodecs {
       override def nullValue: Short = 0
     }
     s =>
-      numberPool.get.read(codec, s, readerConfig)
+      pool.get._1.read(codec, s, readerConfig)
   }
   implicit val intC3C: Codec[Int] = io.circe.JsoniterScalaCodec.intCodec {
     val codec: JsonValueCodec[Int] = new JsonValueCodec[Int] {
@@ -113,7 +109,7 @@ object CirceCodecs {
       override def nullValue: Int = 0
     }
     s =>
-      numberPool.get.read(codec, s, readerConfig)
+      pool.get._1.read(codec, s, readerConfig)
   }
   implicit val longC3C: Codec[Long] = io.circe.JsoniterScalaCodec.longCodec {
     val codec: JsonValueCodec[Long] = new JsonValueCodec[Long] {
@@ -131,7 +127,7 @@ object CirceCodecs {
       override def nullValue: Long = 0L
     }
     s =>
-      numberPool.get.read(codec, s, readerConfig)
+      pool.get._1.read(codec, s, readerConfig)
   }
   implicit val floatC3C: Codec[Float] = io.circe.JsoniterScalaCodec.floatCodec {
     val codec: JsonValueCodec[Float] = new JsonValueCodec[Float] {
@@ -149,7 +145,7 @@ object CirceCodecs {
       override def nullValue: Float = 0.0f
     }
     s =>
-      numberPool.get.read(codec, s, readerConfig)
+      pool.get._1.read(codec, s, readerConfig)
   }
   implicit val doubleC3C: Codec[Double] = io.circe.JsoniterScalaCodec.doubleCodec {
     val codec: JsonValueCodec[Double] = new JsonValueCodec[Double] {
@@ -167,7 +163,7 @@ object CirceCodecs {
       override def nullValue: Double = 0.0
     }
     s =>
-      numberPool.get.read(codec, s, readerConfig)
+      pool.get._1.read(codec, s, readerConfig)
   }
   implicit val bigIntC3C: Codec[BigInt] = io.circe.JsoniterScalaCodec.bigIntCodec {
     val codec: JsonValueCodec[BigInt] = new JsonValueCodec[BigInt] {
@@ -185,7 +181,7 @@ object CirceCodecs {
       override def nullValue: BigInt = null
     }
     s =>
-      numberPool.get.read(codec, s, readerConfig)
+      pool.get._1.read(codec, s, readerConfig)
   }
   implicit val bigDecimalC3C: Codec[BigDecimal] = io.circe.JsoniterScalaCodec.bigDecimalCodec {
     val codec: JsonValueCodec[BigDecimal] = new JsonValueCodec[BigDecimal] {
@@ -204,7 +200,7 @@ object CirceCodecs {
       override def nullValue: BigDecimal = null
     }
     s =>
-      numberPool.get.read(codec, s, readerConfig)
+      pool.get._1.read(codec, s, readerConfig)
   }
   // codecs for java.time.* types
   implicit val durationC3C: Codec[Duration] = new ShortAsciiStringCodec(new JsonValueCodec[Duration] {
