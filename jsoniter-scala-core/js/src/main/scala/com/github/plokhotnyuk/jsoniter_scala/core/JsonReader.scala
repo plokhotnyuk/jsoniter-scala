@@ -546,6 +546,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or dection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Byte`
     */
+  @inline
   def readByte(): Byte = readByte(isToken = true)
 
   /**
@@ -569,6 +570,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Short`
     */
+  @inline
   def readShort(): Short = readShort(isToken = true)
 
   /**
@@ -578,6 +580,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Int`
     */
+  @inline
   def readInt(): Int = readInt(isToken = true)
 
   /**
@@ -587,6 +590,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Long`
     */
+  @inline
   def readLong(): Long = readLong(isToken = true)
 
   /**
@@ -596,6 +600,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value
     */
+  @inline
   def readDouble(): Double = readDouble(isToken = true)
 
   /**
@@ -605,6 +610,7 @@ final class JsonReader private[jsoniter_scala](
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value
     */
+  @inline
   def readFloat(): Float = readFloat(isToken = true)
 
   /**
@@ -2313,6 +2319,7 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
+  @inline
   private[this] def toDouble(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Double =
     if (m10 == 0L || e10 < -343) 0.0
     else if (e10 >= 310) Double.PositiveInfinity
@@ -2457,6 +2464,7 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
+  @inline
   private[this] def toFloat(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Float =
     if (m10 == 0L || e10 < -64) 0.0f
     else if (e10 >= 39) Float.PositiveInfinity
