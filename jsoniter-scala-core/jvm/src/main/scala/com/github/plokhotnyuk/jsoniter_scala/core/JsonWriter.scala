@@ -869,7 +869,6 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeArrayStart(): Unit = writeNestedStart('[')
 
-
   /**
    * Writes a JSON array end marker (`]`).
    */

@@ -940,7 +940,6 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeArrayStart(): Unit = writeNestedStart('[')
 
-
   /**
    * Writes a JSON array end marker (`]`).
    */
@@ -1622,10 +1621,9 @@ final class JsonWriter private[jsoniter_scala](
         pos += digitCount(q)
         count = pos
       } else {
-        val q1 = (exp >>> 8) * 1441151881L >>> 49 // divide a small positive long by 100000000
-        q = q1.toInt
-        pos += digitCount(q)
-        count = write8Digits((exp - q1 * 100000000L).toInt, pos, buf, ds)
+        q = (exp * 1e-8).toInt // divide a small positive long by 100000000
+        pos += ((9 - q) >>> 31) + 1
+        count = write8Digits((exp - q * 100000000L).toInt, pos, buf, ds)
       }
       writePositiveIntDigits(q, pos, buf, ds)
     }
@@ -2403,10 +2401,9 @@ final class JsonWriter private[jsoniter_scala](
         lastPos += digitCount(q)
         pos = lastPos
       } else {
-        val q2 = (q1 >>> 8) * 1441151881L >>> 49 // divide a small positive long by 100000000
-        q = q2.toInt
-        lastPos += digitCount(q)
-        pos = write8Digits((q1 - q2 * 100000000L).toInt, lastPos, buf, ds)
+        q = ((q1 >>> 8) * 1441151881L >>> 49).toInt // divide a small positive long by 100000000
+        lastPos += ((9 - q) >>> 31) + 1
+        pos = write8Digits((q1 - q * 100000000L).toInt, lastPos, buf, ds)
       }
       pos = write8Digits((q0 - q1 * 100000000L).toInt, pos, buf, ds) + posCorr
     }
@@ -2452,7 +2449,7 @@ final class JsonWriter private[jsoniter_scala](
           cblCorr = 1
         }
         e10 = e2 * 315653 - e2Corr >> 20
-        val g = gs(e10 + 324 << 1) + 1
+        val g = gs(e10 + 324 << 1) + 1L
         val h = (e10 * -108853 >> 15) + e2 + 1
         val cb = m2 << 2
         val vbCorr = (m2 & 0x1) - 1
