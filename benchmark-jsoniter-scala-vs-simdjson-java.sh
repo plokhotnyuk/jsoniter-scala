@@ -1,0 +1,3 @@
+#!/bin/bash
+sbt -java-home /usr/lib/jvm/jdk-24 ++3.6.1 jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -p size=1,10,100,1000,10000,100000,1000000 (ArrayOf(Boolean|Byte|Double|Float|Int|Long|Short)s|StringOf(Ascii|Escaped|NonAscii)Chars)Reading.(jsoniterScala|simdjsonJava)' 2>&1 | tee jsoniter-scala-vs-simdjson-java.txt
+sbt -java-home /usr/lib/jvm/jdk-24 ++3.6.1 jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/jmh:run -t 16 -p size=1,10,100,1000,10000,100000,1000000 (ArrayOf(Boolean|Byte|Double|Float|Int|Long|Short)s|StringOf(Ascii|Escaped|NonAscii)Chars)Reading.(jsoniterScala|simdjsonJava)' 2>&1 | tee jsoniter-scala-vs-simdjson-java-t16.txt

@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
+import org.simdjson.SimdJsonParser
 
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -9,10 +10,12 @@ import org.openjdk.jmh.annotations._
 @Fork(value = 1, jvmArgs = Array(
 //  "-Djava.lang.invoke.VarHandle.VAR_HANDLE_GUARDS=false",
 //  "-XX:+UseTransparentHugePages",
+  "--add-modules",
+  "jdk.incubator.vector",
   "-server",
   "-noclassgc",
-  "-Xms2g",
-  "-Xmx2g",
+  "-Xms16g",
+  "-Xmx16g",
   "-XX:NewSize=1g",
   "-XX:MaxNewSize=1g",
   "-XX:InitialCodeCacheSize=512m",
@@ -39,4 +42,8 @@ import org.openjdk.jmh.annotations._
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-abstract class CommonParams
+abstract class CommonParams {
+  val simdJsonParser: ThreadLocal[SimdJsonParser] = new ThreadLocal[SimdJsonParser] {
+    override def initialValue(): SimdJsonParser = new SimdJsonParser
+  }
+}

@@ -256,6 +256,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.18.0",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.18.0",
       "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.18.0",
+      "org.simdjson" % "simdjson-java" % "0.3.0",
       "org.openjdk.jmh" % "jmh-core" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
@@ -276,6 +277,10 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
   .enablePlugins(JmhPlugin)
+  .settings(
+    Test / fork := true,
+    Test / javaOptions ++= Seq("--add-modules", "jdk.incubator.vector")
+  )
 
 lazy val assemblyJSBenchmarks = sys.props.get("assemblyJSBenchmarks").isDefined
 

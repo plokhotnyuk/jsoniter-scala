@@ -80,6 +80,10 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   }
 
   @Benchmark
+  def simdjsonJava(): Array[Byte] =
+    simdJsonParser.get.parse[Array[Byte]](jsonBytes, jsonBytes.length, classOf[Array[Byte]])
+
+  @Benchmark
   def smithy4sJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

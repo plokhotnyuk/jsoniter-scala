@@ -79,6 +79,10 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   }
 
   @Benchmark
+  def simdjsonJava(): Array[Double] =
+    simdJsonParser.get.parse[Array[Double]](jsonBytes, jsonBytes.length, classOf[Array[Double]])
+
+  @Benchmark
   def smithy4sJson(): Array[Double] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

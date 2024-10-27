@@ -78,6 +78,10 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
   }
 
   @Benchmark
+  def simdjsonJava(): Array[Boolean] =
+    simdJsonParser.get.parse[Array[Boolean]](jsonBytes, jsonBytes.length, classOf[Array[Boolean]])
+
+  @Benchmark
   def smithy4sJson(): Array[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

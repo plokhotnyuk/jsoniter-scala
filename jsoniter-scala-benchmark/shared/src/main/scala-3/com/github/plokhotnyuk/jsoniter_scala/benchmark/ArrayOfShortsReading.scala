@@ -79,6 +79,10 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   }
 
   @Benchmark
+  def simdjsonJava(): Array[Short] =
+    simdJsonParser.get.parse[Array[Short]](jsonBytes, jsonBytes.length, classOf[Array[Short]])
+
+  @Benchmark
   def smithy4sJson(): Array[Short] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

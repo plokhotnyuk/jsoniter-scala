@@ -79,6 +79,10 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   }
 
   @Benchmark
+  def simdjsonJava(): String =
+    simdJsonParser.get.parse[String](jsonBytes, jsonBytes.length, classOf[String])
+
+  @Benchmark
   def smithy4sJson(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._

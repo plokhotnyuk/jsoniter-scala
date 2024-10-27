@@ -80,6 +80,10 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   }
 
   @Benchmark
+  def simdjsonJava(): Array[Float] =
+    simdJsonParser.get.parse[Array[Float]](jsonBytes, jsonBytes.length, classOf[Array[Float]])
+
+  @Benchmark
   def smithy4sJson(): Array[Float] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
