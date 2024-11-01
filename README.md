@@ -33,7 +33,7 @@ compare performance of jsoniter-scala with: [circe](https://github.com/circe/cir
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [uPickle](https://github.com/lihaoyi/upickle), [zio-json](https://github.com/zio/zio-json)
 compiled by Scala.js 1.17.0 to ES 2015 with GCC v20220202 optimizations applied on
-Intel® Core™ i7-11800H CPU @ 2.3GHz (max 4.6GHz), RAM 64Gb DDR4-3200, Ubuntu 23.10 (Linux 6.6).
+Intel® Core™ i7-11800H CPU @ 2.3GHz (max 4.6GHz), RAM 64Gb DDR4-3200, Ubuntu 23.10 (Linux 6.8).
 
 ## Contents
 
@@ -821,6 +821,8 @@ For Scala 3 use the [scala3-compile-tests](https://github.com/pme123/scala3-comp
 compilation time of jsoniter-scala for Scala 3 enumerations (sum types) with circe in semi-auto mode.
 
 ### Publish locally
+
+Use publishing of SNAPSHOT versions to your local artifact repositories for testing with other libraries or applications. 
 
 Publish to the local Ivy repo:
 ```sh
