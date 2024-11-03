@@ -331,6 +331,8 @@ Samples for its integration with different web frameworks and HTTP servers:
 
 Usages of jsoniter-scala in OSS libraries:
 - [akka-http-json](https://github.com/hseeberger/akka-http-json) - integrates some of the best JSON libs in Scala with Akka HTTP 
+- [bootzooka](https://github.com/softwaremill/bootzooka) - a project to quickly start developing a Scala-based microservice or web app,
+  without the need to write login, user registration etc.
 - [caliban](https://github.com/ghostdogpr/caliban) - a purely functional library for building GraphQL servers and 
   clients in Scala
 - [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
@@ -834,7 +836,7 @@ Publish to the local Maven repo:
 sbt clean +publishM2
 ```
 
-### Release
+### Releasehttps://github.com/softwaremill/bootzook
 
 For version numbering use [Recommended Versioning Scheme](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
