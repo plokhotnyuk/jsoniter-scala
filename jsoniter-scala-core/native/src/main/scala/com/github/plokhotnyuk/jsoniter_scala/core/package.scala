@@ -38,7 +38,7 @@ package object core {
   /**
     * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type.
     *
-    * While it is less efficient than scanning JSON values from an input stream using pooled readers but it can be
+    * While it is less efficient than scanning JSON values from an input stream using pooled readers, but it can be
     * safely used when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of the value to parse
@@ -90,7 +90,7 @@ package object core {
     *
     * All parsed values will be passed to consuming function `f`.
     *
-    * While it is less efficient than scanning JSON values from an input stream using pooled readers but it can be
+    * While it is less efficient than scanning JSON values from an input stream using pooled readers, but it can be
     * safely used when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of the value to parse
@@ -142,7 +142,7 @@ package object core {
     *
     * All parsed values will be passed to consuming function `f`.
     *
-    * While it is less efficient than scanning JSON array from an input stream using pooled readers but it can be
+    * While it is less efficient than scanning JSON array from an input stream using pooled readers, but it can be
     * safely used when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of the value to parse
@@ -185,7 +185,7 @@ package object core {
   /**
     * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
     *
-    * While it is less efficient than parsing from a byte array using pooled readers but it can be safely used
+    * While it is less efficient than parsing from a byte array using pooled readers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of the value to parse
@@ -232,7 +232,7 @@ package object core {
   /**
     * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
     *
-    * While it is less efficient than parsing from a sub array using pooled readers but it can be safely used
+    * While it is less efficient than parsing from a sub array using pooled readers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of the value to parse
@@ -287,7 +287,7 @@ package object core {
     * value will be parsed before reaching of the limit. In any case the buffer position will be set to the next
     * position after the last read byte.
     *
-    * While it is less efficient than parsing from a byte buffer using pooled readers but it can be safely used
+    * While it is less efficient than parsing from a byte buffer using pooled readers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of the value to parse
@@ -324,7 +324,7 @@ package object core {
   /**
     * Deserialize JSON content from a string into a value of given `A` type.
     *
-    * While it is less efficient than parsing from a string using pooled readers but it can be safely used
+    * While it is less efficient than parsing from a string using pooled readers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of the value to parse
@@ -370,7 +370,7 @@ package object core {
   /**
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format.
     *
-    * While it is less efficient than serialization to an output stream using pooled writers but it can be safely used
+    * While it is less efficient than serialization to an output stream using pooled writers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of value to serialize
@@ -413,7 +413,7 @@ package object core {
   /**
     * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format.
     *
-    * While it is less efficient than serialization to a byte array using pooled writers but it can be safely used
+    * While it is less efficient than serialization to a byte array using pooled writers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of value to serialize
@@ -460,7 +460,7 @@ package object core {
   /**
     * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format.
     *
-    * While it is less efficient than serialization to a sub array using pooled writers but it can be safely used
+    * While it is less efficient than serialization to a sub array using pooled writers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of value to serialize
@@ -490,7 +490,7 @@ package object core {
     * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format.
     *
     * Serialization will start from the current position up to the provided byte buffer limit.
-    * On return the byte buffer will has position set to the next position after the last written byte.
+    * On return the byte buffer will have position set to the next position after the last written byte.
     *
     * BEWARE: It is a non-reentrant routine and should not be used in a nested way in the same thread.
     *
@@ -517,9 +517,9 @@ package object core {
     * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format.
     *
     * Serialization will start from the current position up to the provided byte buffer limit.
-    * On return the byte buffer will has position set to the next position after the last written byte.
+    * On return the byte buffer will have position set to the next position after the last written byte.
     *
-    * While it is less efficient than serialization to a byte buffer pooled writers but it can be safely used
+    * While it is less efficient than serialization to a byte buffer pooled writers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of value to serialize
@@ -560,7 +560,7 @@ package object core {
   /**
     * Serialize the `x` argument to a string in JSON format.
     *
-    * While it is less efficient than serialization to a string using pooled writers but it can be safely used
+    * While it is less efficient than serialization to a string using pooled writers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of value to serialize
