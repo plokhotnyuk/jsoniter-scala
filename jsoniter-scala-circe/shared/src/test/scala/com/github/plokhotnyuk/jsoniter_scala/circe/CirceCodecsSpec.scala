@@ -12,72 +12,102 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "CirceCodecsSpec codecs" should {
     "decode and encode Byte" in {
-      Decoder[Byte].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0.toByte) shouldBe 1.toByte
-      Decoder[Byte].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0.toByte) shouldBe 1.toByte
-      Decoder[Byte].decodeJson(Json.fromBigInt(1)).getOrElse(0.toByte) shouldBe 1.toByte
-      Decoder[Byte].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0.toByte) shouldBe 1.toByte
-      Decoder[Byte].decodeJson(Json.fromString("001")).getOrElse(0.toByte) shouldBe 1.toByte
+      Decoder[Byte].decodeJson(Json.fromFloatOrNull(1.0f)) shouldBe Right(1.toByte)
+      Decoder[Byte].decodeJson(Json.fromDoubleOrNull(1.0)) shouldBe Right(1.toByte)
+      Decoder[Byte].decodeJson(Json.fromBigInt(1)) shouldBe Right(1.toByte)
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(1.0)) shouldBe Right(1.toByte)
+      Decoder[Byte].decodeJson(Json.fromString("001")) shouldBe Right(1.toByte)
       Decoder[Byte].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Byte", Nil))
       Decoder[Byte].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromString("128")) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromString("-129")) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(0.123)) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal("92233720368547758080"))) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal("9223372036854775808"))) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal("-9223372036854775809"))) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal("0000000000000000000"))) shouldBe Right(0.toByte)
       forAll(arbitrary[Byte], minSuccessful(10000)) { x =>
-        Decoder[Byte].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
+        Decoder[Byte].decodeJson(Json.fromString(x.toString)) shouldBe Right(x)
       }
       forAll(arbitrary[Byte], minSuccessful(10000)) { x =>
-        Decoder[Byte].decodeJson(Json.fromInt(x)).getOrElse(null) shouldBe x
+        Decoder[Byte].decodeJson(Json.fromInt(x)) shouldBe Right(x)
       }
       forAll(arbitrary[Byte], minSuccessful(10000)) { x =>
         Encoder[Byte].apply(x) shouldBe Json.fromInt(x)
       }
     }
     "decode and encode Short" in {
-      Decoder[Short].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0.toShort) shouldBe 1.toShort
-      Decoder[Short].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0.toShort) shouldBe 1.toShort
-      Decoder[Short].decodeJson(Json.fromBigInt(1)).getOrElse(0.toShort) shouldBe 1.toShort
-      Decoder[Short].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0.toShort) shouldBe 1.toShort
-      Decoder[Short].decodeJson(Json.fromString("001")).getOrElse(0.toShort) shouldBe 1.toShort
+      Decoder[Short].decodeJson(Json.fromFloatOrNull(1.0f)) shouldBe Right(1.toShort)
+      Decoder[Short].decodeJson(Json.fromDoubleOrNull(1.0)) shouldBe Right(1.toShort)
+      Decoder[Short].decodeJson(Json.fromBigInt(1)) shouldBe Right(1.toShort)
+      Decoder[Short].decodeJson(Json.fromBigDecimal(1.0)) shouldBe Right(1.toShort)
+      Decoder[Short].decodeJson(Json.fromString("001")) shouldBe Right(1.toShort)
       Decoder[Short].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Short", Nil))
       Decoder[Short].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromString("32768")) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromString("-32769")) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(0.123)) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal("92233720368547758080"))) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal("9223372036854775808"))) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal("-9223372036854775809"))) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal("0000000000000000000"))) shouldBe Right(0.toShort)
       forAll(arbitrary[Short], minSuccessful(10000)) { x =>
-        Decoder[Short].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
+        Decoder[Short].decodeJson(Json.fromString(x.toString)) shouldBe Right(x)
       }
       forAll(arbitrary[Short], minSuccessful(10000)) { x =>
-        Decoder[Short].decodeJson(Json.fromInt(x)).getOrElse(null) shouldBe x
+        Decoder[Short].decodeJson(Json.fromInt(x)) shouldBe Right(x)
       }
       forAll(arbitrary[Short], minSuccessful(10000)) { x =>
         Encoder[Short].apply(x) shouldBe Json.fromInt(x)
       }
     }
     "decode and encode Int" in {
-      Decoder[Int].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0) shouldBe 1
-      Decoder[Int].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0) shouldBe 1
-      Decoder[Int].decodeJson(Json.fromBigInt(1)).getOrElse(0) shouldBe 1
-      Decoder[Int].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0) shouldBe 1
-      Decoder[Int].decodeJson(Json.fromString("001")).getOrElse(0) shouldBe 1
+      Decoder[Int].decodeJson(Json.fromFloatOrNull(1.0f)) shouldBe Right(1)
+      Decoder[Int].decodeJson(Json.fromDoubleOrNull(1.0)) shouldBe Right(1)
+      Decoder[Int].decodeJson(Json.fromBigInt(1)) shouldBe Right(1)
+      Decoder[Int].decodeJson(Json.fromBigDecimal(1.0)) shouldBe Right(1)
+      Decoder[Int].decodeJson(Json.fromString("001")) shouldBe Right(1)
       Decoder[Int].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Int", Nil))
       Decoder[Int].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromString("2147483648")) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromString("-2147483649")) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(0.123)) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal("92233720368547758080"))) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal("9223372036854775808"))) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal("-9223372036854775809"))) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal("0000000000000000000"))) shouldBe Right(0)
       forAll(arbitrary[Int], minSuccessful(10000)) { x =>
-        Decoder[Int].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
+        Decoder[Int].decodeJson(Json.fromString(x.toString)) shouldBe Right(x)
       }
       forAll(arbitrary[Int], minSuccessful(10000)) { x =>
-        Decoder[Int].decodeJson(Json.fromInt(x)).getOrElse(null) shouldBe x
+        Decoder[Int].decodeJson(Json.fromInt(x)) shouldBe Right(x)
       }
       forAll(arbitrary[Int], minSuccessful(10000)) { x =>
         Encoder[Int].apply(x) shouldBe Json.fromInt(x)
       }
     }
     "decode and encode Long" in {
-      Decoder[Long].decodeJson(Json.fromFloatOrNull(1.0f)).getOrElse(0L) shouldBe 1L
-      Decoder[Long].decodeJson(Json.fromDoubleOrNull(1.0)).getOrElse(0L) shouldBe 1L
-      Decoder[Long].decodeJson(Json.fromBigInt(1)).getOrElse(0L) shouldBe 1L
-      Decoder[Long].decodeJson(Json.fromBigDecimal(1.0)).getOrElse(0L) shouldBe 1L
-      Decoder[Long].decodeJson(Json.fromString("001")).getOrElse(0L) shouldBe 1L
+      Decoder[Long].decodeJson(Json.fromFloatOrNull(1.0f)) shouldBe Right(1L)
+      Decoder[Long].decodeJson(Json.fromDoubleOrNull(1.0)) shouldBe Right(1L)
+      Decoder[Long].decodeJson(Json.fromBigInt(1)) shouldBe Right(1L)
+      Decoder[Long].decodeJson(Json.fromBigDecimal(1.0)) shouldBe Right(1L)
+      Decoder[Long].decodeJson(Json.fromString("001")) shouldBe Right(1L)
       Decoder[Long].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Long", Nil))
       Decoder[Long].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(0.123)) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal("92233720368547758080"))) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal("9223372036854775808"))) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal("-9223372036854775809"))) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal("0000000000000000000"))) shouldBe Right(0)
       forAll(arbitrary[Long], minSuccessful(10000)) { x =>
-        Decoder[Long].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
+        Decoder[Long].decodeJson(Json.fromString(x.toString)) shouldBe Right(x)
       }
       forAll(arbitrary[Long], minSuccessful(10000)) { x =>
-        Decoder[Long].decodeJson(Json.fromLong(x)).getOrElse(null) shouldBe x
+        Decoder[Long].decodeJson(Json.fromLong(x)) shouldBe Right(x)
       }
       forAll(arbitrary[Long], minSuccessful(10000)) { x =>
         Encoder[Long].apply(x) shouldBe Json.fromLong(x)
@@ -91,6 +121,7 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[Float].decodeJson(Json.fromString("001.0")).getOrElse(0.0f) shouldBe 1.0f
       Decoder[Float].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("Float", Nil))
       Decoder[Float].decodeJson(Json.fromString("1.0 ")) shouldBe Left(DecodingFailure("Float", Nil))
+      Decoder[Float].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Float", Nil))
       forAll(arbitrary[Float], minSuccessful(10000)) { x =>
         Decoder[Float].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
       }
@@ -109,6 +140,7 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[Double].decodeJson(Json.fromString("001.0")).getOrElse(0.0) shouldBe 1.0
       Decoder[Double].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("Double", Nil))
       Decoder[Double].decodeJson(Json.fromString("1.0 ")) shouldBe Left(DecodingFailure("Double", Nil))
+      Decoder[Double].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Double", Nil))
       forAll(arbitrary[Double], minSuccessful(10000)) { x =>
         Decoder[Double].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
       }
@@ -127,6 +159,7 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[BigInt].decodeJson(Json.fromString("001")).getOrElse(null) shouldBe BigInt(1)
       Decoder[BigInt].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("BigInt", Nil))
       Decoder[BigInt].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("BigInt", Nil))
       forAll(arbitrary[BigInt], minSuccessful(10000)) { x =>
         Decoder[BigInt].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
       }
@@ -145,6 +178,7 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[BigDecimal].decodeJson(Json.fromString("001.0")).getOrElse(null) shouldBe BigDecimal(1.0)
       Decoder[BigDecimal].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("BigDecimal", Nil))
       Decoder[BigDecimal].decodeJson(Json.fromString("1.0 ")) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("BigDecimal", Nil))
       forAll(arbitrary[BigDecimal], minSuccessful(10000)) { x =>
         val y = x.apply(JsonReader.bigDecimalMathContext)
         Decoder[BigDecimal].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe y

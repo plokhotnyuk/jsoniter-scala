@@ -3,6 +3,9 @@ package io.circe
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.Decoder.Result
 import io.circe.Json._
+import io.circe.numbers.BiggerDecimal
+
+import java.math.{BigInteger, RoundingMode}
 import java.nio.charset.StandardCharsets
 import java.util
 import scala.collection.immutable.VectorBuilder
@@ -69,6 +72,10 @@ object JsoniterScalaCodec {
     }
   }
 
+  private[this] val longMin = BigInteger.valueOf(Long.MinValue)
+
+  private[this] val longMax = BigInteger.valueOf(Long.MaxValue)
+
   /**
    * Converts an ASCII byte array to a JSON string.
    *
@@ -99,6 +106,13 @@ object JsoniterScalaCodec {
             val l = jl.value
             val b = l.toByte
             if (b == l) return new Right(b)
+          case jbd: JsonBigDecimal =>
+            val bi = longValueExact(jbd.value)
+            if (bi ne null) {
+              val l = bi.longValue
+              val b = l.toByte
+              if (b == l) return new Right(b)
+            }
           case y =>
             val ol = y.toLong
             if (ol ne None) {
@@ -109,7 +123,7 @@ object JsoniterScalaCodec {
         }
         fail(c)
       case s: JString => try new Right(fromString(s.value)) catch {
-        case NonFatal(_) => fail(c)
+        case e if NonFatal(e) => fail(c)
       }
       case _ => fail(c)
     }
@@ -128,6 +142,13 @@ object JsoniterScalaCodec {
             val l = jl.value
             val s = l.toShort
             if (s == l) return new Right(s)
+          case jbd: JsonBigDecimal =>
+            val bi = longValueExact(jbd.value)
+            if (bi ne null) {
+              val l = bi.longValue
+              val s = l.toShort
+              if (s == l) return new Right(s)
+            }
           case y =>
             val ol = y.toLong
             if (ol ne None) {
@@ -138,7 +159,7 @@ object JsoniterScalaCodec {
         }
         fail(c)
       case s: JString => try new Right(fromString(s.value)) catch {
-        case NonFatal(_) => fail(c)
+        case e if NonFatal(e) => fail(c)
       }
       case _ => fail(c)
     }
@@ -157,6 +178,13 @@ object JsoniterScalaCodec {
             val l = jl.value
             val i = l.toInt
             if (i == l) return new Right(i)
+          case jbd: JsonBigDecimal =>
+            val bi = longValueExact(jbd.value)
+            if (bi ne null) {
+              val l = bi.longValue
+              val i = l.toInt
+              if (i == l) return new Right(i)
+            }
           case y =>
             val ol = y.toLong
             if (ol ne None) {
@@ -167,7 +195,7 @@ object JsoniterScalaCodec {
         }
         fail(c)
       case s: JString => try new Right(fromString(s.value)) catch {
-        case NonFatal(_) => fail(c)
+        case e if NonFatal(e) => fail(c)
       }
       case _ => fail(c)
     }
@@ -177,17 +205,26 @@ object JsoniterScalaCodec {
 
     private[this] def fail(c: HCursor): Result[Int] = new Left(DecodingFailure("Int", c.history))
   }
+
   def longCodec(fromString: String => Long): Codec[Long] = new Codec[Long] {
     final def apply(c: HCursor): Result[Long] = c.value match {
-      case n: JNumber => n.value match {
-        case jl: JsonLong => new Right(jl.value)
-        case x =>
-          val ol = x.toLong
-          if (ol ne None) new Right(ol.get)
-          else fail(c)
-      }
+      case n: JNumber =>
+        n.value match {
+          case jl: JsonLong => return new Right(jl.value)
+          case jbd: JsonBigDecimal =>
+            val bi = longValueExact(jbd.value)
+            if (bi ne null) {
+              val l = bi.longValue
+              val s = l.toShort
+              if (s == l) return new Right(s)
+            }
+          case x =>
+            val ol = x.toLong
+            if (ol ne None) return new Right(ol.get)
+        }
+        fail(c)
       case s: JString => try new Right(fromString(s.value)) catch {
-        case NonFatal(_) => fail(c)
+        case e if NonFatal(e) => fail(c)
       }
       case _ => fail(c)
     }
@@ -202,7 +239,7 @@ object JsoniterScalaCodec {
     final def apply(c: HCursor): Result[Float] = c.value match {
       case n: JNumber => new Right(n.value.toFloat)
       case s: JString => try new Right(fromString(s.value)) catch {
-        case NonFatal(_) => fail(c)
+        case e if NonFatal(e) => fail(c)
       }
       case _ => fail(c)
     }
@@ -217,7 +254,7 @@ object JsoniterScalaCodec {
     final def apply(c: HCursor): Result[Double] = c.value match {
       case n: JNumber => new Right(n.value.toDouble)
       case s: JString => try new Right(fromString(s.value)) catch {
-        case NonFatal(_) => fail(c)
+        case e if NonFatal(e) => fail(c)
       }
       case _ => fail(c)
     }
@@ -227,6 +264,7 @@ object JsoniterScalaCodec {
 
     private[this] def fail(c: HCursor): Result[Double] = new Left(DecodingFailure("Double", c.history))
   }
+
   def bigIntCodec(fromString: String => BigInt): Codec[BigInt] = new Codec[BigInt] {
     final def apply(c: HCursor): Result[BigInt] = try c.value match {
       case n: JNumber => n.value match {
@@ -244,7 +282,7 @@ object JsoniterScalaCodec {
       case s: JString => new Right(fromString(s.value))
       case _ => fail(c)
     } catch {
-      case NonFatal(_) => fail(c)
+      case e if NonFatal(e) => fail(c)
     }
 
     @inline
@@ -266,7 +304,7 @@ object JsoniterScalaCodec {
         }
       }
       case s: JString => try new Right(fromString(s.value)) catch {
-        case NonFatal(_) => fail(c)
+        case e if NonFatal(e) => fail(c)
       }
       case _ => fail(c)
     }
@@ -276,6 +314,17 @@ object JsoniterScalaCodec {
 
     private[this] def fail(c: HCursor): Result[BigDecimal] = new Left(DecodingFailure("BigDecimal", c.history))
   }
+
+  private[this] def longValueExact(bd: java.math.BigDecimal): BigInteger =
+    if (bd.signum != 0) {
+      val p = bd.precision
+      val s = bd.scale
+      if (p <= s || p - 19 > s) return null
+      val bd0 = bd.setScale(0, RoundingMode.UNNECESSARY)
+      val bi = bd0.unscaledValue
+      if (bd0.precision >= 19 || bi.compareTo(longMin) < 0 || bi.compareTo(longMax) > 0) return null
+      bi
+    } else BigInteger.ZERO
 }
 
 /**
