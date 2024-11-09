@@ -1,6 +1,6 @@
 //> using jmh
 //> using jmhVersion 1.37
-//> using dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe::2.31.2"
+//> using dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe::2.31.3"
 package bench
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
