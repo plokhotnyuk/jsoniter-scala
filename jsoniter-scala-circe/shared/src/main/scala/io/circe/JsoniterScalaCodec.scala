@@ -3,9 +3,7 @@ package io.circe
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.Decoder.Result
 import io.circe.Json._
-import io.circe.numbers.BiggerDecimal
-
-import java.math.{BigInteger, RoundingMode}
+import java.math.RoundingMode
 import java.nio.charset.StandardCharsets
 import java.util
 import scala.collection.immutable.VectorBuilder
@@ -15,7 +13,6 @@ object JsoniterScalaCodec {
   /**
    * Default number parser that detects integers vs floating-point values
    * and chooses an appropriate JSON number representation.
-   *
    * @return a JSON number value
    */
   val defaultNumberParser: JsonReader => Json = in => new JNumber({
@@ -72,9 +69,13 @@ object JsoniterScalaCodec {
     }
   }
 
-  private[this] val longMin = BigInteger.valueOf(Long.MinValue)
+  private[this] val intMin = java.math.BigDecimal.valueOf(Int.MinValue)
 
-  private[this] val longMax = BigInteger.valueOf(Long.MaxValue)
+  private[this] val intMax = java.math.BigDecimal.valueOf(Int.MaxValue)
+
+  private[this] val longMin = java.math.BigDecimal.valueOf(Long.MinValue)
+
+  private[this] val longMax = java.math.BigDecimal.valueOf(Long.MaxValue)
 
   /**
    * Converts an ASCII byte array to a JSON string.
@@ -107,9 +108,9 @@ object JsoniterScalaCodec {
             val b = l.toByte
             if (b == l) return new Right(b)
           case jbd: JsonBigDecimal =>
-            val bi = longValueExact(jbd.value)
-            if (bi ne null) {
-              val l = bi.longValue
+            val bd = intValueExact(jbd.value)
+            if (bd ne null) {
+              val l = bd.intValue
               val b = l.toByte
               if (b == l) return new Right(b)
             }
@@ -143,9 +144,9 @@ object JsoniterScalaCodec {
             val s = l.toShort
             if (s == l) return new Right(s)
           case jbd: JsonBigDecimal =>
-            val bi = longValueExact(jbd.value)
-            if (bi ne null) {
-              val l = bi.longValue
+            val bd = intValueExact(jbd.value)
+            if (bd ne null) {
+              val l = bd.intValue
               val s = l.toShort
               if (s == l) return new Right(s)
             }
@@ -179,12 +180,8 @@ object JsoniterScalaCodec {
             val i = l.toInt
             if (i == l) return new Right(i)
           case jbd: JsonBigDecimal =>
-            val bi = longValueExact(jbd.value)
-            if (bi ne null) {
-              val l = bi.longValue
-              val i = l.toInt
-              if (i == l) return new Right(i)
-            }
+            val bd = intValueExact(jbd.value)
+            if (bd ne null) return new Right(bd.intValue)
           case y =>
             val ol = y.toLong
             if (ol ne None) {
@@ -212,12 +209,8 @@ object JsoniterScalaCodec {
         n.value match {
           case jl: JsonLong => return new Right(jl.value)
           case jbd: JsonBigDecimal =>
-            val bi = longValueExact(jbd.value)
-            if (bi ne null) {
-              val l = bi.longValue
-              val s = l.toShort
-              if (s == l) return new Right(s)
-            }
+            val bd = longValueExact(jbd.value)
+            if (bd ne null) return new Right(bd.longValue)
           case x =>
             val ol = x.toLong
             if (ol ne None) return new Right(ol.get)
@@ -315,16 +308,27 @@ object JsoniterScalaCodec {
     private[this] def fail(c: HCursor): Result[BigDecimal] = new Left(DecodingFailure("BigDecimal", c.history))
   }
 
-  private[this] def longValueExact(bd: java.math.BigDecimal): BigInteger =
+  private[this] def intValueExact(bd: java.math.BigDecimal): java.math.BigDecimal =
     if (bd.signum != 0) {
-      val p = bd.precision
+      var p = bd.precision
+      val s = bd.scale
+      if (p <= s || p - 10 > s) return null
+      val bd0 = bd.setScale(0, RoundingMode.UNNECESSARY)
+      p = bd0.precision
+      if (p > 10 || p == 10 && (bd0.compareTo(intMin) < 0 || bd0.compareTo(intMax) > 0)) return null
+      bd0
+    } else java.math.BigDecimal.ZERO
+
+  private[this] def longValueExact(bd: java.math.BigDecimal): java.math.BigDecimal =
+    if (bd.signum != 0) {
+      var p = bd.precision
       val s = bd.scale
       if (p <= s || p - 19 > s) return null
       val bd0 = bd.setScale(0, RoundingMode.UNNECESSARY)
-      val bi = bd0.unscaledValue
-      if (bd0.precision >= 19 || bi.compareTo(longMin) < 0 || bi.compareTo(longMax) > 0) return null
-      bi
-    } else BigInteger.ZERO
+      p = bd0.precision
+      if (p > 19 || p == 19 && (bd0.compareTo(longMin) < 0 || bd0.compareTo(longMax) > 0)) return null
+      bd0
+    } else java.math.BigDecimal.ZERO
 }
 
 /**
