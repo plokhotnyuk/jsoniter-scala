@@ -246,7 +246,7 @@ list of sbt dependencies:
 ```sbt
 libraryDependencies ++= Seq(
   // Use the %%% operator instead of %% for Scala.js and Scala Native 
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.31.2",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "2.31.2",
   // Use the "provided" scope instead when the "compile-internal" scope is not supported  
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.31.2" % "compile-internal"
 )
@@ -836,7 +836,7 @@ Publish to the local Maven repo:
 sbt clean +publishM2
 ```
 
-### Releasehttps://github.com/softwaremill/bootzook
+### Release
 
 For version numbering use [Recommended Versioning Scheme](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
