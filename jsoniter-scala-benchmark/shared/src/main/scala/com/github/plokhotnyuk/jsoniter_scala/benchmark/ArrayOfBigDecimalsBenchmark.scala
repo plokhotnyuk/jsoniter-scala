@@ -5,12 +5,12 @@ import java.nio.charset.StandardCharsets.UTF_8
 import org.openjdk.jmh.annotations.{Param, Setup}
 
 abstract class ArrayOfBigDecimalsBenchmark extends CommonParams {
-  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 1000
   var sourceObj: Array[BigDecimal] = _
-  var jsonString: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
+  var jsonString: String = _
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 1000
 
   @Setup
   def setup(): Unit = {
@@ -19,7 +19,7 @@ abstract class ArrayOfBigDecimalsBenchmark extends CommonParams {
     }.toArray // up to 112-bit BigInt numbers rounded to IEEE 754 Decimal128 format (34 decimal digits)
     jsonString = sourceObj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 
   private[benchmark] def obj: Array[BigDecimal] = {
@@ -29,7 +29,8 @@ abstract class ArrayOfBigDecimalsBenchmark extends CommonParams {
     var i = 0
     while (i < l) {
       val x = xs(i) // to avoid internal caching of the string representation
-      ys(i) = new BigDecimal(new java.math.BigDecimal(x.bigDecimal.unscaledValue, x.bigDecimal.scale), x.mc)
+      val bd = x.bigDecimal
+      ys(i) = new BigDecimal(new java.math.BigDecimal(bd.unscaledValue, bd.scale), x.mc)
       i += 1
     }
     ys

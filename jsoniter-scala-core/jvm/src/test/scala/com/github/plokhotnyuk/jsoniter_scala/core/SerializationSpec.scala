@@ -14,9 +14,9 @@ class SerializationSpec extends AnyWordSpec with Matchers with ScalaCheckPropert
   }
   "JsonKeyCodec" should {
     "be serializable" in {
-      val out = new ByteArrayOutputStream()
       val codec: JsonKeyCodec[Int] = new JsonKeyCodec[Int] {
         override def decodeKey(in: JsonReader): Int = in.readKeyAsInt()
+
         override def encodeKey(x: Int, out: JsonWriter): Unit = out.writeKey(x)
       }
       serDeser(codec) shouldNot be(null)

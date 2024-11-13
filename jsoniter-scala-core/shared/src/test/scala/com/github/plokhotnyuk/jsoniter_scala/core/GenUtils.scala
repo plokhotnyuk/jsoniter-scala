@@ -19,16 +19,19 @@ object GenUtils {
       java.util.Arrays.fill(bs, ws(Random.nextInt(ws.length)))
       new String(bs, 0, bs.length, UTF_8)
   }
+  val genChar: Gen[Char] = Gen.choose('\u0000', '\uffff')
   val genHighSurrogateChar: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
   val genSurrogateChar: Gen[Char] = Gen.oneOf(genHighSurrogateChar, genLowSurrogateChar)
   val genAsciiChar: Gen[Char] = Gen.choose('\u0000', '\u007f')
+  val genISO8859Char: Gen[Char] = Gen.choose('\u0000', '\u00ff')
   val genControlChar: Gen[Char] = Gen.choose('\u0000', '\u001f')
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
-  val genWhitespaces: Gen[String] = Gen.choose(0, 99).map(whitespaces)
-  val genSize: Gen[Int] = Gen.frequency((9, Gen.choose(1, 10)), (3, Gen.choose(1, 100)), (1, Gen.choose(1, 1000)))
+  val genWhitespaces: Gen[String] = Gen.oneOf(whitespaces)
+  val genSize: Gen[Int] = Gen.frequency((9, Gen.choose(1, 10)), (3, Gen.choose(1, 100)),
+    (1, Gen.choose(1, 1000)))
   val genMathContext: Gen[MathContext] = for {
     precision <- genSize
     rounding <- Gen.oneOf(CEILING, DOWN, FLOOR, HALF_DOWN, HALF_EVEN, HALF_UP, UNNECESSARY, UP)
@@ -52,11 +55,11 @@ object GenUtils {
     Gen.choose(Long.MinValue / 86400, Long.MaxValue / 86400).map(Duration.ofDays),
     Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
     Gen.choose(Long.MinValue / 60, Long.MaxValue / 60).map(Duration.ofMinutes),
-    // FIXME: JDK 8 has bug in parsing and serialization of Duration with zero seconds and negative nanos,
-    // see https://bugs.openjdk.java.net/browse/JDK-8054978
+    // FIXME: Scala.js library for java.time._ has a bug in parsing and serialization of Duration with negative nanos
+    // ans seconds/minutes/hours, see: https://github.com/cquiroz/scala-java-time/issues/360
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
-    Gen.choose(if (TestUtils.isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
-    Gen.choose(if (TestUtils.isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
+    Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Long.MinValue, Long.MaxValue).map(Duration.ofMillis),
+    Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Long.MinValue, Long.MaxValue).map(Duration.ofNanos))
   val genInstant: Gen[Instant] = for {
     epochSecond <- Gen.choose(Instant.MIN.getEpochSecond, Instant.MAX.getEpochSecond)
     nanoAdjustment <- Gen.choose(Long.MinValue, Long.MaxValue)
@@ -73,7 +76,8 @@ object GenUtils {
     hour <- Gen.choose(0, 23)
     minute <- Gen.choose(0, 59)
     second <- Gen.choose(0, 59)
-    nano <- Gen.choose(0, 999999999)
+    nano <- Gen.oneOf(Gen.choose(0, 999999999), Gen.choose(0, 999999).map(_ * 1000),
+      Gen.choose(0, 999).map(_ * 1000000))
   } yield LocalTime.of(hour, minute, second, nano)
   val genLocalDateTime: Gen[LocalDateTime] = for {
     localDate <- genLocalDate
@@ -102,6 +106,7 @@ object GenUtils {
   } yield YearMonth.of(year.getValue, month)
   val genZoneId: Gen[ZoneId] = Gen.oneOf(
     genZoneOffset,
+    genZoneOffset.map(zo => ZoneId.of(zo.toString.replace(":", ""))),
     genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
     genZoneOffset.map(zo => ZoneId.ofOffset("UTC", zo)),
     genZoneOffset.map(zo => ZoneId.ofOffset("GMT", zo)),
@@ -119,10 +124,10 @@ object GenUtils {
   val genFiniteFloat: Gen[Float] = arbitrary[Float].filter(java.lang.Float.isFinite)
   val genNonFiniteDouble: Gen[Double] = Gen.oneOf(
     Gen.oneOf(java.lang.Double.NaN, java.lang.Double.NEGATIVE_INFINITY, java.lang.Double.POSITIVE_INFINITY),
-    Gen.choose(0L, 0x0007FFFFFFFFFFFFL).map(x => java.lang.Double.longBitsToDouble(x | 0x7FF8000000000000L))) // Double.NaN with error code
+    Gen.choose(0L, 0x7FFFFFFFFFFFFL).map(x => java.lang.Double.longBitsToDouble(x | 0x7FF8000000000000L))) // Double.NaN with error code
   val genNonFiniteFloat: Gen[Float] = Gen.oneOf(
     Gen.oneOf(java.lang.Float.NaN, java.lang.Float.NEGATIVE_INFINITY, java.lang.Float.POSITIVE_INFINITY),
-    Gen.choose(0, 0x003FFFFF).map(x => java.lang.Float.intBitsToFloat(x | 0x7FC00000))) // Float.NaN with error code
+    Gen.choose(0, 0x3FFFFF).map(x => java.lang.Float.intBitsToFloat(x | 0x7FC00000))) // Float.NaN with error code
 
   def isEscapedAscii(ch: Char): Boolean = ch < ' ' || ch == '\\' || ch == '"' || ch == '\u007f'
 
@@ -138,4 +143,23 @@ object GenUtils {
   }
 
   def toHexEscaped(ch: Char): String = s"\\u${(ch.toInt | 0x10000).toHexString.substring(1)}"
+
+  def toISO8601(year: Year): String = {
+    val x = year.getValue
+    if (x > 9999) s"+$x"
+    else if (x > 99 && x <= 999) s"0$x"
+    else if (x > 9 && x <= 99) s"00$x"
+    else if (x >= 0 && x <= 9) s"000$x"
+    else if (x >= -9 && x < 0) s"-000${-x}"
+    else if (x >= -99 && x < 9) s"-00${-x}"
+    else if (x >= -999 && x < 99) s"-0${-x}"
+    else x.toString
+  }
+
+  def toISO8601(x: YearMonth): String = {
+    val s = x.toString
+    if (x.getYear < 0 && !s.startsWith("-")) s"-$s"
+    else if (x.getYear > 9999 && !s.startsWith("+")) s"+$s" // '+' is required for years that extends 4 digits, see ISO 8601:2004 sections 3.4.2, 4.1.2.4
+    else s
+  }
 }

@@ -1,36 +1,44 @@
 import scala.sys.process._
 import sbtrelease.ReleaseStateTransformations._
 
-lazy val ensureJDK8: ReleaseStep = { st: State =>
+lazy val ensureJDK11: ReleaseStep = { st: State =>
   val javaVersion = System.getProperty("java.specification.version")
-  if (javaVersion != "1.8") throw new IllegalStateException("Cancelling release, please use JDK 1.8")
+  if (javaVersion != "11") throw new IllegalStateException("Cancelling release, please use JDK 11")
   st
 }
 
-lazy val updateVersionInReadme: ReleaseStep = { st: State =>
+lazy val updateVersionInReadmeAndExamples: ReleaseStep = { st: State =>
   val extracted = Project.extract(st)
   val newVersion = extracted.get(version)
   val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
-  val readme = "README.md"
-  val oldContent = IO.read(file(readme))
-  val newContent = oldContent.replaceAll('"' + oldVersion + '"', '"' + newVersion + '"')
-    .replaceAll('-' + oldVersion + '-', '-' + newVersion + '-')
-  IO.write(file(readme), newContent)
-  s"git add $readme" !! st.log
+
+  def updateFile(path: String): Unit = {
+    val oldContent = IO.read(file(path))
+    val newContent = oldContent
+      .replaceAll('"' + oldVersion + '"', '"' + newVersion + '"')
+      .replaceAll('-' + oldVersion + '-', '-' + newVersion + '-')
+      .replaceAll(':' + oldVersion + '"', ':' + newVersion + '"')
+    IO.write(file(path), newContent)
+    s"git add $path" !! st.log
+  }
+
+  updateFile("README.md")
+  (1 to 3).foreach(n => updateFile(s"jsoniter-scala-examples/example0$n.sc"))
+
   st
 }
 
 releaseCrossBuild := false
 
 releaseProcess := Seq[ReleaseStep](
-  ensureJDK8,
+  ensureJDK11,
   checkSnapshotDependencies,
   inquireVersions,
   runClean,
   releaseStepCommandAndRemaining("+test"),
   setReleaseVersion,
   releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
-  updateVersionInReadme,
+  updateVersionInReadmeAndExamples,
   commitReleaseVersion,
   tagRelease,
   releaseStepCommandAndRemaining("+publishSigned"),

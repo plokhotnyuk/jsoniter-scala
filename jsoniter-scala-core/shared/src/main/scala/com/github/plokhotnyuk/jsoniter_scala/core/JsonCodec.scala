@@ -4,6 +4,15 @@ import scala.{specialized => sp}
 
 /**
   * A `JsonCodec[A]` instance is a universal codec for JSON values and keys.
+  *
+  * BEWARE: Minimize usage of `JsonCodec[A]` due to possible creation of the scalability limit on the JDK level,
+  * for more info see:
+  *
+  *   - [[https://www.youtube.com/watch?v=PxcO3WHqmng]]
+  *   - [[https://bugs.openjdk.org/browse/JDK-8180450]]
+  *   - [[https://github.com/netty/netty/search?q=JDK-8180450&type=issues]]
+  *   - [[https://redhatperf.github.io/post/type-check-scalability-issue]]
+  *   - [[https://netflixtechblog.com/seeing-through-hardware-counters-a-journey-to-threefold-performance-increase-2721924a2822]]
   */
 trait JsonCodec[@sp A] extends JsonValueCodec[A] with JsonKeyCodec[A]
 
@@ -16,10 +25,10 @@ trait JsonValueCodec[@sp A] extends Serializable {
   /**
     * Attempts to decode a value of type `A` from the specified `JsonReader`, but may fail with `JsonReaderException`
     * error if the JSON input does not encode a value of this type.
-   *
-   * @param in an instance of `JsonReader` which provide an access to the JSON input to parse a JSON value to value of
-   *           type `A`
-   * @param default the placeholder value provided to initialize some possible local variables
+    *
+    * @param in an instance of `JsonReader` which provide an access to the JSON input to parse a JSON value to value of
+    *           type `A`
+    * @param default the placeholder value provided to initialize some possible local variables
     */
   def decodeValue(in: JsonReader, default: A): A
 

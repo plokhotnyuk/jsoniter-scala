@@ -11,8 +11,21 @@ import java.nio.charset.StandardCharsets.UTF_8
 import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
 
+/**
+  * The reader to parse JSON input iteratively.
+  *
+  * @param buf the internal buffer with JSON input
+  * @param head the head position in the internal buffer
+  * @param tail the tail position in the internal buffer
+  * @param mark the current mark position
+  * @param charBuf the internal char buffer for parsed strings
+  * @param bbuf the byte buffer with JSON input
+  * @param in the input stream with JSON input
+  * @param totalRead the total number of read bytes
+  * @param config the JSON reader configuration
+  */
 final class JsonReader private[jsoniter_scala](
-    private[this] var buf: Array[Byte] = new Array[Byte](16384),
+    private[this] var buf: Array[Byte] = new Array[Byte](32768),
     private[this] var head: Int = 0,
     private[this] var tail: Int = 0,
     private[this] var mark: Int = -1,
@@ -21,6 +34,15 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
+  private[this] var magnitude: Array[Byte] = _
+  private[this] var zoneIdKey: Key = _
+
+  /**
+    * Throws a [[JsonReaderException]] indicating that a required field with the given name is missing.
+    *
+    * @param reqField the name of the missing required field
+    * @throws JsonReaderException always
+    */
   def requiredFieldError(reqField: String): Nothing = {
     var i = appendString("missing required field \"", 0)
     i = appendString(reqField, i)
@@ -28,20 +50,42 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  /**
+    * Throws a [[JsonReaderException]] indicating that a field with the given name
+    * is duplicated.
+    *
+    * @param len the length of the duplicated field name in the internal char buffer
+    * @throws JsonReaderException always
+    */
   def duplicatedKeyError(len: Int): Nothing = {
     var i = prependString("duplicated field \"", len)
     i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
+  /**
+    * Throws a [[JsonReaderException]] indicating that an unexpected field with the given name was encountered.
+    *
+    * @param len the length of the unexpected field name in the internal char buffer
+    * @throws JsonReaderException always
+    */
   def unexpectedKeyError(len: Int): Nothing = {
     var i = prependString("unexpected field \"", len)
     i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
+  /**
+    * Throws a [[JsonReaderException]] indicating that an illegal discriminator field name was encountered.
+    */
   def discriminatorError(): Nothing = decodeError("illegal discriminator")
 
+  /**
+    * Throws a [[JsonReaderException]] indicating that an illegal value was encountered for the given discriminator field.
+    *
+    * @param discriminatorFieldName the name of the discriminator field
+    * @throws JsonReaderException always
+    */
   def discriminatorValueError(discriminatorFieldName: String): Nothing = {
     var i = appendString("illegal value of discriminator field \"", 0)
     i = appendString(discriminatorFieldName, i)
@@ -49,6 +93,12 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  /**
+    * Throws a [[JsonReaderException]] indicating that an illegal enum value was encountered.
+    *
+    * @param value an illegal enum value
+    * @throws JsonReaderException always
+    */
   def enumValueError(value: String): Nothing = {
     var i = appendString("illegal enum value \"", 0)
     i = appendString(value, i)
@@ -56,40 +106,83 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  /**
+    * Throws a [[JsonReaderException]] indicating that an illegal enum value with the given length was encountered.
+    *
+    * @param len the length of the illegal enum value in the internal char buffer.
+    * @throws JsonReaderException always
+    */
   def enumValueError(len: Int): Nothing = {
     var i = prependString("illegal enum value \"", len)
     i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
+  /**
+    * Sets the current read head position as a mark.
+    */
   def setMark(): Unit = mark = head
 
-  @tailrec
-  def skipToKey(key: String): Boolean = isCharBufEqualsTo(readKeyAsCharBuf(), key) || {
-    skip()
-    isNextToken(',', head) && skipToKey(key)
+  /**
+    * Skips tokens with in the current JSON object until a key with the given name is encountered.
+    *
+    * @param key the name of the JSON key to skip to
+    * @return `true` if the key was found, `false` otherwise
+    * @throws JsonReaderException in cases of reaching the end of input or invalid encoding of JSON key
+    */
+  def skipToKey(key: String): Boolean = {
+    while (!isCharBufEqualsTo(readKeyAsCharBuf(), key)) {
+      skip()
+      if (!isNextToken(',', head)) return false
+    }
+    true
   }
 
+  /**
+    * Rolls back the read head position to the previously set mark.
+    *
+    * @throws java.lang.IllegalStateException in cases of reaching the end of input or invalid encoding of JSON key
+    */
   def rollbackToMark(): Unit = {
     if (mark < 0) missingSetMarkOperation()
     head = mark
     mark = -1
   }
 
+  /**
+    * Reads a JSON key into the internal char buffer and returns the length of the key.
+    *
+    * @return the length of the key in the internal char buffer
+    * @throws JsonReaderException in cases of reaching the end of input or invalid encoding of JSON key
+    */
   def readKeyAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    val len = parseString()
+    val pos = head
+    val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
     nextTokenOrError(':', head)
     len
   }
 
+  /**
+    * Reads a JSON key into the internal char buffer and returns a `String` instance.
+    *
+    * @return a `String` instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or invalid encoding of JSON key
+    */
   def readKeyAsString(): String = {
     nextTokenOrError('"', head)
-    val len = parseString()
+    val pos = head
+    val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
     nextTokenOrError(':', head)
     new String(charBuf, 0, len)
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.Duration]] instance.
+    *
+    * @return a [[java.time.Duration]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsDuration(): Duration = {
     nextTokenOrError('"', head)
     val x = parseDuration()
@@ -97,6 +190,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.Instant]] instance.
+    *
+    * @return a [[java.time.Instant]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsInstant(): Instant = {
     nextTokenOrError('"', head)
     val x = parseInstant()
@@ -104,6 +203,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.LocalDate]] instance.
+    *
+    * @return a [[java.time.LocalDate]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsLocalDate(): LocalDate = {
     nextTokenOrError('"', head)
     val x = parseLocalDate()
@@ -111,6 +216,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.LocalDateTime]] instance.
+    *
+    * @return a [[java.time.LocalDateTime]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsLocalDateTime(): LocalDateTime = {
     nextTokenOrError('"', head)
     val x = parseLocalDateTime()
@@ -118,6 +229,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.LocalTime]] instance.
+    *
+    * @return a [[java.time.LocalTime]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsLocalTime(): LocalTime = {
     nextTokenOrError('"', head)
     val x = parseLocalTime()
@@ -125,6 +242,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.MonthDay]] instance.
+    *
+    * @return a [[java.time.MonthDay]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsMonthDay(): MonthDay = {
     nextTokenOrError('"', head)
     val x = parseMonthDay(head)
@@ -132,6 +255,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.OffsetDateTime]] instance.
+    *
+    * @return a [[java.time.OffsetDateTime]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsOffsetDateTime(): OffsetDateTime = {
     nextTokenOrError('"', head)
     val x = parseOffsetDateTime()
@@ -139,6 +268,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.OffsetTime]] instance.
+    *
+    * @return a [[java.time.OffsetTime]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsOffsetTime(): OffsetTime = {
     nextTokenOrError('"', head)
     val x = parseOffsetTime()
@@ -146,6 +281,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.Period]] instance.
+    *
+    * @return a [[java.time.Period]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsPeriod(): Period = {
     nextTokenOrError('"', head)
     val x = parsePeriod()
@@ -153,20 +294,38 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.Year]] instance.
+    *
+    * @return a [[java.time.Year]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsYear(): Year = {
     nextTokenOrError('"', head)
-    val x = Year.of(parseYearWithByte('"', 9, head))
+    val x = Year.of(parseYearWithByte('"', head))
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.YearMonth]] instance.
+    *
+    * @return a [[java.time.YearMonth]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsYearMonth(): YearMonth = {
     nextTokenOrError('"', head)
-    val x = parseYearMonth()
+    val x = parseYearMonth(head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.ZonedDateTime]] instance.
+    *
+    * @return a [[java.time.ZonedDateTime]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsZonedDateTime(): ZonedDateTime = {
     nextTokenOrError('"', head)
     val x = parseZonedDateTime()
@@ -174,13 +333,25 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.ZoneId]] instance.
+    *
+    * @return a [[java.time.ZoneId]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsZoneId(): ZoneId = {
     nextTokenOrError('"', head)
-    val x = parseZoneIdWithByte('"')
+    val x = parseZoneId()
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.time.ZoneOffset]] instance.
+    *
+    * @return a [[java.time.ZoneOffset]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsZoneOffset(): ZoneOffset = {
     nextTokenOrError('"', head)
     val x = parseZoneOffset()
@@ -188,6 +359,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a `Boolean` value.
+    *
+    * @return a `Boolean` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsBoolean(): Boolean = {
     nextTokenOrError('"', head)
     val x = parseBoolean(isToken = false, head)
@@ -196,14 +373,27 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a `Byte` value.
+    *
+    * @return a `Byte` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsByte(): Byte = {
     nextTokenOrError('"', head)
-    val x = parseByte(isToken = false)
+    val x = readByte(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a `Char` value.
+    *
+    * @return a `Char` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    *                             or exceeding capacity of `Char` or when parsed char is a part of a surrogate pair
+    */
   def readKeyAsChar(): Char = {
     nextTokenOrError('"', head)
     val x = parseChar(head)
@@ -212,67 +402,136 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a JSON key into a `Short` value.
+    *
+    * @return a `Short` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsShort(): Short = {
     nextTokenOrError('"', head)
-    val x = parseShort(isToken = false)
+    val x = readShort(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a `Int` value.
+    *
+    * @return a `Int` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsInt(): Int = {
     nextTokenOrError('"', head)
-    val x = parseInt(isToken = false)
+    val x = readInt(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a `Long` value.
+    *
+    * @return a `Long` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsLong(): Long = {
     nextTokenOrError('"', head)
-    val x = parseLong(isToken = false)
+    val x = readLong(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a `Float` value.
+    *
+    * @return a `Float` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsFloat(): Float = {
     nextTokenOrError('"', head)
-    val x = parseFloat(isToken = false)
+    val x = readFloat(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a `Double` value.
+    *
+    * @return a `Double` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsDouble(): Double = {
     nextTokenOrError('"', head)
-    val x = parseDouble(isToken = false)
+    val x = readDouble(isToken = false)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a `BigInt` instance with the default limit of allowed digits.
+    *
+    * @return a `BigInt` instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key or
+    *                             exceeding of the default limit
+    */
   def readKeyAsBigInt(): BigInt = readKeyAsBigInt(bigIntDigitsLimit)
 
+  /**
+    * Reads a JSON key into a `BigInt` instance with the given limit of allowed digits.
+    *
+    * @param digitsLimit the maximum number of decimal digits allowed in the parsed `BigInt` value
+    * @return a `BigInt` instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key or
+    *                             exceeding of the provided limit
+    */
   def readKeyAsBigInt(digitsLimit: Int): BigInt = {
     nextTokenOrError('"', head)
-    val x = parseBigInt(isToken = false, null, digitsLimit)
+    val x = readBigInt(isToken = false, null, digitsLimit)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
+    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
+    *
+    * @return a `BigDecimal` instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key or
+    *                             exceeding of default limits
+    */
   def readKeyAsBigDecimal(): BigDecimal =
     readKeyAsBigDecimal(bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
+  /**
+    * Reads a JSON key into a Scala `BigDecimal` instance with the given precision, scale limit, and digits limit.
+    *
+    * @param mc the precision to use
+    * @param scaleLimit the maximum number of decimal places (scale) allowed
+    * @param digitsLimit the maximum number of decimal digits allowed
+    * @return a `BigDecimal` instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key or
+    *                             exceeding of provided limits
+    */
   def readKeyAsBigDecimal(mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal = {
     nextTokenOrError('"', head)
-    val x = parseBigDecimal(isToken = false, null, mc, scaleLimit, digitsLimit)
+    val x = readBigDecimal(isToken = false, null, mc, scaleLimit, digitsLimit)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
   }
 
+  /**
+    * Reads a JSON key into a [[java.util.UUID]] instance.
+    *
+    * @return a [[java.util.UUID]] instance of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
   def readKeyAsUUID(): UUID = {
     nextTokenOrError('"', head)
     val x = parseUUID(head)
@@ -280,8 +539,22 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readByte(): Byte = parseByte(isToken = true)
+  /**
+    * Reads a JSON number value into a `Byte` value.
+    *
+    * @return a `Byte` value of the parsed JSON value
+    * @throws JsonReaderException in cases of reaching the end of input or dection of leading zero or
+    *                             illegal format of JSON value or exceeding capacity of `Byte`
+    */
+  def readByte(): Byte = readByte(isToken = true)
 
+  /**
+    * Reads a JSON string value into a `Char` value.
+    *
+    * @return a `Char` value of the parsed JSON value
+    * @throws JsonReaderException in cases of reaching the end of input or invalid encoding of JSON value or
+    *                             exceeding capacity of `Char` or when parsed char is a part of a surrogate pair
+    */
   def readChar(): Char = {
     nextTokenOrError('"', head)
     val x = parseChar(head)
@@ -289,172 +562,557 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readShort(): Short = parseShort(isToken = true)
+  /**
+    * Reads a JSON number value into a `Short` value.
+    *
+    * @return a `Short` value of the parsed JSON value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding capacity of `Short`
+    */
+  def readShort(): Short = readShort(isToken = true)
 
-  def readInt(): Int = parseInt(isToken = true)
+  /**
+    * Reads a JSON value into a `Int` value.
+    *
+    * @return a `Int` value of the parsed JSON value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding capacity of `Int`
+    */
+  def readInt(): Int = readInt(isToken = true)
 
-  def readLong(): Long = parseLong(isToken = true)
+  /**
+    * Reads a JSON number value into a `Long` value.
+    *
+    * @return a `Long` value of the parsed JSON value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding capacity of `Long`
+    */
+  def readLong(): Long = readLong(isToken = true)
 
-  def readDouble(): Double = parseDouble(isToken = true)
+  /**
+    * Reads a JSON number value into a `Double` value.
+    *
+    * @return a `Double` value of the parsed JSON value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value
+    */
+  def readDouble(): Double = readDouble(isToken = true)
 
-  def readFloat(): Float = parseFloat(isToken = true)
+  /**
+    * Reads a JSON number value into a `Float` value.
+    *
+    * @return a `Float` value of the parsed JSON value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value
+    */
+  def readFloat(): Float = readFloat(isToken = true)
 
-  def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default, bigIntDigitsLimit)
+  /**
+    * Reads a JSON number value into a `BigInt` instance with the default limit of allowed digits.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigInt` value to return if the JSON value is `null`
+    * @return a `BigInt` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding of the default limit or
+    *                             when both the JSON value and the provided default value are `null`
+    */
+  def readBigInt(default: BigInt): BigInt = readBigInt(isToken = true, default, bigIntDigitsLimit)
 
-  def readBigInt(default: BigInt, digitsLimit: Int): BigInt = parseBigInt(isToken = true, default, digitsLimit)
+  /**
+    * Reads a JSON number value into a `BigInt` instance with the provided limit of allowed digits.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigInt` value to return if the JSON value is `null`
+    * @param digitsLimit the maximum number of decimal digits allowed in the parsed `BigInt` value
+    * @return a `BigInt` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding of the default limit or
+    *                             when both the JSON value and the provided default value are `null`
+    */
+  def readBigInt(default: BigInt, digitsLimit: Int): BigInt = readBigInt(isToken = true, default, digitsLimit)
 
+  /**
+    * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
+    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigDecimal` value to return if the JSON value is `null`
+    * @return a `BigDecimal` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding of default limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readBigDecimal(default: BigDecimal): BigDecimal =
-    parseBigDecimal(isToken = true, default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+    readBigDecimal(isToken = true, default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
+  /**
+    * Reads a JSON number value into a `BigDecimal` instance with the provided limit of allowed digits for mantissa,
+    * the provided limit for scale, and the provided instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigDecimal` value to return if the JSON value is `null`
+    * @param mc the precision to use
+    * @param scaleLimit the maximum number of decimal places (scale) allowed
+    * @param digitsLimit the maximum number of decimal digits allowed
+    * @return a `BigDecimal` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding of provided limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readBigDecimal(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
-    parseBigDecimal(isToken = true, default, mc, scaleLimit, digitsLimit)
+    readBigDecimal(isToken = true, default, mc, scaleLimit, digitsLimit)
 
+  /**
+    * Reads a JSON string value into a `String` instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `String` value to return if the JSON value is `null`.
+    * @return a `String` instance of the parsed JSON value or the default value if the JSON value is `null`.
+    * @throws JsonReaderException in cases of reaching the end of input or invalid encoding of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readString(default: String): String =
     if (isNextToken('"', head)) {
-      val len = parseString()
+      val pos = head
+      val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.Duration]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.Duration]] value to return if the JSON value is `null`
+    * @return a [[java.time.Duration]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readDuration(default: Duration): Duration =
     if (isNextToken('"', head)) parseDuration()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.Instant]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.Instant]] value to return if the JSON value is `null`
+    * @return a [[java.time.Instant]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readInstant(default: Instant): Instant =
     if (isNextToken('"', head)) parseInstant()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.LocalDate]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.LocalDate]] value to return if the JSON value is `null`
+    * @return a [[java.time.LocalDate]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readLocalDate(default: LocalDate): LocalDate =
     if (isNextToken('"', head)) parseLocalDate()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.LocalDateTime]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.LocalDateTime]] value to return if the JSON value is `null`
+    * @return a [[java.time.LocalDateTime]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readLocalDateTime(default: LocalDateTime): LocalDateTime =
     if (isNextToken('"', head)) parseLocalDateTime()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.LocalTime]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.LocalTime]] value to return if the JSON value is `null`
+    * @return a [[java.time.LocalTime]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readLocalTime(default: LocalTime): LocalTime =
     if (isNextToken('"', head)) parseLocalTime()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.MonthDay]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.MonthDay]] value to return if the JSON value is `null`
+    * @return a [[java.time.MonthDay]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readMonthDay(default: MonthDay): MonthDay =
     if (isNextToken('"', head)) parseMonthDay(head)
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.OffsetDateTime]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.OffsetDateTime]] value to return if the JSON value is `null`
+    * @return a [[java.time.OffsetDateTime]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readOffsetDateTime(default: OffsetDateTime): OffsetDateTime =
     if (isNextToken('"', head)) parseOffsetDateTime()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.OffsetTime]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.OffsetTime]] value to return if the JSON value is `null`.
+    * @return a [[java.time.OffsetTime]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readOffsetTime(default: OffsetTime): OffsetTime =
     if (isNextToken('"', head)) parseOffsetTime()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.Period]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.Period]] value to return if the JSON value is `null`
+    * @return a [[java.time.Period]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readPeriod(default: Period): Period =
     if (isNextToken('"', head)) parsePeriod()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.Year]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.Year]] value to return if the JSON value is `null`
+    * @return a [[java.time.Year]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readYear(default: Year): Year =
-    if (isNextToken('"', head)) Year.of(parseYearWithByte('"', 9, head))
+    if (isNextToken('"', head)) Year.of(parseYearWithByte('"', head))
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.YearMonth]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.YearMonth]] value to return if the JSON value is `null`
+    * @return a [[java.time.YearMonth]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readYearMonth(default: YearMonth): YearMonth =
-    if (isNextToken('"', head)) parseYearMonth()
+    if (isNextToken('"', head)) parseYearMonth(head)
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.ZonedDateTime]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.ZonedDateTime]] value to return if the JSON value is `null`
+    * @return a [[java.time.ZonedDateTime]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readZonedDateTime(default: ZonedDateTime): ZonedDateTime =
     if (isNextToken('"', head)) parseZonedDateTime()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.ZoneId]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.ZoneId]] value to return if the JSON value is `null`
+    * @return a [[java.time.ZoneId]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readZoneId(default: ZoneId): ZoneId =
-    if (isNextToken('"', head)) parseZoneIdWithByte('"')
+    if (isNextToken('"', head)) parseZoneId()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.time.ZoneOffset]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.time.ZoneOffset]] value to return if the JSON value is `null`
+    * @return a [[java.time.ZoneOffset]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readZoneOffset(default: ZoneOffset): ZoneOffset =
     if (isNextToken('"', head)) parseZoneOffset()
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a [[java.util.UUID]] instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default [[java.util.UUID]] value to return if the JSON value is `null`
+    * @return a [[java.util.UUID]] instance of the parsed JSON value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readUUID(default: UUID): UUID =
     if (isNextToken('"', head)) parseUUID(head)
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value encoded with the base-16 format into a `Array[Byte]` instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `Array[Byte]` value to return if the JSON value is `null`
+    * @return a `Array[Byte]` instance of the parsed JSON  value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readBase16AsBytes(default: Array[Byte]): Array[Byte] =
     if (isNextToken('"', head)) parseBase16(nibbles)
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value encoded with the base-64 format into a `Array[Byte]` instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `Array[Byte]` value to return if the JSON value is `null`
+    * @return a `Array[Byte]` instance of the parsed JSON  value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readBase64AsBytes(default: Array[Byte]): Array[Byte] =
     if (isNextToken('"', head)) parseBase64(base64Bytes)
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value encoded with the base-64 format for URLs into a `Array[Byte]` instance.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `Array[Byte]` value to return if the JSON value is `null`
+    * @return a `Array[Byte]` instance of the parsed JSON  value or the default value if the JSON value is `null`
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readBase64UrlAsBytes(default: Array[Byte]): Array[Byte] =
     if (isNextToken('"', head)) parseBase64(base64UrlBytes)
     else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON boolean value into a `Boolean` value.
+    *
+    * @return a `Boolean` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or unexpected JSON value
+    */
   def readBoolean(): Boolean = parseBoolean(isToken = true, head)
 
+  /**
+    * Reads a JSON string value into the internal char buffer and returns the length of the string.
+    *
+    * @return a length of the string in the internal char buffer
+    * @throws JsonReaderException in cases of reaching the end of input or invalid encoding of JSON value
+    */
   def readStringAsCharBuf(): Int = {
     nextTokenOrError('"', head)
-    parseString()
+    val pos = head
+    parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
   }
 
+  /**
+    * Reads a JSON string value into a `Byte` value.
+    *
+    * @return a `Byte` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             exceeding capacity of `Byte`
+    */
   def readStringAsByte(): Byte = {
     nextTokenOrError('"', head)
-    val x = parseByte(isToken = false)
+    val x = readByte(isToken = false)
     nextByteOrError('"', head)
     x
   }
 
+  /**
+    * Reads a JSON string value into a `Short` value.
+    *
+    * @return a `Short` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             exceeding capacity of `Short`
+    */
   def readStringAsShort(): Short = {
     nextTokenOrError('"', head)
-    val x = parseShort(isToken = false)
+    val x = readShort(isToken = false)
     nextByteOrError('"', head)
     x
   }
 
+  /**
+    * Reads a JSON string value into a `Int` value.
+    *
+    * @return a `Int` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             exceeding capacity of `Int`
+    */
   def readStringAsInt(): Int = {
     nextTokenOrError('"', head)
-    val x = parseInt(isToken = false)
+    val x = readInt(isToken = false)
     nextByteOrError('"', head)
     x
   }
 
+  /**
+    * Reads a JSON string value into a `Long` value.
+    *
+    * @return a `Long` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
+    *                             exceeding capacity of `Long`
+    */
   def readStringAsLong(): Long = {
     nextTokenOrError('"', head)
-    val x = parseLong(isToken = false)
+    val x = readLong(isToken = false)
     nextByteOrError('"', head)
     x
   }
 
+  /**
+    * Reads a JSON string value into a `Double` value.
+    *
+    * @return a `Double` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value
+    */
   def readStringAsDouble(): Double = {
     nextTokenOrError('"', head)
-    val x = parseDouble(isToken = false)
+    val x = readDouble(isToken = false)
     nextByteOrError('"', head)
     x
   }
 
+  /**
+    * Reads a JSON string value into a `Float` value.
+    *
+    * @return a `Float` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value
+    */
   def readStringAsFloat(): Float = {
     nextTokenOrError('"', head)
-    val x = parseFloat(isToken = false)
+    val x = readFloat(isToken = false)
     nextByteOrError('"', head)
     x
   }
 
+  /**
+    * Reads a JSON string value into a `BigInt` instance with the default limit of allowed digits.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigInt` value to return if the JSON value is `null`
+    * @return a `BigInt` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or
+    *                             illegal format of JSON value or exceeding of the default limit or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readStringAsBigInt(default: BigInt): BigInt = readStringAsBigInt(default, bigIntDigitsLimit)
 
+  /**
+    * Reads a JSON string value into a `BigInt` instance with the provided limit of allowed digits.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigInt` value to return if the JSON value is `null`
+    * @param digitsLimit the maximum number of decimal digits allowed in the parsed `BigInt` value
+    * @return a `BigInt` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or
+    *                             illegal format of JSON value or exceeding of the default limit or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readStringAsBigInt(default: BigInt, digitsLimit: Int): BigInt =
     if (isNextToken('"', head)) {
-      val x = parseBigInt(isToken = false, default, digitsLimit)
+      val x = readBigInt(isToken = false, default, digitsLimit)
       nextByteOrError('"', head)
       x
     } else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
+    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigDecimal` value to return if the JSON value is `null`
+    * @return a `BigDecimal` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or
+    *                             illegal format of JSON value or exceeding of default limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
     readStringAsBigDecimal(default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
+  /**
+    * Reads a JSON number value into a `BigDecimal` instance with the provided limit of allowed digits for mantissa,
+    * the provided limit for scale, and the provided instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `BigDecimal` value to return if the JSON value is `null`
+    * @param mc the precision to use
+    * @param scaleLimit the maximum number of decimal places (scale) allowed
+    * @param digitsLimit the maximum number of decimal digits allowed
+    * @return a `BigDecimal` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or
+    *                             illegal format of JSON value or exceeding of provided limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
   def readStringAsBigDecimal(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
     if (isNextToken('"', head)) {
-      val x = parseBigDecimal(isToken = false, default, mc, scaleLimit, digitsLimit)
+      val x = readBigDecimal(isToken = false, default, mc, scaleLimit, digitsLimit)
       nextByteOrError('"', head)
       x
     } else readNullOrTokenError(default, '"')
 
+  /**
+    * Reads a JSON string value into a `Boolean` value.
+    *
+    * @return a `Boolean` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value
+    */
   def readStringAsBoolean(): Boolean = {
     nextTokenOrError('"', head)
     val x = parseBoolean(isToken = false, head)
@@ -462,6 +1120,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  /**
+    * Reads a raw JSON value into a `Array[Byte]` instance without parsing.
+    *
+    * @return a `Array[Byte]` instance containing the raw bytes of the JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or invalid type of JSON value
+    */
   def readRawValAsBytes(): Array[Byte] = {
     var from = head
     val oldMark = mark
@@ -469,42 +1133,151 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    try {
-      skip()
-      if (mark == 0) from -= newMark
-      val len = head - from
-      val x = new Array[Byte](len)
-      System.arraycopy(buf, from, x, 0, len)
-      x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    skip()
+    if (mark == 0) from -= newMark
+    if (mark > oldMark) mark = oldMark
+    val len = head - from
+    val x = new Array[Byte](len)
+    System.arraycopy(buf, from, x, 0, len)
+    x
   }
 
+  /**
+    * Finishes reading the `null` JSON value and returns the provided default value or throws [[JsonReaderException]].
+    * Before calling it the `n` token should be parsed already.
+    *
+    * @param default the default value to return
+    * @param msg the exception message
+    * @tparam A the type of the default value
+    * @return the default value
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value
+    *                             or when the provided default value is `null`
+    */
+  @tailrec
   def readNullOrError[@sp A](default: A, msg: String): A =
-    if (default != null && isCurrentToken('n', head)) parseNullOrError(default, msg, head)
-    else decodeError(msg)
+    if (default != null) {
+      val pos = head
+      if (pos != 0) {
+        if (pos + 2 < tail) {
+          val bs = ByteArrayAccess.getInt(buf, pos - 1)
+          if (bs == 0x6C6C756E) {
+            head = pos + 3
+            default
+          } else decodeError(msg, bs, pos)
+        } else if (buf(pos - 1) == 'n') {
+          head = loadMoreOrError(pos - 1) + 1
+          readNullOrError(default, msg)
+        } else decodeError(msg, pos - 1)
+      } else illegalTokenOperation()
+    } else decodeError(msg)
 
+  /**
+    * Finishes reading the `null` JSON value and returns the provided default value or throws [[JsonReaderException]]
+    * with a message of expecting `null` or the provided token.
+    * Before calling it the `n` token should be parsed already.
+    *
+    * @param default the default value to return
+    * @param t the token for an error message
+    * @tparam A the type of the default value
+    * @return the default value
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value
+    *                             or when the provided default value is `null`
+    */
+  @tailrec
   def readNullOrTokenError[@sp A](default: A, t: Byte): A =
-    if (default != null && isCurrentToken('n', head)) parseNullOrTokenError(default, t, head)
-    else if (default != null) tokenOrNullError(t)
-    else tokenError(t)
+    if (default != null) {
+      val pos = head
+      if (pos != 0) {
+        if (pos + 2 < tail) {
+          val bs = ByteArrayAccess.getInt(buf, pos - 1)
+          if (bs == 0x6C6C756E) {
+            head = pos + 3
+            default
+          } else tokenOrNullError(t, bs, pos)
+        } else if (buf(pos - 1) == 'n') {
+          head = loadMoreOrError(pos - 1) + 1
+          readNullOrTokenError(default, t)
+        } else tokenOrNullError(t)
+      } else illegalTokenOperation()
+    } else tokenError(t)
 
+  /**
+    * Reads and returns the next byte from the input.
+    *
+    * @return the next byte from the input
+    * @throws JsonReaderException in cases of reaching the end of input
+    */
   def nextByte(): Byte = nextByte(head)
 
+  /**
+    * Skips whitespaces, then reads and returns the next byte from the input.
+    *
+    * @return the next token from the input
+    * @throws JsonReaderException in cases of reaching the end of input
+    */
   def nextToken(): Byte = nextToken(head)
 
+  /**
+    * Skips whitespaces, then checks if the next token in the input matches the given one.
+    *
+    * @param t the token to match
+    * @return `true` if the next token matches `t`, `false` otherwise
+    * @throws JsonReaderException in cases of reaching the end of input
+    */
   def isNextToken(t: Byte): Boolean = isNextToken(t, head)
 
+  /**
+    * Checks if the current token in the input matches the given one.
+    *
+    * @param t the token to match
+    * @return `true` if the current token matches `t`, `false` otherwise.
+    * @throws java.lang.IllegalStateException if no any token was parsed yet
+    */
   def isCurrentToken(t: Byte): Boolean = isCurrentToken(t, head)
 
+  /**
+    * Checks if there are more bytes available for reading in the input.
+    *
+    * @return `true` if there are more bytes available, `false` otherwise
+    */
+  def hasRemaining(): Boolean = head < tail || loadMore(head) < tail
+
+  /**
+    * Rolls back the current reading position by one.
+    *
+    * @throws java.lang.IllegalStateException if no any token was parsed yet
+    */
   def rollbackToken(): Unit = {
     val pos = head
     if (pos == 0) illegalTokenOperation()
     head = pos - 1
   }
 
-  def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
+  /**
+    * Calculates a hash code for the internal char buffer of the given length.
+    *
+    * @param len the length of the char buffer to hash
+    * @return the hash code for the char buffer
+    */
+  def charBufToHashCode(len: Int): Int = {
+    val cs = charBuf
+    var h, i = 0
+    while (i < len) {
+      h = (h << 5) + (cs(i) - h)
+      i += 1
+    }
+    h
+  }
 
-  def isCharBufEqualsTo(len: Int, s: String): Boolean = s.length == len && {
+  /**
+    * Checks if the internal char buffer contains the given string.
+    *
+    * @param len the length of the char buffer to check
+    * @param s the string to match
+    * @return `true` if the char buffer contains `s`, `false` otherwise
+    */
+  def isCharBufEqualsTo(len: Int, s: String): Boolean = {
+    if (s.length != len) return false
     val charBuf = this.charBuf
     var i = 0
     while (i < len) {
@@ -514,31 +1287,88 @@ final class JsonReader private[jsoniter_scala](
     true
   }
 
-  def skip(): Unit = head = {
+  /**
+    * Skips the next JSON value.
+    *
+    * @throws JsonReaderException in cases of reaching the end of input
+    */
+  def skip(): Unit = {
     val b = nextToken(head)
-    if (b == '"') skipString(evenBackSlashes = true, head)
-    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
-    else if (b == 'n' || b == 't') skipFixedBytes(3, head)
-    else if (b == 'f') skipFixedBytes(4, head)
-    else if (b == '[') skipArray(0, head)
-    else if (b == '{') skipObject(0, head)
+    var pos = head
+    if (b == '"') pos = skipString(evenBackSlashes = true, pos)
+    else if ((b >= '0' && b <= '9') || b == '-') pos = skipNumber(pos)
+    else if (b == 'n' || b == 't') pos = skipFixedBytes(3, pos)
+    else if (b == 'f') pos = skipFixedBytes(4, pos)
+    else if (b == '[') pos = skipArray(0, pos)
+    else if (b == '{') pos = skipObject(0, pos)
     else decodeError("expected value")
+    head = pos
   }
 
+  /**
+    * Throws a [[JsonReaderException]] with the message `expected ','`.
+    *
+    * @throws JsonReaderException always
+    */
   def commaError(): Nothing = decodeError("expected ','")
 
+  /**
+    * Throws a [[JsonReaderException]] with the message `expected '[' or null`.
+    *
+    * @throws JsonReaderException always
+    */
   def arrayStartOrNullError(): Nothing = decodeError("expected '[' or null")
 
+  /**
+    * Throws a [[JsonReaderException]] with the message `expected ']'`.
+    *
+    * @throws JsonReaderException always
+    */
   def arrayEndError(): Nothing = decodeError("expected ']'")
 
+  /**
+    * Throws a [[JsonReaderException]] with the message `expected ']' or ','`.
+    *
+    * @throws JsonReaderException always
+    */
   def arrayEndOrCommaError(): Nothing = decodeError("expected ']' or ','")
 
+  /**
+    * Throws a [[JsonReaderException]] with the message `expected '{' or null`.
+    *
+    * @throws JsonReaderException always
+    */
   def objectStartOrNullError(): Nothing = decodeError("expected '{' or null")
 
+  /**
+    * Throws a [[JsonReaderException]] with the message `expected '}' or ','`.
+    *
+    * @throws JsonReaderException always
+    */
   def objectEndOrCommaError(): Nothing = decodeError("expected '}' or ','")
 
+  /**
+    * Throws a [[JsonReaderException]] with the given message.
+    *
+    * @param msg the exception message
+    * @throws JsonReaderException always
+    */
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
+  /**
+    * Reads a JSON value from the given byte array slice into an instance of type `A` using the given [[JsonValueCodec]].
+    *
+    * @param codec the JSON value codec
+    * @param buf the byte array with JSON input
+    * @param from the start index of the slice (inclusive)
+    * @param to the end index of the slice (exclusive)
+    * @param config the reader configuration
+    * @tparam A the type of the value to read
+    * @return an instance of type `A` containing the decoded JSON value
+    * @throws JsonReaderException in cases of reaching the end of input during parsing of JSON value or
+    *                             unexpected format of JSON value or when configured checking of reaching the end of input
+    *                             doesn't pass after reading of the whole JSON value
+    */
   private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig): A = {
     val currBuf = this.buf
     try {
@@ -557,6 +1387,18 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
+  /**
+    * Reads a JSON value from the given input stream into an instance of type `A` using the given [[JsonValueCodec]].
+    *
+    * @param codec the JSON value codec
+    * @param in the input stream with the JSON input
+    * @param config the reader configuration
+    * @tparam A the type of the value to read
+    * @return an instance of type `A` containing the decoded JSON value
+    * @throws JsonReaderException in cases of reaching the end of input during parsing of JSON value or
+    *                             unexpected format of JSON value or when configured checking of reaching the end of input
+    *                             doesn't pass after reading of the whole JSON value
+    */
   private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig): A =
     try {
       this.config = config
@@ -575,6 +1417,18 @@ final class JsonReader private[jsoniter_scala](
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
+  /**
+    * Reads a JSON value from the given byte buffer into an instance of type `A` using the given [[JsonValueCodec]].
+    *
+    * @param codec the JSON value codec
+    * @param bbuf the byte buffer with the JSON input
+    * @param config the reader configuration
+    * @tparam A the type of the value to read
+    * @return an instance of type `A` containing the decoded JSON value
+    * @throws JsonReaderException in cases of reaching the end of input during parsing of JSON value or
+    *                             unexpected format of JSON value or when configured checking of reaching the end of input
+    *                             doesn't pass after reading of the whole JSON value
+    */
   private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], bbuf: ByteBuffer, config: ReaderConfig): A =
     if (bbuf.hasArray) {
       val offset = bbuf.arrayOffset
@@ -616,6 +1470,18 @@ final class JsonReader private[jsoniter_scala](
       }
     }
 
+  /**
+    * Reads a JSON value from the given string into an instance of type `A` using the given [[JsonValueCodec]].
+    *
+    * @param codec the JSON value codec
+    * @param s the string with the JSON input
+    * @param config The reader configuration.
+    * @tparam A the type of the value to read
+    * @return an instance of type `A` containing the decoded JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input during parsing of JSON value or
+    *                             unexpected format of JSON value or when configured checking of reaching the end of input
+    *                             doesn't pass after reading of the whole JSON value
+    */
   private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], s: String, config: ReaderConfig): A = {
     val currBuf = this.buf
     try {
@@ -635,6 +1501,16 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
+  /**
+    * Scans JSON values separated by whitespaces from the given input stream and applies the given function to each decoded value until it returns `false`.
+    *
+    * @param codec the JSON value codec
+    * @param in the input stream with the JSON input
+    * @param config the reader configuration
+    * @param f the callback function to apply to each decoded JSON value
+    * @throws JsonReaderException in cases of reaching the end of input during parsing of JSON value or
+    *                             unexpected format of JSON value
+    */
   private[jsoniter_scala] def scanValueStream[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
                                                     (f: A => Boolean): Unit =
     try {
@@ -652,6 +1528,17 @@ final class JsonReader private[jsoniter_scala](
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
+  /**
+    * Scans JSON array from the given input stream and applies the given function to each decoded value until it returns `false`.
+    *
+    * @param codec the JSON value codec
+    * @param in the input stream with the JSON input
+    * @param config the reader configuration
+    * @param f the function to apply to each decoded JSON value
+    * @throws JsonReaderException in cases of reaching the end of input during parsing of JSON value or
+    *                             unexpected format of JSON value or when configured checking of reaching the end of input
+    *                             doesn't pass after reading of the whole JSON array
+    */
   private[jsoniter_scala] def scanArray[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
                                               (f: A => Boolean): Unit =
     try {
@@ -680,9 +1567,19 @@ final class JsonReader private[jsoniter_scala](
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
-  private[jsoniter_scala] def endOfInputOrError(): Boolean =
-    skipWhitespaces() && decodeError("expected end of input", head)
+  /**
+    * Skips whitespace characters and checks if there are non-whitespace characters left in the input.
+    *
+    * @throws JsonReaderException when there is at least one non-whitespace character left in the input
+    */
+  private[jsoniter_scala] def endOfInputOrError(): Unit =
+    if (skipWhitespaces()) decodeError("expected end of input", head)
 
+  /**
+    * Skips whitespace characters in the input.
+    *
+    * @return `true` if and only if there are non-whitespace characters left in the input after skipping the whitespace
+    */
   private[jsoniter_scala] def skipWhitespaces(): Boolean = {
     var pos = head
     var buf = this.buf
@@ -797,47 +1694,48 @@ final class JsonReader private[jsoniter_scala](
     throw new IllegalStateException("expected preceding call of 'setMark()'")
 
   @tailrec
-  private[this] def parseYearWithByte(t: Byte, maxDigits: Int, pos: Int): Int =
+  private[this] def parseInstantYearWithDash(pos: Int): Int =
     if (pos + 4 < tail) {
       val buf = this.buf
-      val b1 = buf(pos)
-      if (b1 >= '0' && b1 <= '9') {
-        val b2 = buf(pos + 1)
-        val b3 = buf(pos + 2)
-        val b4 = buf(pos + 3)
-        val b5 = buf(pos + 4)
+      var year = ByteArrayAccess.getInt(buf, pos) - 0x30303030
+      if (((year + 0x76767676 | year) & 0x80808080) == 0 && buf(pos + 4) == '-') { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        year = (year * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
         head = pos + 5
-        if (b2 < '0' || b2 > '9') digitError(pos + 1)
-        if (b3 < '0' || b3 > '9') digitError(pos + 2)
-        if (b4 < '0' || b4 > '9') digitError(pos + 3)
-        if (b5 != t) tokenError(t, pos + 4)
-        b1 * 1000 + b2 * 100 + b3 * 10 + b4 - 53328 // 53328 == '0' * 1111
-      } else parseNon4DigitYearWithByte(t, maxDigits, b1, pos)
-    } else parseYearWithByte(t, maxDigits, loadMoreOrError(pos))
+        year
+      } else parseNon4DigitYearWithByte('-', 10, year, pos)
+    } else parseInstantYearWithDash(loadMoreOrError(pos))
 
-  private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, b1: Byte, p: Int): Int = {
-    var pos = p
+  @tailrec
+  private[this] def parseYearWithByte(t: Byte, pos: Int): Int =
+    if (pos + 4 < tail) {
+      val buf = this.buf
+      var year = ByteArrayAccess.getInt(buf, pos) - 0x30303030
+      if (((year + 0x76767676 | year) & 0x80808080) == 0 && buf(pos + 4) == t) { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        year = (year * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
+        head = pos + 5
+        year
+      } else parseNon4DigitYearWithByte(t, 9, year, pos)
+    } else parseYearWithByte(t, loadMoreOrError(pos))
+
+  private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, y: Int, p: Int): Int = {
+    val b1 = (y + 0x30).toByte
+    if (b1 != '-' && b1 != '+') fourDigitYearWithByteError(t, p, y)
+    var pos = p + 1
     var buf = this.buf
-    val b2 = buf(pos + 1)
-    val b3 = buf(pos + 2)
-    val b4 = buf(pos + 3)
-    val b5 = buf(pos + 4)
-    val yearNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
-    if (b2 < '0' || b2 > '9') digitError(pos + 1)
-    if (b3 < '0' || b3 > '9') digitError(pos + 2)
-    if (b4 < '0' || b4 > '9') digitError(pos + 3)
-    if (b5 < '0' || b5 > '9') digitError(pos + 4)
-    var year = b2 * 1000 + b3 * 100 + b4 * 10 + b5 - 53328 // 53328 == '0' * 1111
+    var year = ByteArrayAccess.getInt(buf, pos) - 0x30303030
+    val m = (year + 0x76767676 | year) & 0x80808080 // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+    if (m != 0) digitError((java.lang.Integer.numberOfTrailingZeros(m) >> 3) + pos)
+    year = (year * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
+    pos += 4
     var yearDigits = 4
     var b: Byte = 0
-    pos += 5
     while ({
       if (pos >= tail) {
         pos = loadMoreOrError(pos)
         buf = this.buf
       }
       b = buf(pos)
-      b >= '0' && b <= '9' && yearDigits < maxDigits
+      (b >= '0' && b <= '9') && yearDigits < maxDigits
     }) {
       year =
         if (year > 100000000) 2147483647
@@ -846,9 +1744,10 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     head = pos + 1
-    if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-    if (b != t) yearError(t, maxDigits, pos, yearNeg, yearDigits)
-    if (yearNeg) year = -year
+    if (b1 == '-' && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+    if (b != t) yearError(t, maxDigits, pos, b1, yearDigits)
+    if (b1 == '-') year = -year
+    if (year >= 0 && year < 10000) digitError(pos)
     year
   }
 
@@ -885,7 +1784,7 @@ final class JsonReader private[jsoniter_scala](
     } else parseDayWithByte(year, month, t, loadMoreOrError(pos))
 
   @tailrec
-  private[this] def parseHourWithByte(t: Byte, pos: Int): Int =
+  private[this] def parseHourWithColon(pos: Int): Int =
     if (pos + 2 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
@@ -896,12 +1795,12 @@ final class JsonReader private[jsoniter_scala](
       if (b1 < '0' || b1 > '9') digitError(pos)
       if (b2 < '0' || b2 > '9') digitError(pos + 1)
       if (hour > 23) hourError(pos + 1)
-      if (b3 != t) tokenError(t, pos + 2)
+      if (b3 != ':') tokenError(':', pos + 2)
       hour
-    } else parseHourWithByte(t, loadMoreOrError(pos))
+    } else parseHourWithColon(loadMoreOrError(pos))
 
   @tailrec
-  private[this] def parseMinuteWithByte(t: Byte, pos: Int): Int =
+  private[this] def parseMinuteWithColon(pos: Int): Int =
     if (pos + 2 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
@@ -911,9 +1810,9 @@ final class JsonReader private[jsoniter_scala](
       if (b1 < '0' || b1 > '9') digitError(pos)
       if (b2 < '0' || b2 > '9') digitError(pos + 1)
       if (b1 > '5') minuteError(pos + 1)
-      if (b3 != t) tokenError(t, pos + 2)
+      if (b3 != ':') tokenError(':', pos + 2)
       b1 * 10 + b2 - 528 // 528 == '0' * 11
-    } else parseMinuteWithByte(t, loadMoreOrError(pos))
+    } else parseMinuteWithColon(loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseMinute(pos: Int): Int =
@@ -940,31 +1839,6 @@ final class JsonReader private[jsoniter_scala](
       if (b1 > '5') secondError(pos + 1)
       b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else parseSecond(loadMoreOrError(pos))
-
-  private[this] def parseOptionalNanoWithByte(t: Byte): Int = {
-    var nano = 0
-    var b = nextByte(head)
-    if (b == '.') {
-      var nanoDigitWeight = 100000000
-      var pos = head
-      var buf = this.buf
-      while ({
-        if (pos >= tail) {
-          pos = loadMoreOrError(pos)
-          buf = this.buf
-        }
-        b = buf(pos)
-        pos += 1
-        b >= '0' && b <= '9' && nanoDigitWeight != 0
-      }) {
-        nano += (b - '0') * nanoDigitWeight
-        nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
-      }
-      head = pos
-      if (b != t) nanoError(nanoDigitWeight, t)
-    } else if (b != t) tokensError('.', t)
-    nano
-  }
 
   @tailrec
   private[this] def parseOffsetHour(pos: Int): Int =
@@ -1010,7 +1884,7 @@ final class JsonReader private[jsoniter_scala](
     } else parseOffsetSecond(loadMoreOrError(pos))
 
   @tailrec
-  private[this] def parseOffsetSecondWithByte(t: Byte, pos: Int): Int =
+  private[this] def parseOffsetSecondWithDoubleQuotes(pos: Int): Int =
     if (pos + 2 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
@@ -1020,77 +1894,46 @@ final class JsonReader private[jsoniter_scala](
       if (b1 < '0' || b1 > '9') digitError(pos)
       if (b2 < '0' || b2 > '9') digitError(pos + 1)
       if (b1 > '5') timezoneOffsetSecondError(pos + 1)
-      if (b3 != t) tokenError(t, pos + 2)
+      if (b3 != '"') tokenError('"', pos + 2)
       b1 * 10 + b2 - 528 // 528 == '0' * 11
-    } else parseOffsetSecondWithByte(t, loadMoreOrError(pos))
+    } else parseOffsetSecondWithDoubleQuotes(loadMoreOrError(pos))
 
-  private[this] def parseZoneIdWithByte(t: Byte): ZoneId = {
-    var from = head
+  private[this] def parseZoneId(): ZoneId = {
+    var pos = head
+    var buf = this.buf
+    var from = pos
     val oldMark = mark
     val newMark =
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    try {
-      var pos = from
-      var buf = this.buf
-      var hash, b = 0
-      while ({
-        if (pos >= tail) {
-          pos = loadMoreOrError(pos)
-          buf = this.buf
-        }
-        b = buf(pos)
-        b != t
-      }) {
-        hash = (hash << 5) - hash + b
-        pos += 1
+    var hash = 0
+    var b: Byte = 0
+    while ({
+      if (pos >= tail) {
+        pos = loadMoreOrError(pos)
+        buf = this.buf
       }
-      head = pos + 1
-      if (mark == 0) from -= newMark
-      val k = new Key(hash, buf, from, pos)
-      var zoneId = zoneIds.get(k)
-      if ((zoneId eq null) && {
-        zoneId = ZoneId.of(k.toString)
-        !zoneId.isInstanceOf[ZoneOffset] ||
-          (zoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0 // check if divisible by 900
-      }) zoneIds.put(k.copy, zoneId)
-      zoneId
-    } catch {
-      case ex: DateTimeException => timezoneError(ex)
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+      b = buf(pos)
+      pos += 1
+      b != '"'
+    }) hash = (hash << 5) - hash + b
+    if (mark == 0) from -= newMark
+    if (mark > oldMark) mark = oldMark
+    var k = zoneIdKey
+    if (k eq null) {
+      k = new Key
+      zoneIdKey = k
+    }
+    k.set(hash, buf, from, pos - 1)
+    var zoneId = zoneIds.get(k)
+    if (zoneId eq null) zoneId = toZoneId(k, pos)
+    head = pos
+    zoneId
   }
 
-  @tailrec
-  private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
-    if (pos + 2 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      head = pos + 3
-      if (b1 != 'u') decodeError(error, pos)
-      if (b2 != 'l') decodeError(error, pos + 1)
-      if (b3 != 'l') decodeError(error, pos + 2)
-      default
-    } else parseNullOrError(default, error, loadMoreOrError(pos))
-
-  @tailrec
-  private[this] def parseNullOrTokenError[@sp A](default: A, t: Byte, pos: Int): A =
-    if (pos + 2 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      head = pos + 3
-      if (b1 != 'u') tokenOrNullError(t, pos)
-      if (b2 != 'l') tokenOrNullError(t, pos + 1)
-      if (b3 != 'l') tokenOrNullError(t, pos + 2)
-      default
-    } else parseNullOrTokenError(default, t, loadMoreOrError(pos))
-
   private[this] def appendChar(ch: Char, i: Int): Int = {
-    if (i >= charBuf.length) growCharBuf(i + 1)
+    ensureCharBufCapacity(i + 1)
     charBuf(i) = ch
     i + 1
   }
@@ -1098,7 +1941,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def appendChars(cs: Array[Char], i: Int): Int = {
     val len = cs.length
     val required = i + len
-    if (required > charBuf.length) growCharBuf(required)
+    ensureCharBufCapacity(required)
     System.arraycopy(cs, 0, charBuf, i, len)
     required
   }
@@ -1106,7 +1949,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def appendString(s: String, i: Int): Int = {
     val len = s.length
     val required = i + len
-    if (required > charBuf.length) growCharBuf(required)
+    ensureCharBufCapacity(required)
     s.getChars(0, len, charBuf, i)
     required
   }
@@ -1114,7 +1957,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def prependString(s: String, i: Int): Int = {
     val len = s.length
     val required = i + len
-    if (required > charBuf.length) growCharBuf(required)
+    ensureCharBufCapacity(required)
     var i1 = required - 1
     var i2 = i1 - len
     while (i2 >= 0) {
@@ -1129,42 +1972,35 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseBoolean(isToken: Boolean, pos: Int): Boolean =
     if (pos + 3 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      if (b1 == 't') {
-        val b2 = buf(pos + 1)
-        val b3 = buf(pos + 2)
-        val b4 = buf(pos + 3)
+      val bs = ByteArrayAccess.getInt(buf, pos)
+      if (bs == 0x65757274) {
         head = pos + 4
-        if (b2 != 'r') booleanError(pos + 1)
-        if (b3 != 'u') booleanError(pos + 2)
-        if (b4 != 'e') booleanError(pos + 3)
         true
-      } else if (b1 == 'f') {
-        if (pos + 4 < tail) {
-          val b2 = buf(pos + 1)
-          val b3 = buf(pos + 2)
-          val b4 = buf(pos + 3)
-          val b5 = buf(pos + 4)
-          head = pos + 5
-          if (b2 != 'a') booleanError(pos + 1)
-          if (b3 != 'l') booleanError(pos + 2)
-          if (b4 != 's') booleanError(pos + 3)
-          if (b5 != 'e') booleanError(pos + 4)
-          false
-        } else parseBoolean(isToken, loadMoreOrError(pos))
-      } else if (isToken && (b1 == ' ' || b1 == '\n' || (b1 | 0x4) == '\r')) parseBoolean(isToken, pos + 1)
-      else booleanError(pos)
+      } else if (bs == 0x736C6166) {
+        if (nextByte(pos + 4) != 'e') booleanError(pos + 4)
+        false
+      } else if (isToken && {
+        val b1 = bs.toByte
+        b1 == ' ' || b1 == '\n' || (b1 | 0x4) == '\r'
+      }) parseBoolean(isToken, pos + 1)
+      else booleanError(bs, pos)
     } else parseBoolean(isToken, loadMoreOrError(pos))
+
+  private[this] def booleanError(bs: Int, pos: Int): Nothing =
+    booleanError((Math.max(java.lang.Integer.numberOfTrailingZeros(bs ^ 0x65757274),
+      java.lang.Integer.numberOfTrailingZeros(bs ^ 0x736C6166)) >> 3) + pos)
 
   private[this] def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
 
-  private[this] def parseByte(isToken: Boolean): Byte = {
+  def readByte(isToken: Boolean): Byte = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var s = 0
+    if (b == '-') {
+      b = nextByte(head)
+      s = -1
+    }
     if (b < '0' || b > '9') numberError()
     var x = b - '0'
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -1184,19 +2020,23 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       head = pos
+      x ^= s
+      x -= s
+      if (x == 128) byteOverflowError(pos - 1)
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-      if (isNeg) x = -x
-      else if (x == 128) byteOverflowError(pos - 1)
     }
     x.toByte
   }
 
-  private[this] def parseShort(isToken: Boolean): Short = {
+  def readShort(isToken: Boolean): Short = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var s = 0
+    if (b == '-') {
+      b = nextByte(head)
+      s = -1
+    }
     if (b < '0' || b > '9') numberError()
     var x = b - '0'
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -1216,19 +2056,23 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       head = pos
+      x ^= s
+      x -= s
+      if (x == 32768) shortOverflowError(pos - 1)
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-      if (isNeg) x = -x
-      else if (x == 32768) shortOverflowError(pos - 1)
     }
     x.toShort
   }
 
-  private[this] def parseInt(isToken: Boolean): Int = {
+  def readInt(isToken: Boolean): Int = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var s = -1
+    if (b == '-') {
+      b = nextByte(head)
+      s = 0
+    }
     if (b < '0' || b > '9') numberError()
     var x = '0' - b
     if (isToken && x == 0) ensureNotLeadingZero()
@@ -1250,27 +2094,47 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       head = pos
+      x ^= s
+      x -= s
+      if ((s & x) == -2147483648) intOverflowError(pos - 1)
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-      if (!isNeg) {
-        if (x == -2147483648) intOverflowError(pos - 1)
-        x = -x
-      }
     }
     x
   }
 
-  private[this] def parseLong(isToken: Boolean): Long = {
+  def readLong(isToken: Boolean): Long = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var s = -1L
+    if (b == '-') {
+      b = nextByte(head)
+      s = 0L
+    }
     if (b < '0' || b > '9') numberError()
-    var x: Long = '0' - b
+    var x = ('0' - b).toLong
     if (isToken && x == 0) ensureNotLeadingZero()
     else {
       var pos = head
       var buf = this.buf
+      var dec = 0L
+      while ((pos + 7 < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos + 7 < tail
+      }) && {
+        val bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        dec = bs - 0x3030303030303030L
+        ((bs + 0x4646464646464646L | dec) & 0x8080808080808080L) == 0
+      }) {
+        if (x < -92233720368L || {
+          dec *= 2561
+          x *= 100000000
+          x -= ((dec >> 8 & 0xFF000000FFL) * 4294967296000100L + (dec >> 24 & 0xFF000000FFL) * 42949672960001L >> 32)
+          x > 0
+        }) longOverflowError(pos + 2)
+        pos += 8
+      }
       while ((pos < tail || {
         pos = loadMore(pos)
         buf = this.buf
@@ -1286,11 +2150,10 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       head = pos
+      x ^= s
+      x -= s
+      if ((s & x) == -9223372036854775808L) longOverflowError(pos - 1)
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-      if (!isNeg) {
-        if (x == -9223372036854775808L) longOverflowError(pos - 1)
-        x = -x
-      }
     }
     x
   }
@@ -1306,12 +2169,15 @@ final class JsonReader private[jsoniter_scala](
     }) leadingZeroError(pos - 1)
   }
 
-  private[this] def parseDouble(isToken: Boolean): Double = {
+  def readDouble(isToken: Boolean): Double = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var pos = head
     var buf = this.buf
@@ -1321,140 +2187,149 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    try {
-      var posMant: Long = b - '0'
-      var exp = 0L
-      var digits = 1
-      if (isToken && posMant == 0) {
-        if ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) leadingZeroError(pos - 1)
-      } else {
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (posMant < 922337203685477580L) {
-            posMant = posMant * 10 + (b - '0')
-            digits += 1
-          } else exp += 1
-          pos += 1
-        }
-      }
-      if (b == '.') {
-        pos += 1
-        exp += digits
-        var noFracDigits = true
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (posMant < 922337203685477580L) {
-            posMant = posMant * 10 + (b - '0')
-            digits += 1
-          }
-          noFracDigits = false
-          pos += 1
-        }
-        exp -= digits
-        if (noFracDigits) numberError(pos)
-      }
-      if ((b | 0x20) == 'e') {
-        b = nextByte(pos + 1)
-        val isNegExp = b == '-'
-        if (isNegExp || b == '+') b = nextByte(head)
-        if (b < '0' || b > '9') numberError()
-        var posExp: Long = b - '0'
-        pos = head
+    var m10 = (b - '0').toLong
+    var e10 = 0
+    var digits = 1
+    if (isToken && m10 == 0) {
+      if ((pos < tail || {
+        pos = loadMore(pos)
         buf = this.buf
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (posExp < 92233720368547758L) posExp = posExp * 10 + (b - '0')
-          pos += 1
-        }
-        if (isNegExp) posExp = -posExp
-        exp += posExp
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) leadingZeroError(pos - 1)
+    } else {
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (m10 < 922337203685477580L) {
+          m10 = m10 * 10 + (b - '0')
+          digits += 1
+        } else e10 += 1
+        pos += 1
       }
-      head = pos
-      var x: Double =
-        if (exp == 0 && posMant < 922337203685477580L) posMant.toDouble
-        else if (posMant < 4503599627370496L && Math.abs(exp) <= 22) {
-          if (exp < 0) posMant / pow10Doubles(-exp.toInt)
-          else posMant * pow10Doubles(exp.toInt)
-        } else if (posMant < 4503599627370496L && exp > 22 && exp + digits <= 38) {
-          val pow10 = pow10Doubles
+    }
+    if (b == '.') {
+      pos += 1
+      e10 += digits
+      var noFracDigits = true
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (m10 < 922337203685477580L) {
+          m10 = m10 * 10 + (b - '0')
+          digits += 1
+        }
+        noFracDigits = false
+        pos += 1
+      }
+      e10 -= digits
+      if (noFracDigits) numberError(pos)
+    }
+    if ((b | 0x20) == 'e') {
+      b = nextByte(pos + 1)
+      var s = 0
+      if (b == '-' || b == '+') {
+        s = '+' - b >> 31
+        b = nextByte(head)
+      }
+      if (b < '0' || b > '9') numberError()
+      var exp = b - '0'
+      pos = head
+      buf = this.buf
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (exp < 214748364) exp = exp * 10 + (b - '0')
+        pos += 1
+      }
+      exp ^= s
+      exp -= s
+      e10 += exp
+    }
+    head = pos
+    var x: Double =
+      if (e10 == 0 && m10 < 922337203685477580L) m10.toDouble
+      else if (m10 < 4503599627370496L && e10 >= -22 && e10 <= 38 - digits) {
+        val pow10 = pow10Doubles
+        if (e10 < 0) m10 / pow10(-e10)
+        else if (e10 <= 22) m10 * pow10(e10)
+        else {
           val slop = 16 - digits
-          (posMant * pow10(slop)) * pow10(exp.toInt - slop)
-        } else toDouble(posMant, exp, from, newMark, pos)
-      if (isNeg) x = -x
-      x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+          (m10 * pow10(slop)) * pow10(e10 - slop)
+        }
+      } else toDouble(m10, e10, from, newMark, pos)
+    if (isNeg) x = -x
+    if (mark > oldMark) mark = oldMark
+    x
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toDouble(m: Long, e: Long, from: Int, newMark: Int, pos: Int): Double =
-    if (m == 0 || e < -343) 0.0
-    else if (e >= 310) Double.PositiveInfinity
+  private[this] def toDouble(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Double =
+    if (m10 == 0 || e10 < -343) 0.0
+    else if (e10 >= 310) Double.PositiveInfinity
     else {
-      var shift = java.lang.Long.numberOfLeadingZeros(m)
-      var mant = unsignedMultiplyHigh(m << shift, pow10Mantissas(e.toInt + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
-      var exp = addExp(-shift, e.toInt)
-      shift = java.lang.Long.numberOfLeadingZeros(mant)
-      mant <<= shift
-      exp -= shift
+      var shift = java.lang.Long.numberOfLeadingZeros(m10)
+      var m2 = unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
+      shift = java.lang.Long.numberOfLeadingZeros(m2)
+      m2 <<= shift
+      e2 -= shift
       val roundingError =
-        (if (m < 922337203685477580L) 2
-        else 20) << shift
-      val truncatedBitNum = Math.max(-1074 - exp, 11)
+        (if (m10 < 922337203685477580L) 1
+        else 19) << shift
+      val truncatedBitNum = Math.max(-1074 - e2, 11)
       val savedBitNum = 64 - truncatedBitNum
       val mask = -1L >>> Math.max(savedBitNum, 0)
-      val halfwayDiff = (mant & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) >= roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
-        if (savedBitNum <= 0) mant = 0
-        mant >>>= truncatedBitNum
-        exp += truncatedBitNum
+      val halfwayDiff = (m2 & mask) - (mask >>> 1)
+      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
+        if (savedBitNum <= 0) m2 = 0
+        m2 >>>= truncatedBitNum
+        e2 += truncatedBitNum
         if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mant == 0x001FFFFFFFFFFFFFL) {
-            mant = 0x0010000000000000L
-            exp += 1
-          } else mant += 1
+          if (m2 == 0x1FFFFFFFFFFFFFL) {
+            m2 = 0x10000000000000L
+            e2 += 1
+          } else m2 += 1
         }
-        if (exp == -1074) mant
-        else if (exp >= 972) 0x7FF0000000000000L
-        else (exp + 1075L) << 52 | mant & 0x000FFFFFFFFFFFFFL
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
-      }
+        if (e2 == -1074) m2
+        else if (e2 >= 972) 0x7FF0000000000000L
+        else (e2 + 1075).toLong << 52 | m2 & 0xFFFFFFFFFFFFFL
+      } else toDouble(from, newMark, pos)
     }
 
-  private[this] def parseFloat(isToken: Boolean): Float = {
+  private[this] def toDouble(from: Int, newMark: Int, pos: Int): Double = {
+    var offset = from
+    if (mark == 0) offset -= newMark
+    java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
+  }
+
+  def readFloat(isToken: Boolean): Float = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
     if (b < '0' || b > '9') numberError()
     var pos = head
     var buf = this.buf
@@ -1464,153 +2339,150 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    try {
-      var posMant: Long = b - '0'
-      var exp = 0L
-      var digits = 1
-      if (isToken && posMant == 0) {
-        if ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) leadingZeroError(pos - 1)
-      } else {
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (posMant < 922337203685477580L) {
-            posMant = posMant * 10 + (b - '0')
-            digits += 1
-          } else exp += 1
-          pos += 1
-        }
-      }
-      if (b == '.') {
-        pos += 1
-        exp += digits
-        var noFracDigits = true
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (posMant < 922337203685477580L) {
-            posMant = posMant * 10 + (b - '0')
-            digits += 1
-          }
-          noFracDigits = false
-          pos += 1
-        }
-        exp -= digits
-        if (noFracDigits) numberError(pos)
-      }
-      if ((b | 0x20) == 'e') {
-        b = nextByte(pos + 1)
-        val isNegExp = b == '-'
-        if (isNegExp || b == '+') b = nextByte(head)
-        if (b < '0' || b > '9') numberError()
-        var posExp: Long = b - '0'
-        pos = head
+    var m10 = (b - '0').toLong
+    var e10 = 0
+    var digits = 1
+    if (isToken && m10 == 0) {
+      if ((pos < tail || {
+        pos = loadMore(pos)
         buf = this.buf
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (posExp < 92233720368547758L) posExp = posExp * 10 + (b - '0')
-          pos += 1
-        }
-        if (isNegExp) posExp = -posExp
-        exp += posExp
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) leadingZeroError(pos - 1)
+    } else {
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (m10 < 922337203685477580L) {
+          m10 = m10 * 10 + (b - '0')
+          digits += 1
+        } else e10 += 1
+        pos += 1
       }
-      head = pos
-      var x: Float =
-        if (exp == 0 && posMant < 922337203685477580L) posMant.toFloat
-        else if (posMant < 4294967296L && exp >= digits - 23 && exp <= 19 - digits) {
-          (if (exp < 0) posMant / pow10Doubles(-exp.toInt)
-          else posMant * pow10Doubles(exp.toInt)).toFloat
-        } else toFloat(posMant, exp, from, newMark, pos)
-      if (isNeg) x = -x
-      x
-    } finally if (mark != 0 || oldMark < 0) mark = oldMark
+    }
+    if (b == '.') {
+      pos += 1
+      e10 += digits
+      var noFracDigits = true
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (m10 < 922337203685477580L) {
+          m10 = m10 * 10 + (b - '0')
+          digits += 1
+        }
+        noFracDigits = false
+        pos += 1
+      }
+      e10 -= digits
+      if (noFracDigits) numberError(pos)
+    }
+    if ((b | 0x20) == 'e') {
+      b = nextByte(pos + 1)
+      var s = 0
+      if (b == '-' || b == '+') {
+        s = '+' - b >> 31
+        b = nextByte(head)
+      }
+      if (b < '0' || b > '9') numberError()
+      var exp = b - '0'
+      pos = head
+      buf = this.buf
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (exp < 214748364) exp = exp * 10 + (b - '0')
+        pos += 1
+      }
+      exp ^= s
+      exp -= s
+      e10 += exp
+    }
+    head = pos
+    var x: Float =
+      if (e10 == 0 && m10 < 922337203685477580L) m10.toFloat
+      else if (m10 < 4294967296L && e10 >= digits - 23 && e10 <= 19 - digits) {
+        val pow10 = pow10Doubles
+        (if (e10 < 0) m10 / pow10(-e10)
+        else m10 * pow10(e10)).toFloat
+      } else toFloat(m10, e10, from, newMark, pos)
+    if (isNeg) x = -x
+    if (mark > oldMark) mark = oldMark
+    x
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toFloat(m: Long, e: Long, from: Int, newMark: Int, pos: Int): Float =
-    if (m == 0 || e < -64) 0.0f
-    else if (e >= 39) Float.PositiveInfinity
+  private[this] def toFloat(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Float =
+    if (m10 == 0 || e10 < -64) 0.0f
+    else if (e10 >= 39) Float.PositiveInfinity
     else {
-      var shift = java.lang.Long.numberOfLeadingZeros(m)
-      var mant = unsignedMultiplyHigh(m << shift, pow10Mantissas(e.toInt + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
-      var exp = addExp(-shift, e.toInt)
-      shift = java.lang.Long.numberOfLeadingZeros(mant)
-      mant <<= shift
-      exp -= shift
+      var shift = java.lang.Long.numberOfLeadingZeros(m10)
+      var m2 = unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
+      shift = java.lang.Long.numberOfLeadingZeros(m2)
+      m2 <<= shift
+      e2 -= shift
       val roundingError =
-        (if (m < 922337203685477580L) 2
-        else 20) << shift
-      val truncatedBitNum = Math.max(-149 - exp, 40)
+        (if (m10 < 922337203685477580L) 1
+        else 19) << shift
+      val truncatedBitNum = Math.max(-149 - e2, 40)
       val savedBitNum = 64 - truncatedBitNum
       val mask = -1L >>> Math.max(savedBitNum, 0)
-      val halfwayDiff = (mant & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) >= roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
-        if (savedBitNum <= 0) mant = 0
-        mant >>>= truncatedBitNum
-        exp += truncatedBitNum
+      val halfwayDiff = (m2 & mask) - (mask >>> 1)
+      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
+        var mf = 0
+        if (savedBitNum > 0) mf = (m2 >>> truncatedBitNum).toInt
+        e2 += truncatedBitNum
         if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mant == 0x00FFFFFF) {
-            mant = 0x00800000
-            exp += 1
-          } else mant += 1
+          if (mf == 0xFFFFFF) {
+            mf = 0x800000
+            e2 += 1
+          } else mf += 1
         }
-        if (exp == -149) mant.toInt
-        else if (exp >= 105) 0x7F800000
-        else (exp + 150) << 23 | mant.toInt & 0x007FFFFF
-      } else {
-        var offset = from
-        if (mark == 0) offset -= newMark
-        java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
-      }
+        if (e2 == -149) mf
+        else if (e2 >= 105) 0x7F800000
+        else e2 + 150 << 23 | mf & 0x7FFFFF
+      } else toFloat(from, newMark, pos)
     }
 
-  // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
-  // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
-  // https://doc.lagout.org/security/Hackers%20Delight.pdf
-  private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long = { // FIXME: Use Math.multiplyHigh(x, y) + ((x >> 63) & y) + ((y >> 63) & x) after dropping of JDK 8 support
-    val xl = x & 0xFFFFFFFFL
-    val xh = x >>> 32
-    val yl = y & 0xFFFFFFFFL
-    val yh = y >>> 32
-    val t = xh * yl + (xl * yl >>> 32)
-    xh * yh + (t >>> 32) + (xl * yh + (t & 0xFFFFFFFFL) >>> 32)
+  private[this] def toFloat(from: Int, newMark: Int, pos: Int): Float = {
+    var offset = from
+    if (mark == 0) offset -= newMark
+    java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
   }
 
-  private[this] def addExp(e2: Int, e10: Int): Int =
-    (e10 * 108853 >> 15) + e2 + 1 // (e10 * Math.log(10) / Math.log(2)).toInt + e2 + 1
+  private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
+    Math.multiplyHigh(x, y) + x + y // Use implementation that works only when both params are negative
 
-  private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
+  def readBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
     if (isToken && b == 'n') readNullOrNumberError(default, head)
     else {
-      val isNeg = b == '-'
-      if (isNeg) b = nextByte(head)
+      var s = 0
+      if (b == '-') {
+        b = nextByte(head)
+        s = -1
+      }
       if (b < '0' || b > '9') numberError()
       if (isToken && b == '0') {
         ensureNotLeadingZero()
@@ -1624,7 +2496,17 @@ final class JsonReader private[jsoniter_scala](
           if (oldMark < 0) from
           else oldMark
         mark = newMark
-        try {
+        var m, bs = 0L
+        while ((pos + 7 < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos + 7 < tail
+        }) && {
+          bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+          m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
+          m == 0
+        }) pos += 8
+        if (m == 0) {
           while ((pos < tail || {
             pos = loadMore(pos)
             buf = this.buf
@@ -1633,25 +2515,53 @@ final class JsonReader private[jsoniter_scala](
             b = buf(pos)
             b >= '0' && b <= '9'
           }) pos += 1
-          head = pos
-          if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-          if (mark == 0) from -= newMark
-          if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
-          new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
-        } finally if (mark != 0 || oldMark < 0) mark = oldMark
+        } else {
+          val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+          pos += offset
+          b = (bs >> (offset << 3)).toByte
+        }
+        head = pos
+        if (mark == 0) from -= newMark
+        if (mark > oldMark) mark = oldMark
+        val len = pos - from
+        if (len >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
+        if ((b | 0x20) == 'e' || b == '.') numberError(pos)
+        if (len < 19) {
+          var x = (buf(from) - '0').toLong
+          from += 1
+          while (from < pos) {
+            x = x * 10 + (buf(from) - '0')
+            from += 1
+          }
+          BigInt((x ^ s) - s)
+        } else if (len <= 36) toBigInt36(buf, from, pos, s)
+        else new BigInt({
+          if (len <= 308) toBigInteger308(buf, from, pos, s)
+          else {
+            // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing huge numbers
+            // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
+            // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+            val mid = len >> 1
+            val midPos = pos - mid
+            toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, pos, s, 0)).unscaledValue()
+          }
+        })
       }
     }
   }
 
-  private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal, mc: MathContext, scaleLimit: Int,
-                                    digitsLimit: Int): BigDecimal = {
+  def readBigDecimal(isToken: Boolean, default: BigDecimal, mc: MathContext, scaleLimit: Int,
+                     digitsLimit: Int): BigDecimal = {
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
     if (isToken && b == 'n') readNullOrNumberError(default, head)
     else {
-      val isNeg = b == '-'
-      if (isNeg) b = nextByte(head)
+      var s = 0
+      if (b == '-') {
+        b = nextByte(head)
+        s = -1
+      }
       if (b < '0' || b > '9') numberError()
       var pos = head
       var buf = this.buf
@@ -1661,19 +2571,31 @@ final class JsonReader private[jsoniter_scala](
         if (oldMark < 0) from
         else oldMark
       mark = newMark
-      try {
-        var digits = 1
-        if (isToken && b == '0') {
-          if ((pos < tail || {
-            pos = loadMore(pos)
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) leadingZeroError(pos - 1)
-        } else {
+      var digits = 1
+      if (isToken && b == '0') {
+        if ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) leadingZeroError(pos - 1)
+      } else {
+        digits -= pos
+        var m, bs = 0L
+        while ((pos + 7 < tail || {
+          digits += pos
+          pos = loadMore(pos)
           digits -= pos
+          buf = this.buf
+          pos + 7 < tail
+        }) && {
+          bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+          m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
+          m == 0
+        }) pos += 8
+        if (m == 0) {
           while ((pos < tail || {
             digits += pos
             pos = loadMore(pos)
@@ -1684,13 +2606,31 @@ final class JsonReader private[jsoniter_scala](
             b = buf(pos)
             b >= '0' && b <= '9'
           }) pos += 1
-          digits += pos
+        } else {
+          val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+          pos += offset
+          b = (bs >> (offset << 3)).toByte
         }
-        var fracLen, scale = 0
-        if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
-        if (b == '.') {
-          pos += 1
+        digits += pos
+      }
+      var fracLen, scale = 0
+      if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
+      if (b == '.') {
+        pos += 1
+        fracLen -= pos
+        var m, bs = 0L
+        while ((pos + 7 < tail || {
+          fracLen += pos
+          pos = loadMore(pos)
           fracLen -= pos
+          buf = this.buf
+          pos + 7 < tail
+        }) && {
+          bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+          m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
+          m == 0
+        }) pos += 8
+        if (m == 0) {
           while ((pos < tail || {
             fracLen += pos
             pos = loadMore(pos)
@@ -1701,172 +2641,229 @@ final class JsonReader private[jsoniter_scala](
             b = buf(pos)
             b >= '0' && b <= '9'
           }) pos += 1
-          fracLen += pos
-          digits += fracLen
-          if (fracLen == 0) numberError(pos)
-          if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
+        } else {
+          val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+          pos += offset
+          b = (bs >> (offset << 3)).toByte
         }
-        if ((b | 0x20) == 'e') {
-          b = nextByte(pos + 1)
-          val isNegExp = b == '-'
-          if (isNegExp || b == '+') b = nextByte(head)
-          if (b < '0' || b > '9') numberError()
-          var exp: Long = b - '0'
-          pos = head
+        fracLen += pos
+        digits += fracLen
+        if (fracLen == 0) numberError(pos)
+        if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
+      }
+      if ((b | 0x20) == 'e') {
+        b = nextByte(pos + 1)
+        var ss = 0
+        if (b == '-' || b == '+') {
+          ss = '+' - b >> 31
+          b = nextByte(head)
+        }
+        if (b < '0' || b > '9') numberError()
+        scale = '0' - b
+        pos = head
+        buf = this.buf
+        while ((pos < tail || {
+          pos = loadMore(pos)
           buf = this.buf
-          while ((pos < tail || {
-            pos = loadMore(pos)
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) {
-            exp = exp * 10 + (b - '0')
-            if (exp > 2147483648L) numberError(pos)
-            pos += 1
-          }
-          scale =
-            if (isNegExp) exp.toInt
-            else if (exp == 2147483648L) numberError(pos - 1)
-            else -exp.toInt
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) {
+          if (scale < -214748364 || {
+            scale = scale * 10 + ('0' - b)
+            scale > 0
+          }) numberError(pos)
+          pos += 1
         }
-        head = pos
-        if (mark == 0) from -= newMark
-        var x =
-          if (fracLen != 0) {
-            val limit = from + digits + 1
-            val fracPos = limit - fracLen
-            val fracLimit = fracPos - 1
-            if (digits < 19) {
-              var x: Long = buf(from) - '0'
+        scale ^= ss
+        scale -= ss
+        if (scale == -2147483648) numberError(pos - 1)
+      }
+      head = pos
+      if (mark == 0) from -= newMark
+      if (mark > oldMark) mark = oldMark
+      var d =
+        if (fracLen != 0) {
+          val limit = from + digits + 1
+          val fracPos = limit - fracLen
+          val fracLimit = fracPos - 1
+          if (digits < 19) {
+            var x = (buf(from) - '0').toLong
+            from += 1
+            while (from < fracLimit) {
+              x = x * 10 + (buf(from) - '0')
               from += 1
-              while (from < fracLimit) {
-                x = x * 10 + (buf(from) - '0')
-                from += 1
-              }
+            }
+            from += 1
+            while (from < limit) {
+              x = x * 10 + (buf(from) - '0')
               from += 1
-              while (from < limit) {
-                x = x * 10 + (buf(from) - '0')
-                from += 1
-              }
-              if (isNeg) x = -x
-              java.math.BigDecimal.valueOf(x, scale + fracLen)
-            } else toBigDecimal(buf, from, fracLimit, isNeg, scale)
-              .add(toBigDecimal(buf, fracPos, limit, isNeg, scale + fracLen))
-          } else toBigDecimal(buf, from, from + digits, isNeg, scale)
-        if (digits > mc.getPrecision) x = x.plus(mc)
-        if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
-        new BigDecimal(x, mc)
-      } finally if (mark != 0 || oldMark < 0) mark = oldMark
+            }
+            java.math.BigDecimal.valueOf((x ^ s) - s, scale + fracLen)
+          } else toBigDecimal(buf, from, fracLimit, s, scale).add(toBigDecimal(buf, fracPos, limit, s, scale + fracLen))
+        } else toBigDecimal(buf, from, from + digits, s, scale)
+      if (mc.getPrecision < digits) d = d.plus(mc)
+      if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
+      new BigDecimal(d, mc)
     }
   }
 
-  // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
-  // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK 8/11:
-  // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
-  private[this] def toBigDecimal(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
-                                 scale: Int): java.math.BigDecimal = {
-    val len = limit - offset
+  private[this] def toBigDecimal(buf: Array[Byte], p: Int, limit: Int, s: Int, scale: Int): java.math.BigDecimal = {
+    val len = limit - p
     if (len < 19) {
-      var pos = offset
-      var x: Long = buf(pos) - '0'
+      var pos = p
+      var x = (buf(pos) - '0').toLong
       pos += 1
       while (pos < limit) {
         x = x * 10 + (buf(pos) - '0')
         pos += 1
       }
-      if (isNeg) x = -x
-      java.math.BigDecimal.valueOf(x, scale)
-    } else if (len < 37) toBigDecimal37(buf, offset, limit, isNeg, scale)
-    else if (len < 300) toBigDecimal300(buf, offset, limit, isNeg, scale)
+      java.math.BigDecimal.valueOf((x ^ s) - s, scale)
+    } else if (len <= 36) toBigDecimal36(buf, p, limit, s, scale)
+    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, limit, s), scale)
     else {
+      // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
+      // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
+      // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
       val mid = len >> 1
       val midPos = limit - mid
-      toBigDecimal(buf, offset, midPos, isNeg, scale - mid).add(toBigDecimal(buf, midPos, limit, isNeg, scale))
+      toBigDecimal(buf, p, midPos, s, scale - mid).add(toBigDecimal(buf, midPos, limit, s, scale))
     }
   }
 
-  private[this] def toBigDecimal37(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
-                                   scale: Int): java.math.BigDecimal = {
+  private[this] def toBigInt36(buf: Array[Byte], p: Int, limit: Int, s: Int): BigInt = {
     val firstBlockLimit = limit - 18
-    var pos = offset
-    var x1: Long = buf(pos) - '0'
+    var pos = p
+    var x1 = (buf(pos) - '0').toLong
     pos += 1
     while (pos < firstBlockLimit) {
       x1 = x1 * 10 + (buf(pos) - '0')
       pos += 1
     }
-    var x2 =
-      (buf(pos) * 10 + buf(pos + 1)) * 10000000000000000L +
-        ((buf(pos + 2) * 10 + buf(pos + 3)) * 1000000 +
-          (buf(pos + 4) * 10 + buf(pos + 5)) * 10000 +
-          (buf(pos + 6) * 10 + buf(pos + 7)) * 100 +
-          (buf(pos + 8) * 10 + buf(pos + 9))) * 100000000L +
-        ((buf(pos + 10) * 10 + buf(pos + 11)) * 1000000 +
-          (buf(pos + 12) * 10 + buf(pos + 13)) * 10000 +
-          (buf(pos + 14) * 10 + buf(pos + 15)) * 100 +
-          buf(pos + 16) * 10 + buf(pos + 17)) - 5333333333333333328L // 5333333333333333328L == '0' * 111111111111111111L
-    if (isNeg) {
-      x1 = -x1
-      x2 = -x2
+    val x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+      val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 8)) * 1000000000 + {
+      val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 17) - 48000000048L
+    val q = x1 * 1000000000000000000L
+    val l = q + x2
+    val h = Math.multiplyHigh(x1, 1000000000000000000L) + ((~l & q) >>> 63)
+    if (l >= 0 && h == 0) BigInt((l ^ s) - s)
+    else {
+      var magnitude = this.magnitude
+      if (magnitude eq null) {
+        magnitude = new Array[Byte](128)
+        this.magnitude = magnitude
+      }
+      ByteArrayAccess.setLongReversed(magnitude, 0, h)
+      ByteArrayAccess.setLongReversed(magnitude, 8, l)
+      new BigInt(new java.math.BigInteger(s | 1, magnitude, 0, 16))
     }
-    java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
-  private[this] def toBigDecimal300(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
-                                    scale: Int): java.math.BigDecimal = {
-    val len = limit - offset
+  private[this] def toBigDecimal36(buf: Array[Byte], p: Int, limit: Int, s: Int, scale: Int): java.math.BigDecimal = {
+    val firstBlockLimit = limit - 18
+    var pos = p
+    var x1 = (buf(pos) - '0').toLong
+    pos += 1
+    while (pos < firstBlockLimit) {
+      x1 = x1 * 10 + (buf(pos) - '0')
+      pos += 1
+    }
+    val x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+      val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 8)) * 1000000000 + {
+      val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 17) - 48000000048L
+    val q = x1 * 1000000000000000000L
+    val l = q + x2
+    val h = Math.multiplyHigh(x1, 1000000000000000000L) + ((~l & q) >>> 63)
+    if (l >= 0 && h == 0) java.math.BigDecimal.valueOf((l ^ s) - s, scale)
+    else {
+      var magnitude = this.magnitude
+      if (magnitude eq null) {
+        magnitude = new Array[Byte](128)
+        this.magnitude = magnitude
+      }
+      ByteArrayAccess.setLongReversed(magnitude, 0, h)
+      ByteArrayAccess.setLongReversed(magnitude, 8, l)
+      new java.math.BigDecimal(new java.math.BigInteger(s | 1, magnitude, 0, 16), scale)
+    }
+  }
+
+  private[this] def toBigInteger308(buf: Array[Byte], p: Int, limit: Int, s: Int): java.math.BigInteger = {
+    val len = limit - p
+    val last = (len * 222930821L >> 32).toInt << 3 // (len * Math.log(10) / Math.log(1L << 64)).toInt * 8
+    var magnitude = this.magnitude
+    if (magnitude eq null) {
+      magnitude = new Array[Byte](128)
+      this.magnitude = magnitude
+    } else {
+      var i = 0
+      while (i < last) {
+        ByteArrayAccess.setLong(magnitude, i, 0L)
+        i += 8
+      }
+    }
     var x = 0L
-    val lenD9 = (len * 954437177L >> 33).toInt // divide a positive number by 9
-    val firstBlockLimit = len - (lenD9 << 3) - lenD9 + offset // len % 9 + offset
-    var pos = offset
+    val firstBlockLimit = len % 18 + p
+    var pos = p
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val lastWord = ((len * 445861642L) >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
-    var firstWord = lastWord
-    val numWords = lastWord + 1
-    val magWords = new Array[Int](numWords)
-    magWords(lastWord) = x.toInt
+    ByteArrayAccess.setLong(magnitude, last, x)
+    var first = last
     while (pos < limit) {
-      x =
-        (buf(pos) * 10 + buf(pos + 1)) * 10000000L +
-          ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
-            (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
-            (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
-            buf(pos + 8)) - 5333333328L // 5333333328L == '0' * 111111111L
-      firstWord = Math.max(firstWord - 1, 0)
-      var i = lastWord
-      while (i >= firstWord) {
-        val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
-        magWords(i) = p.toInt
-        x = p >>> 32
-        i -= 1
+      x = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+        (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+      } + buf(pos + 8)) * 1000000000 + {
+        val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+        (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+      } + buf(pos + 17) - 48000000048L
+      pos += 18
+      first = Math.max(first - 8, 0)
+      var i = last
+      val q = 1000000000000000000L
+      var m, mq = 0L
+      while ({
+        m = ByteArrayAccess.getLong(magnitude, i)
+        mq = m * q
+        x += mq
+        ByteArrayAccess.setLong(magnitude, i, x)
+        i -= 8
+        i >= first
+      }) {
+        x = (~x & mq) >>> 63
+        x += Math.multiplyHigh(m, q)
+        x += m >> 63 & q
       }
-      pos += 9
     }
-    val magBytes = new Array[Byte](numWords << 2)
     var i = 0
-    while (i < numWords) {
-      val w = magWords(i)
-      val j = i << 2
-      magBytes(j) = (w >> 24).toByte
-      magBytes(j + 1) = (w >> 16).toByte
-      magBytes(j + 2) = (w >> 8).toByte
-      magBytes(j + 3) = w.toByte
-      i += 1
+    while (i <= last) {
+      ByteArrayAccess.setLongReversed(magnitude, i, ByteArrayAccess.getLong(magnitude, i))
+      i += 8
     }
-    val signum =
-      if (isNeg) -1
-      else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale) // FIXME: Use cached arrays with the constructor that has an offset and a len params after dropping of JDK 8 support
+    new java.math.BigInteger(s | 1, magnitude, 0, last + 8)
   }
 
+  @tailrec
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
-    if (default != null) parseNullOrError(default, "expected number or null", pos)
-    else numberError(pos - 1)
+    if (default != null) {
+      if (pos + 2 < tail) {
+        val bs = ByteArrayAccess.getInt(buf, pos - 1)
+        if (bs == 0x6C6C756E) {
+          head = pos + 3
+          default
+        } else decodeError("expected number or null", bs, pos)
+      } else readNullOrNumberError(default, loadMoreOrError(pos - 1) + 1)
+    } else numberError(pos - 1)
 
   private[this] def numberError(pos: Int = head - 1): Nothing = decodeError("illegal number", pos)
 
@@ -1884,28 +2881,36 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
+  private[this] def decodeError(msg: String, bs: Int, pos: Int): Nothing =
+    decodeError(msg, (java.lang.Integer.numberOfTrailingZeros(bs ^ 0x6C6C756E) >> 3) + pos - 1)
+
+  private[this] def tokenOrNullError(t: Byte, bs: Int, pos: Int): Nothing =
+    tokenOrNullError(t, (java.lang.Integer.numberOfTrailingZeros(bs ^ 0x6C6C756E) >> 3) + pos - 1)
+
   private[this] def parseDuration(): Duration = {
-    var seconds = 0L
-    var nanos, state = 0
     var b = nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
-    if (b != 'P') durationOrPeriodStartError(isNeg)
+    var s = 0L
+    if (b == '-') {
+      b = nextByte(head)
+      s = ~s
+    }
+    if (b != 'P') durationOrPeriodStartError(s.toInt)
     b = nextByte(head)
+    var state = -1
+    if (b == 'T') {
+      b = nextByte(head)
+      state = 0
+    }
+    var seconds = 0L
+    var nano = 0
     while ({
-      if (state == 0) {
-        if (b == 'T') {
-          b = nextByte(head)
-          state = 1
-        }
-      } else if (state == 1) {
-        if (b != 'T') tokensError('T', '"')
+      var sx = s
+      if (b == '-') {
         b = nextByte(head)
-      } else if (state == 4) tokenError('"')
-      val isNegX = b == '-'
-      if (isNegX) b = nextByte(head)
-      if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 1)
-      var x: Long = '0' - b
+        sx = ~sx
+      }
+      if (b < '0' || b > '9') durationOrPeriodDigitError(s.toInt, sx.toInt, state)
+      var x = ('0' - b).toLong
       var pos = head
       var buf = this.buf
       while ((pos < tail || {
@@ -1922,52 +2927,74 @@ final class JsonReader private[jsoniter_scala](
         }) durationError(pos)
         pos += 1
       }
-      if (!(isNeg ^ isNegX)) {
-        if (x == -9223372036854775808L) durationError(pos)
-        x = -x
-      }
-      if (b == 'D' && state <= 0) {
-        if (x < -106751991167300L || x > 106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
-        seconds = x * 86400
+      if (b == 'D' && state < 0) {
+        if (x < -106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
+        seconds = (sx - (x ^ sx)) * 86400
+        state = 0
+      } else if (b == 'H' && state <= 0) {
+        if (x < -2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
+        seconds = sumSeconds((sx - (x ^ sx)) * 3600, seconds, pos)
         state = 1
-      } else if (b == 'H' && state <= 1) {
-        if (x < -2562047788015215L || x > 2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
-        seconds = sumSeconds(x * 3600, seconds, pos)
+      } else if (b == 'M' && state <= 1) {
+        if (x < -153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
+        seconds = sumSeconds((sx - (x ^ sx)) * 60, seconds, pos)
         state = 2
-      } else if (b == 'M' && state <= 2) {
-        if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
-        seconds = sumSeconds(x * 60, seconds, pos)
+      } else if (b == 'S' || b == '.') {
+        if ((x | sx) == -9223372036854775808L) durationError(pos)
+        seconds = sumSeconds(sx - (x ^ sx), seconds, pos)
         state = 3
-      } else if (b == '.') {
-        pos += 1
-        seconds = sumSeconds(x, seconds, pos)
-        var nanoDigitWeight = 100000000
-        while ({
-          if (pos >= tail) {
-            pos = loadMoreOrError(pos)
-            buf = this.buf
-          }
-          b = buf(pos)
-          b >= '0' && b <= '9' && nanoDigitWeight != 0
-        }) {
-          nanos += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+        if (b == '.') {
           pos += 1
+          var nanoDigitWeight = 100000000
+          var bs = 0
+          if (pos + 9 < tail && {
+            bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+            ((bs + 0x767676 | bs) & 0x808080) == 0
+          } && {
+            nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+            pos += 3
+            bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+            nanoDigitWeight = 100000
+            ((bs + 0x767676 | bs) & 0x808080) == 0
+          } && {
+            nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+            pos += 3
+            bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+            nanoDigitWeight = 100
+            ((bs + 0x767676 | bs) & 0x808080) == 0
+          }) {
+            nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+            pos += 3
+            b = (bs >> 24).toByte
+            nanoDigitWeight = 0
+          } else {
+            while ({
+              if (pos >= tail) {
+                pos = loadMoreOrError(pos)
+                buf = this.buf
+              }
+              b = buf(pos)
+              (b >= '0' && b <= '9') && nanoDigitWeight != 0
+            }) {
+              nano += (b - '0') * nanoDigitWeight
+              nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+              pos += 1
+            }
+          }
+          if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
+          nano = ((nano ^ sx) - sx).toInt
         }
-        if (b != 'S') {
-          head = pos + 1
-          nanoError(nanoDigitWeight, 'S')
-        }
-        if (isNeg ^ isNegX) nanos = -nanos
-        state = 4
-      } else if (b == 'S') {
-        seconds = sumSeconds(x, seconds, pos)
-        state = 4
       } else durationError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
-    }) ()
-    Duration.ofSeconds(seconds, nanos)
+    }) {
+      if (state == 0) {
+        if (b != 'T') tokensError('T', '"')
+        b = nextByte(head)
+      } else if (state == 3) tokenError('"')
+    }
+    if (nano == 0) Duration.ofSeconds(seconds)
+    else Duration.ofSeconds(seconds, nano.toLong)
   }
 
   private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
@@ -1977,97 +3004,362 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseInstant(): Instant = {
-    val year = parseYearWithByte('-', 10, head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinuteWithByte(':', head)
-    val second = parseSecond(head)
-    val nano = parseOptionalNanoWithByte('Z')
-    nextByteOrError('"', head)
-    val epochDay = epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
-    Instant.ofEpochSecond(epochDay * 86400 + (hour * 3600 + minute * 60 + second), nano) // 86400 == seconds per day
+    val year = parseInstantYearWithDash(head)
+    val monthDay = parseMonthDayWithT(year, head)
+    var epochSecond = epochDay(year, monthDay.toByte.toInt, monthDay >> 24) * 86400 // 86400 == seconds per day
+    var pos = head
+    var buf = this.buf
+    var secondOfDay = 0L
+    var b: Byte = 0
+    if (pos + 8 < tail && {
+      secondOfDay = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
+      ((secondOfDay + 0x767A00767A00767DL | secondOfDay) & 0x8080FF8080FF8080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        secondOfDay *= 2561 // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+        secondOfDay = ((secondOfDay & 0x3F00001F00L) * 1979120931962880L >>> 47) + (secondOfDay >> 56)
+        secondOfDay < 86400
+      }
+    }) {
+      b = buf(pos + 8)
+      pos += 9
+    } else {
+      secondOfDay = parseSecondOfDay(pos)
+      b = nextByte(head)
+      pos = head
+      buf = this.buf
+    }
+    epochSecond += secondOfDay
+    var nano = 0
+    var nanoDigitWeight = -2
+    if (b == '.') {
+      nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
+      }
+    }
+    if (b == 'Z') nextByteOrError('"', pos)
+    else if (b == '-' || b == '+') {
+      var offsetTotal = 0
+      if (pos + 7 < tail && {
+        val bs = ByteArrayAccess.getLong(buf, pos)
+        offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+        (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+      }) head = pos + 6
+      else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+      if (b == '-') epochSecond += offsetTotal
+      else epochSecond -= offsetTotal
+    } else timeError(nanoDigitWeight, pos - 1)
+    if (nano == 0) Instant.ofEpochSecond(epochSecond)
+    else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
 
+  private[this] def parseSecondOfDay(pos: Int): Long =
+    (parseHourWithColon(pos) * 3600 + parseMinuteWithColon(head) * 60 + parseSecond(head)).toLong
+
   private[this] def parseLocalDate(): LocalDate = {
-    val year = parseYearWithByte('-', 9, head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, '"', head)
+    val year = parseYearWithByte('-', head)
+    var month, day = 0
+    val pos = head
+    if (pos + 7 < tail && {
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      (bs + 0x60C00060EL & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && (bs & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && { // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+        val monthDay = ((bs & 0xF03000F01L) * 2561 >> 8).toInt
+        month = monthDay.toByte.toInt
+        day = monthDay >> 24
+        (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
+      }
+    }) head = pos + 6
+    else {
+      month = parseMonthWithByte('-', pos)
+      day = parseDayWithByte(year, month, '"', head)
+    }
     LocalDate.of(year, month, day)
   }
 
   private[this] def parseLocalDateTime(): LocalDateTime = {
-    val year = parseYearWithByte('-', 9, head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
-    var second, nano = 0
-    val b = nextByte(head)
-    if (b == ':') {
-      second = parseSecond(head)
-      nano = parseOptionalNanoWithByte('"')
-    } else if (b != '"') tokensError(':', '"')
-    LocalDateTime.of(year, month, day, hour, minute, second, nano)
+    val year = parseYearWithByte('-', head)
+    val monthDay = parseMonthDayWithT(year, head)
+    var pos = head
+    var buf = this.buf
+    var hour, minute, second = 0
+    var b: Byte = 0
+    if (pos + 8 < tail && {
+      var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        pos += 8
+        second = (dec >> 56).toInt
+        hour < 24
+      } || m << 16 == 0xE800000000000000L && {
+        pos += 5
+        hour < 24
+      }
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
+      hour = parseHourWithColon(head)
+      minute = parseMinute(head)
+      b = nextByte(head)
+      if (b == ':') {
+        second = parseSecond(head)
+        b = nextByte(head)
+      } else if (b != '"') tokensError(':', '"')
+      pos = head
+      buf = this.buf
+    }
+    var nano = 0
+    if (b == '.') {
+      var nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
+      }
+      if (b != '"') nanoError(nanoDigitWeight, '"', pos - 1)
+    } else if (b != '"') tokensError('.', '"', pos - 1)
+    head = pos
+    LocalDateTime.of(year, monthDay.toByte.toInt, monthDay >> 24, hour, minute, second, nano)
   }
 
   private[this] def parseLocalTime(): LocalTime = {
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
-    var second, nano = 0
-    val b = nextByte(head)
-    if (b == ':') {
-      second = parseSecond(head)
-      nano = parseOptionalNanoWithByte('"')
-    } else if (b != '"') tokensError(':', '"')
+    var pos = head
+    var buf = this.buf
+    var hour, minute, second = 0
+    var b: Byte = 0
+    if (pos + 8 < tail && {
+      var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        pos += 8
+        second = (dec >> 56).toInt
+        hour < 24
+      } || m << 16 == 0xE800000000000000L && {
+        pos += 5
+        hour < 24
+      }
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
+      hour = parseHourWithColon(head)
+      minute = parseMinute(head)
+      b = nextByte(head)
+      if (b == ':') {
+        second = parseSecond(head)
+        b = nextByte(head)
+      } else if (b != '"') tokensError(':', '"')
+      pos = head
+      buf = this.buf
+    }
+    var nano = 0
+    if (b == '.') {
+      var nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
+        }
+      }
+      if (b != '"') nanoError(nanoDigitWeight, '"', pos - 1)
+    } else if (b != '"') tokensError('.', '"', pos - 1)
+    head = pos
     LocalTime.of(hour, minute, second, nano)
   }
 
   @tailrec
   private[this] def parseMonthDay(pos: Int): MonthDay =
     if (pos + 7 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      val b4 = buf(pos + 3)
-      val month = b3 * 10 + b4 - 528 // 528 == '0' * 11
-      val b5 = buf(pos + 4)
-      val b6 = buf(pos + 5)
-      val b7 = buf(pos + 6)
-      val b8 = buf(pos + 7)
-      val day = b6 * 10 + b7 - 528 // 528 == '0' * 11
+      val bs = ByteArrayAccess.getLong(buf, pos) - 0x2230302D30302D2DL
+      val monthDay = (bs * 2561 >> 24).toInt
+      val month = monthDay.toByte.toInt
+      val day = monthDay >> 24
       head = pos + 8
-      if (b1 != '-') tokenError('-', pos)
-      if (b2 != '-') tokenError('-', pos + 1)
-      if (b3 < '0' || b3 > '9') digitError(pos + 2)
-      if (b4 < '0' || b4 > '9') digitError(pos + 3)
+      if (((bs + 0x767C00767E0000L | bs) & 0xFF8080FF8080FFFFL) != 0) monthDayError(pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
       if (month < 1 || month > 12) monthError(pos + 3)
-      if (b5 != '-') tokenError('-', pos + 4)
-      if (b6 < '0' || b6 > '9') digitError(pos + 5)
-      if (b7 < '0' || b7 > '9') digitError(pos + 6)
       if (day == 0 || (day > 28 && day > maxDayForMonth(month))) dayError(pos + 6)
-      if (b8 != '"') tokenError('"', pos + 7)
       MonthDay.of(month, day)
     } else parseMonthDay(loadMoreOrError(pos))
 
+  private[this] def parseMonthDayWithT(year: Int, pos: Int): Int = {
+    var monthDay = 0
+    if (pos + 7 < tail && {
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      (bs + 0x60C00060EL & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && (bs & 0xFFF0F0FFF0F0L) == 0x5430302D3030L && { // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+        monthDay = ((bs & 0xF03000F01L) * 2561 >> 8).toInt
+        val month = monthDay.toByte.toInt
+        val day = monthDay >> 24
+        (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
+      }
+    }) {
+      head = pos + 6
+      monthDay
+    } else {
+      val month = parseMonthWithByte('-', pos)
+      parseDayWithByte(year, month, 'T', head) << 24 | month
+    }
+  }
+
   private[this] def parseOffsetDateTime(): OffsetDateTime = {
-    val year = parseYearWithByte('-', 9, head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
-    var second, nano = 0
+    val year = parseYearWithByte('-', head)
+    val monthDay = parseMonthDayWithT(year, head)
+    var pos = head
+    var buf = this.buf
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
-    var b = nextByte(head)
-    if (b == ':') {
-      nanoDigitWeight = -2
-      second = parseSecond(head)
+    if (pos + 8 < tail && {
+      var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        pos += 8
+        second = (dec >> 56).toInt
+        nanoDigitWeight = -2
+        hour < 24
+      } || m << 24 == 0 && m << 16 != 0 && {
+        pos += 5
+        hour < 24
+      }
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
+      hour = parseHourWithColon(head)
+      minute = parseMinute(head)
       b = nextByte(head)
-      if (b == '.') {
-        nanoDigitWeight = 100000000
-        var pos = head
-        var buf = this.buf
+      if (b == ':') {
+        nanoDigitWeight = -2
+        second = parseSecond(head)
+        b = nextByte(head)
+      }
+      pos = head
+      buf = this.buf
+    }
+    var nano = 0
+    if (nanoDigitWeight == -2 && b == '.') {
+      nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
         while ({
           if (pos >= tail) {
             pos = loadMoreOrError(pos)
@@ -2075,47 +3367,92 @@ final class JsonReader private[jsoniter_scala](
           }
           b = buf(pos)
           pos += 1
-          b >= '0' && b <= '9' && nanoDigitWeight != 0
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
         }) {
           nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
         }
-        head = pos
       }
     }
     val zoneOffset =
       if (b == 'Z') {
-        nextByteOrError('"', head)
+        nextByteOrError('"', pos)
         ZoneOffset.UTC
-      } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
-        var offsetTotal = parseOffsetHour(head) * 3600
-        b = nextByte(head)
-        if (b == ':' && {
-          offsetTotal += parseOffsetMinute(head) * 60
-          b = nextByte(head)
-          b == ':'
-        }) offsetTotal += parseOffsetSecondWithByte('"', head)
-        else if (b != '"') tokensError(':', '"')
-        toZoneOffset(offsetNeg, offsetTotal)
-      }
-    OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
+      } else if (b == '-' || b == '+') {
+        var offsetTotal = 0
+        if (pos + 7 < tail && {
+          val bs = ByteArrayAccess.getLong(buf, pos)
+          offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+        }) head = pos + 6
+        else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+        toZoneOffset(b, offsetTotal)
+      } else timeError(nanoDigitWeight, pos - 1)
+    OffsetDateTime.of(year, monthDay.toByte.toInt, monthDay >> 24, hour, minute, second, nano, zoneOffset)
   }
 
   private[this] def parseOffsetTime(): OffsetTime = {
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
-    var second, nano = 0
+    var pos = head
+    var buf = this.buf
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
-    var b = nextByte(head)
-    if (b == ':') {
-      nanoDigitWeight = -2
-      second = parseSecond(head)
+    if (pos + 8 < tail && {
+      var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        pos += 8
+        second = (dec >> 56).toInt
+        nanoDigitWeight = -2
+        hour < 24
+      } || m << 24 == 0 && m << 16 != 0 && {
+        pos += 5
+        hour < 24
+      }
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
+      hour = parseHourWithColon(head)
+      minute = parseMinute(head)
       b = nextByte(head)
-      if (b == '.') {
-        nanoDigitWeight = 100000000
-        var pos = head
-        var buf = this.buf
+      if (b == ':') {
+        nanoDigitWeight = -2
+        second = parseSecond(head)
+        b = nextByte(head)
+      }
+      pos = head
+      buf = this.buf
+    }
+    var nano = 0
+    if (nanoDigitWeight == -2 && b == '.') {
+      nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
         while ({
           if (pos >= tail) {
             pos = loadMoreOrError(pos)
@@ -2123,45 +3460,48 @@ final class JsonReader private[jsoniter_scala](
           }
           b = buf(pos)
           pos += 1
-          b >= '0' && b <= '9' && nanoDigitWeight != 0
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
         }) {
           nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
         }
-        head = pos
       }
     }
     val zoneOffset =
       if (b == 'Z') {
-        nextByteOrError('"', head)
+        nextByteOrError('"', pos)
         ZoneOffset.UTC
-      } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
-        var offsetTotal = parseOffsetHour(head) * 3600
-        b = nextByte(head)
-        if (b == ':' && {
-          offsetTotal += parseOffsetMinute(head) * 60
-          b = nextByte(head)
-          b == ':'
-        }) offsetTotal += parseOffsetSecondWithByte('"', head)
-        else if (b != '"') tokensError(':', '"')
-        toZoneOffset(offsetNeg, offsetTotal)
-      }
+      } else if (b == '-' || b == '+') {
+        var offsetTotal = 0
+        if (pos + 7 < tail && {
+          val bs = ByteArrayAccess.getLong(buf, pos)
+          offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+        }) head = pos + 6
+        else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+        toZoneOffset(b, offsetTotal)
+      } else timeError(nanoDigitWeight, pos - 1)
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
   }
 
   private[this] def parsePeriod(): Period = {
-    var years, months, days, state = 0
     var b = nextByte(head)
-    val isNeg = b == '-'
-    if (isNeg) b = nextByte(head)
-    if (b != 'P') durationOrPeriodStartError(isNeg)
+    var s = 0
+    if (b == '-') {
+      b = nextByte(head)
+      s = -1
+    }
+    if (b != 'P') durationOrPeriodStartError(s)
     b = nextByte(head)
+    var years, months, days, state = 0
     while ({
-      if (state == 4) tokenError('"')
-      val isNegX = b == '-'
-      if (isNegX) b = nextByte(head)
-      if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state <= 0)
+      var sx = s
+      if (b == '-') {
+        b = nextByte(head)
+        sx = ~sx
+      }
+      if (b < '0' || b > '9') durationOrPeriodDigitError(s, sx, state)
       var x = '0' - b
       var pos = head
       var buf = this.buf
@@ -2179,10 +3519,8 @@ final class JsonReader private[jsoniter_scala](
         }) periodError(pos)
         pos += 1
       }
-      if (!(isNeg ^ isNegX)) {
-        if (x == -2147483648) periodError(pos)
-        x = -x
-      }
+      x = sx - (x ^ sx)
+      if ((sx | x) == -2147483648) periodError(pos)
       if (b == 'Y' && state <= 0) {
         years = x
         state = 1
@@ -2195,36 +3533,99 @@ final class JsonReader private[jsoniter_scala](
         state = 3
       } else if (b == 'D') {
         val ds = x.toLong + days
-        if (ds != ds.toInt) periodError(pos)
         days = ds.toInt
         state = 4
+        if (ds != days) periodError(pos)
       } else periodError(state, pos)
       b = nextByte(pos + 1)
       b != '"'
-    }) ()
+    }) {
+      if (state == 4) tokenError('"')
+    }
     Period.of(years, months, days)
   }
 
-  private[this] def parseYearMonth(): YearMonth =
-    YearMonth.of(parseYearWithByte('-', 9, head), parseMonthWithByte('"', head))
+  private[this] def parseYearMonth(pos: Int): YearMonth = {
+    var year, month = 0
+    if (pos + 7 < tail && {
+      var yearMonth = ByteArrayAccess.getLong(buf, pos) - 0x2230302D30303030L
+      ((yearMonth + 0x767E0076767676L | yearMonth) & 0xFF8080FF80808080L) == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        yearMonth *= 2561
+        year = (yearMonth.toInt >> 8 & 0xFF00FF) * 6553601 >> 16
+        month = (yearMonth >> 48).toByte.toInt
+        month >= 1 && month <= 12
+      }
+    }) head = pos + 8
+    else {
+      year = parseYearWithByte('-', pos)
+      month = parseMonthWithByte('"', head)
+    }
+    YearMonth.of(year, month)
+  }
 
   private[this] def parseZonedDateTime(): ZonedDateTime = {
-    val year = parseYearWithByte('-', 9, head)
-    val month = parseMonthWithByte('-', head)
-    val day = parseDayWithByte(year, month, 'T', head)
-    val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
-    var second, nano = 0
+    val year = parseYearWithByte('-', head)
+    val monthDay = parseMonthDayWithT(year, head)
+    var pos = head
+    var buf = this.buf
+    var hour, minute, second = 0
+    var b: Byte = 0
     var nanoDigitWeight = -1
-    var b = nextByte(head)
-    if (b == ':') {
-      nanoDigitWeight = -2
-      second = parseSecond(head)
+    if (pos + 8 < tail && {
+      var dec = ByteArrayAccess.getLong(buf, pos) - 0x30303A30303A3030L
+      val m = (dec + 0x767A00767A00767DL | dec) & 0x8080FF8080FF8080L
+      dec *= 2561
+      hour = (dec >> 8).toByte.toInt
+      minute = (dec >> 32).toByte.toInt
+      m == 0 && { // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        pos += 8
+        second = (dec >> 56).toInt
+        nanoDigitWeight = -2
+        hour < 24
+      } || m << 24 == 0 && m << 16 != 0 && {
+        pos += 5
+        hour < 24
+      }
+    }) {
+      b = buf(pos)
+      pos += 1
+    } else {
+      hour = parseHourWithColon(head)
+      minute = parseMinute(head)
       b = nextByte(head)
-      if (b == '.') {
-        nanoDigitWeight = 100000000
-        var pos = head
-        var buf = this.buf
+      if (b == ':') {
+        nanoDigitWeight = -2
+        second = parseSecond(head)
+        b = nextByte(head)
+      }
+      pos = head
+      buf = this.buf
+    }
+    var nano = 0
+    if (nanoDigitWeight == -2 && b == '.') {
+      nanoDigitWeight = 100000000
+      var bs = 0
+      if (pos + 9 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano = ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100000
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      } && {
+        nano += ((bs * 2561 & 0xFF00FF) * 6553601 >> 16) * 1000
+        pos += 3
+        bs = ByteArrayAccess.getInt(buf, pos) - 0x303030
+        nanoDigitWeight = 100
+        ((bs + 0x767676 | bs) & 0x808080) == 0
+      }) {
+        nano += (bs * 2561 & 0xFF00FF) * 6553601 >> 16
+        pos += 4
+        b = (bs >> 24).toByte
+        nanoDigitWeight = 0
+      } else {
         while ({
           if (pos >= tail) {
             pos = loadMoreOrError(pos)
@@ -2232,144 +3633,226 @@ final class JsonReader private[jsoniter_scala](
           }
           b = buf(pos)
           pos += 1
-          b >= '0' && b <= '9' && nanoDigitWeight != 0
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
         }) {
           nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          nanoDigitWeight = (nanoDigitWeight * 429496730L >> 32).toInt // divide a small positive int by 10
         }
-        head = pos
       }
     }
-    val localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, nano)
+    val localDateTime = LocalDateTime.of(year, monthDay.toByte.toInt, monthDay >> 24, hour, minute, second, nano)
     val zoneOffset =
       if (b == 'Z') {
-        b = nextByte(head)
+        b = nextByte(pos)
         ZoneOffset.UTC
-      } else {
-        val offsetNeg = b == '-' || (b != '+' && timeError(nanoDigitWeight))
+      } else if (b == '-' || b == '+') {
+        val sb = b
         nanoDigitWeight = -3
-        var offsetTotal = parseOffsetHour(head) * 3600
-        b = nextByte(head)
-        if (b == ':') {
-          offsetTotal += parseOffsetMinute(head) * 60
+        var offsetTotal = 0
+        if (pos + 7 < tail && {
+          val bs = ByteArrayAccess.getLong(buf, pos)
+          offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+          b = (bs >> 40).toByte
+          (bs + 0x60A00060EL & 0xF0F0FFF0F0L) == 0x30303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+            (bs & 0xF0F0FFF0F0L) == 0x30303A3030L && b != ':' && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+        }) head = pos + 6
+        else {
+          offsetTotal = parseOffsetHour(pos) * 3600
           b = nextByte(head)
           if (b == ':') {
-            nanoDigitWeight = -4
-            offsetTotal += parseOffsetSecond(head)
+            offsetTotal += parseOffsetMinute(head) * 60
             b = nextByte(head)
+            if (b == ':') {
+              nanoDigitWeight = -4
+              offsetTotal += parseOffsetSecond(head)
+              b = nextByte(head)
+            }
           }
+          if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
         }
-        toZoneOffset(offsetNeg, offsetTotal)
-      }
+        toZoneOffset(sb, offsetTotal)
+      } else timeError(nanoDigitWeight, pos - 1)
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (b == '[') {
-      val zone = parseZoneIdWithByte(']')
-      nextByteOrError('"', head)
-      ZonedDateTime.ofInstant(localDateTime, zoneOffset, zone)
+      pos = head
+      buf = this.buf
+      var from = pos
+      val oldMark = mark
+      val newMark =
+        if (oldMark < 0) from
+        else oldMark
+      mark = newMark
+      var hash = 0
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        pos += 1
+        b != ']'
+      }) hash = (hash << 5) - hash + b
+      if (mark == 0) from -= newMark
+      if (mark > oldMark) mark = oldMark
+      var k = zoneIdKey
+      if (k eq null) {
+        k = new Key
+        zoneIdKey = k
+      }
+      k.set(hash, buf, from, pos - 1)
+      var zoneId = zoneIds.get(k)
+      if (zoneId eq null) zoneId = toZoneId(k, pos)
+      if (pos >= tail) {
+        pos = loadMoreOrError(pos)
+        buf = this.buf
+      }
+      if (buf(pos) != '"') tokenError('"', pos)
+      head = pos + 1
+      ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
     } else zonedDateTimeError(nanoDigitWeight)
   }
 
-  private[this] def parseZoneOffset(): ZoneOffset = {
-    var b = nextByte(head)
-    if (b == 'Z') {
-      nextByteOrError('"', head)
-      ZoneOffset.UTC
-    } else {
-      val offsetNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
-      var offsetTotal = parseOffsetHour(head) * 3600
-      b = nextByte(head)
-      if (b == ':' && {
-        offsetTotal += parseOffsetMinute(head) * 60
-        b = nextByte(head)
-        b == ':'
-      }) offsetTotal += parseOffsetSecondWithByte('"', head)
-      else if (b != '"') tokensError(':', '"')
-      toZoneOffset(offsetNeg, offsetTotal)
-    }
-  }
-
-  private[this] def toZoneOffset(isNeg: Boolean, offsetTotal: Int): ZoneOffset = {
-    var qp = offsetTotal * 37283
-    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-    if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
-      qp >>>= 25 // divide offsetTotal by 900
-      if (isNeg) qp = -qp
-      var zoneOffset = zoneOffsets(qp + 72)
-      if (zoneOffset ne null) zoneOffset
-      else {
-        zoneOffset = ZoneOffset.ofTotalSeconds(if (isNeg) -offsetTotal else offsetTotal)
-        zoneOffsets(qp + 72) = zoneOffset
-        zoneOffset
+  private[this] def toZoneId(k: Key, pos: Int): ZoneId =
+    try {
+      val zoneId = ZoneId.of(k.toString)
+      if (!zoneId.isInstanceOf[ZoneOffset] ||
+        (zoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
+        zoneIds.put(k.copy, zoneId)
       }
-    } else ZoneOffset.ofTotalSeconds(if (isNeg) -offsetTotal else offsetTotal)
+      return zoneId
+    } catch {
+      case ex: DateTimeException => timezoneError(ex, pos)
+    }
+
+  private[this] def parseZoneOffset(): ZoneOffset = {
+    val b = nextByte(head)
+    val pos = head
+    if (b == 'Z') {
+      nextByteOrError('"', pos)
+      ZoneOffset.UTC
+    } else if (b == '-' || b == '+') {
+      var offsetTotal = 0
+      if (pos + 7 < tail && {
+        val bs = ByteArrayAccess.getLong(buf, pos)
+        offsetTotal = (((bs & 0xF07000F01L) * 2561 & 0x3F00001F00L) * 1979120931962880L >>> 47).toInt // Based on the fast time string to seconds conversion: https://johnnylee-sde.github.io/Fast-time-string-to-seconds/
+        (bs + 0x60A00060EL & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+          (bs & 0xFFF0F0FFF0F0L) == 0x2230303A3030L && offsetTotal <= 64800 // 64800 == 18 * 60 * 60
+      }) head = pos + 6
+      else offsetTotal = parseOffsetTotalWithDoubleQuotes(pos)
+      toZoneOffset(b, offsetTotal)
+    } else decodeError("expected '+' or '-' or 'Z'")
   }
 
-  private[this] def epochDayForYear(year: Int): Long =
-    year * 365L + (((year + 3) >> 2) - {
+  private[this] def parseOffsetTotalWithDoubleQuotes(pos: Int): Int = {
+    var offsetTotal = parseOffsetHour(pos) * 3600
+    var b = nextByte(head)
+    if (b == ':' && {
+      offsetTotal += parseOffsetMinute(head) * 60
+      b = nextByte(head)
+      b == ':'
+    }) offsetTotal += parseOffsetSecondWithDoubleQuotes(head)
+    else if (b != '"') tokensError(':', '"')
+    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
+    offsetTotal
+  }
+
+  private[this] def toZoneOffset(sb: Byte, offsetTotal: Int): ZoneOffset = {
+    var qp = offsetTotal * 37283
+    val s = '+' - sb >> 31
+    if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
+      qp = ((qp >>> 25) ^ s) - s + 72 // divide offsetTotal by 900
+      var zoneOffset = zoneOffsets(qp)
+      if (zoneOffset eq null) {
+        zoneOffset = ZoneOffset.ofTotalSeconds((offsetTotal ^ s) - s)
+        zoneOffsets(qp) = zoneOffset
+      }
+      zoneOffset
+    } else ZoneOffset.ofTotalSeconds((offsetTotal ^ s) - s)
+  }
+
+  private[this] def epochDay(year: Int, month: Int, day: Int): Long =
+    year * 365L + ((year + 3 >> 2) - {
       val cp = year * 1374389535L
       if (year < 0) (cp >> 37) - (cp >> 39) // year / 100 - year / 400
       else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
-    }.toInt)
-
-  private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
-    ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
-      (if (month <= 2) 0
-      else if (isLeap(year)) 1
-      else 2)
+    }.toInt + (month * 1002277 - 988622 >> 15) + // (month * 367 - 362) / 12
+      (if (month <= 2) -719529
+      else if (isLeap(year)) -719530
+      else -719531) + day) // 719528 == days 0000 to 1970)
 
   private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
-    if (month != 2) ((month >> 3) ^ (month & 0x1)) + 30
+    if (month != 2) month >> 3 ^ (month | 0x1E)
     else if (isLeap(year)) 29
     else 28
 
   private[this] def maxDayForMonth(month: Int): Int =
-    if (month != 2) ((month >> 3) ^ (month & 0x1)) + 30
+    if (month != 2) month >> 3 ^ (month | 0x1E)
     else 29
 
-  private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && { // (year % 100 != 0 || year % 400 == 0)
-    val cp = year * 1374389535L
-    val cc = year >> 31
-    ((cp ^ cc) & 0x1FC0000000L) != 0 || (((cp >> 37).toInt - cc) & 0x3) == 0
+  private[this] def isLeap(year: Int): Boolean =
+    (year & 0x3) == 0 && (year * -1030792151 - 2061584303 > -1975684958 || (year & 0xF) == 0) // year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+
+  private[this] def fourDigitYearWithByteError(t: Byte, pos: Int, y: Int): Nothing = {
+    val m = (y + 0x76767676 | y) & 0x80808080
+    if (m == 0) tokenError(t, pos + 4)
+    else if (m.toByte != 0) decodeError("expected '-' or '+' or digit", pos)
+    else digitError((java.lang.Integer.numberOfTrailingZeros(m) >> 3) + pos)
   }
 
   private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
 
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
-  private[this] def periodError(state: Int, pos: Int): Nothing = decodeError((state: @switch) match {
+  private[this] def periodError(state: Int, pos: Int): Nothing = decodeError(state match {
     case 0 => "expected 'Y' or 'M' or 'W' or 'D' or digit"
     case 1 => "expected 'M' or 'W' or 'D' or digit"
     case 2 => "expected 'W' or 'D' or digit"
-    case 3 => "expected 'D' or digit"
+    case _ => "expected 'D' or digit"
   }, pos)
 
-  private[this] def durationOrPeriodStartError(isNeg: Boolean): Nothing = decodeError {
-    if (isNeg) "expected 'P'"
+  private[this] def durationOrPeriodStartError(s: Int): Nothing = decodeError {
+    if (s < 0) "expected 'P'"
     else "expected 'P' or '-'"
   }
 
-  private[this] def durationOrPeriodDigitError(isNegX: Boolean, isNumReq: Boolean): Nothing = decodeError {
-    if (isNegX) "expected digit"
-    else if (isNumReq) "expected '-' or digit"
+  private[this] def durationOrPeriodDigitError(s: Int, sx: Int, state: Int): Nothing = decodeError {
+    if ((s ^ sx) < 0) "expected digit"
+    else if (state <= 0) "expected '-' or digit"
     else "expected '\"' or '-' or digit"
   }
 
   private[this] def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
 
-  private[this] def durationError(state: Int, pos: Int): Nothing = decodeError((state: @switch) match {
-    case 0 => "expected 'D' or digit"
-    case 1 => "expected 'H' or 'M' or 'S or '.' or digit"
-    case 2 => "expected 'M' or 'S or '.' or digit"
-    case 3 => "expected 'S or '.' or digit"
+  private[this] def durationError(state: Int, pos: Int): Nothing = decodeError(state match {
+    case -1 => "expected 'D' or digit"
+    case 0 => "expected 'H' or 'M' or 'S' or '.' or digit"
+    case 1 => "expected 'M' or 'S' or '.' or digit"
+    case _ => "expected 'S' or '.' or digit"
   }, pos)
 
-  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, yearNeg: Boolean, yearDigits: Int): Nothing = {
-    if (!yearNeg && yearDigits == 4) digitError(pos)
+  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, b: Byte, yearDigits: Int): Nothing = {
+    if (b != '-' && yearDigits == 4) digitError(pos)
     if (yearDigits == maxDigits) tokenError(t, pos)
     tokenOrDigitError(t, pos)
   }
 
   private[this] def yearError(pos: Int): Nothing = decodeError("illegal year", pos)
+
+  private[this] def monthDayError(pos: Int): Nothing = {
+    val buf = this.buf
+    if (buf(pos) != '-') tokenError('-', pos)
+    if (buf(pos + 1) != '-') tokenError('-', pos + 1)
+    val b3 = buf(pos + 2)
+    val b4 = buf(pos + 3)
+    if (b3 < '0' || b3 > '9') digitError(pos + 2)
+    if (b4 < '0' || b4 > '9') digitError(pos + 3)
+    if (buf(pos + 4) != '-') tokenError('-', pos + 4)
+    val b6 = buf(pos + 5)
+    val b7 = buf(pos + 6)
+    if (b6 < '0' || b6 > '9') digitError(pos + 5)
+    if (b7 < '0' || b7 > '9') digitError(pos + 6)
+    tokenError('"', pos + 7)
+  }
 
   private[this] def monthError(pos: Int): Nothing = decodeError("illegal month", pos)
 
@@ -2381,19 +3864,18 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def secondError(pos: Int): Nothing = decodeError("illegal second", pos)
 
-  private[this] def nanoError(nanoDigitWeight: Int, t: Byte): Nothing = {
-    if (nanoDigitWeight == 0) tokenError(t)
-    tokenOrDigitError(t)
-  }
+  private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing =
+    if (nanoDigitWeight == 0) tokenError(t, pos)
+    else tokenOrDigitError(t, pos)
 
-  private[this] def timeError(nanoDigitWeight: Int): Nothing = decodeError {
+  private[this] def timeError(nanoDigitWeight: Int, pos: Int): Nothing = decodeError({
     if (nanoDigitWeight == -2) "expected '.' or '+' or '-' or 'Z'"
     else if (nanoDigitWeight == -1) "expected ':' or '+' or '-' or 'Z'"
     else if (nanoDigitWeight == 0) "expected '+' or '-' or 'Z'"
     else "expected '+' or '-' or 'Z' or digit"
-  }
+  }, pos)
 
-  private[this] def timezoneError(ex: DateTimeException): Nothing = decodeError("illegal timezone", head - 1, ex)
+  private[this] def timezoneError(ex: DateTimeException, pos: Int): Nothing = decodeError("illegal timezone", pos - 1, ex)
 
   private[this] def timezoneOffsetError(): Nothing = decodeError("illegal timezone offset")
 
@@ -2413,73 +3895,81 @@ final class JsonReader private[jsoniter_scala](
     if (pos + 36 < tail) {
       val ns = nibbles
       val buf = this.buf
-      val mostSigBits1: Long =
-        (ns(buf(pos) & 0xFF).toLong << 28) |
-          ((ns(buf(pos + 1) & 0xFF) << 24) |
-            (ns(buf(pos + 2) & 0xFF) << 20) |
-            (ns(buf(pos + 3) & 0xFF) << 16) |
-            (ns(buf(pos + 4) & 0xFF) << 12) |
-            (ns(buf(pos + 5) & 0xFF) << 8) |
-            (ns(buf(pos + 6) & 0xFF) << 4) |
+      val mostSigBits1 =
+        ns(buf(pos) & 0xFF).toLong << 28 |
+          (ns(buf(pos + 1) & 0xFF) << 24 |
+            ns(buf(pos + 2) & 0xFF) << 20 |
+            ns(buf(pos + 3) & 0xFF) << 16 |
+            ns(buf(pos + 4) & 0xFF) << 12 |
+            ns(buf(pos + 5) & 0xFF) << 8 |
+            ns(buf(pos + 6) & 0xFF) << 4 |
             ns(buf(pos + 7) & 0xFF))
       if (mostSigBits1 < 0) hexDigitError(pos)
       if (buf(pos + 8) != '-') tokenError('-', pos + 8)
-      val mostSigBits2: Int =
-        (ns(buf(pos + 9) & 0xFF) << 12) |
-          (ns(buf(pos + 10) & 0xFF) << 8) |
-          (ns(buf(pos + 11) & 0xFF) << 4) |
+      val mostSigBits2 =
+        ns(buf(pos + 9) & 0xFF) << 12 |
+          ns(buf(pos + 10) & 0xFF) << 8 |
+          ns(buf(pos + 11) & 0xFF) << 4 |
           ns(buf(pos + 12) & 0xFF)
       if (mostSigBits2 < 0) hexDigitError(pos + 9)
       if (buf(pos + 13) != '-') tokenError('-', pos + 13)
-      val mostSigBits3: Int =
-        (ns(buf(pos + 14) & 0xFF) << 12) |
-          (ns(buf(pos + 15) & 0xFF) << 8) |
-          (ns(buf(pos + 16) & 0xFF) << 4) |
+      val mostSigBits3 =
+        ns(buf(pos + 14) & 0xFF) << 12 |
+          ns(buf(pos + 15) & 0xFF) << 8 |
+          ns(buf(pos + 16) & 0xFF) << 4 |
           ns(buf(pos + 17) & 0xFF)
       if (mostSigBits3 < 0) hexDigitError(pos + 14)
       if (buf(pos + 18) != '-') tokenError('-', pos + 18)
-      val leastSigBits1: Int =
-        (ns(buf(pos + 19) & 0xFF) << 12) |
-          (ns(buf(pos + 20) & 0xFF) << 8) |
-          (ns(buf(pos + 21) & 0xFF) << 4) |
+      val leastSigBits1 =
+        ns(buf(pos + 19) & 0xFF) << 12 |
+          ns(buf(pos + 20) & 0xFF) << 8 |
+          ns(buf(pos + 21) & 0xFF) << 4 |
           ns(buf(pos + 22) & 0xFF)
       if (leastSigBits1 < 0) hexDigitError(pos + 19)
       if (buf(pos + 23) != '-') tokenError('-', pos + 23)
-      val leastSigBits2: Long =
-        ((ns(buf(pos + 24) & 0xFF) << 16) |
-          (ns(buf(pos + 25) & 0xFF) << 12) |
-          (ns(buf(pos + 26) & 0xFF) << 8) |
-          (ns(buf(pos + 27) & 0xFF) << 4) |
+      val leastSigBits2 =
+        (ns(buf(pos + 24) & 0xFF) << 16 |
+          ns(buf(pos + 25) & 0xFF) << 12 |
+          ns(buf(pos + 26) & 0xFF) << 8 |
+          ns(buf(pos + 27) & 0xFF) << 4 |
           ns(buf(pos + 28) & 0xFF)).toLong << 28 |
-          ((ns(buf(pos + 29) & 0xFF) << 24) |
-            (ns(buf(pos + 30) & 0xFF) << 20) |
-            (ns(buf(pos + 31) & 0xFF) << 16) |
-            (ns(buf(pos + 32) & 0xFF) << 12) |
-            (ns(buf(pos + 33) & 0xFF) << 8) |
-            (ns(buf(pos + 34) & 0xFF) << 4) |
+          (ns(buf(pos + 29) & 0xFF) << 24 |
+            ns(buf(pos + 30) & 0xFF) << 20 |
+            ns(buf(pos + 31) & 0xFF) << 16 |
+            ns(buf(pos + 32) & 0xFF) << 12 |
+            ns(buf(pos + 33) & 0xFF) << 8 |
+            ns(buf(pos + 34) & 0xFF) << 4 |
             ns(buf(pos + 35) & 0xFF))
       if (leastSigBits2 < 0) hexDigitError(pos + 24)
       if (buf(pos + 36) != '"') tokenError('"', pos + 36)
       head = pos + 37
-      new UUID((mostSigBits1 << 32) | (mostSigBits2.toLong << 16) | mostSigBits3,
-        (leastSigBits1.toLong << 48) | leastSigBits2)
+      new UUID(mostSigBits1 << 32 | mostSigBits2.toLong << 16 | mostSigBits3,
+        leastSigBits1.toLong << 48 | leastSigBits2)
     } else parseUUID(loadMoreOrError(pos))
-
-  private[this] def parseString(): Int = {
-    val minLim = Math.min(charBuf.length, tail - head)
-    if (isGraalVM) parseStringUnrolled(0, minLim, charBuf, head)
-    else parseString(0, minLim, charBuf, head)
-  }
 
   @tailrec
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i < minLim) {
+    if (i + 3 < minLim) { // Based on SWAR routine of JSON string parsing: https://github.com/sirthias/borer/blob/fde9d1ce674d151b0fee1dd0c2565020c3f6633a/core/src/main/scala/io/bullet/borer/json/JsonParser.scala#L456
+      val bs = ByteArrayAccess.getInt(buf, pos)
+      val m = ((bs - 0x20202020 ^ 0x3C3C3C3C) - 0x1010101 | (bs ^ 0x5D5D5D5D) + 0x1010101) & 0x80808080
+      charBuf(i) = (bs & 0xFF).toChar
+      charBuf(i + 1) = (bs >> 8 & 0xFF).toChar
+      charBuf(i + 2) = (bs >> 16 & 0xFF).toChar
+      charBuf(i + 3) = (bs >> 24).toChar
+      if (m != 0) {
+        val offset = java.lang.Integer.numberOfTrailingZeros(m) >> 3
+        if ((bs >> (offset << 3)).toByte == '"') {
+          head = pos + offset + 1
+          i + offset
+        } else parseEncodedString(i + offset, charBuf.length - 1, charBuf, pos + offset)
+      } else parseString(i + 4, minLim, charBuf, pos + 4)
+    } else if (i < minLim) {
       val b = buf(pos)
       charBuf(i) = b.toChar
       if (b == '"') {
         head = pos + 1
         i
-      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      } else if ((b - 0x20 ^ 0x3C) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
       else parseString(i + 1, minLim, charBuf, pos + 1)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
@@ -2487,58 +3977,16 @@ final class JsonReader private[jsoniter_scala](
     } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
   @tailrec
-  private[this] def parseStringUnrolled(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i + 3 < minLim) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      charBuf(i) = b1.toChar
-      val b2 = buf(pos + 1)
-      charBuf(i + 1) = b2.toChar
-      val b3 = buf(pos + 2)
-      charBuf(i + 2) = b3.toChar
-      val b4 = buf(pos + 3)
-      charBuf(i + 3) = b4.toChar
-      if (b1 == '"') {
-        head = pos + 1
-        i
-      } else if (((b1 - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
-      else if (b2 == '"') {
-        head = pos + 2
-        i + 1
-      } else if (((b2 - 32) ^ 60) <= 0) parseEncodedString(i + 1, charBuf.length - 1, charBuf, pos + 1)
-      else if (b3 == '"') {
-        head = pos + 3
-        i + 2
-      } else if (((b3 - 32) ^ 60) <= 0) parseEncodedString(i + 2, charBuf.length - 1, charBuf, pos + 2)
-      else if (b4 == '"') {
-        head = pos + 4
-        i + 3
-      } else if (((b4 - 32) ^ 60) <= 0) parseEncodedString(i + 3, charBuf.length - 1, charBuf, pos + 3)
-      else parseStringUnrolled(i + 4, minLim, charBuf, pos + 4)
-    } else if (i < minLim) {
-      val b = buf(pos)
-      charBuf(i) = b.toChar
-      if (b == '"') {
-        head = pos + 1
-        i
-      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
-      else parseStringUnrolled(i + 1, minLim, charBuf, pos + 1)
-    } else if (pos >= tail) {
-      val newPos = loadMoreOrError(pos)
-      parseStringUnrolled(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
-    } else parseStringUnrolled(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
-
-  @tailrec
   private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int = {
     val remaining = tail - pos
     if (i < lim) {
       if (remaining > 0) {
         val b1 = buf(pos)
-        if (b1 >= 0) { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
+        if (b1 >= 0) {
           if (b1 == '"') {
             head = pos + 1
             i
-          } else if (b1 != '\\') {
+          } else if (b1 != '\\') { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
             if (b1 < ' ') unescapedControlCharacterError(pos)
             charBuf(i) = b1.toChar
             parseEncodedString(i + 1, lim, charBuf, pos + 1)
@@ -2554,50 +4002,52 @@ final class JsonReader private[jsoniter_scala](
                 case 'f' => '\f'
                 case '\\' => '\\'
                 case '/' => '/'
-                case _ => illegalEscapeSequenceError(pos + 1)
+                case _ => escapeSequenceError(pos + 1)
               }
               parseEncodedString(i + 1, lim, charBuf, pos + 2)
             } else if (remaining > 5) {
               val ch1 = readEscapedUnicode(pos + 2, buf)
               charBuf(i) = ch1
-              if (ch1 < 0xD800 || ch1 > 0xDFFF) parseEncodedString(i + 1, lim, charBuf, pos + 6)
+              if ((ch1 & 0xF800) != 0xD800) parseEncodedString(i + 1, lim, charBuf, pos + 6)
               else if (remaining > 11) {
-                if (buf(pos + 6) != '\\') illegalEscapeSequenceError(pos + 6)
-                if (buf(pos + 7) != 'u') illegalEscapeSequenceError(pos + 7)
+                if (buf(pos + 6) != '\\') escapeSequenceError(pos + 6)
+                if (buf(pos + 7) != 'u') escapeSequenceError(pos + 7)
                 val ch2 = readEscapedUnicode(pos + 8, buf)
-                if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
                 charBuf(i + 1) = ch2
+                if (ch1 >= 0xDC00 || (ch2 & 0xFC00) != 0xDC00) decodeError("illegal surrogate character pair", pos + 11)
                 parseEncodedString(i + 2, lim, charBuf, pos + 12)
               } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
             } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
-        } else if ((b1 >> 5) == -2) { // 110bbbbb 10aaaaaa (UTF-8 bytes) -> 00000bbbbbaaaaaa (UTF-16 char)
+        } else if ((b1 & 0xE0) == 0xC0) { // 110bbbbb 10aaaaaa (UTF-8 bytes) -> 00000bbbbbaaaaaa (UTF-16 char)
           if (remaining > 1) {
             val b2 = buf(pos + 1)
-            if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
-            charBuf(i) = ((b1 << 6) ^ (b2 ^ 0xF80)).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+            val ch = (b1 << 6 ^ b2 ^ 0xF80).toChar // 0xF80 == 0xC0.toByte << 6 ^ 0x80.toByte
+            charBuf(i) = ch
+            if ((b2 & 0xC0) != 0x80 || ch < 0x80) malformedBytesError(b1, b2, pos)
             parseEncodedString(i + 1, lim, charBuf, pos + 2)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
-        } else if ((b1 >> 4) == -2) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
+        } else if ((b1 & 0xF0) == 0xE0) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
           if (remaining > 2) {
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
-            val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-            if ((b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
-              (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
+            val ch = (b1 << 12 ^ b2 << 6 ^ b3 ^ 0x1F80).toChar // 0x1F80 == (0x80.toByte << 6 ^ 0x80.toByte).toChar
             charBuf(i) = ch
+            if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || ch < 0x800 ||
+              (ch & 0xF800) == 0xD800) malformedBytesError(b1, b2, b3, pos)
             parseEncodedString(i + 1, lim, charBuf, pos + 3)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
-        } else if ((b1 >> 3) == -2) { // 11110ddd 10ddcccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> 110110uuuuccccbb 110111bbbbaaaaaa (UTF-16 chars), where uuuu = ddddd - 1
+        } else if ((b1 & 0xF8) == 0xF0) { // 11110ddd 10ddcccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> 110110uuuuccccbb 110111bbbbaaaaaa (UTF-16 chars), where uuuu = ddddd - 1
           if (remaining > 3) {
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
             val b4 = buf(pos + 3)
-            val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+            val cp = b1 << 18 ^ b2 << 12 ^ b3 << 6 ^ b4 ^ 0x381F80 // 0x381F80 == 0xF0.toByte << 18 ^ 0x80.toByte << 12 ^ 0x80.toByte << 6 ^ 0x80.toByte
+            val ch1 = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x10000 >>> 10)
+            charBuf(i) = ch1
+            charBuf(i + 1) = ((cp & 0x3FF) | 0xDC00).toChar
             if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80 ||
-              cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
-            charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
-            charBuf(i + 1) = ((cp & 0x3FF) + 0xDC00).toChar
+              (ch1 & 0xF800) != 0xD800) malformedBytesError(b1, b2, b3, b4, pos)
             parseEncodedString(i + 2, lim, charBuf, pos + 4)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else malformedBytesError(b1, pos)
@@ -2610,62 +4060,64 @@ final class JsonReader private[jsoniter_scala](
     val remaining = tail - pos
     if (remaining > 0) {
       val b1 = buf(pos)
-      if (b1 >= 0) { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
-        if (b1 == '"') decodeError("illegal value for char", pos)
-        else if (b1 != '\\') {
+      if (b1 >= 0) {
+        if (b1 == '"') characterError(pos)
+        else if (b1 != '\\') { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
           if (b1 < ' ') unescapedControlCharacterError(pos)
           head = pos + 1
-          b1.toChar
+          return b1.toChar
         } else if (remaining > 1) {
           val b2 = buf(pos + 1)
           if (b2 != 'u') {
             head = pos + 2
             (b2: @switch) match {
-              case 'b' => '\b'
-              case 'f' => '\f'
-              case 'n' => '\n'
-              case 'r' => '\r'
-              case 't' => '\t'
-              case '"' => '"'
-              case '/' => '/'
-              case '\\' => '\\'
-              case _ => illegalEscapeSequenceError(pos + 1)
+              case 'b' => return '\b'
+              case 'f' => return '\f'
+              case 'n' => return '\n'
+              case 'r' => return '\r'
+              case 't' => return '\t'
+              case '"' => return '"'
+              case '/' => return '/'
+              case '\\' => return '\\'
+              case _ => escapeSequenceError(pos + 1)
             }
           } else if (remaining > 5) {
             val ch = readEscapedUnicode(pos + 2, buf)
-            if (ch >= 0xD800 && ch <= 0xDFFF) decodeError("illegal surrogate character", pos + 5)
             head = pos + 6
-            ch
-          } else parseChar(loadMoreOrError(pos))
-        } else parseChar(loadMoreOrError(pos))
-      } else if ((b1 >> 5) == -2) { // 110bbbbb 10aaaaaa (UTF-8 bytes) -> 00000bbbbbaaaaaa (UTF-16 char)
+            if ((ch & 0xF800) == 0xD800) surrogateCharacterError(pos + 5)
+            return ch
+          }
+        }
+      } else if ((b1 & 0xE0) == 0xC0) { // 110bbbbb 10aaaaaa (UTF-8 bytes) -> 00000bbbbbaaaaaa (UTF-16 char)
         if (remaining > 1) {
           val b2 = buf(pos + 1)
-          if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
+          val ch = (b1 << 6 ^ b2 ^ 0xF80).toChar // 0xF80 == 0xC0.toByte << 6 ^ 0x80.toByte
           head = pos + 2
-          ((b1 << 6) ^ (b2 ^ 0xF80)).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
-        } else parseChar(loadMoreOrError(pos))
-      } else if ((b1 >> 4) == -2) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
+          if ((b2 & 0xC0) != 0x80 || ch < 0x80) malformedBytesError(b1, b2, pos)
+          return ch
+        }
+      } else if ((b1 & 0xF0) == 0xE0) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
         if (remaining > 2) {
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
-          val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-          if ((b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
-            (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
+          val ch = (b1 << 12 ^ b2 << 6 ^ b3 ^ 0x1F80).toChar // 0x1F80 == (0x80.toByte << 6 ^ 0x80.toByte).toChar
           head = pos + 3
-          ch
-        } else parseChar(loadMoreOrError(pos))
-      } else if ((b1 >> 3) == -2) decodeError("illegal surrogate character", pos + 3)
+          if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || ch < 0x800 ||
+            (ch & 0xF800) == 0xD800) malformedBytesError(b1, b2, b3, pos)
+          return ch
+        }
+      } else if ((b1 & 0xF8) == 0xF0) surrogateCharacterError(pos + 3)
       else malformedBytesError(b1, pos)
-    } else parseChar(loadMoreOrError(pos))
+    }
+    parseChar(loadMoreOrError(pos))
   }
 
   private[this] def readEscapedUnicode(pos: Int, buf: Array[Byte]): Char = {
     val ns = nibbles
     val x =
-      (ns(buf(pos) & 0xFF) << 12) |
-        (ns(buf(pos + 1) & 0xFF) << 8) |
-        (ns(buf(pos + 2) & 0xFF) << 4) |
+      ns(buf(pos) & 0xFF) << 12 |
+        ns(buf(pos + 1) & 0xFF) << 8 |
+        ns(buf(pos + 2) & 0xFF) << 4 |
         ns(buf(pos + 3) & 0xFF)
     if (x < 0) hexDigitError(pos)
     x.toChar
@@ -2686,7 +4138,7 @@ final class JsonReader private[jsoniter_scala](
         len = growCharBuf(i + 1)
         charBuf = this.charBuf
       }
-      val posLim = Math.min(tail - 3, ((len - i) << 2) + pos)
+      val posLim = Math.min(tail - 3, (len - i << 2) + pos)
       while (pos < posLim && {
         bits =
           ns(buf(pos) & 0xFF) << 12 |
@@ -2705,15 +4157,15 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(pos)
     if (b == '"') bs = new Array[Byte](bLen)
     else {
-      bits = ns(b & 0xFF)
+      bits = ns(b & 0xFF).toInt
       if (bits < 0) decodeError("expected '\"' or hex digit")
       b = nextByte(head)
-      bits = (bits << 4) | ns(b & 0xFF)
+      bits = bits << 4 | ns(b & 0xFF)
       if (bits < 0) decodeError("expected hex digit")
       b = nextByte(head)
       if (b != '"') {
         if (ns(b & 0xFF) < 0) decodeError("expected '\"' or hex digit")
-        nextByte(head)
+        b = nextByte(head)
         decodeError("expected hex digit")
       }
       bs = new Array[Byte](bLen + 1)
@@ -2746,7 +4198,7 @@ final class JsonReader private[jsoniter_scala](
         lenM1 = growCharBuf(i + 1) - 1
         charBuf = this.charBuf
       }
-      val posLim = Math.min(tail - 3, ((lenM1 - i) << 1) + pos)
+      val posLim = Math.min(tail - 3, (lenM1 - i << 1) + pos)
       while (pos < posLim && {
         bits =
           ds(buf(pos) & 0xFF) << 18 |
@@ -2766,10 +4218,10 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(pos)
     if (b == '"') bs = new Array[Byte](bLen)
     else {
-      bits = ds(b & 0xFF)
+      bits = ds(b & 0xFF).toInt
       if (bits < 0) decodeError("expected '\"' or base64 digit")
       b = nextByte(head)
-      bits = (bits << 6) | ds(b & 0xFF)
+      bits = bits << 6 | ds(b & 0xFF)
       if (bits < 0) decodeError("expected base64 digit")
       b = nextByte(head)
       if (b == '"' || b == '=') {
@@ -2780,7 +4232,7 @@ final class JsonReader private[jsoniter_scala](
         bs = new Array[Byte](bLen + 1)
         bs(bLen) = (bits >> 4).toByte
       } else {
-        bits = (bits << 6) | ds(b & 0xFF)
+        bits = bits << 6 | ds(b & 0xFF)
         if (bits < 0) decodeError("expected '\"' or '=' or base64 digit")
         b = nextByte(head)
         if (b == '=') nextByteOrError('"', head)
@@ -2809,7 +4261,11 @@ final class JsonReader private[jsoniter_scala](
     hexDigitError(pos + 1)
   }
 
-  private[this] def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
+  private[this] def characterError(pos: Int): Nothing = decodeError("illegal character", pos)
+
+  private[this] def escapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
+
+  private[this] def surrogateCharacterError(pos: Int): Nothing = decodeError("illegal surrogate character", pos)
 
   private[this] def unescapedControlCharacterError(pos: Int): Nothing = decodeError("unescaped control character", pos)
 
@@ -2854,10 +4310,10 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def appendHexDump(pos: Int, offset: Int, from: Int): Int = {
     val hexDumpSizeInBytes = config.hexDumpSize << 4
-    val start = Math.max((pos - hexDumpSizeInBytes) & 0xFFFFFFF0, 0)
-    val end = Math.min((pos + hexDumpSizeInBytes + 16) & 0xFFFFFFF0, tail)
-    val alignedAbsFrom = (start + offset) & 0xFFFFFFF0
-    val alignedAbsTo = (end + offset + 15) & 0xFFFFFFF0
+    val start = Math.max(pos - hexDumpSizeInBytes & 0xFFFFFFF0, 0)
+    val end = Math.min(pos + hexDumpSizeInBytes + 16 & 0xFFFFFFF0, tail)
+    val alignedAbsFrom = start + offset & 0xFFFFFFF0
+    val alignedAbsTo = end + offset + 15 & 0xFFFFFFF0
     val len = alignedAbsTo - alignedAbsFrom
     val bufOffset = alignedAbsFrom - offset
     var i = appendChars(dumpBorder, from)
@@ -2888,7 +4344,7 @@ final class JsonReader private[jsoniter_scala](
       charBuf(i + 50 - (linePos << 1)) =
         if (pos >= start && pos < end) {
           val b = buf(pos)
-          charBuf(i) = ds((b >> 4) & 0xF)
+          charBuf(i) = ds(b >> 4 & 0xF)
           charBuf(i + 1) = ds(b & 0xF)
           charBuf(i + 2) = ' '
           if (b <= 31 || b >= 127) '.'
@@ -2913,44 +4369,53 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def appendHexOffset(d: Long, i: Int): Int = {
-    if (i + 16 >= charBuf.length) growCharBuf(i + 16)
+    ensureCharBufCapacity(i + 16)
     val ds = hexDigits
     var j = i
-    if (d.toInt != d) {
-      var shift = (64 - java.lang.Long.numberOfLeadingZeros(d)) & 0x3C
-      while (shift >= 32) {
-        charBuf(j) = ds((d >> shift).toInt & 0xF)
+    val dl = d.toInt
+    if (dl != d) {
+      val dh = (d >> 32).toInt
+      var shift = 32 - java.lang.Integer.numberOfLeadingZeros(dh) & 0x1C
+      while (shift >= 0) {
+        charBuf(j) = ds(dh >> shift & 0xF)
         shift -= 4
         j += 1
       }
     }
-    putHexInt(d.toInt, j, charBuf, ds)
+    putHexInt(dl, j, charBuf, ds)
     j + 8
   }
 
   private[this] def appendHexByte(b: Byte, i: Int, ds: Array[Char]): Int = {
-    if (i + 2 >= charBuf.length) growCharBuf(i + 2)
-    charBuf(i) = ds((b >> 4) & 0xF)
+    ensureCharBufCapacity(i + 2)
+    charBuf(i) = ds(b >> 4 & 0xF)
     charBuf(i + 1) = ds(b & 0xF)
     i + 2
   }
 
   private[this] def putHexInt(d: Int, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
     charBuf(i) = ds(d >>> 28)
-    charBuf(i + 1) = ds((d >> 24) & 0xF)
-    charBuf(i + 2) = ds((d >> 20) & 0xF)
-    charBuf(i + 3) = ds((d >> 16) & 0xF)
-    charBuf(i + 4) = ds((d >> 12) & 0xF)
-    charBuf(i + 5) = ds((d >> 8) & 0xF)
-    charBuf(i + 6) = ds((d >> 4) & 0xF)
+    charBuf(i + 1) = ds(d >> 24 & 0xF)
+    charBuf(i + 2) = ds(d >> 20 & 0xF)
+    charBuf(i + 3) = ds(d >> 16 & 0xF)
+    charBuf(i + 4) = ds(d >> 12 & 0xF)
+    charBuf(i + 5) = ds(d >> 8 & 0xF)
+    charBuf(i + 6) = ds(d >> 4 & 0xF)
     charBuf(i + 7) = ds(d & 0xF)
   }
 
   private[this] def growCharBuf(required: Int): Int = {
-    val newLim = (-1 >>> Integer.numberOfLeadingZeros(charBuf.length | required)) + 1
-    charBuf = java.util.Arrays.copyOf(charBuf, newLim)
-    newLim
+    var charBufLen = charBuf.length
+    val maxCharBufSize = config.maxCharBufSize
+    if (charBufLen == maxCharBufSize) tooLongStringError()
+    charBufLen = (-1 >>> Integer.numberOfLeadingZeros(charBufLen | required)) + 1
+    if (Integer.compareUnsigned(charBufLen, maxCharBufSize) > 0) charBufLen = maxCharBufSize
+    charBuf = java.util.Arrays.copyOf(charBuf, charBufLen)
+    charBufLen
   }
+
+  private[this] def ensureCharBufCapacity(required: Int): Unit =
+    if (charBuf.length < required) growCharBuf(required): Unit
 
   @tailrec
   private[this] def skipString(evenBackSlashes: Boolean, pos: Int): Int =
@@ -3021,6 +4486,7 @@ final class JsonReader private[jsoniter_scala](
       else mark
     if (offset > 0) {
       newPos -= offset
+      val buf = this.buf
       val remaining = tail - offset
       var i = 0
       while (i < remaining) {
@@ -3030,7 +4496,7 @@ final class JsonReader private[jsoniter_scala](
       if (mark > 0) mark = 0
       tail = remaining
       head = newPos
-    } else buf = java.util.Arrays.copyOf(buf, buf.length << 1)
+    } else growBuf()
     var len = buf.length - tail
     if (bbuf ne null) {
       len = Math.min(bbuf.remaining, len)
@@ -3042,6 +4508,19 @@ final class JsonReader private[jsoniter_scala](
     newPos
   }
 
+  private[this] def growBuf(): Unit = {
+    var bufLen = buf.length
+    val maxBufSize = config.maxBufSize
+    if (bufLen == maxBufSize) tooLongInputError()
+    bufLen <<= 1
+    if (Integer.compareUnsigned(bufLen, maxBufSize) > 0) bufLen = maxBufSize
+    buf = java.util.Arrays.copyOf(buf, bufLen)
+  }
+
+  private[this] def tooLongInputError(): Nothing = decodeError("too long part of input exceeded 'maxBufSize'", tail)
+
+  private[this] def tooLongStringError(): Nothing = decodeError("too long string exceeded 'maxCharBufSize'", tail)
+
   private[this] def endOfInputError(): Nothing = decodeError("unexpected end of input", tail)
 
   private[this] def reallocateBufToPreferredSize(): Unit = buf = new Array[Byte](config.preferredBufSize)
@@ -3050,9 +4529,6 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
-  private final val isGraalVM: Boolean =
-    Option(System.getProperty("java.vendor.version")).getOrElse(System.getProperty("java.vm.name")).contains("GraalVM") ||
-      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.contains("-XX:+UseJVMCICompiler")
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
@@ -3371,9 +4847,25 @@ object JsonReader {
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102,
     32, 124
   )
+
+  /**
+    * The default math context used for rounding of `BigDecimal` values when parsing.
+    */
   final val bigDecimalMathContext: MathContext = MathContext.DECIMAL128
+
+  /**
+    * The default limit for number of decimal digits in mantissa of parsed `BigDecimal` values.
+    */
   final val bigDecimalDigitsLimit: Int = 308
+
+  /**
+    * The default limit for scale of parsed `BigDecimal` values.
+    */
   final val bigDecimalScaleLimit: Int = 6178
+
+  /**
+    * The maximum number of digits in `BigInt` values.
+    */
   final val bigIntDigitsLimit: Int = 308
 
   /**
@@ -3383,8 +4875,8 @@ object JsonReader {
     * @param cs a char array
     * @param len an exclusive limit
     * @return a hash code value
-    * @throws NullPointerException if the `cs` is null
-    * @throws ArrayIndexOutOfBoundsException if the length of `cs` is less than the provided `len`
+    * @throws java.lang.NullPointerException if the `cs` is null
+    * @throws java.lang.ArrayIndexOutOfBoundsException if the length of `cs` is less than the provided `len`
     */
   final def toHashCode(cs: Array[Char], len: Int): Int = {
     var h, i = 0
@@ -3396,28 +4888,49 @@ object JsonReader {
   }
 }
 
-private class Key(val hash: Int, val bs: Array[Byte], val from: Int, val to: Int) {
+private class Key {
+  private[this] var hash: Int = _
+  private[this] var bs: Array[Byte] = _
+  private[this] var from: Int = _
+  private[this] var to: Int = _
+
+  def set(hash: Int, bs: Array[Byte], from: Int, to: Int): Unit = {
+    this.hash = hash
+    this.bs = bs
+    this.from = from
+    this.to = to
+  }
+
   def copy: Key = {
     val len = to - from
     val bs1 = new Array[Byte](len)
     System.arraycopy(bs, from, bs1, 0, len)
-    new Key(hash, bs1, 0, len)
+    val k = new Key
+    k.set(hash, bs1, 0, len)
+    k
   }
 
   override def hashCode: Int = hash
 
   override def equals(obj: Any): Boolean = {
     val k = obj.asInstanceOf[Key]
-    val koff = k.from
-    val len = to - from
-    k.to - koff == len && {
-      val kbs = k.bs
-      val off = from
+    val off = from
+    val koff = k.fromIndex
+    val len = to - off
+    k.toIndex - koff == len && {
+      val bs = this.bs
+      val kbs = k.bytes
       var i = 0
-      while (i < len && kbs(i + koff) == bs(i + off)) i += 1
+      while (i < len && kbs(koff + i) == bs(off + i)) i += 1
       i == len
     }
   }
 
   override def toString: String = new String(bs, 0, from, to - from)
+
+  private def bytes: Array[Byte] = bs
+
+  private def fromIndex: Int = from
+
+  private def toIndex: Int = to
 }

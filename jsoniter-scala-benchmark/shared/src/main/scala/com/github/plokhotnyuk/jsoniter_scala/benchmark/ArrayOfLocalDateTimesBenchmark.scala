@@ -5,12 +5,12 @@ import java.time.{LocalDate, LocalDateTime, LocalTime}
 import org.openjdk.jmh.annotations.{Param, Setup}
 
 abstract class ArrayOfLocalDateTimesBenchmark extends CommonParams {
-  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 1000
   var obj: Array[LocalDateTime] = _
-  var jsonString: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
+  var jsonString: String = _
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 1000
 
   @Setup
   def setup(): Unit = {
@@ -26,6 +26,6 @@ abstract class ArrayOfLocalDateTimesBenchmark extends CommonParams {
     }.toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 }

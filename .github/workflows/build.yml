@@ -20,28 +20,30 @@ jobs:
     strategy:
       matrix:
         java:
-          - zulu@1.17
-          - graalvm-ce-java11
-          - zulu@1.8
+          - 11
+          - 21
         os:
-          - ubuntu-latest
+          - ubuntu-latest # FIXME: restore build on MacOS and Windows
       fail-fast: false
     steps:
+      - name: Install Boehm GC for Scala Native # FIXME: Remove after fixing of https://github.com/scala-native/scala-native/issues/4032
+        run: sudo apt-get update && sudo apt-get install -y libgc-dev
       - name: Configure git
         run: "git config --global core.autocrlf false"
         shell: bash
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 300
       - name: Fetch tags
         run: git fetch --depth=300 origin +refs/tags/*:refs/tags/*
-      - uses: coursier/cache-action@v6.3
-      - uses: olafurpg/setup-scala@v13
+      - uses: coursier/cache-action@v6
+      - uses: actions/setup-java@v4
         with:
+          distribution: "adopt"
           java-version: ${{ matrix.java }}
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
-          node-version: 14
-      - name: Compile, test and check binary compatibility
+          node-version: 16
+      - name: Test and Check Binary Compatibility
         run: "sbt -batch +test +mimaReportBinaryIssues"
         shell: bash

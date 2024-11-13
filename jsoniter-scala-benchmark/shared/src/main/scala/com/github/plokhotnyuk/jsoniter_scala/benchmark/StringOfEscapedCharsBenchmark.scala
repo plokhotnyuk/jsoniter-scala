@@ -5,13 +5,13 @@ import java.nio.charset.StandardCharsets.UTF_8
 import org.openjdk.jmh.annotations.{Param, Setup}
 
 class StringOfEscapedCharsBenchmark extends CommonParams {
-  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 1000
   var obj: String = _
-  var jsonString1: String = _
-  var jsonString2: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
+  var jsonString1: String = _
+  var jsonString2: String = _
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 1000
 
   @Setup
   def setup(): Unit = {
@@ -36,6 +36,6 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
     jsonString1 = "\"" + obj.map(ch => f"\\u$ch%04x").mkString  + "\""
     jsonString2 = "\"" + obj.map(ch => f"\\u$ch%04X").mkString  + "\""
     jsonBytes = jsonString1.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
   }
 }

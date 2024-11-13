@@ -1,18 +1,27 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.core.json.JsonWriteFeature
-import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator}
+import com.fasterxml.jackson.core.{JsonFactoryBuilder, JsonGenerator, StreamReadFeature, StreamWriteFeature}
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrinter
-import com.rallyhealth.weejson.v1.jackson.JsonGeneratorOps
+import com.rallyhealth.weejson.v1.jackson.{JsonGeneratorOps, JsonParserOps}
 import com.rallyhealth.weepickle.v1.WeePickle._
 import com.rallyhealth.weepickle.v1.core.Visitor
 import java.time._
 
-object WeePickleFromTos {
-  object ToPrettyJson extends JsonGeneratorOps {
+object WeePickleFromTos extends WeePickleFromTos2 {
+  private[this] def defaultJsonFactoryBuilder: JsonFactoryBuilder = new JsonFactoryBuilder()
+    .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
+    .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
+    .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
+
+  object FromJson extends JsonParserOps(defaultJsonFactoryBuilder.build())
+
+  object ToJson extends JsonGeneratorOps(defaultJsonFactoryBuilder.build())
+
+  object ToPrettyJson extends JsonGeneratorOps(defaultJsonFactoryBuilder.build()) {
     override protected def wrapGenerator(g: JsonGenerator): JsonGenerator =
       g.setPrettyPrinter(new FieldSepPrettyPrinter({
         val indenter = new DefaultIndenter("  ", "\n")
@@ -21,7 +30,7 @@ object WeePickleFromTos {
   }
 
   object ToEscapedNonAsciiJson extends JsonGeneratorOps(
-    JsonFactory.builder().asInstanceOf[JsonFactoryBuilder]
+    defaultJsonFactoryBuilder
       .enable(JsonWriteFeature.ESCAPE_NON_ASCII)
       .build()
   )
@@ -87,6 +96,9 @@ object WeePickleFromTos {
   implicit val monthDayFromTo: FromTo[MonthDay] = fromTo[String].bimap(_.toString, MonthDay.parse)
   implicit val nestedStructsFromTos: FromTo[NestedStructs] = macroFromTo
   implicit val offsetTimeFromTo: FromTo[OffsetTime] = fromTo[String].bimap(_.toString, OffsetTime.parse)
+}
+
+trait WeePickleFromTos2 {
   implicit val openRTBBidRequestFromTos: FromTo[OpenRTB.BidRequest] = {
     implicit val ft1: FromTo[OpenRTB.Segment] = macroFromTo
     implicit val ft2: FromTo[OpenRTB.Format] = macroFromTo
@@ -125,7 +137,6 @@ object WeePickleFromTos {
   }
   implicit val yearMonthFromTo: FromTo[YearMonth] = fromTo[String].bimap(_.toString, YearMonth.parse)
   implicit val yearFromTo: FromTo[Year] = fromTo[String].bimap(_.toString, Year.parse)
-  implicit val zoneIdFromTo: FromTo[ZoneId] = fromTo[String].bimap(_.toString, ZoneId.of)
   implicit val zoneOffsetFromTo: FromTo[ZoneOffset] = fromTo[String].bimap(_.toString, ZoneOffset.of)
 
   val fromNonBinaryByteArray: From[Array[Byte]] = ArrayFrom[Byte](new From[Byte] {

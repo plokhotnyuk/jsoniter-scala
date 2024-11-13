@@ -3,10 +3,8 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.math.MathContext
 import java.time._
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import io.bullet.borer.{AdtEncodingStrategy, Codec, Decoder, Encoder, Reader, Writer}
-import io.bullet.borer.Borer.Error._
 import io.bullet.borer.Json.DecodingConfig
 import io.bullet.borer.derivation.ArrayBasedCodecs
 import io.bullet.borer.derivation.MapBasedCodecs._
@@ -67,8 +65,8 @@ object BorerJsonEncodersDecoders {
   implicit val Codec(zoneOffsetEnc: Encoder[ZoneOffset], zoneOffsetDec: Decoder[ZoneOffset]) =
     stringCodec(ZoneOffset.of)
   implicit val Codec(gitHubActionsAPIEnc: Encoder[GitHubActionsAPI.Response], gitHubActionsAPIDec: Decoder[GitHubActionsAPI.Response]) = {
-    import Decoder.StringBooleans._
-    import Encoder.StringBooleans._
+    import Decoder.StringBooleans.booleanDecoder
+    import Encoder.StringBooleans.booleanEncoder
 
     implicit val c1: Codec[GitHubActionsAPI.Artifact] = deriveCodec
     deriveCodec[GitHubActionsAPI.Response]
@@ -109,17 +107,17 @@ object BorerJsonEncodersDecoders {
   }
   implicit val Codec(primitivesEnc: Encoder[Primitives], primitivesDec: Decoder[Primitives]) = deriveCodec[Primitives]
   implicit val Codec(suitADTEnc: Encoder[SuitADT], suitADTDec: Decoder[SuitADT]) = stringCodec {
-    val suite = Map(
+    val m = Map[String, SuitADT](
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
+    s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val Codec(suitEnc: Encoder[Suit], suitDec: Decoder[Suit]) = stringCodec(Suit.valueOf)
-  implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = enumCodec(SuitEnum)
+  implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = stringCodec(SuitEnum.withName)
   implicit val Codec(twitterAPIEnc: Encoder[TwitterAPI.Tweet], twitterAPIDec: Decoder[TwitterAPI.Tweet]) = {
-    import io.bullet.borer.NullOptions._
+    import io.bullet.borer.NullOptions.{encoder, decoder}
 
     implicit val c1: Codec[TwitterAPI.UserMentions] = deriveCodec
     implicit val c2: Codec[TwitterAPI.Urls] = deriveCodec
@@ -132,22 +130,6 @@ object BorerJsonEncodersDecoders {
   }
   implicit val Codec(uuidEnc: Encoder[UUID], uuidDec: Decoder[UUID]) = stringCodec(UUID.fromString)
 
-  def enumCodec[T <: scala.Enumeration](e: T): Codec[T#Value] = Codec(
-    (w: Writer, value: T#Value) => w.writeString(value.toString), {
-      val ec = new ConcurrentHashMap[String, T#Value]
-      (r: Reader) => {
-        val s = r.readString()
-        var v = ec.get(s)
-        if (v eq null) {
-          v = e.values.iterator.find(_.toString == s)
-            .getOrElse(throw new InvalidInputData(r.position, s"Expected [String] from enum $e, but got $s"))
-          ec.put(s, v)
-        }
-        v
-      }
-    })
-
-  def stringCodec[T](f: String => T): Codec[T] = Codec(
-    (w: Writer, value: T) => w.writeString(value.toString),
-    (r: Reader) => f(r.readString()))
+  private[this] def stringCodec[T](f: String => T): Codec[T] =
+    new Codec((w: Writer, value: T) => w.writeString(value.toString), (r: Reader) => f(r.readString()))
 }

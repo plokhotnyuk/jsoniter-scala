@@ -1,0 +1,3 @@
+package com.github.plokhotnyuk.jsoniter_scala.benchmark
+
+trait PlatformSpecificPlayJsonFormats

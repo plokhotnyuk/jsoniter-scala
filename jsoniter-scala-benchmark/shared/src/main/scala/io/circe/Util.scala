@@ -18,7 +18,6 @@ object Util {
 
     def onArray(value: Vector[Json]): Json = {
       val builder = Vector.newBuilder[Json]
-      builder.sizeHint(value.size)
       value.foreach(v => if (!v.isNull) builder.addOne(v.foldWith(this)))
       val vec = builder.result()
       if (vec.isEmpty) Null
@@ -26,17 +25,25 @@ object Util {
     }
 
     def onObject(value: JsonObject): Json = new JObject(JsonObject.fromLinkedHashMap {
-      val map = new util.LinkedHashMap[String, Json]
-      value.toIterable.foreach { case (k, v) =>
-        lazy val folded = v.foldWith(this)
-        if (!{
-          if (v.isArray) folded
-          else v
-        }.isNull) map.put(k, folded)
+      val map = new util.LinkedHashMap[String, Json](value.size << 1, 0.5f)
+      value.toIterable.foreach { kv =>
+        val folded = kv._2.foldWith(this)
+        if (!folded.isNull) map.put(kv._1, folded)
       }
       map
     })
   }
 
   def deepDropEmptyValues(json: Json): Json = json.foldWith(dropEmptyValueFolder)
+
+  def toJObject(fields: (String, Json)*): Json = new JObject(JsonObject.fromLinkedHashMap {
+    val map = new util.LinkedHashMap[String, Json](fields.size << 1, 0.5f)
+    val it = fields.iterator
+    while (it.hasNext) {
+      val kv = it.next()
+      val v = kv._2
+      if (!(v.isNull || v.isArray && v.asInstanceOf[JArray].value.isEmpty)) map.put(kv._1, v)
+    }
+    map
+  })
 }

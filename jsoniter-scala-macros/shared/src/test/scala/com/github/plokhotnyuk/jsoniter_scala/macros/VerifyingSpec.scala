@@ -21,6 +21,18 @@ class VerifyingSpec extends AnyWordSpec with Matchers {
     verifyArraySer(codec, obj, cfg, json)
   }
 
+  def verifySerError[T](codec: JsonValueCodec[T], obj: T, json: String, msg: String, cfg: WriterConfig = WriterConfig): Unit = {
+    val len = json.getBytes(UTF_8).length
+    val r1 = intercept[Throwable](verifyDirectByteBufferSer(codec, obj, len, cfg, json))
+    if (msg != null) assert(r1.getMessage.contains(msg))
+    val r2 = intercept[Throwable](verifyHeapByteBufferSer(codec, obj, len, cfg, json))
+    if (msg != null) assert(r2.getMessage.contains(msg))
+    val r3 = intercept[Throwable](verifyOutputStreamSer(codec, obj, cfg, json))
+    if (msg != null) assert(r3.getMessage.contains(msg))
+    val r4 = intercept[Throwable](verifyArraySer(codec, obj, cfg, json))
+    if (msg != null) assert(r4.getMessage.contains(msg))
+  }
+
   def verifyDeser[T](codec: JsonValueCodec[T], obj: T, json: String): Unit =
     verifyDeserByCheck[T](codec, json, check = (_: T) shouldBe obj)
 
@@ -36,13 +48,13 @@ class VerifyingSpec extends AnyWordSpec with Matchers {
     verifyDeserError(codec, json.getBytes(UTF_8), msg)
 
   def verifyDeserError[T](codec: JsonValueCodec[T], jsonBytes: Array[Byte], msg: String): Unit = {
-    assert(intercept[JsonReaderException](verifyDirectByteBufferDeser(codec, jsonBytes, (_: T) => ()))
+    assert(intercept[Throwable](verifyDirectByteBufferDeser(codec, jsonBytes, (_: T) => ()))
       .getMessage.contains(msg))
-    assert(intercept[JsonReaderException](verifyHeapByteBufferDeser(codec, jsonBytes, (_: T) => ()))
+    assert(intercept[Throwable](verifyHeapByteBufferDeser(codec, jsonBytes, (_: T) => ()))
       .getMessage.contains(msg))
-    assert(intercept[JsonReaderException](verifyInputStreamDeser(codec, jsonBytes, (_: T) => ()))
+    assert(intercept[Throwable](verifyInputStreamDeser(codec, jsonBytes, (_: T) => ()))
       .getMessage.contains(msg))
-    assert(intercept[JsonReaderException](verifyByteArrayDeser(codec, jsonBytes, (_: T) => ()))
+    assert(intercept[Throwable](verifyByteArrayDeser(codec, jsonBytes, (_: T) => ()))
       .getMessage.contains(msg))
   }
 

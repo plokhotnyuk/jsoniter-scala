@@ -10,16 +10,34 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter._
 import scala.annotation.tailrec
 import scala.{specialized => sp}
 
+/**
+ * A writer for iterative serialization of JSON keys and values.
+ *
+ * @param buf an internal buffer for writing JSON data
+ * @param count the current position in the internal buffer
+ * @param limit the last position in the internal buffer
+ * @param indention the current indention level
+ * @param comma a flag indicating if the next element should be preceded by comma
+ * @param disableBufGrowing a flag indicating if growing of the internal buffer is disabled
+ * @param bbuf a byte buffer for writing JSON data
+ * @param out the output stream for writing JSON data
+ * @param config a writer configuration
+ */
 final class JsonWriter private[jsoniter_scala](
-    private[this] var buf: Array[Byte] = new Array[Byte](16384),
+    private[this] var buf: Array[Byte] = new Array[Byte](32768),
     private[this] var count: Int = 0,
-    private[this] var limit: Int = 16384,
+    private[this] var limit: Int = 32768,
     private[this] var indention: Int = 0,
     private[this] var comma: Boolean = false,
     private[this] var disableBufGrowing: Boolean = false,
     private[this] var bbuf: ByteBuffer = null,
     private[this] var out: OutputStream = null,
     private[this] var config: WriterConfig = null) {
+  /**
+   * Writes a `Boolean` value as a JSON key.
+   *
+   * @param x the `Boolean` value to write
+   */
   def writeKey(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -27,6 +45,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Byte` value as a JSON key.
+   *
+   * @param x the `Byte` value to write
+   */
   def writeKey(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -34,12 +57,23 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Char` value as a JSON key.
+   *
+   * @param x the `Char` value to write
+   * @throws JsonWriterException in case of `Char` value is a part of surrogate pair
+   */
   def writeKey(x: Char): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeChar(x)
+    writeChar(x.toInt)
     writeColon()
   }
 
+  /**
+   * Writes a `Short` value as a JSON key.
+   *
+   * @param x the `Short` value to write
+   */
   def writeKey(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -47,6 +81,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Int` value as a JSON key.
+   *
+   * @param x the `Int` value to write
+   */
   def writeKey(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -54,6 +93,11 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Long` value as a JSON key.
+   *
+   * @param x the `Long` value to write
+   */
   def writeKey(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -61,6 +105,12 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Float` value as a JSON key.
+   *
+   * @param x the `Float` value to write
+   * @throws JsonWriterException if the value is non-finite
+   */
   def writeKey(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -68,6 +118,12 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `Double` value as a JSON key.
+   *
+   * @param x the `Double` value to write
+   * @throws JsonWriterException if the value is non-finite
+   */
   def writeKey(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -75,13 +131,24 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `BigInt` value as a JSON key.
+   *
+   * @param x the `BigInt` value to write
+   */
   def writeKey(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) writeLong(x.longValue)
+    else writeBigInteger(x.bigInteger, null)
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a `BigDecimal` value as a JSON key.
+   *
+   * @param x the `BigDecimal` value to write
+   */
   def writeKey(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -89,43 +156,26 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  /**
+   * Writes a [[java.util.UUID]] value as a JSON key.
+   *
+   * @param x the [[java.util.UUID]] value to write
+   */
   def writeKey(x: UUID): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeUUID(x.getMostSignificantBits, x.getLeastSignificantBits)
     writeColon()
   }
 
-  def writeKey(x: String): Unit = count = {
+  /**
+   * Writes a `String` value as a JSON key.
+   *
+   * @param x the `String` value to write
+   * @throws JsonWriterException if the provided string has an illegal surrogate pair
+   */
+  def writeKey(x: String): Unit = {
     val indention = this.indention
-    var pos = ensureBufCapacity(indention + 3)
-    var buf = this.buf
-    if (comma) {
-      comma = false
-      buf(pos) = ','
-      pos += 1
-      if (indention != 0) pos = writeIndention(buf, pos, indention)
-    }
-    buf(pos) = '"'
-    pos += 1
-    pos =
-      if (JsonWriter.isGraalVM) writeString(x, 0, x.length, pos, limit - 1, escapedChars)
-      else writeStringUnrolled(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
-    if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
-    buf = this.buf
-    buf(pos) = '"'
-    buf(pos + 1) = ':'
-    pos += 2
-    if (config.indentionStep > 0) {
-      buf(pos) = ' '
-      pos += 1
-    }
-    pos
-  }
-
-  def writeNonEscapedAsciiKey(x: String): Unit = count = {
-    val len = x.length
-    val indention = this.indention
-    var pos = ensureBufCapacity(indention + len + 6)
+    var pos = ensureBufCapacity(indention + 10)
     val buf = this.buf
     if (comma) {
       comma = false
@@ -135,141 +185,250 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos += 1
-    x.getBytes(0, len, buf, pos)
-    pos += len
-    buf(pos) = '"'
-    buf(pos + 1) = ':'
-    pos += 2
-    if (config.indentionStep > 0) {
-      buf(pos) = ' '
-      pos += 1
-    }
-    pos
+    pos = writeString(x, 0, pos, buf, Math.min(x.length, limit - pos - 1) + pos)
+    if (pos + 4 >= limit) pos = flushAndGrowBuf(4, pos)
+    ByteArrayAccess.setInt(this.buf, pos, 0x203A22)
+    if (indention > 0) pos += 1
+    count = pos + 2
   }
 
+  /**
+   * Writes a `String` value that doesn't require encoding or escaping as a JSON key.
+   *
+   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligable for writing by this method.
+   *
+   * @param x the `String` value to write
+   */
+  def writeNonEscapedAsciiKey(x: String): Unit = {
+    val len = x.length
+    val indention = this.indention
+    val required = indention + len + 10
+    if (required <= config.preferredBufSize) {
+      var pos = ensureBufCapacity(required)
+      val buf = this.buf
+      if (comma) {
+        comma = false
+        buf(pos) = ','
+        pos += 1
+        if (indention != 0) pos = writeIndention(buf, pos, indention)
+      }
+      buf(pos) = '"'
+      pos += 1
+      var i = 0
+      while (i < len) {
+        buf(pos) = x.charAt(i).toByte
+        pos += 1
+        i += 1
+      }
+      ByteArrayAccess.setInt(buf, pos, 0x203A22)
+      if (indention > 0) pos += 1
+      count = pos + 2
+    } else writeLongNonEscapedAsciiKey(x)
+  }
+
+  /**
+   * Writes a [[java.time.Duration]] value as a JSON key.
+   *
+   * @param x the [[java.time.Duration]] value to write
+   */
   def writeKey(x: Duration): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeDuration(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.Duration]] value as a JSON key.
+   *
+   * @param x the [[java.time.Duration]] value to write
+   */
   def writeKey(x: Instant): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeInstant(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.LocalDate]] value as a JSON key.
+   *
+   * @param x the [[java.time.LocalDate]] value to write
+   */
   def writeKey(x: LocalDate): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalDate(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.LocalDateTime]] value as a JSON key.
+   *
+   * @param x the [[java.time.LocalDateTime]] value to write
+   */
   def writeKey(x: LocalDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalDateTime(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.LocalTime]] value as a JSON key.
+   *
+   * @param x the [[java.time.LocalTime]] value to write
+   */
   def writeKey(x: LocalTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalTime(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.MonthDay]] value as a JSON key.
+   *
+   * @param x the [[java.time.MonthDay]] value to write
+   */
   def writeKey(x: MonthDay): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeMonthDay(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.OffsetDateTime]] value as a JSON key.
+   *
+   * @param x the [[java.time.OffsetDateTime]] value to write
+   */
   def writeKey(x: OffsetDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeOffsetDateTime(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.OffsetTime]] value as a JSON key.
+   *
+   * @param x the [[java.time.OffsetTime]] value to write
+   */
   def writeKey(x: OffsetTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeOffsetTime(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.Period]] value as a JSON key.
+   *
+   * @param x the [[java.time.Period]] value to write
+   */
   def writeKey(x: Period): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writePeriod(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.Year]] value as a JSON key.
+   *
+   * @param x the [[java.time.Year]] value to write
+   */
   def writeKey(x: Year): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeYear(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.YearMonth]] value as a JSON key.
+   *
+   * @param x the [[java.time.YearMonth]] value to write
+   */
   def writeKey(x: YearMonth): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeYearMonth(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.ZonedDateTime]] value as a JSON key.
+   *
+   * @param x the [[java.time.ZonedDateTime]] value to write
+   */
   def writeKey(x: ZonedDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeZonedDateTime(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.ZoneId]] value as a JSON key.
+   *
+   * @param x the [[java.time.ZoneId]] value to write
+   */
   def writeKey(x: ZoneId): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeZoneId(x)
     writeColon()
   }
 
+  /**
+   * Writes a [[java.time.ZoneOffset]] value as a JSON key.
+   *
+   * @param x the [[java.time.ZoneOffset]] value to write
+   */
   def writeKey(x: ZoneOffset): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeZoneOffset(x)
     writeColon()
   }
 
+  /**
+   * Throws a [[JsonWriterException]] with the given error message.
+   *
+   * @param msg the error message
+   * @throws JsonWriterException always
+   */
   def encodeError(msg: String): Nothing =
     throw new JsonWriterException(msg, null, config.throwWriterExceptionWithStackTrace)
 
+  /**
+   * Writes a `BigDecimal` value as a JSON value.
+   *
+   * @param x the `BigDecimal` value to write
+   */
   def writeVal(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBigDecimal(x.bigDecimal)
   }
 
+  /**
+   * Writes a `BigInt` value as a JSON value.
+   *
+   * @param x the `BigInt` value to write
+   */
   def writeVal(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) writeLong(x.longValue)
+    else writeBigInteger(x.bigInteger, null)
   }
 
+  /**
+   * Writes a [[java.util.UUID]] value as a JSON value.
+   *
+   * @param x the [[java.util.UUID]] value to write
+   */
   def writeVal(x: UUID): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeUUID(x.getMostSignificantBits, x.getLeastSignificantBits)
   }
 
-  def writeVal(x: String): Unit = count = {
+  /**
+   * Writes a `String` value as a JSON value.
+   *
+   * @param x the `String` value to write
+   * @throws JsonWriterException if the provided string has an illegal surrogate pair
+   */
+  def writeVal(x: String): Unit = {
     val indention = this.indention
-    var pos = ensureBufCapacity(indention + 4)
-    if (comma) {
-      buf(pos) = ','
-      pos += 1
-      if (indention != 0) pos = writeIndention(buf, pos, indention)
-    } else comma = true
-    buf(pos) = '"'
-    pos += 1
-    pos =
-      if (JsonWriter.isGraalVM) writeString(x, 0, x.length, pos, limit - 1, escapedChars)
-      else writeStringUnrolled(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
-    buf(pos) = '"'
-    pos + 1
-  }
-
-  def writeNonEscapedAsciiVal(x: String): Unit = count = {
-    val len = x.length
-    val indention = this.indention
-    var pos = ensureBufCapacity(indention + len + 4)
+    var pos = ensureBufCapacity(indention + 10)
     val buf = this.buf
     if (comma) {
       buf(pos) = ','
@@ -278,122 +437,271 @@ final class JsonWriter private[jsoniter_scala](
     } else comma = true
     buf(pos) = '"'
     pos += 1
-    x.getBytes(0, len, buf, pos)
-    pos += len
-    buf(pos) = '"'
-    pos + 1
+    pos = writeString(x, 0, pos, buf, Math.min(x.length, limit - pos - 1) + pos)
+    this.buf(pos) = '"'
+    count = pos + 1
   }
 
+  /**
+   * Writes a `String` value that doesn't require encoding or escaping as a JSON value.
+   *
+   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligable for writing by this method.
+   *
+   * @param x the `String` value to write
+   */
+  def writeNonEscapedAsciiVal(x: String): Unit = {
+    val len = x.length
+    val indention = this.indention
+    val required = indention + len + 10
+    if (required <= config.preferredBufSize) {
+      var pos = ensureBufCapacity(required)
+      val buf = this.buf
+      if (comma) {
+        buf(pos) = ','
+        pos += 1
+        if (indention != 0) pos = writeIndention(buf, pos, indention)
+      } else comma = true
+      buf(pos) = '"'
+      pos += 1
+      var i = 0
+      while (i < len) {
+        buf(pos) = x.charAt(i).toByte
+        pos += 1
+        i += 1
+      }
+      buf(pos) = '"'
+      count = pos + 1
+    } else writeLongNonEscapedAsciiVal(x)
+  }
+
+  /**
+   * Writes a [[java.time.Duration]] value as a JSON value.
+   *
+   * @param x the [[java.time.Duration]] value to write
+   */
   def writeVal(x: Duration): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeDuration(x)
   }
 
+  /**
+   * Writes a [[java.time.Instant]] value as a JSON value.
+   *
+   * @param x the [[java.time.Instant]] value to write
+   */
   def writeVal(x: Instant): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeInstant(x)
   }
 
+  /**
+   * Writes a [[java.time.LocalDate]] value as a JSON value.
+   *
+   * @param x the [[java.time.LocalDate]] value to write
+   */
   def writeVal(x: LocalDate): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalDate(x)
   }
 
+  /**
+   * Writes a [[java.time.LocalDateTime]] value as a JSON value.
+   *
+   * @param x the [[java.time.LocalDateTime]] value to write
+   */
   def writeVal(x: LocalDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalDateTime(x)
   }
 
+  /**
+   * Writes a [[java.time.LocalTime]] value as a JSON value.
+   *
+   * @param x the [[java.time.LocalTime]] value to write
+   */
   def writeVal(x: LocalTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalTime(x)
   }
 
+  /**
+   * Writes a [[java.time.MonthDay]] value as a JSON value.
+   *
+   * @param x the [[java.time.MonthDay]] value to write
+   */
   def writeVal(x: MonthDay): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeMonthDay(x)
   }
 
+  /**
+   * Writes a [[java.time.OffsetDateTime]] value as a JSON value.
+   *
+   * @param x the [[java.time.OffsetDateTime]] value to write
+   */
   def writeVal(x: OffsetDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeOffsetDateTime(x)
   }
 
+  /**
+   * Writes a [[java.time.OffsetTime]] value as a JSON value.
+   *
+   * @param x the [[java.time.OffsetTime]] value to write
+   */
   def writeVal(x: OffsetTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeOffsetTime(x)
   }
 
+  /**
+   * Writes a [[java.time.Period]] value as a JSON value.
+   *
+   * @param x the [[java.time.Period]] value to write
+   */
   def writeVal(x: Period): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writePeriod(x)
   }
 
+  /**
+   * Writes a [[java.time.Year]] value as a JSON value.
+   *
+   * @param x the [[java.time.Year]] value to write
+   */
   def writeVal(x: Year): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeYear(x)
   }
 
+  /**
+   * Writes a [[java.time.YearMonth]] value as a JSON value.
+   *
+   * @param x the [[java.time.YearMonth]] value to write
+   */
   def writeVal(x: YearMonth): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeYearMonth(x)
   }
 
+  /**
+   * Writes a [[java.time.ZonedDateTime]] value as a JSON value.
+   *
+   * @param x the [[java.time.ZonedDateTime]] value to write
+   */
   def writeVal(x: ZonedDateTime): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeZonedDateTime(x)
   }
 
+  /**
+   * Writes a [[java.time.ZoneId]] value as a JSON value.
+   *
+   * @param x the [[java.time.ZoneId]] value to write
+   */
   def writeVal(x: ZoneId): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeZoneId(x)
   }
 
+  /**
+   * Writes a [[java.time.ZoneOffset]] value as a JSON value.
+   *
+   * @param x the [[java.time.ZoneOffset]] value to write
+   */
   def writeVal(x: ZoneOffset): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeZoneOffset(x)
   }
 
+  /**
+   * Writes a `Boolean` value as a JSON value.
+   *
+   * @param x the `Boolean` value to write
+   */
   def writeVal(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBoolean(x)
   }
 
+  /**
+   * Writes a `Byte` value as a JSON value.
+   *
+   * @param x the `Byte` value to write
+   */
   def writeVal(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeByte(x)
   }
 
+  /**
+   * Writes a `Short` value as a JSON value.
+   *
+   * @param x the `Short` value to write
+   */
   def writeVal(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeShort(x)
   }
 
+  /**
+   * Writes a `Char` value as a JSON key.
+   *
+   * @param x the `Char` value to write
+   * @throws JsonWriterException in case of `Char` value is a part of surrogate pair
+   */
   def writeVal(x: Char): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeChar(x)
+    writeChar(x.toInt)
   }
 
+  /**
+   * Writes a `Int` value as a JSON value.
+   *
+   * @param x the `Int` value to write
+   */
   def writeVal(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeInt(x)
   }
 
+  /**
+   * Writes a `Long` value as a JSON value.
+   *
+   * @param x the `Long` value to write
+   */
   def writeVal(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeLong(x)
   }
 
+  /**
+   * Writes a `Float` value as a JSON value.
+   *
+   * @param x the `Float` value to write
+   * @throws JsonWriterException if the value is non-finite
+   */
   def writeVal(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeFloat(x)
   }
 
+  /**
+   * Writes a `Double` value as a JSON value.
+   *
+   * @param x the `Double` value to write
+   * @throws JsonWriterException if the value is non-finite
+   */
   def writeVal(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeDouble(x)
   }
 
+  /**
+   * Writes a `BigDecimal` value as a JSON string value.
+   *
+   * @param x the `BigDecimal` value to write
+   */
   def writeValAsString(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -401,13 +709,24 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  /**
+   * Writes a `BigInt` value as a JSON string value.
+   *
+   * @param x the `BigInt` value to write
+   */
   def writeValAsString(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
-    writeBigInteger(x.bigInteger, null)
+    if (x.isValidLong) writeLong(x.longValue)
+    else writeBigInteger(x.bigInteger, null)
     writeBytes('"')
   }
 
+  /**
+   * Writes a `Boolean` value as a JSON string value.
+   *
+   * @param x the `Boolean` value to write
+   */
   def writeValAsString(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -415,6 +734,11 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  /**
+   * Writes a `Byte` value as a JSON string value.
+   *
+   * @param x the `Byte` value to write
+   */
   def writeValAsString(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -422,6 +746,11 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  /**
+   * Writes a `Short` value as a JSON string value.
+   *
+   * @param x the `Short` value to write
+   */
   def writeValAsString(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -429,6 +758,11 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  /**
+   * Writes a `Int` value as a JSON string value.
+   *
+   * @param x the `Int` value to write
+   */
   def writeValAsString(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -436,6 +770,11 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  /**
+   * Writes a `Long` value as a JSON string value.
+   *
+   * @param x the `Long` value to write
+   */
   def writeValAsString(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -443,6 +782,12 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  /**
+   * Writes a `Float` value as a JSON string value.
+   *
+   * @param x the `Float` value to write
+   * @throws JsonWriterException if the value is non-finite
+   */
   def writeValAsString(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -450,6 +795,12 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  /**
+   * Writes a `Double` value as a JSON string value.
+   *
+   * @param x the `Double` value to write
+   * @throws JsonWriterException if the value is non-finite
+   */
   def writeValAsString(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -457,6 +808,12 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  /**
+   * Writes a byte array as a JSON hexadecimal string value.
+   *
+   * @param bs the byte array to write
+   * @param lowerCase if `true`, outputs lowercase hexadecimal digits
+   */
   def writeBase16Val(bs: Array[Byte], lowerCase: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     val ds =
@@ -465,40 +822,76 @@ final class JsonWriter private[jsoniter_scala](
     writeBase16Bytes(bs, ds)
   }
 
+  /**
+   * Writes a byte array as a JSON string value encoded in a base-64 format.
+   *
+   * @param bs the byte array to write
+   * @param doPadding if `true`, outputs padding characters (`=`) as needed
+   */
   def writeBase64Val(bs: Array[Byte], doPadding: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBase64Bytes(bs, base64Digits, doPadding)
   }
 
+  /**
+   * Writes a byte array as a JSON string value encoded in a base-64 format for URLs.
+   *
+   * @param bs the byte array to write
+   * @param doPadding if `true`, outputs padding characters (`=`) as needed
+   */
   def writeBase64UrlVal(bs: Array[Byte], doPadding: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBase64Bytes(bs, base64UrlDigits, doPadding)
   }
 
+  /**
+   * Writes a byte array as a JSON raw binary value.
+   *
+   * @param bs the byte array to write
+   */
   def writeRawVal(bs: Array[Byte]): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeRawBytes(bs)
   }
 
-  def writeNull(): Unit = count = {
+  /**
+   * Writes a JSON `null` value.
+   */
+  def writeNull(): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     val pos = ensureBufCapacity(4)
-    val buf = this.buf
-    buf(pos) = 'n'
-    buf(pos + 1) = 'u'
-    buf(pos + 2) = 'l'
-    buf(pos + 3) = 'l'
-    pos + 4
+    ByteArrayAccess.setInt(buf, pos, 0x6C6C756E)
+    count = pos + 4
   }
 
+  /**
+   * Writes a JSON array start marker (`[`).
+   */
   def writeArrayStart(): Unit = writeNestedStart('[')
 
+  /**
+   * Writes a JSON array end marker (`]`).
+   */
   def writeArrayEnd(): Unit = writeNestedEnd(']')
 
+  /**
+   * Writes a JSON array start marker (`{`).
+   */
   def writeObjectStart(): Unit = writeNestedStart('{')
 
+  /**
+   * Writes a JSON array end marker (`}`).
+   */
   def writeObjectEnd(): Unit = writeNestedEnd('}')
 
+  /**
+   * Writes JSON-encoded value of type `A` to an output stream.
+   *
+   * @param codec a JSON value codec for type `A`
+   * @param x the value to encode
+   * @param out the output stream to write to
+   * @param config the writer configuration
+   */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit =
     try {
       this.out = out
@@ -515,6 +908,14 @@ final class JsonWriter private[jsoniter_scala](
       if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
     }
 
+  /**
+   * Encodes a value of type `A` to a byte array.
+   *
+   * @param codec a JSON value codec for type `A`
+   * @param x the value to encode
+   * @param config the writer configuration
+   * @return the encoded JSON as a byte array
+   */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): Array[Byte] =
     try {
       this.config = config
@@ -528,6 +929,14 @@ final class JsonWriter private[jsoniter_scala](
       if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
     }
 
+  /**
+   * Encodes a value of type `A` to a string.
+   *
+   * @param codec a JSON value codec for type `A`
+   * @param x the value to encode
+   * @param config the writer configuration
+   * @return the encoded JSON as a string
+   */
   private[jsoniter_scala] def writeToString[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String =
     try {
       this.config = config
@@ -541,6 +950,16 @@ final class JsonWriter private[jsoniter_scala](
       if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
     }
 
+  /**
+   * Encodes a value of type `A` to a string without buffer reallocation.
+   *
+   * @note Use only once with a newly allocated writer, so buffer reallocation is not required.
+   *
+   * @param codec a JSON value codec for type `A`
+   * @param x the value to encode
+   * @param config the writer configuration
+   * @return the encoded JSON as a string
+   */
   private[jsoniter_scala] def writeToStringWithoutBufReallocation[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String = {
     this.config = config
     count = 0
@@ -549,8 +968,19 @@ final class JsonWriter private[jsoniter_scala](
     disableBufGrowing = false
     codec.encodeValue(x, this)
     new String(buf, 0, count, StandardCharsets.UTF_8)
-  } // used only once with a new allocated writer, so reallocation of `buf` is not required
+  }
 
+  /**
+   * Encodes a value of type `A` into a pre-allocated byte array slice.
+   *
+   * @param codec a JSON value codec for type `A`
+   * @param x the value to encode
+   * @param buf the target byte array
+   * @param from the start index of the target slice (inclusive)
+   * @param to the end index of the target slice (exclusive)
+   * @param config the writer configuration
+   * @return the number of bytes written to the target slice
+   */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig): Int = {
     val currBuf = this.buf
     try {
@@ -562,12 +992,20 @@ final class JsonWriter private[jsoniter_scala](
       comma = false
       disableBufGrowing = true
       codec.encodeValue(x, this)
-      count
     } finally {
       setBuf(currBuf)
     }
+    count
   }
 
+  /**
+   * Encodes a value of type `A` into a byte buffer.
+   *
+   * @param codec JSON value codec for type `A`
+   * @param x the value to encode
+   * @param bbuf the target byte buffer
+   * @param config the writer configuration
+   */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, bbuf: ByteBuffer, config: WriterConfig): Unit =
     if (bbuf.hasArray) {
       val offset = bbuf.arrayOffset
@@ -636,57 +1074,46 @@ final class JsonWriter private[jsoniter_scala](
       if (indention != 0) writeIndention()
     }
 
-  private[this] def writeIndention(): Unit = count = {
+  private[this] def writeIndention(): Unit = {
     val n = indention
-    val pos = ensureBufCapacity(n + 1)
-    writeIndention(buf, pos, n)
+    val pos = ensureBufCapacity(n + 8)
+    count = writeIndention(buf, pos, n)
   }
 
-  private[this] def writeIndention(buf: Array[Byte], pos: Int, n: Int): Int = {
-    var p = pos
-    buf(p) = '\n'
-    p += 1
-    val posLim = p + n
-    while (p < posLim) {
-      buf(p) = ' '
-      p += 1
-    }
-    p
-  }
-
-  private[this] def writeParenthesesWithColon(): Unit = count = {
-    var pos = ensureBufCapacity(3)
-    val buf = this.buf
-    buf(pos) = '"'
-    buf(pos + 1) = ':'
-    pos += 2
-    if (config.indentionStep > 0) {
-      buf(pos) = ' '
-      pos += 1
-    }
-    pos
-  }
-
-  private[this] def writeColon(): Unit = count = {
-    var pos = ensureBufCapacity(2)
-    val buf = this.buf
-    buf(pos) = ':'
+  private[this] def writeIndention(buf: Array[Byte], p: Int, n: Int): Int = {
+    var pos = p
+    buf(pos) = '\n'
     pos += 1
-    if (config.indentionStep > 0) {
-      buf(pos) = ' '
-      pos += 1
+    val posLim = pos + n
+    while (pos < posLim) {
+      ByteArrayAccess.setLong(buf, pos, 0x2020202020202020L)
+      pos += 8
     }
-    pos
+    posLim
   }
 
-  private[this] def writeBytes(b: Byte): Unit = count = {
+  private[this] def writeParenthesesWithColon(): Unit = {
+    var pos = ensureBufCapacity(4) // 4 == size of Int in bytes
+    ByteArrayAccess.setInt(buf, pos, 0x203A22)
+    if (indention > 0) pos += 1
+    count = pos + 2
+  }
+
+  private[this] def writeColon(): Unit = {
+    var pos = ensureBufCapacity(2)
+    ByteArrayAccess.setShort(buf, pos, 0x203A)
+    if (indention > 0) pos += 1
+    count = pos + 1
+  }
+
+  private[this] def writeBytes(b: Byte): Unit = {
     var pos = count
     if (pos >= limit) pos = flushAndGrowBuf(1, pos)
     buf(pos) = b
-    pos + 1
+    count = pos + 1
   }
 
-  private[this] def writeBase16Bytes(bs: Array[Byte], ds: Array[Short]): Unit = count = {
+  private[this] def writeBase16Bytes(bs: Array[Byte], ds: Array[Short]): Unit = {
     val lenM1 = bs.length - 1
     var posLim = limit - 6
     var pos = count
@@ -699,14 +1126,11 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     var offset = 0
     while (offset < lenM1) {
-      val offsetLim = Math.min(((posLim - pos + 1) >> 1) + offset, lenM1)
+      val offsetLim = Math.min((posLim - pos + 1 >> 1) + offset, lenM1)
       while (offset < offsetLim) {
         val d1 = ds(bs(offset) & 0xFF)
-        val d2 = ds(bs(offset + 1) & 0xFF)
-        buf(pos) = d1.toByte
-        buf(pos + 1) = (d1 >> 8).toByte
-        buf(pos + 2) = d2.toByte
-        buf(pos + 3) = (d2 >> 8).toByte
+        val d2 = ds(bs(offset + 1) & 0xFF) << 16
+        ByteArrayAccess.setInt(buf, pos, d1 | d2)
         pos += 4
         offset += 2
       }
@@ -717,17 +1141,15 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     if (offset == lenM1) {
-      val d1 = ds(bs(offset) & 0xFF)
-      buf(pos) = d1.toByte
-      buf(pos + 1) = (d1 >> 8).toByte
+      ByteArrayAccess.setShort(buf, pos, ds(bs(offset) & 0xFF))
       pos += 2
     }
     buf(pos) = '"'
-    pos + 1
+    count = pos + 1
   }
 
-  private[this] def writeBase64Bytes(bs: Array[Byte], ds: Array[Byte], doPadding: Boolean): Unit = count = {
-    val lenM2 = bs.length - 2
+  private[this] def writeBase64Bytes(bs: Array[Byte], ds: Array[Byte], doPadding: Boolean): Unit = {
+    val lenM3 = bs.length - 3
     var posLim = limit - 6
     var pos = count
     if (pos >= posLim) {
@@ -738,14 +1160,12 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     var offset = 0
-    while (offset < lenM2) {
-      val offsetLim = Math.min(((posLim - pos + 3) >> 2) * 3 + offset, lenM2)
+    while (offset < lenM3) {
+      val offsetLim = Math.min((posLim - pos + 3 >> 2) * 3 + offset, lenM3)
       while (offset < offsetLim) {
-        val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
-        buf(pos) = ds(p >> 18)
-        buf(pos + 1) = ds((p >> 12) & 0x3F)
-        buf(pos + 2) = ds((p >> 6) & 0x3F)
-        buf(pos + 3) = ds(p & 0x3F)
+        val p = ByteArrayAccess.getIntReversed(bs, offset)
+        ByteArrayAccess.setInt(buf, pos,
+          ds(p >> 8 & 0x3F) << 24 | ds(p >> 14 & 0x3F) << 16 | ds(p >> 20 & 0x3F) << 8 | ds(p >>> 26))
         pos += 4
         offset += 3
       }
@@ -755,32 +1175,27 @@ final class JsonWriter private[jsoniter_scala](
         posLim = limit - 5
       }
     }
-    if (offset == lenM2) {
+    if (offset == lenM3) {
+      val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
+      ByteArrayAccess.setInt(buf, pos,
+        ds(p & 0x3F) << 24 | ds(p >> 6 & 0x3F) << 16 | ds(p >> 12 & 0x3F) << 8 | ds(p >> 18))
+      pos += 4
+    } else if (offset == lenM3 + 1) {
       val p = (bs(offset) & 0xFF) << 10 | (bs(offset + 1) & 0xFF) << 2
-      buf(pos) = ds(p >> 12)
-      buf(pos + 1) = ds((p >> 6) & 0x3F)
-      buf(pos + 2) = ds(p & 0x3F)
+      ByteArrayAccess.setInt(buf, pos, ds(p & 0x3F) << 16 | ds(p >> 6 & 0x3F) << 8 | ds(p >> 12) | 0x3D000000)
       pos += 3
-      if (doPadding) {
-        buf(pos) = '='
-        pos += 1
-      }
-    } else if (offset == lenM2 + 1) {
-      val p = bs(offset) & 0xFF
-      buf(pos) = ds(p >> 2)
-      buf(pos + 1) = ds((p << 4) & 0x3F)
+      if (doPadding) pos += 1
+    } else if (offset == lenM3 + 2) {
+      val p = bs(offset)
+      ByteArrayAccess.setInt(buf, pos, ds(p << 4 & 0x3F) << 8 | ds(p >> 2 & 0x3F) | 0x3D3D0000)
       pos += 2
-      if (doPadding) {
-        buf(pos) = '='
-        buf(pos + 1) = '='
-        pos += 2
-      }
+      if (doPadding) pos += 2
     }
     buf(pos) = '"'
-    pos + 1
+    count = pos + 1
   }
 
-  private[this] def writeRawBytes(bs: Array[Byte]): Unit = count = {
+  private[this] def writeRawBytes(bs: Array[Byte]): Unit = {
     var pos = count
     var step = Math.max(config.preferredBufSize, limit - pos)
     var remaining = bs.length
@@ -793,10 +1208,50 @@ final class JsonWriter private[jsoniter_scala](
       pos += step
       remaining -= step
     }
-    pos
+    count = pos
   }
 
-  private[this] def writeZoneId(x: ZoneId): Unit = count = {
+  private[this] def writeLongNonEscapedAsciiKey(x: String): Unit = {
+    writeOptionalCommaAndIndentionBeforeKey()
+    writeBytes('"')
+    var pos = count
+    var step = Math.max(config.preferredBufSize, limit - pos)
+    var remaining = x.length
+    var offset = 0
+    while (remaining > 0) {
+      step = Math.min(step, remaining)
+      if (pos + step > limit) pos = flushAndGrowBuf(step, pos)
+      val newOffset = offset + step
+      x.getBytes(offset, newOffset, buf, pos)
+      offset = newOffset
+      pos += step
+      remaining -= step
+    }
+    count = pos
+    writeParenthesesWithColon()
+  }
+
+  private[this] def writeLongNonEscapedAsciiVal(x: String): Unit = {
+    writeOptionalCommaAndIndentionBeforeValue()
+    writeBytes('"')
+    var pos = count
+    var step = Math.max(config.preferredBufSize, limit - pos)
+    var remaining = x.length
+    var offset = 0
+    while (remaining > 0) {
+      step = Math.min(step, remaining)
+      if (pos + step > limit) pos = flushAndGrowBuf(step, pos)
+      val newOffset = offset + step
+      x.getBytes(offset, newOffset, buf, pos)
+      offset = newOffset
+      pos += step
+      remaining -= step
+    }
+    count = pos
+    writeBytes('"')
+  }
+
+  private[this] def writeZoneId(x: ZoneId): Unit = {
     val s = x.getId
     val len = s.length
     var pos = ensureBufCapacity(len + 2)
@@ -806,115 +1261,56 @@ final class JsonWriter private[jsoniter_scala](
     s.getBytes(0, len, buf, pos)
     pos += len
     buf(pos) = '"'
-    pos + 1
+    count = pos + 1
   }
 
-  private[this] def writeUUID(mostSigBits: Long, leastSigBits: Long): Unit = count = {
-    val pos = ensureBufCapacity(38) // 38 == (new java.util.UUID(0, 0)).toString.length + 2
+  private[this] def writeUUID(mostSigBits: Long, leastSigBits: Long): Unit = {
+    val pos = ensureBufCapacity(40) // 40 == 5 * size of Long in bytes
     val buf = this.buf
     val ds = lowerCaseHexDigits
     val mostSigBits1 = (mostSigBits >> 32).toInt
-    buf(pos) = '"'
-    val d1 = ds(mostSigBits1 >>> 24)
-    buf(pos + 1) = d1.toByte
-    buf(pos + 2) = (d1 >> 8).toByte
-    val d2 = ds((mostSigBits1 >> 16) & 0xFF)
-    buf(pos + 3) = d2.toByte
-    buf(pos + 4) = (d2 >> 8).toByte
-    val d3 = ds((mostSigBits1 >> 8) & 0xFF)
-    buf(pos + 5) = d3.toByte
-    buf(pos + 6) = (d3 >> 8).toByte
+    val d1 = ds(mostSigBits1 >>> 24) << 8
+    val d2 = ds(mostSigBits1 >> 16 & 0xFF).toLong << 24
+    val d3 = ds(mostSigBits1 >> 8 & 0xFF).toLong << 40
     val d4 = ds(mostSigBits1 & 0xFF)
-    buf(pos + 7) = d4.toByte
-    buf(pos + 8) = (d4 >> 8).toByte
+    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3 | d4.toLong << 56 | 0x22)
     val mostSigBits2 = mostSigBits.toInt
-    buf(pos + 9) = '-'
-    val d5 = ds(mostSigBits2 >>> 24)
-    buf(pos + 10) = d5.toByte
-    buf(pos + 11) = (d5 >> 8).toByte
-    val d6 = ds((mostSigBits2 >> 16) & 0xFF)
-    buf(pos + 12) = d6.toByte
-    buf(pos + 13) = (d6 >> 8).toByte
-    buf(pos + 14) = '-'
-    val d7 = ds((mostSigBits2 >> 8) & 0xFF)
-    buf(pos + 15) = d7.toByte
-    buf(pos + 16) = (d7 >> 8).toByte
-    val d8 = ds(mostSigBits2 & 0xFF)
-    buf(pos + 17) = d8.toByte
-    buf(pos + 18) = (d8 >> 8).toByte
+    val d5 = ds(mostSigBits2 >>> 24) << 16
+    val d6 = ds(mostSigBits2 >> 16 & 0xFF).toLong << 32
+    val d7 = ds(mostSigBits2 >> 8 & 0xFF)
+    ByteArrayAccess.setLong(buf, pos + 8, d4 >> 8 | d5 | d6 | d7.toLong << 56 | 0x2D000000002D00L)
+    val d8 = ds(mostSigBits2 & 0xFF) << 8
     val leastSigBits1 = (leastSigBits >> 32).toInt
-    buf(pos + 19) = '-'
-    val d9 = ds(leastSigBits1 >>> 24)
-    buf(pos + 20) = d9.toByte
-    buf(pos + 21) = (d9 >> 8).toByte
-    val d10 = ds((leastSigBits1 >> 16) & 0xFF)
-    buf(pos + 22) = d10.toByte
-    buf(pos + 23) = (d10 >> 8).toByte
-    buf(pos + 24) = '-'
-    val d11 = ds((leastSigBits1 >> 8) & 0xFF)
-    buf(pos + 25) = d11.toByte
-    buf(pos + 26) = (d11 >> 8).toByte
-    val d12 = ds(leastSigBits1 & 0xFF)
-    buf(pos + 27) = d12.toByte
-    buf(pos + 28) = (d12 >> 8).toByte
+    val d9 = ds(leastSigBits1 >>> 24).toLong << 32
+    val d10 = ds(leastSigBits1 >> 16 & 0xFF).toLong << 48
+    ByteArrayAccess.setLong(buf, pos + 16, d7 >> 8 | d8 | d9 | d10 | 0x2D000000)
+    val d11 = ds(leastSigBits1 >> 8 & 0xFF) << 8
+    val d12 = ds(leastSigBits1 & 0xFF).toLong << 24
     val leastSigBits2 = leastSigBits.toInt
-    val d13 = ds(leastSigBits2 >>> 24)
-    buf(pos + 29) = d13.toByte
-    buf(pos + 30) = (d13 >> 8).toByte
-    val d14 = ds((leastSigBits2 >> 16) & 0xFF)
-    buf(pos + 31) = d14.toByte
-    buf(pos + 32) = (d14 >> 8).toByte
-    val d15 = ds((leastSigBits2 >> 8) & 0xFF)
-    buf(pos + 33) = d15.toByte
-    buf(pos + 34) = (d15 >> 8).toByte
-    val d16 = ds(leastSigBits2 & 0xFF)
-    buf(pos + 35) = d16.toByte
-    buf(pos + 36) = (d16 >> 8).toByte
-    buf(pos + 37) = '"'
-    pos + 38
+    val d13 = ds(leastSigBits2 >>> 24).toLong << 40
+    val d14 = ds(leastSigBits2 >> 16 & 0xFF)
+    ByteArrayAccess.setLong(buf, pos + 24, d11 | d12| d13 | d14.toLong << 56 | 0x2D)
+    val d15 = ds(leastSigBits2 >> 8 & 0xFF) << 8
+    val d16 = ds(leastSigBits2 & 0xFF).toLong << 24
+    ByteArrayAccess.setLong(buf, pos + 32, d14 >> 8 | d15 | d16 | 0x220000000000L)
+    count = pos + 38
   }
 
   @tailrec
-  private[this] def writeString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
-    if (from >= to) pos
-    else if (pos >= posLim) writeString(s, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
+  private[this] def writeString(s: String, from: Int, pos: Int, buf: Array[Byte], minLim: Int): Int =
+    if (pos < minLim) {
+      val ch = s.charAt(from).toInt
+      buf(pos) = ch.toByte
+      if (ch >= 0x20 && ch < 0x7F && ch != 0x22 && ch != 0x5C) writeString(s, from + 1, pos + 1, buf, minLim)
+      else writeEscapedOrEncodedString(s, from, pos)
+    } else if (s.length == from) pos
     else {
-      val ch = s.charAt(from)
-      buf(pos) = ch.toByte
-      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
-      else writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      val newPos = flushAndGrowBuf(2, pos)
+      writeString(s, from, newPos, this.buf, Math.min(s.length - from, limit - newPos - 1) + newPos)
     }
 
-  @tailrec
-  private[this] def writeStringUnrolled(s: String, from: Int, pos: Int, minLim: Int, escapedChars: Array[Byte]): Int =
-    if (pos + 3 < minLim) {
-      val ch1 = s.charAt(from)
-      val ch2 = s.charAt(from + 1)
-      val ch3 = s.charAt(from + 2)
-      val ch4 = s.charAt(from + 3)
-      buf(pos) = ch1.toByte
-      buf(pos + 1) = ch2.toByte
-      buf(pos + 2) = ch3.toByte
-      buf(pos + 3) = ch4.toByte
-      if ((ch1 | ch2 | ch3 | ch4) < 0x80 &&
-        (escapedChars(ch1) | escapedChars(ch2) | escapedChars(ch3) | escapedChars(ch4)) == 0) {
-        writeStringUnrolled(s, from + 4, pos + 4, minLim, escapedChars)
-      } else writeEscapedOrEncodedString(s, from, pos, escapedChars)
-    } else if (pos < minLim) {
-      val ch = s.charAt(from)
-      buf(pos) = ch.toByte
-      if (ch < 0x80 && escapedChars(ch) == 0) writeStringUnrolled(s, from + 1, pos + 1, minLim, escapedChars)
-      else writeEscapedOrEncodedString(s, from, pos, escapedChars)
-    } else {
-      val remaining = s.length - from
-      if (remaining > 0) {
-        val newPos = flushAndGrowBuf(2, pos)
-        writeStringUnrolled(s, from, newPos, Math.min(remaining, limit - newPos - 1) + newPos, escapedChars)
-      } else pos
-    }
-
-  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]): Int =
-    if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars)
+  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int): Int =
+    if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars, lowerCaseHexDigits)
     else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
 
   @tailrec
@@ -922,127 +1318,114 @@ final class JsonWriter private[jsoniter_scala](
     if (from >= to) pos
     else if (pos >= posLim) writeEncodedString(s, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
-      val ch1 = s.charAt(from)
-      if (ch1 < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+      val ch1 = s.charAt(from).toInt
+      if (ch1 < 0x80) {
         val esc = escapedChars(ch1)
-        if (esc == 0) {
+        if (esc == 0) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
           buf(pos) = ch1.toByte
           writeEncodedString(s, from + 1, to, pos + 1, posLim, escapedChars)
         } else if (esc > 0) {
-          buf(pos) = '\\'
-          buf(pos + 1) = esc
+          ByteArrayAccess.setShort(buf, pos, (esc << 8 | 0x5C).toShort)
           writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-        } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
+        } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf, lowerCaseHexDigits), posLim, escapedChars)
       } else if (ch1 < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
-        buf(pos) = (0xC0 | (ch1 >> 6)).toByte
-        buf(pos + 1) = (0x80 | (ch1 & 0x3F)).toByte
+        ByteArrayAccess.setShort(buf, pos, (ch1 >> 6 | (ch1 << 8 & 0x3F00) | 0x80C0).toShort)
         writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-      } else if (ch1 < 0xD800 || ch1 > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
-        buf(pos) = (0xE0 | (ch1 >> 12)).toByte
-        buf(pos + 1) = (0x80 | ((ch1 >> 6) & 0x3F)).toByte
-        buf(pos + 2) = (0x80 | (ch1 & 0x3F)).toByte
+      } else if ((ch1 & 0xF800) != 0xD800) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
+        ByteArrayAccess.setInt(buf, pos, ch1 >> 12 | (ch1 << 2 & 0x3F00) | (ch1 << 16 & 0x3F0000) | 0x8080E0)
         writeEncodedString(s, from + 1, to, pos + 3, posLim, escapedChars)
       } else { // 110110uuuuccccbb 110111bbbbaaaaaa (UTF-16 chars) -> 11110ddd 10ddcccc 10bbbbbb 10aaaaaa (UTF-8 bytes), where ddddd = uuuu + 1
-        if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
-        val ch2 = s.charAt(from + 1)
-        if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
-        val cp = (ch1 << 10) + (ch2 - 56613888) // -56613888 == 0x010000 - (0xD800 << 10) - 0xDC00
-        buf(pos) = (0xF0 | (cp >> 18)).toByte
-        buf(pos + 1) = (0x80 | ((cp >> 12) & 0x3F)).toByte
-        buf(pos + 2) = (0x80 | ((cp >> 6) & 0x3F)).toByte
-        buf(pos + 3) = (0x80 | (cp & 0x3F)).toByte
+        var ch2 = 0
+        if (ch1 >= 0xDC00 || from + 1 >= to || {
+          ch2 = s.charAt(from + 1).toInt
+          (ch2 & 0xFC00) != 0xDC00
+        }) illegalSurrogateError()
+        val cp = (ch1 << 10) + (ch2 - 56613888) // -56613888 == 0x10000 - (0xD800 << 10) - 0xDC00
+        ByteArrayAccess.setInt(buf, pos, cp >> 18 | (cp >> 4 & 0x3F00) | (cp << 10 & 0x3F0000) | (cp << 24 & 0x3F000000) | 0x808080F0)
         writeEncodedString(s, from + 2, to, pos + 4, posLim, escapedChars)
       }
     }
 
   @tailrec
-  private[this] def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
+  private[this] def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte], ds: Array[Short]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), limit - 12, escapedChars)
+    else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), limit - 12, escapedChars, ds)
     else {
-      val ch1 = s.charAt(from)
+      val ch1 = s.charAt(from).toInt
       if (ch1 < 0x80) {
         val esc = escapedChars(ch1)
         if (esc == 0) {
           buf(pos) = ch1.toByte
-          writeEscapedString(s, from + 1, to, pos + 1, posLim, escapedChars)
+          writeEscapedString(s, from + 1, to, pos + 1, posLim, escapedChars, ds)
         } else if (esc > 0) {
-          buf(pos) = '\\'
-          buf(pos + 1) = esc
-          writeEscapedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-        } else writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
-      } else if (ch1 < 0xD800 || ch1 > 0xDFFF) {
-        writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1, pos, buf), posLim, escapedChars)
+          ByteArrayAccess.setShort(buf, pos, (esc << 8 | 0x5C).toShort)
+          writeEscapedString(s, from + 1, to, pos + 2, posLim, escapedChars, ds)
+        } else writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf, ds), posLim, escapedChars, ds)
+      } else if ((ch1 & 0xF800) != 0xD800) {
+        writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1, pos, buf, ds), posLim, escapedChars, ds)
       } else {
-        if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
-        val ch2 = s.charAt(from + 1)
-        if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
-        writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf), buf), posLim, escapedChars)
+        var ch2 = 0
+        if (ch1 >= 0xDC00 || from + 1 >= to || {
+          ch2 = s.charAt(from + 1).toInt
+          (ch2 & 0xFC00) != 0xDC00
+        }) illegalSurrogateError()
+        writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf, ds), buf, ds), posLim, escapedChars, ds)
       }
     }
 
-  private[this] def writeChar(ch: Char): Unit = count = {
-    var pos = ensureBufCapacity(8) // 6 bytes per char for escaped unicode + make room for the quotes
-    val buf = this.buf
-    buf(pos) = '"'
-    pos += 1
-    if (ch < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+  private[this] def writeChar(ch: Int): Unit = {
+    var pos = ensureBufCapacity(8) // 8 = size of Long in bytes
+    if (ch < 0x80) {
       val esc = escapedChars(ch)
-      if (esc == 0) {
-        buf(pos) = ch.toByte
-        pos += 1
+      if (esc == 0) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+        ByteArrayAccess.setInt(buf, pos, ch << 8 | 0x220022)
+        pos += 3
       } else if (esc > 0) {
-        buf(pos) = '\\'
-        buf(pos + 1) = esc
-        pos += 2
-      } else pos = writeEscapedUnicode(ch.toByte, pos, buf)
+        ByteArrayAccess.setInt(buf, pos, esc << 16 | 0x22005C22)
+        pos += 4
+      } else {
+        val ds = lowerCaseHexDigits
+        ByteArrayAccess.setLong(buf, pos, ds(ch).toLong << 40 | 0x2200003030755C22L)
+        pos += 8
+      }
     } else if (config.escapeUnicode) {
-      if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
-      pos = writeEscapedUnicode(ch, pos, buf)
+      if ((ch & 0xF800) == 0xD800) illegalSurrogateError()
+      val ds = lowerCaseHexDigits
+      val d1 = ds(ch >> 8).toLong << 24
+      val d2 = ds(ch & 0xFF).toLong << 40
+      ByteArrayAccess.setLong(buf, pos, d1 | d2 | 0x2200000000755C22L)
+      pos += 8
     } else if (ch < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
-      buf(pos) = (0xC0 | (ch >> 6)).toByte
-      buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
-      pos += 2
-    } else if (ch < 0xD800 || ch > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
-      buf(pos) = (0xE0 | (ch >> 12)).toByte
-      buf(pos + 1) = (0x80 | ((ch >> 6) & 0x3F)).toByte
-      buf(pos + 2) = (0x80 | (ch & 0x3F)).toByte
-      pos += 3
+      ByteArrayAccess.setInt(buf, pos, (ch & 0x3F) << 16 | (ch & 0xFC0) << 2 | 0x2280C022)
+      pos += 4
+    } else if ((ch & 0xF800) != 0xD800) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
+      ByteArrayAccess.setLong(buf, pos, ((ch & 0x3F) << 24 | (ch & 0xFC0) << 10 | (ch & 0xF000) >> 4) | 0x228080E022L)
+      pos += 5
     } else illegalSurrogateError()
-    buf(pos) = '"'
-    pos + 1
+    count = pos
   }
 
-  private[this] def writeEscapedUnicode(ch: Char, pos: Int, buf: Array[Byte]): Int = {
-    val ds = lowerCaseHexDigits
-    buf(pos) = '\\'
-    buf(pos + 1) = 'u'
+  private[this] def writeEscapedUnicode(ch: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    ByteArrayAccess.setShort(buf, pos, 0x755C)
     val d1 = ds(ch >> 8)
-    buf(pos + 2) = d1.toByte
-    buf(pos + 3) = (d1 >> 8).toByte
-    val d2 = ds(ch & 0xFF)
-    buf(pos + 4) = d2.toByte
-    buf(pos + 5) = (d2 >> 8).toByte
+    val d2 = ds(ch & 0xFF) << 16
+    ByteArrayAccess.setInt(buf, pos + 2, d1 | d2)
     pos + 6
   }
 
-  private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val d = lowerCaseHexDigits(b & 0xFF)
-    buf(pos) = '\\'
-    buf(pos + 1) = 'u'
-    buf(pos + 2) = '0'
-    buf(pos + 3) = '0'
-    buf(pos + 4) = d.toByte
-    buf(pos + 5) = (d >> 8).toByte
+  private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    ByteArrayAccess.setInt(buf, pos, 0x3030755C)
+    ByteArrayAccess.setShort(buf, pos + 4, ds(b & 0xFF))
     pos + 6
   }
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
-  private[this] def writeBigInteger(x: BigInteger, ss: Array[BigInteger]): Unit =
-    if (x.bitLength < 64) writeLong(x.longValue)
+  private[this] def writeBigInteger(x: BigInteger, ss: Array[BigInteger]): Unit = {
+    val bitLen = x.bitLength
+    if (bitLen < 64) writeLong(x.longValue)
     else {
-      val n = calculateTenPow18SquareNumber(x)
+      val n = calculateTenPow18SquareNumber(bitLen)
       val ss1 =
         if (ss eq null) getTenPow18Squares(n)
         else ss
@@ -1050,6 +1433,7 @@ final class JsonWriter private[jsoniter_scala](
       writeBigInteger(qr(0), ss1)
       writeBigIntegerRemainder(qr(1), n - 1, ss1)
     }
+  }
 
   private[this] def writeBigIntegerRemainder(x: BigInteger, n: Int, ss: Array[BigInteger]): Unit =
     if (n < 0) count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(18), buf, digits)
@@ -1060,81 +1444,86 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeBigDecimal(x: java.math.BigDecimal): Unit = {
-    val exp = writeBigDecimal(x.unscaledValue, x.scale, 0, null)
+    var exp = writeBigDecimal(x.unscaledValue, x.scale, 0, null)
     if (exp != 0) {
       var pos = ensureBufCapacity(12)
       val buf = this.buf
       val ds = digits
-      buf(pos) = 'E'
-      pos += 1
-      val q0 =
-        if (exp >= 0) {
-          buf(pos) = '+'
-          pos += 1
-          exp
-        } else {
-          buf(pos) = '-'
-          pos += 1
-          -exp
-        }
-      count =
-        if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
-        else {
-          val q1 = (q0 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-          write8Digits((q0 - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
-        }
+      var m: Short = 0x2B45
+      if (exp < 0) {
+        m = 0x2D45
+        exp = -exp
+      }
+      ByteArrayAccess.setShort(buf, pos, m)
+      pos += 2
+      var q = exp
+      if (exp < 100000000L) {
+        pos += digitCount(exp)
+        count = pos
+      } else {
+        q = Math.multiplyHigh(exp, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
+        pos += digitCount(q)
+        count = write8Digits(exp - q * 100000000L, pos, buf, ds)
+      }
+      writePositiveIntDigits(q.toInt, pos, buf, ds)
     }
   }
 
-  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int, ss: Array[BigInteger]): Long =
-    if (x.bitLength < 64) {
+  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int, ss: Array[BigInteger]): Long = {
+    val bitLen = x.bitLength
+    if (bitLen < 64) {
       val v = x.longValue
       val pos = ensureBufCapacity(28) // Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
-      count = pos
-      writeLong(v)
-      val blockLen = (v >> 63).toInt + count - pos
+      val buf = this.buf
+      var lastPos = writeLong(v, pos, buf)
+      val digits = (v >> 63).toInt + lastPos - pos
       val dotOff = scale.toLong - blockScale
-      val exp = (blockLen - 1) - dotOff
+      val exp = (digits - 1) - dotOff
       if (scale >= 0 && exp >= -6) {
-        if (exp < 0) insertDotWithZeroes(blockLen, -1 - exp.toInt)
-        else if (dotOff > 0) insertDot(count - dotOff.toInt)
+        if (exp < 0) lastPos = insertDotWithZeroes(digits, -1 - exp.toInt, lastPos, buf)
+        else if (dotOff > 0) lastPos = insertDot(lastPos - dotOff.toInt, lastPos, buf)
+        count = lastPos
         0
       } else {
-        if (blockLen > 1 || blockScale > 0) insertDot(count - blockLen + 1)
+        if (digits > 1 || blockScale > 0) lastPos = insertDot(lastPos - digits + 1, lastPos, buf)
+        count = lastPos
         exp
       }
     } else {
-      val n = calculateTenPow18SquareNumber(x)
+      val n = calculateTenPow18SquareNumber(bitLen)
       val ss1 =
         if (ss eq null) getTenPow18Squares(n)
         else ss
       val qr = x.divideAndRemainder(ss1(n))
-      val exp = writeBigDecimal(qr(0), scale, blockScale + (18 << n), ss1)
+      val exp = writeBigDecimal(qr(0), scale, (18 << n) + blockScale, ss1)
       writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss1)
       exp
     }
+  }
 
   private[this] def writeBigDecimalRemainder(x: BigInteger, scale: Int, blockScale: Int, n: Int,
                                              ss: Array[BigInteger]): Unit =
     if (n < 0) {
-      count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits) // 18 digits and a place for optional dot
+      val pos = ensureBufCapacity(19) // 18 digits and a place for optional dot
+      val buf = this.buf
+      var lastPos = write18Digits(Math.abs(x.longValue), pos, buf, digits)
       val dotOff = scale - blockScale
-      if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
+      if (dotOff > 0 && dotOff <= 18) lastPos = insertDot(lastPos - dotOff, lastPos, buf)
+      count = lastPos
     } else {
       val qr = x.divideAndRemainder(ss(n))
-      writeBigDecimalRemainder(qr(0), scale, blockScale + (18 << n), n - 1, ss)
+      writeBigDecimalRemainder(qr(0), scale, (18 << n) + blockScale, n - 1, ss)
       writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss)
     }
 
-  private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
-    val m = Math.max((x.bitLength * 71828554L >> 32).toInt - 1, 1) // Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
+  private[this] def calculateTenPow18SquareNumber(bitLen: Int): Int = {
+    val m = Math.max((bitLen * 71828554L >> 32).toInt - 1, 1) // Math.max((x.bitLength * Math.log(2) / Math.log(1e18)).toInt - 1, 1)
     31 - java.lang.Integer.numberOfLeadingZeros(m)
   }
 
-  private[this] def insertDotWithZeroes(len: Int, pad: Int): Unit = count = {
-    var pos = count + pad + 1
-    val buf = this.buf
-    val numPos = pos - len
+  private[this] def insertDotWithZeroes(digits: Int, pad: Int, lastPos: Int, buf: Array[Byte]): Int = {
+    var pos = lastPos + pad + 1
+    val numPos = pos - digits
     val off = pad + 2
     while (pos > numPos) {
       buf(pos) = buf(pos - off)
@@ -1145,321 +1534,335 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = '0'
       pos -= 1
     }
-    buf(dotPos) = '.'
-    buf(dotPos - 1) = '0'
-    count + off
+    ByteArrayAccess.setShort(buf, dotPos - 1, 0x2E30)
+    lastPos + off
   }
 
-  private[this] def insertDot(dotPos: Int): Unit = count = {
-    var pos = count
-    val buf = this.buf
+  private[this] def insertDot(dotPos: Int, lastPos: Int, buf: Array[Byte]): Int = {
+    var pos = lastPos
     while (pos > dotPos) {
       buf(pos) = buf(pos - 1)
       pos -= 1
     }
     buf(dotPos) = '.'
-    count + 1
+    lastPos + 1
   }
 
-  private[this] def writeBoolean(x: Boolean): Unit = count = {
-    val pos = ensureBufCapacity(5) // false.toString.length
-    val buf = this.buf
+  private[this] def writeBoolean(x: Boolean): Unit = {
+    var pos = ensureBufCapacity(8) // bytes in Long
     if (x) {
-      buf(pos) = 't'
-      buf(pos + 1) = 'r'
-      buf(pos + 2) = 'u'
-      buf(pos + 3) = 'e'
-      pos + 4
+      ByteArrayAccess.setInt(buf, pos, 0x65757274)
+      pos += 4
     } else {
-      buf(pos) = 'f'
-      buf(pos + 1) = 'a'
-      buf(pos + 2) = 'l'
-      buf(pos + 3) = 's'
-      buf(pos + 4) = 'e'
-      pos + 5
+      ByteArrayAccess.setLong(buf, pos, 0x65736c6166L)
+      pos += 5
     }
+    count = pos
   }
 
-  private[this] def writeByte(x: Byte): Unit = count = {
-    var pos = ensureBufCapacity(4) // Byte.MinValue.toString.length
+  private[this] def writeByte(x: Byte): Unit = {
+    var pos = ensureBufCapacity(5) // size of Int in bytes + one byte for the sign
     val buf = this.buf
-    val q0: Int =
-      if (x >= 0) x
-      else {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      }
+    val ds = digits
+    var q0 = x.toInt
+    if (q0 < 0) {
+      q0 = -q0
+      buf(pos) = '-'
+      pos += 1
+    }
     if (q0 < 10) {
-      buf(pos) = (q0 + '0').toByte
-      pos + 1
+      buf(pos) = (q0 | '0').toByte
+      pos += 1
     } else if (q0 < 100) {
-      val d = digits(q0)
-      buf(pos) = d.toByte
-      buf(pos + 1) = (d >> 8).toByte
-      pos + 2
-    } else {
-      val d = digits(q0 - 100)
-      buf(pos) = '1'
-      buf(pos + 1) = d.toByte
-      buf(pos + 2) = (d >> 8).toByte
-      pos + 3
-    }
-  }
-
-  private[this] def writeDuration(x: Duration): Unit = count = {
-    var pos = ensureBufCapacity(40) // 40 == "PT-1111111111111111H-11M-11.111111111S".length + 2
-    val buf = this.buf
-    buf(pos) = '"'
-    buf(pos + 1) = 'P'
-    buf(pos + 2) = 'T'
-    pos += 3
-    val totalSecs = x.getSeconds
-    var nano = x.getNano
-    if ((totalSecs | nano) == 0) {
-      buf(pos) = '0'
-      buf(pos + 1) = 'S'
+      ByteArrayAccess.setShort(buf, pos, ds(q0))
       pos += 2
     } else {
-      val effectiveTotalSecs =
-        if (totalSecs < 0) (-nano >> 31) - totalSecs
-        else totalSecs
-      val hours = effectiveTotalSecs / 3600 // FIXME: Use Math.multiplyHigh(x, 5247073869855161349L) >> 10 after dropping of JDK 8 support
-      val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
+      ByteArrayAccess.setInt(buf, pos, ds(q0 - 100) << 8 | '1')
+      pos += 3
+    }
+    count = pos
+  }
+
+  private[this] def writeDuration(x: Duration): Unit = {
+    var pos = ensureBufCapacity(40) // 40 == "PT-1111111111111111H-11M-11.111111111S".length + 2
+    val buf = this.buf
+    var totalSecs = x.getSeconds
+    var nano = x.getNano
+    ByteArrayAccess.setLong(buf, pos, 0x225330545022L)
+    if ((totalSecs | nano) == 0) pos += 6
+    else {
+      pos += 3
+      val isNeg = totalSecs < 0
+      if (isNeg) totalSecs = (-nano >> 31) - totalSecs
+      var hours = 0L
+      var secsOfHour = totalSecs.toInt
+      if (totalSecs >= 3600) {
+        hours = Math.multiplyHigh(totalSecs >> 4, 655884233731895169L) >> 3 // divide a positive long by 3600
+        secsOfHour = (totalSecs - hours * 3600).toInt
+      }
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
       val seconds = secsOfHour - minutes * 60
       val ds = digits
       if (hours != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
-        pos =
-          if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
-          else {
-            val q1 = hours / 100000000 // FIXME: Use Math.multiplyHigh(hours, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-            write8Digits((hours - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
-          }
-        buf(pos) = 'H'
+        var q = hours
+        var lastPos = pos
+        if (hours < 100000000L) {
+          lastPos += digitCount(hours)
+          pos = lastPos
+        } else {
+          q = Math.multiplyHigh(hours, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
+          lastPos += digitCount(q)
+          pos = write8Digits(hours - q * 100000000L, lastPos, buf, ds)
+        }
+        writePositiveIntDigits(q.toInt, lastPos, buf, ds)
+        ByteArrayAccess.setShort(buf, pos, 0x2248)
         pos += 1
       }
       if (minutes != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
         if (minutes < 10) {
-          buf(pos) = (minutes + '0').toByte
+          buf(pos) = (minutes | '0').toByte
           pos += 1
-        } else pos = write2Digits(minutes, pos, buf, ds)
-        buf(pos) = 'M'
+        } else {
+          ByteArrayAccess.setShort(buf, pos, ds(minutes))
+          pos += 2
+        }
+        ByteArrayAccess.setShort(buf, pos, 0x224D)
         pos += 1
       }
       if ((seconds | nano) != 0) {
-        if (totalSecs < 0) {
+        if (isNeg) {
           buf(pos) = '-'
           pos += 1
         }
         if (seconds < 10) {
-          buf(pos) = (seconds + '0').toByte
+          buf(pos) = (seconds | '0').toByte
           pos += 1
-        } else pos = write2Digits(seconds, pos, buf, ds)
+        } else {
+          ByteArrayAccess.setShort(buf, pos, ds(seconds))
+          pos += 2
+        }
         if (nano != 0) {
-          if (totalSecs < 0) nano = 1000000000 - nano
+          if (isNeg) nano = 1000000000 - nano
           val dotPos = pos
           pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, ds)
           buf(dotPos) = '.'
         }
-        buf(pos) = 'S'
+        ByteArrayAccess.setShort(buf, pos, 0x2253)
         pos += 1
       }
+      pos += 1
     }
-    buf(pos) = '"'
-    pos + 1
+    count = pos
   }
 
-  private[this] def writeInstant(x: Instant): Unit = count = {
+  private[this] def writeInstant(x: Instant): Unit = {
     val epochSecond = x.getEpochSecond
-    val epochDay = // FIXME: Use (Math.multiplyHigh(if (epochSecond >= 0) epochSecond else epochSecond - 86399, 1749024623285053783L) >> 13) - (epochSecond >> 63) after dropping JDK 8 support
-      (if (epochSecond >= 0) epochSecond
-      else epochSecond - 86399) / 86400 // 86400 == seconds per day
-    val secsOfDay = (epochSecond - epochDay * 86400).toInt
-    var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
-    var adjustYear = 0
-    if (marchZeroDay < 0) { // adjust negative years to positive for calculation
-      val marchZeroDayP1 = marchZeroDay + 1
-      val adjust400YearCycles = (((marchZeroDayP1 * 7525902) >> 40) + (~marchZeroDayP1 >> 63)).toInt // ((marchZeroDay + 1) / 146097).toInt - 1 (146097 == number of days in a 400 year cycle)
-      adjustYear = adjust400YearCycles * 400
-      marchZeroDay -= adjust400YearCycles * 146097L // 146097 == number of days in a 400 year cycle
+    if (epochSecond < 0) writeBeforeEpochInstant(epochSecond, x.getNano)
+    else {
+      val epochDay = Math.multiplyHigh(epochSecond, 1749024623285053783L) >> 13 // epochSecond / 86400
+      val marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
+      var year = (Math.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
+      var days = year * 365L
+      var year1374389535 = year * 1374389535L
+      var century = (year1374389535 >> 37).toInt
+      var marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
+      if (marchDayOfYear < 0) {
+        days -= 365
+        year1374389535 -= 1374389535
+        year -= 1
+        century = (year1374389535 >> 37).toInt
+        marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
+      }
+      val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
+      val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+      val m = 9 - marchMonth >> 4
+      val month = (m & -9 | 3) + marchMonth
+      year -= m
+      writeInstant(year, month, day, (epochSecond - epochDay * 86400).toInt, x.getNano)
     }
-    var year = // FIXME: Use { val pa = marchZeroDay * 400 + 591; ((Math.multiplyHigh(pa, 4137408090565272301L) >> 15) + (pa >> 63)).toInt } after dropping JDK 8 support
-      ((marchZeroDay * 400 + 591) / 146097).toInt
-    var marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
-    if (marchDayOfYear < 0) { // fix year estimate
+  }
+
+  private[this] def writeBeforeEpochInstant(epochSecond: Long, nano: Int): Unit = {
+    val epochDay = (Math.multiplyHigh(epochSecond - 86399, 1749024623285053783L) >> 13) + 1 // (epochSecond - 86399) / 86400
+    var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
+    val adjust400YearCycles = ((marchZeroDay + 1) * 7525902 >> 40).toInt // ((marchZeroDay + 1) / 146097).toInt - 1
+    marchZeroDay -= adjust400YearCycles * 146097L
+    var year = (Math.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
+    var days = year * 365L
+    var year1374389535 = year * 1374389535L
+    var century = (year1374389535 >> 37).toInt
+    var marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
+    if (marchDayOfYear < 0) {
+      days -= 365
+      year1374389535 -= 1374389535
       year -= 1
-      marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
+      century = (year1374389535 >> 37).toInt
+      marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
     }
-    val marchMonth = (marchDayOfYear * 17135 + 6854) >> 19 // (marchDayOfYear * 5 + 2) / 153
-    year += (marchMonth * 3277 >> 15) + adjustYear // year += marchMonth / 10 + adjustYear (reset any negative year and convert march-based values back to january-based)
-    val month = marchMonth +
-      (if (marchMonth < 10) 3
-      else -9)
-    val day = marchDayOfYear - ((marchMonth * 1002762 - 16383) >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
-    val hour = secsOfDay * 37283 >>> 27 // divide a small positive int by 3600
-    val secsOfHour = secsOfDay - hour * 3600
-    val minute = secsOfHour * 17477 >> 20 // divide a small positive int by 60
-    val second = secsOfHour - minute * 60
+    val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
+    val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val m = 9 - marchMonth >> 4
+    val month = (m & -9 | 3) + marchMonth
+    year += adjust400YearCycles * 400 - m
+    writeInstant(year, month, day, (epochSecond - epochDay * 86400).toInt, nano)
+  }
+
+  private[this] def writeInstant(year: Int, month: Int, day: Int, secsOfDay: Int, nano: Int): Unit = {
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(year, month, day, pos + 1, buf, ds)
-    buf(pos) = 'T'
-    pos = writeLocalTime(hour, minute, second, x.getNano, pos + 1, buf, ds)
-    buf(pos) = 'Z'
-    buf(pos + 1) = '"'
-    pos + 2
+    pos = writeYear(year, pos + 1, buf, ds)
+    ByteArrayAccess.setLong(buf, pos, ds(month) << 8 | ds(day).toLong << 32 | 0x5400002D00002DL)
+    pos += 7
+    val y1 = secsOfDay * 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y2 = (y1 & 0x7FFFFFF) * 15
+    val y3 = (y2 & 0x1FFFFFF) * 15
+    ByteArrayAccess.setLong(buf, pos, ds(y1 >>> 27) | ds(y2 >> 25).toLong << 24 | ds(y3 >> 23).toLong << 48 | 0x3A00003A0000L)
+    pos += 8
+    if (nano != 0) pos = writeNanos(nano, pos, buf, ds)
+    ByteArrayAccess.setShort(buf, pos, 0x225A)
+    count = pos + 2
   }
 
-  private[this] def toMarchDayOfYear(marchZeroDay: Long, year: Int): Int = {
-    val century = (year * 1374389535L >> 37).toInt // divide an int by 100 (the sign correction is not needed)
-    (marchZeroDay - year * 365L).toInt - (year >> 2) + century - (century >> 2)
-  }
-
-  private[this] def writeLocalDate(x: LocalDate): Unit = count = {
-    var pos = ensureBufCapacity(18) // 18 == LocalDate.MAX.toString.length + 2
+  private[this] def writeLocalDate(x: LocalDate): Unit = {
+    var pos = ensureBufCapacity(19) // 19 == java.time.Year.MAX_VALUE.toString.length + 9
     val buf = this.buf
+    val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(x, pos + 1, buf, digits)
-    buf(pos) = '"'
-    pos + 1
+    pos = writeYear(x.getYear, pos + 1, buf, ds)
+    val d1 = ds(x.getMonthValue) << 8
+    val d2 = ds(x.getDayOfMonth).toLong << 32
+    ByteArrayAccess.setLong(buf, pos, d1 | d2 | 0x2200002D00002DL)
+    count = pos + 7
   }
 
-  private[this] def writeLocalDateTime(x: LocalDateTime): Unit = count = {
+  private[this] def writeLocalDateTime(x: LocalDateTime): Unit = {
     var pos = ensureBufCapacity(37) // 37 == LocalDateTime.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
-    buf(pos) = 'T'
-    pos = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
+    pos = writeLocalTime(x.toLocalTime, writeLocalDateWithT(x.toLocalDate, pos + 1, buf, ds), buf, ds)
     buf(pos) = '"'
-    pos + 1
+    count = pos + 1
   }
 
-  private[this] def writeLocalTime(x: LocalTime): Unit = count = {
+  private[this] def writeLocalTime(x: LocalTime): Unit = {
     var pos = ensureBufCapacity(20) // 20 == LocalTime.MAX.toString.length + 2
     val buf = this.buf
+    val ds = digits
     buf(pos) = '"'
-    pos = writeLocalTime(x, pos + 1, buf, digits)
+    pos = writeLocalTime(x, pos + 1, buf, ds)
     buf(pos) = '"'
-    pos + 1
+    count = pos + 1
   }
 
-  private[this] def writeMonthDay(x: MonthDay): Unit = count = {
-    var pos = ensureBufCapacity(9) // 9 == "--01-01".length + 2
+  private[this] def writeMonthDay(x: MonthDay): Unit = {
+    val pos = ensureBufCapacity(9) // 9 == "--01-01".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    buf(pos + 1) = '-'
-    buf(pos + 2) = '-'
-    pos = write2Digits(x.getMonthValue, pos + 3, buf, ds)
-    buf(pos) = '-'
-    pos = write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
-    buf(pos) = '"'
-    pos + 1
+    val d1 = ds(x.getMonthValue) << 16
+    val d2 = ds(x.getDayOfMonth).toLong << 40
+    ByteArrayAccess.setLong(buf, pos + 1, d1 | d2 | 0x2200002D00002D2DL)
+    count = pos + 9
   }
 
-  private[this] def writeOffsetDateTime(x: OffsetDateTime): Unit = count = {
-    var pos = ensureBufCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
+  private[this] def writeOffsetDateTime(x: OffsetDateTime): Unit = {
+    val pos = ensureBufCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
-    buf(pos) = 'T'
-    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
-    buf(pos) = '"'
-    pos + 1
+    count = writeOffset(x.getOffset,
+      writeLocalTime(x.toLocalTime, writeLocalDateWithT(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
   }
 
-  private[this] def writeOffsetTime(x: OffsetTime): Unit = count = {
-    var pos = ensureBufCapacity(29) // 29 == "00:00:07.999999998+00:00:08".length + 2
+  private[this] def writeOffsetTime(x: OffsetTime): Unit = {
+    val pos = ensureBufCapacity(29) // 29 == "00:00:07.999999998+00:00:08".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
-    buf(pos) = '"'
-    pos + 1
+    count = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
   }
 
-  private[this] def writePeriod(x: Period): Unit = count = {
+  private[this] def writePeriod(x: Period): Unit = {
     var pos = ensureBufCapacity(39) // 39 == "P-2147483648Y-2147483648M-2147483648D".length + 2
     val buf = this.buf
-    buf(pos) = '"'
-    buf(pos + 1) = 'P'
-    pos += 2
-    if (x.isZero) {
-      buf(pos) = '0'
-      buf(pos + 1) = 'D'
+    val years = x.getYears
+    val months = x.getMonths
+    val days = x.getDays
+    ByteArrayAccess.setLong(buf, pos, 0x2244305022L)
+    if ((years | months | days) == 0) count = pos + 5
+    else {
       pos += 2
-    } else {
       val ds = digits
-      val years = x.getYears
-      val months = x.getMonths
-      val days = x.getDays
-      if (years != 0) pos = writePeriod(years, pos, buf, ds, 'Y')
-      if (months != 0) pos = writePeriod(months, pos, buf, ds, 'M')
-      if (days != 0) pos = writePeriod(days, pos, buf, ds, 'D')
-    }
-    buf(pos) = '"'
-    pos + 1
-  }
-
-  private[this] def writePeriod(x: Int, p: Int, buf: Array[Byte], ds: Array[Short], b: Byte): Int = {
-    var pos = p
-    val q0 =
-      if (x >= 0) x
-      else if (x != -2147483648) {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      } else {
-        buf(pos) = '-'
-        buf(pos + 1) = '2'
-        pos += 2
-        147483648
+      var q0 = years
+      var b: Byte = 'Y'
+      while (true) {
+        if (q0 != 0) {
+          if (q0 < 0) {
+            q0 = -q0
+            ByteArrayAccess.setShort(buf, pos, 0x322D)
+            pos += 1
+            if (q0 == -2147483648) {
+              q0 = 147483648
+              pos += 1
+            }
+          }
+          pos += digitCount(q0.toLong)
+          writePositiveIntDigits(q0, pos, buf, ds)
+          buf(pos) = b
+          pos += 1
+        }
+        if (b == 'Y') {
+          q0 = months
+          b = 'M'
+        } else if (b == 'M') {
+          q0 = days
+          b = 'D'
+        } else {
+          buf(pos) = '"'
+          count = pos + 1
+          return
+        }
       }
-    pos = writePositiveInt(q0, pos, buf, ds)
-    buf(pos) = b
-    pos + 1
+    }
   }
 
-  private[this] def writeYear(x: Year): Unit = count = {
+  private[this] def writeYear(x: Year): Unit = {
     var pos = ensureBufCapacity(12) // 12 == "+999999999".length + 2
     val buf = this.buf
     buf(pos) = '"'
     pos = writeYear(x.getValue, pos + 1, buf, digits)
     buf(pos) = '"'
-    pos + 1
+    count = pos + 1
   }
 
-  private[this] def writeYearMonth(x: YearMonth): Unit = count = {
+  private[this] def writeYearMonth(x: YearMonth): Unit = {
     var pos = ensureBufCapacity(15) // 15 == "+999999999-12".length + 2
     val buf = this.buf
+    val ds = digits
     buf(pos) = '"'
-    pos = writeYearMonth(x.getYear, x.getMonthValue, pos + 1, buf, digits)
-    buf(pos) = '"'
-    pos + 1
+    pos = writeYear(x.getYear, pos + 1, buf, ds)
+    ByteArrayAccess.setInt(buf, pos, ds(x.getMonthValue) << 8 | 0x2200002D)
+    count = pos + 4
   }
 
-  private[this] def writeZonedDateTime(x: ZonedDateTime): Unit = count = {
+  private[this] def writeZonedDateTime(x: ZonedDateTime): Unit = {
     var pos = ensureBufCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
     var buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
-    buf(pos) = 'T'
-    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
+    pos = writeOffset(x.getOffset,
+      writeLocalTime(x.toLocalTime, writeLocalDateWithT(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
     val zone = x.getZone
     if (!zone.isInstanceOf[ZoneOffset]) {
       val zoneId = zone.getId
@@ -1469,563 +1872,535 @@ final class JsonWriter private[jsoniter_scala](
         pos = flushAndGrowBuf(required, pos)
         buf = this.buf
       }
-      buf(pos) = '['
-      pos += 1
+      buf(pos - 1) = '['
       zoneId.getBytes(0, len, buf, pos)
       pos += len
-      buf(pos) = ']'
-      pos += 1
+      ByteArrayAccess.setShort(buf, pos, 0x225D)
+      pos += 2
     }
-    buf(pos) = '"'
-    pos + 1
+    count = pos
   }
 
-  private[this] def writeZoneOffset(x: ZoneOffset): Unit = count = {
-    var pos = ensureBufCapacity(12) // 12 == "+10:10:10".length + 2
+  private[this] def writeZoneOffset(x: ZoneOffset): Unit = {
+    var pos = ensureBufCapacity(12) // 12 == number of bytes in Long and Int
     val buf = this.buf
-    buf(pos) = '"'
-    pos = writeOffset(x, pos + 1, buf, digits)
-    buf(pos) = '"'
-    pos + 1
+    var y = x.getTotalSeconds
+    if (y == 0) {
+      ByteArrayAccess.setInt(buf, pos, 0x225A22)
+      pos += 3
+    } else {
+      val ds = digits
+      var m = 0x2230303A00002B22L
+      if (y < 0) {
+        y = -y
+        m = 0x2230303A00002D22L
+      }
+      y *= 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      m |= ds(y >>> 27) << 16
+      if ((y & 0x7FF8000) == 0) { // check if totalSeconds is divisible by 3600
+        ByteArrayAccess.setLong(buf, pos, m)
+        pos += 8
+      } else {
+        y &= 0x7FFFFFF
+        y *= 15
+        ByteArrayAccess.setLong(buf, pos, ds(y >> 25).toLong << 40 | m)
+        if ((y & 0x1F80000) == 0) pos += 8 // check if totalSeconds is divisible by 60
+        else {
+          ByteArrayAccess.setInt(buf, pos + 7, ds((y & 0x1FFFFFF) * 15 >> 23) << 8 | 0x2200003A)
+          pos += 11
+        }
+      }
+    }
+    count = pos
   }
 
-  private[this] def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var pos = writeYear(x.getYear, p, buf, ds)
-    buf(pos) = '-'
-    pos = write2Digits(x.getMonthValue, pos + 1, buf, ds)
-    buf(pos) = '-'
-    write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
-  }
-
-  private[this] def writeLocalDate(year: Int, month: Int, day: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var pos = writeYear(year, p, buf, ds)
-    buf(pos) = '-'
-    pos = write2Digits(month, pos + 1, buf, ds)
-    buf(pos) = '-'
-    write2Digits(day, pos + 1, buf, ds)
-  }
-
-  private[this] def writeYearMonth(year: Int, month: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val pos = writeYear(year, p, buf, ds)
-    buf(pos) = '-'
-    write2Digits(month, pos + 1, buf, ds)
+  private[this] def writeLocalDateWithT(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val pos = writeYear(x.getYear, p, buf, ds)
+    val d1 = ds(x.getMonthValue) << 8
+    val d2 = ds(x.getDayOfMonth).toLong << 32
+    ByteArrayAccess.setLong(buf, pos, d1 | d2 | 0x5400002D00002DL)
+    pos + 7
   }
 
   private[this] def writeYear(year: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (year >= 0) {
-      if (year < 10000) write4Digits(year, pos, buf, ds)
-      else {
-        buf(pos) = '+'
-        writePositiveInt(year, pos + 1, buf, ds)
-      }
-    } else {
-      buf(pos) = '-'
-      if (year > -10000) write4Digits(-year, pos + 1, buf, ds)
-      else writePositiveInt(-year, pos + 1, buf, ds)
-    }
+    if (year >= 0 && year < 10000) write4Digits(year, pos, buf, ds)
+    else writeYearWithSign(year, pos, buf, ds)
 
-  private[this] def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var pos = write2Digits(x.getHour, p, buf, ds)
-    buf(pos) = ':'
-    pos = write2Digits(x.getMinute, pos + 1, buf, ds)
+  private[this] def writeYearWithSign(year: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var q0 = year
+    var pos = p
+    var b: Byte = '+'
+    if (q0 < 0) {
+      q0 = -q0
+      b = '-'
+    }
+    buf(pos) = b
+    pos += 1
+    if (q0 < 10000) write4Digits(q0, pos, buf, ds)
+    else {
+      pos += digitCount(q0.toLong)
+      writePositiveIntDigits(q0, pos, buf, ds)
+      pos
+    }
+  }
+
+  private[this] def writeLocalTime(x: LocalTime, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val second = x.getSecond
     val nano = x.getNano
-    if ((second | nano) != 0) {
-      buf(pos) = ':'
-      pos = write2Digits(second, pos + 1, buf, ds)
-      if (nano != 0) {
-        buf(pos) = '.'
-        pos = writeNanos(nano, pos + 1, buf, ds)
-      }
-    }
-    pos
-  }
-
-  private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var pos = write2Digits(hour, p, buf, ds)
-    buf(pos) = ':'
-    pos = write2Digits(minute, pos + 1, buf, ds)
-    buf(pos) = ':'
-    pos = write2Digits(second, pos + 1, buf, ds)
-    if (nano != 0) {
-      buf(pos) = '.'
-      writeNanos(nano, pos + 1, buf, ds)
-    } else pos
-  }
-
-  private[this] def writeNanos(q0: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = (q0 * 1801439851L >> 54).toInt // divide a positive int by 10000000
-    val r1 = q0 - q1 * 10000000
-    var pos = write2Digits(q1, p, buf, ds)
-    val p2 = r1 * 175921861L
-    val q2 = (p2 >> 44).toInt // divide a positive int by 100000
-    val d = ds(q2)
-    buf(pos) = d.toByte
-    pos += 1
-    val b = (d >> 8).toByte
-    if ((p2 & 0xFFFF8000000L | b - '0') != 0) { // check if r1 divisible by 100000 and the next digit is zero
-      val r2 = r1 - q2 * 100000
-      buf(pos) = b
-      val p3 = r2 * 2199023256L
-      val q3 = (p3 >> 41).toInt // divide a positive int by 1000
-      pos = write2Digits(q3, pos + 1, buf, ds)
-      if ((p3 & 0x1FF80000000L) != 0) { // check if r2 divisible by 1000
-        pos = write3Digits(r2 - q3 * 1000, pos, buf, ds)
-      }
-    }
-    pos
-  }
-
-  private[this] def writeOffset(x: ZoneOffset, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val totalSeconds = x.getTotalSeconds
-    if (totalSeconds == 0) {
-      buf(p) = 'Z'
-      p + 1
+    val d1 = ds(x.getHour) | 0x3A00003A0000L
+    val d2 = ds(x.getMinute).toLong << 24
+    if ((second | nano) == 0) {
+      ByteArrayAccess.setLong(buf, pos, d1 | d2)
+      pos + 5
     } else {
-      val q0 =
-        if (totalSeconds > 0) {
-          buf(p) = '+'
-          totalSeconds
-        } else {
-          buf(p) = '-'
-          -totalSeconds
-        }
-      val p1 = q0 * 37283
-      val q1 = p1 >>> 27 // divide a small positive int by 3600
-      var pos = write2Digits(q1, p + 1, buf, ds)
-      buf(pos) = ':'
-      if ((p1 & 0x7FF8000) == 0) { // check if q0 is divisible by 3600
-        buf(pos + 1) = '0'
-        buf(pos + 2) = '0'
-        pos + 3
+      val d3 = ds(second).toLong << 48
+      ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
+      if (nano == 0) pos + 8
+      else writeNanos(nano, pos + 8, buf, ds)
+    }
+  }
+
+  private[this] def writeNanos(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val y1 = x * 1441151881L // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y2 = (y1 & 0x1FFFFFFFFFFFFFFL) * 100
+    var m = y1 >>> 57 << 8 | ds((y2 >>> 57).toInt) << 16 | 0x302E
+    if ((y2 & 0x1FFFFF800000000L) == 0) { // check if q0 is divisible by 1000000
+      ByteArrayAccess.setInt(buf, pos, m.toInt)
+      pos + 4
+    } else {
+      val y3 = (y2 & 0x1FFFFFFFFFFFFFFL) * 100
+      val y4 = (y3 & 0x1FFFFFFFFFFFFFFL) * 100
+      m |= ds((y3 >>> 57).toInt).toLong << 32
+      val d = ds((y4 >>> 57).toInt)
+      ByteArrayAccess.setLong(buf, pos, m | d.toLong << 48)
+      if ((y4 & 0x1FF000000000000L) == 0 && d <= 0x3039) pos + 7 // check if x is divisible by 1000
+      else {
+        ByteArrayAccess.setShort(buf, pos + 8, ds(((y4 & 0x1FFFFFFFFFFFFFFL) * 100 >>> 57).toInt))
+        pos + 10
+      }
+    }
+  }
+
+  private[this] def writeOffset(x: ZoneOffset, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var y = x.getTotalSeconds
+    if (y == 0) {
+      ByteArrayAccess.setShort(buf, pos, 0x225A)
+      pos + 2
+    } else {
+      var m = 0x2230303A00002BL
+      if (y < 0) {
+        y = -y
+        m = 0x2230303A00002DL
+      }
+      y *= 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      m |= ds(y >>> 27) << 8
+      if ((y & 0x7FF8000) == 0) { // check if totalSeconds is divisible by 3600
+        ByteArrayAccess.setLong(buf, pos, m)
+        pos + 7
       } else {
-        val r1 = q0 - q1 * 3600
-        val p2 = r1 * 17477
-        val q2 = p2 >> 20 // divide a small positive int by 60
-        pos = write2Digits(q2, pos + 1, buf, ds)
-        if ((p2 & 0xFC000) == 0) pos // check if r1 is divisible by 60
+        y &= 0x7FFFFFF
+        y *= 15
+        ByteArrayAccess.setLong(buf, pos, ds(y >> 25).toLong << 32 | m)
+        if ((y & 0x1F80000) == 0) pos + 7 // check if totalSeconds is divisible by 60
         else {
-          buf(pos) = ':'
-          write2Digits(r1 - q2 * 60, pos + 1, buf, ds)
+          ByteArrayAccess.setInt(buf, pos + 6, ds((y & 0x1FFFFFF) * 15 >> 23) << 8 | 0x2200003A)
+          pos + 10
         }
       }
     }
   }
 
-  private[this] def write2Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val d = ds(q0)
-    buf(pos) = d.toByte
-    buf(pos + 1) = (d >> 8).toByte
-    pos + 2
-  }
-
-  private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 * 1311 >> 17 // divide a small positive int by 100
-    buf(pos) = (q1 + '0').toByte
-    val d = ds(q0 - q1 * 100)
-    buf(pos + 1) = d.toByte
-    buf(pos + 2) = (d >> 8).toByte
+  private[this] def write3Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = x * 1311 >> 17 // divide a small positive int by 100
+    ByteArrayAccess.setInt(buf, pos, ds(x - q1 * 100) << 8 | q1 | '0')
     pos + 3
   }
 
-  private[this] def write4Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
-    val d1 = ds(q1)
-    buf(pos) = d1.toByte
-    buf(pos + 1) = (d1 >> 8).toByte
-    val d2 = ds(q0 - q1 * 100)
-    buf(pos + 2) = d2.toByte
-    buf(pos + 3) = (d2 >> 8).toByte
+  private[this] def write4Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = x * 5243 >> 19 // divide a small positive int by 100
+    val d1 = ds(x - q1 * 100) << 16
+    val d2 = ds(q1)
+    ByteArrayAccess.setInt(buf, pos, d1 | d2)
     pos + 4
   }
 
-  private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = (q0 * 109951163L >> 40).toInt // divide an 8-digit positive int by 10000
-    val q2 = q1 * 5243 >> 19 // divide a small positive int by 100
-    val d1 = ds(q2)
-    buf(pos) = d1.toByte
-    buf(pos + 1) = (d1 >> 8).toByte
-    val d2 = ds(q1 - q2 * 100)
-    buf(pos + 2) = d2.toByte
-    buf(pos + 3) = (d2 >> 8).toByte
-    val r1 = q0 - q1 * 10000
-    val q3 = r1 * 5243 >> 19 // divide a small positive int by 100
-    val d3 = ds(q3)
-    buf(pos + 4) = d3.toByte
-    buf(pos + 5) = (d3 >> 8).toByte
-    val d4 = ds(r1 - q3 * 100)
-    buf(pos + 6) = d4.toByte
-    buf(pos + 7) = (d4 >> 8).toByte
+  private[this] def write8Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val y1 = x * 140737489 // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val m1 = 0x7FFFFFFFFFFFL
+    val m2 = 100L
+    val y2 = (y1 & m1) * m2
+    val y3 = (y2 & m1) * m2
+    val y4 = (y3 & m1) * m2
+    val d1 = ds((y1 >> 47).toInt)
+    val d2 = ds((y2 >> 47).toInt) << 16
+    val d3 = ds((y3 >> 47).toInt).toLong << 32
+    val d4 = ds((y4 >> 47).toInt).toLong << 48
+    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3 | d4)
     pos + 8
   }
 
-  private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-    write8Digits((q0 - q1 * 100000000).toInt, {
-      val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-      write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
-    }, buf, ds)
+  private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val m1 = 6189700196426901375L
+    val q1 = Math.multiplyHigh(x, m1) >>> 25 // divide a positive long by 100000000
+    val q2 = Math.multiplyHigh(q1, m1) >>> 25 // divide a positive long by 100000000
+    ByteArrayAccess.setShort(buf, pos, ds(q2.toInt))
+    write8Digits(x - q1 * 100000000L, write8Digits(q1 - q2 * 100000000L, pos + 2, buf, ds), buf, ds)
   }
 
-  private[this] def writeShort(x: Short): Unit = count = {
-    var pos = ensureBufCapacity(6) // Short.MinValue.toString.length
-    val buf = this.buf
-    val q0: Int =
-      if (x >= 0) x
-      else {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      }
-    if (q0 < 100) {
-      if (q0 < 10) {
-        buf(pos) = (q0 + '0').toByte
-        pos + 1
-      } else write2Digits(q0, pos, buf, digits)
-    } else if (q0 < 10000) {
-      if (q0 < 1000) write3Digits(q0, pos, buf, digits)
-      else write4Digits(q0, pos, buf, digits)
-    } else {
-      val q1 = q0 * 53688 >> 29 // divide a small positive int by 10000
-      buf(pos) = (q1 + '0').toByte
-      write4Digits(q0 - 10000 * q1, pos + 1, buf, digits)
-    }
-  }
-
-  private[this] def writeInt(x: Int): Unit = count = {
-    var pos = ensureBufCapacity(11) // Int.MinValue.toString.length
-    val buf = this.buf
-    val q0 =
-      if (x >= 0) x
-      else if (x != -2147483648) {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      } else {
-        buf(pos) = '-'
-        buf(pos + 1) = '2'
-        pos += 2
-        147483648
-      }
-    writePositiveInt(q0, pos, buf, digits)
-  }
-
-  private[this] def writeLong(x: Long): Unit = count = {
-    var pos = ensureBufCapacity(20) // Long.MinValue.toString.length
+  private[this] def writeShort(x: Short): Unit = {
+    var pos = ensureBufCapacity(9) // 8 bytes in long + a byte for the sign
     val buf = this.buf
     val ds = digits
-    val q0 =
-      if (x >= 0) x
-      else if (x != -9223372036854775808L) {
-        buf(pos) = '-'
-        pos += 1
-        -x
-      } else {
-        buf(pos) = '-'
-        buf(pos + 1) = '9'
-        pos += 2
-        223372036854775808L
-      }
-    if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
-    else {
-      val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-      write8Digits((q0 - q1 * 100000000).toInt, {
-        if (q1.toInt == q1) writePositiveInt(q1.toInt, pos, buf, ds)
-        else {
-          val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-          write8Digits((q1 - q2 * 100000000).toInt, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds)
-        }
-      }, buf, ds)
+    var q0 = x.toInt
+    if (q0 < 0) {
+      q0 = -q0
+      buf(pos) = '-'
+      pos += 1
     }
+    if (q0 < 100) {
+      if (q0 < 10) {
+        buf(pos) = (q0 | '0').toByte
+        pos += 1
+      } else {
+        ByteArrayAccess.setShort(buf, pos, ds(q0))
+        pos += 2
+      }
+    } else if (q0 < 10000) {
+      val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+      val d2 = ds(q0 - q1 * 100)
+      if (q0 < 1000) {
+        ByteArrayAccess.setInt(buf, pos, q1 | '0' | d2 << 8)
+        pos += 3
+      } else {
+        ByteArrayAccess.setInt(buf, pos, ds(q1) | d2 << 16)
+        pos += 4
+      }
+    } else {
+      val y1 = q0 * 429497L // Based on James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      val y2 = (y1 & 0xFFFFFFFFL) * 100
+      val y3 = (y2 & 0xFFFFFFFFL) * 100
+      val d1 = (y1 >> 32).toInt | '0'
+      val d2 = ds((y2 >> 32).toInt) << 8
+      val d3 = ds((y3 >> 32).toInt).toLong << 24
+      ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
+      pos += 5
+    }
+    count = pos
   }
 
-  private[this] def writePositiveInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val lastPos = digitCount(q0) + pos
-    writePositiveIntDigits(q0, lastPos - 1, buf, ds)
-    lastPos
+  private[this] def writeInt(x: Int): Unit = {
+    var pos = ensureBufCapacity(11) // Int.MinValue.toString.length
+    val buf = this.buf
+    val ds = digits
+    var q0 = x
+    if (x < 0) {
+      q0 = -q0
+      ByteArrayAccess.setShort(buf, pos, 0x322D)
+      pos += 1
+      if (q0 == x) {
+        q0 = 147483648
+        pos += 1
+      }
+    }
+    pos += digitCount(q0.toLong)
+    writePositiveIntDigits(q0, pos, buf, ds)
+    count = pos
+  }
+
+  private[this] def writeLong(x: Long): Unit =
+    count = writeLong(x, ensureBufCapacity(20), buf) // Long.MinValue.toString.length
+
+  private[this] def writeLong(x: Long, p: Int, buf: Array[Byte]): Int = {
+    var pos = p
+    val ds = digits
+    var q0 = x
+    if (x < 0) {
+      q0 = -q0
+      ByteArrayAccess.setInt(buf, pos, 0x3232392D)
+      pos += 1
+      if (q0 == x) {
+        q0 = 3372036854775808L
+        pos += 3
+      }
+    }
+    val m1 = 100000000L
+    var q2 = q0
+    var lastPos = pos
+    if (q0 < m1) {
+      lastPos += digitCount(q0)
+      pos = lastPos
+    } else {
+      val m2 = 6189700196426901375L
+      val q1 = Math.multiplyHigh(q0, m2) >>> 25 // divide a positive long by 100000000
+      if (q1 < m1) {
+        q2 = q1
+        lastPos += digitCount(q1)
+        pos = lastPos
+      } else {
+        q2 = Math.multiplyHigh(q1, m2) >>> 25 // divide a small positive long by 100000000
+        lastPos += digitCount(q2)
+        pos = write8Digits(q1 - q2 * m1, lastPos, buf, ds)
+      }
+      pos = write8Digits(q0 - q1 * m1, pos, buf, ds)
+    }
+    writePositiveIntDigits(q2.toInt, lastPos, buf, ds)
+    pos
   }
 
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/FloatToDecimal.java
-  private[this] def writeFloat(x: Float): Unit = count = {
-    val bits = java.lang.Float.floatToRawIntBits(x)
+  private[this] def writeFloat(x: Float): Unit = {
     var pos = ensureBufCapacity(15)
     val buf = this.buf
-    if (bits < 0) {
+    if (x < 0.0f) {
       buf(pos) = '-'
       pos += 1
     }
     if (x == 0.0f) {
-      buf(pos) = '0'
-      buf(pos + 1) = '.'
-      buf(pos + 2) = '0'
-      pos + 3
+      ByteArrayAccess.setInt(buf, pos, 0x302E30)
+      pos += 3
     } else {
-      val ieeeExponent = (bits >> 23) & 0xFF
-      val ieeeMantissa = bits & 0x7FFFFF
-      var e = ieeeExponent - 150
-      var m = ieeeMantissa | 0x800000
-      var dv, exp = 0
-      if (e == 0) dv = m
-      else if (e >= -23 && e < 0 && m << e == 0) dv = m >> -e
+      val bits = java.lang.Float.floatToRawIntBits(x)
+      var e2 = (bits >> 23 & 0xFF) - 150
+      var m2 = bits & 0x7FFFFF | 0x800000
+      var m10, e10 = 0
+      if (e2 == 0) m10 = m2
+      else if ((e2 >= -23 && e2 < 0) && m2 << e2 == 0) m10 = m2 >> -e2
       else {
-        var expShift, expCorr = 0
-        var cblShift = 2
-        if (ieeeExponent == 0) {
-          e = -149
-          m = ieeeMantissa
-          if (ieeeMantissa < 8) {
-            m *= 10
-            expShift = 1
+        var e10Corr, e2Corr = 0
+        var cblCorr = 2
+        if (e2 == -150) {
+          m2 &= 0x7FFFFF
+          e2 = -149
+          if (m2 < 8) {
+            m2 *= 10
+            e10Corr = 1
           }
-        } else if (ieeeExponent == 255) illegalNumberError(x)
-        if (ieeeMantissa == 0 && ieeeExponent > 1) {
-          expCorr = 131007
-          cblShift = 1
+        } else if (e2 == 105) illegalNumberError(x)
+        else if (m2 == 0x800000 && e2 > -149) {
+          e2Corr = 131007
+          cblCorr = 1
         }
-        exp = e * 315653 - expCorr >> 20
-        val g1 = gs(exp + 324 << 1) + 1
-        val h = (-exp * 108853 >> 15) + e + 1
-        val cb = m << 2
-        val outm1 = (m & 0x1) - 1
-        val vb = rop(g1, cb << h)
-        val vbls = rop(g1, cb - cblShift << h) + outm1
-        val vbrd = outm1 - rop(g1, cb + 2 << h)
-        val s = vb >> 2
-        if (s < 100 || {
-          dv = (s * 3435973837L >> 35).toInt // divide a positive int by 10
-          val sp40 = dv * 40
-          val upin = vbls - sp40
-          ((sp40 + vbrd + 40) ^ upin) >= 0 || {
-            dv += ~upin >>> 31
-            exp += 1
-            false
-          }
+        e10 = e2 * 315653 - e2Corr >> 20
+        val g = gs(e10 + 324 << 1) + 1
+        val h = (e10 * -108853 >> 15) + e2 + 1
+        val cb = m2 << 2
+        val vbCorr = (m2 & 0x1) - 1
+        val vb = rop(g, cb << h)
+        val vbl = rop(g, cb - cblCorr << h) + vbCorr
+        val vbr = rop(g, cb + 2 << h) - vbCorr
+        var diff = 0
+        if (vb < 400 || {
+          m10 = (vb * 107374183L >> 32).toInt // divide a positive int by 40
+          val vb40 = m10 * 40
+          diff = vbl - vb40
+          (vb40 - vbr + 40 ^ diff) >= 0
         }) {
-          val s4 = s << 2
-          val uin = vbls - s4
-          dv = (~{
-            if (((s4 + vbrd + 4) ^ uin) < 0) uin
-            else (vb & 0x3) + (s & 0x1) - 3
-          } >>> 31) + s
-          exp -= expShift
-        }
+          m10 = vb >> 2
+          val vb4 = m10 << 2
+          diff = vbl - vb4
+          if ((vb4 - vbr + 4 ^ diff) >= 0) diff = (vb & 0x3) + (m10 & 0x1) - 3
+        } else e10Corr = -1
+        m10 += ~diff >>> 31
+        e10 -= e10Corr
       }
+      val len = digitCount(m10.toLong)
+      e10 += len - 1
       val ds = digits
-      val len = digitCount(dv)
-      exp += len - 1
-      if (exp < -3 || exp >= 7) {
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
-        buf(pos) = buf(pos + 1)
-        buf(pos + 1) = '.'
-        pos =
-          if (lastPos < pos + 3) {
-            buf(lastPos) = '0'
-            lastPos + 1
-          } else lastPos
-        buf(pos) = 'E'
+      if (e10 < -3 || e10 >= 7) {
+        val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        ByteArrayAccess.setShort(buf, pos, (buf(pos + 1) | 0x2E00).toShort)
+        if (lastPos - 3 < pos) {
+          buf(lastPos) = '0'
+          pos = lastPos + 1
+        } else pos = lastPos
+        ByteArrayAccess.setShort(buf, pos, 0x2D45)
         pos += 1
-        if (exp < 0) {
-          buf(pos) = '-'
+        if (e10 < 0) {
+          e10 = -e10
           pos += 1
-          exp = -exp
         }
-        if (exp < 10) {
-          buf(pos) = (exp + '0').toByte
-          pos + 1
-        } else write2Digits(exp, pos, buf, ds)
-      } else if (exp < 0) {
+        if (e10 < 10) {
+          buf(pos) = (e10 | '0').toByte
+          pos += 1
+        } else {
+          ByteArrayAccess.setShort(buf, pos, ds(e10))
+          pos += 2
+        }
+      } else if (e10 < 0) {
         val dotPos = pos + 1
-        buf(pos) = '0'
-        buf(pos + 2) = '0'
-        buf(pos + 3) = '0'
-        pos -= exp
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
+        ByteArrayAccess.setInt(buf, pos, 0x30303030)
+        pos -= e10
+        pos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         buf(dotPos) = '.'
-        lastPos
-      } else if (exp < len - 1) {
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
-        val beforeDotPos = pos + exp
-        while (pos <= beforeDotPos) {
-          buf(pos) = buf(pos + 1)
-          pos += 1
-        }
-        buf(pos) = '.'
-        lastPos
+      } else if (e10 < len - 1) {
+        val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        val bs = ByteArrayAccess.getLong(buf, pos)
+        val s = e10 << 3
+        val m = 0xFFFFFFFFFFFF0000L << s
+        val d1 = (~m & bs) >> 8
+        val d2 = 0x2E00L << s
+        val d3 = m & bs
+        ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
+        pos = lastPos
       } else {
         pos += len
-        writePositiveIntDigits(dv, pos - 1, buf, ds)
-        buf(pos) = '.'
-        buf(pos + 1) = '0'
-        pos + 2
+        writePositiveIntDigits(m10, pos, buf, ds)
+        ByteArrayAccess.setShort(buf, pos, 0x302E)
+        pos += 2
       }
     }
+    count = pos
   }
 
   private[this] def rop(g: Long, cp: Int): Int = {
-    val x1 = ((g & 0xFFFFFFFFL) * cp >>> 32) + (g >>> 32) * cp // FIXME: Use Math.multiplyHigh(g, cp.toLong << 32) after dropping of JDK 8 support
-    (x1 >>> 31).toInt | -x1.toInt >>> 31
+    val x = Math.multiplyHigh(g, cp.toLong << 32)
+    (x >>> 31).toInt | -x.toInt >>> 31
   }
 
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
-  private[this] def writeDouble(x: Double): Unit = count = {
-    val bits = java.lang.Double.doubleToRawLongBits(x)
-    var pos = ensureBufCapacity(24)
+  private[this] def writeDouble(x: Double): Unit = {
+    var pos = ensureBufCapacity(25) // -1.2898455142673966E-135.toString.length + 1
     val buf = this.buf
-    if (bits < 0) {
+    if (x < 0.0) {
       buf(pos) = '-'
       pos += 1
     }
     if (x == 0.0) {
-      buf(pos) = '0'
-      buf(pos + 1) = '.'
-      buf(pos + 2) = '0'
-      pos + 3
+      ByteArrayAccess.setInt(buf, pos, 0x302E30)
+      pos += 3
     } else {
-      val ieeeExponent = (bits >> 52).toInt & 0x7FF
-      val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
-      var e = ieeeExponent - 1075
-      var m = ieeeMantissa | 0x10000000000000L
-      var dv = 0L
-      var exp = 0
-      if (e == 0) dv = m
-      else if (e >= -52 && e < 0 && m << e == 0) dv = m >> -e
+      val bits = java.lang.Double.doubleToRawLongBits(x)
+      var e2 = ((bits >> 52).toInt & 0x7FF) - 1075
+      var m2 = bits & 0xFFFFFFFFFFFFFL | 0x10000000000000L
+      var m10 = 0L
+      var e10 = 0
+      if (e2 == 0) m10 = m2
+      else if ((e2 >= -52 && e2 < 0) && m2 << e2 == 0) m10 = m2 >> -e2
       else {
-        var expShift, expCorr = 0
-        var cblShift = 2
-        if (ieeeExponent == 0) {
-          e = -1074
-          m = ieeeMantissa
-          if (ieeeMantissa < 3) {
-            m *= 10
-            expShift = 1
+        var e10Corr, e2Corr = 0
+        var cblCorr = 2
+        if (e2 == -1075) {
+          m2 &= 0xFFFFFFFFFFFFFL
+          e2 = -1074
+          if (m2 < 3) {
+            m2 *= 10
+            e10Corr = 1
           }
-        } else if (ieeeExponent == 2047) illegalNumberError(x)
-        if (ieeeMantissa == 0 && ieeeExponent > 1) {
-          expCorr = 131007
-          cblShift = 1
+        } else if (e2 == 972) illegalNumberError(x)
+        else if (m2 == 0x10000000000000L && e2 > -1074) {
+          e2Corr = 131007
+          cblCorr = 1
         }
-        exp = e * 315653 - expCorr >> 20
-        val i = exp + 324 << 1
+        e10 = e2 * 315653 - e2Corr >> 20
+        val gs = JsonWriter.gs
+        val i = e10 + 324 << 1
         val g1 = gs(i)
         val g0 = gs(i + 1)
-        val h = (-exp * 108853 >> 15) + e + 2
-        val cb = m << 2
-        val outm1 = (m.toInt & 0x1) - 1
+        val h = (e10 * -108853 >> 15) + e2 + 2
+        val cb = m2 << 2
+        val vbCorr = (m2.toInt & 0x1) - 1
         val vb = rop(g1, g0, cb << h)
-        val vbls = rop(g1, g0, cb - cblShift << h) + outm1
-        val vbrd = outm1 - rop(g1, g0, cb + 2 << h)
-        val s = vb >> 2
-        if (s < 100 || {
-          dv = s / 10 // FIXME: Use Math.multiplyHigh(s, 1844674407370955168L) instead after dropping of JDK 8 support
-          val sp40 = dv * 40
-          val upin = (vbls - sp40).toInt
-          (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
-            dv += ~upin >>> 31
-            exp += 1
-            false
-          }
+        val vbl = rop(g1, g0, cb - cblCorr << h) + vbCorr
+        val vbr = rop(g1, g0, cb + 2 << h) - vbCorr
+        var diff = 0
+        if (vb < 400 || {
+          m10 = Math.multiplyHigh(vb, 461168601842738792L) // divide a positive long by 40
+          val vb40 = m10 * 40
+          diff = (vbl - vb40).toInt
+          ((vb40 - vbr).toInt + 40 ^ diff) >= 0
         }) {
-          val s4 = s << 2
-          val uin = (vbls - s4).toInt
-          dv = (~{
-            if ((((s4 + vbrd).toInt + 4) ^ uin) < 0) uin
-            else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
-          } >>> 31) + s
-          exp -= expShift
-        }
+          m10 = vb >> 2
+          val vb4 = m10 << 2
+          diff = (vbl - vb4).toInt
+          if (((vb4 - vbr).toInt + 4 ^ diff) >= 0) diff = (vb.toInt & 0x3) + (m10.toInt & 0x1) - 3
+        } else e10Corr = -1
+        m10 += ~diff >>> 31
+        e10 -= e10Corr
       }
+      val len = digitCount(m10)
+      e10 += len - 1
       val ds = digits
-      val len = digitCount(dv)
-      exp += len - 1
-      if (exp < -3 || exp >= 7) {
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
-        buf(pos) = buf(pos + 1)
-        buf(pos + 1) = '.'
-        pos =
-          if (lastPos < pos + 3) {
-            buf(lastPos) = '0'
-            lastPos + 1
-          } else lastPos
-        buf(pos) = 'E'
+      if (e10 < -3 || e10 >= 7) {
+        val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        ByteArrayAccess.setShort(buf, pos, (buf(pos + 1) | 0x2E00).toShort)
+        if (lastPos - 3 < pos) {
+          buf(lastPos) = '0'
+          pos = lastPos + 1
+        } else pos = lastPos
+        ByteArrayAccess.setShort(buf, pos, 0x2D45)
         pos += 1
-        if (exp < 0) {
-          buf(pos) = '-'
+        if (e10 < 0) {
+          e10 = -e10
           pos += 1
-          exp = -exp
         }
-        if (exp < 10) {
-          buf(pos) = (exp + '0').toByte
-          pos + 1
-        } else if (exp < 100) write2Digits(exp, pos, buf, ds)
-        else write3Digits(exp, pos, buf, ds)
-      } else if (exp < 0) {
+        if (e10 < 10) {
+          buf(pos) = (e10 | '0').toByte
+          pos += 1
+        } else if (e10 < 100) {
+          ByteArrayAccess.setShort(buf, pos, ds(e10))
+          pos += 2
+        } else pos = write3Digits(e10, pos, buf, ds)
+      } else if (e10 < 0) {
         val dotPos = pos + 1
-        buf(pos) = '0'
-        buf(pos + 2) = '0'
-        buf(pos + 3) = '0'
-        pos -= exp
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
+        ByteArrayAccess.setInt(buf, pos, 0x30303030)
+        pos -= e10
+        pos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
         buf(dotPos) = '.'
-        lastPos
-      } else if (exp < len - 1) {
-        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
-        val beforeDotPos = pos + exp
-        while (pos <= beforeDotPos) {
-          buf(pos) = buf(pos + 1)
-          pos += 1
-        }
-        buf(pos) = '.'
-        lastPos
+      } else if (e10 < len - 1) {
+        val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        val bs = ByteArrayAccess.getLong(buf, pos)
+        val s = e10 << 3
+        val m = 0xFFFFFFFFFFFF0000L << s
+        val d1 = (~m & bs) >> 8
+        val d2 = 0x2E00L << s
+        val d3 = m & bs
+        ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
+        pos = lastPos
       } else {
         pos += len
-        writePositiveIntDigits(dv.toInt, pos - 1, buf, ds)
-        buf(pos) = '.'
-        buf(pos + 1) = '0'
-        pos + 2
+        writePositiveIntDigits(m10.toInt, pos, buf, ds)
+        ByteArrayAccess.setShort(buf, pos, 0x302E)
+        pos += 2
       }
     }
+    count = pos
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x1 = multiplyHigh(g0, cp) // FIXME: Use Math.multiplyHigh after dropping of JDK 8 support
-    val z = (g1 * cp >>> 1) + x1
-    val y1 = multiplyHigh(g1, cp) // FIXME: Use Math.multiplyHigh after dropping of JDK 8 support
-    (z >>> 63) + y1 | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
-  }
-
-  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Karatsuba technique for two positive ints
-    val x2 = x & 0xFFFFFFFFL
-    val y2 = y & 0xFFFFFFFFL
-    val b = x2 * y2
-    val x1 = x >>> 32
-    val y1 = y >>> 32
-    val a = x1 * y1
-    (((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a) >>> 32) + a
+    val x = Math.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
+    Math.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
   }
 
   // Adoption of a nice trick from Daniel Lemire's blog that works for numbers up to 10^18:
   // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
-  private[this] def digitCount(q0: Long): Int = (offsets(java.lang.Long.numberOfLeadingZeros(q0)) + q0 >> 58).toInt
+  private[this] def digitCount(x: Long): Int = (offsets(java.lang.Long.numberOfLeadingZeros(x)) + x >> 58).toInt
 
-  private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, pos, posLim, buf, ds)
-    else {
-      val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-      val r1 = (q0 - q1 * 100000000).toInt
-      if (r1 == 0) writeSignificantFractionDigits(q1.toInt, pos - 8, posLim, buf, ds)
-      else {
-        val lastPos = writeSignificantFractionDigits(r1, pos, pos - 8, buf, ds)
-        writeFractionDigits(q1.toInt, pos - 8, posLim, buf, ds)
-        lastPos
+  private[this] def writeSignificantFractionDigits(x: Long, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var q0 = x.toInt
+    var pos = p
+    var posLim = pl
+    if (q0 != x) {
+      val q1 = (Math.multiplyHigh(x, 6189700196426901375L) >>> 25).toInt // divide a positive long by 100000000
+      val r1 = (x - q1 * 100000000L).toInt
+      val posm8 = pos - 8
+      if (r1 == 0) {
+        q0 = q1
+        pos = posm8
+      } else {
+        writeFractionDigits(q1, posm8, posLim, buf, ds)
+        q0 = r1
+        posLim = posm8
       }
     }
+    writeSignificantFractionDigits(q0, pos, posLim, buf, ds)
+  }
 
-  private[this] def writeSignificantFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var q0 = q
+  private[this] def writeSignificantFractionDigits(x: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var q0 = x
     var q1 = 0
     var pos = p
     while ({
@@ -2037,47 +2412,38 @@ final class JsonWriter private[jsoniter_scala](
       pos -= 2
     }
     val d = ds(q0 - q1 * 100)
-    buf(pos - 1) = d.toByte
-    var lastPos = pos
-    if (d > 12345) { // 12345 == ('0' << 8) | '9'
-      buf(pos) = (d >> 8).toByte
-      lastPos += 1
-    }
+    ByteArrayAccess.setShort(buf, pos - 1, d)
     writeFractionDigits(q1, pos - 2, posLim, buf, ds)
-    lastPos
+    pos + ((0x3039 - d) >>> 31)
   }
 
-  private[this] def writeFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
-    var q0 = q
+  private[this] def writeFractionDigits(x: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
+    var q0 = x
     var pos = p
     while (pos > posLim) {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
-      val d = ds(q0 - q1 * 100)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
+      ByteArrayAccess.setShort(buf, pos - 1, ds(q0 - q1 * 100))
       q0 = q1
       pos -= 2
     }
   }
 
-  private[this] def writePositiveIntDigits(q: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
-    var q0 = q
+  private[this] def writePositiveIntDigits(x: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
+    var q0 = x
     var pos = p
-    while (q0 >= 100) {
-      val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
-      val d = ds(q0 - q1 * 100)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
-      q0 = q1
+    while ({
       pos -= 2
+      q0 >= 100
+    }) {
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
+      ByteArrayAccess.setShort(buf, pos, ds(q0 - q1 * 100))
+      q0 = q1
     }
-    if (q0 < 10) buf(pos) = (q0 + '0').toByte
-    else {
-      val d = ds(q0)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
-    }
+    if (q0 < 10) buf(pos + 1) = (q0 | '0').toByte
+    else ByteArrayAccess.setShort(buf, pos, ds(q0))
   }
+
+  private[this] def illegalNumberError(x: Float): Nothing = encodeError("illegal number: " + x)
 
   private[this] def illegalNumberError(x: Double): Nothing = encodeError("illegal number: " + x)
 
@@ -2114,9 +2480,6 @@ final class JsonWriter private[jsoniter_scala](
 }
 
 object JsonWriter {
-  private final val isGraalVM: Boolean =
-    Option(System.getProperty("java.vendor.version")).getOrElse(System.getProperty("java.vm.name")).contains("GraalVM") ||
-      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.contains("-XX:+UseJVMCICompiler")
   /* Use the following code to generate `escapedChars` in Scala REPL:
     val es = new Array[Byte](128)
     java.util.Arrays.fill(es, 0, 32, -1: Byte)
@@ -2140,7 +2503,6 @@ object JsonWriter {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1
   )
-
   private final val offsets = Array(
     5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L,
     5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L,
@@ -2631,5 +2993,11 @@ object JsonWriter {
     ss
   }
 
-  final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch) == 0
+  /**
+   * Checks if a character does not require JSON escaping or encoding.
+   *
+   * @param ch the character to check
+   * @return `true` if the character is a basic ASCII character (code point less than `0x80`) that does not need JSON escaping
+   */
+  final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch.toInt) == 0
 }
