@@ -822,6 +822,11 @@ play-json, and circe in 3 modes: auto, semi-auto, and derivation.
 For Scala 3 use the [scala3-compile-tests](https://github.com/pme123/scala3-compile-tests) project to compare
 compilation time of jsoniter-scala for Scala 3 enumerations (sum types) with circe in semi-auto mode.
 
+Please, also, see [an amazing talk from Mateusz Kubuszok](https://www.youtube.com/watch?v=scWvlO_fb78),
+co-author of [Chimney](https://github.com/scalalandio/chimney), about of different approaches in type class derivation
+and how some secret trick from jsoniter-scala can greatly speed up the most sanely way of auto-derivation that you
+would like to re-use for derivation of your type-classes too. 
+
 ### Publish locally
 
 Use publishing of SNAPSHOT versions to your local artifact repositories for testing with other libraries or applications. 
