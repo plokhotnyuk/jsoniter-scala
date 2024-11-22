@@ -22,6 +22,11 @@ lazy val updateVersionInReadmeAndExamples: ReleaseStep = { st: State =>
     s"git add $path" !! st.log
   }
 
+  Seq(
+    "README.md",
+    "docs/tutorials/1-getting-started.md",
+    "docs/tutorials/1-getting-started.scala",
+  ).foreach(updateFile)
   updateFile("README.md")
   (1 to 3).foreach(n => updateFile(s"jsoniter-scala-examples/example0$n.sc"))
 
