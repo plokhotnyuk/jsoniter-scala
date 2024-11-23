@@ -5,16 +5,15 @@
 - Performance 
 - Productivity
 
-Using `scala-cli` (or `scala` for latest versions of Scala 3):
+2. Features
 
-2. Tutorials
+3. Tutorials
 
-3. How-tos
+4. How-tos
 
-4. API docs
+5. API docs
+   https://www.javadoc.io/doc/com.github.plokhotnyuk.jsoniter-scala
  
-5. Features 
-
 6. Known-issues
 
-7. Explanations
+7. Blog posts

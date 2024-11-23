@@ -1,1 +1,1 @@
-jsontier-scala-examples/example_02.sc
+Example: jsontier-scala-examples/example_02.sc

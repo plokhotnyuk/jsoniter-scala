@@ -1,1 +1,1 @@
-OpenRTB native
+Example: OpenRTB native

@@ -1,1 +1,1 @@
-api-key signing
+Example: api-key signing

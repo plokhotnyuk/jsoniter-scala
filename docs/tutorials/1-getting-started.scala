@@ -15,16 +15,15 @@ enum OrderStatus extends Enum[OrderStatus]:
 
 case class OrderItem(product: Product, quantity: Int)
 
-case class Order(id: Long, customer: Customer, items: List[OrderItem], status: OrderStatus)
+case class Order(id: Long, customer: Customer, items: Seq[OrderItem], status: OrderStatus)
 
 case class Customer(id: Long, name: String, email: String, address: Address)
 
 case class Address(street: String, city: String, state: String, zip: String)
 
-enum PaymentType extends Enum[PaymentType]:
-  case CreditCard, PayPal
-
-case class PaymentMethod(`type`: PaymentType, details: Map[String, String]/*e.g. card number, expiration date*/)
+enum PaymentMethod:
+  case CreditCard(cardNumber: Long, validThru: java.time.YearMonth) extends PaymentMethod
+  case PayPal(id: String) extends PaymentMethod
 
 case class Payment(method: PaymentMethod, amount: BigDecimal, timestamp: java.time.Instant)
 
@@ -76,7 +75,7 @@ val customer2 = Customer(
 val order1 = Order(
   id = 1L,
   customer = customer1,
-  items = List(
+  items = Seq(
     OrderItem(product1, 1),
     OrderItem(product2, 2)
   ),
@@ -85,23 +84,17 @@ val order1 = Order(
 val order2 = Order(
   id = 2L,
   customer = customer2,
-  items = List(
+  items = Seq(
     OrderItem(product3, 1)
   ),
   status = OrderStatus.Shipped
 )
-val paymentMethod1 = PaymentMethod(
-  `type` = PaymentType.CreditCard,
-  details = Map(
-    "card_number" -> "1234-5678-9012-3456",
-    "expiration_date" -> "12/2026"
-  )
+val paymentMethod1 = PaymentMethod.CreditCard(
+  cardNumber = 1234_5678_9012_3456L,
+  validThru = java.time.YearMonth.parse("2026-12")
 )
-val paymentMethod2 = PaymentMethod(
-  `type` = PaymentType.PayPal,
-  details = Map(
-    "paypal_id" -> "jane.smith@example.com"
-  )
+val paymentMethod2 = PaymentMethod.PayPal(
+  id = "jane.smith@example.com"
 )
 val payment1 = Payment(
   method = paymentMethod1,
@@ -121,12 +114,12 @@ val orderPayment2 = OrderPayment(
   order = order2,
   payment = payment2
 )
-val report = List(
+val report = Seq(
   orderPayment1,
   orderPayment2
 )
 
-given JsonValueCodec[List[OrderPayment]] = JsonCodecMaker.make
+given JsonValueCodec[Seq[OrderPayment]] = JsonCodecMaker.make
 
 @main def gettingStarted: Unit =
   val json = writeToString(report)

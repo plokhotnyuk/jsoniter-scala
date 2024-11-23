@@ -22,5 +22,3 @@ Options to consider:
 Anti-patterns:
 - Generation of codecs for intermediate (non-top level) data structures (as an example, overuse of `derives` keyword)
 - Generation and wide usage of codecs for primitives, strings, etc.
-
-Challenge: Print generated codecs and patch them for yet more efficiency, then open an improvement issue in the jsoniter-scala project

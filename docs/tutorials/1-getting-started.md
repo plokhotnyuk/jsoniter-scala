@@ -46,16 +46,15 @@ enum OrderStatus extends Enum[OrderStatus]:
 
 case class OrderItem(product: Product, quantity: Int)
 
-case class Order(id: Long, customer: Customer, items: List[OrderItem], status: OrderStatus)
+case class Order(id: Long, customer: Customer, items: Seq[OrderItem], status: OrderStatus)
 
 case class Customer(id: Long, name: String, email: String, address: Address)
 
 case class Address(street: String, city: String, state: String, zip: String)
 
-enum PaymentType extends Enum[PaymentType]:
-  case CreditCard, PayPal
-
-case class PaymentMethod(`type`: PaymentType, details: Map[String, String]/*e.g. card number, expiration date*/)
+enum PaymentMethod:
+  case CreditCard(cardNumber: Long, validThru: java.time.YearMonth) extends PaymentMethod
+  case PayPal(id: String) extends PaymentMethod
 
 case class Payment(method: PaymentMethod, amount: BigDecimal, timestamp: java.time.Instant)
 
@@ -107,7 +106,7 @@ val customer2 = Customer(
 val order1 = Order(
   id = 1L,
   customer = customer1,
-  items = List(
+  items = Seq(
     OrderItem(product1, 1),
     OrderItem(product2, 2)
   ),
@@ -116,23 +115,17 @@ val order1 = Order(
 val order2 = Order(
   id = 2L,
   customer = customer2,
-  items = List(
+  items = Seq(
     OrderItem(product3, 1)
   ),
   status = OrderStatus.Shipped
 )
-val paymentMethod1 = PaymentMethod(
-  `type` = PaymentType.CreditCard,
-  details = Map(
-    "card_number" -> "1234-5678-9012-3456",
-    "expiration_date" -> "12/2026"
-  )
+val paymentMethod1 = PaymentMethod.CreditCard(
+  cardNumber = 1234_5678_9012_3456L,
+  validThru = java.time.YearMonth.parse("2026-12")
 )
-val paymentMethod2 = PaymentMethod(
-  `type` = PaymentType.PayPal,
-  details = Map(
-    "paypal_id" -> "jane.smith@example.com"
-  )
+val paymentMethod2 = PaymentMethod.PayPal(
+  id = "jane.smith@example.com"
 )
 val payment1 = Payment(
   method = paymentMethod1,
@@ -152,7 +145,7 @@ val orderPayment2 = OrderPayment(
   order = order2,
   payment = payment2
 )
-val report = List(
+val report = Seq(
   orderPayment1,
   orderPayment2
 )
@@ -160,18 +153,19 @@ val report = List(
 
 ## Defining the codec
 
-To derive a codec the report type (`List[OrderPayment]` type in our case) we will use `JsonCodecMaker.make` macros:
+Now we need to derive a codec for the report type (`List[OrderPayment]` type in our case). We will use 
+`JsonCodecMaker.make` macros for that:
 ```scala
-given JsonValueCodec[List[OrderPayment]] = JsonCodecMaker.make
+given JsonValueCodec[Seq[OrderPayment]] = JsonCodecMaker.make
 ```
 
 An instance of this codec (also known as a type-class instance) is getting to be visible in the scope of subsequent
-calls of parsing and serialization methods. 
+calls of parsing and serialization methods.
 
 ## Serialization
 
-Now we are ready to serialize the report. Just need to define some entry point method and call `writeToString`.
-We will also print resulting JSON to the system output to see it as a process output:
+Now we are ready to serialize the report. For that we need to define some entry point method and call `writeToString`.
+We will also print resulting JSON to the system output to see it as an output:
 
 ```scala
 @main def gettingStarted: Unit =
@@ -190,13 +184,14 @@ Having the JSON string in memory you can parse it using following lines that sho
   println(parsedReport)
 ```
 
-Now you can rerun the script and get additionally printed `toString` representation of a report parsed from JSON string.
+Let's rerun the script and get additionally printed `toString` representation of a report parsed from JSON string.
 
-If something gone wrong you can pick the final version of [a script for this tutorial](1-getting-started.scala) and then run it.
+If something gone wrong you can pick and run [the final version of a script for this tutorial](1-getting-started.scala).
 
 ## Challenge
-Experiment with different types of collections and try to find any collection type from the standard Scala library that
-is not supported by `JsonCodecMaker.make` macros to derive codec for serialization *and* parsing.
+Experiment with the script to use different types of collections instead of `Seq` and try to find any collection type 
+from the standard Scala library that is not supported by `JsonCodecMaker.make` macros to derive codec for serialization
+and parsing.
 
 ## Recap
 In this tutorial we learned basics for parsing and serialization of complex nested data structures using `scala-cli`.

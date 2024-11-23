@@ -4,5 +4,3 @@ Approaches to consider:
 - Use 2 data models for huge projects with different API versions or 3-rd party data structures (use chimney or ducktape for transformation between them)
 - Use GraphQL (caliban) for reach and highly customized requests
 - Use Smithy (smithy4s-json) for model first approach with cross-language APIs
-
-Challenge: Use Dependents side section of the https://index.scala-lang.org/plokhotnyuk/jsoniter-scala page to discover and try some other integrations with jsoniter-scala
