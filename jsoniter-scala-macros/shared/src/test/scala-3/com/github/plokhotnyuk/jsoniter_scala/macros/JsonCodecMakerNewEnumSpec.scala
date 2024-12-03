@@ -13,6 +13,9 @@ import scala.util.hashing.MurmurHash3
 enum TrafficLight:
   case Red, Yellow, Green
 
+enum Java extends Enum[Java]: // extends Java enum
+  case `JDK-11`, `JDK-17`, `JDK-21`
+
 enum Color(val rgb: Int):
   case Red   extends Color(0xFF0000)
   case Green extends Color(0x00FF00)
@@ -89,7 +92,13 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
           case "Yellow" => "🟨"
           case "Green" => "🟩"
         }).withDiscriminatorFieldName(None)),
-        List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["🟥","🟨","🟩"]""".stripMargin)
+        List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["🟥","🟨","🟩"]""")
+    }
+    "serialize and deserialize Scala3 enums that extend java.lang.Enum" in {
+      verifySerDeser(make[List[Java]],
+        List(Java.`JDK-21`, Java.`JDK-17`, Java.`JDK-11`), """["JDK-21","JDK-17","JDK-11"]""")
+      verifySerDeser(make[List[Java]](CodecMakerConfig.withJavaEnumValueNameMapper(JsonCodecMaker.`enforce-kebab-case`)),
+        List(Java.`JDK-21`, Java.`JDK-17`, Java.`JDK-11`), """["jdk-21","jdk-17","jdk-11"]""")
     }
     "serialize and deserialize Scala3 enums with mixed types" in {
       verifySerDeser(make[List[MyEnum]],

@@ -93,7 +93,6 @@ lazy val nativeSettings = Seq(
   nativeConfig ~= {
     _.withMode(Mode.releaseFast) // TODO: Test with `Mode.releaseSize` and `Mode.releaseFull`
       .withLTO(LTO.none)
-      .withGC(GC.boehm) // FIXME: Remove after fixing of https://github.com/scala-native/scala-native/issues/4032
   },
   coverageEnabled := false // FIXME: Unexpected linking error
 )
@@ -235,7 +234,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.6.1", "2.13.15"),
+    crossScalaVersions := Seq("3.6.2-RC3", "2.13.15"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq("-source:3.3", "-Xmax-inlines:100")
@@ -253,9 +252,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.json4s" %% "json4s-ext" % "4.1.0-M8",
       "org.json4s" %% "json4s-jackson" % "4.1.0-M8",
       "org.json4s" %% "json4s-native" % "4.1.0-M8",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.18.1",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.18.1",
-      "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.18.1",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.18.2",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.18.2",
+      "com.fasterxml.jackson.module" % "jackson-module-blackbird" % "2.18.2",
       "org.openjdk.jmh" % "jmh-core" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
