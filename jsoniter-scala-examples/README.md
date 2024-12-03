@@ -5,7 +5,7 @@
 Here you will learn how to build and run the simplest example and measure the startup time on Linux using 
 Debian packages
 
-### Build uber jar, print its size, and measure its start up time
+### Build uber jar, print its size, and measure its start up time (tested with Oracle GraalVM 24-dev)
 
 ```sh
 sudo apt install linux-tools-common linux-tools-generic
@@ -18,20 +18,20 @@ Expected output:
 ```text
  Performance counter stats for './example01.jar' (100 runs):
 
-            175.84 msec task-clock                       #    1.593 CPUs utilized               ( +-  0.21% )
-             1,100      context-switches                 #    6.256 K/sec                       ( +-  0.83% )
-                11      cpu-migrations                   #   62.556 /sec                        ( +-  2.06% )
-            10,057      page-faults                      #   57.193 K/sec                       ( +-  0.04% )
-       720,474,662      cycles                           #    4.097 GHz                         ( +-  0.17% )
-       946,247,562      instructions                     #    1.31  insn per cycle              ( +-  0.07% )
-       183,694,120      branches                         #    1.045 G/sec                       ( +-  0.07% )
-         7,111,513      branch-misses                    #    3.87% of all branches             ( +-  0.08% )
-                        TopdownL1                 #     13.9 %  tma_backend_bound      
-                                                  #     33.9 %  tma_bad_speculation    
-                                                  #     31.5 %  tma_frontend_bound     
-                                                  #     20.8 %  tma_retiring             ( +-  0.12% )
+            275.05 msec task-clock                       #    2.067 CPUs utilized               ( +-  0.19% )
+             1,970      context-switches                 #    7.162 K/sec                       ( +-  0.48% )
+                15      cpu-migrations                   #   54.536 /sec                        ( +-  2.23% )
+            22,159      page-faults                      #   80.565 K/sec                       ( +-  0.20% )
+     1,101,372,203      cycles                           #    4.004 GHz                         ( +-  0.20% )
+     1,504,873,660      instructions                     #    1.37  insn per cycle              ( +-  0.10% )
+       297,952,673      branches                         #    1.083 G/sec                       ( +-  0.10% )
+         9,110,277      branch-misses                    #    3.06% of all branches             ( +-  0.11% )
+                        TopdownL1                 #     14.1 %  tma_backend_bound      
+                                                  #     35.6 %  tma_bad_speculation    
+                                                  #     30.0 %  tma_frontend_bound     
+                                                  #     20.3 %  tma_retiring             ( +-  0.13% )
 
-          0.110362 +- 0.000163 seconds time elapsed  ( +-  0.15% )
+          0.133067 +- 0.000190 seconds time elapsed  ( +-  0.14% )
 ```
 
 ### Build Scala JS output, print its size, and measure its start up time with `node`
@@ -102,7 +102,7 @@ Expected output:
 ```sh
 sudo apt install linux-tools-common linux-tools-generic gcc zlib1g-dev
 sudo sysctl kernel.perf_event_paranoid=1
-scala-cli --power package --graalvm-jvm-id graalvm-java23:23.0.0 --native-image example01.sc --force -o example01_graalvm.bin -- --no-fallback -Os
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example01.sc --force -o example01_graalvm.bin -- --no-fallback -O3
 ls -l ./example01_graalvm.bin
 perf stat -r 100 ./example01_graalvm.bin > /dev/null
 ```
@@ -110,20 +110,20 @@ Expected output:
 ```text
  Performance counter stats for './example01_graalvm.bin' (100 runs):
 
-              2.02 msec task-clock                       #    0.945 CPUs utilized               ( +-  0.49% )
-                 1      context-switches                 #  493.912 /sec                        ( +-  8.42% )
+              1.84 msec task-clock                       #    0.939 CPUs utilized               ( +-  0.40% )
+                 1      context-switches                 #  542.721 /sec                        ( +-  3.21% )
                  0      cpu-migrations                   #    0.000 /sec                      
-               706      page-faults                      #  348.702 K/sec                       ( +-  0.01% )
-         8,343,057      cycles                           #    4.121 GHz                         ( +-  0.57% )
-        11,631,591      instructions                     #    1.39  insn per cycle              ( +-  0.04% )
-         2,267,207      branches                         #    1.120 G/sec                       ( +-  0.03% )
-            22,802      branch-misses                    #    1.01% of all branches             ( +-  0.78% )
-                        TopdownL1                 #     34.0 %  tma_backend_bound      
-                                                  #      6.4 %  tma_bad_speculation    
-                                                  #     29.4 %  tma_frontend_bound     
-                                                  #     30.2 %  tma_retiring             ( +-  0.57% )
+               633      page-faults                      #  343.543 K/sec                       ( +-  0.01% )
+         7,594,064      cycles                           #    4.121 GHz                         ( +-  0.49% )
+        11,150,492      instructions                     #    1.47  insn per cycle              ( +-  0.04% )
+         2,133,178      branches                         #    1.158 G/sec                       ( +-  0.03% )
+            21,759      branch-misses                    #    1.02% of all branches             ( +-  0.84% )
+                        TopdownL1                 #     32.0 %  tma_backend_bound      
+                                                  #      6.5 %  tma_bad_speculation    
+                                                  #     30.0 %  tma_frontend_bound     
+                                                  #     31.5 %  tma_retiring             ( +-  0.49% )
 
-         0.0021429 +- 0.0000126 seconds time elapsed  ( +-  0.59% )
+        0.00196304 +- 0.00000988 seconds time elapsed  ( +-  0.50% )
 ```
 
 ### Build Scala Native image, print its size, and measure its start up time
@@ -184,7 +184,7 @@ Here is an example of expected output:
  Timing buffered disk reads: 2180 MB in  3.04 seconds = 716.07 MB/sec
 ```
 
-### Build uber jar, print its size, and measure its running time (tested with Oracle Graal VM 24-dev)
+### Build uber jar, print its size, and measure its running time (tested with Oracle GraalVM 24-dev)
 
 ```sh
 scala-cli --power package --assembly example02.sc --force -o example02.jar
@@ -193,23 +193,23 @@ time ./example02.jar -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseEpsilonGC -J-X
 ```
 Expected output:
 ```text
-real	1m2,667s
-user	0m59,750s
-sys	0m3,171s
+real	1m8.991s
+user	1m5.239s
+sys	0m4.102s
 ```
 
 ### Build GraalVM native image, print its size, and measure its running time
 
 ```sh
-scala-cli --power package --graalvm-jvm-id graalvm-java23:23.0.0 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon -Os
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon -O3
 ls -l ./example02_graalvm.bin
 time ./example02_graalvm.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	1m45,502s
-user	1m42,411s
-sys	0m3,088s
+real	1m34.353s
+user	1m29.199s
+sys	0m5.151s
 ```
 
 ### Build Scala Native image, print its size, and measure its running time
@@ -221,7 +221,7 @@ time ./example02_native.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/nul
 ```
 Expected output:
 ```text
-real	1m25,617s
-user	1m22,498s
-sys	0m3,116s
+real	1m27.275s
+user	1m23.233s
+sys	0m4.038s
 ```
