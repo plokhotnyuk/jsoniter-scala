@@ -734,7 +734,7 @@ object JsonCodecMaker {
               report.errorAndAbort("'decodingOnly' and 'encodingOnly' cannot be 'true' simultaneously")
             cfg
         }) catch {
-        case ex: CompileTimeEvalException => report.errorAndAbort("Can't evaluate compile-time expression", ex.expr)
+        case ex: CompileTimeEvalException => report.errorAndAbort(s"Can't evaluate compile-time expression: ${ex.message}", ex.expr)
       }
     }
 
