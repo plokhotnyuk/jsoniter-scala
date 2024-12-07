@@ -4,6 +4,14 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   @Benchmark
+  def borer(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+    import io.bullet.borer.Json
+
+    Json.encode(obj).withPrettyRendering(2).toByteArray
+  }
+
+  @Benchmark
   def circe(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.syntax._

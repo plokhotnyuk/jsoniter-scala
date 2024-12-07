@@ -1012,6 +1012,7 @@ object Main {
   }, {
     val benchmark = new GoogleMapsAPIPrettyPrinting { setup() }
     GS(S("GoogleMapsAPIPrettyPrinting")(
+      B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
