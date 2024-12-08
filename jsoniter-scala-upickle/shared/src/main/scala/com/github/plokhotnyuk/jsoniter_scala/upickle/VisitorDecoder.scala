@@ -91,8 +91,7 @@ object VisitorNumberReader {
         } else {
           val x = in.readBigInt(null)
           if (x.isValidLong) v.visitInt64(x.longValue, -1)
-          else v.visitString(x.toString(), -1) // see: ujson/JsVisitor.scala#L33
-          // alt: v.visitFloat64StringParts(x.toString(), -1, -1, -1)
+          else v.visitFloat64StringParts(x.toString(), -1, -1, -1)
         }
       } else {
         in.setMark()
@@ -104,8 +103,8 @@ object VisitorNumberReader {
           x
         } else {
           in.rollbackToMark()
-          v.visitString(new String(in.readRawValAsBytes(), StandardCharsets.US_ASCII), -1) // see: ujson/JsVisitor.scala#L33
-          // alt: v.visitFloat64StringParts(new String(in.readRaw...), -1, -1, -1)
+          val bytes = in.readRawValAsBytes()
+          v.visitFloat64ByteParts(bytes, 0, bytes.length, -1, -1, -1)
         }
       }
     }
