@@ -2837,8 +2837,7 @@ final class JsonReader private[jsoniter_scala](
         i -= 8
         i >= first
       }) {
-        x = (~x & mq) >>> 63
-        x += NativeMath.unsignedMultiplyHigh(m, q)
+        x = NativeMath.unsignedMultiplyHigh(m, q) + ((~x & mq) >>> 63)
       }
     }
     var i = 0

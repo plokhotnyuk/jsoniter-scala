@@ -2840,9 +2840,7 @@ final class JsonReader private[jsoniter_scala](
         i -= 8
         i >= first
       }) {
-        x = (~x & mq) >>> 63
-        x += Math.multiplyHigh(m, q)
-        x += m >> 63 & q
+        x = Math.multiplyHigh(m, q) + (m >> 63 & q) + ((~x & mq) >>> 63) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(m, q) + ((~x & mq) >>> 63)
       }
     }
     var i = 0
