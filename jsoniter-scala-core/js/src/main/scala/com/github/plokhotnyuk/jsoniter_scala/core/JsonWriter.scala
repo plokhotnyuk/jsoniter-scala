@@ -755,6 +755,27 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
+   * Writes a timestamp value as a JSON value.
+   *
+   * @param epochSecond the epoch second of the timestamp to write
+   * @param nano the nanoseconds of the timestamp to write
+   * @throws JsonWriterException if the nanoseconds value is less than 0 or greater than 999999999
+   */
+  def writeTimestampVal(epochSecond: Long, nano: Int): Unit = {
+    if (nano < 0 || nano > 999999999) encodeError("illegal nanoseconds value: " + nano)
+    writeOptionalCommaAndIndentionBeforeValue()
+    var pos = ensureBufCapacity(30)
+    val buf = this.buf
+    pos = writeLong(epochSecond, pos, buf)
+    if (nano != 0) {
+      val dotPos = pos
+      pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, digits)
+      buf(dotPos) = '.'
+    }
+    this.count = pos
+  }
+
+  /**
    * Writes a `BigDecimal` value as a JSON string value.
    *
    * @param x the `BigDecimal` value to write
@@ -869,6 +890,31 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
     writeDouble(x)
     writeBytes('"')
+  }
+
+  /**
+   * Writes a timestamp value as a JSON string value.
+   *
+   * @param epochSecond the epoch second of the timestamp to write
+   * @param nano the nanoseconds of the timestamp to write
+   * @throws JsonWriterException if the nanoseconds value is less than 0 or greater than 999999999
+   */
+  def writeTimestampValAsString(epochSecond: Long, nano: Int): Unit = {
+    if (nano < 0 || nano > 999999999) encodeError("illegal nanoseconds value: " + nano)
+    writeOptionalCommaAndIndentionBeforeValue()
+    var pos = ensureBufCapacity(32)
+    val buf = this.buf
+    buf(pos) = '"'
+    pos += 1
+    pos = writeLong(epochSecond, pos, buf)
+    if (nano != 0) {
+      val dotPos = pos
+      pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, digits)
+      buf(dotPos) = '.'
+    }
+    buf(pos) = '"'
+    pos += 1
+    this.count = pos
   }
 
   /**

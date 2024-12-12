@@ -734,6 +734,40 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(genBigInt, minSuccessful(10000))(check)
     }
   }
+  "JsonWriter.writeVal for a timestamp" should {
+    "write timestamp values" in {
+      def check(epochSecond: Long, nano: Int): Unit = {
+        val s = BigDecimal({
+          val es = java.math.BigDecimal.valueOf(epochSecond)
+          if (nano == 0) es
+          else es.add(java.math.BigDecimal.valueOf({
+            if (epochSecond < 0) -nano
+            else nano
+          }.toLong, 9).stripTrailingZeros)
+        }).toString
+        withWriter(_.writeTimestampVal(epochSecond, nano)) shouldBe s
+        withWriter(_.writeTimestampValAsString(epochSecond, nano)) shouldBe s""""$s""""
+      }
+
+      check(1L, 0)
+      check(1L, 900000000)
+      check(1L, 990000000)
+      check(1L, 999000000)
+      check(1L, 999900000)
+      check(1L, 999990000)
+      check(1L, 999999000)
+      check(1L, 999999900)
+      check(1L, 999999990)
+      check(1L, 999999999)
+      forAll(arbitrary[Long], Gen.choose(0, 999999999), minSuccessful(10000))((es, n) => check(es, n))
+    }
+    "throw i/o exception for illegal nanos" in {
+      forAll(arbitrary[Long], Gen.oneOf(Gen.choose(Int.MinValue, -1), Gen.choose(1000000000, Int.MaxValue))) { (es, n) =>
+        assert(intercept[JsonWriterException](withWriter(_.writeTimestampVal(es, n))).getMessage.startsWith("illegal nanoseconds"))
+        assert(intercept[JsonWriterException](withWriter(_.writeTimestampValAsString(es, n))).getMessage.startsWith("illegal nanoseconds"))
+      }
+    }
+  }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for BigDecimal" should {
     "don't write null value" in {
       intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[BigDecimal])))
