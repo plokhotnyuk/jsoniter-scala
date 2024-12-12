@@ -102,7 +102,7 @@ Expected output:
 ```sh
 sudo apt install linux-tools-common linux-tools-generic gcc zlib1g-dev
 sudo sysctl kernel.perf_event_paranoid=1
-scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example01.sc --force -o example01_graalvm.bin -- --no-fallback -O3
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example01.sc --force -o example01_graalvm.bin -- --no-fallback -march=native
 ls -l ./example01_graalvm.bin
 perf stat -r 100 ./example01_graalvm.bin > /dev/null
 ```
@@ -210,6 +210,32 @@ Expected output:
 real	1m34.353s
 user	1m29.199s
 sys	0m5.151s
+```
+
+You can use profile guided optimization (PGO) to improve performance of Oracle GraalVM native image, for that you need:
+- build an instrumented GraalVM native image with `--pgo-instrument` option added:
+```sh
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm_instrumented.bin -- --no-fallback --gc=epsilon -O3 --pgo-instrument
+ls -l ./example02_graalvm_instrumented.bin
+```
+- run the instrumented image and collect the profile data:
+```sh
+time ./example02_graalvm_instrumented.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
+```
+- build a PGO-optimized GraalVM native image with `--pgo=default.iprof` option added:
+```sh
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm_optimized.bin -- --no-fallback --gc=epsilon -O3 --pgo=default.iprof
+ls -l ./example02_graalvm_optimized.bin
+```
+- run the PGO-optimized image:
+```sh
+time ./example02_graalvm_optimized.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
+```
+Expected output:
+```text
+real	1m20.185s
+user	1m15.976s
+sys	0m4.207s
 ```
 
 ### Build Scala Native image, print its size, and measure its running time
