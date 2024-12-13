@@ -2571,7 +2571,7 @@ final class JsonReader private[jsoniter_scala](
           if (s != 0) x1 = -x1
           BigInt(x1)
         } else new BigInt({
-          if (len <= 36) toBigDecimal36(buf, from, pos, s, 0).unscaledValue()
+          if (len <= 36) toBigDecimal36(buf, from, pos, s, 0).unscaledValue
           else if (len <= 308) toBigInteger308(buf, from, pos, s)
           else {
             // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing huge numbers
@@ -2579,7 +2579,7 @@ final class JsonReader private[jsoniter_scala](
             // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
             val mid = len >> 1
             val midPos = pos - mid
-            toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, pos, s, 0)).unscaledValue()
+            toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, pos, s, 0)).unscaledValue
           }
         })
       }

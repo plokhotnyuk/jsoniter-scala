@@ -2540,7 +2540,7 @@ final class JsonReader private[jsoniter_scala](
             // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
             val mid = len >> 1
             val midPos = pos - mid
-            toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, pos, s, 0)).unscaledValue()
+            toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, pos, s, 0)).unscaledValue
           }
         })
       }
