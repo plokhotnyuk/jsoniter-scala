@@ -319,102 +319,32 @@ object CodecMakerConfig extends CodecMakerConfig(
   class PrintCodec
 
   private[macros] given FromExpr[CodecMakerConfig] with {
-    def extract[X: FromExpr](name: String, x: Expr[X])(using Quotes): X = {
-      import quotes.reflect._
-
-      summon[FromExpr[X]].unapply(x).getOrElse(throw FromExprException(s"Can't parse $name: ${x.show}, tree: ${x.asTerm}", x))
-    }
-
     def unapply(x: Expr[CodecMakerConfig])(using Quotes): Option[CodecMakerConfig] = {
       import quotes.reflect._
 
       x match
-        case '{
-          CodecMakerConfig(
-            $exprFieldNameMapper,
-            $exprJavaEnumValueNameMapper,
-            $exprAdtLeafClassNameMapper,
-            $exprDiscriminatorFieldName,
-            $exprIsStringified,
-            $exprMapAsArray,
-            $exprSkipUnexpectedFields,
-            $exprTransientDefault,
-            $exprTransientEmpty,
-            $exprTransientNone,
-            $exprRequireCollectionFields,
-            $exprBigDecimalPrecision,
-            $exprBigDecimalScaleLimit,
-            $exprBigDecimalDigitsLimit,
-            $exprBigIntDigitsLimit,
-            $exprBitSetValueLimit,
-            $exprMapMaxInsertNumber,
-            $exprSetMaxInsertNumber,
-            $exprAllowRecursiveTypes,
-            $exprRequireDiscriminatorFirst,
-            $exprUseScalaEnumValueId,
-            $exprSkipNestedOptionValues,
-            $exprCirceLikeObjectEncoding,
-            $exprEncodingOnly,
-            $exprDecodingOnly,
-            $exprRequireDefaultFields,
-            $exprCheckFieldDuplication,
-            $exprScalaTransientSupport,
-            $exprInlineOneValueClasses,
-            $exprAlwaysEmitDiscriminator)
-        } =>
-          try {
-            Some(CodecMakerConfig(
-              extract("fieldNameMapper", exprFieldNameMapper),
-              extract("javaEnumValueNameMapper", exprJavaEnumValueNameMapper),
-              extract("eadtLeafClassNameMapper", exprAdtLeafClassNameMapper),
-              extract("discriminatorFieldName", exprDiscriminatorFieldName),
-              extract("isStringified", exprIsStringified),
-              extract("mapAsArray", exprMapAsArray),
-              extract("skipUnexpectedFields", exprSkipUnexpectedFields),
-              extract("transientDefault", exprTransientDefault),
-              extract("transientEmpty", exprTransientEmpty),
-              extract("transientNone", exprTransientNone),
-              extract("requireCollectionFields", exprRequireCollectionFields),
-              extract("bigDecimalPrecision", exprBigDecimalPrecision),
-              extract("bigDecimalScaleLimit", exprBigDecimalScaleLimit),
-              extract("bigDecimalDigitsLimit", exprBigDecimalDigitsLimit),
-              extract("bigIntDigitsLimit", exprBigIntDigitsLimit),
-              extract("bitSetValueLimit", exprBitSetValueLimit),
-              extract("mapMaxInsertNumber", exprMapMaxInsertNumber),
-              extract("setMaxInsertNumber", exprSetMaxInsertNumber),
-              extract("allowRecursiveTypes", exprAllowRecursiveTypes),
-              extract("requireDiscriminatorFirst", exprRequireDiscriminatorFirst),
-              extract("useScalaEnumValueId", exprUseScalaEnumValueId),
-              extract("skipNestedOptionValues", exprSkipNestedOptionValues),
-              extract("circeLikeObjectEncoding", exprCirceLikeObjectEncoding),
-              extract("decodingOnly", exprDecodingOnly),
-              extract("encodingOnly", exprEncodingOnly),
-              extract("requireDefaultFields", exprRequireDefaultFields),
-              extract("checkFieldDuplication", exprCheckFieldDuplication),
-              extract("scalaTransientSupport", exprScalaTransientSupport),
-              extract("inlineOneValueClasses", exprInlineOneValueClasses),
-              extract("alwaysEmitDiscriminator", exprAlwaysEmitDiscriminator),
-            ))
-          } catch {
-            case FromExprException(message, expr) =>
-              report.warning(message, expr)
-              None
-          }
-        case '{ ($x: CodecMakerConfig).withAllowRecursiveTypes($v) } => Some(x.valueOrAbort.withAllowRecursiveTypes(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withDiscriminatorFieldName($v) } => Some(x.valueOrAbort.withDiscriminatorFieldName(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withUseScalaEnumValueId($v) } => Some(x.valueOrAbort.withUseScalaEnumValueId(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withIsStringified($v) } => Some(x.valueOrAbort.withIsStringified(v.valueOrAbort))
         case '{ CodecMakerConfig } => Some(CodecMakerConfig)
+        case '{ ($x: CodecMakerConfig).withDiscriminatorFieldName($v) } => Some(x.valueOrAbort.withDiscriminatorFieldName(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withFieldNameMapper($v) } => Some(x.valueOrAbort.copy(fieldNameMapper = ExprPartialFunctionWrapper(v)))
         case '{ ($x: CodecMakerConfig).withJavaEnumValueNameMapper($v) } => Some(x.valueOrAbort.copy(javaEnumValueNameMapper = ExprPartialFunctionWrapper(v)))
         case '{ ($x: CodecMakerConfig).withAdtLeafClassNameMapper($v) } => Some(x.valueOrAbort.copy(adtLeafClassNameMapper = ExprPartialFunctionWrapper('{ { case x => $v(x) } })))
+        case '{ ($x: CodecMakerConfig).withAllowRecursiveTypes($v) } => Some(x.valueOrAbort.withAllowRecursiveTypes(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireDiscriminatorFirst($v) } => Some(x.valueOrAbort.copy(requireDiscriminatorFirst = v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withMapAsArray($v) } => Some(x.valueOrAbort.withMapAsArray(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withCheckFieldDuplication($v) } => Some(x.valueOrAbort.withCheckFieldDuplication(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withInlineOneValueClasses($v) } => Some(x.valueOrAbort.withInlineOneValueClasses(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withUseScalaEnumValueId($v) } => Some(x.valueOrAbort.withUseScalaEnumValueId(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withIsStringified($v) } => Some(x.valueOrAbort.withIsStringified(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withDecodingOnly($v) } => Some(x.valueOrAbort.withDecodingOnly(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withEncodingOnly($v) } => Some(x.valueOrAbort.withEncodingOnly(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withSkipUnexpectedFields($v) } => Some(x.valueOrAbort.withSkipUnexpectedFields(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withTransientDefault($v) } => Some(x.valueOrAbort.withTransientDefault(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withTransientEmpty($v) } => Some(x.valueOrAbort.withTransientEmpty(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withTransientNone($v) } => Some(x.valueOrAbort.withTransientNone(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireCollectionFields($v) } => Some(x.valueOrAbort.withRequireCollectionFields(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withRequireDefaultFields($v) } => Some(x.valueOrAbort.withRequireDefaultFields(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withScalaTransientSupport($v) } => Some(x.valueOrAbort.withScalaTransientSupport(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withAlwaysEmitDiscriminator($v) } => Some(x.valueOrAbort.withAlwaysEmitDiscriminator(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withMapAsArray($v) } => Some(x.valueOrAbort.withMapAsArray(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withBigDecimalPrecision($v) } => Some(x.valueOrAbort.withBigDecimalPrecision(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withBigDecimalScaleLimit($v) } => Some(x.valueOrAbort.withBigDecimalScaleLimit(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withBigDecimalDigitsLimit($v) } => Some(x.valueOrAbort.withBigDecimalDigitsLimit(v.valueOrAbort))
@@ -424,13 +354,6 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withSetMaxInsertNumber($v) } => Some(x.valueOrAbort.withSetMaxInsertNumber(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withSkipNestedOptionValues($v) } => Some(x.valueOrAbort.withSkipNestedOptionValues(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withCirceLikeObjectEncoding($v) } => Some(x.valueOrAbort.withCirceLikeObjectEncoding(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withDecodingOnly($v) } => Some(x.valueOrAbort.withDecodingOnly(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withEncodingOnly($v) } => Some(x.valueOrAbort.withEncodingOnly(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withRequireDefaultFields($v) } => Some(x.valueOrAbort.withRequireDefaultFields(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withCheckFieldDuplication($v) } => Some(x.valueOrAbort.withCheckFieldDuplication(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withScalaTransientSupport($v) } => Some(x.valueOrAbort.withScalaTransientSupport(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withInlineOneValueClasses($v) } => Some(x.valueOrAbort.withInlineOneValueClasses(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withAlwaysEmitDiscriminator($v) } => Some(x.valueOrAbort.withAlwaysEmitDiscriminator(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
