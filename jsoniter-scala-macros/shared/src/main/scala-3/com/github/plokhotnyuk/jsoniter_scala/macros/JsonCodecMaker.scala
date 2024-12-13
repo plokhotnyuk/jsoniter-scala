@@ -1382,6 +1382,7 @@ object JsonCodecMaker {
       def genWriteConstantVal(value: String, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         if (isEncodingRequired(value)) '{ $out.writeVal(${Expr(value)}) }
         else '{ $out.writeNonEscapedAsciiVal(${Expr(value)}) }
+
       def genWriteArray[T: Type](x: Expr[Iterable[T]], writeVal: Quotes ?=> (Expr[JsonWriter], Expr[T]) => Expr[Unit],
                                  out: Expr[JsonWriter])(using Quotes): Expr[Unit] = '{
         $out.writeArrayStart()
@@ -2600,7 +2601,7 @@ object JsonCodecMaker {
                     def cond(v: Expr[Array[_]])(using Quotes): Expr[Boolean] =
                       val da = d.asExprOf[Array[_]]
                       if (cfg.transientEmpty)
-                        '{ $v.length > 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                        '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
                       else
                         '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
 
@@ -2618,7 +2619,7 @@ object JsonCodecMaker {
                         def cond(v: Expr[IArray[ft1]])(using Quotes): Expr[Boolean] =
                           val da = d.asExprOf[IArray[ft1]]
                           if (cfg.transientEmpty)
-                            '{ $v.length > 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                            '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
                           else
                             '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
 
@@ -2662,7 +2663,7 @@ object JsonCodecMaker {
                       }
                   } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Array[_]]) '{
                     val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Array[_]]}
-                    if (v.length > 0) {
+                    if (v.length != 0) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
@@ -2671,7 +2672,7 @@ object JsonCodecMaker {
                     fTpe1.asType match
                       case '[ft1] => '{
                         val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[IArray[ft1]]}
-                        if (v.length > 0) {
+                        if (v.length != 0) {
                           ${genWriteConstantKey(fieldInfo.mappedName, out)}
                           ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                         }

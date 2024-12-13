@@ -1962,7 +1962,7 @@ object JsonCodecMaker {
               } else if (fTpe <:< typeOf[Array[_]]) {
                 val cond =
                   if (cfg.transientEmpty) {
-                    q"v.length > 0 && !${withEqualsFor(fTpe, q"v", d)(genArrayEquals(fTpe))}"
+                    q"v.length != 0 && !${withEqualsFor(fTpe, q"v", d)(genArrayEquals(fTpe))}"
                   } else q"!${withEqualsFor(fTpe, q"v", d)(genArrayEquals(fTpe))}"
                 q"""val v = x.${fieldInfo.getter}
                     if ($cond) {
@@ -1997,7 +1997,7 @@ object JsonCodecMaker {
                     }"""
               } else if (cfg.transientEmpty && fTpe <:< typeOf[Array[_]]) {
                 q"""val v = x.${fieldInfo.getter}
-                    if (v.length > 0) {
+                    if (v.length != 0) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
