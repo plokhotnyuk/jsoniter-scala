@@ -23,7 +23,8 @@ jobs:
           - 11
           - 21
         os:
-          - ubuntu-latest # FIXME: restore build on MacOS and Windows
+          - ubuntu-latest
+          - macos-latest
       fail-fast: false
     steps:
       - name: Configure git
