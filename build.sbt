@@ -236,8 +236,8 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     crossScalaVersions := Seq("3.6.2", "2.13.15"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq()
-      case _ => Seq("-source:3.3", "-Xmax-inlines:100")
+      case Some((2, _)) => Seq("-Wopt", "-opt:l:inline", "-opt-inline-from:**:!java.**")
+      case _ => Seq("-source:3.3", "-Xmax-inlines:100", "-language:experimental.betterFors")
     }),
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.27",
