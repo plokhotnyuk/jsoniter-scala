@@ -102,7 +102,7 @@ Expected output:
 ```sh
 sudo apt install linux-tools-common linux-tools-generic gcc zlib1g-dev
 sudo sysctl kernel.perf_event_paranoid=1
-scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example01.sc --force -o example01_graalvm.bin -- --no-fallback -march=native
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example01.sc --force -o example01_graalvm.bin -- --no-fallback -O3 -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
 ls -l ./example01_graalvm.bin
 perf stat -r 100 ./example01_graalvm.bin > /dev/null
 ```
@@ -110,20 +110,20 @@ Expected output:
 ```text
  Performance counter stats for './example01_graalvm.bin' (100 runs):
 
-              1.84 msec task-clock                       #    0.939 CPUs utilized               ( +-  0.40% )
-                 1      context-switches                 #  542.721 /sec                        ( +-  3.21% )
+              1.54 msec task-clock                       #    0.929 CPUs utilized               ( +-  2.17% )
+                 1      context-switches                 #  647.939 /sec                        ( +-  2.93% )
                  0      cpu-migrations                   #    0.000 /sec                      
-               633      page-faults                      #  343.543 K/sec                       ( +-  0.01% )
-         7,594,064      cycles                           #    4.121 GHz                         ( +-  0.49% )
-        11,150,492      instructions                     #    1.47  insn per cycle              ( +-  0.04% )
-         2,133,178      branches                         #    1.158 G/sec                       ( +-  0.03% )
-            21,759      branch-misses                    #    1.02% of all branches             ( +-  0.84% )
-                        TopdownL1                 #     32.0 %  tma_backend_bound      
-                                                  #      6.5 %  tma_bad_speculation    
-                                                  #     30.0 %  tma_frontend_bound     
-                                                  #     31.5 %  tma_retiring             ( +-  0.49% )
+               535      page-faults                      #  346.647 K/sec                       ( +-  0.01% )
+         6,194,402      cycles                           #    4.014 GHz                         ( +-  0.32% )
+         8,776,339      instructions                     #    1.42  insn per cycle              ( +-  0.04% )
+         1,661,644      branches                         #    1.077 G/sec                       ( +-  0.03% )
+            18,496      branch-misses                    #    1.11% of all branches             ( +-  0.87% )
+                        TopdownL1                 #     32.3 %  tma_backend_bound      
+                                                  #      6.6 %  tma_bad_speculation    
+                                                  #     30.4 %  tma_frontend_bound     
+                                                  #     30.7 %  tma_retiring             ( +-  0.31% )
 
-        0.00196304 +- 0.00000988 seconds time elapsed  ( +-  0.50% )
+         0.0016622 +- 0.0000371 seconds time elapsed  ( +-  2.23% )
 ```
 
 ### Build Scala Native image, print its size, and measure its start up time
@@ -201,7 +201,7 @@ sys	0m4.102s
 ### Build GraalVM native image, print its size, and measure its running time
 
 ```sh
-scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon -O3
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon -O3 -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
 ls -l ./example02_graalvm.bin
 time ./example02_graalvm.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
@@ -215,7 +215,7 @@ sys	0m5.151s
 You can use profile guided optimization (PGO) to improve performance of Oracle GraalVM native image, for that you need:
 - build an instrumented GraalVM native image with `--pgo-instrument` option added:
 ```sh
-scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm_instrumented.bin -- --no-fallback --gc=epsilon -O3 --pgo-instrument
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm_instrumented.bin -- --no-fallback --gc=epsilon -O3 --pgo-instrument -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
 ls -l ./example02_graalvm_instrumented.bin
 ```
 - run the instrumented image and collect the profile data:
@@ -224,7 +224,7 @@ time ./example02_graalvm_instrumented.bin < 2023_06_430_65B0_in_network_rates.js
 ```
 - build a PGO-optimized GraalVM native image with `--pgo=default.iprof` option added:
 ```sh
-scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm_optimized.bin -- --no-fallback --gc=epsilon -O3 --pgo=default.iprof
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm_optimized.bin -- --no-fallback --gc=epsilon -O3 --pgo=default.iprof -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
 ls -l ./example02_graalvm_optimized.bin
 ```
 - run the PGO-optimized image:
