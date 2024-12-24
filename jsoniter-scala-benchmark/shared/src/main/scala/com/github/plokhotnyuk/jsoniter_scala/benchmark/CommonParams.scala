@@ -33,7 +33,6 @@ import org.openjdk.jmh.annotations._
   "-XX:+PerfDisableSharedMem", // See https://github.com/Simonis/mmap-pause#readme
   "-XX:-UseDynamicNumberOfCompilerThreads",
   "-XX:-UsePerfData",
-  "-XX:-UseNotificationThread",
   "-XX:+UnlockExperimentalVMOptions",
   "-XX:+TrustFinalNonStaticFields"
 ))
