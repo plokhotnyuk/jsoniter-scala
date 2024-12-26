@@ -8,7 +8,7 @@ import java.util.Base64
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
-object ZioJSONEncoderDecoders {
+object ZioJsonCodecs {
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen

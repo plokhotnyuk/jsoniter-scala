@@ -19,6 +19,7 @@ class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
       toString(b.smithy4sJson()) shouldBe b.jsonString2
       toString(b.uPickle()) shouldBe b.jsonString2
       toString(b.zioJson()) shouldBe b.jsonString1
+      toString(b.zioSchemaJson()) shouldBe b.jsonString1
     }
   }
 }

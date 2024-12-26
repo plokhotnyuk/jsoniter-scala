@@ -117,6 +117,6 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
     import zio.json._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[SuitEnum]](ZioJSONEncoderDecoders.arrayOfEnumsC3c.decoder).fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[SuitEnum]](ZioJsonCodecs.arrayOfEnumsC3c.decoder).fold(sys.error, identity)
   }
 }

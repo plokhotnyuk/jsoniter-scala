@@ -126,6 +126,6 @@ class ArrayOfEnumsWriting extends ArrayOfEnumsBenchmark {
     import zio.json._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    obj.toJson(ZioJSONEncoderDecoders.arrayOfEnumsC3c.encoder).getBytes(UTF_8)
+    obj.toJson(ZioJsonCodecs.arrayOfEnumsC3c.encoder).getBytes(UTF_8)
   }
 }

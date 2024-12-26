@@ -133,6 +133,6 @@ class ArrayOfEnumADTsWriting extends ArrayOfEnumADTsBenchmark {
     import zio.json._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    obj.toJson(ZioJSONEncoderDecoders.arrayOfEnumADTsC3c.encoder).getBytes(UTF_8)
+    obj.toJson(ZioJsonCodecs.arrayOfEnumADTsC3c.encoder).getBytes(UTF_8)
   }
 }
