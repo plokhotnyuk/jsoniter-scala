@@ -115,4 +115,12 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Vector[Boolean]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    vectorOfBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

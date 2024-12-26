@@ -124,10 +124,18 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def zioJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json._
     import java.nio.charset.StandardCharsets.UTF_8
 
     obj.toJsonPretty.getBytes(UTF_8)
+  }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    googleMapsAPICodec.encodeJson(obj, new Some(0)).toString.getBytes(UTF_8)
   }
 }

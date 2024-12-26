@@ -130,15 +130,23 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: Zio-JSON serializes empty collections
+/* FIXME: zio-json serializes empty collections
   @Benchmark
   def zioJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-    import zio.json._
-    import zio.json.JsonEncoder._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
+    import zio.json.EncoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
     obj.toJson.getBytes(UTF_8)
+  }
+*/
+/* FIXME: zio-schema-json serializes default values
+  @Benchmark
+  def zioSchemaJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    openRTBBidRequestCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
   }
 */
 }

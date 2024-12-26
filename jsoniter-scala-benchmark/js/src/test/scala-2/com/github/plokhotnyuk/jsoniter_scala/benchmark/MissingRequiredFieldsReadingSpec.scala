@@ -36,6 +36,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.smithy4sJson() shouldBe "Missing required field (path: .s)"
       b.uPickle() shouldBe "missing keys in dictionary: s, i at index 1"
       b.zioJson() shouldBe ".s(missing)"
+      b.zioSchemaJson() shouldBe ".s(missing)"
     }
     "return toString value for valid input" in {
       val b = benchmark
@@ -52,6 +53,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.smithy4sJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
       b.zioJson() shouldBe "MissingRequiredFields(VVV,1)"
+      b.zioSchemaJson() shouldBe "MissingRequiredFields(VVV,1)"
     }
   }
 }

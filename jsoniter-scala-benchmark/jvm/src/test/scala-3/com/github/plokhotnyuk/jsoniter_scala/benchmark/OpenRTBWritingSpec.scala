@@ -25,8 +25,10 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.jsonString2
       toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString1
-      //FIXME: Zio-JSON serializes empty collections
+      //FIXME: zio-json serializes empty collections
       //toString(b.zioJson()) shouldBe b.jsonString1
+      //FIXME: zio-schema-json serializes default values
+      //toString(b.zioSchemaJson()) shouldBe b.jsonString1
     }
   }
 }

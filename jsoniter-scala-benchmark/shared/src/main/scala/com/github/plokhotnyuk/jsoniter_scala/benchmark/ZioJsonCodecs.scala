@@ -8,7 +8,7 @@ import java.util.Base64
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
-object ZioJSONEncoderDecoders {
+object ZioJsonCodecs {
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
@@ -103,12 +103,13 @@ object ZioJSONEncoderDecoders {
   }
   implicit val missingRequiredFieldsC3c: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
   implicit val primitivesC3c: JsonCodec[Primitives] = DeriveJsonCodec.gen
-  implicit val arrayOfEnumADTsC3c: JsonCodec[Array[SuitADT]] = new JsonCodec(
-    JsonEncoder.array[SuitADT]({ (a: SuitADT, _: Option[Int], out: Write) =>
-      out.write('"')
-      out.write(a.toString)
-      out.write('"')
-    }, ClassTag(classOf[SuitADT])), JsonDecoder.array[SuitADT](new JsonDecoder[SuitADT] {
+  implicit val enumADTsC3c: JsonCodec[SuitADT] = new JsonCodec(new JsonEncoder[SuitADT] {
+      override def unsafeEncode(a: SuitADT, indent: Option[Int], out: Write): Unit = {
+        out.write('"')
+        out.write(a.toString)
+        out.write('"')
+      }
+    }, new JsonDecoder[SuitADT] {
       private[this] val m = Map(
         "Hearts" -> Hearts,
         "Spades" -> Spades,
@@ -117,7 +118,7 @@ object ZioJSONEncoderDecoders {
 
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT =
         m.getOrElse(Lexer.string(trace, in).toString, throwError("SuitADT", trace))
-    }, ClassTag(classOf[SuitADT])))
+    })
   implicit val arrayOfEnumsC3c: JsonCodec[Array[SuitEnum]] = new JsonCodec(
     JsonEncoder.array[SuitEnum]({ (a: SuitEnum, _: Option[Int], out: Write) =>
       out.write('"')

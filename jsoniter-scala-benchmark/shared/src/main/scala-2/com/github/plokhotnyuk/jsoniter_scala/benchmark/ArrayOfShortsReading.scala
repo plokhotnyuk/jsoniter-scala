@@ -124,7 +124,7 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
 
   @Benchmark
   def zioJson(): Array[Short] = {
-    import zio.json._
+    import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
     new String(jsonBytes, UTF_8).fromJson[Array[Short]].fold(sys.error, identity)

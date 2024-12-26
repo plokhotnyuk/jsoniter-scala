@@ -19,6 +19,7 @@ class AnyValsWritingSpec extends BenchmarkSpecBase {
       toString(b.smithy4sJson()) shouldBe b.jsonString1
       toString(b.uPickle()) shouldBe b.jsonString3
       toString(b.zioJson()) shouldBe b.jsonString1
+      toString(b.zioSchemaJson()) shouldBe b.jsonString1
     }
   }
 }
