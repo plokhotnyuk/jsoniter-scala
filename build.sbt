@@ -241,7 +241,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     }),
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.27",
-      "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3",
+      "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3" intransitive(),
       "org.playframework" %%% "play-json" % "3.0.4",
       "dev.zio" %%% "zio-json" % "0.7.3",
       "io.circe" %%% "circe-generic" % "0.14.10",
@@ -275,6 +275,16 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
   .enablePlugins(JmhPlugin)
+  .settings(
+    assembly / assemblyJarName := "benchmarks.jar",
+    assembly / mainClass := Some("org.openjdk.jmh.Main"),
+    assembly / fullClasspath := (Jmh / fullClasspath).value,
+    ThisBuild / assemblyMergeStrategy := {
+      case x if x.endsWith("module-info.class") => MergeStrategy.discard
+      case PathList("deriving.conf") => MergeStrategy.concat
+      case path => MergeStrategy.defaultMergeStrategy(path)
+    }
+  )
 
 lazy val assemblyJSBenchmarks = sys.props.get("assemblyJSBenchmarks").isDefined
 

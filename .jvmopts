@@ -4,4 +4,3 @@
 -XX:InitialCodeCacheSize=512m
 -XX:ReservedCodeCacheSize=512m
 -Dfile.encoding=UTF8
---enable-native-access=ALL-UNNAMED
