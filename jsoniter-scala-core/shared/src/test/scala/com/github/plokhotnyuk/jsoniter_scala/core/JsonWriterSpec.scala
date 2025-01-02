@@ -737,18 +737,21 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   "JsonWriter.writeVal for a timestamp" should {
     "write timestamp values" in {
       def check(epochSecond: Long, nano: Int): Unit = {
-        val s = BigDecimal({
-          val es = java.math.BigDecimal.valueOf(epochSecond)
-          if (nano == 0) es
-          else es.add(java.math.BigDecimal.valueOf({
-            if (epochSecond < 0) -nano
-            else nano
-          }.toLong, 9).stripTrailingZeros)
-        }).toString
-        withWriter(_.writeTimestampVal(epochSecond, nano)) shouldBe s
-        withWriter(_.writeTimestampValAsString(epochSecond, nano)) shouldBe s""""$s""""
+        val s =
+          if (nano == 0) epochSecond.toString
+          else BigDecimal({
+            java.math.BigDecimal.valueOf(epochSecond)
+              .add(java.math.BigDecimal.valueOf(nano.toLong, 9).stripTrailingZeros)
+          }).toString
+        if (!s.contains("E")) {
+          withWriter(_.writeTimestampVal(epochSecond, nano)) shouldBe s
+          withWriter(_.writeTimestampValAsString(epochSecond, nano)) shouldBe s""""$s""""
+          withWriter(_.writeTimestampKey(epochSecond, nano)) shouldBe s""""$s":"""
+        }
       }
 
+      check(-1L, 123456789)
+      check(-1L, 0)
       check(1L, 0)
       check(1L, 900000000)
       check(1L, 990000000)

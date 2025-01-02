@@ -132,6 +132,39 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
+   * Writes a timestamp value as a JSON key.
+   *
+   * @param epochSecond the epoch second of the timestamp to write
+   * @param nano the nanoseconds of the timestamp to write
+   * @throws JsonWriterException if the nanoseconds value is less than 0 or greater than 999999999
+   */
+  def writeTimestampKey(epochSecond: Long, nano: Int): Unit = {
+    if (nano < 0 || nano > 999999999) encodeError("illegal nanoseconds value: " + nano)
+    writeOptionalCommaAndIndentionBeforeKey()
+    writeBytes('"')
+    var pos = ensureBufCapacity(30)
+    val buf = this.buf
+    var es = epochSecond
+    var ns = nano
+    if (es < 0 & ns > 0) {
+      es += 1
+      ns = 1000000000 - ns
+      if (es == 0) {
+        buf(pos) = '-'
+        pos += 1
+      }
+    }
+    pos = writeLong(es, pos, buf)
+    if (ns != 0) {
+      val dotPos = pos
+      pos = writeSignificantFractionDigits(ns, pos + 9, pos, buf, digits)
+      buf(dotPos) = '.'
+    }
+    this.count = pos
+    writeParenthesesWithColon()
+  }
+
+  /**
    * Writes a `BigInt` value as a JSON key.
    *
    * @param x the `BigInt` value to write
@@ -709,10 +742,20 @@ final class JsonWriter private[jsoniter_scala](
     writeOptionalCommaAndIndentionBeforeValue()
     var pos = ensureBufCapacity(30)
     val buf = this.buf
-    pos = writeLong(epochSecond, pos, buf)
-    if (nano != 0) {
+    var es = epochSecond
+    var ns = nano
+    if (es < 0 & ns > 0) {
+      es += 1
+      ns = 1000000000 - ns
+      if (es == 0) {
+        buf(pos) = '-'
+        pos += 1
+      }
+    }
+    pos = writeLong(es, pos, buf)
+    if (ns != 0) {
       val dotPos = pos
-      pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, digits)
+      pos = writeSignificantFractionDigits(ns, pos + 9, pos, buf, digits)
       buf(dotPos) = '.'
     }
     this.count = pos
@@ -843,10 +886,20 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     buf(pos) = '"'
     pos += 1
-    pos = writeLong(epochSecond, pos, buf)
-    if (nano != 0) {
+    var es = epochSecond
+    var ns = nano
+    if (es < 0 & ns > 0) {
+      es += 1
+      ns = 1000000000 - ns
+      if (es == 0) {
+        buf(pos) = '-'
+        pos += 1
+      }
+    }
+    pos = writeLong(es, pos, buf)
+    if (ns != 0) {
       val dotPos = pos
-      pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, digits)
+      pos = writeSignificantFractionDigits(ns, pos + 9, pos, buf, digits)
       buf(dotPos) = '.'
     }
     buf(pos) = '"'
