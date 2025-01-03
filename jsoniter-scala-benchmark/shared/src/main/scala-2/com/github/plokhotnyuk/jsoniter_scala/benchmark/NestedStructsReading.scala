@@ -128,11 +128,20 @@ class NestedStructsReading extends NestedStructsBenchmark {
 
   @Benchmark
   def zioJson(): NestedStructs = {
-     import zio.json._
-     import zio.json.JsonDecoder._
-     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-     import java.nio.charset.StandardCharsets.UTF_8
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
+    import zio.json._
+    import java.nio.charset.StandardCharsets.UTF_8
 
     new String(jsonBytes, UTF_8).fromJson[NestedStructs].fold(sys.error, identity)
   }
+/* FIXME: zio-schema-json parses only 127 levels of nesting instead of 128
+  @Benchmark
+  def zioSchemaJson(): NestedStructs = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import zio.json._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[NestedStructs].fold(sys.error, identity)
+  }
+*/
 }

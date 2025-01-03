@@ -123,6 +123,6 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
     import zio.json._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[SuitADT]](ZioJSONEncoderDecoders.arrayOfEnumADTsC3c.decoder).fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[SuitADT]](ZioJsonCodecs.arrayOfEnumADTsC3c.decoder).fold(sys.error, identity)
   }
 }
