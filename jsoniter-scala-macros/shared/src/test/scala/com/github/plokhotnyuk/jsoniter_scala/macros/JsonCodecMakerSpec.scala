@@ -2136,9 +2136,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         WriterConfig.withEscapeUnicode(true))
     }
     "serialize and deserialize case classes with Scala operators in field names" in {
-      case class Operators(`=<>!#%^&|*/\\~+-:$`: Int)
+      case class Operators(` =<>!#%^&|*/\\~+-:$ `: Int)
 
-      verifySerDeser(make[Operators], Operators(7), """{"=<>!#%^&|*/\\~+-:$":7}""")
+      verifySerDeser(make[Operators], Operators(7), """{" =<>!#%^&|*/\\~+-:$ ":7}""")
     }
     "don't serialize default values of case classes that defined for fields when the transientDefault flag is on (by default)" in {
       val codecOfDefaults: JsonValueCodec[Defaults] = make

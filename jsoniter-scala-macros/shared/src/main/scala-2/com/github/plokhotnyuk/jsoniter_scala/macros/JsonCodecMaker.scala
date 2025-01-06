@@ -609,6 +609,8 @@ object JsonCodecMaker {
 
       def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
 
+      def decodeFieldName(s: Symbol): String = NameTransformer.decode(s.name.toString.trim) // FIXME: Why is there a space at the end of field name?!
+
       def resolveConcreteType(tpe: Type, mtpe: Type): Type = {
         val tpeTypeParams =
           if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.typeParams
@@ -820,7 +822,7 @@ object JsonCodecMaker {
         val getters = tpe.members.collect { case m: MethodSymbol if m.isParamAccessor && m.isGetter => m }
         val annotations = tpe.members.collect {
           case m: TermSymbol if hasSupportedAnnotation(m) =>
-            val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
+            val name = decodeFieldName(m)
             val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
             if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$name' of '$tpe'.")
             val trans = m.annotations.filter(a => a.tree.tpe =:= typeOf[transient]  ||
