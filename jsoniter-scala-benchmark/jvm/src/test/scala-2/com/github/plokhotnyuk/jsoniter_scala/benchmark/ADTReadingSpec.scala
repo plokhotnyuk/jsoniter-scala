@@ -24,6 +24,8 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
+      //FIXME: zio-schema-json throws java.lang.RuntimeException: .type.Z.l.type(unrecognized subtype)
+      //benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -43,6 +45,8 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())
+      //FIXME: zio-schema-json throws java.lang.RuntimeException: .type.Z.l.type(unrecognized subtype)
+      //intercept[Throwable](b.zioSchemaJson())
     }
     "fail on invalid discriminator value" in {
       val b = benchmark

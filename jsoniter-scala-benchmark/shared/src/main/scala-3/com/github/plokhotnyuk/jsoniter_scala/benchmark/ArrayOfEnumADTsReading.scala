@@ -106,11 +106,18 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
 
   @Benchmark
   def zioJson(): Array[SuitADT] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-    import zio.json._
-    import zio.json.JsonDecoder._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
+    import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
     new String(jsonBytes, UTF_8).fromJson[Array[SuitADT]].fold(sys.error, identity)
+  }
+
+  @Benchmark
+  def zioSchemaJson(): Array[SuitADT] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfEnumADTsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
   }
 }

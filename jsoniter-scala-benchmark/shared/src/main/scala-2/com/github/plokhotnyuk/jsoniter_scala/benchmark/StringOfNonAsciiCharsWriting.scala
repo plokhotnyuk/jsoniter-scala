@@ -134,7 +134,7 @@ class StringOfNonAsciiCharsWriting extends StringOfNonAsciiCharsBenchmark {
 
   @Benchmark
   def zioJson(): Array[Byte] = {
-    import zio.json._
+    import zio.json.EncoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
     obj.toJson.getBytes(UTF_8)

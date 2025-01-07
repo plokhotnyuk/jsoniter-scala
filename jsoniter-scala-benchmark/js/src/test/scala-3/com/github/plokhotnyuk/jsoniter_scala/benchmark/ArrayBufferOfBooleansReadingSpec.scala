@@ -16,6 +16,7 @@ class ArrayBufferOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -27,6 +28,7 @@ class ArrayBufferOfBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioSchemaJson())
     }
   }
 }

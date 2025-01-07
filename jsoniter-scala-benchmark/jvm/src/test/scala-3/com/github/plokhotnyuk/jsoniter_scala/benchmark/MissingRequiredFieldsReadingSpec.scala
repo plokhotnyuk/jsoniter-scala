@@ -45,6 +45,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.uPickle() shouldBe "missing keys in dictionary: s, i at index 1"
       b.weePickle() shouldBe "Parser or Visitor failure jsonPointer= index=2 line=1 col=3 token=END_OBJECT"
       b.zioJson() shouldBe ".s(missing)"
+      b.zioSchemaJson() shouldBe ".s(missing)"
     }
     "return toString value for valid input" in {
       val b = benchmark
@@ -65,6 +66,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
       b.weePickle() shouldBe "MissingRequiredFields(VVV,1)"
       b.zioJson() shouldBe "MissingRequiredFields(VVV,1)"
+      b.zioSchemaJson() shouldBe "MissingRequiredFields(VVV,1)"
     }
   }
 }

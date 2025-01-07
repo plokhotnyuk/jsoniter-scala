@@ -100,4 +100,12 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[mutable.ArrayBuffer[Boolean]])
   }
+
+  @Benchmark
+  def zioSchemaJson(): mutable.ArrayBuffer[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayBufferOfBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

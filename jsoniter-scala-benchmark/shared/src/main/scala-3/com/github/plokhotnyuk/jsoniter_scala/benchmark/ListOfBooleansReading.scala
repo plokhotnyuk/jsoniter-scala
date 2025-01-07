@@ -115,4 +115,12 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[List[Boolean]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): List[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    listOfBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

@@ -24,6 +24,8 @@ class ADTWritingSpec extends BenchmarkSpecBase {
       toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString1
       toString(b.zioJson()) shouldBe b.jsonString1
+      //FIXME: zio-schema-json doesn't serialize the discriminator field
+      //toString(b.zioSchemaJson()) shouldBe b.jsonString1
     }
     "fail on invalid input" in {
       val b = benchmark

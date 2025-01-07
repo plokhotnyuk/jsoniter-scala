@@ -122,11 +122,18 @@ class AnyValsWriting extends AnyValsBenchmark {
 
   @Benchmark
   def zioJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-    import zio.json._
-    import zio.json.JsonEncoder._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
+    import zio.json.EncoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
     obj.toJson.getBytes(UTF_8)
+  }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    anyValsCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
   }
 }

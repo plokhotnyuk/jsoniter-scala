@@ -129,4 +129,12 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Set[Int]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    setOfIntsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

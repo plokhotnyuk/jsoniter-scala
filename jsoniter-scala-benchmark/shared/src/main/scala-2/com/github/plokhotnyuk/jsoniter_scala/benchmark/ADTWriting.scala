@@ -131,11 +131,20 @@ class ADTWriting extends ADTBenchmark {
 
   @Benchmark
   def zioJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
-    import zio.json._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
+    import zio.json.EncoderOps
     import zio.json.JsonEncoder._
     import java.nio.charset.StandardCharsets.UTF_8
 
     obj.toJson.getBytes(UTF_8)
   }
+/* FIXME: zio-schema-json doesn't serialize the discriminator field
+  @Benchmark
+  def zioSchemaJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    adtCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
+  }
+*/
 }

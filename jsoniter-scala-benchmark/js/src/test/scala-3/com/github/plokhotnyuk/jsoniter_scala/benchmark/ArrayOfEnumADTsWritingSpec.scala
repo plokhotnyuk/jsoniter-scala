@@ -17,6 +17,7 @@ class ArrayOfEnumADTsWritingSpec extends BenchmarkSpecBase {
       toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.zioJson()) shouldBe b.jsonString
+      toString(b.zioSchemaJson()) shouldBe b.jsonString
     }
   }
 }

@@ -112,10 +112,18 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
 
   @Benchmark
   def zioJson(): ArraySeq[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 
     new String(jsonBytes, UTF_8).fromJson[ArraySeq[Boolean]].fold(sys.error, identity)
+  }
+
+  @Benchmark
+  def zioSchemaJson(): ArraySeq[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arraySeqOfBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
   }
 }

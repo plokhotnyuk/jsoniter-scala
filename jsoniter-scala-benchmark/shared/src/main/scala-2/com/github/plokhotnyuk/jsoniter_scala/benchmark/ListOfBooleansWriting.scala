@@ -134,9 +134,17 @@ class ListOfBooleansWriting extends ListOfBooleansBenchmark {
 
   @Benchmark
   def zioJson(): Array[Byte] = {
-    import zio.json._
+    import zio.json.EncoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
     obj.toJson.getBytes(UTF_8)
+  }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    listOfBooleansCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
   }
 }

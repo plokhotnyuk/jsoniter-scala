@@ -26,6 +26,8 @@ object Main {
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
+      //FIXME: zio-schema-json throws java.lang.RuntimeException: .type.Z.l.type(unrecognized subtype)
+      //B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ADTWriting { setup() }
@@ -41,6 +43,8 @@ object Main {
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
+      //FIXME: zio-schema-json doesn't serialize the discriminator field
+      //B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new AnyValsReading { setup() }
@@ -54,7 +58,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new AnyValsWriting { setup() }
@@ -69,7 +74,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ArrayBufferOfBooleansReading { size = 128; setup() }
@@ -81,7 +87,8 @@ object Main {
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ArrayBufferOfBooleansWriting { size = 128; setup() }
@@ -95,7 +102,8 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ArrayOfBigDecimalsReading { size = 128; setup() }
@@ -165,7 +173,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ArrayOfBooleansWriting { size = 128; setup() }
@@ -180,7 +189,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ArrayOfBytesReading { size = 128; setup() }
@@ -305,7 +315,8 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ArrayOfEnumADTsWriting { size = 128; setup() }
@@ -319,7 +330,8 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ArrayOfEnumsReading { size = 128; setup() }
@@ -887,7 +899,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ArraySeqOfBooleansWriting { size = 128; setup() }
@@ -902,7 +915,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new Base16Reading { size = 128; setup() }
@@ -1031,7 +1045,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GeoJSONReading { setup() }
@@ -1046,6 +1061,8 @@ object Main {
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
+      //FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
+      //B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GeoJSONWriting { setup() }
@@ -1060,7 +1077,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GitHubActionsAPIReading { setup() }
@@ -1074,7 +1092,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GitHubActionsAPIWriting { setup() }
@@ -1089,7 +1108,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GoogleMapsAPIPrettyPrinting { setup() }
@@ -1104,7 +1124,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GoogleMapsAPIReading { setup() }
@@ -1118,7 +1139,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GoogleMapsAPIWriting { setup() }
@@ -1133,7 +1155,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new IntMapOfBooleansReading { size = 128; setup() }
@@ -1195,7 +1218,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new ListOfBooleansWriting { size = 128; setup() }
@@ -1210,7 +1234,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new MapOfIntsToBooleansReading { size = 128; setup() }
@@ -1249,7 +1274,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new MutableBitSetReading { size = 128; setup() }
@@ -1349,6 +1375,8 @@ object Main {
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
+      //FIXME: zio-schema-json parses only 127 levels of nesting instead of 128
+      //B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new NestedStructsWriting { size = 128; setup() }
@@ -1362,7 +1390,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new OpenRTBReading { setup() }
@@ -1376,7 +1405,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new OpenRTBWriting { setup() }
@@ -1391,6 +1421,10 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle())
+      //FIXME: zio-json serializes empty collections
+      //B("zioJson")(benchmark.zioJson()),
+      //FIXME: zio-schema-json serializes default values
+      //B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new PrimitivesReading { setup() }
@@ -1404,7 +1438,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new PrimitivesWriting { setup() }
@@ -1419,7 +1454,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new SetOfIntsReading { size = 128; setup() }
@@ -1433,7 +1469,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new SetOfIntsWriting { size = 128; setup() }
@@ -1448,7 +1485,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new StringOfAsciiCharsReading { size = 128; setup() }
@@ -1548,7 +1586,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new TwitterAPIWriting { setup() }
@@ -1562,7 +1601,8 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new VectorOfBooleansReading { size = 128; setup() }
@@ -1576,7 +1616,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new VectorOfBooleansWriting { size = 128; setup() }
@@ -1591,7 +1632,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   })
 }
