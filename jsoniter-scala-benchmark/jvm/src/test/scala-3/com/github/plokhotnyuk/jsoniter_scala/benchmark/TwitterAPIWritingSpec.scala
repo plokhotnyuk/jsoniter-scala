@@ -24,7 +24,7 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.compactJsonString2
       toString(b.uPickle()) shouldBe b.compactJsonString1
       toString(b.weePickle()) shouldBe b.compactJsonString1
-      //FIXME: zio-json serializes empty collections
+      //FIXME: zio-json serializes default values
       //toString(b.zioJson()) shouldBe b.compactJsonString1
       toString(b.zioSchemaJson()) shouldBe b.compactJsonString1
     }

@@ -1316,7 +1316,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle())
-      //FIXME: zio-json serializes empty collections
+      //FIXME: zio-json serializes default values
       //B("zioJson")(benchmark.zioJson()),
       //FIXME: zio-schema-json serializes default values
       //B("zioSchemaJson")(benchmark.zioSchemaJson())

@@ -122,7 +122,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: zio-json serializes empty collections
+/* FIXME: zio-json serializes default values
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
