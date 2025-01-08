@@ -133,7 +133,6 @@ class ADTWriting extends ADTBenchmark {
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.EncoderOps
-    import zio.json.JsonEncoder._
     import java.nio.charset.StandardCharsets.UTF_8
 
     obj.toJson.getBytes(UTF_8)
