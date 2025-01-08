@@ -138,7 +138,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: zio-json serializes default values
+/* FIXME: zio-json skips serialization of the `"description": {}` field
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._

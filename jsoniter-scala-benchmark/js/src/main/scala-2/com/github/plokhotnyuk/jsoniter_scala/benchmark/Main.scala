@@ -1602,6 +1602,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      //FIXME: zio-json skips serialization of the `"description": {}` field
+      //B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
