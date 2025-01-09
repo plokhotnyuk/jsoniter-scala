@@ -1155,7 +1155,8 @@ object Main {
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new MapOfIntsToBooleansWriting { size = 128; setup() }
@@ -1166,7 +1167,8 @@ object Main {
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new MissingRequiredFieldsReading { setup() }
@@ -1390,7 +1392,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new StringOfAsciiCharsWriting { size = 128; setup() }
@@ -1404,7 +1407,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new StringOfEscapedCharsReading { size = 128; setup() }
@@ -1417,7 +1421,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new StringOfEscapedCharsWriting { size = 128; setup() }
@@ -1442,7 +1447,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new StringOfNonAsciiCharsWriting { size = 128; setup() }
@@ -1456,7 +1462,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new TwitterAPIReading { setup() }

@@ -71,6 +71,8 @@ object ZioSchemaJsonCodecs {
   }
   val listOfBooleansCodec: JsonCodec[List[Boolean]] =
     zio.schema.codec.JsonCodec.jsonCodec(Schema.list[Boolean])
+  val mapOfIntsToBooleansCodec: JsonCodec[Map[Int, Boolean]] =
+    zio.schema.codec.JsonCodec.jsonCodec(Schema.map[Int, Boolean])
   val missingRequiredFieldsCodec: JsonCodec[MissingRequiredFields] =
     zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[MissingRequiredFields])
   val nestedStructsCodec: JsonCodec[NestedStructs] =
@@ -103,6 +105,8 @@ object ZioSchemaJsonCodecs {
     zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[Primitives])
   val setOfIntsCodec: JsonCodec[Set[Int]] =
     zio.schema.codec.JsonCodec.jsonCodec(Schema.set[Int])
+  val stringCodec: JsonCodec[String] =
+    zio.schema.codec.JsonCodec.jsonCodec(Schema[String])
   val twitterAPICodec: JsonCodec[Seq[TwitterAPI.Tweet]] = {
     implicit val s1: Schema[TwitterAPI.UserMentions] = DeriveSchema.gen
     implicit val s2: Schema[TwitterAPI.Urls] = DeriveSchema.gen

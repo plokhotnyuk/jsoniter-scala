@@ -17,6 +17,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
+      benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -28,6 +29,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.zioJson())
+      intercept[Throwable](b.zioSchemaJson())
     }
   }
 }

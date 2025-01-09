@@ -17,6 +17,7 @@ class MapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.zioJson()) shouldBe b.jsonString
+      toString(b.zioSchemaJson()) shouldBe b.jsonString
     }
   }
 }

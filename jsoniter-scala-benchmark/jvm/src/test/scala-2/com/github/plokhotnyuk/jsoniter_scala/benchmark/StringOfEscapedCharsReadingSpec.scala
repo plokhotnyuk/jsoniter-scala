@@ -26,6 +26,7 @@ class StringOfEscapedCharsReadingSpec extends BenchmarkSpecBase {
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
+      benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -47,6 +48,7 @@ class StringOfEscapedCharsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())
+      intercept[Throwable](b.zioSchemaJson())
     }
   }
 }
