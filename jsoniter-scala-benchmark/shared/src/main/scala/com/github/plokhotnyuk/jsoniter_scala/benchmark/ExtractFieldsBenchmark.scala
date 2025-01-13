@@ -18,6 +18,7 @@ abstract class ExtractFieldsBenchmark extends CommonParams {
     jsonString = zeroHashCodeStrings.map(s => writeToString(s)(JsoniterScalaCodecs.stringCodec)).take(size)
       .mkString("""{"s":"s",""", s""":$value,""", s""":$value,"i":1}""") // test for hashcode collision vulnerability
     //jsonString = s"""{"s":"s","n":${"7" * size},"i":1}""" // test for big number parsing vulnerability
+    //jsonString = s"""{"s":"s","n":"${"x" * size}","i":1}""" // test for big string parsing vulnerability
     //jsonString = s"""{"s":"s","n":${"[" * size + "]" * size},"i":1}""" // test for nested JSON array vulnerability
     //jsonString = s"""{"s":"s",${""""n":{""" * size + "}" * size},"i":1}""" // test for nested JSON object vulnerability
     jsonBytes = jsonString.getBytes(UTF_8)
