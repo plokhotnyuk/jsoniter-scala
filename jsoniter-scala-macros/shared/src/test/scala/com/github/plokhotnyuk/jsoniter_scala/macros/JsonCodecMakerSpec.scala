@@ -3022,6 +3022,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(make[MultiListOfArgs], new MultiListOfArgs(1)(2)("VVV"), """{"i":1,"l":2,"s":"VVV"}""")
     }
+    "generate codecs for case classes with multiple parameter lists in a primary constructor that has default values in the first parameter list" in {
+      case class MultiListOfArgs(i: Int = 1)(val l: Long)(var s: String)
+
+      verifySerDeser(make[MultiListOfArgs], new MultiListOfArgs()(2)("VVV"), """{"l":2,"s":"VVV"}""")
+      verifySerDeser(makeWithRequiredDefaultFields[MultiListOfArgs],
+        new MultiListOfArgs()(2)("VVV"), """{"i":1,"l":2,"s":"VVV"}""")
+    }
     "generate codecs for case classes with multiple parameter lists in a primary constructor with depended default values when the requireDefaultFields is on" in {
       case class MultiListOfArgs(i: Int = 1)(val l: Long = i - 1)(var s: String = l.toString)
 
