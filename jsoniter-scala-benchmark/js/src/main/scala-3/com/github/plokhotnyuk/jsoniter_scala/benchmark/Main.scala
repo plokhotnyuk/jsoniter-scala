@@ -1011,6 +1011,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
+      B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
