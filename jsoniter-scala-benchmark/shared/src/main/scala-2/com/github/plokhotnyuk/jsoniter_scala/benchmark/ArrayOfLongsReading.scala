@@ -129,4 +129,12 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[Long]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Long] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfLongsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

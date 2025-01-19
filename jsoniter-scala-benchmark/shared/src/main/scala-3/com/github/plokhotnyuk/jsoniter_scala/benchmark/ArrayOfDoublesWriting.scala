@@ -125,4 +125,12 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
 
     obj.toJson.getBytes(UTF_8)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfDoublesCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
+  }
 }

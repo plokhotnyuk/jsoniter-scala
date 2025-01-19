@@ -111,4 +111,12 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[Period]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfPeriodsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

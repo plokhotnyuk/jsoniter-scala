@@ -117,4 +117,12 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[Byte]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfBytesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

@@ -126,4 +126,12 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[Instant]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Instant] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfInstantsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

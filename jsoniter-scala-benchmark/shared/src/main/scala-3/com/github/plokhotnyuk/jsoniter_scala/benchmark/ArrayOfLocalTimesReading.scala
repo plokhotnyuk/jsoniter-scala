@@ -112,4 +112,12 @@ class ArrayOfLocalTimesReading extends ArrayOfLocalTimesBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[LocalTime]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[LocalTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfLocalTimesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

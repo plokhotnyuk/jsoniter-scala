@@ -2,10 +2,14 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import zio.Chunk
 import zio.json.JsonCodec
+import zio.schema.DeriveSchema.gen
+import zio.schema.codec.JsonCodec.jsonCodec
 import zio.schema.StandardType
 import zio.schema.annotation._
 import zio.schema.{DeriveSchema, Schema}
 
+import java.time._
+import java.util.UUID
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -27,8 +31,7 @@ object ZioSchemaJsonCodecs {
   implicit def seq[A](implicit schemaA: Schema[A]): Schema[Seq[A]] =
     Schema.Sequence[Seq[A], A, String](schemaA, _.toSeq, Chunk.fromIterable, Chunk.empty, "Seq")
 
-  val adtCodec: JsonCodec[ADTBase] =
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[ADTBase].annotate(discriminatorName("type")))
+  val adtCodec: JsonCodec[ADTBase] = jsonCodec(DeriveSchema.gen[ADTBase].annotate(discriminatorName("type")))
   val anyValsCodec: JsonCodec[AnyVals] = {
     implicit val s1: Schema[ByteVal] = Schema.Primitive(StandardType.ByteType).transform(ByteVal.apply, _.a)
     implicit val s2: Schema[ShortVal] = Schema.Primitive(StandardType.ShortType).transform(ShortVal.apply, _.a)
@@ -38,45 +41,59 @@ object ZioSchemaJsonCodecs {
     implicit val s6: Schema[CharVal] = Schema.Primitive(StandardType.CharType).transform(CharVal.apply, _.a)
     implicit val s7: Schema[DoubleVal] = Schema.Primitive(StandardType.DoubleType).transform(DoubleVal.apply, _.a)
     implicit val s8: Schema[FloatVal] = Schema.Primitive(StandardType.FloatType).transform(FloatVal.apply, _.a)
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[AnyVals])
+    jsonCodec(DeriveSchema.gen[AnyVals])
   }
-  val arrayBufferOfBooleansCodec: JsonCodec[mutable.ArrayBuffer[Boolean]] =
-    zio.schema.codec.JsonCodec.jsonCodec(arrayBuffer[Boolean])
-  val arrayOfBooleansCodec: JsonCodec[Array[Boolean]] =
-    zio.schema.codec.JsonCodec.jsonCodec(array[Boolean])
+  val arrayBufferOfBooleansCodec: JsonCodec[mutable.ArrayBuffer[Boolean]] = jsonCodec(arrayBuffer[Boolean])
+  val arrayOfBooleansCodec: JsonCodec[Array[Boolean]] = jsonCodec(array[Boolean])
+  val arrayOfBytesCodec: JsonCodec[Array[Byte]] = jsonCodec(array[Byte])
+  val arrayOfCharsCodec: JsonCodec[Array[Char]] = jsonCodec(array[Char])
+  val arrayOfDoublesCodec: JsonCodec[Array[Double]] = jsonCodec(array[Double])
+  val arrayOfDurationsCodec: JsonCodec[Array[Duration]] = jsonCodec(array[Duration])
   val arrayOfEnumADTsCodec: JsonCodec[Array[SuitADT]] = {
     implicit val s1: Schema[SuitADT] = DeriveSchema.gen
-    zio.schema.codec.JsonCodec.jsonCodec(array[SuitADT])
+    jsonCodec(array[SuitADT])
   }
-  val arraySeqOfBooleansCodec: JsonCodec[ArraySeq[Boolean]] =
-    zio.schema.codec.JsonCodec.jsonCodec(arraySeq[Boolean])
-  val extractFieldsCodec: JsonCodec[ExtractFields] =
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[ExtractFields])
+  val arrayOfFloatsCodec: JsonCodec[Array[Float]] = jsonCodec(array[Float])
+  val arrayOfInstantsCodec: JsonCodec[Array[Instant]] = jsonCodec(array[Instant])
+  val arrayOfIntsCodec: JsonCodec[Array[Int]] = jsonCodec(array[Int])
+  val arrayOfLocalDatesCodec: JsonCodec[Array[LocalDate]] = jsonCodec(array[LocalDate])
+  val arrayOfLocalDateTimesCodec: JsonCodec[Array[LocalDateTime]] = jsonCodec(array[LocalDateTime])
+  val arrayOfLocalTimesCodec: JsonCodec[Array[LocalTime]] = jsonCodec(array[LocalTime])
+  val arrayOfLongsCodec: JsonCodec[Array[Long]] = jsonCodec(array[Long])
+  val arrayOfMonthDaysCodec: JsonCodec[Array[MonthDay]] = jsonCodec(array[MonthDay])
+  val arrayOfOffsetDateTimesCodec: JsonCodec[Array[OffsetDateTime]] = jsonCodec(array[OffsetDateTime])
+  val arrayOfOffsetTimesCodec: JsonCodec[Array[OffsetTime]] = jsonCodec(array[OffsetTime])
+  val arrayOfPeriodsCodec: JsonCodec[Array[Period]] = jsonCodec(array[Period])
+  val arrayOfShortsCodec: JsonCodec[Array[Short]] = jsonCodec(array[Short])
+  val arrayOfUUIDsCodec: JsonCodec[Array[UUID]] = jsonCodec(array[UUID])
+  val arrayOfYearMonthsCodec: JsonCodec[Array[YearMonth]] = jsonCodec(array[YearMonth])
+  val arrayOfYearsCodec: JsonCodec[Array[Year]] = jsonCodec(array[Year])
+  val arrayOfZonedDateTimesCodec: JsonCodec[Array[ZonedDateTime]] = jsonCodec(array[ZonedDateTime])
+  val arrayOfZoneIdsCodec: JsonCodec[Array[ZoneId]] = jsonCodec(array[ZoneId])
+  val arrayOfZoneOffsetsCodec: JsonCodec[Array[ZoneOffset]] = jsonCodec(array[ZoneOffset])
+  val arraySeqOfBooleansCodec: JsonCodec[ArraySeq[Boolean]] = jsonCodec(arraySeq[Boolean])
+  val extractFieldsCodec: JsonCodec[ExtractFields] = jsonCodec(DeriveSchema.gen[ExtractFields])
   val geoJsonCodec: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val s1: Schema[GeoJSON.SimpleGeometry] = DeriveSchema.gen[GeoJSON.SimpleGeometry].annotate(discriminatorName("type"))
     implicit val s2: Schema[GeoJSON.Geometry] = DeriveSchema.gen[GeoJSON.Geometry].annotate(discriminatorName("type"))
     implicit val s3: Schema[GeoJSON.SimpleGeoJSON] = DeriveSchema.gen[GeoJSON.SimpleGeoJSON].annotate(discriminatorName("type"))
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[GeoJSON.GeoJSON].annotate(discriminatorName("type")))
+    jsonCodec(DeriveSchema.gen[GeoJSON.GeoJSON].annotate(discriminatorName("type")))
   }
   val gitHubActionsAPICodec: JsonCodec[GitHubActionsAPI.Response] = {
     implicit val s1: Schema[Boolean] = Schema.primitive[String].transform(_.toBoolean, _.toString)
     implicit val s2: Schema[GitHubActionsAPI.Artifact] = DeriveSchema.gen
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[GitHubActionsAPI.Response])
+    jsonCodec(DeriveSchema.gen[GitHubActionsAPI.Response])
   }
   val googleMapsAPICodec: JsonCodec[GoogleMapsAPI.DistanceMatrix] = {
     implicit val s1: Schema[GoogleMapsAPI.Value] = DeriveSchema.gen
     implicit val s2: Schema[GoogleMapsAPI.Elements] = DeriveSchema.gen
     implicit val s3: Schema[GoogleMapsAPI.Rows] = DeriveSchema.gen
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[GoogleMapsAPI.DistanceMatrix])
+    jsonCodec(DeriveSchema.gen[GoogleMapsAPI.DistanceMatrix])
   }
-  val listOfBooleansCodec: JsonCodec[List[Boolean]] =
-    zio.schema.codec.JsonCodec.jsonCodec(Schema.list[Boolean])
-  val mapOfIntsToBooleansCodec: JsonCodec[Map[Int, Boolean]] =
-    zio.schema.codec.JsonCodec.jsonCodec(Schema.map[Int, Boolean])
-  val missingRequiredFieldsCodec: JsonCodec[MissingRequiredFields] =
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[MissingRequiredFields])
-  val nestedStructsCodec: JsonCodec[NestedStructs] =
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[NestedStructs])
+  val listOfBooleansCodec: JsonCodec[List[Boolean]] = jsonCodec(Schema.list[Boolean])
+  val mapOfIntsToBooleansCodec: JsonCodec[Map[Int, Boolean]] = jsonCodec(Schema.map[Int, Boolean])
+  val missingRequiredFieldsCodec: JsonCodec[MissingRequiredFields] = jsonCodec(DeriveSchema.gen[MissingRequiredFields])
+  val nestedStructsCodec: JsonCodec[NestedStructs] = jsonCodec(DeriveSchema.gen[NestedStructs])
   val openRTBBidRequestCodec: JsonCodec[OpenRTB.BidRequest] = {
     implicit val s1: Schema[OpenRTB.Segment] = DeriveSchema.gen
     implicit val s2: Schema[OpenRTB.Format] = DeriveSchema.gen
@@ -99,14 +116,11 @@ object ZioSchemaJsonCodecs {
     implicit val s19: Schema[OpenRTB.User] = DeriveSchema.gen
     implicit val s20: Schema[OpenRTB.Source] = DeriveSchema.gen
     implicit val s21: Schema[OpenRTB.Reqs] = DeriveSchema.gen
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[OpenRTB.BidRequest])
+    jsonCodec(DeriveSchema.gen[OpenRTB.BidRequest])
   }
-  val primitivesCodec: JsonCodec[Primitives] =
-    zio.schema.codec.JsonCodec.jsonCodec(DeriveSchema.gen[Primitives])
-  val setOfIntsCodec: JsonCodec[Set[Int]] =
-    zio.schema.codec.JsonCodec.jsonCodec(Schema.set[Int])
-  val stringCodec: JsonCodec[String] =
-    zio.schema.codec.JsonCodec.jsonCodec(Schema[String])
+  val primitivesCodec: JsonCodec[Primitives] = jsonCodec(DeriveSchema.gen[Primitives])
+  val setOfIntsCodec: JsonCodec[Set[Int]] = jsonCodec(Schema.set[Int])
+  val stringCodec: JsonCodec[String] = jsonCodec(Schema[String])
   val twitterAPICodec: JsonCodec[Seq[TwitterAPI.Tweet]] = {
     implicit val s1: Schema[TwitterAPI.UserMentions] = DeriveSchema.gen
     implicit val s2: Schema[TwitterAPI.Urls] = DeriveSchema.gen
@@ -116,8 +130,7 @@ object ZioSchemaJsonCodecs {
     implicit val s6: Schema[TwitterAPI.User] = DeriveSchema.gen
     implicit val s7: Schema[TwitterAPI.RetweetedStatus] = DeriveSchema.gen
     implicit val s8: Schema[TwitterAPI.Tweet] = DeriveSchema.gen
-    zio.schema.codec.JsonCodec.jsonCodec(seq[TwitterAPI.Tweet])
+    jsonCodec(seq[TwitterAPI.Tweet])
   }
-  val vectorOfBooleansCodec: JsonCodec[Vector[Boolean]] =
-    zio.schema.codec.JsonCodec.jsonCodec(Schema.vector[Boolean])
+  val vectorOfBooleansCodec: JsonCodec[Vector[Boolean]] = jsonCodec(Schema.vector[Boolean])
 }

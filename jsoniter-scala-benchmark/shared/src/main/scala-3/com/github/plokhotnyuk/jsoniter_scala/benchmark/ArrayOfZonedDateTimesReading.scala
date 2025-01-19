@@ -111,4 +111,12 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[ZonedDateTime]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[ZonedDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfZonedDateTimesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

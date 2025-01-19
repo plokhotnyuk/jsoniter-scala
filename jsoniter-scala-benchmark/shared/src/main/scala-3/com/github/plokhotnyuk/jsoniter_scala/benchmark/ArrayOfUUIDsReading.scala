@@ -117,4 +117,12 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[UUID]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[UUID] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfUUIDsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

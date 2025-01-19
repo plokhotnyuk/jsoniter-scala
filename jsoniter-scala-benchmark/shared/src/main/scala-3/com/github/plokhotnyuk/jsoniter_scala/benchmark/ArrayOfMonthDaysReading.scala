@@ -111,4 +111,12 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[MonthDay]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[MonthDay] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfMonthDaysCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

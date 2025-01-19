@@ -17,6 +17,7 @@ class ArrayOfCharsReadingSpec extends BenchmarkSpecBase {
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
+      benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -29,6 +30,7 @@ class ArrayOfCharsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())
+      intercept[Throwable](b.zioSchemaJson())
     }
   }
 }

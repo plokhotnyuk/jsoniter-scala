@@ -111,4 +111,12 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[Year]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[Year] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfYearsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }

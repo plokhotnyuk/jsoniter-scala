@@ -125,4 +125,12 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[Array[OffsetDateTime]].fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJson(): Array[OffsetDateTime] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    arrayOfOffsetDateTimesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+  }
 }
