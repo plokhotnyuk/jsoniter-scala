@@ -142,4 +142,12 @@ class PrimitivesReading extends PrimitivesBenchmark {
 
     primitivesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaJsoniter(): Primitives = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    readFromArray[Primitives](jsonBytes)
+  }
 }

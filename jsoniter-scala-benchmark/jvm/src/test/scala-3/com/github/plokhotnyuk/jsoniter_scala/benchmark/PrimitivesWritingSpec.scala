@@ -24,6 +24,7 @@ class PrimitivesWritingSpec extends BenchmarkSpecBase {
       toString(b.weePickle()) shouldBe b.jsonString1
       toString(b.zioJson()) shouldBe b.jsonString1
       toString(b.zioSchemaJson()) shouldBe b.jsonString1
+      toString(b.zioSchemaJsoniter()) shouldBe b.jsonString1
     }
   }
 }

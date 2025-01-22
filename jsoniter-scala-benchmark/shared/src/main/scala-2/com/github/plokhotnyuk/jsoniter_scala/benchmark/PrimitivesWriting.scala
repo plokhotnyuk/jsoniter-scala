@@ -152,4 +152,12 @@ class PrimitivesWriting extends PrimitivesBenchmark {
 
     primitivesCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
   }
+
+  @Benchmark
+  def zioSchemaJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    writeToArray(obj)
+  }
 }
