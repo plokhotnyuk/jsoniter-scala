@@ -1319,9 +1319,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
-      //FIXME: zio-schema-json parses only 127 levels of nesting instead of 128
-      //B("zioSchemaJson")(benchmark.zioSchemaJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new NestedStructsWriting { size = 128; setup() }

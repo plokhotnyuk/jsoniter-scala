@@ -9,7 +9,6 @@ import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
 object ZioJsonCodecs {
-  implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(explicitEmptyCollections = false)
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen

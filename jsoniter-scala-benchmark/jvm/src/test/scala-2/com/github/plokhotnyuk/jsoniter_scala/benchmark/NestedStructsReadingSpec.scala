@@ -26,8 +26,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
-      //FIXME: zio-schema-json parses only 127 levels of nesting instead of 128
-      //benchmark.zioSchemaJson() shouldBe benchmark.obj
+      benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -48,8 +47,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())
-      //FIXME: zio-schema-json parses only 127 levels of nesting instead of 128
-      //intercept[Throwable](b.zioSchemaJson())
+      intercept[Throwable](b.zioSchemaJson())
     }
   }
 }
