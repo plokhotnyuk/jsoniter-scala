@@ -26,23 +26,28 @@ object ZioJsonCodecs {
       implicit val c5: JsonCodec[OpenRTB.Banner] = DeriveJsonCodec.gen
       implicit val c6: JsonCodec[OpenRTB.Audio] = DeriveJsonCodec.gen
       implicit val c7: JsonCodec[OpenRTB.Video] = DeriveJsonCodec.gen
-      implicit val c8: JsonCodec[OpenRTB.Native] = DeriveJsonCodec.gen
-      implicit val c9: JsonCodec[OpenRTB.Pmp] = DeriveJsonCodec.gen
 
       def genOpenRTBBidRequestC3c2: JsonCodec[OpenRTB.BidRequest] = {
+        implicit val c8: JsonCodec[OpenRTB.Native] = DeriveJsonCodec.gen
+        implicit val c9: JsonCodec[OpenRTB.Pmp] = DeriveJsonCodec.gen
         implicit val c10: JsonCodec[OpenRTB.Producer] = DeriveJsonCodec.gen
         implicit val c11: JsonCodec[OpenRTB.Data] = DeriveJsonCodec.gen
         implicit val c12: JsonCodec[OpenRTB.Content] = DeriveJsonCodec.gen
         implicit val c13: JsonCodec[OpenRTB.Publisher] = DeriveJsonCodec.gen
         implicit val c14: JsonCodec[OpenRTB.Geo] = DeriveJsonCodec.gen
-        implicit val c15: JsonCodec[OpenRTB.Imp] = DeriveJsonCodec.gen
-        implicit val c16: JsonCodec[OpenRTB.Site] = DeriveJsonCodec.gen
-        implicit val c17: JsonCodec[OpenRTB.App] = DeriveJsonCodec.gen
-        implicit val c18: JsonCodec[OpenRTB.Device] = DeriveJsonCodec.gen
-        implicit val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
-        implicit val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
-        implicit val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
-        DeriveJsonCodec.gen
+
+        def genOpenRTBBidRequestC3c3: JsonCodec[OpenRTB.BidRequest] = {
+          implicit val c15: JsonCodec[OpenRTB.Imp] = DeriveJsonCodec.gen
+          implicit val c16: JsonCodec[OpenRTB.Site] = DeriveJsonCodec.gen
+          implicit val c17: JsonCodec[OpenRTB.App] = DeriveJsonCodec.gen
+          implicit val c18: JsonCodec[OpenRTB.Device] = DeriveJsonCodec.gen
+          implicit val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
+          implicit val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
+          implicit val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
+          DeriveJsonCodec.gen
+        }
+
+        genOpenRTBBidRequestC3c3
       }
 
       genOpenRTBBidRequestC3c2
