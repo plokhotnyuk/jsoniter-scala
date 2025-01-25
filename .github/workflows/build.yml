@@ -23,6 +23,7 @@ jobs:
           - 11
           - 21
         os:
+          - ubuntu-22.04-arm
           - ubuntu-latest
           - macos-latest
       fail-fast: false
