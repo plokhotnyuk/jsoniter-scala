@@ -24,8 +24,7 @@ jobs:
           - 21
         os:
           - ubuntu-22.04-arm
-          - ubuntu-latest
-          - macos-latest
+          - ubuntu-22.04
       fail-fast: false
     steps:
       - name: Configure git
