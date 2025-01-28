@@ -3,11 +3,13 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import zio.json.JsonDecoder.JsonError
 import zio.json.internal.{Lexer, RetractReader, StringMatrix, Write}
-import zio.json.{DeriveJsonCodec, JsonCodec, JsonDecoder, JsonEncoder}
+import zio.json.{DeriveJsonCodec, ExplicitEmptyCollections, JsonCodec, JsonCodecConfiguration, JsonDecoder, JsonEncoder}
 import java.util.Base64
 import scala.collection.immutable.ArraySeq
 
 object ZioJsonCodecs {
+  implicit val config: JsonCodecConfiguration =
+    JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(encoding = false, decoding = false))
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
