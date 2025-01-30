@@ -597,25 +597,25 @@ object JsonCodecMaker {
 
     // @plokhotnyuk: this is mainly used for backwards compatibility and being able to swap out
     // implementations in tests without having to do a major refactor.
-    trait MacroAPI(using FieldTypeResolver) {
-      def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] = make(CodecMakerConfig)
+    trait MacroAPI(val ftr: FieldTypeResolver) {
+      def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] = make(CodecMakerConfig, ftr)
 
       def makeWithoutDiscriminator[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-        make(CodecMakerConfig.withDiscriminatorFieldName(None))
+        make(CodecMakerConfig.withDiscriminatorFieldName(None), ftr)
 
       def makeWithRequiredCollectionFields[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-        make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true))
+        make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true), ftr)
 
       def makeWithRequiredDefaultFields[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-        make(CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true))
+        make(CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true), ftr)
 
       def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
         make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)
-          .withDiscriminatorFieldName(Some("name")))
+          .withDiscriminatorFieldName(Some("name")), ftr)
 
       def makeCirceLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
         make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
-          .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true))
+          .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true), ftr)
 
       def makeCirceLikeSnakeCased[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
         make(CodecMakerConfig(
@@ -648,7 +648,7 @@ object JsonCodecMaker {
           checkFieldDuplication = true,
           scalaTransientSupport = false,
           inlineOneValueClasses = false,
-          alwaysEmitDiscriminator = false))
+          alwaysEmitDiscriminator = false), ftr)
       
       def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
         import quotes.reflect._
@@ -667,19 +667,19 @@ object JsonCodecMaker {
               if (cfg.decodingOnly && cfg.encodingOnly)
                 report.errorAndAbort("'decodingOnly' and 'encodingOnly' cannot be 'true' simultaneously")
               cfg
-          }) catch {
+          }, ftr) catch {
           case ex: CompileTimeEvalException => report.errorAndAbort(s"Can't evaluate compile-time expression: ${ex.message}", ex.expr)
         }
       }
     }
 
-    object api extends MacroAPI(using FieldTypeResolver.original)
+    object api extends MacroAPI(FieldTypeResolver.original)
     export api.*
 
     // @plokhotnyuk: this is the only actual change required for my macros to work.
     // `ftr` is implicit for convenience only. Alternatively:
     //   `def make[A: Type](using )(cfg: CodecMakerConfig, ftr: FieldTypeResolver = FieldTypeResolver.original)...`
-    def make[A: Type](using ftr: FieldTypeResolver)(cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
+    def make[A: Type](cfg: CodecMakerConfig, ftr: FieldTypeResolver)(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
 
       def fail(msg: String): Nothing = report.errorAndAbort(msg, Position.ofMacroExpansion)

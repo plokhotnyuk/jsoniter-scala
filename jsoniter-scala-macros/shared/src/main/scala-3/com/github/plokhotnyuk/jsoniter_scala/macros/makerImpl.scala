@@ -27,7 +27,7 @@ object makerImpl {
     }
   }
 
-  object defaultAPI extends Impl.MacroAPI(using Impl.FieldTypeResolver.original)
+  object defaultAPI extends Impl.MacroAPI(Impl.FieldTypeResolver.original)
 
   // @plokhotnyuk: stubbed-out equivalent of the default implementation
   object originalResolverImpl {
@@ -51,7 +51,7 @@ object makerImpl {
   }
 
   // @plokhotnyuk: this is the actual fix
-  object customAPI extends Impl.MacroAPI(using
+  object customAPI extends Impl.MacroAPI(
     (tpe, symbol) => {
       import quotes.reflect.*
       val tst = symbol.typeRef.translucentSuperType.typeSymbol
