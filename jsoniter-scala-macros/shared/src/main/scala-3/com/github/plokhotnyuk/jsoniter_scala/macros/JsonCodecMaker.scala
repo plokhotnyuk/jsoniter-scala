@@ -586,82 +586,100 @@ object JsonCodecMaker {
     */
   inline def make[A](inline config: CodecMakerConfig): JsonValueCodec[A] = ${Impl.makeWithSpecifiedConfig('config)}
 
-  private[macros] object Impl {
-    def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] = make(CodecMakerConfig)
+  object Impl {
+    type FieldTypeResolver = (q: Quotes) ?=> (q.reflect.TypeRepr, q.reflect.Symbol) => q.reflect.TypeRepr
 
-    def makeWithoutDiscriminator[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      make(CodecMakerConfig.withDiscriminatorFieldName(None))
-
-    def makeWithRequiredCollectionFields[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true))
-
-    def makeWithRequiredDefaultFields[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      make(CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true))
-
-    def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)
-        .withDiscriminatorFieldName(Some("name")))
-
-    def makeCirceLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
-        .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true))
-
-    def makeCirceLikeSnakeCased[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
-      make(CodecMakerConfig(
-        fieldNameMapper = enforce_snake_case,
-        javaEnumValueNameMapper = enforce_snake_case,
-        adtLeafClassNameMapper = (x: String) => enforce_snake_case(simpleClassName(x)),
-        discriminatorFieldName = None,
-        isStringified = false,
-        mapAsArray = false,
-        skipUnexpectedFields = true,
-        transientDefault = false,
-        transientEmpty = false,
-        transientNone = false,
-        requireCollectionFields = false,
-        bigDecimalPrecision = 34,
-        bigDecimalScaleLimit = 6178,
-        bigDecimalDigitsLimit = 308,
-        bigIntDigitsLimit = 308,
-        bitSetValueLimit = 1024,
-        mapMaxInsertNumber = 1024,
-        setMaxInsertNumber = 1024,
-        allowRecursiveTypes = false,
-        requireDiscriminatorFirst = true,
-        useScalaEnumValueId = false,
-        skipNestedOptionValues = false,
-        circeLikeObjectEncoding = true,
-        decodingOnly = false,
-        encodingOnly = false,
-        requireDefaultFields = false,
-        checkFieldDuplication = true,
-        scalaTransientSupport = false,
-        inlineOneValueClasses = false,
-        alwaysEmitDiscriminator = false))
-
-    def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
-      import quotes.reflect._
-
-      try make[A](summon[FromExpr[CodecMakerConfig]].unapply(config)
-        .fold(report.errorAndAbort(s"Cannot evaluate a parameter of the 'make' macro call for type '${Type.show[A]}'. ")) {
-          cfg =>
-            if (cfg.requireCollectionFields && cfg.transientEmpty)
-              report.errorAndAbort("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
-            if (cfg.requireDefaultFields && cfg.transientDefault)
-              report.errorAndAbort("'requireDefaultFields' and 'transientDefault' cannot be 'true' simultaneously")
-            if (cfg.circeLikeObjectEncoding && cfg.discriminatorFieldName.nonEmpty)
-              report.errorAndAbort("'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'")
-            if (cfg.alwaysEmitDiscriminator && cfg.discriminatorFieldName.isEmpty)
-              report.errorAndAbort("'discriminatorFieldName' should not be 'None' when 'alwaysEmitDiscriminator' is 'true'")
-            if (cfg.decodingOnly && cfg.encodingOnly)
-              report.errorAndAbort("'decodingOnly' and 'encodingOnly' cannot be 'true' simultaneously")
-            cfg
-        }) catch {
-        case ex: CompileTimeEvalException => report.errorAndAbort(s"Can't evaluate compile-time expression: ${ex.message}", ex.expr)
+    object FieldTypeResolver {
+      val original: FieldTypeResolver = (tpe, symbol) => {
+        tpe.memberType(symbol).dealias
       }
     }
 
-    private[this] def make[A: Type](cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
+    // @plokhotnyuk: this is mainly used for backwards compatibility and being able to swap out
+    // implementations in tests without having to do a major refactor.
+    trait MacroAPI(using FieldTypeResolver) {
+      def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] = make(CodecMakerConfig)
+
+      def makeWithoutDiscriminator[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+        make(CodecMakerConfig.withDiscriminatorFieldName(None))
+
+      def makeWithRequiredCollectionFields[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+        make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true))
+
+      def makeWithRequiredDefaultFields[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+        make(CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true))
+
+      def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+        make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)
+          .withDiscriminatorFieldName(Some("name")))
+
+      def makeCirceLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+        make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
+          .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true))
+
+      def makeCirceLikeSnakeCased[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+        make(CodecMakerConfig(
+          fieldNameMapper = enforce_snake_case,
+          javaEnumValueNameMapper = enforce_snake_case,
+          adtLeafClassNameMapper = (x: String) => enforce_snake_case(simpleClassName(x)),
+          discriminatorFieldName = None,
+          isStringified = false,
+          mapAsArray = false,
+          skipUnexpectedFields = true,
+          transientDefault = false,
+          transientEmpty = false,
+          transientNone = false,
+          requireCollectionFields = false,
+          bigDecimalPrecision = 34,
+          bigDecimalScaleLimit = 6178,
+          bigDecimalDigitsLimit = 308,
+          bigIntDigitsLimit = 308,
+          bitSetValueLimit = 1024,
+          mapMaxInsertNumber = 1024,
+          setMaxInsertNumber = 1024,
+          allowRecursiveTypes = false,
+          requireDiscriminatorFirst = true,
+          useScalaEnumValueId = false,
+          skipNestedOptionValues = false,
+          circeLikeObjectEncoding = true,
+          decodingOnly = false,
+          encodingOnly = false,
+          requireDefaultFields = false,
+          checkFieldDuplication = true,
+          scalaTransientSupport = false,
+          inlineOneValueClasses = false,
+          alwaysEmitDiscriminator = false))
+      
+      def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
+        import quotes.reflect._
+
+        try make[A](summon[FromExpr[CodecMakerConfig]].unapply(config)
+          .fold(report.errorAndAbort(s"Cannot evaluate a parameter of the 'make' macro call for type '${Type.show[A]}'. ")) {
+            cfg =>
+              if (cfg.requireCollectionFields && cfg.transientEmpty)
+                report.errorAndAbort("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
+              if (cfg.requireDefaultFields && cfg.transientDefault)
+                report.errorAndAbort("'requireDefaultFields' and 'transientDefault' cannot be 'true' simultaneously")
+              if (cfg.circeLikeObjectEncoding && cfg.discriminatorFieldName.nonEmpty)
+                report.errorAndAbort("'discriminatorFieldName' should be 'None' when 'circeLikeObjectEncoding' is 'true'")
+              if (cfg.alwaysEmitDiscriminator && cfg.discriminatorFieldName.isEmpty)
+                report.errorAndAbort("'discriminatorFieldName' should not be 'None' when 'alwaysEmitDiscriminator' is 'true'")
+              if (cfg.decodingOnly && cfg.encodingOnly)
+                report.errorAndAbort("'decodingOnly' and 'encodingOnly' cannot be 'true' simultaneously")
+              cfg
+          }) catch {
+          case ex: CompileTimeEvalException => report.errorAndAbort(s"Can't evaluate compile-time expression: ${ex.message}", ex.expr)
+        }
+      }
+    }
+
+    object api extends MacroAPI(using FieldTypeResolver.original)
+    export api.*
+
+    // @plokhotnyuk: this is the only actual change required for my macros to work.
+    // `ftr` is implicit for convenience only. Alternatively:
+    //   `def make[A: Type](using )(cfg: CodecMakerConfig, ftr: FieldTypeResolver = FieldTypeResolver.original)...`
+    def make[A: Type](using ftr: FieldTypeResolver)(cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
 
       def fail(msg: String): Nothing = report.errorAndAbort(msg, Position.ofMacroExpansion)
@@ -948,7 +966,8 @@ object JsonCodecMaker {
               } else None
             val isStringified = annotationOption.exists(_.stringified)
             val isTransient = annotationOption.exists(_.transient)
-            val originFieldType = tpe.memberType(symbol).dealias
+            // val originFieldType = tpe.memberType(symbol).dealias
+            val originFieldType = ftr(tpe, symbol)
             val fieldType = typeArgs(tpe) match
               case Nil => originFieldType
               case typeArgs => originFieldType.substituteTypes(typeParams, typeArgs)
