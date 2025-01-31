@@ -59,7 +59,7 @@ object makerImpl {
         FieldTypeResolver.original(tpe, symbol)
       } else {
         tpe match {
-          case TypeRef(q, n) => {
+          case TypeRef(q, n) if q.typeSymbol.flags.is(Flags.Module) => {
             val trmRef = q.typeSymbol.termRef
             def recurse(t: TypeRepr): TypeRepr = t match {
               case TermRef(q, n) => TermRef(recurse(q), n)

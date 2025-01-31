@@ -80,8 +80,8 @@ object newCustom {
   trait OrderType[C <: CustomerType](val c: C) {
     case class State(cust: c.AID)
 
-    // @plokhotnyuk: don't need this yet, but could add support later with a bit more work on `customResolverImpl`
-    // val stateCodec = impl.make[State]
+    // @plokhotnyuk: now works with `customResolverImpl`
+    val stateCodec = impl.make[State]
   }
 
   object Customer extends CustomerType

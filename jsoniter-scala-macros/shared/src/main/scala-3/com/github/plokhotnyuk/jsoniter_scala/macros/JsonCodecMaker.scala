@@ -677,8 +677,6 @@ object JsonCodecMaker {
     export api.*
 
     // @plokhotnyuk: this is the only actual change required for my macros to work.
-    // `ftr` is implicit for convenience only. Alternatively:
-    //   `def make[A: Type](using )(cfg: CodecMakerConfig, ftr: FieldTypeResolver = FieldTypeResolver.original)...`
     def make[A: Type](cfg: CodecMakerConfig, ftr: FieldTypeResolver)(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
 
