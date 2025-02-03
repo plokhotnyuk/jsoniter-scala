@@ -19,6 +19,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       //FIXME: smithy4sJson: don't know how to tune precision for parsing of BigDecimal values
       //benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
+      benchmark.zioJson() shouldBe benchmark.sourceObj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -29,6 +30,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

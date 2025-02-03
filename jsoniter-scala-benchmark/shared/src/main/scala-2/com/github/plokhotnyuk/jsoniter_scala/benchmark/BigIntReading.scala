@@ -114,4 +114,13 @@ class BigIntReading extends BigIntBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[BigInt])
   }
+
+  @Benchmark
+  def zioJson(): BigInt = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[BigInt](bigIntC3c.decoder).fold(sys.error, identity)
+  }
 }

@@ -2,8 +2,10 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import zio.json.JsonDecoder.JsonError
-import zio.json.internal.{Lexer, RetractReader, StringMatrix, Write}
+import zio.json.internal.Lexer.{NumberMaxBits, error}
+import zio.json.internal.{Lexer, RetractReader, StringMatrix, UnsafeNumbers, Write}
 import zio.json.{DeriveJsonCodec, ExplicitEmptyCollections, JsonCodec, JsonCodecConfiguration, JsonDecoder, JsonEncoder}
+
 import java.util.Base64
 import scala.collection.immutable.ArraySeq
 
@@ -88,6 +90,28 @@ object ZioJsonCodecs {
       out.write('"')
     },
     (trace: List[JsonError], in: RetractReader) => Base64.getDecoder.decode(Lexer.string(trace, in).toString))
+  val bigDecimalC3c: JsonCodec[BigDecimal] = new JsonCodec[BigDecimal](
+    (a: BigDecimal, _: Option[Int], out: Write) => out.write(a.toString),
+    (trace: List[JsonError], in: RetractReader) => {
+      try {
+        val i = UnsafeNumbers.bigDecimal_(in, false, Int.MaxValue)
+        in.retract()
+        i
+      } catch {
+        case UnsafeNumbers.UnsafeNumber => error("expected number", trace)
+      }
+    })
+  val bigIntC3c: JsonCodec[BigInt] = new JsonCodec[BigInt](
+    (a: BigInt, _: Option[Int], out: Write) => out.write(a.toString),
+    (trace: List[JsonError], in: RetractReader) => {
+      try {
+        val i = BigInt(UnsafeNumbers.bigInteger_(in, false, Int.MaxValue))
+        in.retract()
+        i
+      } catch {
+        case UnsafeNumbers.UnsafeNumber => error("expected number", trace)
+      }
+    })
   implicit val extractFieldsC3c: JsonCodec[ExtractFields] = DeriveJsonCodec.gen
   implicit val gitHubActionsAPIC3c: JsonCodec[GitHubActionsAPI.Response] = {
     implicit val e1: JsonEncoder[Boolean] = (a: Boolean, _: Option[Int], out: Write) =>
@@ -110,37 +134,35 @@ object ZioJsonCodecs {
   implicit val missingRequiredFieldsC3c: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
   implicit val primitivesC3c: JsonCodec[Primitives] = DeriveJsonCodec.gen
   implicit val enumADTsC3c: JsonCodec[SuitADT] = new JsonCodec(new JsonEncoder[SuitADT] {
-      override def unsafeEncode(a: SuitADT, indent: Option[Int], out: Write): Unit = {
-        out.write('"')
-        out.write(a.toString)
-        out.write('"')
-      }
-    }, new JsonDecoder[SuitADT] {
-      private[this] val values = Array(Hearts, Spades, Diamonds, Clubs)
-      private[this] val matrix = new StringMatrix(values.map(_.toString))
+    override def unsafeEncode(a: SuitADT, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      out.write(a.toString)
+      out.write('"')
+    }
+  }, new JsonDecoder[SuitADT] {
+    private[this] val values = Array(Hearts, Spades, Diamonds, Clubs)
+    private[this] val matrix = new StringMatrix(values.map(_.toString))
 
-      override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT = {
-        val idx = Lexer.enumeration(trace, in, matrix)
-        if (idx == -1) Lexer.error("SuitADT", trace)
-        values(idx)
-      }
+    override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT = {
+      val idx = Lexer.enumeration(trace, in, matrix)
+      if (idx == -1) Lexer.error("SuitADT", trace)
+      values(idx)
+    }
   })
   implicit val enumsC3c: JsonCodec[SuitEnum] = new JsonCodec(new JsonEncoder[SuitEnum] {
-      override def unsafeEncode(a: SuitEnum, indent: Option[Int], out: Write): Unit = {
-        out.write('"')
-        out.write(a.toString)
-        out.write('"')
-      }
-    }, new JsonDecoder[SuitEnum] {
-      private[this] val values = SuitEnum.values.toArray
-      private[this] val matrix = new StringMatrix(values.map(_.toString))
+    override def unsafeEncode(a: SuitEnum, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      out.write(a.toString)
+      out.write('"')
+    }
+  }, new JsonDecoder[SuitEnum] {
+    private[this] val values = SuitEnum.values.toArray
+    private[this] val matrix = new StringMatrix(values.map(_.toString))
 
-      override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitEnum = {
-        val idx = Lexer.enumeration(trace, in, matrix)
-        if (idx == -1) Lexer.error("SuitEnum", trace)
-        values(idx)
-      }
-    })
-  implicit val arraySeqOfBooleansD5r: JsonDecoder[ArraySeq[Boolean]] =
-    JsonDecoder.array[Boolean].map(ArraySeq.unsafeWrapArray)
+    override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitEnum = {
+      val idx = Lexer.enumeration(trace, in, matrix)
+      if (idx == -1) Lexer.error("SuitEnum", trace)
+      values(idx)
+    }
+  })
 }

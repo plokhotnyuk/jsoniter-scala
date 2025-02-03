@@ -102,4 +102,13 @@ class BigDecimalReading extends BigDecimalBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[BigDecimal])
   }
+
+  @Benchmark
+  def zioJson(): BigDecimal = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
+    import zio.json.DecoderOps
+    import java.nio.charset.StandardCharsets.UTF_8
+
+    new String(jsonBytes, UTF_8).fromJson[BigDecimal](bigDecimalC3c.decoder).fold(sys.error, identity)
+  }
 }
