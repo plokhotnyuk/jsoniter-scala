@@ -23,6 +23,8 @@ jobs:
           - 11
           - 21
         os:
+          - macos-14
+          - windows-2022
           - ubuntu-22.04-arm
           - ubuntu-22.04
       fail-fast: false
@@ -41,6 +43,7 @@ jobs:
       - name: Setup Scala with SBT
         uses: coursier/setup-action@v1
         with:
+          jvm: temurin:${{ matrix.java }}
           apps: sbt
       - name: Setup Node.js
         uses: actions/setup-node@v4
