@@ -110,15 +110,10 @@ class SuiteEnumSerializer extends JsonSerializer[SuitEnum] {
 }
 
 class SuiteEnumDeserializer extends JsonDeserializer[SuitEnum] {
-  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum = {
-    val s = jp.getValueAsString
-    var x: SuitEnum = null
-    try x = SuitEnum.withName(s) catch {
-      case _: NoSuchElementException =>
+  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum =
+    try SuitEnum.withName(jp.getValueAsString) catch {
+      case _: NoSuchElementException => ctxt.handleUnexpectedToken(classOf[SuitEnum], jp).asInstanceOf[SuitEnum]
     }
-    if (x eq null) ctxt.handleUnexpectedToken(classOf[SuitEnum], jp)
-    x
-  }
 }
 
 class SuitADTSerializer extends JsonSerializer[SuitADT] {

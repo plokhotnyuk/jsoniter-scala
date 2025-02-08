@@ -222,18 +222,14 @@ object SprayFormats extends DefaultJsonProtocol {
     s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val suitEnumJsonFormat: RootJsonFormat[SuitEnum.SuitEnum] = new RootJsonFormat[SuitEnum.SuitEnum] {
-    override def read(json: JsValue): SuitEnum.SuitEnum = {
-      var x: SuitEnum.SuitEnum = null
+    override def read(json: JsValue): SuitEnum.SuitEnum =
       json match {
         case js: JsString =>
-          try x = SuitEnum.withName(js.value) catch {
-            case _: NoSuchElementException =>
+          try SuitEnum.withName(js.value) catch {
+            case _: NoSuchElementException => deserializationError("Expected JSON string of value from SuitEnum")
           }
-        case _ =>
+        case _ => deserializationError("Expected JSON string of value from SuitEnum")
       }
-      if (x eq null) deserializationError(s"Expected JSON string of value from SuitEnum")
-      x
-    }
 
     override def write(ev: SuitEnum.SuitEnum): JsValue = new JsString(ev.toString)
   }
