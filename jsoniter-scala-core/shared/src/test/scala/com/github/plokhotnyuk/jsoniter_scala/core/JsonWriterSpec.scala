@@ -482,6 +482,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
 
       Array(
+        1405345091900L, // See: https://github.com/plokhotnyuk/jsoniter-scala/issues/1247
         6950401124099999999L,
         7379897853799999999L,
         7809394583499999999L,
