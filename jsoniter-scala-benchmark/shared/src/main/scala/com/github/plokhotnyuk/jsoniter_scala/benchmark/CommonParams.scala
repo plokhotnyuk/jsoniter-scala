@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations._
   "-XX:+UseParallelGC",
   "-XX:-UseAdaptiveSizePolicy",
   "-XX:MaxInlineLevel=20",
-//  "-XX:InlineSmallCode=1500",
+  "-XX:InlineSmallCode=2500", // Use defaults from Open JDK 17+
   "-XX:+AlwaysPreTouch",
   "-XX:-UseDynamicNumberOfGCThreads",
   "-XX:+UseNUMA",
