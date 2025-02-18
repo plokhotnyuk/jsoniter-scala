@@ -20,10 +20,11 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [play-json with jsoniter-scala booster](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [spray-json](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
-[weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json)
-libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-13900K CPU @ 3.0GHz
-(max 5.8GHz, performance-cores only), RAM 64Gb DDR5-4800, Ubuntu 24.04 (Linux 6.8), and latest versions of JDK 17/21/24-ea,
-GraalVM Community JDK 17/21/24-ea, and GraalVM JDK 17/21/24-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
+[weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json),
+[zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
+libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ Ultra 9 285K CPU @ 3.7GHz
+(max 5.7GHz, performance-cores only), RAM 64Gb DDR5-6400, Ubuntu 24.04 (Linux 6.11), and latest versions of JDK 17/21/25-ea,
+GraalVM Community JDK 17/21/25-ea, and GraalVM JDK 17/21/25-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that
 compare performance of jsoniter-scala with: [circe](https://github.com/circe/circe), 
