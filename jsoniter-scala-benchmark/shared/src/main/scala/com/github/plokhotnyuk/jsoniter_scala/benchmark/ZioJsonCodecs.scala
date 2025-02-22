@@ -10,8 +10,10 @@ import java.util.Base64
 import scala.collection.immutable.ArraySeq
 
 object ZioJsonCodecs {
-  implicit val config: JsonCodecConfiguration =
-    JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(encoding = false, decoding = false))
+  implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(
+    explicitEmptyCollections = ExplicitEmptyCollections(encoding = false, decoding = false),
+    enumValuesAsStrings = true
+  )
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
@@ -133,22 +135,7 @@ object ZioJsonCodecs {
   }
   implicit val missingRequiredFieldsC3c: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
   implicit val primitivesC3c: JsonCodec[Primitives] = DeriveJsonCodec.gen
-  implicit val enumADTsC3c: JsonCodec[SuitADT] = new JsonCodec(new JsonEncoder[SuitADT] {
-    override def unsafeEncode(a: SuitADT, indent: Option[Int], out: Write): Unit = {
-      out.write('"')
-      out.write(a.toString)
-      out.write('"')
-    }
-  }, new JsonDecoder[SuitADT] {
-    private[this] val values = Array(Hearts, Spades, Diamonds, Clubs)
-    private[this] val matrix = new StringMatrix(values.map(_.toString))
-
-    override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT = {
-      val idx = Lexer.enumeration(trace, in, matrix)
-      if (idx == -1) Lexer.error("SuitADT", trace)
-      values(idx)
-    }
-  })
+  implicit val enumADTsC3c: JsonCodec[SuitADT] = DeriveJsonCodec.gen
   implicit val enumsC3c: JsonCodec[SuitEnum] = new JsonCodec(new JsonEncoder[SuitEnum] {
     override def unsafeEncode(a: SuitEnum, indent: Option[Int], out: Write): Unit = {
       out.write('"')
