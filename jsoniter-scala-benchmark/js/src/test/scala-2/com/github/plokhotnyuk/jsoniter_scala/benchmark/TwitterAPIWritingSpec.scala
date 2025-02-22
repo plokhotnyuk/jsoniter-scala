@@ -18,8 +18,7 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.playJsonJsoniter()) shouldBe b.compactJsonString1
       toString(b.smithy4sJson()) shouldBe b.compactJsonString1
       toString(b.uPickle()) shouldBe b.compactJsonString1
-      //FIXME: zio-json skips serialization of the `"description": {}` field
-      //toString(b.zioJson()) shouldBe b.compactJsonString1
+      toString(b.zioJson()) shouldBe b.compactJsonString1
       toString(b.zioSchemaJson()) shouldBe b.compactJsonString1
     }
   }

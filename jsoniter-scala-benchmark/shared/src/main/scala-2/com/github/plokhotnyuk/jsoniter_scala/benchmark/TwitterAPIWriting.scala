@@ -138,7 +138,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: zio-json skips serialization of the `"description": {}` field
+
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
@@ -147,7 +147,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
     obj.toJson.getBytes(UTF_8)
   }
-*/
+
   @Benchmark
   def zioSchemaJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._

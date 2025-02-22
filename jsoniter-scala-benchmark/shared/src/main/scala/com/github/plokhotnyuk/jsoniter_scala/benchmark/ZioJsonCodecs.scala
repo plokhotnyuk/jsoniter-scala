@@ -2,16 +2,16 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import zio.json.JsonDecoder.JsonError
-import zio.json.internal.Lexer.{NumberMaxBits, error}
-import zio.json.internal.{Lexer, RetractReader, StringMatrix, UnsafeNumbers, Write}
+import zio.json.internal.Lexer.error
+import zio.json.internal.{Lexer, RetractReader, SafeNumbers, StringMatrix, UnsafeNumbers, Write}
 import zio.json.{DeriveJsonCodec, ExplicitEmptyCollections, JsonCodec, JsonCodecConfiguration, JsonDecoder, JsonEncoder}
-
 import java.util.Base64
-import scala.collection.immutable.ArraySeq
 
 object ZioJsonCodecs {
-  implicit val config: JsonCodecConfiguration =
-    JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(encoding = false, decoding = false))
+  implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(
+    explicitEmptyCollections = ExplicitEmptyCollections(encoding = false, decoding = false),
+    enumValuesAsStrings = true
+  )
   implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
@@ -73,14 +73,37 @@ object ZioJsonCodecs {
     genTwitterAPIC3c
   }
   implicit val anyValsC3cr: JsonCodec[AnyVals] = {
-    implicit val c1: JsonCodec[ByteVal] = JsonCodec.byte.transform(ByteVal.apply, _.a)
-    implicit val c2: JsonCodec[ShortVal] = JsonCodec.short.transform(ShortVal.apply, _.a)
-    implicit val c3: JsonCodec[IntVal] = JsonCodec.int.transform(IntVal.apply, _.a)
-    implicit val c4: JsonCodec[LongVal] = JsonCodec.long.transform(LongVal.apply, _.a)
-    implicit val c5: JsonCodec[BooleanVal] = JsonCodec.boolean.transform(BooleanVal.apply, _.a)
-    implicit val c6: JsonCodec[CharVal] = JsonCodec.char.transform(CharVal.apply, _.a)
-    implicit val c7: JsonCodec[DoubleVal] = JsonCodec.double.transform(DoubleVal.apply, _.a)
-    implicit val c8: JsonCodec[FloatVal] = JsonCodec.float.transform(FloatVal.apply, _.a)
+    implicit val c1: JsonCodec[ByteVal] = new JsonCodec[ByteVal](
+      (a: ByteVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a.toInt, out),
+      (trace: List[JsonError], in: RetractReader) => new ByteVal(Lexer.byte(trace, in)))
+    implicit val c2: JsonCodec[ShortVal] = new JsonCodec[ShortVal](
+      (a: ShortVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a.toInt, out),
+      (trace: List[JsonError], in: RetractReader) => new ShortVal(Lexer.short(trace, in)))
+    implicit val c3: JsonCodec[IntVal] = new JsonCodec[IntVal](
+      (a: IntVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a, out),
+      (trace: List[JsonError], in: RetractReader) => new IntVal(Lexer.int(trace, in)))
+    implicit val c4: JsonCodec[LongVal] = new JsonCodec[LongVal](
+      (a: LongVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a, out),
+      (trace: List[JsonError], in: RetractReader) => new LongVal(Lexer.long(trace, in)))
+    implicit val c5: JsonCodec[BooleanVal] = new JsonCodec[BooleanVal](
+      (a: BooleanVal, _: Option[Int], out: Write) => {
+        if (a.a) out.write('t', 'r', 'u', 'e')
+        else out.write('f', 'a', 'l', 's', 'e')
+      },
+      (trace: List[JsonError], in: RetractReader) => new BooleanVal(Lexer.boolean(trace, in)))
+    implicit val c6: JsonCodec[CharVal] = new JsonCodec[CharVal](
+      (a: CharVal, _: Option[Int], out: Write) => {
+        out.write('"')
+        out.write(a.a)
+        out.write('"')
+      },
+      (trace: List[JsonError], in: RetractReader) => new CharVal(Lexer.char(trace, in)))
+    implicit val c7: JsonCodec[DoubleVal] = new JsonCodec[DoubleVal](
+      (a: DoubleVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a, out),
+      (trace: List[JsonError], in: RetractReader) => new DoubleVal(Lexer.double(trace, in)))
+    implicit val c8: JsonCodec[FloatVal] = new JsonCodec[FloatVal](
+      (a: FloatVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a, out),
+      (trace: List[JsonError], in: RetractReader) => new FloatVal(Lexer.float(trace, in)))
     DeriveJsonCodec.gen
   }
   val base64C3c: JsonCodec[Array[Byte]] = new JsonCodec[Array[Byte]](
@@ -91,7 +114,7 @@ object ZioJsonCodecs {
     },
     (trace: List[JsonError], in: RetractReader) => Base64.getDecoder.decode(Lexer.string(trace, in).toString))
   val bigDecimalC3c: JsonCodec[BigDecimal] = new JsonCodec[BigDecimal](
-    (a: BigDecimal, _: Option[Int], out: Write) => out.write(a.toString),
+    (a: BigDecimal, _: Option[Int], out: Write) => SafeNumbers.write(a.bigDecimal, out),
     (trace: List[JsonError], in: RetractReader) => {
       try {
         val i = UnsafeNumbers.bigDecimal_(in, false, Int.MaxValue)
@@ -102,7 +125,10 @@ object ZioJsonCodecs {
       }
     })
   val bigIntC3c: JsonCodec[BigInt] = new JsonCodec[BigInt](
-    (a: BigInt, _: Option[Int], out: Write) => out.write(a.toString),
+    (a: BigInt, _: Option[Int], out: Write) => {
+      if (a.isValidLong) SafeNumbers.write(a.longValue, out)
+      else SafeNumbers.write(a.bigInteger, out)
+    },
     (trace: List[JsonError], in: RetractReader) => {
       try {
         val i = BigInt(UnsafeNumbers.bigInteger_(in, false, Int.MaxValue))
@@ -133,36 +159,19 @@ object ZioJsonCodecs {
   }
   implicit val missingRequiredFieldsC3c: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
   implicit val primitivesC3c: JsonCodec[Primitives] = DeriveJsonCodec.gen
-  implicit val enumADTsC3c: JsonCodec[SuitADT] = new JsonCodec(new JsonEncoder[SuitADT] {
-    override def unsafeEncode(a: SuitADT, indent: Option[Int], out: Write): Unit = {
+  implicit val enumADTsC3c: JsonCodec[SuitADT] = DeriveJsonCodec.gen
+  implicit val enumsC3c: JsonCodec[SuitEnum] = new JsonCodec(
+    (a: SuitEnum, _: Option[Int], out: Write) => {
       out.write('"')
       out.write(a.toString)
       out.write('"')
-    }
-  }, new JsonDecoder[SuitADT] {
-    private[this] val values = Array(Hearts, Spades, Diamonds, Clubs)
-    private[this] val matrix = new StringMatrix(values.map(_.toString))
-
-    override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT = {
-      val idx = Lexer.enumeration(trace, in, matrix)
-      if (idx == -1) Lexer.error("SuitADT", trace)
-      values(idx)
-    }
-  })
-  implicit val enumsC3c: JsonCodec[SuitEnum] = new JsonCodec(new JsonEncoder[SuitEnum] {
-    override def unsafeEncode(a: SuitEnum, indent: Option[Int], out: Write): Unit = {
-      out.write('"')
-      out.write(a.toString)
-      out.write('"')
-    }
-  }, new JsonDecoder[SuitEnum] {
-    private[this] val values = SuitEnum.values.toArray
-    private[this] val matrix = new StringMatrix(values.map(_.toString))
-
-    override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitEnum = {
-      val idx = Lexer.enumeration(trace, in, matrix)
-      if (idx == -1) Lexer.error("SuitEnum", trace)
-      values(idx)
-    }
-  })
+    }, {
+      val values = SuitEnum.values.toArray
+      val matrix = new StringMatrix(values.map(_.toString))
+      (trace: List[JsonError], in: RetractReader) => {
+        val idx = Lexer.enumeration(trace, in, matrix)
+        if (idx < 0) Lexer.error("SuitEnum", trace)
+        values(idx)
+      }
+    })
 }
