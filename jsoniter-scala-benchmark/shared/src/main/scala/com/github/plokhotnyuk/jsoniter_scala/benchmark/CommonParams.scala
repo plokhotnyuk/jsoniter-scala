@@ -8,13 +8,12 @@ import org.openjdk.jmh.annotations._
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Fork(value = 1, jvmArgs = Array(
 //  "-Djava.lang.invoke.VarHandle.VAR_HANDLE_GUARDS=false",
-//  "-XX:+UseTransparentHugePages",
   "-server",
   "-noclassgc",
-  "-Xms2g",
-  "-Xmx2g",
-  "-XX:NewSize=1g",
-  "-XX:MaxNewSize=1g",
+  "-Xms16g",
+  "-Xmx16g",
+  "-XX:NewSize=15g",
+  "-XX:MaxNewSize=15g",
   "-XX:InitialCodeCacheSize=512m",
   "-XX:ReservedCodeCacheSize=512m",
   "-XX:NonNMethodCodeHeapSize=32m",
@@ -27,6 +26,7 @@ import org.openjdk.jmh.annotations._
   "-XX:MaxInlineLevel=20",
   "-XX:InlineSmallCode=2500", // Use defaults from Open JDK 17+
   "-XX:+AlwaysPreTouch",
+  "-XX:+UseTransparentHugePages",
   "-XX:-UseDynamicNumberOfGCThreads",
   "-XX:+UseNUMA",
   "-XX:-UseAdaptiveNUMAChunkSizing",
