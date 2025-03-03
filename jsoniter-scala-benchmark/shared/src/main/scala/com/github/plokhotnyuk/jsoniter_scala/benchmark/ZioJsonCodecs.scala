@@ -12,7 +12,6 @@ object ZioJsonCodecs {
     explicitEmptyCollections = ExplicitEmptyCollections(encoding = false, decoding = false),
     enumValuesAsStrings = true
   )
-  implicit val adtC3c: JsonCodec[ADTBase] = DeriveJsonCodec.gen
   implicit val geoJsonC3c: JsonCodec[GeoJSON.GeoJSON] = {
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[GeoJSON.Geometry] = DeriveJsonCodec.gen
@@ -72,40 +71,6 @@ object ZioJsonCodecs {
 
     genTwitterAPIC3c
   }
-  implicit val anyValsC3cr: JsonCodec[AnyVals] = {
-    implicit val c1: JsonCodec[ByteVal] = new JsonCodec[ByteVal](
-      (a: ByteVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a.toInt, out),
-      (trace: List[JsonError], in: RetractReader) => new ByteVal(Lexer.byte(trace, in)))
-    implicit val c2: JsonCodec[ShortVal] = new JsonCodec[ShortVal](
-      (a: ShortVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a.toInt, out),
-      (trace: List[JsonError], in: RetractReader) => new ShortVal(Lexer.short(trace, in)))
-    implicit val c3: JsonCodec[IntVal] = new JsonCodec[IntVal](
-      (a: IntVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a, out),
-      (trace: List[JsonError], in: RetractReader) => new IntVal(Lexer.int(trace, in)))
-    implicit val c4: JsonCodec[LongVal] = new JsonCodec[LongVal](
-      (a: LongVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a, out),
-      (trace: List[JsonError], in: RetractReader) => new LongVal(Lexer.long(trace, in)))
-    implicit val c5: JsonCodec[BooleanVal] = new JsonCodec[BooleanVal](
-      (a: BooleanVal, _: Option[Int], out: Write) => {
-        if (a.a) out.write('t', 'r', 'u', 'e')
-        else out.write('f', 'a', 'l', 's', 'e')
-      },
-      (trace: List[JsonError], in: RetractReader) => new BooleanVal(Lexer.boolean(trace, in)))
-    implicit val c6: JsonCodec[CharVal] = new JsonCodec[CharVal](
-      (a: CharVal, _: Option[Int], out: Write) => {
-        out.write('"')
-        out.write(a.a)
-        out.write('"')
-      },
-      (trace: List[JsonError], in: RetractReader) => new CharVal(Lexer.char(trace, in)))
-    implicit val c7: JsonCodec[DoubleVal] = new JsonCodec[DoubleVal](
-      (a: DoubleVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a, out),
-      (trace: List[JsonError], in: RetractReader) => new DoubleVal(Lexer.double(trace, in)))
-    implicit val c8: JsonCodec[FloatVal] = new JsonCodec[FloatVal](
-      (a: FloatVal, _: Option[Int], out: Write) => SafeNumbers.write(a.a, out),
-      (trace: List[JsonError], in: RetractReader) => new FloatVal(Lexer.float(trace, in)))
-    DeriveJsonCodec.gen
-  }
   val base64C3c: JsonCodec[Array[Byte]] = new JsonCodec[Array[Byte]](
     (a: Array[Byte], _: Option[Int], out: Write) => {
       out.write('"')
@@ -158,7 +123,6 @@ object ZioJsonCodecs {
     DeriveJsonCodec.gen
   }
   implicit val missingRequiredFieldsC3c: JsonCodec[MissingRequiredFields] = DeriveJsonCodec.gen
-  implicit val primitivesC3c: JsonCodec[Primitives] = DeriveJsonCodec.gen
   implicit val enumADTsC3c: JsonCodec[SuitADT] = DeriveJsonCodec.gen
   implicit val enumsC3c: JsonCodec[SuitEnum] = new JsonCodec(
     (a: SuitEnum, _: Option[Int], out: Write) => {

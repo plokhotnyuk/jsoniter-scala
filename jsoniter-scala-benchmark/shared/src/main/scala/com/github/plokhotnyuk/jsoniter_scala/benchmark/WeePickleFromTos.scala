@@ -35,19 +35,6 @@ object WeePickleFromTos extends WeePickleFromTos2 {
       .build()
   )
 
-  implicit val adtFromTos: FromTo[ADTBase] =
-    FromTo.merge(macroFromTo[X], macroFromTo[Y], macroFromTo[Z])
-  implicit val anyValsFromTo: FromTo[AnyVals] = {
-    implicit val ft1: FromTo[ByteVal] = fromTo[Byte].bimap(_.a, ByteVal.apply)
-    implicit val ft2: FromTo[ShortVal] = fromTo[Short].bimap(_.a, ShortVal.apply)
-    implicit val ft3: FromTo[IntVal] = fromTo[Int].bimap(_.a, IntVal.apply)
-    implicit val ft4: FromTo[LongVal] = fromTo[Long].bimap(_.a, LongVal.apply)
-    implicit val ft5: FromTo[BooleanVal] = fromTo[Boolean].bimap(_.a, BooleanVal.apply)
-    implicit val ft6: FromTo[DoubleVal] = fromTo[Double].bimap(_.a, DoubleVal.apply)
-    implicit val ft7: FromTo[CharVal] = fromTo[Char].bimap(_.a, CharVal.apply)
-    implicit val ft8: FromTo[FloatVal] = fromTo[Float].bimap(_.a, FloatVal.apply)
-    macroFromTo
-  }
   implicit val durationFromTo: FromTo[Duration] = fromTo[String].bimap(_.toString, Duration.parse)
   implicit val enumADTFromTo: FromTo[SuitADT] = fromTo[String].bimap(_.toString, {
     val suite = Map(
@@ -124,7 +111,6 @@ trait WeePickleFromTos2 {
     macroFromTo
   }
   implicit val periodFromTo: FromTo[Period] = fromTo[String].bimap(_.toString, Period.parse)
-  implicit val primitivesFromTos: FromTo[Primitives] = macroFromTo
   implicit val twitterAPIFromTos: FromTo[TwitterAPI.Tweet] = {
     implicit val ft1: FromTo[TwitterAPI.Urls] = macroFromTo
     implicit val ft2: FromTo[TwitterAPI.Url] = macroFromTo

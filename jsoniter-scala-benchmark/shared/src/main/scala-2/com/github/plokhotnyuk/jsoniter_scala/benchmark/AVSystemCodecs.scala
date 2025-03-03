@@ -17,8 +17,6 @@ object AVSystemCodecs {
     JsonOptions.Default.copy(mathContext = MathContext.UNLIMITED /* WARNING: It is an unsafe option for open systems */)
   val jsonBase16Options: JsonOptions = JsonOptions.Default.copy(binaryFormat = HexString)
   val jsonBase64Options: JsonOptions = JsonOptions.Default.copy(binaryFormat = Base64())
-  implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
-  implicit val anyValsGenCodec: GenCodec[AnyVals] = materializeRecursively
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
   implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, SuitEnum.withName)
   implicit val instantGenCodec: GenCodec[Instant] = transformed(_.toString, Instant.parse)
@@ -77,6 +75,5 @@ object AVSystemCodecs {
       })
   implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = materializeRecursively
   implicit val openRTBGenCodec: GenCodec[OpenRTB.BidRequest] = materializeRecursively
-  implicit val primitivesGenCodec: GenCodec[Primitives] = materializeRecursively
   implicit val twitterAPIGenCodec: GenCodec[TwitterAPI.Tweet] = materializeRecursively
 }

@@ -11,7 +11,7 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   var jsonString1: String = _
   var jsonString2: String = _
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 1000
+  var size: Int = 512
 
   @Setup
   def setup(): Unit = {

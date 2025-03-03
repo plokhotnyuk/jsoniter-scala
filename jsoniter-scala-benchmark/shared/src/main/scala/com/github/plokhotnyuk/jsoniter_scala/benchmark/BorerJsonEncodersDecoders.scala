@@ -25,18 +25,6 @@ object BorerJsonEncodersDecoders {
     Decoder.forJBigDecimal(maxJsonNumberStringLength = 1000000).map(x => new BigDecimal(x, MathContext.UNLIMITED)) /* WARNING: It is an unsafe option for open systems */
   implicit val flatAdtEncoding: AdtEncodingStrategy = AdtEncodingStrategy.flat(typeMemberName = "type")
   implicit val Codec(charEnc: Encoder[Char], charDec: Decoder[Char]) = stringCodec(_.charAt(0))
-  implicit val Codec(adtEnc: Encoder[ADTBase], adtDec: Decoder[ADTBase]) = deriveAllCodecs[ADTBase]
-  implicit val Codec(anyValsEnc: Encoder[AnyVals], anyValsDec: Decoder[AnyVals]) = {
-    implicit val c1: Codec[ByteVal] = ArrayBasedCodecs.deriveCodec
-    implicit val c2: Codec[ShortVal] = ArrayBasedCodecs.deriveCodec
-    implicit val c3: Codec[IntVal] = ArrayBasedCodecs.deriveCodec
-    implicit val c4: Codec[LongVal] = ArrayBasedCodecs.deriveCodec
-    implicit val c5: Codec[BooleanVal] = ArrayBasedCodecs.deriveCodec
-    implicit val c6: Codec[CharVal] = ArrayBasedCodecs.deriveCodec
-    implicit val c7: Codec[DoubleVal] = ArrayBasedCodecs.deriveCodec
-    implicit val c8: Codec[FloatVal] = ArrayBasedCodecs.deriveCodec
-    deriveCodec[AnyVals]
-  }
   implicit val Codec(extractFieldsEnc: Encoder[ExtractFields], extractFieldsDec: Decoder[ExtractFields]) =
     deriveCodec[ExtractFields]
   implicit val Codec(geoJsonEnc: Encoder[GeoJSON.GeoJSON], geoJsonDec: Decoder[GeoJSON.GeoJSON]) = {
@@ -105,7 +93,6 @@ object BorerJsonEncodersDecoders {
     implicit val c21: Codec[OpenRTB.Reqs] = deriveCodec
     deriveCodec[OpenRTB.BidRequest]
   }
-  implicit val Codec(primitivesEnc: Encoder[Primitives], primitivesDec: Decoder[Primitives]) = deriveCodec[Primitives]
   implicit val Codec(suitADTEnc: Encoder[SuitADT], suitADTDec: Decoder[SuitADT]) = stringCodec {
     val m = Map[String, SuitADT](
       "Hearts" -> Hearts,

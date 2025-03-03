@@ -32,7 +32,6 @@ object JacksonSerDesers {
     new ObjectMapper(jsonFactory) with ClassTagExtensions {
       addMixIn(classOf[GeoJSON.GeoJSON], classOf[MixIn])
       addMixIn(classOf[GeoJSON.Geometry], classOf[MixIn])
-      addMixIn(classOf[ADTBase], classOf[MixIn])
       registerSubtypes(
         new NamedType(classOf[GeoJSON.Point], "Point"),
         new NamedType(classOf[GeoJSON.MultiPoint], "MultiPoint"),
@@ -42,10 +41,7 @@ object JacksonSerDesers {
         new NamedType(classOf[GeoJSON.MultiPolygon], "MultiPolygon"),
         new NamedType(classOf[GeoJSON.GeometryCollection], "GeometryCollection"),
         new NamedType(classOf[GeoJSON.Feature], "Feature"),
-        new NamedType(classOf[GeoJSON.FeatureCollection], "FeatureCollection"),
-        new NamedType(classOf[X], "X"),
-        new NamedType(classOf[Y], "Y"),
-        new NamedType(classOf[Z], "Z"))
+        new NamedType(classOf[GeoJSON.FeatureCollection], "FeatureCollection"))
       registerModule(DefaultScalaModule)
       registerModule(BitSetDeserializerModule)
       registerModule(new SimpleModule()

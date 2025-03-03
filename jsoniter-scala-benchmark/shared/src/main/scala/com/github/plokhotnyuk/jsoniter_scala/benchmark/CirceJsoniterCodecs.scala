@@ -19,32 +19,6 @@ object CirceJsoniterCodecs {
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   implicit val jsonCodec: JsonValueCodec[Json] = JsoniterScalaCodec.jsonCodec(doSerialize = _ ne Json.Null)
-  implicit val adtC3c: Codec[ADTBase] = {
-    implicit val c1: Codec[X] = deriveCodec
-    implicit val c2: Codec[Y] = deriveCodec
-    implicit val c3: Codec[Z] = deriveCodec
-    Codec.from(Decoder.instance(c =>
-      c.downField("type").as[String].flatMap {
-        case "X" => c.as[X]
-        case "Y" => c.as[Y]
-        case "Z" => c.as[Z]
-      }), Encoder.instance {
-      case x: X => x.asJson.mapObject(_.+:("type" -> "X".asJson))
-      case y: Y => y.asJson.mapObject(_.+:("type" -> "Y".asJson))
-      case z: Z => z.asJson.mapObject(_.+:("type" -> "Z".asJson))
-    })
-  }
-  implicit val anyValsC3c: Codec[AnyVals] = {
-    implicit val c1: Codec[ByteVal] = Codec.from(byteC3C.map(ByteVal.apply), byteC3C.contramap(_.a))
-    implicit val c2: Codec[ShortVal] = Codec.from(shortC3C.map(ShortVal.apply), shortC3C.contramap(_.a))
-    implicit val c3: Codec[IntVal] = Codec.from(intC3C.map(IntVal.apply), intC3C.contramap(_.a))
-    implicit val c4: Codec[LongVal] = Codec.from(longC3C.map(LongVal.apply), longC3C.contramap(_.a))
-    implicit val c5: Codec[BooleanVal] = Codec.from(Decoder.decodeBoolean.map(BooleanVal.apply), Encoder.encodeBoolean.contramap(_.a))
-    implicit val c6: Codec[CharVal] = Codec.from(Decoder.decodeChar.map(CharVal.apply), Encoder.encodeChar.contramap(_.a))
-    implicit val c7: Codec[DoubleVal] = Codec.from(doubleC3C.map(DoubleVal.apply), doubleC3C.contramap(_.a))
-    implicit val c8: Codec[FloatVal] = Codec.from(floatC3C.map(FloatVal.apply), floatC3C.contramap(_.a))
-    deriveCodec
-  }
   val base64C3c: Codec[Array[Byte]] =
     Codec.from(Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
       Encoder.encodeString.contramap[Array[Byte]](Base64.getEncoder.encodeToString))
@@ -688,7 +662,6 @@ object CirceJsoniterCodecs {
     s => m.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }, Encoder.encodeString.contramap(_.toString))
   implicit val suitEnumC3c: Codec[SuitEnum] = Codec.codecForEnumeration(SuitEnum)
-  implicit val primitivesC3c: Codec[Primitives] = deriveCodec
   implicit val tweetC3c: Codec[TwitterAPI.Tweet] = {
     implicit val c1: Codec[TwitterAPI.UserMentions] = deriveCodec
     implicit val c2: Codec[TwitterAPI.Urls] = deriveCodec

@@ -14,93 +14,7 @@ object Main {
     batchModeFormats = Map(JmhJson -> On, JmhText -> Off, CSV(8) -> Off),
     bmResultFormats = ctx => Vector(BRF.OpsPerSec, BRF.chooseTimePerOp(ctx))
   ))({
-    val benchmark = new ADTReading { setup() }
-    GS(S("ADTReading")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
-      //FIXME: zio-schema-json throws java.lang.RuntimeException: .type.Z.l.type(unrecognized subtype)
-      //B("zioSchemaJson")(benchmark.zioSchemaJson())
-    ))
-  }, {
-    val benchmark = new ADTWriting { setup() }
-    GS(S("ADTWriting")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
-      //FIXME: zio-schema-json doesn't serialize the discriminator field
-      //B("zioSchemaJson")(benchmark.zioSchemaJson())
-    ))
-  }, {
-    val benchmark = new AnyValsReading { setup() }
-    GS(S("AnyValsReading")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson()),
-      B("zioSchemaJson")(benchmark.zioSchemaJson())
-    ))
-  }, {
-    val benchmark = new AnyValsWriting { setup() }
-    GS(S("AnyValsWriting")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson()),
-      B("zioSchemaJson")(benchmark.zioSchemaJson())
-    ))
-  }, {
-    val benchmark = new ArrayBufferOfBooleansReading { size = 128; setup() }
-    GS(S("ArrayBufferOfBooleansReading")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioSchemaJson")(benchmark.zioSchemaJson())
-    ))
-  }, {
-    val benchmark = new ArrayBufferOfBooleansWriting { size = 128; setup() }
-    GS(S("ArrayBufferOfBooleansWriting")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson()),
-      B("zioSchemaJson")(benchmark.zioSchemaJson())
-    ))
-  }, {
-    val benchmark = new ArrayOfBigDecimalsReading { size = 128; setup() }
+    val benchmark = new ArrayOfBigDecimalsReading { size = 512; setup() }
     GS(S("ArrayOfBigDecimalsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -114,7 +28,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new ArrayOfBigDecimalsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfBigDecimalsWriting { size = 512; setup() }
     GS(S("ArrayOfBigDecimalsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -128,7 +42,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new ArrayOfBigIntsReading { size = 128; setup() }
+    val benchmark = new ArrayOfBigIntsReading { size = 512; setup() }
     GS(S("ArrayOfBigIntsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -139,7 +53,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new ArrayOfBigIntsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfBigIntsWriting { size = 512; setup() }
     GS(S("ArrayOfBigIntsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -152,7 +66,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new ArrayOfBooleansReading { size = 128; setup() }
+    val benchmark = new ArrayOfBooleansReading { size = 512; setup() }
     GS(S("ArrayOfBooleansReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -166,7 +80,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfBooleansWriting { size = 128; setup() }
+    val benchmark = new ArrayOfBooleansWriting { size = 512; setup() }
     GS(S("ArrayOfBooleansWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -181,7 +95,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfBytesReading { size = 128; setup() }
+    val benchmark = new ArrayOfBytesReading { size = 512; setup() }
     GS(S("ArrayOfBytesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -195,7 +109,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfBytesWriting { size = 128; setup() }
+    val benchmark = new ArrayOfBytesWriting { size = 512; setup() }
     GS(S("ArrayOfBytesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -210,7 +124,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfCharsReading { size = 128; setup() }
+    val benchmark = new ArrayOfCharsReading { size = 512; setup() }
     GS(S("ArrayOfCharsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -223,7 +137,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfCharsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfCharsWriting { size = 512; setup() }
     GS(S("ArrayOfCharsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -237,7 +151,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfDoublesReading { size = 128; setup() }
+    val benchmark = new ArrayOfDoublesReading { size = 512; setup() }
     GS(S("ArrayOfDoublesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -251,7 +165,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfDoublesWriting { size = 128; setup() }
+    val benchmark = new ArrayOfDoublesWriting { size = 512; setup() }
     GS(S("ArrayOfDoublesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -266,7 +180,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfDurationsReading { size = 128; setup() }
+    val benchmark = new ArrayOfDurationsReading { size = 512; setup() }
     GS(S("ArrayOfDurationsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -279,7 +193,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfDurationsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfDurationsWriting { size = 512; setup() }
     GS(S("ArrayOfDurationsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -293,7 +207,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfEnumADTsReading { size = 128; setup() }
+    val benchmark = new ArrayOfEnumADTsReading { size = 512; setup() }
     GS(S("ArrayOfEnumADTsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -306,7 +220,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfEnumADTsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfEnumADTsWriting { size = 512; setup() }
     GS(S("ArrayOfEnumADTsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -320,7 +234,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfEnumsReading { size = 128; setup() }
+    val benchmark = new ArrayOfEnumsReading { size = 512; setup() }
     GS(S("ArrayOfEnumsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -332,7 +246,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new ArrayOfEnumsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfEnumsWriting { size = 512; setup() }
     GS(S("ArrayOfEnumsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -345,7 +259,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new ArrayOfFloatsReading { size = 128; setup() }
+    val benchmark = new ArrayOfFloatsReading { size = 512; setup() }
     GS(S("ArrayOfFloatsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -360,7 +274,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfFloatsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfFloatsWriting { size = 512; setup() }
     GS(S("ArrayOfFloatsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -375,7 +289,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfInstantsReading { size = 128; setup() }
+    val benchmark = new ArrayOfInstantsReading { size = 512; setup() }
     GS(S("ArrayOfInstantsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -389,7 +303,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfInstantsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfInstantsWriting { size = 512; setup() }
     GS(S("ArrayOfInstantsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -404,7 +318,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfIntsReading { size = 128; setup() }
+    val benchmark = new ArrayOfIntsReading { size = 512; setup() }
     GS(S("ArrayOfIntsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -418,7 +332,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfIntsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfIntsWriting { size = 512; setup() }
     GS(S("ArrayOfIntsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -433,7 +347,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfJavaEnumsReading { size = 128; setup() }
+    val benchmark = new ArrayOfJavaEnumsReading { size = 512; setup() }
     GS(S("ArrayOfJavaEnumsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -444,7 +358,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new ArrayOfJavaEnumsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfJavaEnumsWriting { size = 512; setup() }
     GS(S("ArrayOfJavaEnumsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -456,7 +370,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new ArrayOfLocalDatesReading { size = 128; setup() }
+    val benchmark = new ArrayOfLocalDatesReading { size = 512; setup() }
     GS(S("ArrayOfLocalDatesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -469,7 +383,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfLocalDatesWriting { size = 128; setup() }
+    val benchmark = new ArrayOfLocalDatesWriting { size = 512; setup() }
     GS(S("ArrayOfLocalDatesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -483,7 +397,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfLocalDateTimesReading { size = 128; setup() }
+    val benchmark = new ArrayOfLocalDateTimesReading { size = 512; setup() }
     GS(S("ArrayOfLocalDateTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -496,7 +410,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfLocalDateTimesWriting { size = 128; setup() }
+    val benchmark = new ArrayOfLocalDateTimesWriting { size = 512; setup() }
     GS(S("ArrayOfLocalDateTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -510,7 +424,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfLocalTimesReading { size = 128; setup() }
+    val benchmark = new ArrayOfLocalTimesReading { size = 512; setup() }
     GS(S("ArrayOfLocalTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -523,7 +437,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfLocalTimesWriting { size = 128; setup() }
+    val benchmark = new ArrayOfLocalTimesWriting { size = 512; setup() }
     GS(S("ArrayOfLocalTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -537,7 +451,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfLongsReading { size = 128; setup() }
+    val benchmark = new ArrayOfLongsReading { size = 512; setup() }
     GS(S("ArrayOfLongsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -552,7 +466,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfLongsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfLongsWriting { size = 512; setup() }
     GS(S("ArrayOfLongsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -567,7 +481,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfMonthDaysReading { size = 128; setup() }
+    val benchmark = new ArrayOfMonthDaysReading { size = 512; setup() }
     GS(S("ArrayOfMonthDaysReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -580,7 +494,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfMonthDaysWriting { size = 128; setup() }
+    val benchmark = new ArrayOfMonthDaysWriting { size = 512; setup() }
     GS(S("ArrayOfMonthDaysWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -594,7 +508,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfOffsetDateTimesReading { size = 128; setup() }
+    val benchmark = new ArrayOfOffsetDateTimesReading { size = 512; setup() }
     GS(S("ArrayOfOffsetDateTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -607,7 +521,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfOffsetDateTimesWriting { size = 128; setup() }
+    val benchmark = new ArrayOfOffsetDateTimesWriting { size = 512; setup() }
     GS(S("ArrayOfOffsetDateTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -621,7 +535,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfOffsetTimesReading { size = 128; setup() }
+    val benchmark = new ArrayOfOffsetTimesReading { size = 512; setup() }
     GS(S("ArrayOfOffsetTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -634,7 +548,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfOffsetTimesWriting { size = 128; setup() }
+    val benchmark = new ArrayOfOffsetTimesWriting { size = 512; setup() }
     GS(S("ArrayOfOffsetTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -648,7 +562,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfPeriodsReading { size = 128; setup() }
+    val benchmark = new ArrayOfPeriodsReading { size = 512; setup() }
     GS(S("ArrayOfPeriodsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -661,7 +575,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfPeriodsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfPeriodsWriting { size = 512; setup() }
     GS(S("ArrayOfPeriodsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -675,7 +589,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfShortsReading { size = 128; setup() }
+    val benchmark = new ArrayOfShortsReading { size = 512; setup() }
     GS(S("ArrayOfShortsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -689,7 +603,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfShortsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfShortsWriting { size = 512; setup() }
     GS(S("ArrayOfShortsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -704,7 +618,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfUUIDsReading { size = 128; setup() }
+    val benchmark = new ArrayOfUUIDsReading { size = 512; setup() }
     GS(S("ArrayOfUUIDsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -718,7 +632,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfUUIDsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfUUIDsWriting { size = 512; setup() }
     GS(S("ArrayOfUUIDsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -733,7 +647,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfYearMonthsReading { size = 128; setup() }
+    val benchmark = new ArrayOfYearMonthsReading { size = 512; setup() }
     GS(S("ArrayOfYearMonthsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -746,7 +660,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfYearMonthsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfYearMonthsWriting { size = 512; setup() }
     GS(S("ArrayOfYearMonthsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -760,7 +674,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfYearsReading { size = 128; setup() }
+    val benchmark = new ArrayOfYearsReading { size = 512; setup() }
     GS(S("ArrayOfYearsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -773,7 +687,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfYearsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfYearsWriting { size = 512; setup() }
     GS(S("ArrayOfYearsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -787,7 +701,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfZonedDateTimesReading { size = 128; setup() }
+    val benchmark = new ArrayOfZonedDateTimesReading { size = 512; setup() }
     GS(S("ArrayOfZonedDateTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -800,7 +714,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfZonedDateTimesWriting { size = 128; setup() }
+    val benchmark = new ArrayOfZonedDateTimesWriting { size = 512; setup() }
     GS(S("ArrayOfZonedDateTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -814,7 +728,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfZoneIdsReading { size = 128; setup() }
+    val benchmark = new ArrayOfZoneIdsReading { size = 512; setup() }
     GS(S("ArrayOfZoneIdsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -827,7 +741,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfZoneIdsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfZoneIdsWriting { size = 512; setup() }
     GS(S("ArrayOfZoneIdsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -841,7 +755,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfZoneOffsetsReading { size = 128; setup() }
+    val benchmark = new ArrayOfZoneOffsetsReading { size = 512; setup() }
     GS(S("ArrayOfZoneOffsetsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -854,7 +768,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArrayOfZoneOffsetsWriting { size = 128; setup() }
+    val benchmark = new ArrayOfZoneOffsetsWriting { size = 512; setup() }
     GS(S("ArrayOfZoneOffsetsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -868,7 +782,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArraySeqOfBooleansReading { size = 128; setup() }
+    val benchmark = new ArraySeqOfBooleansReading { size = 512; setup() }
     GS(S("ArraySeqOfBooleansReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -882,7 +796,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ArraySeqOfBooleansWriting { size = 128; setup() }
+    val benchmark = new ArraySeqOfBooleansWriting { size = 512; setup() }
     GS(S("ArraySeqOfBooleansWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -897,20 +811,20 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new Base16Reading { size = 128; setup() }
+    val benchmark = new Base16Reading { size = 512; setup() }
     GS(S("Base16Reading")(
       B("borer")(benchmark.borer()),
       B("jsoniterScala")(benchmark.jsoniterScala())
     ))
   }, {
-    val benchmark = new Base16Writing { size = 128; setup() }
+    val benchmark = new Base16Writing { size = 512; setup() }
     GS(S("Base16Writing")(
       B("borer")(benchmark.borer()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
     ))
   }, {
-    val benchmark = new Base64Reading { size = 128; setup() }
+    val benchmark = new Base64Reading { size = 512; setup() }
     GS(S("Base64Reading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -923,7 +837,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new Base64Writing { size = 128; setup() }
+    val benchmark = new Base64Writing { size = 512; setup() }
     GS(S("Base64Writing")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -937,7 +851,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new BigDecimalReading { size = 128; setup() }
+    val benchmark = new BigDecimalReading { size = 512; setup() }
     GS(S("BigDecimalReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -947,7 +861,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new BigDecimalWriting { size = 128; setup() }
+    val benchmark = new BigDecimalWriting { size = 512; setup() }
     GS(S("BigDecimalWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -961,7 +875,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new BigIntReading { size = 128; setup() }
+    val benchmark = new BigIntReading { size = 512; setup() }
     GS(S("BigIntReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -972,7 +886,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new BigIntWriting { size = 128; setup() }
+    val benchmark = new BigIntWriting { size = 512; setup() }
     GS(S("BigIntWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -985,7 +899,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new BitSetReading { size = 128; setup() }
+    val benchmark = new BitSetReading { size = 512; setup() }
     GS(S("BitSetReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -994,7 +908,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter())
     ))
   }, {
-    val benchmark = new BitSetWriting { size = 128; setup() }
+    val benchmark = new BitSetWriting { size = 512; setup() }
     GS(S("BitSetWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1004,7 +918,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter())
     ))
   }, {
-    val benchmark = new ExtractFieldsReading { size = 128; setup() }
+    val benchmark = new ExtractFieldsReading { size = 512; setup() }
     GS(S("ExtractFieldsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1122,7 +1036,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new IntMapOfBooleansReading { size = 128; setup() }
+    val benchmark = new IntMapOfBooleansReading { size = 512; setup() }
     GS(S("IntMapOfBooleansReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1130,7 +1044,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new IntMapOfBooleansWriting { size = 128; setup() }
+    val benchmark = new IntMapOfBooleansWriting { size = 512; setup() }
     GS(S("IntMapOfBooleansWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1139,34 +1053,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new IntReading { setup() }
-    GS(S("IntReading")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
-    ))
-  }, {
-    val benchmark = new IntWriting { setup() }
-    GS(S("IntWriting")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
-    ))
-  }, {
-    val benchmark = new ListOfBooleansReading { size = 128; setup() }
+    val benchmark = new ListOfBooleansReading { size = 512; setup() }
     GS(S("ListOfBooleansReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1180,7 +1067,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new ListOfBooleansWriting { size = 128; setup() }
+    val benchmark = new ListOfBooleansWriting { size = 512; setup() }
     GS(S("ListOfBooleansWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1195,7 +1082,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new MapOfIntsToBooleansReading { size = 128; setup() }
+    val benchmark = new MapOfIntsToBooleansReading { size = 512; setup() }
     GS(S("MapOfIntsToBooleansReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1206,7 +1093,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new MapOfIntsToBooleansWriting { size = 128; setup() }
+    val benchmark = new MapOfIntsToBooleansWriting { size = 512; setup() }
     GS(S("MapOfIntsToBooleansWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1234,7 +1121,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new MutableBitSetReading { size = 128; setup() }
+    val benchmark = new MutableBitSetReading { size = 512; setup() }
     GS(S("MutableBitSetReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1243,7 +1130,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter())
     ))
   }, {
-    val benchmark = new MutableBitSetWriting { size = 128; setup() }
+    val benchmark = new MutableBitSetWriting { size = 512; setup() }
     GS(S("MutableBitSetWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1253,7 +1140,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter())
     ))
   }, {
-    val benchmark = new MutableLongMapOfBooleansReading { size = 128; setup() }
+    val benchmark = new MutableLongMapOfBooleansReading { size = 512; setup() }
     GS(S("MutableLongMapOfBooleansReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1261,7 +1148,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new MutableLongMapOfBooleansWriting { size = 128; setup() }
+    val benchmark = new MutableLongMapOfBooleansWriting { size = 512; setup() }
     GS(S("MutableLongMapOfBooleansWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1270,7 +1157,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new MutableMapOfIntsToBooleansReading { size = 128; setup() }
+    val benchmark = new MutableMapOfIntsToBooleansReading { size = 512; setup() }
     GS(S("MutableMapOfIntsToBooleansReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1278,7 +1165,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new MutableMapOfIntsToBooleansWriting { size = 128; setup() }
+    val benchmark = new MutableMapOfIntsToBooleansWriting { size = 512; setup() }
     GS(S("MutableMapOfIntsToBooleansWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1288,7 +1175,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new MutableSetOfIntsReading { size = 128; setup() }
+    val benchmark = new MutableSetOfIntsReading { size = 512; setup() }
     GS(S("MutableSetOfIntsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1299,7 +1186,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new MutableSetOfIntsWriting { size = 128; setup() }
+    val benchmark = new MutableSetOfIntsWriting { size = 512; setup() }
     GS(S("MutableSetOfIntsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1312,7 +1199,7 @@ object Main {
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
-    val benchmark = new NestedStructsReading { size = 128; setup() }
+    val benchmark = new NestedStructsReading { size = 512; setup() }
     GS(S("NestedStructsReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1325,7 +1212,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new NestedStructsWriting { size = 128; setup() }
+    val benchmark = new NestedStructsWriting { size = 512; setup() }
     GS(S("NestedStructsWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1370,36 +1257,7 @@ object Main {
       //B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new PrimitivesReading { setup() }
-    GS(S("PrimitivesReading")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson()),
-      B("zioSchemaJson")(benchmark.zioSchemaJson())
-    ))
-  }, {
-    val benchmark = new PrimitivesWriting { setup() }
-    GS(S("PrimitivesWriting")(
-      B("borer")(benchmark.borer()),
-      B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
-      B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("playJson")(benchmark.playJson()),
-      B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson()),
-      B("zioSchemaJson")(benchmark.zioSchemaJson())
-    ))
-  }, {
-    val benchmark = new SetOfIntsReading { size = 128; setup() }
+    val benchmark = new SetOfIntsReading { size = 512; setup() }
     GS(S("SetOfIntsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1413,7 +1271,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new SetOfIntsWriting { size = 128; setup() }
+    val benchmark = new SetOfIntsWriting { size = 512; setup() }
     GS(S("SetOfIntsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1428,7 +1286,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new StringOfAsciiCharsReading { size = 128; setup() }
+    val benchmark = new StringOfAsciiCharsReading { size = 512; setup() }
     GS(S("StringOfAsciiCharsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1442,7 +1300,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new StringOfAsciiCharsWriting { size = 128; setup() }
+    val benchmark = new StringOfAsciiCharsWriting { size = 512; setup() }
     GS(S("StringOfAsciiCharsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1457,7 +1315,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new StringOfEscapedCharsReading { size = 128; setup() }
+    val benchmark = new StringOfEscapedCharsReading { size = 512; setup() }
     GS(S("StringOfEscapedCharsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1471,7 +1329,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new StringOfEscapedCharsWriting { size = 128; setup() }
+    val benchmark = new StringOfEscapedCharsWriting { size = 512; setup() }
     GS(S("StringOfEscapedCharsWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1483,7 +1341,7 @@ object Main {
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
-    val benchmark = new StringOfNonAsciiCharsReading { size = 128; setup() }
+    val benchmark = new StringOfNonAsciiCharsReading { size = 512; setup() }
     GS(S("StringOfNonAsciiCharsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1497,7 +1355,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new StringOfNonAsciiCharsWriting { size = 128; setup() }
+    val benchmark = new StringOfNonAsciiCharsWriting { size = 512; setup() }
     GS(S("StringOfNonAsciiCharsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1542,7 +1400,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new VectorOfBooleansReading { size = 128; setup() }
+    val benchmark = new VectorOfBooleansReading { size = 512; setup() }
     GS(S("VectorOfBooleansReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -1556,7 +1414,7 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
-    val benchmark = new VectorOfBooleansWriting { size = 128; setup() }
+    val benchmark = new VectorOfBooleansWriting { size = 512; setup() }
     GS(S("VectorOfBooleansWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),

@@ -40,51 +40,8 @@ object SprayFormats extends DefaultJsonProtocol {
       sb.append(']')
     }
   }
-  implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = new RootJsonFormat[AnyVals] {
-    override def read(json: JsValue): AnyVals = {
-      val fields = json.asJsObject.fields
-      new AnyVals(
-        new ByteVal(fields("b").convertTo[Byte]),
-        new ShortVal(fields("s").convertTo[Short]),
-        new IntVal(fields("i").convertTo[Int]),
-        new LongVal(fields("l").convertTo[Long]),
-        new BooleanVal(fields("bl").convertTo[Boolean]),
-        new CharVal(fields("ch").convertTo[Char]),
-        new DoubleVal(fields("dbl").convertTo[Double]),
-        new FloatVal(fields("f").convertTo[Float])
-      )
-    }
-
-    override def write(x: AnyVals): JsValue = JsObject(
-      ("b", JsNumber(x.b.a)),
-      ("s", JsNumber(x.s.a)),
-      ("i", JsNumber(x.i.a)),
-      ("l", JsNumber(x.l.a)),
-      ("bl", JsBoolean(x.bl.a)),
-      ("ch", new JsString(x.ch.a.toString)),
-      ("dbl", JsNumber(x.dbl.a)),
-      ("f", JsNumber(x.f.a))
-    )
-  }
   val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
     .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /* WARNING: It is an unsafe option for open systems */
-  implicit lazy val adtBaseJsonFormat: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
-    implicit val jf1: RootJsonFormat[X] = jsonFormat1(X.apply)
-    implicit val jf2: RootJsonFormat[Y] = jsonFormat1(Y.apply)
-    implicit lazy val jf3: RootJsonFormat[Z] = jsonFormat2(Z.apply)
-
-    override def read(json: JsValue): ADTBase = readADT(json) {
-      case "X" => json.convertTo[X]
-      case "Y" => json.convertTo[Y]
-      case "Z" => json.convertTo[Z]
-    }
-
-    override def write(obj: ADTBase): JsValue = writeADT(obj) {
-      case x: X => x.toJson
-      case y: Y => y.toJson
-      case z: Z => z.toJson
-    }
-  }
   val base64JsonFormat: RootJsonFormat[Array[Byte]] = new RootJsonFormat[Array[Byte]] {
     def read(json: JsValue): Array[Byte] = json match {
       case js: JsString => Base64.getDecoder.decode(js.value)
@@ -212,7 +169,6 @@ object SprayFormats extends DefaultJsonProtocol {
   implicit val offsetDateTimeJsonFormat: RootJsonFormat[OffsetDateTime] = stringJsonFormat(OffsetDateTime.parse)
   implicit val offsetTimeJsonFormat: RootJsonFormat[OffsetTime] = stringJsonFormat(OffsetTime.parse)
   implicit val periodJsonFormat: RootJsonFormat[Period] = stringJsonFormat(Period.parse)
-  implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormat8(Primitives.apply)
   implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = stringJsonFormat {
     val suite = Map(
       "Hearts" -> Hearts,

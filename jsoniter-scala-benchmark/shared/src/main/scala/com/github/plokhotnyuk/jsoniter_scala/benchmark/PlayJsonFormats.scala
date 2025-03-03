@@ -96,103 +96,12 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
       "n" -> Json.toJson(x.n)
     )
   })
-  implicit lazy val adtBaseFormat: Format[ADTBase] = {
-    val v1: Format[X] = Format({
-      for {
-        a <- (__ \ "a").read[Int]
-      } yield new X(a)
-    }, (x: X) => {
-      toJsObject(
-        "type" -> new JsString("X"),
-        "a" -> new JsNumber(x.a)
-      )
-    })
-    val v2: Format[Y] = Format({
-      for {
-        b <- (__ \ "b").read[String]
-      } yield new Y(b)
-    }, (x: Y) => {
-      toJsObject(
-        "type" -> new JsString("Y"),
-        "b" -> new JsString(x.b)
-      )
-    })
-    val v3: Format[Z] = Format({
-      for {
-        l <- (__ \ "l").lazyRead[ADTBase](adtBaseFormat)
-        r <- (__ \ "r").lazyRead[ADTBase](adtBaseFormat)
-      } yield new Z(l, r)
-    }, (x: Z) => {
-      toJsObject(
-        "type" -> new JsString("Z"),
-        "l" -> Json.toJson(x.l)(adtBaseFormat),
-        "r" -> Json.toJson(x.r)(adtBaseFormat)
-      )
-    })
-    Format[ADTBase](readType.flatMap {
-      case "X" => v1.widen
-      case "Y" => v2.widen
-      case "Z" => v3.widen
-      case _ => Reads.failed("Unknown type value")
-    }, Writes {
-      case x: X => v1.writes(x)
-      case y: Y => v2.writes(y)
-      case z: Z => v3.writes(z)
-    })
-  }
-  implicit val anyValsFormat: Format[AnyVals] = Format({
-    for {
-      b <- (__ \ "b").read[Byte]
-      s <- (__ \ "s").read[Short]
-      i <- (__ \ "i").read[Int]
-      l <- (__ \ "l").read[Long]
-      bl <- (__ \ "bl").read[Boolean]
-      ch <- (__ \ "ch").read[Char]
-      dbl <- (__ \ "dbl").read[Double]
-      f <- (__ \ "f").read[Float]
-    } yield new AnyVals(new ByteVal(b), new ShortVal(s), new IntVal(i), new LongVal(l), new BooleanVal(bl), new CharVal(ch),
-      new DoubleVal(dbl), new FloatVal(f))
-  }, (x: AnyVals) => {
-    JsObject(Array(
-      "b" -> Json.toJson(x.b.a),
-      "s" -> Json.toJson(x.s.a),
-      "i" -> new JsNumber(x.i.a),
-      "l" -> new JsNumber(x.l.a),
-      "bl" -> JsBoolean(x.bl.a),
-      "ch" -> Json.toJson(x.ch.a),
-      "dbl" -> new JsNumber(x.dbl.a),
-      "f" -> Json.toJson(x.f.a)
-    ))
-  })
   implicit val bitSetFormat: Format[BitSet] = Format(
     Reads(js => new JsSuccess(BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
     Writes((es: BitSet) => new JsArray(es.toArray.map(v => new JsNumber(BigDecimal(v))))))
   implicit val mutableBitSetFormat: Format[mutable.BitSet] = Format(
     Reads(js => new JsSuccess(mutable.BitSet.fromBitMaskNoCopy(BitMask.toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
     Writes((es: mutable.BitSet) => new JsArray(es.toArray.map(v => new JsNumber(BigDecimal(v))))))
-  implicit val primitivesFormat: Format[Primitives] = Format({
-    for {
-      b <- (__ \ "b").read[Byte]
-      s <- (__ \ "s").read[Short]
-      i <- (__ \ "i").read[Int]
-      l <- (__ \ "l").read[Long]
-      bl <- (__ \ "bl").read[Boolean]
-      ch <- (__ \ "ch").read[Char]
-      dbl <- (__ \ "dbl").read[Double]
-      f <- (__ \ "f").read[Float]
-    } yield new Primitives(b, s, i, l, bl, ch, dbl, f)
-  }, (x: Primitives) => {
-    JsObject(Array(
-      "b" -> Json.toJson(x.b),
-      "s" -> Json.toJson(x.s),
-      "i" -> new JsNumber(x.i),
-      "l" -> new JsNumber(x.l),
-      "bl" -> JsBoolean(x.bl),
-      "ch" -> Json.toJson(x.ch),
-      "dbl" -> new JsNumber(x.dbl),
-      "f" -> Json.toJson(x.f)
-    ))
-  })
   implicit val extractFieldsFormat: Format[ExtractFields] = Format({
     for {
       s <- (__ \ "s").read[String]

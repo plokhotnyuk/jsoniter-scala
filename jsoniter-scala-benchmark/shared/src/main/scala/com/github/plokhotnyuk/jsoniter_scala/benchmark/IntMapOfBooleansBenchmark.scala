@@ -10,7 +10,7 @@ abstract class IntMapOfBooleansBenchmark extends CommonParams {
   var jsonString: String = _
   var preallocatedBuf: Array[Byte] = _
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 1000
+  var size: Int = 512
 
   @Setup
   def setup(): Unit = {

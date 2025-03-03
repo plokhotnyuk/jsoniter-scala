@@ -34,14 +34,9 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig.withBigDecimalDigitsLimit(Int.MaxValue).withBigDecimalScaleLimit(Int.MaxValue).withBigDecimalPrecision(0)) /* WARNING: It is an unsafe option for open systems */
   val bigIntCodec: JsonValueCodec[BigInt] =
     make(CodecMakerConfig.withBigIntDigitsLimit(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  val intCodec: JsonValueCodec[Int] = make
   val stringCodec: JsonValueCodec[String] = make
-  implicit val adtCodec: JsonValueCodec[ADTBase] =
-    make(CodecMakerConfig.withCheckFieldDuplication(false).withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
-  implicit val anyValsCodec: JsonValueCodec[AnyVals] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make
-  implicit val booleanArrayBufferCodec: JsonValueCodec[mutable.ArrayBuffer[Boolean]] = make
   implicit val booleanArrayCodec: JsonValueCodec[Array[Boolean]] = make
   implicit val booleanArraySeqCodec: JsonValueCodec[ArraySeq[Boolean]] = make
   implicit val booleanListCodec: JsonValueCodec[List[Boolean]] = make
@@ -98,7 +93,6 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val mutableSetOfIntsCodec: JsonValueCodec[mutable.Set[Int]] =
     make(CodecMakerConfig.withSetMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig.withCheckFieldDuplication(false))
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make
   implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] =
     make(CodecMakerConfig.withTransientDefault(false).withCheckFieldDuplication(false))

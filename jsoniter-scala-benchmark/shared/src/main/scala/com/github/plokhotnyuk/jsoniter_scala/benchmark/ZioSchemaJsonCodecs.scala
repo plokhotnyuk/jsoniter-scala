@@ -31,18 +31,6 @@ object ZioSchemaJsonCodecs {
   implicit def seq[A](implicit schemaA: Schema[A]): Schema[Seq[A]] =
     Schema.Sequence[Seq[A], A, String](schemaA, _.toSeq, Chunk.fromIterable, Chunk.empty, "Seq")
 
-  val adtCodec: JsonCodec[ADTBase] = jsonCodec(DeriveSchema.gen[ADTBase].annotate(discriminatorName("type")))
-  val anyValsCodec: JsonCodec[AnyVals] = {
-    implicit val s1: Schema[ByteVal] = Schema.Primitive(StandardType.ByteType).transform(ByteVal.apply, _.a)
-    implicit val s2: Schema[ShortVal] = Schema.Primitive(StandardType.ShortType).transform(ShortVal.apply, _.a)
-    implicit val s3: Schema[IntVal] = Schema.Primitive(StandardType.IntType).transform(IntVal.apply, _.a)
-    implicit val s4: Schema[LongVal] = Schema.Primitive(StandardType.LongType).transform(LongVal.apply, _.a)
-    implicit val s5: Schema[BooleanVal] = Schema.Primitive(StandardType.BoolType).transform(BooleanVal.apply, _.a)
-    implicit val s6: Schema[CharVal] = Schema.Primitive(StandardType.CharType).transform(CharVal.apply, _.a)
-    implicit val s7: Schema[DoubleVal] = Schema.Primitive(StandardType.DoubleType).transform(DoubleVal.apply, _.a)
-    implicit val s8: Schema[FloatVal] = Schema.Primitive(StandardType.FloatType).transform(FloatVal.apply, _.a)
-    jsonCodec(DeriveSchema.gen[AnyVals])
-  }
   val arrayBufferOfBooleansCodec: JsonCodec[mutable.ArrayBuffer[Boolean]] = jsonCodec(arrayBuffer[Boolean])
   val arrayOfBooleansCodec: JsonCodec[Array[Boolean]] = jsonCodec(array[Boolean])
   val arrayOfBytesCodec: JsonCodec[Array[Byte]] = jsonCodec(array[Byte])
@@ -118,7 +106,6 @@ object ZioSchemaJsonCodecs {
     implicit val s21: Schema[OpenRTB.Reqs] = DeriveSchema.gen
     jsonCodec(DeriveSchema.gen[OpenRTB.BidRequest])
   }
-  val primitivesCodec: JsonCodec[Primitives] = jsonCodec(DeriveSchema.gen[Primitives])
   val setOfIntsCodec: JsonCodec[Set[Int]] = jsonCodec(Schema.set[Int])
   val stringCodec: JsonCodec[String] = jsonCodec(Schema[String])
   val twitterAPICodec: JsonCodec[Seq[TwitterAPI.Tweet]] = {

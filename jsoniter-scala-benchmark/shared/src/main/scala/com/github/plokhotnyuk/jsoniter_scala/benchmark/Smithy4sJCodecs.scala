@@ -14,32 +14,6 @@ object Smithy4sJCodecs {
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   private[this] val datetime: Schema[Timestamp] = timestamp.addHints(smithy.api.TimestampFormat.DATE_TIME.widen)
-  private[this] val adtSchema: Schema[ADTBase] = recursive {
-    union(
-      struct(int.required[X]("a", _.a))(X.apply).oneOf[ADTBase]("X"),
-      struct(string.required[Y]("b", _.b))(Y.apply).oneOf[ADTBase]("Y"),
-      struct(adtSchema.required[Z]("l", _.l), adtSchema.required[Z]("r", _.r))(Z.apply).oneOf[ADTBase]("Z")
-    ) {
-      case _: X => 0
-      case _: Y => 1
-      case _: Z => 2
-    }.addHints(Discriminated("type"))
-  }
-  implicit val adtJCodec: JsonCodec[ADTBase] = Json.deriveJsonCodec(adtSchema)
-  implicit val anyValsJCodec: JsonCodec[AnyVals] = Json.deriveJsonCodec(struct(
-    byte.required[AnyVals]("b", _.b.a),
-    short.required[AnyVals]("s", _.s.a),
-    int.required[AnyVals]("i", _.i.a),
-    long.required[AnyVals]("l", _.l.a),
-    boolean.required[AnyVals]("bl", _.bl.a),
-    string.required[AnyVals]("ch", _.ch.a.toString),
-    double.required[AnyVals]("dbl", _.dbl.a),
-    float.required[AnyVals]("f", _.f.a)
-  )((b, s, i, l, bl, st, dbl, f) => AnyVals(new ByteVal(b), new ShortVal(s), new IntVal(i), new LongVal(l), new BooleanVal(bl),
-    new CharVal({
-      if (st.length == 1) st.charAt(0)
-      else sys.error("illegal char")
-    }), new DoubleVal(dbl), new FloatVal(f))))
   implicit val arrayOfBigDecimalsJCodec: JsonCodec[Array[BigDecimal]] =
     Json.deriveJsonCodec(bijection(indexedSeq(bigdecimal), (x: IndexedSeq[BigDecimal]) => x match {
       case x: ArraySeq[BigDecimal] => x.unsafeArray.asInstanceOf[Array[BigDecimal]]
@@ -699,19 +673,6 @@ object Smithy4sJCodecs {
         bcat.getOrElse(Nil), badv.getOrElse(Nil), bapp.getOrElse(Nil), source, reqs)
     }
   }
-  implicit val primitivesJCodec: JsonCodec[Primitives] = Json.deriveJsonCodec(struct(
-    byte.required[Primitives]("b", _.b),
-    short.required[Primitives]("s", _.s),
-    int.required[Primitives]("i", _.i),
-    long.required[Primitives]("l", _.l),
-    boolean.required[Primitives]("bl", _.bl),
-    string.required[Primitives]("ch", _.ch.toString),
-    double.required[Primitives]("dbl", _.dbl),
-    float.required[Primitives]("f", _.f)
-  )((b, s, i, l, bl, st, dbl, f) => Primitives(b, s, i, l, bl, {
-    if (st.length == 1) st.charAt(0)
-    else sys.error("illegal char")
-  }, dbl, f)))
   implicit val setOfIntsJCodec: JsonCodec[Set[Int]] = Json.deriveJsonCodec(set(int))
   val stringJCodec: JsonCodec[String] = Json.deriveJsonCodec(string)
   implicit val twitterAPIJCodec: JsonCodec[Seq[TwitterAPI.Tweet]] = Json.deriveJsonCodec({

@@ -34,8 +34,6 @@ object DslPlatformJson {
 
   val (stringEncoder: JsonWriter.WriteObject[String],
   stringDecoder: JsonReader.ReadObject[String]) = codec[String]
-  implicit val (anyValsEncoder: JsonWriter.WriteObject[AnyVals],
-  anyValsDecoder: JsonReader.ReadObject[AnyVals]) = codec[AnyVals]
   implicit val (arrayBufferOfBooleansEncoder: JsonWriter.WriteObject[mutable.ArrayBuffer[Boolean]],
   arrayBufferOfBooleansDecoder: JsonReader.ReadObject[mutable.ArrayBuffer[Boolean]]) = codec[mutable.ArrayBuffer[Boolean]]
   implicit val (arrayOfBigDecimalsEncoder: JsonWriter.WriteObject[Array[BigDecimal]],
@@ -106,8 +104,6 @@ object DslPlatformJson {
   missingReqFieldsDecoder: JsonReader.ReadObject[MissingRequiredFields]) = codec[MissingRequiredFields]
   implicit val (nestedStructsEncoder: JsonWriter.WriteObject[NestedStructs],
   nestedStructsDecoder: JsonReader.ReadObject[NestedStructs]) = codec[NestedStructs]
-  implicit val (primitivesEncoder: JsonWriter.WriteObject[Primitives],
-  primitivesDecoder: JsonReader.ReadObject[Primitives]) = codec[Primitives]
   implicit val (seqOfTweetEncoder: JsonWriter.WriteObject[Seq[TwitterAPI.Tweet]],
   seqOfTweetDecoder: JsonReader.ReadObject[Seq[TwitterAPI.Tweet]]) = codec[Seq[TwitterAPI.Tweet]]
   implicit val (setOfIntsEncoder: JsonWriter.WriteObject[Set[Int]],

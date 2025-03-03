@@ -20,19 +20,6 @@ object UPickleReaderWriters extends AttributeTagged {
       if (v > -4503599627370496L && v < 4503599627370496L) out.visitInt64(v, -1)
       else out.visitFloat64String(v.toString, -1)
   }
-  @annotation.nowarn implicit lazy val adtReadWriter: ReadWriter[ADTBase] =
-    ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
-  implicit val anyValsReadWriter: ReadWriter[AnyVals] = {
-    implicit val v1: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
-    implicit val v2: ReadWriter[ShortVal] = readwriter[Short].bimap(_.a, ShortVal.apply)
-    implicit val v3: ReadWriter[IntVal] = readwriter[Int].bimap(_.a, IntVal.apply)
-    implicit val v4: ReadWriter[LongVal] = readwriter[Long].bimap(_.a, LongVal.apply)
-    implicit val v5: ReadWriter[BooleanVal] = readwriter[Boolean].bimap(_.a, BooleanVal.apply)
-    implicit val v6: ReadWriter[DoubleVal] = readwriter[Double].bimap(_.a, DoubleVal.apply)
-    implicit val v7: ReadWriter[CharVal] = readwriter[Char].bimap(_.a, CharVal.apply)
-    implicit val v8: ReadWriter[FloatVal] = readwriter[Float].bimap(_.a, FloatVal.apply)
-    macroRW
-  }
   val base64ReadWriter: ReadWriter[Array[Byte]] =
     readwriter[String].bimap(Base64.getEncoder.encodeToString, Base64.getDecoder.decode)
   implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
@@ -62,7 +49,6 @@ object UPickleReaderWriters extends AttributeTagged {
   }
   @annotation.nowarn implicit lazy val nestedStructsReadWriter: ReadWriter[NestedStructs] = macroRW
   implicit val missingRequiredFieldsReadWriter: ReadWriter[MissingRequiredFields] = macroRW
-  implicit val primitivesReadWriter: ReadWriter[Primitives] = macroRW
   implicit val durationReader: Reader[Duration] = strReader(Duration.parse)
   implicit val durationWriter: Writer[Duration] = strWriter[Duration]
   implicit val instantReader: Reader[Instant] = strReader(Instant.parse)

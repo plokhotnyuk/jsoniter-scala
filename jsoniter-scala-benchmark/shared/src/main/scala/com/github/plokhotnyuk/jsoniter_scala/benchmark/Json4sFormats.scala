@@ -26,52 +26,6 @@ object BigDecimalJson4sFormat {
   implicit val bigDecimalFormats: Formats = DefaultFormats.withBigDecimal.withBigInt
 }
 
-object ADTJson4sFormats {
-  implicit val adtFormats: Formats = new DefaultFormats {
-    override val typeHints: TypeHints = new SimpleTypeHints(List(classOf[X], classOf[Y], classOf[Z]))
-  }
-}
-
-object AnyValsJson4sFormats {
-  implicit val anyValsFormats: Formats = DefaultFormats +
-    StringifiedFormats.stringified[Char](x => if (x.length == 1) x.charAt(0) else sys.error("char")) +
-    new CustomSerializer[ByteVal](_ => ({
-      case JInt(x) if x.isValidByte => new ByteVal(x.toByte)
-    }, {
-      case x: ByteVal => new JLong(x.a.toLong)
-    })) +
-    new CustomSerializer[ShortVal](_ => ({
-      case JInt(x) if x.isValidShort => new ShortVal(x.toShort)
-    }, {
-      case x: ShortVal => new JLong(x.a.toLong)
-    })) +
-    new CustomSerializer[IntVal](_ => ({
-      case JInt(x) if x.isValidInt => new IntVal(x.toInt)
-    }, {
-      case x: IntVal => new JLong(x.a.toLong)
-    })) +
-    new CustomSerializer[LongVal](_ => ({
-      case JInt(x) if x.isValidLong => new LongVal(x.toLong)
-    }, {
-      case x: LongVal => new JLong(x.a)
-    })) +
-    new CustomSerializer[FloatVal](_ => ({
-      case JDecimal(x) => new FloatVal(x.toFloat)
-    }, {
-      case x: FloatVal => new JDecimal(BigDecimal(x.a))
-    })) +
-    new CustomSerializer[DoubleVal](_ => ({
-      case JDouble(x) => new DoubleVal(x)
-    }, {
-      case x: DoubleVal => new JDecimal(x.a)
-    })) +
-    new CustomSerializer[CharVal](_ => ({
-      case JString(x) if x.length == 1 => new CharVal(x.charAt(0))
-    }, {
-      case x: CharVal => new JString(x.a.toString)
-    }))
-}
-
 object JavaTimeJson4sFormats {
   implicit val javaTimeFormats: Formats = DefaultFormats +
     StringifiedFormats.stringified[Duration](Duration.parse) +
