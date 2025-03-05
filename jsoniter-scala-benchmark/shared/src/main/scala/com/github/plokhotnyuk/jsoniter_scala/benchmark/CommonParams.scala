@@ -12,6 +12,7 @@ import org.openjdk.jmh.annotations._
   "-noclassgc",
   "-Xms16g",
   "-Xmx16g",
+  "-Xss4m",
   "-XX:NewSize=15g",
   "-XX:MaxNewSize=15g",
   "-XX:InitialCodeCacheSize=512m",
