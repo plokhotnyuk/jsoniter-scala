@@ -1,4 +1,5 @@
 #!/bin/bash
+for i in $(ls /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor); do echo performance | sudo tee $i; done
 sudo systemctl stop proc-sys-fs-binfmt_misc.automount
 sudo systemctl stop bluetooth.service
 sudo systemctl stop cron.service
@@ -23,7 +24,6 @@ sudo systemctl stop systemd-journald-dev-log.socket
 sudo systemctl stop systemd-oomd.service
 sudo systemctl stop systemd-oomd.socket
 sudo systemctl stop systemd-hostnamed.service
-sudo systemctl stop systemd-resolved.service
 sudo systemctl stop systemd-timesyncd.service
 sudo systemctl stop switcheroo-control.service
 sudo systemctl stop thermald.service
