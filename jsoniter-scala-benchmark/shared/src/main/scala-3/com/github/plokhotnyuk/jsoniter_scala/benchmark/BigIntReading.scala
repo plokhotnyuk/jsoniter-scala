@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import org.openjdk.jmh.annotations.Benchmark
 
 class BigIntReading extends BigIntBenchmark {
+/* FIXME: borer parses up to 200 digits only
   @Benchmark
   def borer(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
@@ -10,14 +11,14 @@ class BigIntReading extends BigIntBenchmark {
 
     Json.decode(jsonBytes).withConfig(decodingConfig).to[BigInt].value
   }
-
+*/
   @Benchmark
   def circe(): BigInt = {
     import io.circe.jawn._
 
     decodeByteArray[BigInt](jsonBytes).fold(throw _, identity)
   }
-
+/* FIXME: circe-jsoniter parses up to 308 digits only
   @Benchmark
   def circeJsoniter(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
@@ -27,7 +28,7 @@ class BigIntReading extends BigIntBenchmark {
 
     Decoder[BigInt].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
-
+*/
   @Benchmark
   def jacksonScala(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

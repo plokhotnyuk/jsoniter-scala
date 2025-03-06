@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import org.openjdk.jmh.annotations.Benchmark
 
 class BigDecimalReading extends BigDecimalBenchmark {
+/* FIXME: borer parses up to 200 digits only
   @Benchmark
   def borer(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
@@ -10,14 +11,14 @@ class BigDecimalReading extends BigDecimalBenchmark {
 
     Json.decode(jsonBytes).withConfig(decodingConfig).to[BigDecimal].value
   }
-
+*/
   @Benchmark
   def circe(): BigDecimal = {
     import io.circe.jawn._
 
     decodeByteArray[BigDecimal](jsonBytes).fold(throw _, identity)
   }
-
+/* FIXME: circe-jsoniter parses up to 308 digits only
   @Benchmark
   def circeJsoniter(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
@@ -27,7 +28,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
 
     Decoder[BigDecimal].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
-
+*/
   @Benchmark
   def jacksonScala(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -71,7 +72,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
     Json.parse(jsonBytes).as[BigDecimal]
   }
 */
-/* FIXME: smithy4sJson: don't know how to tune precision for parsing of BigDecimal values
+/* FIXME: smithy4sJson parses up to 308 digits only
   @Benchmark
   def smithy4sJson(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sCodecs._

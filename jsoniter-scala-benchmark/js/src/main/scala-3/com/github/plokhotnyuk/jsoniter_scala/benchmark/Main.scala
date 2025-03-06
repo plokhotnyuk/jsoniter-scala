@@ -853,9 +853,11 @@ object Main {
   }, {
     val benchmark = new BigDecimalReading { size = 512; setup() }
     GS(S("BigDecimalReading")(
-      B("borer")(benchmark.borer()),
+      //FIXME: borer parses up to 200 digits only
+      //B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
+      //FIXME: circe-jsoniter parses up to 308 digits only
+      //B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
@@ -877,9 +879,11 @@ object Main {
   }, {
     val benchmark = new BigIntReading { size = 512; setup() }
     GS(S("BigIntReading")(
-      B("borer")(benchmark.borer()),
+      //FIXME: borer parses up to 200 digits only
+      //B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
+      //FIXME: circe-jsoniter parses up to 308 digits only
+      //B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
