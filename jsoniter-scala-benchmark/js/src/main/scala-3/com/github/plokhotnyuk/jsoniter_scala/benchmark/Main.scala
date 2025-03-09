@@ -885,7 +885,8 @@ object Main {
       //FIXME: circe-jsoniter parses up to 308 digits only
       //B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("smithy4sJson")(benchmark.smithy4sJson()),
+      // FIXME: smithy4sJson parses up to 308 digits only
+      //B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))

@@ -84,6 +84,7 @@ class BigIntReading extends BigIntBenchmark {
     Json.parse(jsonBytes).as[BigInt]
   }
 */
+/* FIXME: smithy4sJson parses up to 308 digits only
   @Benchmark
   def smithy4sJson(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
@@ -91,7 +92,7 @@ class BigIntReading extends BigIntBenchmark {
 
     readFromArray[BigInt](jsonBytes)(bigIntJCodec)
   }
-
+*/
   @Benchmark
   def sprayJson(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
