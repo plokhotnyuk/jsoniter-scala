@@ -32,9 +32,9 @@ compare performance of jsoniter-scala with: [circe](https://github.com/circe/cir
 [play-json](https://github.com/playframework/play-json),
 [play-json with jsoniter-scala booster](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
-[uPickle](https://github.com/lihaoyi/upickle), [zio-json](https://github.com/zio/zio-json)
-compiled by Scala.js 1.17.0 to ES 2015 with GCC v20220202 optimizations applied on
-Intel® Core™ i7-11800H CPU @ 2.3GHz (max 4.6GHz), RAM 64Gb DDR4-3200, Ubuntu 23.10 (Linux 6.8).
+[uPickle](https://github.com/lihaoyi/upickle), [zio-json](https://github.com/zio/zio-json), and [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
+compiled by Scala.js 1.18.2 to ES 2015 with GCC v20220202 optimizations applied on
+Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz, performance-cores only), RAM 64Gb DDR5-6400, on Windows 11 Pro (24H2).
 
 ## Contents
 
