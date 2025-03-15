@@ -19,6 +19,9 @@ object CirceJsoniterCodecs {
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   implicit val jsonCodec: JsonValueCodec[Json] = JsoniterScalaCodec.jsonCodec(maxDepth = 512, doSerialize = _ ne Json.Null)
+  val jsonCodec2: JsonValueCodec[Json] = JsoniterScalaCodec.jsonCodec(maxDepth = 512, doSerialize = x => {
+    (x ne Json.Null) && !(x.isArray && x.asArray.get.isEmpty)
+  })
   val base64C3c: Codec[Array[Byte]] =
     Codec.from(Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
       Encoder.encodeString.contramap[Array[Byte]](Base64.getEncoder.encodeToString))

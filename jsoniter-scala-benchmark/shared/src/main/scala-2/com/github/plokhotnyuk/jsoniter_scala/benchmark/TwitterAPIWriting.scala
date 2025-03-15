@@ -34,10 +34,9 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   def circeJsoniter(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.core._
-    import io.circe.Util._
     import io.circe.syntax._
 
-    writeToArray(deepDropEmptyValues(obj.asJson))
+    writeToArray(obj.asJson)(jsonCodec2)
   }
 /* FIXME: DSL-JSON serializes empty collections
   @Benchmark
