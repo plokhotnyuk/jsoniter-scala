@@ -22,7 +22,7 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def jacksonScala(): mutable.Map[Int, Boolean] = {
-    import com.fasterxml.jackson.module.scala.JavaTypeable.gen2JavaTypeable
+    import tools.jackson.module.scala.JavaTypeable.gen2JavaTypeable
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     jacksonMapper.readValue[mutable.Map[Int, Boolean]](jsonBytes)

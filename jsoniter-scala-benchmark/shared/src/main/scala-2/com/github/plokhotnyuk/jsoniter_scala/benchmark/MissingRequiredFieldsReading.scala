@@ -61,7 +61,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
 
   @Benchmark
   def jacksonScala(): String = {
-    import com.fasterxml.jackson.databind.exc.MismatchedInputException
+    import tools.jackson.databind.exc.MismatchedInputException
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     try {

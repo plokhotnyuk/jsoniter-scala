@@ -28,6 +28,13 @@ lazy val updateVersionInReadmeAndExamples: ReleaseStep = { st: State =>
   st
 }
 
+addCommandAlias(
+  "releaseTest",
+  "+jsoniter-scala-coreJVM/test; +jsoniter-scala-coreJS/test; +jsoniter-scala-coreNative/test; " +
+    "+jsoniter-scala-macrosJVM/test; +jsoniter-scala-macrosJS/test; +jsoniter-scala-macrosNative/test; " +
+    "+jsoniter-scala-circeJVM/test; +jsoniter-scala-circeJS/test; +jsoniter-scala-circeNative/test; "
+)
+
 releaseCrossBuild := false
 
 releaseProcess := Seq[ReleaseStep](
@@ -35,7 +42,7 @@ releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
   runClean,
-  releaseStepCommandAndRemaining("+test"),
+  releaseStepCommandAndRemaining("releaseTest"),
   setReleaseVersion,
   releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
   updateVersionInReadmeAndExamples,
