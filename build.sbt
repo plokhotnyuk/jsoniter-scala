@@ -268,7 +268,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "com.dslplatform" %% "dsl-json-scala" % "2.0.2"
       )
       case _ => Seq(
-        "io.bullet" %%% "borer-derivation" % "1.15.0"
+        "io.bullet" %%% "borer-derivation" % "1.16.0"
       )
     }),
     Compile / doc / sources := Seq()
