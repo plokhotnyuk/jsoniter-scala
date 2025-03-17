@@ -30,7 +30,13 @@ object JacksonSerDesers {
       .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
       .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
       .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
-      .streamReadConstraints(StreamReadConstraints.builder().maxNumberLength(Int.MaxValue).build()) /* WARNING: It is an unsafe option for open systems */
+      .streamReadConstraints(StreamReadConstraints.builder()
+        .maxNumberLength(Int.MaxValue) // WARNING: It is an unsafe option for open systems
+        .maxNestingDepth(Int.MaxValue) // WARNING: It is an unsafe option for open systems
+        .build())
+      .streamWriteConstraints(StreamWriteConstraints.builder()
+        .maxNestingDepth(Int.MaxValue) // WARNING: It is an unsafe option for open systems
+        .build())
       .build()
     val builder = JsonMapper.builder(jsonFactory)
       .addMixIn(classOf[GeoJSON.GeoJSON], classOf[MixIn])
