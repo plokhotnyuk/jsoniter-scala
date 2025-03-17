@@ -1,5 +1,10 @@
 #!/bin/bash
 for i in $(ls /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor); do echo performance | sudo tee $i; done
+echo 0 | sudo tee /proc/sys/vm/compaction_proactiveness
+echo 0 | sudo tee /sys/kernel/mm/ksm/run
+echo 1000 | sudo tee /sys/kernel/mm/lru_gen/min_ttl_ms
+echo 5 | sudo tee /proc/sys/vm/dirty_ratio
+echo 5 | sudo tee /proc/sys/vm/dirty_background_ratio
 sudo systemctl stop proc-sys-fs-binfmt_misc.automount
 sudo systemctl stop bluetooth.service
 sudo systemctl stop cron.service
