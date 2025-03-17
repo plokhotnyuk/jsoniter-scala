@@ -127,13 +127,12 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
     new String(jsonBytes, UTF_8).fromJson[GeoJSON].fold(sys.error, identity)
   }
-/* FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
+
   @Benchmark
   def zioSchemaJson(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    geoJSONCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    geoJsonCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
   }
-*/
 }

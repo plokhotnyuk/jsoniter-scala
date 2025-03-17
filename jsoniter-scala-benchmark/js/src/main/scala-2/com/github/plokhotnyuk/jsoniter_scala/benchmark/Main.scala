@@ -1019,9 +1019,8 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
-      B("zioJson")(benchmark.zioJson())
-      //FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
-      //B("zioSchemaJson")(benchmark.zioSchemaJson())
+      B("zioJson")(benchmark.zioJson()),
+      B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GeoJSONWriting { setup() }
