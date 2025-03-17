@@ -29,14 +29,14 @@ class ArrayOfYearsWriting extends ArrayOfYearsBenchmark {
 
     writeToArray(obj.asJson)
   }
-/* FIXME: jackson 3.0.0-rc1 serializes `java.time.Year` values as numbers
+
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     jacksonMapper.writeValueAsBytes(obj)
   }
-*/
+
   @Benchmark
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JavaTimeJson4sFormats._

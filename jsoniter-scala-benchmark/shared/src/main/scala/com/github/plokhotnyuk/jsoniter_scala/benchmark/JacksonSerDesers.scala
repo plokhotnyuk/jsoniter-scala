@@ -54,6 +54,7 @@ object JacksonSerDesers {
       .addModule(DefaultScalaModule)
       .addModule(BitSetDeserializerModule)
       .addModule(new JavaTimeModule)
+      .withConfigOverride(classOf[Year], x => x.setFormat(JsonFormat.Value.forShape(JsonFormat.Shape.STRING)))
       .addModule(new SimpleModule()
         .addDeserializer(classOf[BitSet], ImmutableBitSetDeserializer)
         .addDeserializer(classOf[mutable.BitSet], MutableBitSetDeserializer)
