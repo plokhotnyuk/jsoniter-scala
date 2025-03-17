@@ -19,8 +19,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.dslJsonScala() shouldBe
         "Mandatory properties (s, i) not found at position: 1, following: `{`, before: `}`"
       b.jacksonScala() shouldBe
-        """Null value for creator property 's' (index 0); `DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES` enabled
-          | at [Source: (byte[])"{}"; line: 1, column: 2] (through reference chain: com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields["s"])""".stripMargin
+        """Cannot map `null` into type `int` (set DeserializationConfig.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES to 'false' to allow)
+          | at [Source: (byte[])"{}"; line: 1, column: 2] (through reference chain: com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields["i"])""".stripMargin
       b.json4sJackson() shouldBe
         """No usable value for s
           |Did not find value which can be converted into java.lang.String""".stripMargin
