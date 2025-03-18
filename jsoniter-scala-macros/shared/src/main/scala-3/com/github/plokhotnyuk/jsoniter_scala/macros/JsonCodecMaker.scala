@@ -1017,7 +1017,7 @@ object JsonCodecMaker {
             val nudeSubtype = TypeIdent(sym).tpe
             val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(tpe.typeSymbol))
             nudeSubtype.memberType(sym.primaryConstructor) match
-              case MethodType(_, _, resTp) => resTp
+              case MethodType(_, _, _) => nudeSubtype
               case PolyType(names, bounds, resPolyTp) =>
                 val targs = typeArgs(tpe)
                 val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, targs, Map.empty)

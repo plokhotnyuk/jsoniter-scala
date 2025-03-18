@@ -3037,6 +3037,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[MultiListOfArgs](CodecMakerConfig.withRequireDefaultFields(true).withTransientDefault(false)),
         new MultiListOfArgs(1)(2)("VVV"), """{"i":1,"l":2,"s":"VVV"}""")
     }
+    "generate codecs for ADTs that has case classes with multiple parameter lists in a primary constructor" in {
+      sealed trait ADT
+
+      case class Data1(i: Int)(val pos: Int) extends ADT
+
+      case class Data2(i: Int)(val pos: Int) extends ADT
+
+      verifySerDeser(make[List[ADT]], List(Data1(1)(11), Data2(2)(22)),
+        """[{"type":"Data1","i":1,"pos":11},{"type":"Data2","i":2,"pos":22}]""")
+    }
     "don't generate codecs for case classes with non public parameters of the primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {
         """case class MultiListOfArgsWithNonPublicParam(i: Int)(l: Long)
