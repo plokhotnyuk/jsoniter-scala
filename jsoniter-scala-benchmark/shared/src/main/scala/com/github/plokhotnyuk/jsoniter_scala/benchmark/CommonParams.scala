@@ -7,9 +7,8 @@ import org.openjdk.jmh.annotations._
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Fork(value = 1, jvmArgs = Array(
-//  "-Djava.lang.invoke.VarHandle.VAR_HANDLE_GUARDS=false",
   "-server",
-  "-noclassgc",
+  "-Xnoclassgc",
   "-Xms16g",
   "-Xmx16g",
   "-Xss4m",
