@@ -2,19 +2,18 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.annotation.{JsonFormat, JsonInclude, JsonTypeInfo}
 import tools.jackson.core.json.{JsonFactoryBuilder, JsonWriteFeature}
-import tools.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
+import tools.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter, JsonRecyclerPools}
 import tools.jackson.databind.jsontype.NamedType
 import tools.jackson.core._
 import tools.jackson.databind._
 import tools.jackson.databind.json.JsonMapper
-import tools.jackson.datatype.jsr310.{JavaTimeFeature, JavaTimeModule}
+import tools.jackson.datatype.jsr310.JavaTimeModule
 import tools.jackson.databind.module.SimpleModule
 import tools.jackson.databind.ser.std.StdSerializer
 import tools.jackson.module.blackbird.BlackbirdModule
 import tools.jackson.module.scala.deser.{ImmutableBitSetDeserializer, MutableBitSetDeserializer}
 import tools.jackson.module.scala.{BitSetDeserializerModule, ClassTagExtensions, DefaultScalaModule}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
-import tools.jackson.datatype.jsr310.ser.YearSerializer
 import java.time.Year
 import scala.collection.immutable.BitSet
 import scala.collection.mutable
@@ -37,6 +36,7 @@ object JacksonSerDesers {
       .streamWriteConstraints(StreamWriteConstraints.builder()
         .maxNestingDepth(Int.MaxValue) // WARNING: It is an unsafe option for open systems
         .build())
+      .recyclerPool(JsonRecyclerPools.threadLocalPool)
       .build()
     val builder = JsonMapper.builder(jsonFactory)
       .addMixIn(classOf[GeoJSON.GeoJSON], classOf[MixIn])
