@@ -10,7 +10,6 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.datatype.jsr310.JavaTimeModule
 import tools.jackson.databind.module.SimpleModule
 import tools.jackson.databind.ser.std.StdSerializer
-import tools.jackson.module.blackbird.BlackbirdModule
 import tools.jackson.module.scala.deser.{ImmutableBitSetDeserializer, MutableBitSetDeserializer}
 import tools.jackson.module.scala.{BitSetDeserializerModule, ClassTagExtensions, DefaultScalaModule}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
@@ -63,7 +62,6 @@ object JacksonSerDesers {
         .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
         .addDeserializer(classOf[SuitEnum], new SuiteEnumDeserializer)
       )
-      .addModule(new BlackbirdModule)
       .configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
       .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)

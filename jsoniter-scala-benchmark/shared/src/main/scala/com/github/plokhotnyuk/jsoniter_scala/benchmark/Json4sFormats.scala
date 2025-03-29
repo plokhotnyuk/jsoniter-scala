@@ -5,6 +5,11 @@ import org.json4s.ext.{EnumNameSerializer, UUIDSerializer}
 import java.time._
 import java.util.Base64
 import scala.reflect.ClassTag
+import com.fasterxml.jackson.core._
+import com.fasterxml.jackson.core.util._
+import com.fasterxml.jackson.core.json.JsonWriteFeature
+import com.fasterxml.jackson.databind._
+import org.json4s.jackson.Json4sScalaModule
 
 object CommonJson4sFormats {
   implicit val commonFormats: Formats = DefaultFormats +
@@ -47,9 +52,9 @@ object JavaTimeJson4sFormats {
 object GeoJsonJson4sFormats {
   implicit val geoJsonFormats: Formats = new DefaultFormats {
     override val typeHints: TypeHints = new SimpleTypeHints(List(
-        classOf[GeoJSON.Point], classOf[GeoJSON.MultiPoint], classOf[GeoJSON.LineString],
-        classOf[GeoJSON.MultiLineString], classOf[GeoJSON.Polygon], classOf[GeoJSON.MultiPolygon],
-        classOf[GeoJSON.GeometryCollection], classOf[GeoJSON.Feature], classOf[GeoJSON.FeatureCollection]))
+      classOf[GeoJSON.Point], classOf[GeoJSON.MultiPoint], classOf[GeoJSON.LineString],
+      classOf[GeoJSON.MultiLineString], classOf[GeoJSON.Polygon], classOf[GeoJSON.MultiPolygon],
+      classOf[GeoJSON.GeometryCollection], classOf[GeoJSON.Feature], classOf[GeoJSON.FeatureCollection]))
   } +
     new CustomSerializer[(Double, Double)](_ => ({
       case JArray(JDouble(x) :: JDouble(y) :: Nil) => new Tuple2[Double, Double](x, y)
@@ -92,12 +97,6 @@ class SimpleTypeHints(override val hints: List[Class[_]],
 }
 
 object Json4sJacksonMappers {
-  import com.fasterxml.jackson.core._
-  import com.fasterxml.jackson.core.util._
-  import com.fasterxml.jackson.core.json.JsonWriteFeature
-  import com.fasterxml.jackson.databind._
-  import org.json4s.jackson.Json4sScalaModule
-
   private[this] def mapper(indentOutput: Boolean = false, escapeNonAscii: Boolean = false,
                            useBigNumber: Boolean = false): ObjectMapper = {
     val jsonFactory = new JsonFactoryBuilder()
@@ -119,8 +118,8 @@ object Json4sJacksonMappers {
   }
 
   val mapper: ObjectMapper = mapper()
+  val jValueType: JavaType = mapper.constructType(classOf[JValue])
   val bigNumberMapper: ObjectMapper = mapper(useBigNumber = true)
   val prettyPrintMapper: ObjectMapper = mapper(indentOutput = true)
   val escapeNonAsciiMapper: ObjectMapper = mapper(escapeNonAscii = true)
-  val jValueType: JavaType = mapper.constructType(classOf[JValue])
 }
