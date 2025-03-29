@@ -11,11 +11,11 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       toString(b.borer()) shouldBe b.jsonString1
       toString(b.circe()) shouldBe b.jsonString1
       toString(b.circeJsoniter()) shouldBe b.jsonString1
-      //FIXME: Jackson serializes fields with default values
+      // FIXME: Jackson serializes fields with default values
       //toString(b.jacksonScala()) shouldBe b.jsonString1
-      //FIXME: json4s.jackson serializes fields with default values
+      // FIXME: json4s.jackson serializes fields with default values
       //toString(b.json4sJackson()) shouldBe b.jsonString1
-      //FIXME: json4s.native serializes fields with default values
+      // FIXME: json4s.native serializes fields with default values
       //toString(b.json4sNative()) shouldBe b.jsonString1
       toString(b.jsoniterScala()) shouldBe b.jsonString1
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
@@ -25,9 +25,9 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.jsonString2
       toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString1
-      //FIXME: zio-json serializes default values
+      // FIXME: zio-json serializes default values
       //toString(b.zioJson()) shouldBe b.jsonString1
-      //FIXME: zio-schema-json serializes default values
+      // FIXME: zio-schema-json serializes default values
       //toString(b.zioSchemaJson()) shouldBe b.jsonString1
     }
   }

@@ -18,7 +18,7 @@ class MutableLongMapOfBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.playJson()) shouldBe b.jsonString
       toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
-      //FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
+      // FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
       //toString(b.weePickle()) shouldBe b.jsonString
     }
   }

@@ -48,7 +48,7 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
 
     jacksonMapper.readValue[ArraySeq[Boolean]](jsonBytes)
   }
-/* FIXME json4s.jackson throws org.json4s.MappingException: unknown error
+/* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
   @Benchmark
   def json4sJackson(): ArraySeq[Boolean] = {
     import org.json4s._
@@ -58,7 +58,7 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
     mapper.readValue[JValue](jsonBytes, jValueType).extract[ArraySeq[Boolean]]
   }
 */
-/* FIXME json4s.native throws org.json4s.MappingException: unknown error
+/* FIXME: json4s.native throws org.json4s.MappingException: unknown error
   @Benchmark
   def json4sNative(): ArraySeq[Boolean] = {
     import org.json4s._

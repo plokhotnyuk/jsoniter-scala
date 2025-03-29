@@ -11,7 +11,7 @@ class MutableLongMapOfBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.avSystemGenCodec()) shouldBe b.jsonString
       toString(b.circe()) shouldBe b.jsonString
       toString(b.circeJsoniter()) shouldBe b.jsonString
-      //FIXME: DSL-JSON doesn't support mutable.LongMap
+      // FIXME: DSL-JSON doesn't support mutable.LongMap
       //toString(b.dslJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.json4sJackson()) shouldBe b.jsonString
@@ -21,7 +21,7 @@ class MutableLongMapOfBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.playJson()) shouldBe b.jsonString
       toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
-      //FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
+      // FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
       //toString(b.weePickle()) shouldBe b.jsonString
     }
   }

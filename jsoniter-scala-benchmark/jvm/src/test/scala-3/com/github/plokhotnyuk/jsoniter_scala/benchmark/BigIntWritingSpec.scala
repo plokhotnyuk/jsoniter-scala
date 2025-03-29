@@ -16,13 +16,13 @@ class BigIntWritingSpec extends BenchmarkSpecBase {
       toString(b.json4sNative()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 64, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
-      //FIXME: Play-JSON serializes BigInt values as floating point numbers with a scientific representation
+      // FIXME: Play-JSON serializes BigInt values as floating point numbers with a scientific representation
       //toString(b.playJson()) shouldBe b.jsonString
       toString(b.playJsonJsoniter()) shouldBe b.jsonString
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
-      //FIXME: weePickle serializes BigInt values as JSON strings
+      // FIXME: weePickle serializes BigInt values as JSON strings
       //toString(b.weePickle()) shouldBe b.jsonString
       toString(b.zioJson()) shouldBe b.jsonString
     }

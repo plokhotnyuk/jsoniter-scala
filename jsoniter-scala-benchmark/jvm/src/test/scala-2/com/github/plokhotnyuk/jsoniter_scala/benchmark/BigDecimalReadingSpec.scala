@@ -10,21 +10,21 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
   "BigDecimalReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.sourceObj
-      //FIXME: borer parses up to 200 digits only
-      //benchmark.borer() shouldBe benchmark.sourceObj
+      // FIXME: borer parses up to 200 digits only
+      // benchmark.borer() shouldBe benchmark.sourceObj
       benchmark.circe() shouldBe benchmark.sourceObj
-      //FIXME: circe-jsoniter parses up to 308 digits only
-      //benchmark.circeJsoniter() shouldBe benchmark.sourceObj
+      // FIXME: circe-jsoniter parses up to 308 digits only
+      // benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.dslJsonScala() shouldBe benchmark.sourceObj
       benchmark.jacksonScala() shouldBe benchmark.sourceObj
       benchmark.json4sJackson() shouldBe benchmark.obj
-      //FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
-      //benchmark.json4sNative() shouldBe benchmark.obj
+      // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
+      // benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
-      //FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
-      //benchmark.playJson() shouldBe benchmark.sourceObj
-      //FIXME: smithy4sJson parses up to 308 digits only
-      //benchmark.smithy4sJson() shouldBe benchmark.sourceObj
+      // FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
+      // benchmark.playJson() shouldBe benchmark.sourceObj
+      // FIXME: smithy4sJson parses up to 308 digits only
+      // benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.sprayJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
       benchmark.weePickle() shouldBe benchmark.sourceObj
@@ -34,19 +34,19 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       val b = benchmark
       b.jsonBytes = "{}".getBytes(UTF_8)
       intercept[Throwable](b.avSystemGenCodec())
-      //FIXME: borer parses up to 200 digits only
-      //intercept[Throwable](b.borer())
+      // FIXME: borer parses up to 200 digits only
+      // intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      //FIXME: circe-jsoniter parses up to 308 digits only
-      //intercept[Throwable](b.circeJsoniter())
+      // FIXME: circe-jsoniter parses up to 308 digits only
+      // intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
-      //FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
-      //intercept[Throwable](b.json4sNative())
+      // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
+      // intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
-      //FIXME: smithy4sJson parses up to 308 digits only
-      //intercept[Throwable](b.smithy4sJson())
+      // FIXME: smithy4sJson parses up to 308 digits only
+      // intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())

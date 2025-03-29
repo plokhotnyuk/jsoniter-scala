@@ -25,8 +25,8 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
-      //FIXME play-json parses 1.1999999284744263 as 1.2000000476837158
-      //benchmark.playJson() shouldBe benchmark.obj
+      // FIXME: play-json parses 1.1999999284744263 as 1.2000000476837158
+      // benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj

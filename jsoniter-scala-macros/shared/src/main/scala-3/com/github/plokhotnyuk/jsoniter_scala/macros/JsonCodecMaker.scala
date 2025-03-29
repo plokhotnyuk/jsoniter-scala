@@ -3026,7 +3026,7 @@ object JsonCodecMaker {
         } else if (isConstType(tpe)) getWriteConstType(tpe, isStringified, out)
         else cannotFindValueCodecError(tpe)
 
-      val codecDef = '{ //FIXME: generate a type class instance using `ClassDef.apply` and `Symbol.newClass` calls after graduating from experimental API: https://www.scala-lang.org/blog/2022/06/21/scala-3.1.3-released.html
+      val codecDef = '{ // FIXME: generate a type class instance using `ClassDef.apply` and `Symbol.newClass` calls after graduating from experimental API: https://www.scala-lang.org/blog/2022/06/21/scala-3.1.3-released.html
         new JsonValueCodec[A] {
           @inline
           def nullValue: A = ${genNullValue[A](List(rootTpe))}
@@ -3054,7 +3054,7 @@ object JsonCodecMaker {
           decodeMethodDefs ++
           encodeMethodDefs
       val codec = Block(needDefs.toList, codecDef).asExprOf[JsonValueCodec[A]]
-      if (//FIXME: uncomment after graduating from experimental API: CompilationInfo.XmacroSettings.contains("print-codecs") ||
+      if (// FIXME: uncomment after graduating from experimental API: CompilationInfo.XmacroSettings.contains("print-codecs") ||
         Expr.summon[CodecMakerConfig.PrintCodec].isDefined) {
         report.info(s"Generated JSON codec for type '${rootTpe.show}':\n${codec.show}", Position.ofMacroExpansion)
       }

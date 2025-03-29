@@ -12,10 +12,10 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
-      //FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
-      //benchmark.json4sJackson() shouldBe benchmark.obj
-      //FIXME: json4s.native throws org.json4s.MappingException: unknown error
-      //benchmark.json4sNative() shouldBe benchmark.obj
+      // FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+      // benchmark.json4sJackson() shouldBe benchmark.obj
+      // FIXME: json4s.native throws org.json4s.MappingException: unknown error
+      // benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -27,10 +27,10 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
-      //FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
-      //intercept[Throwable](b.json4sJackson())
-      //FIXME: json4s.native throws org.json4s.MappingException: unknown error
-      //intercept[Throwable](b.json4sNative())
+      // FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+      // intercept[Throwable](b.json4sJackson())
+      // FIXME: json4s.native throws org.json4s.MappingException: unknown error
+      // intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

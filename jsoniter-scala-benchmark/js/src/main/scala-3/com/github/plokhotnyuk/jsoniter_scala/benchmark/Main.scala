@@ -20,8 +20,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      //FIXME play-json parses 42667970104045.735577865 as 42667970104045.734
-      //B("playJson")(benchmark.playJson()),
+      // FIXME: play-json parses 42667970104045.735577865 as 42667970104045.734
+      // B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
@@ -265,8 +265,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      //FIXME play-json parses 1.1999999284744263 as 1.2000000476837158
-      //B("playJson")(benchmark.playJson()),
+      // FIXME: play-json parses 1.1999999284744263 as 1.2000000476837158
+      // B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
@@ -458,7 +458,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       // FIXME: play-json parses 697125858266480539 as 697125858266480500
-      //B("playJson")(benchmark.playJson()),
+      // B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
@@ -853,11 +853,11 @@ object Main {
   }, {
     val benchmark = new BigDecimalReading { size = 512; setup() }
     GS(S("BigDecimalReading")(
-      //FIXME: borer parses up to 200 digits only
-      //B("borer")(benchmark.borer()),
+      // FIXME: borer parses up to 200 digits only
+      // B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
-      //FIXME: circe-jsoniter parses up to 308 digits only
-      //B("circeJsoniter")(benchmark.circeJsoniter()),
+      // FIXME: circe-jsoniter parses up to 308 digits only
+      // B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
@@ -879,14 +879,14 @@ object Main {
   }, {
     val benchmark = new BigIntReading { size = 512; setup() }
     GS(S("BigIntReading")(
-      //FIXME: borer parses up to 200 digits only
-      //B("borer")(benchmark.borer()),
+      // FIXME: borer parses up to 200 digits only
+      // B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
-      //FIXME: circe-jsoniter parses up to 308 digits only
-      //B("circeJsoniter")(benchmark.circeJsoniter()),
+      // FIXME: circe-jsoniter parses up to 308 digits only
+      // B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       // FIXME: smithy4sJson parses up to 308 digits only
-      //B("smithy4sJson")(benchmark.smithy4sJson()),
+      // B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
@@ -948,8 +948,8 @@ object Main {
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
-      //FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
-      //B("zioSchemaJson")(benchmark.zioSchemaJson())
+      // FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
+      // B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new GeoJSONWriting { setup() }
@@ -1003,8 +1003,8 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      //FIXME: play-json pretty prints array values in one line
-      //B("playJson")(benchmark.playJson()),
+      // FIXME: play-json pretty prints array values in one line
+      // B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
@@ -1256,10 +1256,10 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle())
-      //FIXME: zio-json serializes default values
-      //B("zioJson")(benchmark.zioJson()),
-      //FIXME: zio-schema-json serializes default values
-      //B("zioSchemaJson")(benchmark.zioSchemaJson())
+      // FIXME: zio-json serializes default values
+      // B("zioJson")(benchmark.zioJson()),
+      // FIXME: zio-schema-json serializes default values
+      // B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
     val benchmark = new SetOfIntsReading { size = 512; setup() }
@@ -1381,8 +1381,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      //FIXME: play-json parses 850007368138018817 as 850007368138018800
-      //B("playJson")(benchmark.playJson()),
+      // FIXME: play-json parses 850007368138018817 as 850007368138018800
+      // B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),

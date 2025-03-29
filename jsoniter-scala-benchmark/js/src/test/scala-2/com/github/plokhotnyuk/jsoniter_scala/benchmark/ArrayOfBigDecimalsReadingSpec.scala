@@ -14,8 +14,8 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.sourceObj
       benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
-      //FIXME play-json parses 42667970104045.735577865 as 42667970104045.734
-      //benchmark.playJson() shouldBe benchmark.sourceObj
+      // FIXME: play-json parses 42667970104045.735577865 as 42667970104045.734
+      // benchmark.playJson() shouldBe benchmark.sourceObj
       benchmark.playJsonJsoniter() shouldBe benchmark.sourceObj
       benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj

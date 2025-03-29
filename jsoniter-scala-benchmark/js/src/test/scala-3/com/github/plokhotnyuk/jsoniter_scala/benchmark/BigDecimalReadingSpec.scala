@@ -9,15 +9,15 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
 
   "BigDecimalReading" should {
     "read properly" in {
-      //FIXME: borer parses up to 200 digits only
-      //benchmark.borer() shouldBe benchmark.sourceObj
+      // FIXME: borer parses up to 200 digits only
+      // benchmark.borer() shouldBe benchmark.sourceObj
       benchmark.circe() shouldBe benchmark.sourceObj
-      //FIXME: circe-jsoniter parses up to 308 digits only
-      //benchmark.circeJsoniter() shouldBe benchmark.sourceObj
+      // FIXME: circe-jsoniter parses up to 308 digits only
+      // benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
-      //FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
-      //benchmark.playJson() shouldBe benchmark.sourceObj
-      //FIXME: smithy4sJson parses up to 308 digits only
+      // FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
+      // benchmark.playJson() shouldBe benchmark.sourceObj
+      // FIXME: smithy4sJson parses up to 308 digits only
       // benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
       benchmark.zioJson() shouldBe benchmark.sourceObj
@@ -25,14 +25,14 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
     "fail on invalid input" in {
       val b = benchmark
       b.jsonBytes = "{}".getBytes(UTF_8)
-      //FIXME: borer parses up to 200 digits only
-      //intercept[Throwable](b.borer())
+      // FIXME: borer parses up to 200 digits only
+      // intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      //FIXME: circe-jsoniter parses up to 308 digits only
-      //intercept[Throwable](b.circeJsoniter())
+      // FIXME: circe-jsoniter parses up to 308 digits only
+      // intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
-      //FIXME: smithy4sJson parses up to 308 digits only
-      //intercept[Throwable](b.smithy4sJson())
+      // FIXME: smithy4sJson parses up to 308 digits only
+      // intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())
     }
