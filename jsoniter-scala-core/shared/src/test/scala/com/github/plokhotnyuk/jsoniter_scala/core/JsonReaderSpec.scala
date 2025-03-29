@@ -1957,7 +1957,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""""", "unexpected end of input, offset: 0x00000001")
       checkError("""""""", "illegal timezone, offset: 0x00000001")
       checkError(""""+"""", "illegal timezone, offset: 0x00000002")
-      //checkError(""""+1"""", "expected digit, offset: 0x00000003") FIXME: looks like a bug in ZoneId.of() parser
+      checkError(""""+1X"""", "illegal timezone, offset: 0x00000004")
       checkError(""""XXX"""", "illegal timezone, offset: 0x00000004")
       checkError(""""+10="""", "illegal timezone, offset: 0x00000005")
       checkError(""""+10:"""", "illegal timezone, offset: 0x00000005")
