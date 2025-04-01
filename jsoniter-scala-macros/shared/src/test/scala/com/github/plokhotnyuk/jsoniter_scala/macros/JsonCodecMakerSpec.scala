@@ -797,6 +797,47 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """["-Infinity","Infinity",0.0,1.0E10]""")
       verifyDeserError(codecOfDoubleArray, """["Inf","-Inf"]""", "illegal double, offset: 0x00000005")
     }
+    "serialize and deserialize collection from JSON array or a single value using custom value codec" in {
+      def customCodecOfList[A](aCodec: JsonValueCodec[A]): JsonValueCodec[List[A]] =
+        new JsonValueCodec[List[A]] {
+          def nullValue: List[A] = _root_.scala.Nil
+
+          def decodeValue(in: JsonReader, default: List[A]): List[A] =
+            if (in.isNextToken('[')) {
+              if (in.isNextToken(']')) default
+              else {
+                in.rollbackToken()
+                val x = List.newBuilder[A]
+                while ({
+                  x += aCodec.decodeValue(in, aCodec.nullValue)
+                  in.isNextToken(',')
+                }) ()
+                if (in.isCurrentToken(']')) x.result()
+                else in.arrayEndOrCommaError()
+              }
+            } else {
+              in.rollbackToken()
+              List(aCodec.decodeValue(in, aCodec.nullValue))
+            }
+
+          def encodeValue(x: List[A], out: JsonWriter): _root_.scala.Unit =
+            if (x.size == 1) aCodec.encodeValue(x.head, out) // FIXME: Use `x.sizeCompare(1) == 0` for Scala 2.13+
+            else {
+              out.writeArrayStart()
+              var y = x
+              while (y ne _root_.scala.Nil) {
+                aCodec.encodeValue(y.head, out)
+                y = y.tail
+              }
+              out.writeArrayEnd()
+            }
+        }
+
+      val codecOfDoubleList = customCodecOfList(make[Double])
+      verifySerDeser(codecOfDoubleList, List(0.0, 1.0e10), """[0.0,1.0E10]""")
+      verifySerDeser(codecOfDoubleList, List(3.0), """3.0""")
+      verifySerDeser(codecOfDoubleList, List(), """[]""")
+    }
     "serialize zoned date time values into a custom format" in {
       implicit val customCodecOfZonedDateTime: JsonValueCodec[ZonedDateTime] = new JsonValueCodec[ZonedDateTime] {
         private[this] val standardCodec: JsonValueCodec[ZonedDateTime] = JsonCodecMaker.make[ZonedDateTime]
