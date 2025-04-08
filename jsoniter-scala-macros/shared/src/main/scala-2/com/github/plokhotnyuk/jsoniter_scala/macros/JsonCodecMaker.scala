@@ -508,6 +508,16 @@ object JsonCodecMaker {
   def makeWithRequiredDefaultFields[A]: JsonValueCodec[A] = macro Impl.makeWithRequiredDefaultFields[A]
 
   /**
+   * A replacement for the `make` call with the
+   * `CodecMakerConfig.withSkipNestedOptionValues(true)`
+   * configuration parameter.
+   *
+   * @tparam A a type that should be encoded and decoded by the derived codec
+   * @return an instance of the derived codec
+   */
+  def makeWithSkipNestedOptionValues[A]: JsonValueCodec[A] = macro Impl.makeWithSkipNestedOptionValues[A]
+
+  /**
     * A replacement for the `make` call with the
     * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None)`
     * configuration parameter.
@@ -552,6 +562,9 @@ object JsonCodecMaker {
 
     def makeWithRequiredDefaultFields[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true))
+
+    def makeWithSkipNestedOptionValues[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
+      make(c)(CodecMakerConfig.withSkipNestedOptionValues(true))
 
     def makeCirceLike[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)

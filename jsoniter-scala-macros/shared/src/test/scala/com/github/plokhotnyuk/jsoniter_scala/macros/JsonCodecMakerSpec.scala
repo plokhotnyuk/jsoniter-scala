@@ -271,7 +271,7 @@ object Demo { // See https://github.com/plokhotnyuk/jsoniter-scala/issues/1004
   final case class Timeout() extends Status[Nothing, Nothing]
 
   implicit def statusCodec[A, E](implicit ec: JsonValueCodec[E], ac: JsonValueCodec[A]): JsonValueCodec[Status[E, A]] =
-    JsonCodecMaker.make
+    make
 }
 
 sealed abstract class Version(val value: String)
@@ -840,7 +840,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize zoned date time values into a custom format" in {
       implicit val customCodecOfZonedDateTime: JsonValueCodec[ZonedDateTime] = new JsonValueCodec[ZonedDateTime] {
-        private[this] val standardCodec: JsonValueCodec[ZonedDateTime] = JsonCodecMaker.make[ZonedDateTime]
+        private[this] val standardCodec: JsonValueCodec[ZonedDateTime] = make[ZonedDateTime]
 
         def nullValue: ZonedDateTime = null
 
@@ -878,7 +878,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "parse offset date time values with escaped characters using a custom codec" in {
       implicit val customCodecOfOffsetDateTime: JsonValueCodec[OffsetDateTime] = new JsonValueCodec[OffsetDateTime] {
-        private[this] val defaultCodec: JsonValueCodec[OffsetDateTime] = JsonCodecMaker.make[OffsetDateTime]
+        private[this] val defaultCodec: JsonValueCodec[OffsetDateTime] = make[OffsetDateTime]
         private[this] val maxLen = 44 // should be enough for the longest offset date time value
         private[this] val pool = new ThreadLocal[_root_.scala.Array[_root_.scala.Byte]] {
           override def initialValue(): _root_.scala.Array[_root_.scala.Byte] =
@@ -1141,7 +1141,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         private case class TopLevel(y: Nested)
 
         private case object TopLevel {
-          implicit val codec: JsonValueCodec[TopLevel] = JsonCodecMaker.make
+          implicit val codec: JsonValueCodec[TopLevel] = make
         }
       }
 
@@ -1188,6 +1188,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       case class Model(field1: String, field2: Option[Option[String]])
 
       verifySerDeser(make[List[Model]](CodecMakerConfig.withSkipNestedOptionValues(true)),
+        List(Model("VVV", _root_.scala.Some(_root_.scala.Some("WWW"))), Model("VVV", _root_.scala.None), Model("VVV", _root_.scala.Some(_root_.scala.None))),
+        """[{"field1":"VVV","field2":"WWW"},{"field1":"VVV"},{"field1":"VVV","field2":null}]""")
+
+      verifySerDeser(makeWithSkipNestedOptionValues[List[Model]],
         List(Model("VVV", _root_.scala.Some(_root_.scala.Some("WWW"))), Model("VVV", _root_.scala.None), Model("VVV", _root_.scala.Some(_root_.scala.None))),
         """[{"field1":"VVV","field2":"WWW"},{"field1":"VVV"},{"field1":"VVV","field2":null}]""")
     }
@@ -1260,8 +1264,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       case class Doc(id: String, tags: List[String], langs: Map[String, Lang])
 
       def customDocCodec(supportedLangs: Set[String]): JsonValueCodec[Doc] = new JsonValueCodec[Doc] {
-        private[this] val langCodec: JsonValueCodec[Lang] = JsonCodecMaker.make
-        private[this] val listOfStringCodec: JsonValueCodec[List[String]] = JsonCodecMaker.make
+        private[this] val langCodec: JsonValueCodec[Lang] = make
+        private[this] val listOfStringCodec: JsonValueCodec[List[String]] = make
 
         override def decodeValue(in: JsonReader, default: Doc): Doc =  if (in.isNextToken('{')) {
           var _id: String = null
@@ -1347,9 +1351,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           JsonCodecMaker.make
       }
 
-      implicit val aCodec: JsonValueCodec[_root_.scala.Boolean] = JsonCodecMaker.make
-      implicit val bCodec: JsonValueCodec[String] = JsonCodecMaker.make
-      implicit val cCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+      implicit val aCodec: JsonValueCodec[_root_.scala.Boolean] = make
+      implicit val bCodec: JsonValueCodec[String] = make
+      implicit val cCodec: JsonValueCodec[Int] = make
       verifySerDeser(implicitly[JsonValueCodec[GenDoc[_root_.scala.Boolean, String, Int]]],
         GenDoc(true, _root_.scala.Some("VVV"), List(1, 2, 3)), """{"a":true,"opt":"VVV","list":[1,2,3]}""")
     }
@@ -2655,7 +2659,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
         implicit val codec: JsonValueCodec[Event] = adtCodecWithUnknownKindHandler(
           Set("CreateEvent", "DeleteEvent"),
-          JsonCodecMaker.make[Event](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("kind"))),
+          make[Event](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("kind"))),
           UnknownEvent.apply)
       }
 
@@ -2666,7 +2670,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize case class that have a field named as discriminator" in {
       case class Foo(hint: String)
 
-      verifySerDeser(JsonCodecMaker.make[Foo](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("hint"))),
+      verifySerDeser(make[Foo](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("hint"))),
         Foo("a"), """{"hint":"a"}""")
     }
     "deserialize in case of duplicated discriminator field when checking for field duplication is disabled" in {
@@ -3166,168 +3170,168 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   }
   "JsonCodecMaker.enforceCamelCase" should {
     "transform snake_case names to camelCase" in {
-      JsonCodecMaker.enforceCamelCase("o_o") shouldBe "oO"
-      JsonCodecMaker.enforceCamelCase("o_ooo_") shouldBe "oOoo"
-      JsonCodecMaker.enforceCamelCase("OO_OOO_111") shouldBe "ooOoo111"
-      JsonCodecMaker.enforceCamelCase("ooo_111") shouldBe "ooo111"
+      enforceCamelCase("o_o") shouldBe "oO"
+      enforceCamelCase("o_ooo_") shouldBe "oOoo"
+      enforceCamelCase("OO_OOO_111") shouldBe "ooOoo111"
+      enforceCamelCase("ooo_111") shouldBe "ooo111"
     }
     "transform kebab-case names to camelCase" in {
-      JsonCodecMaker.enforceCamelCase("o-o") shouldBe "oO"
-      JsonCodecMaker.enforceCamelCase("o-ooo-") shouldBe "oOoo"
-      JsonCodecMaker.enforceCamelCase("O-OOO-111") shouldBe "oOoo111"
+      enforceCamelCase("o-o") shouldBe "oO"
+      enforceCamelCase("o-ooo-") shouldBe "oOoo"
+      enforceCamelCase("O-OOO-111") shouldBe "oOoo111"
     }
     "transform PascalCase names to camelCase" in {
-      JsonCodecMaker.enforceCamelCase("OoOo111") shouldBe "ooOo111"
-      JsonCodecMaker.enforceCamelCase("OOoo111") shouldBe "oOoo111"
+      enforceCamelCase("OoOo111") shouldBe "ooOo111"
+      enforceCamelCase("OOoo111") shouldBe "oOoo111"
     }
     "leave camelCase names as is" in {
-      JsonCodecMaker.enforceCamelCase("") shouldBe ""
-      JsonCodecMaker.enforceCamelCase("o") shouldBe "o"
-      JsonCodecMaker.enforceCamelCase("oO") shouldBe "oO"
-      JsonCodecMaker.enforceCamelCase("oOoo") shouldBe "oOoo"
+      enforceCamelCase("") shouldBe ""
+      enforceCamelCase("o") shouldBe "o"
+      enforceCamelCase("oO") shouldBe "oO"
+      enforceCamelCase("oOoo") shouldBe "oOoo"
     }
   }
   "JsonCodecMaker.EnforcePascalCase" should {
     "transform snake_case names to PascalCase" in {
-      JsonCodecMaker.EnforcePascalCase("o_o") shouldBe "OO"
-      JsonCodecMaker.EnforcePascalCase("o_ooo_") shouldBe "OOoo"
-      JsonCodecMaker.EnforcePascalCase("OO_OOO_111") shouldBe "OoOoo111"
-      JsonCodecMaker.EnforcePascalCase("ooo_111") shouldBe "Ooo111"
+      EnforcePascalCase("o_o") shouldBe "OO"
+      EnforcePascalCase("o_ooo_") shouldBe "OOoo"
+      EnforcePascalCase("OO_OOO_111") shouldBe "OoOoo111"
+      EnforcePascalCase("ooo_111") shouldBe "Ooo111"
     }
     "transform kebab-case names to PascalCase" in {
-      JsonCodecMaker.EnforcePascalCase("o-o") shouldBe "OO"
-      JsonCodecMaker.EnforcePascalCase("o-ooo-") shouldBe "OOoo"
-      JsonCodecMaker.EnforcePascalCase("O-OOO-111") shouldBe "OOoo111"
+      EnforcePascalCase("o-o") shouldBe "OO"
+      EnforcePascalCase("o-ooo-") shouldBe "OOoo"
+      EnforcePascalCase("O-OOO-111") shouldBe "OOoo111"
     }
     "transform camelCase names to PascalCase" in {
-      JsonCodecMaker.EnforcePascalCase("ooOo111") shouldBe "OoOo111"
-      JsonCodecMaker.EnforcePascalCase("oOoo111") shouldBe "OOoo111"
+      EnforcePascalCase("ooOo111") shouldBe "OoOo111"
+      EnforcePascalCase("oOoo111") shouldBe "OOoo111"
     }
     "leave PascalCase names as is" in {
-      JsonCodecMaker.EnforcePascalCase("") shouldBe ""
-      JsonCodecMaker.EnforcePascalCase("O") shouldBe "O"
-      JsonCodecMaker.EnforcePascalCase("Oo") shouldBe "Oo"
-      JsonCodecMaker.EnforcePascalCase("OOoo") shouldBe "OOoo"
+      EnforcePascalCase("") shouldBe ""
+      EnforcePascalCase("O") shouldBe "O"
+      EnforcePascalCase("Oo") shouldBe "Oo"
+      EnforcePascalCase("OOoo") shouldBe "OOoo"
     }
   }
   "JsonCodecMaker.enforce_snake_case" should {
     "transform camelCase names to snake_case with separated non-alphabetic" in {
-      JsonCodecMaker.enforce_snake_case("oO") shouldBe "o_o"
-      JsonCodecMaker.enforce_snake_case("oOoo") shouldBe "o_ooo"
-      JsonCodecMaker.enforce_snake_case("oOoo111") shouldBe "o_ooo_111"
-      JsonCodecMaker.enforce_snake_case("oOoo$") shouldBe "o_ooo_$"
+      enforce_snake_case("oO") shouldBe "o_o"
+      enforce_snake_case("oOoo") shouldBe "o_ooo"
+      enforce_snake_case("oOoo111") shouldBe "o_ooo_111"
+      enforce_snake_case("oOoo$") shouldBe "o_ooo_$"
     }
     "transform PascalCase names to snake_case with separated non-alphabetic" in {
-      JsonCodecMaker.enforce_snake_case("Oo") shouldBe "oo"
-      JsonCodecMaker.enforce_snake_case("Ooo111") shouldBe "ooo_111"
-      JsonCodecMaker.enforce_snake_case("OOOoo111") shouldBe "oo_ooo_111"
-      JsonCodecMaker.enforce_snake_case("OOOoo$") shouldBe "oo_ooo_$"
+      enforce_snake_case("Oo") shouldBe "oo"
+      enforce_snake_case("Ooo111") shouldBe "ooo_111"
+      enforce_snake_case("OOOoo111") shouldBe "oo_ooo_111"
+      enforce_snake_case("OOOoo$") shouldBe "oo_ooo_$"
     }
     "transform kebab-case names to snake_case with separated non-alphabetic" in {
-      JsonCodecMaker.enforce_snake_case("o-o") shouldBe "o_o"
-      JsonCodecMaker.enforce_snake_case("o-ooo-") shouldBe "o_ooo_"
-      JsonCodecMaker.enforce_snake_case("o-ooo111") shouldBe "o_ooo_111"
-      JsonCodecMaker.enforce_snake_case("o-ooo-111") shouldBe "o_ooo_111"
-      JsonCodecMaker.enforce_snake_case("o-ooo-$") shouldBe "o_ooo_$"
+      enforce_snake_case("o-o") shouldBe "o_o"
+      enforce_snake_case("o-ooo-") shouldBe "o_ooo_"
+      enforce_snake_case("o-ooo111") shouldBe "o_ooo_111"
+      enforce_snake_case("o-ooo-111") shouldBe "o_ooo_111"
+      enforce_snake_case("o-ooo-$") shouldBe "o_ooo_$"
     }
     "transform snake_case names to snake_case with separated non-alphabetic" in {
-      JsonCodecMaker.enforce_snake_case("o_o") shouldBe "o_o"
-      JsonCodecMaker.enforce_snake_case("o_ooo_") shouldBe "o_ooo_"
-      JsonCodecMaker.enforce_snake_case("o_ooo111") shouldBe "o_ooo_111"
-      JsonCodecMaker.enforce_snake_case("o_ooo_111") shouldBe "o_ooo_111"
-      JsonCodecMaker.enforce_snake_case("o_ooo$") shouldBe "o_ooo_$"
+      enforce_snake_case("o_o") shouldBe "o_o"
+      enforce_snake_case("o_ooo_") shouldBe "o_ooo_"
+      enforce_snake_case("o_ooo111") shouldBe "o_ooo_111"
+      enforce_snake_case("o_ooo_111") shouldBe "o_ooo_111"
+      enforce_snake_case("o_ooo$") shouldBe "o_ooo_$"
     }
   }
   "JsonCodecMaker.enforce_snake_case2" should {
     "transform camelCase names to snake_case2 with joined non-alphabetic" in {
-      JsonCodecMaker.enforce_snake_case2("oO") shouldBe "o_o"
-      JsonCodecMaker.enforce_snake_case2("oOoo") shouldBe "o_ooo"
-      JsonCodecMaker.enforce_snake_case2("oOoo111") shouldBe "o_ooo111"
-      JsonCodecMaker.enforce_snake_case2("oOoo$") shouldBe "o_ooo$"
+      enforce_snake_case2("oO") shouldBe "o_o"
+      enforce_snake_case2("oOoo") shouldBe "o_ooo"
+      enforce_snake_case2("oOoo111") shouldBe "o_ooo111"
+      enforce_snake_case2("oOoo$") shouldBe "o_ooo$"
     }
     "transform PascalCase names to snake_case2 with joined non-alphabetic" in {
-      JsonCodecMaker.enforce_snake_case2("Oo") shouldBe "oo"
-      JsonCodecMaker.enforce_snake_case2("Ooo111") shouldBe "ooo111"
-      JsonCodecMaker.enforce_snake_case2("OOOoo111") shouldBe "oo_ooo111"
-      JsonCodecMaker.enforce_snake_case2("OOOoo$") shouldBe "oo_ooo$"
+      enforce_snake_case2("Oo") shouldBe "oo"
+      enforce_snake_case2("Ooo111") shouldBe "ooo111"
+      enforce_snake_case2("OOOoo111") shouldBe "oo_ooo111"
+      enforce_snake_case2("OOOoo$") shouldBe "oo_ooo$"
     }
     "transform kebab-case names to snake_case2 with joined non-alphabetic" in {
-      JsonCodecMaker.enforce_snake_case2("o-o") shouldBe "o_o"
-      JsonCodecMaker.enforce_snake_case2("o-ooo-") shouldBe "o_ooo_"
-      JsonCodecMaker.enforce_snake_case2("o-ooo111") shouldBe "o_ooo111"
-      JsonCodecMaker.enforce_snake_case2("o-ooo-111") shouldBe "o_ooo111"
-      JsonCodecMaker.enforce_snake_case2("o-ooo-$") shouldBe "o_ooo$"
+      enforce_snake_case2("o-o") shouldBe "o_o"
+      enforce_snake_case2("o-ooo-") shouldBe "o_ooo_"
+      enforce_snake_case2("o-ooo111") shouldBe "o_ooo111"
+      enforce_snake_case2("o-ooo-111") shouldBe "o_ooo111"
+      enforce_snake_case2("o-ooo-$") shouldBe "o_ooo$"
     }
     "transform snake_case names to snake_case2 with joined non-alphabetic" in {
-      JsonCodecMaker.enforce_snake_case2("o_o") shouldBe "o_o"
-      JsonCodecMaker.enforce_snake_case2("o_ooo_") shouldBe "o_ooo_"
-      JsonCodecMaker.enforce_snake_case2("o_ooo111") shouldBe "o_ooo111"
-      JsonCodecMaker.enforce_snake_case2("o_ooo_111") shouldBe "o_ooo111"
-      JsonCodecMaker.enforce_snake_case2("o_ooo_$") shouldBe "o_ooo$"
+      enforce_snake_case2("o_o") shouldBe "o_o"
+      enforce_snake_case2("o_ooo_") shouldBe "o_ooo_"
+      enforce_snake_case2("o_ooo111") shouldBe "o_ooo111"
+      enforce_snake_case2("o_ooo_111") shouldBe "o_ooo111"
+      enforce_snake_case2("o_ooo_$") shouldBe "o_ooo$"
     }
   }
   "JsonCodecMaker.enforce-kebab-case" should {
     "transform camelCase names to kebab-case with separated non-alphabetic" in {
-      JsonCodecMaker.`enforce-kebab-case`("oO") shouldBe "o-o"
-      JsonCodecMaker.`enforce-kebab-case`("oOoo") shouldBe "o-ooo"
-      JsonCodecMaker.`enforce-kebab-case`("oOoo111") shouldBe "o-ooo-111"
-      JsonCodecMaker.`enforce-kebab-case`("oOoo$") shouldBe "o-ooo-$"
+      `enforce-kebab-case`("oO") shouldBe "o-o"
+      `enforce-kebab-case`("oOoo") shouldBe "o-ooo"
+      `enforce-kebab-case`("oOoo111") shouldBe "o-ooo-111"
+      `enforce-kebab-case`("oOoo$") shouldBe "o-ooo-$"
     }
     "transform PascalCase names to kebab-case with separated non-alphabetic" in {
-      JsonCodecMaker.`enforce-kebab-case`("Oo") shouldBe "oo"
-      JsonCodecMaker.`enforce-kebab-case`("Ooo111") shouldBe "ooo-111"
-      JsonCodecMaker.`enforce-kebab-case`("OOOoo111") shouldBe "oo-ooo-111"
-      JsonCodecMaker.`enforce-kebab-case`("OOOoo$") shouldBe "oo-ooo-$"
+      `enforce-kebab-case`("Oo") shouldBe "oo"
+      `enforce-kebab-case`("Ooo111") shouldBe "ooo-111"
+      `enforce-kebab-case`("OOOoo111") shouldBe "oo-ooo-111"
+      `enforce-kebab-case`("OOOoo$") shouldBe "oo-ooo-$"
     }
     "transform snake_case names to kebab-case with separated non-alphabetic" in {
-      JsonCodecMaker.`enforce-kebab-case`("o_o") shouldBe "o-o"
-      JsonCodecMaker.`enforce-kebab-case`("o_ooo_") shouldBe "o-ooo-"
-      JsonCodecMaker.`enforce-kebab-case`("o_ooo111") shouldBe "o-ooo-111"
-      JsonCodecMaker.`enforce-kebab-case`("o_ooo_111") shouldBe "o-ooo-111"
-      JsonCodecMaker.`enforce-kebab-case`("o_ooo_$") shouldBe "o-ooo-$"
+      `enforce-kebab-case`("o_o") shouldBe "o-o"
+      `enforce-kebab-case`("o_ooo_") shouldBe "o-ooo-"
+      `enforce-kebab-case`("o_ooo111") shouldBe "o-ooo-111"
+      `enforce-kebab-case`("o_ooo_111") shouldBe "o-ooo-111"
+      `enforce-kebab-case`("o_ooo_$") shouldBe "o-ooo-$"
     }
     "transform kebab-case names to kebab-case with separated non-alphabetic" in {
-      JsonCodecMaker.`enforce-kebab-case`("o-o") shouldBe "o-o"
-      JsonCodecMaker.`enforce-kebab-case`("o-ooo-") shouldBe "o-ooo-"
-      JsonCodecMaker.`enforce-kebab-case`("o-ooo111") shouldBe "o-ooo-111"
-      JsonCodecMaker.`enforce-kebab-case`("o-ooo-111") shouldBe "o-ooo-111"
-      JsonCodecMaker.`enforce-kebab-case`("o-ooo$") shouldBe "o-ooo-$"
+      `enforce-kebab-case`("o-o") shouldBe "o-o"
+      `enforce-kebab-case`("o-ooo-") shouldBe "o-ooo-"
+      `enforce-kebab-case`("o-ooo111") shouldBe "o-ooo-111"
+      `enforce-kebab-case`("o-ooo-111") shouldBe "o-ooo-111"
+      `enforce-kebab-case`("o-ooo$") shouldBe "o-ooo-$"
     }
   }
   "JsonCodecMaker.enforce-kebab-case2" should {
     "transform camelCase names to kebab-case2 with joined non-alphabetic" in {
-      JsonCodecMaker.`enforce-kebab-case2`("oO") shouldBe "o-o"
-      JsonCodecMaker.`enforce-kebab-case2`("oOoo") shouldBe "o-ooo"
-      JsonCodecMaker.`enforce-kebab-case2`("oOoo111") shouldBe "o-ooo111"
-      JsonCodecMaker.`enforce-kebab-case2`("oOoo$") shouldBe "o-ooo$"
+      `enforce-kebab-case2`("oO") shouldBe "o-o"
+      `enforce-kebab-case2`("oOoo") shouldBe "o-ooo"
+      `enforce-kebab-case2`("oOoo111") shouldBe "o-ooo111"
+      `enforce-kebab-case2`("oOoo$") shouldBe "o-ooo$"
     }
     "transform PascalCase names to kebab-case2 with joined non-alphabetic" in {
-      JsonCodecMaker.`enforce-kebab-case2`("Oo") shouldBe "oo"
-      JsonCodecMaker.`enforce-kebab-case2`("Ooo111") shouldBe "ooo111"
-      JsonCodecMaker.`enforce-kebab-case2`("OOOoo111") shouldBe "oo-ooo111"
-      JsonCodecMaker.`enforce-kebab-case2`("OOOoo$") shouldBe "oo-ooo$"
+      `enforce-kebab-case2`("Oo") shouldBe "oo"
+      `enforce-kebab-case2`("Ooo111") shouldBe "ooo111"
+      `enforce-kebab-case2`("OOOoo111") shouldBe "oo-ooo111"
+      `enforce-kebab-case2`("OOOoo$") shouldBe "oo-ooo$"
     }
     "transform snake_case names to kebab-case2 with joined non-alphabetic" in {
-      JsonCodecMaker.`enforce-kebab-case2`("o_o") shouldBe "o-o"
-      JsonCodecMaker.`enforce-kebab-case2`("o_ooo_") shouldBe "o-ooo-"
-      JsonCodecMaker.`enforce-kebab-case2`("o_ooo111") shouldBe "o-ooo111"
-      JsonCodecMaker.`enforce-kebab-case2`("o_ooo_111") shouldBe "o-ooo111"
-      JsonCodecMaker.`enforce-kebab-case2`("o_ooo_$") shouldBe "o-ooo$"
+      `enforce-kebab-case2`("o_o") shouldBe "o-o"
+      `enforce-kebab-case2`("o_ooo_") shouldBe "o-ooo-"
+      `enforce-kebab-case2`("o_ooo111") shouldBe "o-ooo111"
+      `enforce-kebab-case2`("o_ooo_111") shouldBe "o-ooo111"
+      `enforce-kebab-case2`("o_ooo_$") shouldBe "o-ooo$"
     }
     "transform kebab-case names to kebab-case2 with joined non-alphabetic" in {
-      JsonCodecMaker.`enforce-kebab-case2`("o-o") shouldBe "o-o"
-      JsonCodecMaker.`enforce-kebab-case2`("o-ooo-") shouldBe "o-ooo-"
-      JsonCodecMaker.`enforce-kebab-case2`("o-ooo111") shouldBe "o-ooo111"
-      JsonCodecMaker.`enforce-kebab-case2`("o-ooo-111") shouldBe "o-ooo111"
-      JsonCodecMaker.`enforce-kebab-case2`("o-ooo-$") shouldBe "o-ooo$"
+      `enforce-kebab-case2`("o-o") shouldBe "o-o"
+      `enforce-kebab-case2`("o-ooo-") shouldBe "o-ooo-"
+      `enforce-kebab-case2`("o-ooo111") shouldBe "o-ooo111"
+      `enforce-kebab-case2`("o-ooo-111") shouldBe "o-ooo111"
+      `enforce-kebab-case2`("o-ooo-$") shouldBe "o-ooo$"
     }
   }
   "JsonCodecMaker.simpleClassName" should {
     "shorten full class name to simple class name" in {
-      JsonCodecMaker.simpleClassName("com.github.plohkotnyuk.jsoniter_scala.Test") shouldBe "Test"
-      JsonCodecMaker.simpleClassName("JsonCodecMakerSpec.this.Test") shouldBe "Test"
-      JsonCodecMaker.simpleClassName(".Test") shouldBe "Test"
-      JsonCodecMaker.simpleClassName("Test") shouldBe "Test"
+      simpleClassName("com.github.plohkotnyuk.jsoniter_scala.Test") shouldBe "Test"
+      simpleClassName("JsonCodecMakerSpec.this.Test") shouldBe "Test"
+      simpleClassName(".Test") shouldBe "Test"
+      simpleClassName("Test") shouldBe "Test"
     }
   }
 }

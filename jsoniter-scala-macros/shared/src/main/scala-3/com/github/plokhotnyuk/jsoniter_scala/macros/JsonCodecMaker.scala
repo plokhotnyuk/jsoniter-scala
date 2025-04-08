@@ -558,6 +558,16 @@ object JsonCodecMaker {
   inline def makeWithRequiredDefaultFields[A]: JsonValueCodec[A] = ${Impl.makeWithRequiredDefaultFields}
 
   /**
+   * A replacement for the `make` call with the
+   * `CodecMakerConfig.withSkipNestedOptionValues(true)`
+   * configuration parameter.
+   *
+   * @tparam A a type that should be encoded and decoded by the derived codec
+   * @return an instance of the derived codec
+   */
+  inline def makeWithSkipNestedOptionValues[A]: JsonValueCodec[A] = ${Impl.makeWithSkipNestedOptionValues}
+
+  /**
     * A replacement for the `make` call with the
     * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None)`
     * configuration parameter.
@@ -597,6 +607,9 @@ object JsonCodecMaker {
 
     def makeWithRequiredDefaultFields[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       make(CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true))
+
+    def makeWithSkipNestedOptionValues[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
+      make(CodecMakerConfig.withSkipNestedOptionValues(true))
 
     def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       make(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)
