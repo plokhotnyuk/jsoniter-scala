@@ -234,10 +234,10 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.6.4", "2.13.16"),
+    crossScalaVersions := Seq("3.7.0-RC2", "2.13.16"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq("-Wopt", "-opt:l:inline", "-opt-inline-from:**:!java.**")
-      case _ => Seq("-source:3.3", "-Xmax-inlines:100", "-language:experimental.betterFors")
+      case _ => Seq("-source:3.3", "-Xmax-inlines:100")
     }),
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.32",
@@ -281,6 +281,7 @@ lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
     assembly / fullClasspath := (Jmh / fullClasspath).value,
     ThisBuild / assemblyMergeStrategy := {
       case x if x.endsWith("module-info.class") => MergeStrategy.discard
+      case x if x.contains("unroll") => MergeStrategy.last
       case PathList("deriving.conf") => MergeStrategy.concat
       case path => MergeStrategy.defaultMergeStrategy(path)
     }
