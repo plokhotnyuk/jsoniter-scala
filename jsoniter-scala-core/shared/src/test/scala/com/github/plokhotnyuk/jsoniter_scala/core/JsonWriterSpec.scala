@@ -769,6 +769,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(arbitrary[Long], Gen.oneOf(Gen.choose(Int.MinValue, -1), Gen.choose(1000000000, Int.MaxValue))) { (es, n) =>
         assert(intercept[JsonWriterException](withWriter(_.writeTimestampVal(es, n))).getMessage.startsWith("illegal nanoseconds"))
         assert(intercept[JsonWriterException](withWriter(_.writeTimestampValAsString(es, n))).getMessage.startsWith("illegal nanoseconds"))
+        assert(intercept[JsonWriterException](withWriter(_.writeTimestampKey(es, n))).getMessage.startsWith("illegal nanoseconds"))
       }
     }
   }
