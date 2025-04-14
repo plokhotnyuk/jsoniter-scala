@@ -7,7 +7,7 @@ import tools.jackson.databind.jsontype.NamedType
 import tools.jackson.core._
 import tools.jackson.databind._
 import tools.jackson.databind.json.JsonMapper
-import tools.jackson.datatype.jsr310.JavaTimeModule
+import tools.jackson.databind.cfg.DateTimeFeature
 import tools.jackson.databind.module.SimpleModule
 import tools.jackson.databind.ser.std.StdSerializer
 import tools.jackson.module.scala.deser.{ImmutableBitSetDeserializer, MutableBitSetDeserializer}
@@ -18,15 +18,12 @@ import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 object JacksonSerDesers {
-
   private[this] def createJacksonMapper(escapeNonAscii: Boolean = false, indentOutput: Boolean = false,
       booleanAsString: Boolean = false, byteArrayAsBase64String: Boolean = true): ObjectMapper with ClassTagExtensions = {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
       .configure(JsonWriteFeature.ESCAPE_FORWARD_SLASHES, false)
-      .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
       .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
-      .configure(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER, true)
       .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
       .streamReadConstraints(StreamReadConstraints.builder()
         .maxNumberLength(Int.MaxValue) // WARNING: It is an unsafe option for open systems
@@ -52,7 +49,6 @@ object JacksonSerDesers {
         new NamedType(classOf[GeoJSON.FeatureCollection], "FeatureCollection"))
       .addModule(DefaultScalaModule)
       .addModule(BitSetDeserializerModule)
-      .addModule(new JavaTimeModule)
       .withConfigOverride(classOf[Year], x => x.setFormat(JsonFormat.Value.forShape(JsonFormat.Shape.STRING)))
       .addModule(new SimpleModule()
         .addDeserializer(classOf[BitSet], ImmutableBitSetDeserializer)
@@ -60,16 +56,12 @@ object JacksonSerDesers {
         .addSerializer(classOf[SuitADT], new SuitADTSerializer)
         .addSerializer(classOf[SuitEnum], new SuiteEnumSerializer)
         .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
-        .addDeserializer(classOf[SuitEnum], new SuiteEnumDeserializer)
-      )
+        .addDeserializer(classOf[SuitEnum], new SuiteEnumDeserializer))
       .configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
-      .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
-      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
       .configure(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES, true)
       .configure(SerializationFeature.WRITE_CHAR_ARRAYS_AS_JSON_ARRAYS, true)
-      .configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false)
-      .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-      .configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true)
+      .configure(DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
+      .configure(DateTimeFeature.WRITE_DATES_WITH_ZONE_ID, true)
       .changeDefaultPropertyInclusion(_
         .withValueInclusion(JsonInclude.Include.NON_EMPTY)
         .withContentInclusion(JsonInclude.Include.NON_EMPTY))
@@ -96,9 +88,8 @@ object JacksonSerDesers {
 class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]]) {
   override def serialize(value: Array[Byte], gen: JsonGenerator, ctxt: SerializationContext): Unit = {
     gen.writeStartArray()
-    val l = value.length
     var i = 0
-    while (i < l) {
+    while (i < value.length) {
       gen.writeNumber(value(i))
       i += 1
     }
@@ -107,22 +98,25 @@ class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]
 }
 
 class StringifiedBooleanSerializer extends ValueSerializer[Boolean] {
-  override def serialize(x: Boolean, jgen: JsonGenerator, ctxt: SerializationContext): Unit = jgen.writeString(x.toString)
+  override def serialize(value: Boolean, gen: JsonGenerator, ctxt: SerializationContext): Unit =
+    gen.writeString(value.toString)
 }
 
 class SuiteEnumSerializer extends ValueSerializer[SuitEnum] {
-  override def serialize(x: SuitEnum, jg: JsonGenerator, ctxt: SerializationContext): Unit = jg.writeString(x.toString)
+  override def serialize(value: SuitEnum, gen: JsonGenerator, ctxt: SerializationContext): Unit =
+    gen.writeString(value.toString)
 }
 
 class SuiteEnumDeserializer extends ValueDeserializer[SuitEnum] {
-  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum =
-    try SuitEnum.withName(jp.getValueAsString) catch {
-      case _: NoSuchElementException => ctxt.handleUnexpectedToken(classOf[SuitEnum], jp).asInstanceOf[SuitEnum]
+  override def deserialize(p: JsonParser, ctxt: DeserializationContext): SuitEnum =
+    try SuitEnum.withName(p.getValueAsString) catch {
+      case _: NoSuchElementException => ctxt.handleUnexpectedToken(classOf[SuitEnum], p).asInstanceOf[SuitEnum]
     }
 }
 
 class SuitADTSerializer extends ValueSerializer[SuitADT] {
-  override def serialize(x: SuitADT, jg: JsonGenerator, ctxt: SerializationContext): Unit = jg.writeString(x.toString)
+  override def serialize(value: SuitADT, gen: JsonGenerator, ctxt: SerializationContext): Unit =
+    gen.writeString(value.toString)
 }
 
 class SuitADTDeserializer extends ValueDeserializer[SuitADT] {
@@ -132,10 +126,10 @@ class SuitADTDeserializer extends ValueDeserializer[SuitADT] {
     "Diamonds" -> Diamonds,
     "Clubs" -> Clubs)
 
-  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitADT =
-    m.get(jp.getValueAsString) match {
+  override def deserialize(p: JsonParser, ctxt: DeserializationContext): SuitADT =
+    m.get(p.getValueAsString) match {
       case s: Some[SuitADT] => s.value
-      case _ => ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]
+      case _ => ctxt.handleUnexpectedToken(classOf[SuitADT], p).asInstanceOf[SuitADT]
     }
 }
 
