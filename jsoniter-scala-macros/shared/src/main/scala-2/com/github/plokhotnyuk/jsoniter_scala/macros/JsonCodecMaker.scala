@@ -910,7 +910,8 @@ object JsonCodecMaker {
           else leafTpes
         }
 
-        val classes = collectRecursively(adtBaseTpe).distinct
+        val classes = collectRecursively(adtBaseTpe).distinct.sortBy(_.typeSymbol.fullName)
+
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
           "Please add them or provide a custom implicitly accessible codec for the ADT base.")
         classes
