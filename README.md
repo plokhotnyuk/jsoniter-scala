@@ -159,6 +159,7 @@ view of an error context
 - No extra buffering is required when parsing from `java.io.InputStream`/`java.io.FileInputStream` or serializing to
   `java.io.OutputStream`/`java.io.FileOuputStream`
 - Using black box macros only for codec generation ensures that your types will never be changed
+- Generated code is ordered to preserve checksums and maximize hit rate for remote caches of build tools
 - Ability to print generated code for codecs using an implicit val of `CodecMakerConfig.PrintCodec` type in a scope of 
   codec derivation
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library` (all platforms) and
