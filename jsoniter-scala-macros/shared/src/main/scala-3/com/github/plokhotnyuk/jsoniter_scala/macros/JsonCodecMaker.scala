@@ -996,7 +996,7 @@ object JsonCodecMaker {
         (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
           tpe <:< TypeRepr.of[AnyVal] && !tpe.classSymbol.fold(false)(x => defn.ScalaPrimitiveValueClasses.contains(x)))
 
-      def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = { // TODO: explore yet one variant with mirrors
+      def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = {
         def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
                                  binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
           if (fromNudeChildTarg.typeSymbol.isTypeParam) { // TODO: check for paramRef instead ?
@@ -1056,12 +1056,12 @@ object JsonCodecMaker {
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
         def collectRecursively(tpe: TypeRepr): Seq[TypeRepr] =
           val leafTpes = adtChildren(tpe).flatMap { subTpe =>
-            if (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type]) List(subTpe)
+            if (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type]) Seq(subTpe)
             else if (isSealedClass(subTpe)) collectRecursively(subTpe)
             else if (isValueClass(subTpe)) {
               fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
                 s"supported as leaf classes for ADT with base '${adtBaseTpe.show}'.")
-            } else if (isNonAbstractScalaClass(subTpe)) List(subTpe)
+            } else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
             else fail((if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
               "Only sealed intermediate traits or abstract classes are supported."
             } else {
@@ -1071,7 +1071,7 @@ object JsonCodecMaker {
           if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
           else leafTpes
 
-        val classes = collectRecursively(adtBaseTpe).distinct
+        val classes = distinct(collectRecursively(adtBaseTpe))
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '${adtBaseTpe.show}'. " +
           "Please add them or provide a custom implicitly accessible codec for the ADT base.")
         classes
@@ -3090,5 +3090,10 @@ object JsonCodecMaker {
   private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] = xs.filter {
     val seen = new mutable.HashSet[A]
     x => !seen.add(x)
+  }
+
+  private[this] def distinct[A](xs: Seq[A]): Seq[A] = xs.filter {
+    val seen = new mutable.HashSet[A]
+    x => seen.add(x)
   }
 }

@@ -880,10 +880,10 @@ object JsonCodecMaker {
         (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
           tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass)
 
-      def adtLeafClasses(adtBaseTpe: Type): List[Type] = {
-        def collectRecursively(tpe: Type): List[Type] = {
+      def adtLeafClasses(adtBaseTpe: Type): Seq[Type] = {
+        def collectRecursively(tpe: Type): Seq[Type] = {
           val tpeClass = tpe.typeSymbol.asClass
-          val leafTpes = tpeClass.knownDirectSubclasses.toList.flatMap { s =>
+          val leafTpes = tpeClass.knownDirectSubclasses.toSeq.flatMap { s =>
             val classSymbol = s.asClass
             val typeParams = classSymbol.typeParams
             val subTpe =
@@ -899,7 +899,7 @@ object JsonCodecMaker {
             else if (isValueClass(subTpe)) {
               fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
                 s"supported as leaf classes for ADT with base '$adtBaseTpe'.")
-            } else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
+            } else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
             else fail((if (s.isAbstract) {
               "Only sealed intermediate traits or abstract classes are supported."
             } else {
@@ -910,7 +910,7 @@ object JsonCodecMaker {
           else leafTpes
         }
 
-        val classes = collectRecursively(adtBaseTpe).distinct
+        val classes = distinct(collectRecursively(adtBaseTpe))
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
           "Please add them or provide a custom implicitly accessible codec for the ADT base.")
         classes
@@ -2285,5 +2285,10 @@ object JsonCodecMaker {
   private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] = xs.filter {
     val seen = new mutable.HashSet[A]
     x => !seen.add(x)
+  }
+
+  private[this] def distinct[A](xs: Seq[A]): Seq[A] = xs.filter {
+    val seen = new mutable.HashSet[A]
+    x => seen.add(x)
   }
 }
