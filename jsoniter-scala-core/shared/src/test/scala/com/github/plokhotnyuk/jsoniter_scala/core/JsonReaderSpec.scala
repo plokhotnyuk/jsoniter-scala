@@ -3209,7 +3209,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         """too long part of input exceeded 'maxBufSize', offset: 0x02000001""")
     }
   }
-  "JsonReader.setMark and JsonReader.rollbackToMark" should {
+  "JsonReader.setMark, JsonReader.rollbackToMark and JsonReader.resetMark" should {
     "store current position of parsing and return back to it" in {
       def check[A](n: Int, s2: String)(f: JsonReader => A): Unit = {
         val jsonReader = reader("{}" + fill(' ', n) + s2)
@@ -3217,8 +3217,14 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         jsonReader.skip()
         jsonReader.setMark()
         f(jsonReader)
-        jsonReader.rollbackToMark()
-        jsonReader.nextToken().toChar shouldBe s2.charAt(0)
+        if ((n & 1) == 0) {
+          jsonReader.rollbackToMark()
+          jsonReader.hasRemaining() shouldBe true
+          jsonReader.nextToken().toChar shouldBe s2.charAt(0)
+        } else {
+          jsonReader.resetMark()
+          jsonReader.hasRemaining() shouldBe false
+        }
       }
 
       forAll(Gen.size, minSuccessful(1000)) { n =>
@@ -3234,6 +3240,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       val jsonReader = reader("{}")
       jsonReader.skip()
       assert(intercept[IllegalStateException](jsonReader.rollbackToMark())
+        .getMessage.startsWith("expected preceding call of 'setMark()'"))
+    }
+    "throw exception in case of resetMark was called before setMark" in {
+      val jsonReader = reader("{}")
+      jsonReader.skip()
+      assert(intercept[IllegalStateException](jsonReader.resetMark())
         .getMessage.startsWith("expected preceding call of 'setMark()'"))
     }
   }

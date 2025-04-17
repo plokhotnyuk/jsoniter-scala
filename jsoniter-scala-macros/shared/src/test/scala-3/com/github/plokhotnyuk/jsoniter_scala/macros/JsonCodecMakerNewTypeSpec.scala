@@ -153,6 +153,30 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySerDeser(summon[JsonValueCodec[Group]], group,
         """[{"type":"A","a":"Hi"},{"type":"B","b":"Bye"},{"type":"A","a":3.4},{"type":"B","b":4.5},{"type":"A","a":true},{"type":"B","b":false}]""")
     }
+    "serialize and deserialize a Scala3 union type using a custom codec with setMark, resetMark, and rollbackToMark calls" in {
+      implicit val intOrBigDecimalCodec: JsonValueCodec[Int | BigDecimal] =
+        new JsonValueCodec[Int | BigDecimal]:
+          def decodeValue(in: JsonReader, default: Int | BigDecimal): Int | BigDecimal =
+            in.setMark()
+            try {
+              val a = in.readInt()
+              in.resetMark()
+              a
+            } catch { // use this approach wisely taking in account cost of failed parsing with exception throwing and catching
+              case _: JsonReaderException =>
+                in.rollbackToMark()
+                in.readBigDecimal(null)
+            }
+
+          def encodeValue(x: Int | BigDecimal, out: JsonWriter): Unit =
+            if (x.isInstanceOf[BigDecimal]) out.writeVal(x.asInstanceOf[BigDecimal])
+            else out.writeVal(x.asInstanceOf[Int])
+
+          def nullValue: Int | BigDecimal = null.asInstanceOf[Int | BigDecimal]
+
+      verifySerDeser(summon[JsonValueCodec[Int | BigDecimal]], 1, "1")
+      verifySerDeser(summon[JsonValueCodec[Int | BigDecimal]], BigDecimal("1" * 33), "1" * 33)
+    }
     "serialize and deserialize recursive Scala3 union types using a custom value codec" in {
       type JsonPrimitive = String | Int | Double | Boolean | None.type
 

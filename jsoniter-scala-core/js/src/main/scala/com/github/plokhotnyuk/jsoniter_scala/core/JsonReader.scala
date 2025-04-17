@@ -120,6 +120,8 @@ final class JsonReader private[jsoniter_scala](
 
   /**
     * Sets the current read head position as a mark.
+    * Should be followed by `restMark()` or `rollbackToMark()` calls.
+    * Pair of `setMark()` and `restMark()` or `setMark()` and `rollbackToMark()` calls cannot be nested.
     */
   def setMark(): Unit = mark = head
 
@@ -141,11 +143,21 @@ final class JsonReader private[jsoniter_scala](
   /**
     * Rolls back the read head position to the previously set mark.
     *
-    * @throws java.lang.IllegalStateException in cases of reaching the end of input or invalid encoding of JSON key
+    * @throws java.lang.IllegalStateException in case of calling without preceding call of 'setMark()'
     */
   def rollbackToMark(): Unit = {
     if (mark < 0) missingSetMarkOperation()
     head = mark
+    mark = -1
+  }
+
+  /**
+   * Reset mark without changing of the read head position.
+   *
+   * @throws java.lang.IllegalStateException in case of calling without preceding call of 'setMark()'
+   */
+  def resetMark(): Unit = {
+    if (mark < 0) missingSetMarkOperation()
     mark = -1
   }
 
