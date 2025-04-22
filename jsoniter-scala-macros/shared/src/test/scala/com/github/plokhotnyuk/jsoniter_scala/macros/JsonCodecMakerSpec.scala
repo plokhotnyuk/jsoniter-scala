@@ -3,9 +3,10 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Objects, UUID}
-import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, _}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
+
 import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.switch
 import scala.util.control.NonFatal
@@ -2617,6 +2618,54 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(make[List[Base]], List(A(1), B("VVV")), """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
     }
+    "serialize and deserialize ADT hierarchy with a custom codec that handles different dicriminator field names" in {
+      sealed trait T
+
+      sealed trait T1 extends T
+
+      object T1 {
+        case object T11 extends T1
+
+        implicit val codec: JsonValueCodec[T1] =
+          make(CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("discriminator1")))
+      }
+
+      sealed trait T2 extends T
+
+      object T2 {
+        case object T22 extends T2
+
+        implicit val codec: JsonValueCodec[T2] =
+          make(CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("discriminator2")))
+      }
+
+      implicit val codecOfT: JsonValueCodec[T] = new JsonValueCodec[T] {
+        override def decodeValue(in: JsonReader, default: T): T = {
+          in.setMark()
+          if (in.isNextToken('{')) {
+            if (in.skipToKey("discriminator1")) {
+              in.rollbackToMark()
+              T1.codec.decodeValue(in, T1.codec.nullValue)
+            } else {
+              in.rollbackToMark()
+              T2.codec.decodeValue(in, T2.codec.nullValue)
+            }
+          } else {
+            in.resetMark()
+            in.readNullOrTokenError(default, '{')
+          }
+        }
+
+        override def encodeValue(x: T, out: JsonWriter): _root_.scala.Unit = x match {
+          case t1: T1 => T1.codec.encodeValue(t1, out)
+          case t2: T2 => T2.codec.encodeValue(t2, out)
+        }
+
+        override def nullValue: T = null.asInstanceOf[T]
+      }
+
+      verifySerDeser(make[List[T]], List(T1.T11, T2.T22), """[{"discriminator1":"T11"},{"discriminator2":"T22"}]""")
+    }
     "deserialize ADTs with a custom handler of unknown type" in {
       def adtCodecWithUnknownKindHandler[A](knownKinds: Set[String], codec: JsonValueCodec[A],
                                             handler: String => A): JsonValueCodec[A] =
@@ -2632,7 +2681,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
                 in.skip()
                 handler(kind)
               }
-            } else in.readNullOrTokenError(default, '{')
+            } else {
+              in.resetMark()
+              in.readNullOrTokenError(default, '{')
+            }
           }
 
           override def encodeValue(x: A, out: JsonWriter): _root_.scala.Unit = codec.encodeValue(x, out)
