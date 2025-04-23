@@ -826,7 +826,7 @@ object JsonCodecMaker {
       val classInfos = new mutable.LinkedHashMap[Type, ClassInfo]
 
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
-        case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
+        case class FieldAnnotations(partiallyMappedName: Option[String], transient: Boolean, stringified: Boolean)
 
         def hasSupportedAnnotation(m: TermSymbol): Boolean = {
           m.info: Unit // to enforce the type information completeness and availability of annotations
@@ -862,7 +862,7 @@ object JsonCodecMaker {
               warn(s"Both $supportedTransientTypeNames and '${typeOf[named]}' or " +
                 s"$supportedTransientTypeNames and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
-            val partiallyMappedName = namedValueOpt(m.annotations.find(_.tree.tpe =:= typeOf[named]), tpe).getOrElse(name)
+            val partiallyMappedName = namedValueOpt(m.annotations.find(_.tree.tpe =:= typeOf[named]), tpe)
             annotations = annotations.updated(name, FieldAnnotations(partiallyMappedName, trans > 0, strings > 0))
           case _ =>
         }
@@ -877,8 +877,8 @@ object JsonCodecMaker {
             val annotationOption = annotations.get(name)
             if (annotationOption.exists(_.transient)) None
             else {
-              val fieldNameMapper: String => String = n => cfg.fieldNameMapper.lift(n).getOrElse(n)
-              val mappedName = annotationOption.fold(fieldNameMapper(name))(_.partiallyMappedName)
+              val mappedName = annotationOption.flatMap(_.partiallyMappedName)
+                .getOrElse(cfg.fieldNameMapper.lift(name).getOrElse(name))
               val tmpName = TermName("_" + symbol.name)
               val getter = getters.getOrElse(name,
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor."))

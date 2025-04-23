@@ -2068,6 +2068,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfStringified, Stringified(1, 2, Option(1), List(2)),
         """{"i":"1","bi":"2","o":"1","l":["2"]}""")
     }
+    "serialize and deserialize fields that have field name mapper and stringified by annotation" in {
+      verifySerDeser(make(CodecMakerConfig.withFieldNameMapper { case x => x + "_" }), Stringified(1, 2, Option(1), List(2)),
+        """{"i_":"1","bi_":"2","o_":"1","l_":["2"]}""")
+    }
     "throw parse exception when stringified fields have non-string values" in {
       verifyDeserError(codecOfStringified, """{"i":1,"bi":"2","o":"1","l":["2"]}""",
         """expected '"', offset: 0x00000005""")

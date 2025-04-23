@@ -885,7 +885,7 @@ object JsonCodecMaker {
       val classInfos = new mutable.LinkedHashMap[TypeRepr, ClassInfo]
 
       def getClassInfo(tpe: TypeRepr): ClassInfo = classInfos.getOrElseUpdate(tpe, {
-        case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
+        case class FieldAnnotations(partiallyMappedName: Option[String], transient: Boolean, stringified: Boolean)
 
         def hasSupportedAnnotation(m: Symbol): Boolean = m.annotations.exists { a =>
           val tpe = a.tpe
@@ -912,7 +912,7 @@ object JsonCodecMaker {
             if ((named > 0 || strings > 0) && trans > 0)
               warn(s"Both $supportedTransientTypeNames and '${Type.show[named]}' or " +
                 s"$supportedTransientTypeNames and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
-            val partiallyMappedName = namedValueOpt(m.annotations.find(_.tpe =:= TypeRepr.of[named]), tpe).getOrElse(name)
+            val partiallyMappedName = namedValueOpt(m.annotations.find(_.tpe =:= TypeRepr.of[named]), tpe)
             annotations = annotations.updated(name, FieldAnnotations(partiallyMappedName, trans > 0, strings > 0))
           case _ =>
         }
@@ -926,7 +926,8 @@ object JsonCodecMaker {
             i += 1
             val name = symbol.name
             val annotationOption = annotations.get(name)
-            val mappedName = annotationOption.fold(cfg.fieldNameMapper(name).getOrElse(name))(_.partiallyMappedName)
+            val mappedName = annotationOption.flatMap(_.partiallyMappedName)
+              .getOrElse(cfg.fieldNameMapper(name).getOrElse(name))
             val field = tpeClassSym.fieldMember(name)
             val getterOrField =
               if (field.exists) {
