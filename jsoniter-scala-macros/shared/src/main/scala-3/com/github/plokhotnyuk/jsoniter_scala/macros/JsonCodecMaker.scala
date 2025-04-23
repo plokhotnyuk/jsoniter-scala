@@ -887,35 +887,37 @@ object JsonCodecMaker {
       def getClassInfo(tpe: TypeRepr): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
 
-        def getPrimaryConstructor(tpe: TypeRepr): Symbol = tpe.classSymbol match
-          case Some(sym) if sym.primaryConstructor.exists => sym.primaryConstructor
-          case _ => fail(s"Cannot find a primary constructor for '$tpe'")
-
-        def hasSupportedAnnotation(m: Symbol): Boolean =
-          m.annotations.exists(a => a.tpe =:= TypeRepr.of[named] || a.tpe =:= TypeRepr.of[transient] ||
-            a.tpe =:= TypeRepr.of[stringified] || (cfg.scalaTransientSupport && a.tpe =:= TypeRepr.of[scala.transient]))
+        def hasSupportedAnnotation(m: Symbol): Boolean = m.annotations.exists { a =>
+          val tpe = a.tpe
+          tpe =:= TypeRepr.of[named] || tpe =:= TypeRepr.of[transient] || tpe =:= TypeRepr.of[stringified] ||
+            (cfg.scalaTransientSupport && tpe =:= TypeRepr.of[scala.transient])
+        }
 
         def supportedTransientTypeNames: String =
           if (cfg.scalaTransientSupport) s"'${Type.show[transient]}' (or '${Type.show[scala.transient]}')"
           else s"'${Type.show[transient]}')"
 
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"Expected that ${tpe.show} has classSymbol"))
-        val annotations = tpeClassSym.fieldMembers.collect { case m: Symbol if hasSupportedAnnotation(m) =>
-          val name = m.name
-          val named = m.annotations.filter(_.tpe =:= TypeRepr.of[named])
-          if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
-          val trans = m.annotations.filter(a => a.tpe =:= TypeRepr.of[transient] ||
-            (cfg.scalaTransientSupport && a.tpe =:= TypeRepr.of[scala.transient]))
-          if (trans.size > 1) warn(s"Duplicated $supportedTransientTypeNames defined for '$name' of '${tpe.show}'.")
-          val strings = m.annotations.filter(_.tpe =:= TypeRepr.of[stringified])
-          if (strings.size > 1) warn(s"Duplicated '${TypeRepr.of[stringified].show}' defined for '$name' of '${tpe.show}'.")
-          if ((named.nonEmpty || strings.nonEmpty) && trans.nonEmpty)
-            warn(s"Both $supportedTransientTypeNames and '${Type.show[named]}' or " +
-              s"$supportedTransientTypeNames and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
-          val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
-          (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
-        }.toMap
-        val primaryConstructor = getPrimaryConstructor(tpe)
+        var annotations = Map.empty[String, FieldAnnotations]
+        tpeClassSym.fieldMembers.foreach {
+          case m: Symbol if hasSupportedAnnotation(m) =>
+            val name = m.name
+            val named = m.annotations.count(_.tpe =:= TypeRepr.of[named])
+            if (named > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
+            val trans = m.annotations.count(a => a.tpe =:= TypeRepr.of[transient] ||
+              (cfg.scalaTransientSupport && a.tpe =:= TypeRepr.of[scala.transient]))
+            if (trans > 1) warn(s"Duplicated $supportedTransientTypeNames defined for '$name' of '${tpe.show}'.")
+            val strings = m.annotations.count(_.tpe =:= TypeRepr.of[stringified])
+            if (strings > 1) warn(s"Duplicated '${TypeRepr.of[stringified].show}' defined for '$name' of '${tpe.show}'.")
+            if ((named > 0 || strings > 0) && trans > 0)
+              warn(s"Both $supportedTransientTypeNames and '${Type.show[named]}' or " +
+                s"$supportedTransientTypeNames and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
+            val partiallyMappedName = namedValueOpt(m.annotations.find(_.tpe =:= TypeRepr.of[named]), tpe).getOrElse(name)
+            annotations = annotations.updated(name, FieldAnnotations(partiallyMappedName, trans > 0, strings > 0))
+          case _ =>
+        }
+        val primaryConstructor = tpeClassSym.primaryConstructor
+        if (!primaryConstructor.exists) fail(s"Cannot find a primary constructor for '$tpe'")
 
         def createFieldInfos(params: List[Symbol], typeParams: List[Symbol],
                              fieldIndex: Boolean => Int): List[FieldInfo] = params.map {
@@ -978,7 +980,7 @@ object JsonCodecMaker {
                     s"is ${fieldType.show}")
                 }
             FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, fieldIndex(isTransient))
-          }.toList
+          }
 
         val fieldIndex: Boolean => Int = {
           var i = -1
@@ -1032,8 +1034,7 @@ object JsonCodecMaker {
             nudeSubtype.memberType(sym.primaryConstructor) match
               case MethodType(_, _, _) => nudeSubtype
               case PolyType(names, bounds, resPolyTp) =>
-                val targs = typeArgs(tpe)
-                val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, targs, Map.empty)
+                val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, typeArgs(tpe), Map.empty)
                 val ctArgs = names.map { name =>
                   tpBinding.getOrElse(name, fail(s"Type parameter $name of $sym can't be deduced from " +
                     s"type arguments of ${tpe.show}. Please provide a custom implicitly accessible codec for it."))
