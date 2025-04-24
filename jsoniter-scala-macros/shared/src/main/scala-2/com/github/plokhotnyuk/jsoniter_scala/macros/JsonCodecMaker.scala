@@ -606,18 +606,6 @@ object JsonCodecMaker {
       import c.universe._
       import c.internal._
 
-      implicit val symbolOrdering: Ordering[c.universe.Symbol] =
-        (x: c.universe.Symbol, y: c.universe.Symbol) => {
-          val ax = x.pos.source.file.absolute
-          val ay = y.pos.source.file.absolute
-          var diff = ax.path.compareTo(ay.path)
-          if (diff == 0) diff = ax.name.compareTo(ay.name)
-          if (diff == 0) diff = x.pos.line.compareTo(y.pos.line)
-          if (diff == 0) diff = x.pos.column.compareTo(y.pos.column)
-          if (diff == 0) diff = x.fullName.compareTo(y.fullName)
-          diff
-        }
-
       def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
 
       def warn(msg: String): Unit = c.warning(c.enclosingPosition, msg)
@@ -901,7 +889,7 @@ object JsonCodecMaker {
       def adtLeafClasses(adtBaseTpe: Type): Seq[Type] = {
         def collectRecursively(tpe: Type): Seq[Type] = {
           val tpeClass = tpe.typeSymbol.asClass
-          val leafTpes = tpeClass.knownDirectSubclasses.toSeq.sorted.flatMap { s =>
+          val leafTpes = tpeClass.knownDirectSubclasses.toSeq.sortBy(_.fullName).flatMap { s =>
             val classSymbol = s.asClass
             val typeParams = classSymbol.typeParams
             val subTpe =
