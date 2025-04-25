@@ -685,9 +685,11 @@ object JsonCodecMaker {
         case AppliedType(_, typeArgs) => typeArgs.map(_.dealias)
         case _ => Nil
 
-      def typeArg1(tpe: TypeRepr): TypeRepr = typeArgs(tpe).head
+      def typeArg1(tpe: TypeRepr): TypeRepr =
+        typeArgs(tpe).headOption.getOrElse(fail(s"Cannot get 1st type argument in '${tpe.show}'"))
 
-      def typeArg2(tpe: TypeRepr): TypeRepr = typeArgs(tpe).tail.head
+      def typeArg2(tpe: TypeRepr): TypeRepr =
+        typeArgs(tpe).tail.headOption.getOrElse(fail(s"Cannot get 2nd type argument in '${tpe.show}'"))
 
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 

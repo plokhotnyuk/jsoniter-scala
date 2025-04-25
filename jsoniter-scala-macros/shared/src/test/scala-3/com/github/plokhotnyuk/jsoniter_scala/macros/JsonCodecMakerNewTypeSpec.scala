@@ -309,5 +309,28 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         "Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes."
       })
     }
+    "don't generate codecs for opaque types that hides type arguments" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """object Wrappers {
+          |  opaque type ReqId <: Option[String] = Option[String]
+          |
+          |  object ReqId {
+          |    inline def apply(x: Option[String]): ReqId = x
+          |
+          |    given JsonValueCodec[ReqId] = JsonCodecMaker.make[Option[String]]
+          |  }
+          |}
+          |
+          |import Wrappers.*
+          |import Wrappers.ReqId.*
+          |
+          |case class A(r: ReqId)
+          |
+          |given JsonValueCodec[A] = JsonCodecMaker.make
+          |""".stripMargin
+      }).getMessage.contains {
+        "Cannot get 1st type argument in 'Wrappers.ReqId'"
+      })
+    }
   }
 }
