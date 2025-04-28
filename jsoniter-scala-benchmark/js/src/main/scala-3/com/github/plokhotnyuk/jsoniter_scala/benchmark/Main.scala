@@ -8,6 +8,8 @@ import japgolly.scalajs.benchmark.gui.{Disabled => Off, Enabled => On, Benchmark
 import scala.concurrent.duration._
 
 object Main {
+  private val packageName = "com.github.plokhotnyuk.jsoniter_scala.benchmark"
+
   def main(args: Array[String]): Unit = BG.renderMenu(document.getElementById("body"), engineOptions = EO.default.copy(
     warmupIterations = 5, iterations = 5, iterationTime = 1.seconds,
   ), guiOptions = GO.default.copy(
@@ -15,7 +17,7 @@ object Main {
     bmResultFormats = ctx => Vector(BRF.OpsPerSec, BRF.chooseTimePerOp(ctx))
   ))({
     val benchmark = new ArrayOfBigDecimalsReading { size = 512; setup() }
-    GS(S("ArrayOfBigDecimalsReading")(
+    GS(S(s"$packageName.ArrayOfBigDecimalsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -29,7 +31,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfBigDecimalsWriting { size = 512; setup() }
-    GS(S("ArrayOfBigDecimalsWriting")(
+    GS(S(s"$packageName.ArrayOfBigDecimalsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -43,7 +45,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfBigIntsReading { size = 512; setup() }
-    GS(S("ArrayOfBigIntsReading")(
+    GS(S(s"$packageName.ArrayOfBigIntsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -54,7 +56,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfBigIntsWriting { size = 512; setup() }
-    GS(S("ArrayOfBigIntsWriting")(
+    GS(S(s"$packageName.ArrayOfBigIntsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -67,7 +69,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfBooleansReading { size = 512; setup() }
-    GS(S("ArrayOfBooleansReading")(
+    GS(S(s"$packageName.ArrayOfBooleansReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -81,7 +83,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfBooleansWriting { size = 512; setup() }
-    GS(S("ArrayOfBooleansWriting")(
+    GS(S(s"$packageName.ArrayOfBooleansWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -96,7 +98,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfBytesReading { size = 512; setup() }
-    GS(S("ArrayOfBytesReading")(
+    GS(S(s"$packageName.ArrayOfBytesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -110,7 +112,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfBytesWriting { size = 512; setup() }
-    GS(S("ArrayOfBytesWriting")(
+    GS(S(s"$packageName.ArrayOfBytesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -125,7 +127,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfCharsReading { size = 512; setup() }
-    GS(S("ArrayOfCharsReading")(
+    GS(S(s"$packageName.ArrayOfCharsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -138,7 +140,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfCharsWriting { size = 512; setup() }
-    GS(S("ArrayOfCharsWriting")(
+    GS(S(s"$packageName.ArrayOfCharsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -152,7 +154,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfDoublesReading { size = 512; setup() }
-    GS(S("ArrayOfDoublesReading")(
+    GS(S(s"$packageName.ArrayOfDoublesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -166,7 +168,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfDoublesWriting { size = 512; setup() }
-    GS(S("ArrayOfDoublesWriting")(
+    GS(S(s"$packageName.ArrayOfDoublesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -181,7 +183,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfDurationsReading { size = 512; setup() }
-    GS(S("ArrayOfDurationsReading")(
+    GS(S(s"$packageName.ArrayOfDurationsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -194,7 +196,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfDurationsWriting { size = 512; setup() }
-    GS(S("ArrayOfDurationsWriting")(
+    GS(S(s"$packageName.ArrayOfDurationsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -208,7 +210,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfEnumADTsReading { size = 512; setup() }
-    GS(S("ArrayOfEnumADTsReading")(
+    GS(S(s"$packageName.ArrayOfEnumADTsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -221,7 +223,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfEnumADTsWriting { size = 512; setup() }
-    GS(S("ArrayOfEnumADTsWriting")(
+    GS(S(s"$packageName.ArrayOfEnumADTsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -235,7 +237,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfEnumsReading { size = 512; setup() }
-    GS(S("ArrayOfEnumsReading")(
+    GS(S(s"$packageName.ArrayOfEnumsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -247,7 +249,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfEnumsWriting { size = 512; setup() }
-    GS(S("ArrayOfEnumsWriting")(
+    GS(S(s"$packageName.ArrayOfEnumsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -260,7 +262,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfFloatsReading { size = 512; setup() }
-    GS(S("ArrayOfFloatsReading")(
+    GS(S(s"$packageName.ArrayOfFloatsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -275,7 +277,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfFloatsWriting { size = 512; setup() }
-    GS(S("ArrayOfFloatsWriting")(
+    GS(S(s"$packageName.ArrayOfFloatsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -290,7 +292,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfInstantsReading { size = 512; setup() }
-    GS(S("ArrayOfInstantsReading")(
+    GS(S(s"$packageName.ArrayOfInstantsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -304,7 +306,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfInstantsWriting { size = 512; setup() }
-    GS(S("ArrayOfInstantsWriting")(
+    GS(S(s"$packageName.ArrayOfInstantsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -319,7 +321,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfIntsReading { size = 512; setup() }
-    GS(S("ArrayOfIntsReading")(
+    GS(S(s"$packageName.ArrayOfIntsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -333,7 +335,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfIntsWriting { size = 512; setup() }
-    GS(S("ArrayOfIntsWriting")(
+    GS(S(s"$packageName.ArrayOfIntsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -348,7 +350,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfJavaEnumsReading { size = 512; setup() }
-    GS(S("ArrayOfJavaEnumsReading")(
+    GS(S(s"$packageName.ArrayOfJavaEnumsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -359,7 +361,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfJavaEnumsWriting { size = 512; setup() }
-    GS(S("ArrayOfJavaEnumsWriting")(
+    GS(S(s"$packageName.ArrayOfJavaEnumsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -371,7 +373,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfLocalDatesReading { size = 512; setup() }
-    GS(S("ArrayOfLocalDatesReading")(
+    GS(S(s"$packageName.ArrayOfLocalDatesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -384,7 +386,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfLocalDatesWriting { size = 512; setup() }
-    GS(S("ArrayOfLocalDatesWriting")(
+    GS(S(s"$packageName.ArrayOfLocalDatesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -398,7 +400,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfLocalDateTimesReading { size = 512; setup() }
-    GS(S("ArrayOfLocalDateTimesReading")(
+    GS(S(s"$packageName.ArrayOfLocalDateTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -411,7 +413,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfLocalDateTimesWriting { size = 512; setup() }
-    GS(S("ArrayOfLocalDateTimesWriting")(
+    GS(S(s"$packageName.ArrayOfLocalDateTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -425,7 +427,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfLocalTimesReading { size = 512; setup() }
-    GS(S("ArrayOfLocalTimesReading")(
+    GS(S(s"$packageName.ArrayOfLocalTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -438,7 +440,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfLocalTimesWriting { size = 512; setup() }
-    GS(S("ArrayOfLocalTimesWriting")(
+    GS(S(s"$packageName.ArrayOfLocalTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -452,7 +454,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfLongsReading { size = 512; setup() }
-    GS(S("ArrayOfLongsReading")(
+    GS(S(s"$packageName.ArrayOfLongsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -467,7 +469,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfLongsWriting { size = 512; setup() }
-    GS(S("ArrayOfLongsWriting")(
+    GS(S(s"$packageName.ArrayOfLongsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -482,7 +484,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfMonthDaysReading { size = 512; setup() }
-    GS(S("ArrayOfMonthDaysReading")(
+    GS(S(s"$packageName.ArrayOfMonthDaysReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -495,7 +497,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfMonthDaysWriting { size = 512; setup() }
-    GS(S("ArrayOfMonthDaysWriting")(
+    GS(S(s"$packageName.ArrayOfMonthDaysWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -509,7 +511,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfOffsetDateTimesReading { size = 512; setup() }
-    GS(S("ArrayOfOffsetDateTimesReading")(
+    GS(S(s"$packageName.ArrayOfOffsetDateTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -522,7 +524,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfOffsetDateTimesWriting { size = 512; setup() }
-    GS(S("ArrayOfOffsetDateTimesWriting")(
+    GS(S(s"$packageName.ArrayOfOffsetDateTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -536,7 +538,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfOffsetTimesReading { size = 512; setup() }
-    GS(S("ArrayOfOffsetTimesReading")(
+    GS(S(s"$packageName.ArrayOfOffsetTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -549,7 +551,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfOffsetTimesWriting { size = 512; setup() }
-    GS(S("ArrayOfOffsetTimesWriting")(
+    GS(S(s"$packageName.ArrayOfOffsetTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -563,7 +565,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfPeriodsReading { size = 512; setup() }
-    GS(S("ArrayOfPeriodsReading")(
+    GS(S(s"$packageName.ArrayOfPeriodsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -576,7 +578,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfPeriodsWriting { size = 512; setup() }
-    GS(S("ArrayOfPeriodsWriting")(
+    GS(S(s"$packageName.ArrayOfPeriodsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -590,7 +592,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfShortsReading { size = 512; setup() }
-    GS(S("ArrayOfShortsReading")(
+    GS(S(s"$packageName.ArrayOfShortsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -604,7 +606,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfShortsWriting { size = 512; setup() }
-    GS(S("ArrayOfShortsWriting")(
+    GS(S(s"$packageName.ArrayOfShortsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -619,7 +621,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfUUIDsReading { size = 512; setup() }
-    GS(S("ArrayOfUUIDsReading")(
+    GS(S(s"$packageName.ArrayOfUUIDsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -633,7 +635,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfUUIDsWriting { size = 512; setup() }
-    GS(S("ArrayOfUUIDsWriting")(
+    GS(S(s"$packageName.ArrayOfUUIDsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -648,7 +650,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfYearMonthsReading { size = 512; setup() }
-    GS(S("ArrayOfYearMonthsReading")(
+    GS(S(s"$packageName.ArrayOfYearMonthsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -661,7 +663,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfYearMonthsWriting { size = 512; setup() }
-    GS(S("ArrayOfYearMonthsWriting")(
+    GS(S(s"$packageName.ArrayOfYearMonthsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -675,7 +677,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfYearsReading { size = 512; setup() }
-    GS(S("ArrayOfYearsReading")(
+    GS(S(s"$packageName.ArrayOfYearsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -688,7 +690,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfYearsWriting { size = 512; setup() }
-    GS(S("ArrayOfYearsWriting")(
+    GS(S(s"$packageName.ArrayOfYearsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -702,7 +704,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfZonedDateTimesReading { size = 512; setup() }
-    GS(S("ArrayOfZonedDateTimesReading")(
+    GS(S(s"$packageName.ArrayOfZonedDateTimesReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -715,7 +717,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfZonedDateTimesWriting { size = 512; setup() }
-    GS(S("ArrayOfZonedDateTimesWriting")(
+    GS(S(s"$packageName.ArrayOfZonedDateTimesWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -729,7 +731,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfZoneIdsReading { size = 512; setup() }
-    GS(S("ArrayOfZoneIdsReading")(
+    GS(S(s"$packageName.ArrayOfZoneIdsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -742,7 +744,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfZoneIdsWriting { size = 512; setup() }
-    GS(S("ArrayOfZoneIdsWriting")(
+    GS(S(s"$packageName.ArrayOfZoneIdsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -756,7 +758,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfZoneOffsetsReading { size = 512; setup() }
-    GS(S("ArrayOfZoneOffsetsReading")(
+    GS(S(s"$packageName.ArrayOfZoneOffsetsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -769,7 +771,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArrayOfZoneOffsetsWriting { size = 512; setup() }
-    GS(S("ArrayOfZoneOffsetsWriting")(
+    GS(S(s"$packageName.ArrayOfZoneOffsetsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -783,7 +785,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArraySeqOfBooleansReading { size = 512; setup() }
-    GS(S("ArraySeqOfBooleansReading")(
+    GS(S(s"$packageName.ArraySeqOfBooleansReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -797,7 +799,7 @@ object Main {
     ))
   }, {
     val benchmark = new ArraySeqOfBooleansWriting { size = 512; setup() }
-    GS(S("ArraySeqOfBooleansWriting")(
+    GS(S(s"$packageName.ArraySeqOfBooleansWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -812,20 +814,20 @@ object Main {
     ))
   }, {
     val benchmark = new Base16Reading { size = 512; setup() }
-    GS(S("Base16Reading")(
+    GS(S(s"$packageName.Base16Reading")(
       B("borer")(benchmark.borer()),
       B("jsoniterScala")(benchmark.jsoniterScala())
     ))
   }, {
     val benchmark = new Base16Writing { size = 512; setup() }
-    GS(S("Base16Writing")(
+    GS(S(s"$packageName.Base16Writing")(
       B("borer")(benchmark.borer()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
     ))
   }, {
     val benchmark = new Base64Reading { size = 512; setup() }
-    GS(S("Base64Reading")(
+    GS(S(s"$packageName.Base64Reading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -838,7 +840,7 @@ object Main {
     ))
   }, {
     val benchmark = new Base64Writing { size = 512; setup() }
-    GS(S("Base64Writing")(
+    GS(S(s"$packageName.Base64Writing")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -852,7 +854,7 @@ object Main {
     ))
   }, {
     val benchmark = new BigDecimalReading { size = 512; setup() }
-    GS(S("BigDecimalReading")(
+    GS(S(s"$packageName.BigDecimalReading")(
       // FIXME: borer parses up to 200 digits only
       // B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -864,7 +866,7 @@ object Main {
     ))
   }, {
     val benchmark = new BigDecimalWriting { size = 512; setup() }
-    GS(S("BigDecimalWriting")(
+    GS(S(s"$packageName.BigDecimalWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -878,7 +880,7 @@ object Main {
     ))
   }, {
     val benchmark = new BigIntReading { size = 512; setup() }
-    GS(S("BigIntReading")(
+    GS(S(s"$packageName.BigIntReading")(
       // FIXME: borer parses up to 200 digits only
       // B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
@@ -892,7 +894,7 @@ object Main {
     ))
   }, {
     val benchmark = new BigIntWriting { size = 512; setup() }
-    GS(S("BigIntWriting")(
+    GS(S(s"$packageName.BigIntWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -905,7 +907,7 @@ object Main {
     ))
   }, {
     val benchmark = new BitSetReading { size = 512; setup() }
-    GS(S("BitSetReading")(
+    GS(S(s"$packageName.BitSetReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -914,7 +916,7 @@ object Main {
     ))
   }, {
     val benchmark = new BitSetWriting { size = 512; setup() }
-    GS(S("BitSetWriting")(
+    GS(S(s"$packageName.BitSetWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -924,7 +926,7 @@ object Main {
     ))
   }, {
     val benchmark = new ExtractFieldsReading { size = 512; setup() }
-    GS(S("ExtractFieldsReading")(
+    GS(S(s"$packageName.ExtractFieldsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -938,7 +940,7 @@ object Main {
     ))
   }, {
     val benchmark = new GeoJSONReading { setup() }
-    GS(S("GeoJSONReading")(
+    GS(S(s"$packageName.GeoJSONReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -953,7 +955,7 @@ object Main {
     ))
   }, {
     val benchmark = new GeoJSONWriting { setup() }
-    GS(S("GeoJSONWriting")(
+    GS(S(s"$packageName.GeoJSONWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -968,7 +970,7 @@ object Main {
     ))
   }, {
     val benchmark = new GitHubActionsAPIReading { setup() }
-    GS(S("GitHubActionsAPIReading")(
+    GS(S(s"$packageName.GitHubActionsAPIReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -982,7 +984,7 @@ object Main {
     ))
   }, {
     val benchmark = new GitHubActionsAPIWriting { setup() }
-    GS(S("GitHubActionsAPIWriting")(
+    GS(S(s"$packageName.GitHubActionsAPIWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -997,7 +999,7 @@ object Main {
     ))
   }, {
     val benchmark = new GoogleMapsAPIPrettyPrinting { setup() }
-    GS(S("GoogleMapsAPIPrettyPrinting")(
+    GS(S(s"$packageName.GoogleMapsAPIPrettyPrinting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1013,7 +1015,7 @@ object Main {
     ))
   }, {
     val benchmark = new GoogleMapsAPIReading { setup() }
-    GS(S("GoogleMapsAPIReading")(
+    GS(S(s"$packageName.GoogleMapsAPIReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1027,7 +1029,7 @@ object Main {
     ))
   }, {
     val benchmark = new GoogleMapsAPIWriting { setup() }
-    GS(S("GoogleMapsAPIWriting")(
+    GS(S(s"$packageName.GoogleMapsAPIWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1042,7 +1044,7 @@ object Main {
     ))
   }, {
     val benchmark = new IntMapOfBooleansReading { size = 512; setup() }
-    GS(S("IntMapOfBooleansReading")(
+    GS(S(s"$packageName.IntMapOfBooleansReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1050,7 +1052,7 @@ object Main {
     ))
   }, {
     val benchmark = new IntMapOfBooleansWriting { size = 512; setup() }
-    GS(S("IntMapOfBooleansWriting")(
+    GS(S(s"$packageName.IntMapOfBooleansWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1059,7 +1061,7 @@ object Main {
     ))
   }, {
     val benchmark = new ListOfBooleansReading { size = 512; setup() }
-    GS(S("ListOfBooleansReading")(
+    GS(S(s"$packageName.ListOfBooleansReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1073,7 +1075,7 @@ object Main {
     ))
   }, {
     val benchmark = new ListOfBooleansWriting { size = 512; setup() }
-    GS(S("ListOfBooleansWriting")(
+    GS(S(s"$packageName.ListOfBooleansWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1088,7 +1090,7 @@ object Main {
     ))
   }, {
     val benchmark = new MapOfIntsToBooleansReading { size = 512; setup() }
-    GS(S("MapOfIntsToBooleansReading")(
+    GS(S(s"$packageName.MapOfIntsToBooleansReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1099,7 +1101,7 @@ object Main {
     ))
   }, {
     val benchmark = new MapOfIntsToBooleansWriting { size = 512; setup() }
-    GS(S("MapOfIntsToBooleansWriting")(
+    GS(S(s"$packageName.MapOfIntsToBooleansWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1111,7 +1113,7 @@ object Main {
     ))
   }, {
     val benchmark = new MissingRequiredFieldsReading { setup() }
-    GS(S("MissingRequiredFieldsReading")(
+    GS(S(s"$packageName.MissingRequiredFieldsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1127,7 +1129,7 @@ object Main {
     ))
   }, {
     val benchmark = new MutableBitSetReading { size = 512; setup() }
-    GS(S("MutableBitSetReading")(
+    GS(S(s"$packageName.MutableBitSetReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1136,7 +1138,7 @@ object Main {
     ))
   }, {
     val benchmark = new MutableBitSetWriting { size = 512; setup() }
-    GS(S("MutableBitSetWriting")(
+    GS(S(s"$packageName.MutableBitSetWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1146,7 +1148,7 @@ object Main {
     ))
   }, {
     val benchmark = new MutableLongMapOfBooleansReading { size = 512; setup() }
-    GS(S("MutableLongMapOfBooleansReading")(
+    GS(S(s"$packageName.MutableLongMapOfBooleansReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1154,7 +1156,7 @@ object Main {
     ))
   }, {
     val benchmark = new MutableLongMapOfBooleansWriting { size = 512; setup() }
-    GS(S("MutableLongMapOfBooleansWriting")(
+    GS(S(s"$packageName.MutableLongMapOfBooleansWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1163,7 +1165,7 @@ object Main {
     ))
   }, {
     val benchmark = new MutableMapOfIntsToBooleansReading { size = 512; setup() }
-    GS(S("MutableMapOfIntsToBooleansReading")(
+    GS(S(s"$packageName.MutableMapOfIntsToBooleansReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1171,7 +1173,7 @@ object Main {
     ))
   }, {
     val benchmark = new MutableMapOfIntsToBooleansWriting { size = 512; setup() }
-    GS(S("MutableMapOfIntsToBooleansWriting")(
+    GS(S(s"$packageName.MutableMapOfIntsToBooleansWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1181,7 +1183,7 @@ object Main {
     ))
   }, {
     val benchmark = new MutableSetOfIntsReading { size = 512; setup() }
-    GS(S("MutableSetOfIntsReading")(
+    GS(S(s"$packageName.MutableSetOfIntsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1192,7 +1194,7 @@ object Main {
     ))
   }, {
     val benchmark = new MutableSetOfIntsWriting { size = 512; setup() }
-    GS(S("MutableSetOfIntsWriting")(
+    GS(S(s"$packageName.MutableSetOfIntsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1205,7 +1207,7 @@ object Main {
     ))
   }, {
     val benchmark = new NestedStructsReading { size = 512; setup() }
-    GS(S("NestedStructsReading")(
+    GS(S(s"$packageName.NestedStructsReading")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1218,7 +1220,7 @@ object Main {
     ))
   }, {
     val benchmark = new NestedStructsWriting { size = 512; setup() }
-    GS(S("NestedStructsWriting")(
+    GS(S(s"$packageName.NestedStructsWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1232,7 +1234,7 @@ object Main {
     ))
   }, {
     val benchmark = new OpenRTBReading { setup() }
-    GS(S("OpenRTBReading")(
+    GS(S(s"$packageName.OpenRTBReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1246,7 +1248,7 @@ object Main {
     ))
   }, {
     val benchmark = new OpenRTBWriting { setup() }
-    GS(S("OpenRTBWriting")(
+    GS(S(s"$packageName.OpenRTBWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1263,7 +1265,7 @@ object Main {
     ))
   }, {
     val benchmark = new SetOfIntsReading { size = 512; setup() }
-    GS(S("SetOfIntsReading")(
+    GS(S(s"$packageName.SetOfIntsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1277,7 +1279,7 @@ object Main {
     ))
   }, {
     val benchmark = new SetOfIntsWriting { size = 512; setup() }
-    GS(S("SetOfIntsWriting")(
+    GS(S(s"$packageName.SetOfIntsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1292,7 +1294,7 @@ object Main {
     ))
   }, {
     val benchmark = new StringOfAsciiCharsReading { size = 512; setup() }
-    GS(S("StringOfAsciiCharsReading")(
+    GS(S(s"$packageName.StringOfAsciiCharsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1306,7 +1308,7 @@ object Main {
     ))
   }, {
     val benchmark = new StringOfAsciiCharsWriting { size = 512; setup() }
-    GS(S("StringOfAsciiCharsWriting")(
+    GS(S(s"$packageName.StringOfAsciiCharsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1321,7 +1323,7 @@ object Main {
     ))
   }, {
     val benchmark = new StringOfEscapedCharsReading { size = 512; setup() }
-    GS(S("StringOfEscapedCharsReading")(
+    GS(S(s"$packageName.StringOfEscapedCharsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1335,7 +1337,7 @@ object Main {
     ))
   }, {
     val benchmark = new StringOfEscapedCharsWriting { size = 512; setup() }
-    GS(S("StringOfEscapedCharsWriting")(
+    GS(S(s"$packageName.StringOfEscapedCharsWriting")(
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
@@ -1347,7 +1349,7 @@ object Main {
     ))
   }, {
     val benchmark = new StringOfNonAsciiCharsReading { size = 512; setup() }
-    GS(S("StringOfNonAsciiCharsReading")(
+    GS(S(s"$packageName.StringOfNonAsciiCharsReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1361,7 +1363,7 @@ object Main {
     ))
   }, {
     val benchmark = new StringOfNonAsciiCharsWriting { size = 512; setup() }
-    GS(S("StringOfNonAsciiCharsWriting")(
+    GS(S(s"$packageName.StringOfNonAsciiCharsWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1376,7 +1378,7 @@ object Main {
     ))
   }, {
     val benchmark = new TwitterAPIReading { setup() }
-    GS(S("TwitterAPIReading")(
+    GS(S(s"$packageName.TwitterAPIReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1391,7 +1393,7 @@ object Main {
     ))
   }, {
     val benchmark = new TwitterAPIWriting { setup() }
-    GS(S("TwitterAPIWriting")(
+    GS(S(s"$packageName.TwitterAPIWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1406,7 +1408,7 @@ object Main {
     ))
   }, {
     val benchmark = new VectorOfBooleansReading { size = 512; setup() }
-    GS(S("VectorOfBooleansReading")(
+    GS(S(s"$packageName.VectorOfBooleansReading")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
@@ -1420,7 +1422,7 @@ object Main {
     ))
   }, {
     val benchmark = new VectorOfBooleansWriting { size = 512; setup() }
-    GS(S("VectorOfBooleansWriting")(
+    GS(S(s"$packageName.VectorOfBooleansWriting")(
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
