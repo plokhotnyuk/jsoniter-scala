@@ -24,7 +24,7 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json),
 [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ Ultra 9 285K CPU @ 3.7GHz
-(max 5.7GHz, performance-cores only), RAM 64Gb DDR5-6400, Ubuntu 24.04 (Linux 6.11), and latest versions of JDK 17/21/25-ea,
+(max 5.7GHz), RAM 64Gb DDR5-6400, Ubuntu 25.04 (Linux 6.14), and latest versions of JDK 17/21/25-ea,
 GraalVM Community JDK 17/21/25-ea, and GraalVM JDK 17/21/25-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that
@@ -35,7 +35,7 @@ compare performance of jsoniter-scala with: [circe](https://github.com/circe/cir
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [uPickle](https://github.com/lihaoyi/upickle), [zio-json](https://github.com/zio/zio-json), and [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
 compiled by Scala.js 1.19.0 to ES 2015 with GCC v20220202 optimizations applied on
-Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz, performance-cores only), RAM 64Gb DDR5-6400, on Windows 11 Pro (24H2).
+Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz), RAM 64Gb DDR5-6400, on Windows 11 Pro (24H2).
 
 ## Contents
 
