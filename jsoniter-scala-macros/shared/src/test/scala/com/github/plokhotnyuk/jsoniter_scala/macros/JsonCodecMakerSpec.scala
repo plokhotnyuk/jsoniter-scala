@@ -1173,33 +1173,37 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"param1":"A","param2":"B","payload":{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"},"param3":"C"}""")
     }
     "serialize and deserialize nested options without loss of information" in {
-      case class NestedOptions(x: Option[Option[Option[String]]] = _root_.scala.None)
+      case class NestedOptions(y: Option[String], x: Option[Option[Option[String]]] = _root_.scala.None)
 
       val codecOfNestedOptions = make[NestedOptions]
-      verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), """{}""")
-      verifyDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), """{"x":null}""")
-      verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.Some(_root_.scala.Some("VVV")))),
+      verifyDeser(codecOfNestedOptions,
+        NestedOptions(_root_.scala.None, _root_.scala.None), """{"y":null,"x":null}""")
+      verifySerDeser(codecOfNestedOptions,
+        NestedOptions(_root_.scala.Some("VVV"), _root_.scala.None), """{"y":"VVV"}""")
+      verifySerDeser(codecOfNestedOptions,
+        NestedOptions(_root_.scala.None, _root_.scala.Some(_root_.scala.Some(_root_.scala.Some("VVV")))),
         """{"x":{"type":"Some","value":{"type":"Some","value":"VVV"}}}""")
-      verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.None)),
-        """{"x":{"type":"None"}}""")
-      verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.Some(_root_.scala.None))),
+      verifySerDeser(codecOfNestedOptions,
+        NestedOptions(_root_.scala.None, _root_.scala.Some(_root_.scala.None)), """{"x":{"type":"None"}}""")
+      verifySerDeser(codecOfNestedOptions,
+        NestedOptions(_root_.scala.None, _root_.scala.Some(_root_.scala.Some(_root_.scala.None))),
         """{"x":{"type":"Some","value":{"type":"None"}}}""")
     }
     "serialize and deserialize Option[Option[_]] to distinguish `null` field values and missing fields" in {
-      case class Model(field1: Option[Option[String]], field2: Option[Option[String]] = _root_.scala.None)
+      case class Model(field1: Option[String], field2: Option[Option[String]] = _root_.scala.None)
 
       verifySerDeser(make[List[Model]](CodecMakerConfig.withSkipNestedOptionValues(true)),
         List(
-          Model(_root_.scala.Some(_root_.scala.Some("VVV")), _root_.scala.Some(_root_.scala.Some("WWW"))),
+          Model(_root_.scala.Some("VVV"), _root_.scala.Some(_root_.scala.Some("WWW"))),
           Model(_root_.scala.None),
-          Model(_root_.scala.Some(_root_.scala.None), _root_.scala.Some(_root_.scala.None))),
-        """[{"field1":"VVV","field2":"WWW"},{},{"field1":null,"field2":null}]""")
+          Model(_root_.scala.None, _root_.scala.Some(_root_.scala.None))),
+        """[{"field1":"VVV","field2":"WWW"},{},{"field2":null}]""")
       verifySerDeser(makeWithSkipNestedOptionValues[List[Model]],
         List(
-          Model(_root_.scala.Some(_root_.scala.Some("VVV")), _root_.scala.Some(_root_.scala.Some("WWW"))),
+          Model(_root_.scala.Some("VVV"), _root_.scala.Some(_root_.scala.Some("WWW"))),
           Model(_root_.scala.None),
-          Model(_root_.scala.Some(_root_.scala.None), _root_.scala.Some(_root_.scala.None))),
-        """[{"field1":"VVV","field2":"WWW"},{},{"field1":null,"field2":null}]""")
+          Model(_root_.scala.None, _root_.scala.Some(_root_.scala.None))),
+        """[{"field1":"VVV","field2":"WWW"},{},{"field2":null}]""")
     }
     "serialize and deserialize Nullable[_] to distinguish `null` field values and missing fields using a custom value codec" in {
       sealed trait Nullable[+A]

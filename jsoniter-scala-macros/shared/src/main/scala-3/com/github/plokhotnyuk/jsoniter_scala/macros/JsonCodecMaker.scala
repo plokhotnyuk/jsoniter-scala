@@ -2084,10 +2084,9 @@ object JsonCodecMaker {
                               useDiscriminator: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] =
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
-        val methodKey = DecoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), useDiscriminator)
-        val decodeMethodSym = decodeMethodSyms.get(methodKey)
+        lazy val methodKey = DecoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), useDiscriminator)
+        lazy val decodeMethodSym = decodeMethodSyms.get(methodKey)
         if (implCodec.nonEmpty) '{ ${implCodec.get.asExprOf[JsonValueCodec[T]]}.decodeValue($in, $default) }
-        else if (decodeMethodSym.isDefined) Apply(Ref(decodeMethodSym.get), List(in.asTerm, default.asTerm)).asExprOf[T]
         else if (tpe =:= TypeRepr.of[String]) '{ $in.readString(${default.asExprOf[String]}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Boolean]) {
           if (isStringified) '{ $in.readStringAsBoolean() }.asExprOf[T]
@@ -2185,7 +2184,8 @@ object JsonCodecMaker {
                   new Some($readVal1)
                 }
               }.asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
+        } else if (decodeMethodSym.isDefined) Apply(Ref(decodeMethodSym.get), List(in.asTerm, default.asTerm)).asExprOf[T]
+        else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
           tpe.typeSymbol.fullName == "scala.IArray$package$.IArray" ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
@@ -2738,11 +2738,10 @@ object JsonCodecMaker {
                                out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
-        val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)),
+        lazy val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)),
             optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
-        val encodeMethodSym = encodeMethodSyms.get(methodKey)
+        lazy val encodeMethodSym = encodeMethodSyms.get(methodKey)
         if (implCodec.nonEmpty) '{ ${implCodec.get.asExprOf[JsonValueCodec[T]]}.encodeValue($m, $out) }
-        else if (encodeMethodSym.isDefined) Apply(Ref(encodeMethodSym.get), List(m.asTerm, out.asTerm)).asExprOf[Unit]
         else if (tpe =:= TypeRepr.of[String]) '{ $out.writeVal(${m.asExprOf[String]}) }
         else if (tpe =:= TypeRepr.of[Boolean]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Boolean]}) }
@@ -2823,7 +2822,8 @@ object JsonCodecMaker {
                 if ($x ne None) ${genWriteVal('{ $x.get }, tpe1 :: types, isStringified, None, out)}
                 else $out.writeNull()
               }
-        } else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
+        } else if (encodeMethodSym.isDefined) Apply(Ref(encodeMethodSym.get), List(m.asTerm, out.asTerm)).asExprOf[Unit]
+        else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
           tpe.typeSymbol.fullName == "scala.IArray$package$.IArray" ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)

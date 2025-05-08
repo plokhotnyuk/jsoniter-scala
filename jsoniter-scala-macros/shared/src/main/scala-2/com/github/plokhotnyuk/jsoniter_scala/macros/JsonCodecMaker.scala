@@ -1557,10 +1557,9 @@ object JsonCodecMaker {
       def genReadVal(types: List[Type], default: Tree, isStringified: Boolean, discriminator: Tree): Tree = {
         val tpe = types.head
         val implValueCodec = findImplicitValueCodec(types)
-        val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
-        val decodeMethodName = decodeMethodNames.get(methodKey)
+        lazy val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
+        lazy val decodeMethodName = decodeMethodNames.get(methodKey)
         if (implValueCodec.nonEmpty) q"$implValueCodec.decodeValue(in, $default)"
-        else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
         else if (tpe =:= typeOf[String]) q"in.readString($default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           if (isStringified) q"in.readStringAsBoolean()"
@@ -1622,7 +1621,8 @@ object JsonCodecMaker {
                 in.rollbackToken()
                 new _root_.scala.Some(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})
               }"""
-        } else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
+        } else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
+        else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
           isMutableArraySeq(tpe)) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val growArray =
@@ -2050,10 +2050,9 @@ object JsonCodecMaker {
       def genWriteVal(m: Tree, types: List[Type], isStringified: Boolean, discriminator: Tree): Tree = {
         val tpe = types.head
         val implValueCodec = findImplicitValueCodec(types)
-        val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
-        val encodeMethodName = encodeMethodNames.get(methodKey)
+        lazy val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
+        lazy val encodeMethodName = encodeMethodNames.get(methodKey)
         if (implValueCodec.nonEmpty) q"$implValueCodec.encodeValue($m, out)"
-        else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
         else if (tpe =:= typeOf[String]) q"out.writeVal($m)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] || tpe =:= definitions.ByteTpe ||
           tpe =:= typeOf[java.lang.Byte] || tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
@@ -2074,7 +2073,8 @@ object JsonCodecMaker {
         } else if (isOption(tpe, types.tail)) {
           q"""if ($m ne _root_.scala.None) ${genWriteVal(q"$m.get", typeArg1(tpe) :: types, isStringified, EmptyTree)}
               else out.writeNull()"""
-        } else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
+        } else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
+        else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
           isMutableArraySeq(tpe)) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           if (isImmutableArraySeq(tpe)) {
