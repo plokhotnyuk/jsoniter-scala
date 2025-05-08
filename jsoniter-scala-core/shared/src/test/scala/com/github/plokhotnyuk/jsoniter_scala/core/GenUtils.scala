@@ -56,7 +56,7 @@ object GenUtils {
     Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
     Gen.choose(Long.MinValue / 60, Long.MaxValue / 60).map(Duration.ofMinutes),
     // FIXME: Scala.js library for java.time._ has a bug in parsing and serialization of Duration with negative nanos
-    // ans seconds/minutes/hours, see: https://github.com/cquiroz/scala-java-time/issues/360
+    // and seconds/minutes/hours, see: https://github.com/cquiroz/scala-java-time/issues/360
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
     Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Long.MinValue, Long.MaxValue).map(Duration.ofMillis),
     Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Long.MinValue, Long.MaxValue).map(Duration.ofNanos))

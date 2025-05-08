@@ -1241,7 +1241,7 @@ object JsonCodecMaker {
         }
 
       def genReadMap[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
-                                       result: Quotes ?=> Expr[B]=>Expr[C], in: Expr[JsonReader],
+                                       result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader],
                                        default: Expr[C])(using Quotes): Expr[C] =
         if (cfg.setMaxInsertNumber == Int.MaxValue) '{
           if ($in.isNextToken('{')) {
@@ -1648,7 +1648,7 @@ object JsonCodecMaker {
       val encodeMethodDefs = new mutable.ArrayBuffer[DefDef]
 
       def withEncoderFor[T: Type](methodKey: EncoderMethodKey, arg: Expr[T], out: Expr[JsonWriter])
-                                 (f: (Expr[JsonWriter], Expr[T])=> Expr[Unit]): Expr[Unit] =
+                                 (f: (Expr[JsonWriter], Expr[T]) => Expr[Unit]): Expr[Unit] =
         Apply(Ref(encodeMethodSyms.getOrElse(methodKey, {
           val sym = Symbol.newMethod(Symbol.spliceOwner, "e" + encodeMethodSyms.size,
             MethodType(List("x", "out"))(_ => List(TypeRepr.of[T], TypeRepr.of[JsonWriter]), _ => TypeRepr.of[Unit]))
@@ -1981,7 +1981,7 @@ object JsonCodecMaker {
           } else None
         val optDiscriminatorVar = discriminator.flatMap(_.valDefOpt)
 
-        def readFieldsBlock(l: Expr[Int])(using Quotes): Expr[Unit] = // Using Quotes for w/a, see: https://github.com/lampepfl/dotty/issues/14137
+        def readFieldsBlock(l: Expr[Int])(using Quotes): Expr[Unit] =
           if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
             genReadCollisions(readFields, readVarsMap, discriminator, l)
           } else {
@@ -2355,7 +2355,8 @@ object JsonCodecMaker {
                 def readVal1(using Quotes) =
                   genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
 
-                genReadMapAsArray(newBuilder, x => '{ $x.addOne(new Tuple2($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })): Unit},
+                genReadMapAsArray(newBuilder,
+                  x => '{ $x.addOne(new Tuple2($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })): Unit},
                   x => '{ $x.result() }, in, default).asExprOf[T]
               } else {
                 def readKey(using Quotes) = genReadKey[t1](tpe1 :: types, in)
