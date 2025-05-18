@@ -1,9 +1,22 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 
 class JsonCodecMakerCompileTimeEvalSpec extends VerifyingSpec {
   "JsonCodecMaker.make" should {
+    "serialize and deserialize ADTs with openapi-like formatting" in {
+      sealed trait Enum
+
+      object EnumValue1 extends Enum
+
+      object EnumValue2 extends Enum
+
+      verifySerDeser(makeOpenapiLike[Enum], EnumValue1, """{"type":"EnumValue1"}""")
+      verifySerDeser(makeOpenapiLike[Enum]("hint"), EnumValue2, """{"hint":"EnumValue2"}""")
+      verifySerDeser(makeOpenapiLike[Enum]("hint", enforce_snake_case), EnumValue1, """{"hint":"enum_value_1"}""")
+      verifySerDeser(makeOpenapiLikeWithoutDiscriminator[Enum], EnumValue2, """"EnumValue2"""")
+    }
     "don't generate codecs when a parameter of the 'make' call depends on not yet compiled code" in {
       assert(intercept[TestFailedException](assertCompiles {
         """object A {

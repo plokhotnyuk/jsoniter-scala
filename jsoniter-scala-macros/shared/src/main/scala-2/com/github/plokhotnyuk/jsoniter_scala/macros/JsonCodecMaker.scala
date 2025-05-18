@@ -528,14 +528,6 @@ object JsonCodecMaker {
   def makeCirceLike[A]: JsonValueCodec[A] = macro Impl.makeCirceLike[A]
 
   /**
-   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications.
-   * */
-  def makeOpenapiLike[A]: JsonValueCodec[A] = macro Impl.makeOpenapiLike[A]
-  def makeOpenapiEnumLike[A]: JsonValueCodec[A] = macro Impl.makeOpenapiEnumLike[A]
-  def makeOpenapiADTLikeDefaultMapping[A](discriminator: String): JsonValueCodec[A] = macro Impl.makeOpenapiADTLikeDefaultMapping[A]
-  def makeOpenapiADTLike[A](discriminator: String, mapping: PartialFunction[String, String]): JsonValueCodec[A] = macro Impl.makeOpenapiADTLike[A]
-
-  /**
     * A replacement for the `make` call with the
     * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case)`
     * configuration parameter.
@@ -544,6 +536,49 @@ object JsonCodecMaker {
     * @return an instance of the derived codec
     */
   def makeCirceLikeSnakeCased[A]: JsonValueCodec[A] = macro Impl.makeCirceLikeSnakeCased[A]
+
+  /**
+   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
+   * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true).withAllowRecursiveTypes(true)`
+   *
+   * @tparam A a type that should be encoded and decoded by the derived codec
+   * @return an instance of the derived codec
+   */
+  def makeOpenapiLike[A]: JsonValueCodec[A] = macro Impl.makeOpenapiLike1[A]
+
+  /**
+   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
+   * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true).withAllowRecursiveTypes(true)`
+   * with a privided discriminator field name.
+   *
+   * @tparam A a type that should be encoded and decoded by the derived codec
+   * @param discriminatorFieldName a name of discriminator field
+   * @return an instance of the derived codec
+   */
+  def makeOpenapiLike[A](discriminatorFieldName: String): JsonValueCodec[A] = macro Impl.makeOpenapiLike2[A]
+
+  /**
+   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
+   * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true).withAllowRecursiveTypes(true)`
+   * with a privided discriminator field name and an ADT leaf-class name mapper with an applied function
+   * that truncates to simple class name
+   *
+   * @tparam A a type that should be encoded and decoded by the derived codec
+   * @param discriminatorFieldName a name of discriminator field
+   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
+   *                               discriminator field
+   * @return an instance of the derived codec
+   */
+  def makeOpenapiLike[A](discriminatorFieldName: String, adtLeafClassNameMapper: PartialFunction[String, String]): JsonValueCodec[A] = macro Impl.makeOpenapiLike3[A]
+
+  /**
+   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
+   * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true).withAllowRecursiveTypes(true).withDiscriminatorFieldName(scala.None))`
+   *
+   * @tparam A a type that should be encoded and decoded by the derived codec
+   * @return an instance of the derived codec
+   */
+  def makeOpenapiLikeWithoutDiscriminator[A]: JsonValueCodec[A] = macro Impl.makeOpenapiLikeWithoutDiscriminator[A]
 
   /**
     * Derives a codec for JSON values for the specified type `A` and a provided derivation configuration.
@@ -578,23 +613,25 @@ object JsonCodecMaker {
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
         .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true))
 
-    def makeOpenapiLike[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
+    def makeOpenapiLike1[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
         .withRequireCollectionFields(true).withAllowRecursiveTypes(true))
 
-    def makeOpenapiEnumLike[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
+    def makeOpenapiLike2[A: c.WeakTypeTag](c: blackbox.Context)(discriminatorFieldName: c.Expr[String]): c.Expr[JsonValueCodec[A]] =
+      make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
+        .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
+        .withRequireDiscriminatorFirst(false).withDiscriminatorFieldName(Some(c.eval(c.Expr[String](c.untypecheck(discriminatorFieldName.tree.duplicate))))))
+
+    def makeOpenapiLike3[A: c.WeakTypeTag](c: blackbox.Context)(discriminatorFieldName: c.Expr[String],
+                                                                adtLeafClassNameMapper: c.Expr[PartialFunction[String, String]]): c.Expr[JsonValueCodec[A]] =
+      make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
+        .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
+        .withRequireDiscriminatorFirst(false).withDiscriminatorFieldName(Some(c.eval(c.Expr[String](c.untypecheck(discriminatorFieldName.tree.duplicate)))))
+        .withAdtLeafClassNameMapper(x => c.eval(c.Expr[PartialFunction[String, String]](c.untypecheck(adtLeafClassNameMapper.tree.duplicate))).apply(simpleClassName(x))))
+
+    def makeOpenapiLikeWithoutDiscriminator[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
         .withRequireCollectionFields(true).withAllowRecursiveTypes(true).withDiscriminatorFieldName(scala.None))
-
-    def makeOpenapiADTLikeDefaultMapping[A: c.WeakTypeTag](c: blackbox.Context)(discriminator: c.Expr[String]): c.Expr[JsonValueCodec[A]] =
-      make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
-        .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
-        .withRequireDiscriminatorFirst(false).withDiscriminatorFieldName(Some(c.eval(c.Expr[String](c.untypecheck(discriminator.tree.duplicate))))))
-
-    def makeOpenapiADTLike[A: c.WeakTypeTag](c: blackbox.Context)(discriminator: c.Expr[String], mapping: c.Expr[PartialFunction[String, String]]): c.Expr[JsonValueCodec[A]] =
-      make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
-        .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
-        .withRequireDiscriminatorFirst(false).withDiscriminatorFieldName(Some(c.eval(c.Expr[String](c.untypecheck(discriminator.tree.duplicate))))).withAdtLeafClassNameMapper(x => c.eval(c.Expr[PartialFunction[String, String]](c.untypecheck(mapping.tree.duplicate))).apply(com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.simpleClassName(x))))
 
     def makeCirceLikeSnakeCased[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
