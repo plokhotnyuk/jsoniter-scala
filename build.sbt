@@ -39,7 +39,7 @@ lazy val commonSettings = Seq(
     case Some((2, 13)) => Seq("-jdk-api-doc-base", "https://docs.oracle.com/en/java/javase/11/docs/api")
     case _ => Seq()
   }),
-  publishTo := sonatypePublishToBundle.value,
+  publishTo := localStaging.value,
   publishMavenStyle := true,
   pomIncludeRepository := { _ => false },
   scmInfo := Some(
