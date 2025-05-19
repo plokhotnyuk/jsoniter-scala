@@ -2438,7 +2438,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(makeOpenapiLike[Enum], EnumValue1, """{"type":"EnumValue1"}""")
       verifySerDeser(makeOpenapiLike[Enum]("hint"), EnumValue2, """{"hint":"EnumValue2"}""")
-      verifySerDeser(makeOpenapiLike[Enum]("hint", enforce_snake_case), EnumValue1, """{"hint":"enum_value_1"}""")
+      verifySerDeser(makeOpenapiLike[Enum]("hint", {
+        case "EnumValue1" => "enum_value_1"
+        case "EnumValue2" => "enum_value_2"
+      }), EnumValue1, """{"hint":"enum_value_1"}""")
       verifySerDeser(makeOpenapiLikeWithoutDiscriminator[Enum], EnumValue2, """"EnumValue2"""")
     }
     "serialize and deserialize ADTs with circe-like default formatting" in {
