@@ -2429,6 +2429,22 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeser(baseCodec2, B(), """{"B":{"extra":"should be ignored"}}""")
       verifyDeser(baseCodec2, C, """"C"""")
     }
+    "serialize and deserialize ADTs with openapi-like formatting" in {
+      sealed trait Enum
+
+      object EnumValue1 extends Enum
+
+      object EnumValue2 extends Enum
+
+      verifySerDeser(makeOpenapiLike[Enum], EnumValue1, """{"type":"EnumValue1"}""")
+      verifySerDeser(makeOpenapiLike[Enum]("hint"), EnumValue2, """{"hint":"EnumValue2"}""")
+      val codec: JsonValueCodec[Enum] = makeOpenapiLike("hint", {
+        case "EnumValue1" => "enum_value_1"
+        case "EnumValue2" => "enum_value_2"
+      })
+      verifySerDeser(codec, EnumValue1, """{"hint":"enum_value_1"}""")
+      verifySerDeser(makeOpenapiLikeWithoutDiscriminator[Enum], EnumValue2, """"EnumValue2"""")
+    }
     "serialize and deserialize ADTs with circe-like default formatting" in {
       sealed trait Enum
 
