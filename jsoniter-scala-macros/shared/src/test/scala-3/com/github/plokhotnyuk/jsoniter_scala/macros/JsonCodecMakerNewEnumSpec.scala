@@ -71,8 +71,9 @@ enum MyEnum(val value: String):
   case Mixed extends MyEnum("item1") with Mix
   case Simple extends MyEnum("item2")
 
-enum RecursiveEnum:
-  case Rec(val next: Option[Rec]) extends RecursiveEnum
+enum LinkedList[+T]:
+  case End
+  case Node(value: T, next: LinkedList[T])
 
 enum ClientOut(@transient val tpe: String):
   @named("p") case Ping(@named("l") timestamp: Long) extends ClientOut("p")
@@ -156,21 +157,21 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
       verifySerDeser(make[List[FooEnum[Option]]], List(FooEnum.Bar[Option](Some(1)), FooEnum.Baz[Option](Some("VVV"))),
         """[{"type":"Bar","a":1},{"type":"Baz","a":"VVV"}]""")
     }
-    "serialize and deserialize recursive Scala3 enums if it is allowed" in {
-      verifySerDeser(make[List[RecursiveEnum]](CodecMakerConfig.withAllowRecursiveTypes(true)),
-        List(RecursiveEnum.Rec(None), RecursiveEnum.Rec(Some(RecursiveEnum.Rec(None)))),
-        """[{"type":"Rec"},{"type":"Rec","next":{}}]""")
-    }
     "serialize and deserialize Scala3 enums with a transient field" in {
       verifySerDeser(make[List[ClientOut]](CodecMakerConfig.withDiscriminatorFieldName(Some("t"))),
         List(ClientOut.Ping(1), ClientOut.Move(1)), """[{"t":"p","l":1},{"t":"m","m":1}]""")
     }
+    "serialize and deserialize recursive Scala3 enums if it is allowed" in {
+      verifySerDeser(make[LinkedList[Int]](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        LinkedList.Node(2, LinkedList.Node(1, LinkedList.End)),
+        """{"type":"Node","value":2,"next":{"type":"Node","value":1,"next":{"type":"End"}}}""")
+    }
     "don't generate codecs for recursive Scala3 enums by default" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """JsonCodecMaker.make[RecursiveEnum]""".stripMargin
+        """JsonCodecMaker.make[LinkedList[Int]]""".stripMargin
       }).getMessage.contains {
-        """Recursive type(s) detected: 'com.github.plokhotnyuk.jsoniter_scala.macros.RecursiveEnum.Rec',
-          |'scala.Option[com.github.plokhotnyuk.jsoniter_scala.macros.RecursiveEnum.Rec]'.
+        """Recursive type(s) detected: 'com.github.plokhotnyuk.jsoniter_scala.macros.LinkedList[scala.Int]',
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.LinkedList.Node[scala.Int]'.
           |Please consider using a custom implicitly accessible codec for this
           |type to control the level of recursion or turn on the
           |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input

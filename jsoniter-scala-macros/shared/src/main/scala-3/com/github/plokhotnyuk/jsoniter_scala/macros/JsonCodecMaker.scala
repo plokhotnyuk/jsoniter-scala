@@ -1540,9 +1540,6 @@ object JsonCodecMaker {
           else if (tpe.termSymbol.flags.is(Flags.Enum)) {
             tpe match
               case TermRef(_, name) => name
-              case TypeRef(_, name) => name
-              case AppliedType(TermRef(_, name), _) => name
-              case AppliedType(TypeRef(_, name), _) => name
               case _ => fail(s"Unsupported enum type: '${tpe.show}', tree=$tpe")
           } else if (tpe.typeSymbol.flags.is(Flags.Module)) tpe.termSymbol.fullName
           else tpe.typeSymbol.fullName
