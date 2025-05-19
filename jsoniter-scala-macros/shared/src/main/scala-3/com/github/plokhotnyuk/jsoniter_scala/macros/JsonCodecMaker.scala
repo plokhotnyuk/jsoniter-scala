@@ -621,7 +621,7 @@ object JsonCodecMaker {
    * @return an instance of the derived codec
    */
   inline def makeOpenapiLike[A](discriminatorFieldName: String, inline adtLeafClassNameMapper: PartialFunction[String, String]): JsonValueCodec[A] =
-    ${Impl.makeOpenapiLike('discriminatorFieldName, '{ adtLeafClassNameMapper } )}
+    ${Impl.makeOpenapiLike('discriminatorFieldName, 'adtLeafClassNameMapper)}
 
   /**
    * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
