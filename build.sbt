@@ -266,6 +266,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "com.dslplatform" %% "dsl-json-scala" % "2.0.2"
       )
       case _ => Seq(
+        "org.scala-lang" %% "scala3-staging" % scalaVersion.value, // required by `OpenRTBReading.json4sNative` and `OpenRTBReading.json4sNative` benchmarks for Scala 3
         "io.bullet" %%% "borer-derivation" % "1.16.1"
       )
     }),
