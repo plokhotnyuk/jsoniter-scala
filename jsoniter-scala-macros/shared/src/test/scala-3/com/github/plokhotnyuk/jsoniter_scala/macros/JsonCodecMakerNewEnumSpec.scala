@@ -75,6 +75,10 @@ enum LinkedList[+T]:
   case End
   case Node(value: T, next: LinkedList[T])
 
+enum Side:
+  @named("0") case Buy
+  @named("1") case Sell
+
 enum ClientOut(@transient val tpe: String):
   @named("p") case Ping(@named("l") timestamp: Long) extends ClientOut("p")
   @named("m") case Move(@named("m") move: Long) extends ClientOut("m")
@@ -156,6 +160,9 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
     "serialize and deserialize higher-kinded enum ADTs" in {
       verifySerDeser(make[List[FooEnum[Option]]], List(FooEnum.Bar[Option](Some(1)), FooEnum.Baz[Option](Some("VVV"))),
         """[{"type":"Bar","a":1},{"type":"Baz","a":"VVV"}]""")
+    }
+    "serialize and deserialize Scala3 enums with cases that use named annotation" in {
+      verifySerDeser(makeWithoutDiscriminator[List[Side]], List(Side.Buy, Side.Sell), """["0","1"]""")
     }
     "serialize and deserialize Scala3 enums with a transient field" in {
       verifySerDeser(make[List[ClientOut]](CodecMakerConfig.withDiscriminatorFieldName(Some("t"))),

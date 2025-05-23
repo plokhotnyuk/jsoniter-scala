@@ -1531,13 +1531,14 @@ object JsonCodecMaker {
         else '{ $in.unexpectedKeyError($l) }
 
       def discriminatorValue(tpe: TypeRepr): String =
-        val named = tpe.typeSymbol.annotations.filter(_.tpe =:= TypeRepr.of[named])
+        val isEnum = tpe.termSymbol.flags.is(Flags.Enum)
+        var named = (if (isEnum) tpe.termSymbol else tpe.typeSymbol).annotations.filter(_.tpe =:= TypeRepr.of[named])
         if (named.nonEmpty) {
           if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '${tpe.show}'.")
           namedValueOpt(named.headOption, tpe).get
         } else cfg.adtLeafClassNameMapper({
           if (tpe =:= TypeRepr.of[None.type]) "scala.None"
-          else if (tpe.termSymbol.flags.is(Flags.Enum)) {
+          else if (isEnum) {
             tpe match
               case TermRef(_, name) => name
               case _ => fail(s"Unsupported enum type: '${tpe.show}', tree=$tpe")
