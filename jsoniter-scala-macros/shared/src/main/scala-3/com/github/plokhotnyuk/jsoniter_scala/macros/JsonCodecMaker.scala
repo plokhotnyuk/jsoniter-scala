@@ -1538,11 +1538,7 @@ object JsonCodecMaker {
           namedValueOpt(named.headOption, tpe).get
         } else cfg.adtLeafClassNameMapper({
           if (tpe =:= TypeRepr.of[None.type]) "scala.None"
-          else if (isEnum) {
-            tpe match
-              case TermRef(_, name) => name
-              case _ => fail(s"Unsupported enum type: '${tpe.show}', tree=$tpe")
-          } else if (tpe.typeSymbol.flags.is(Flags.Module)) tpe.termSymbol.fullName
+          else if (isEnum || tpe.typeSymbol.flags.is(Flags.Module)) tpe.termSymbol.fullName
           else tpe.typeSymbol.fullName
         }).getOrElse(fail(s"Discriminator is not defined for ${tpe.show}"))
 
