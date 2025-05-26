@@ -485,6 +485,20 @@ final class JsonReader private[jsoniter_scala](
   }
 
   /**
+    * Reads a JSON key into a `Long` representation of `Decimal64` value.
+    *
+    * @return a Decimal64` value of the parsed JSON key
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
+    */
+  def readKeyAsDecimal64(): Long = {
+    nextTokenOrError('"', head)
+    val x = readDecimal64(isToken = false)
+    nextByteOrError('"', head)
+    nextTokenOrError(':', head)
+    x
+  }
+
+  /**
     * Reads a JSON key into a `BigInt` instance with the default limit of allowed digits.
     *
     * @return a `BigInt` instance of the parsed JSON key
@@ -609,6 +623,15 @@ final class JsonReader private[jsoniter_scala](
     *                             illegal format of JSON value
     */
   def readDouble(): Double = readDouble(isToken = true)
+
+  /**
+    * Reads a JSON number value into a `Long` representating of `Decimal64` value.
+    *
+    * @return a `Decimal64` value of the parsed JSON value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value
+    */
+  def readDecimal64(): Long = readDecimal64(isToken = true)
 
   /**
     * Reads a JSON number value into a `Float` value.
@@ -1033,6 +1056,19 @@ final class JsonReader private[jsoniter_scala](
   def readStringAsDouble(): Double = {
     nextTokenOrError('"', head)
     val x = readDouble(isToken = false)
+    nextByteOrError('"', head)
+    x
+  }
+
+  /**
+    * Reads a JSON string value into a `Long` representation of `Decimal64` value.
+    *
+    * @return a `Decimal` value of the parsed JSON value.
+    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value
+    */
+  def readStringAsDecimal64(): Long = {
+    nextTokenOrError('"', head)
+    val x = readDecimal64(isToken = false)
     nextByteOrError('"', head)
     x
   }
@@ -2331,6 +2367,117 @@ final class JsonReader private[jsoniter_scala](
     var offset = from
     if (mark == 0) offset -= newMark
     java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
+  }
+
+  def readDecimal64(isToken: Boolean): Long = {
+    var b =
+      if (isToken) nextToken(head)
+      else nextByte(head)
+    var isNeg = false
+    if (b == '-') {
+      b = nextByte(head)
+      isNeg = true
+    }
+    if (b < '0' || b > '9') numberError()
+    var pos = head
+    var buf = this.buf
+    val from = pos - 1
+    val oldMark = mark
+    val newMark =
+      if (oldMark < 0) from
+      else oldMark
+    mark = newMark
+    var m10 = (b - '0').toLong
+    var e10 = 0
+    var digits = 1
+    if (isToken && m10 == 0) {
+      if ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) leadingZeroError(pos - 1)
+    } else {
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (m10 < 922337203685477580L) {
+          m10 = m10 * 10 + (b - '0')
+          digits += 1
+        } else e10 += 1
+        pos += 1
+      }
+    }
+    if (b == '.') {
+      pos += 1
+      e10 += digits
+      var noFracDigits = true
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (m10 < 922337203685477580L) {
+          m10 = m10 * 10 + (b - '0')
+          digits += 1
+        }
+        noFracDigits = false
+        pos += 1
+      }
+      e10 -= digits
+      if (noFracDigits) numberError(pos)
+    }
+    if ((b | 0x20) == 'e') {
+      b = nextByte(pos + 1)
+      var s = 0
+      if (b == '-' || b == '+') {
+        s = '+' - b >> 31
+        b = nextByte(head)
+      }
+      if (b < '0' || b > '9') numberError()
+      var exp = b - '0'
+      pos = head
+      buf = this.buf
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (exp < 214748364) exp = exp * 10 + (b - '0')
+        pos += 1
+      }
+      exp ^= s
+      exp -= s
+      e10 += exp
+    }
+    head = pos
+    var x: Double =
+      if (e10 == 0 && m10 < 922337203685477580L) m10.toDouble
+      else if (m10 < 4503599627370496L && e10 >= -22 && e10 <= 38 - digits) {
+        val pow10 = pow10Doubles
+        if (e10 < 0) m10 / pow10(-e10)
+        else if (e10 <= 22) m10 * pow10(e10)
+        else {
+          val slop = 16 - digits
+          (m10 * pow10(slop)) * pow10(e10 - slop)
+        }
+      } else toDouble(m10, e10, from, newMark, pos)
+    if (isNeg) x = -x
+    if (mark > oldMark) mark = oldMark
+    x
   }
 
   def readFloat(isToken: Boolean): Float = {
