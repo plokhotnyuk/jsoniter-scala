@@ -387,6 +387,7 @@ and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/micros
 - use `sbt clean compile stage` or `sbt clean test stage` instead of just `sbt clean stage`, like in
 [this repo](https://github.com/hochgi/HTTP-stream-exercise/tree/jsoniter-2nd-round)
 - use `mill clean` if mill's native BSP support is used in IntelliJ IDEA
+- ensure that only one version of jsoniter-scala is on the classpath! Having different versions (e.g. through dependencies) will trigger this error. Use `dependencyTree`/[`dependencyGraph`](https://www.scala-sbt.org/sbt-dependency-graph) or similar mechanisms to see if this is the case. If this happens, use [exclusionRules](https://www.scala-sbt.org/1.x/docs/Library-Management.html#Exclude+Transitive+Dependencies) to get rid of the wrong versions.
 
 3. [Unexpected compiler errors](https://github.com/plokhotnyuk/jsoniter-scala/issues/551)
 can happen during compilation of ADT definitions or their derived codecs if they are nested in some classes or functions
