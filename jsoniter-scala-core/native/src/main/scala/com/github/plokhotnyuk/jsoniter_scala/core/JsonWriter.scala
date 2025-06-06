@@ -1560,7 +1560,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += digitCount(exp)
         count = pos
       } else {
-        q = Math.multiplyHigh(exp, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
+        q = NativeMath.multiplyHigh(exp, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
         pos += digitCount(q)
         count = write8Digits(exp - q * 100000000L, pos, buf, ds)
       }
@@ -1696,7 +1696,7 @@ final class JsonWriter private[jsoniter_scala](
       var hours = 0L
       var secsOfHour = totalSecs.toInt
       if (totalSecs >= 3600) {
-        hours = Math.multiplyHigh(totalSecs >> 4, 655884233731895169L) >> 3 // divide a positive long by 3600
+        hours = NativeMath.multiplyHigh(totalSecs >> 4, 655884233731895169L) >> 3 // divide a positive long by 3600
         secsOfHour = (totalSecs - hours * 3600).toInt
       }
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
@@ -1713,7 +1713,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos += digitCount(hours)
           pos = lastPos
         } else {
-          q = Math.multiplyHigh(hours, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
+          q = NativeMath.multiplyHigh(hours, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
           lastPos += digitCount(q)
           pos = write8Digits(hours - q * 100000000L, lastPos, buf, ds)
         }
@@ -1766,9 +1766,9 @@ final class JsonWriter private[jsoniter_scala](
     val epochSecond = x.getEpochSecond
     if (epochSecond < 0) writeBeforeEpochInstant(epochSecond, x.getNano)
     else {
-      val epochDay = Math.multiplyHigh(epochSecond, 1749024623285053783L) >> 13 // epochSecond / 86400
+      val epochDay = NativeMath.multiplyHigh(epochSecond, 1749024623285053783L) >> 13 // epochSecond / 86400
       val marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
-      var year = (Math.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
+      var year = (NativeMath.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
       var days = year * 365L
       var year1374389535 = year * 1374389535L
       var century = (year1374389535 >> 37).toInt
@@ -1790,11 +1790,11 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeBeforeEpochInstant(epochSecond: Long, nano: Int): Unit = {
-    val epochDay = (Math.multiplyHigh(epochSecond - 86399, 1749024623285053783L) >> 13) + 1 // (epochSecond - 86399) / 86400
+    val epochDay = (NativeMath.multiplyHigh(epochSecond - 86399, 1749024623285053783L) >> 13) + 1 // (epochSecond - 86399) / 86400
     var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     val adjust400YearCycles = ((marchZeroDay + 1) * 7525902 >> 40).toInt // ((marchZeroDay + 1) / 146097).toInt - 1
     marchZeroDay -= adjust400YearCycles * 146097L
-    var year = (Math.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
+    var year = (NativeMath.multiplyHigh(marchZeroDay * 400 + 591, 4137408090565272301L) >> 15).toInt // ((marchZeroDay * 400 + 591) / 146097).toInt
     var days = year * 365L
     var year1374389535 = year * 1374389535L
     var century = (year1374389535 >> 37).toInt
@@ -2140,8 +2140,8 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val m1 = 6189700196426901375L
-    val q1 = Math.multiplyHigh(x, m1) >>> 25 // divide a positive long by 100000000
-    val q2 = Math.multiplyHigh(q1, m1) >>> 25 // divide a positive long by 100000000
+    val q1 = NativeMath.multiplyHigh(x, m1) >>> 25 // divide a positive long by 100000000
+    val q2 = NativeMath.multiplyHigh(q1, m1) >>> 25 // divide a positive long by 100000000
     ByteArrayAccess.setShort(buf, pos, ds(q2.toInt))
     write8Digits(x - q1 * 100000000L, write8Digits(q1 - q2 * 100000000L, pos + 2, buf, ds), buf, ds)
   }
@@ -2230,13 +2230,13 @@ final class JsonWriter private[jsoniter_scala](
       pos = lastPos
     } else {
       val m2 = 6189700196426901375L
-      val q1 = Math.multiplyHigh(q0, m2) >>> 25 // divide a positive long by 100000000
+      val q1 = NativeMath.multiplyHigh(q0, m2) >>> 25 // divide a positive long by 100000000
       if (q1 < m1) {
         q2 = q1
         lastPos += digitCount(q1)
         pos = lastPos
       } else {
-        q2 = Math.multiplyHigh(q1, m2) >>> 25 // divide a small positive long by 100000000
+        q2 = NativeMath.multiplyHigh(q1, m2) >>> 25 // divide a small positive long by 100000000
         lastPos += digitCount(q2)
         pos = write8Digits(q1 - q2 * m1, lastPos, buf, ds)
       }
@@ -2354,7 +2354,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def rop(g: Long, cp: Int): Int = {
-    val x = Math.multiplyHigh(g, cp.toLong << 32)
+    val x = NativeMath.multiplyHigh(g, cp.toLong << 32)
     (x >>> 31).toInt | -x.toInt >>> 31
   }
 
@@ -2407,7 +2407,7 @@ final class JsonWriter private[jsoniter_scala](
         val vbr = rop(g1, g0, cb + 2 << h) - vbCorr
         var diff = 0
         if (vb < 400 || {
-          m10 = Math.multiplyHigh(vb, 461168601842738792L) // divide a positive long by 40
+          m10 = NativeMath.multiplyHigh(vb, 461168601842738792L) // divide a positive long by 40
           val vb40 = m10 * 40
           diff = (vbl - vb40).toInt
           ((vb40 - vbr).toInt + 40 ^ diff) >= 0
@@ -2470,8 +2470,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x = Math.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
-    Math.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
+    val x = NativeMath.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
+    NativeMath.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
   }
 
   // Adoption of a nice trick from Daniel Lemire's blog that works for numbers up to 10^18:
@@ -2483,7 +2483,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = p
     var posLim = pl
     if (q0 != x) {
-      val q1 = (Math.multiplyHigh(x, 6189700196426901375L) >>> 25).toInt // divide a positive long by 100000000
+      val q1 = (NativeMath.multiplyHigh(x, 6189700196426901375L) >>> 25).toInt // divide a positive long by 100000000
       val r1 = (x - q1 * 100000000L).toInt
       val posm8 = pos - 8
       if (r1 == 0) {
