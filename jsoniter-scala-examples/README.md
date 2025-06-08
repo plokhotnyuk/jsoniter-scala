@@ -180,8 +180,8 @@ sudo hdparm -Tt /dev/nvme0n1p4
 Here is an example of expected output:
 ```text
 /dev/nvme0n1p4:
- Timing cached reads:   48588 MB in  2.00 seconds = 24334.91 MB/sec
- Timing buffered disk reads: 4456 MB in  3.00 seconds = 1485.08 MB/sec
+ Timing cached reads:   50804 MB in  2.00 seconds = 25445.50 MB/sec
+ Timing buffered disk reads: 8678 MB in  3.00 seconds = 2892.53 MB/sec
 ```
 
 ### Build uber jar, print its size, and measure its running time (tested with Oracle GraalVM 25-dev)
@@ -193,61 +193,35 @@ time ./example02.jar -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseEpsilonGC -J-X
 ```
 Expected output:
 ```text
-real	0m37.615s
-user	0m35.187s
-sys	0m2.662s
+real	0m36.840s
+user	0m34.748s
+sys	0m2.362s
 ```
 
-### Build GraalVM native image, print its size, and measure its running time (tested with Oracle GraalVM 23)
+### Build GraalVM native image, print its size, and measure its running time (tested with Oracle GraalVM 24/23)
 
 ```sh
-scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon -O3 -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
+scala-cli --power package --graalvm-jvm-id graalvm-oracle:24 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon -O3 -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
 ls -l ./example02_graalvm.bin
 time ./example02_graalvm.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	0m44.963s
-user	0m42.471s
-sys	0m2.486s
-```
-
-You can use profile guided optimization (PGO) to improve performance of Oracle GraalVM native image, for that you need:
-- build an instrumented GraalVM native image with `--pgo-instrument` option added:
-```sh
-scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm_instrumented.bin -- --no-fallback --gc=epsilon -O3 --pgo-instrument -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
-ls -l ./example02_graalvm_instrumented.bin
-```
-- run the instrumented image and collect the profile data:
-```sh
-time ./example02_graalvm_instrumented.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
-```
-- build a PGO-optimized GraalVM native image with `--pgo=default.iprof` option added:
-```sh
-scala-cli --power package --graalvm-jvm-id graalvm-oracle:23 --native-image example02.sc --force -o example02_graalvm_optimized.bin -- --no-fallback --gc=epsilon -O3 --pgo=default.iprof -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
-ls -l ./example02_graalvm_optimized.bin
-```
-- run the PGO-optimized image:
-```sh
-time ./example02_graalvm_optimized.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
-```
-Expected output:
-```text
-real	0m43.674s
-user	0m41.213s
-sys	0m2.461s
+real	0m45.922s
+user	0m43.495s
+sys	0m2.424s
 ```
 
 ### Build Scala Native image, print its size, and measure its running time
 
 ```sh
-scala-cli --power package --native-version 0.5.7 --native example02.sc --native-mode release-full --native-gc none --native-lto thin --native-multithreading=false --force -o example02_native.bin
+scala-cli --power package --native-version 0.5.8 --native example02.sc --native-mode release-full --native-gc none --native-lto thin --native-multithreading=false --force -o example02_native.bin
 ls -l ./example02_native.bin
 time ./example02_native.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
 Expected output:
 ```text
-real	0m49.232s
-user	0m46.838s
-sys	0m2.389s
+real	0m49.766s
+user	0m47.408s
+sys	0m2.355s
 ```
