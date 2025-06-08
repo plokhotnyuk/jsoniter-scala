@@ -12,26 +12,26 @@ sudo apt install linux-tools-common linux-tools-generic
 sudo sysctl kernel.perf_event_paranoid=1
 scala-cli --power package --assembly example01.sc --force -o example01.jar
 ls -l ./example01.jar
-perf stat -r 100 ./example01.jar > /dev/null
+perf stat -r 100 java --sun-misc-unsafe-memory-access=allow -jar ./example01.jar > /dev/null
 ```
 Expected output:
 ```text
  Performance counter stats for './example01.jar' (100 runs):
 
-            202.75 msec task-clock                       #    2.286 CPUs utilized               ( +-  0.27% )
-             2,191      context-switches                 #   10.806 K/sec                       ( +-  1.53% )
-                39      cpu-migrations                   #  192.356 /sec                        ( +-  2.49% )
-            24,775      page-faults                      #  122.195 K/sec                       ( +-  0.27% )
-       303,999,880      cpu_atom/cycles/                 #    1.499 GHz                         ( +-  3.51% )  (71.71%)
-     1,005,678,639      cpu_core/cycles/                 #    4.960 GHz                         ( +-  0.44% )  (77.24%)
-       431,508,692      cpu_atom/instructions/           #    1.42  insn per cycle              ( +-  3.69% )  (71.71%)
-     1,684,651,998      cpu_core/instructions/           #    5.54  insn per cycle              ( +-  0.47% )  (77.24%)
-        83,740,906      cpu_atom/branches/               #  413.027 M/sec                       ( +-  3.78% )  (71.71%)
-       335,230,949      cpu_core/branches/               #    1.653 G/sec                       ( +-  0.49% )  (77.24%)
-         2,017,405      cpu_atom/branch-misses/          #    2.41% of all branches             ( +-  4.20% )  (71.71%)
-         9,450,892      cpu_core/branch-misses/          #   11.29% of all branches             ( +-  0.47% )  (77.24%)
+            205.66 msec task-clock                       #    2.215 CPUs utilized               ( +-  0.30% )
+             1,624      context-switches                 #    7.897 K/sec                       ( +-  0.83% )
+                17      cpu-migrations                   #   82.662 /sec                        ( +-  1.67% )
+            23,158      page-faults                      #  112.605 K/sec                       ( +-  0.09% )
+     1,195,984,140      cpu_atom/instructions/           #    1.57  insn per cycle              ( +-  1.24% )
+       906,422,673      cpu_core/instructions/           #    1.77  insn per cycle              ( +-  2.94% )  (39.78%)
+       762,329,450      cpu_atom/cycles/                 #    3.707 GHz                         ( +-  1.34% )
+       513,382,841      cpu_core/cycles/                 #    2.496 GHz                         ( +-  3.75% )  (39.78%)
+       237,678,684      cpu_atom/branches/               #    1.156 G/sec                       ( +-  1.24% )
+       174,316,667      cpu_core/branches/               #  847.610 M/sec                       ( +-  3.18% )  (39.78%)
+         6,725,338      cpu_atom/branch-misses/          #    2.83% of all branches             ( +-  1.78% )
+         5,919,295      cpu_core/branch-misses/          #    3.40% of all branches             ( +-  4.63% )  (39.78%)
 
-          0.088700 +- 0.000135 seconds time elapsed  ( +-  0.15% )
+          0.092830 +- 0.000511 seconds time elapsed  ( +-  0.55% )
 ```
 
 ### Build Scala JS output, print its size, and measure its start up time with `node` (tested with node.js 22)
@@ -49,20 +49,20 @@ Expected output:
 ```text
  Performance counter stats for 'node ./example01.js' (100 runs):
 
-             14.90 msec task-clock                       #    1.014 CPUs utilized               ( +-  0.30% )
-                20      context-switches                 #    1.343 K/sec                       ( +-  1.60% )
-                 2      cpu-migrations                   #  134.254 /sec                        ( +-  5.08% )
-             2,748      page-faults                      #  184.466 K/sec                       ( +-  0.00% )
-        45,371,808      cpu_atom/cycles/                 #    3.046 GHz                         ( +-  2.61% )  (20.12%)
-        75,772,761      cpu_core/cycles/                 #    5.086 GHz                         ( +-  0.32% )  (85.22%)
-        97,892,289      cpu_atom/instructions/           #    2.16  insn per cycle              ( +-  3.38% )  (20.12%)
-       165,775,873      cpu_core/instructions/           #    3.65  insn per cycle              ( +-  0.29% )  (85.22%)
-        16,573,542      cpu_atom/branches/               #    1.113 G/sec                       ( +-  3.35% )  (20.12%)
-        28,245,004      cpu_core/branches/               #    1.896 G/sec                       ( +-  0.27% )  (85.22%)
-            97,278      cpu_atom/branch-misses/          #    0.59% of all branches             ( +- 11.08% )  (20.12%)
-           573,362      cpu_core/branch-misses/          #    3.46% of all branches             ( +-  0.72% )  (85.22%)
+             17.64 msec task-clock                       #    0.994 CPUs utilized               ( +-  0.14% )
+                18      context-switches                 #    1.021 K/sec                       ( +-  1.43% )
+                 2      cpu-migrations                   #  113.401 /sec                        ( +-  2.30% )
+             2,760      page-faults                      #  156.494 K/sec                       ( +-  0.01% )
+       170,140,863      cpu_atom/instructions/           #    2.12  insn per cycle              ( +-  0.01% )
+     <not counted>      cpu_core/instructions/                                                  ( +- 26.12% )  (0.00%)
+        80,128,642      cpu_atom/cycles/                 #    4.543 GHz                         ( +-  0.14% )
+     <not counted>      cpu_core/cycles/                                                        ( +- 26.44% )  (0.00%)
+        28,956,452      cpu_atom/branches/               #    1.642 G/sec                       ( +-  0.01% )
+     <not counted>      cpu_core/branches/                                                      ( +- 25.84% )  (0.00%)
+           560,195      cpu_atom/branch-misses/          #    1.93% of all branches             ( +-  0.04% )
+     <not counted>      cpu_core/branch-misses/                                                 ( +- 24.67% )  (0.00%)
 
-         0.0146864 +- 0.0000435 seconds time elapsed  ( +-  0.30% )
+         0.0177346 +- 0.0000278 seconds time elapsed  ( +-  0.16% )
 ```
 
 ### Build Scala JS Wasm output, print its size, and measure its start up time with `node` (tested with node.js 22)
@@ -81,20 +81,20 @@ Expected output:
 ```text
  Performance counter stats for 'node --experimental-wasm-exnref ./example01.js/main.js' (100 runs):
 
-             23.36 msec task-clock                       #    1.036 CPUs utilized               ( +-  0.23% )
-                61      context-switches                 #    2.611 K/sec                       ( +-  0.47% )
-                 3      cpu-migrations                   #  128.413 /sec                        ( +-  4.53% )
-             3,156      page-faults                      #  135.090 K/sec                       ( +-  0.01% )
-        81,924,942      cpu_atom/cycles/                 #    3.507 GHz                         ( +-  0.93% )  (10.81%)
-       115,425,581      cpu_core/cycles/                 #    4.941 GHz                         ( +-  0.30% )
-       151,891,461      cpu_atom/instructions/           #    1.85  insn per cycle              ( +-  1.65% )  (10.81%)
-       228,699,784      cpu_core/instructions/           #    2.79  insn per cycle              ( +-  0.23% )
-        26,745,975      cpu_atom/branches/               #    1.145 G/sec                       ( +-  1.49% )  (10.81%)
-        39,592,483      cpu_core/branches/               #    1.695 G/sec                       ( +-  0.24% )
-           459,225      cpu_atom/branch-misses/          #    1.72% of all branches             ( +-  1.76% )  (10.81%)
-         1,062,312      cpu_core/branch-misses/          #    3.97% of all branches             ( +-  0.30% )
+             27.40 msec task-clock                       #    1.023 CPUs utilized               ( +-  0.11% )
+                57      context-switches                 #    2.080 K/sec                       ( +-  0.54% )
+                 3      cpu-migrations                   #  109.497 /sec                        ( +-  3.18% )
+             3,187      page-faults                      #  116.323 K/sec                       ( +-  0.01% )
+       242,622,105      cpu_atom/instructions/           #    1.95  insn per cycle              ( +-  0.01% )
+     <not counted>      cpu_core/instructions/                                                  ( +- 30.95% )  (0.00%)
+       124,113,120      cpu_atom/cycles/                 #    4.530 GHz                         ( +-  0.10% )
+     <not counted>      cpu_core/cycles/                                                        ( +- 30.29% )  (0.00%)
+        42,063,607      cpu_atom/branches/               #    1.535 G/sec                       ( +-  0.01% )
+     <not counted>      cpu_core/branches/                                                      ( +- 31.04% )  (0.00%)
+         1,072,114      cpu_atom/branch-misses/          #    2.55% of all branches             ( +-  0.04% )
+     <not counted>      cpu_core/branch-misses/                                                 ( +- 29.68% )  (0.00%)
 
-         0.0225519 +- 0.0000530 seconds time elapsed  ( +-  0.23% )
+         0.0267775 +- 0.0000388 seconds time elapsed  ( +-  0.14% )
 ```
 
 ### Build GraalVM native image, print its size, and measure its start up time (tested with Oracle GraalVM 24)
@@ -110,20 +110,20 @@ Expected output:
 ```text
  Performance counter stats for './example01_graalvm.bin' (100 runs):
 
-              1.08 msec task-clock                       #    0.911 CPUs utilized               ( +-  0.73% )
-                 1      context-switches                 #  927.547 /sec                        ( +-  4.79% )
+              1.01 msec task-clock                       #    0.893 CPUs utilized               ( +-  0.46% )
+                 1      context-switches                 #  988.945 /sec                        ( +-  4.40% )
                  0      cpu-migrations                   #    0.000 /sec                      
-               477      page-faults                      #  442.440 K/sec                       ( +-  0.01% )
-         4,315,458      cpu_atom/cycles/                 #    4.003 GHz                         ( +-  1.85% )  (19.75%)
-         3,872,466      cpu_core/cycles/                 #    3.592 GHz                         ( +-  5.11% )
-        10,829,542      cpu_atom/instructions/           #    2.51  insn per cycle              ( +-  2.48% )  (19.75%)
-         5,351,563      cpu_core/instructions/           #    1.24  insn per cycle              ( +-  5.21% )
-         1,856,118      cpu_atom/branches/               #    1.722 G/sec                       ( +-  2.33% )  (19.75%)
-         1,000,400      cpu_core/branches/               #  927.918 M/sec                       ( +-  5.18% )
-             7,651      cpu_atom/branch-misses/          #    0.41% of all branches             ( +-  6.90% )  (19.75%)
-            11,792      cpu_core/branch-misses/          #    0.64% of all branches             ( +-  5.28% )
+               470      page-faults                      #  464.804 K/sec                       ( +-  0.01% )
+         7,312,659      cpu_atom/instructions/           #    1.59  insn per cycle              ( +-  0.10% )
+     <not counted>      cpu_core/instructions/                                                  (0.00%)
+         4,591,123      cpu_atom/cycles/                 #    4.540 GHz                         ( +-  0.37% )
+     <not counted>      cpu_core/cycles/                                                        (0.00%)
+         1,319,275      cpu_atom/branches/               #    1.305 G/sec                       ( +-  0.09% )
+     <not counted>      cpu_core/branches/                                                      (0.00%)
+            10,884      cpu_atom/branch-misses/          #    0.82% of all branches             ( +-  1.27% )
+     <not counted>      cpu_core/branch-misses/                                                 (0.00%)
 
-        0.00118361 +- 0.00000667 seconds time elapsed  ( +-  0.56% )
+        0.00113238 +- 0.00000577 seconds time elapsed  ( +-  0.51% )
 ```
 
 ### Build Scala Native image, print its size, and measure its start up time (tested with Scala Native 0.5.7)
@@ -131,7 +131,7 @@ Expected output:
 ```sh
 sudo apt install linux-tools-common linux-tools-generic clang libstdc++-12-dev libgc-dev
 sudo sysctl kernel.perf_event_paranoid=1
-scala-cli --power package --native-version 0.5.7 --native example01.sc --native-mode release-full --force -o example01_native.bin
+scala-cli --power package --native-version 0.5.8 --native example01.sc --native-mode release-full --force -o example01_native.bin
 ls -l ./example01_native.bin
 perf stat -r 100 ./example01_native.bin > /dev/null
 ```
@@ -139,20 +139,20 @@ Expected output:
 ```text
  Performance counter stats for './example01_native.bin' (100 runs):
 
-              0.71 msec task-clock                       #    0.855 CPUs utilized               ( +-  0.64% )
+              0.81 msec task-clock                       #    0.801 CPUs utilized               ( +-  0.22% )
                  0      context-switches                 #    0.000 /sec                      
                  0      cpu-migrations                   #    0.000 /sec                      
-               731      page-faults                      #    1.024 M/sec                       ( +-  0.01% )
-     <not counted>      cpu_atom/cycles/                                                        ( +-100.00% )  (0.00%)
-         3,769,012      cpu_core/cycles/                 #    5.280 GHz                         ( +-  1.17% )
-     <not counted>      cpu_atom/instructions/                                                  ( +-100.00% )  (0.00%)
-         5,907,572      cpu_core/instructions/           #  139.11  insn per cycle              ( +-  1.02% )
-     <not counted>      cpu_atom/branches/                                                      ( +-100.01% )  (0.00%)
-         1,055,882      cpu_core/branches/               #    1.479 G/sec                       ( +-  1.02% )
-     <not counted>      cpu_atom/branch-misses/                                                 ( +-100.62% )  (0.00%)
-             9,104      cpu_core/branch-misses/          #   84.85% of all branches             ( +-  1.35% )
+               732      page-faults                      #  900.150 K/sec                       ( +-  0.02% )
+         5,950,991      cpu_atom/instructions/           #    1.60  insn per cycle              ( +-  0.08% )
+     <not counted>      cpu_core/instructions/                                                  (0.00%)
+         3,728,384      cpu_atom/cycles/                 #    4.585 GHz                         ( +-  0.22% )
+     <not counted>      cpu_core/cycles/                                                        (0.00%)
+         1,062,936      cpu_atom/branches/               #    1.307 G/sec                       ( +-  0.08% )
+     <not counted>      cpu_core/branches/                                                      (0.00%)
+             7,488      cpu_atom/branch-misses/          #    0.70% of all branches             ( +-  1.09% )
+     <not counted>      cpu_core/branch-misses/                                                 (0.00%)
 
-        0.00083490 +- 0.00000519 seconds time elapsed  ( +-  0.62% )
+        0.00101568 +- 0.00000732 seconds time elapsed  ( +-  0.72% )
 ```
 
 ## RFC-8259 validation (example02)
