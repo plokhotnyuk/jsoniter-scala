@@ -2570,8 +2570,8 @@ final class JsonReader private[jsoniter_scala](
         if (len < 19) {
           var x = buf(from) - '0'
           from += 1
-          val posM10 = pos - 10
-          while (from < posM10) {
+          val limit = Math.min(from + 8, pos)
+          while (from < limit) {
             x = x * 10 + (buf(from) - '0')
             from += 1
           }
@@ -2737,7 +2737,7 @@ final class JsonReader private[jsoniter_scala](
       var pos = p
       var x = buf(pos) - '0'
       pos += 1
-      val limit1 = limit - 10
+      val limit1 = Math.min(pos + 8, limit)
       while (pos < limit1) {
         x = x * 10 + (buf(pos) - '0')
         pos += 1
@@ -2765,13 +2765,13 @@ final class JsonReader private[jsoniter_scala](
     var pos = p
     var x = buf(pos) - '0'
     pos += 1
-    val limit1 = limit - 27
+    val limit2 = limit - 18
+    val limit1 = Math.min(pos + 8, limit2)
     while (pos < limit1) {
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
     var x1 = x.toLong
-    val limit2 = limit - 18
     while (pos < limit2) {
       x1 = (x1 << 3) + (x1 << 1) + (buf(pos) - '0')
       pos += 1
@@ -2808,22 +2808,22 @@ final class JsonReader private[jsoniter_scala](
         i += 1
       }
     }
-    var x = 0L
-    val firstBlockLimit = len % 9 + p
+    var x1 = 0
+    val limit1 = len % 9 + p
     var pos = p
-    while (pos < firstBlockLimit) {
-      x = (x << 3) + (x << 1) + (buf(pos) - '0')
+    while (pos < limit1) {
+      x1 = x1 * 10 + (buf(pos) - '0')
       pos += 1
     }
-    magnitude(last) = x.toInt
+    magnitude(last) = x1
     var first = last
     while (pos < limit) {
-      x =
-        (buf(pos) * 10 + buf(pos + 1) - 528) * 10000000 + // 528 == '0' * 11
+      var x =
+        ((buf(pos) * 10 + buf(pos + 1) - 528) * 10000000 + // 528 == '0' * 11
           ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
             (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
             (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
-            buf(pos + 8) - 53333328) // 53333328 == '0' * 1111111
+            buf(pos + 8) - 53333328)).toLong // 53333328 == '0' * 1111111
       pos += 9
       first = Math.max(first - 1, 0)
       var i = last

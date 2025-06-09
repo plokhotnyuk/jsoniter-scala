@@ -2299,7 +2299,7 @@ final class JsonReader private[jsoniter_scala](
     else if (e10 >= 310) Double.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2 = NativeMath.unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var m2 = NativeMath.unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
       var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -2447,7 +2447,7 @@ final class JsonReader private[jsoniter_scala](
     else if (e10 >= 39) Float.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2 = NativeMath.unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var m2 = NativeMath.unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
       var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
