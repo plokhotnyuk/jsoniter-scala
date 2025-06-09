@@ -4,7 +4,7 @@
 
 long long jsoniter_scala_multiply_high(long long x, long long y) {
   long long high_product;
-  _mul128(x, y, &high_product);
+  (void) _mul128(x, y, &high_product);
   return high_product;
 }
 
