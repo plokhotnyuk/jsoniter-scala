@@ -2250,17 +2250,17 @@ final class JsonWriter private[jsoniter_scala](
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/FloatToDecimal.java
   private[this] def writeFloat(x: Float): Unit = {
+    val bits = java.lang.Float.floatToRawIntBits(x)
     var pos = ensureBufCapacity(15)
     val buf = this.buf
-    if (x < 0.0f) {
+    if (bits < 0) {
       buf(pos) = '-'
       pos += 1
     }
-    if (x == 0.0f) {
+    if (bits << 1 == 0) {
       ByteArrayAccess.setInt(buf, pos, 0x302E30)
       pos += 3
     } else {
-      val bits = java.lang.Float.floatToRawIntBits(x)
       var e2 = (bits >> 23 & 0xFF) - 150
       var m2 = bits & 0x7FFFFF | 0x800000
       var m10, e10 = 0
@@ -2362,17 +2362,17 @@ final class JsonWriter private[jsoniter_scala](
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
   private[this] def writeDouble(x: Double): Unit = {
+    val bits = java.lang.Double.doubleToRawLongBits(x)
     var pos = ensureBufCapacity(25) // -1.2898455142673966E-135.toString.length + 1
     val buf = this.buf
-    if (x < 0.0) {
+    if (bits < 0L) {
       buf(pos) = '-'
       pos += 1
     }
-    if (x == 0.0) {
+    if (bits << 1 == 0L) {
       ByteArrayAccess.setInt(buf, pos, 0x302E30)
       pos += 3
     } else {
-      val bits = java.lang.Double.doubleToRawLongBits(x)
       var e2 = ((bits >> 52).toInt & 0x7FF) - 1075
       var m2 = bits & 0xFFFFFFFFFFFFFL | 0x10000000000000L
       var m10 = 0L
