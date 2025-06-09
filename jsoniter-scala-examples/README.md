@@ -198,7 +198,7 @@ user	0m34.748s
 sys	0m2.362s
 ```
 
-### Build GraalVM native image, print its size, and measure its running time (tested with Oracle GraalVM 24/23)
+### Build GraalVM native image, print its size, and measure its running time (tested with Oracle GraalVM 24)
 
 ```sh
 scala-cli --power package --graalvm-jvm-id graalvm-oracle:24 --native-image example02.sc --force -o example02_graalvm.bin -- --no-fallback --gc=epsilon -O3 -H:+UnlockExperimentalVMOptions -R:MaxHeapSize=16m -H:-GenLoopSafepoints -H:-ParseRuntimeOptions -H:-IncludeMethodData --initialize-at-build-time
@@ -224,4 +224,35 @@ Expected output:
 real	0m49.766s
 user	0m47.408s
 sys	0m2.355s
+```
+
+## Benchmarking `Math.multiplyHigh` (example03)
+
+### Build uber jar and measure its running time (tested with Open JDK 21)
+
+```sh
+scala-cli --power package --assembly example03.scala --force -o example03.jar
+time ./example03.jar -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseEpsilonGC -J-Xms32m -J-Xmx32m -J-XX:+AlwaysPreTouch
+```
+Expected output:
+```text
+9223372036854775806
+
+real	0m11.017s
+user	0m11.059s
+sys	0m0.038s
+```
+
+### Build Scala Native image and measure its running time
+```sh
+scala-cli --power package --native-version 0.5.8 --native example03.scala --native-mode release-full --native-gc none --native-lto thin --native-multithreading=false --force -o example03_native.bin
+time ./example03_native.bin
+```
+Expected output:
+```text
+9223372036854775806
+
+real	0m16.668s
+user	0m16.660s
+sys	0m0.006s
 ```

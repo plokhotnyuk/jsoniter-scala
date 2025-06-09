@@ -1,5 +1,5 @@
-import scala.sys.process._
-import sbtrelease.ReleaseStateTransformations._
+import scala.sys.process.*
+import sbtrelease.ReleaseStateTransformations.*
 
 lazy val ensureJDK11: ReleaseStep = { st: State =>
   val javaVersion = System.getProperty("java.specification.version")
@@ -23,7 +23,11 @@ lazy val updateVersionInReadmeAndExamples: ReleaseStep = { st: State =>
   }
 
   updateFile("README.md")
-  (1 to 3).foreach(n => updateFile(s"jsoniter-scala-examples/example0$n.sc"))
+  Seq(
+    "example01.sc",
+    "example02.sc",
+    "example03.scala",
+  ).foreach(x => updateFile(s"jsoniter-scala-examples/$x"))
 
   st
 }
