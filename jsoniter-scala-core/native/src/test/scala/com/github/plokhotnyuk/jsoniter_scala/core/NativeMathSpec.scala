@@ -27,10 +27,6 @@ class NativeMathSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
   }
 
-  def unsignedMultiplyHigh(x: Long, y: Long): Long = { // FIXME: replace by Math.unsignedMultiplyHigh after dropping JDK 17 support
-    var r = Math.multiplyHigh(x, y)
-    r += y & (x >> 63)
-    r += x & (y >> 63)
-    r
-  }
+  def unsignedMultiplyHigh(x: Long, y: Long): Long = // FIXME: replace by Math.unsignedMultiplyHigh after dropping JDK 17 support
+    Math.multiplyHigh(x, y) + (y & (x >> 63)) + (x & (y >> 63))
 }
