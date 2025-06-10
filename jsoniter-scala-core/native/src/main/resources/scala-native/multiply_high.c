@@ -15,7 +15,7 @@ unsigned long long jsoniter_scala_unsigned_multiply_high(unsigned long long x, u
 #elif defined(__SIZEOF_INT128__)
 
 long long jsoniter_scala_multiply_high(long long x, long long y) {
-  return x * (unsigned __int128) y >> 64;
+  return x * (__int128) y >> 64;
 }
 
 unsigned long long jsoniter_scala_unsigned_multiply_high(unsigned long long x, unsigned long long y) {
