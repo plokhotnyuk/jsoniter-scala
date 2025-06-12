@@ -3111,7 +3111,10 @@ object JsonCodecMaker {
       val codecDef = '{ // FIXME: generate a type class instance using `ClassDef.apply` and `Symbol.newClass` calls after graduating from experimental API: https://www.scala-lang.org/blog/2022/06/21/scala-3.1.3-released.html
         new JsonValueCodec[A] {
           @inline
-          def nullValue: A = ${genNullValue[A](List(rootTpe))}
+          def nullValue: A = ${
+            if (cfg.encodingOnly) '{ ??? }
+            else genNullValue[A](List(rootTpe))
+          }
 
           @inline
           def decodeValue(in: JsonReader, default: A): A = ${
