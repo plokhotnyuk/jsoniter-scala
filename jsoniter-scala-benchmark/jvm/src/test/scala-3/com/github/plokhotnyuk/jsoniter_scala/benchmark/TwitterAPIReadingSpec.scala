@@ -13,10 +13,8 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
-      // FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
-      // benchmark.json4sJackson() shouldBe benchmark.obj
-      // FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
-      // benchmark.json4sNative() shouldBe benchmark.obj
+      benchmark.json4sJackson() shouldBe benchmark.obj
+      benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
@@ -34,10 +32,8 @@ class TwitterAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
-      // FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
-      // intercept[Throwable](b.json4sJackson())
-      // FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
-      // intercept[Throwable](b.json4sNative())
+      intercept[Throwable](b.json4sJackson())
+      intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

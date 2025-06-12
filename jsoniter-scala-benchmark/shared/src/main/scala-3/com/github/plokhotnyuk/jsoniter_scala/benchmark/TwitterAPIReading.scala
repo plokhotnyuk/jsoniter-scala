@@ -35,7 +35,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
 
     jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
   }
-/* FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
+
   @Benchmark
   @annotation.nowarn
   def json4sJackson(): Seq[Tweet] = {
@@ -45,8 +45,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
 
     mapper.readValue[JValue](jsonBytes, jValueType).extract[Seq[Tweet]]
   }
-*/
-/* FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
+
   @Benchmark
   @annotation.nowarn
   def json4sNative(): Seq[Tweet] = {
@@ -57,7 +56,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
 
     parse(new String(jsonBytes, UTF_8)).extract[Seq[Tweet]]
   }
-*/
+
   @Benchmark
   def jsoniterScala(): Seq[Tweet] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

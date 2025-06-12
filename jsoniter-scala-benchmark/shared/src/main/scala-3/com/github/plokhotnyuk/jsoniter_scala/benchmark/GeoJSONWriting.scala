@@ -35,7 +35,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
 
     jacksonMapper.writeValueAsBytes(obj)
   }
-/* FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
+
   @Benchmark
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJsonJson4sFormats._
@@ -44,8 +44,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
 
     mapper.writeValueAsBytes(Extraction.decompose(obj))
   }
-*/
-/* FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
+
   @Benchmark
   def json4sNative(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJsonJson4sFormats._
@@ -54,7 +53,7 @@ class GeoJSONWriting extends GeoJSONBenchmark {
 
     write(obj).getBytes(UTF_8)
   }
-*/
+
   @Benchmark
   def jsoniterScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

@@ -34,7 +34,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
     jacksonMapper.readValue[GeoJSON](jsonBytes)
   }
-/* FIXME: json4s.jackson throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
+
   @Benchmark
   @annotation.nowarn
   def json4sJackson(): GeoJSON = {
@@ -44,8 +44,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
     mapper.readValue[JValue](jsonBytes, jValueType).extract[GeoJSON]
   }
-*/
-/* FIXME: json4s.native throws java.lang.NoClassDefFoundError: scala/quoted/staging/package$
+
   @Benchmark
   @annotation.nowarn
   def json4sNative(): GeoJSON = {
@@ -56,7 +55,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
     parse(new String(jsonBytes, UTF_8)).extract[GeoJSON]
   }
-*/
+
   @Benchmark
   def jsoniterScala(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
