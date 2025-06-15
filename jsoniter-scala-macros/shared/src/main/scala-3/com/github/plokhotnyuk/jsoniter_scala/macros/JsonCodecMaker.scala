@@ -2503,20 +2503,13 @@ object JsonCodecMaker {
                 }
               }.asExprOf[T]
           }
-        } else if (tpe <:< TypeRepr.of[List[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[List[_]] || tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
               genReadCollection('{ new mutable.ListBuffer[t1] },
                 x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
-                default.asExprOf[List[t1]], x => '{ $x.toList }, in).asExprOf[T]
-        } else if (tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              genReadCollection('{ new mutable.ListBuffer[t1] },
-                x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
-                default.asExprOf[Seq[t1]], x => '{ $x.toList }, in).asExprOf[T]
+                default, x => '{ $x.toList }, in).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[mutable.ListBuffer[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -2526,6 +2519,13 @@ object JsonCodecMaker {
                 if ($tDefault.isEmpty) $tDefault
                 else new mutable.ListBuffer[t1]
               }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, x => x, in).asExprOf[T]
+        } else if (tpe <:< TypeRepr.of[Vector[_]] || tpe.typeSymbol == TypeRepr.of[IndexedSeq[_]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
+          val tpe1 = typeArg1(tpe)
+          tpe1.asType match
+            case '[t1] =>
+              genReadCollection('{ new immutable.VectorBuilder[t1] },
+                x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
+                default, x => '{ $x.result() }, in).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[mutable.Iterable[_] with mutable.Growable[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
