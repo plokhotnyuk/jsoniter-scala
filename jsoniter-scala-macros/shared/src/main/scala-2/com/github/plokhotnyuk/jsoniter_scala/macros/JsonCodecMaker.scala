@@ -1828,6 +1828,10 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
+        } else if (tpe <:< typeOf[Vector[_]] || tpe.typeSymbol == typeOf[IndexedSeq[_]].typeSymbol) withDecoderFor(methodKey, default) {
+          val tpe1 = typeArg1(tpe)
+          genReadArray(q"{ val x = new _root_.scala.collection.immutable.VectorBuilder[$tpe1] }",
+            genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.12.x
           val tpe1 = typeArg1(tpe)
