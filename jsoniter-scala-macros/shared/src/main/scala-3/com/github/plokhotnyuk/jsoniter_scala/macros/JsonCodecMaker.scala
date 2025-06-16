@@ -781,7 +781,7 @@ object JsonCodecMaker {
         case ConstantType(_) => true
         case _ => false
 
-      def isEnumOrModuleValue(tpe: TypeRepr): Boolean = tpe.isSingleton &&
+      def isEnumOrModuleValue(tpe: TypeRepr): Boolean =
         (tpe.typeSymbol.flags.is(Flags.Module) || tpe.termSymbol.flags.is(Flags.Enum))
 
       def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< TypeRepr.of[Option[_]] &&
@@ -1787,8 +1787,9 @@ object JsonCodecMaker {
           tpe match
             case ConstantType(c) => Literal(c).asExprOf[T]
             case _ => cannotFindValueCodecError(tpe)
-        } else if (isEnumOrModuleValue(tpe)) Ref(tpe.termSymbol).asExprOf[T] // FIXME: add support of non top-level defiend enums
-        else if (isValueClass(tpe)) {
+        } else if (isEnumOrModuleValue(tpe)) {
+          Ref(if (tpe.termSymbol.flags.is(Flags.Enum)) tpe.termSymbol else tpe.typeSymbol.companionModule).asExprOf[T]
+        } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
             case '[t1] => getClassInfo(tpe).genNew(genNullValue[t1](tpe1 :: types).asTerm).asExprOf[T]
@@ -1828,8 +1829,9 @@ object JsonCodecMaker {
                   if (currentDiscriminator.isDefined) '{
                     $in.rollbackToMark()
                     ${genReadLeafClass[st](subTpe)}
-                  } else if (!cfg.circeLikeObjectEncoding && isEnumOrModuleValue(subTpe)) Ref(subTpe.termSymbol).asExprOf[st]
-                  else if (!cfg.circeLikeObjectEncoding && subTpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[st]
+                  } else if (!cfg.circeLikeObjectEncoding && isEnumOrModuleValue(subTpe)) {
+                    Ref(if (subTpe.termSymbol.flags.is(Flags.Enum)) subTpe.termSymbol else subTpe.typeSymbol.companionModule).asExprOf[T]
+                  } else if (!cfg.circeLikeObjectEncoding && subTpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[st]
                   else genReadLeafClass[st](subTpe)
                 } else $acc
               }.asExprOf[T]
@@ -2629,11 +2631,12 @@ object JsonCodecMaker {
             else $in.readNullOrTokenError($default, '[')
           }
         } else if (isEnumOrModuleValue(tpe) || tpe =:= TypeRepr.of[None.type]) withDecoderFor(methodKey, default, in) { (in, default) =>
+          val x = Ref(if (tpe.termSymbol.flags.is(Flags.Enum)) tpe.termSymbol else tpe.typeSymbol.companionModule).asExprOf[T]
           '{
             if ($in.isNextToken('{')) {
               $in.rollbackToken()
               $in.skip()
-              ${if (tpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[T] else Ref(tpe.termSymbol).asExprOf[T]}  // FIXME: add support of non top-level defiend enums
+              $x
             } else $in.readNullOrTokenError($default, '{')
           }
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>

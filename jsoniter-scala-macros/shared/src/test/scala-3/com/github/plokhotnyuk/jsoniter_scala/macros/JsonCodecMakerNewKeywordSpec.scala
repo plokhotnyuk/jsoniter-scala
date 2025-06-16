@@ -113,6 +113,18 @@ class JsonCodecMakerNewKeywordSpec extends VerifyingSpec {
 
         verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"hint":"Value2","str":"VVV"}""")
       }
+      {
+        inline given CodecMakerConfig = CodecMakerConfig.withDiscriminatorFieldName(None)
+
+        sealed trait TestEnum derives ConfiguredJsonValueCodec
+
+        case object Value1 extends TestEnum derives ConfiguredJsonValueCodec
+
+        case class Value2(string: String) extends TestEnum derives ConfiguredJsonValueCodec
+
+        verifyDeserByCheck(summon[JsonValueCodec[Value1.type]], """{}""", x => assert(x eq Value1)) // yes! in macros you can instantiate a new value of case object class
+        verifySerDeser(make[List[TestEnum]], List(Value1, Value2("VVV")), """["Value1",{"Value2":{"string":"VVV"}}]""")
+      }
     }
     "serialize and deserialize an generic ADT defined with bounded leaf classes using a custom codec" in {
       sealed trait TypeBase[T]
