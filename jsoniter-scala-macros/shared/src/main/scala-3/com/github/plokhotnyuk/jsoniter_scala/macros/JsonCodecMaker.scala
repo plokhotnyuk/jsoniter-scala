@@ -781,8 +781,9 @@ object JsonCodecMaker {
         case ConstantType(_) => true
         case _ => false
 
-      def isEnumOrModuleValue(tpe: TypeRepr): Boolean =
-        (tpe.typeSymbol.flags.is(Flags.Module) || tpe.termSymbol.flags.is(Flags.Enum))
+      def isEnumValue(tpe: TypeRepr): Boolean = tpe.termSymbol.flags.is(Flags.Enum)
+
+      def isEnumOrModuleValue(tpe: TypeRepr): Boolean = isEnumValue(tpe) || tpe.typeSymbol.flags.is(Flags.Module)
 
       def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< TypeRepr.of[Option[_]] &&
         (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< TypeRepr.of[Option[_]]))
@@ -1130,7 +1131,7 @@ object JsonCodecMaker {
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
         def collectRecursively(tpe: TypeRepr): Seq[TypeRepr] =
           val leafTpes = adtChildren(tpe).flatMap { subTpe =>
-            if (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type]) Seq(subTpe)
+            if (isEnumOrModuleValue(subTpe)) Seq(subTpe)
             else if (isSealedClass(subTpe)) collectRecursively(subTpe)
             else if (isValueClass(subTpe)) {
               fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
@@ -1531,15 +1532,19 @@ object JsonCodecMaker {
         else '{ $in.unexpectedKeyError($l) }
 
       def discriminatorValue(tpe: TypeRepr): String =
-        val isEnum = tpe.termSymbol.flags.is(Flags.Enum)
-        var named = (if (isEnum) tpe.termSymbol else tpe.typeSymbol).annotations.filter(_.tpe =:= TypeRepr.of[named])
+        val named =
+          (if (isEnumValue(tpe)) tpe.termSymbol else tpe.typeSymbol).annotations.filter(_.tpe =:= TypeRepr.of[named])
         if (named.nonEmpty) {
           if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '${tpe.show}'.")
           namedValueOpt(named.headOption, tpe).get
         } else cfg.adtLeafClassNameMapper({
-          if (tpe =:= TypeRepr.of[None.type]) "scala.None"
-          else if (isEnum || tpe.typeSymbol.flags.is(Flags.Module)) tpe.termSymbol.fullName
-          else tpe.typeSymbol.fullName
+          if (isEnumOrModuleValue(tpe)) {
+            if (tpe.isSingleton) tpe.termSymbol.fullName
+            else {
+              val name = tpe.typeSymbol.fullName
+              name.substring(0, name.length - 1)
+            }
+          } else tpe.typeSymbol.fullName
         }).getOrElse(fail(s"Discriminator is not defined for ${tpe.show}"))
 
       def checkFieldNameCollisions(tpe: TypeRepr, names: Seq[String]): Unit =
@@ -1788,7 +1793,7 @@ object JsonCodecMaker {
             case ConstantType(c) => Literal(c).asExprOf[T]
             case _ => cannotFindValueCodecError(tpe)
         } else if (isEnumOrModuleValue(tpe)) {
-          Ref(if (tpe.termSymbol.flags.is(Flags.Enum)) tpe.termSymbol else tpe.typeSymbol.companionModule).asExprOf[T]
+          Ref(if (isEnumValue(tpe)) tpe.termSymbol else tpe.typeSymbol.companionModule).asExprOf[T]
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
@@ -1830,9 +1835,8 @@ object JsonCodecMaker {
                     $in.rollbackToMark()
                     ${genReadLeafClass[st](subTpe)}
                   } else if (!cfg.circeLikeObjectEncoding && isEnumOrModuleValue(subTpe)) {
-                    Ref(if (subTpe.termSymbol.flags.is(Flags.Enum)) subTpe.termSymbol else subTpe.typeSymbol.companionModule).asExprOf[T]
-                  } else if (!cfg.circeLikeObjectEncoding && subTpe =:= TypeRepr.of[None.type]) '{ None }.asExprOf[st]
-                  else genReadLeafClass[st](subTpe)
+                    Ref(if (isEnumValue(subTpe)) subTpe.termSymbol else subTpe.typeSymbol.companionModule).asExprOf[T]
+                  } else genReadLeafClass[st](subTpe)
                 } else $acc
               }.asExprOf[T]
           }
@@ -1902,7 +1906,7 @@ object JsonCodecMaker {
 
         if (currentDiscriminator.isEmpty) {
           val (leafModuleClasses, leafCaseClasses) = leafClasses.partition { x =>
-            !cfg.circeLikeObjectEncoding && (isEnumOrModuleValue(x) || x =:= TypeRepr.of[None.type])
+            !cfg.circeLikeObjectEncoding && isEnumOrModuleValue(x)
           }
           if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
             '{
@@ -2630,8 +2634,8 @@ object JsonCodecMaker {
             if ($in.isNextToken('[')) ${readCreateBlock.asExprOf[T]}
             else $in.readNullOrTokenError($default, '[')
           }
-        } else if (isEnumOrModuleValue(tpe) || tpe =:= TypeRepr.of[None.type]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val x = Ref(if (tpe.termSymbol.flags.is(Flags.Enum)) tpe.termSymbol else tpe.typeSymbol.companionModule).asExprOf[T]
+        } else if (isEnumOrModuleValue(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
+          val x = Ref(if (isEnumValue(tpe)) tpe.termSymbol else tpe.typeSymbol.companionModule).asExprOf[T]
           '{
             if ($in.isNextToken('{')) {
               $in.rollbackToken()
@@ -3067,8 +3071,7 @@ object JsonCodecMaker {
           }
           if (writeFields.isEmpty) fail(s"Expected that ${tpe.show} should be an applied type")
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
-        } else if ((isEnumOrModuleValue(tpe) || tpe =:= TypeRepr.of[None.type]) &&
-          !(cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (isEnumOrModuleValue(tpe) && !(cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m, out) { (out, x) =>
           '{
             $out.writeObjectStart()
             ${optWriteDiscriminator.fold('{})(_.write(out))}
@@ -3084,7 +3087,7 @@ object JsonCodecMaker {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = cfg.discriminatorFieldName.fold {
             leafClasses.map { subTpe =>
-              if (!cfg.circeLikeObjectEncoding && (isEnumOrModuleValue(subTpe) || subTpe =:= TypeRepr.of[None.type])) {
+              if (!cfg.circeLikeObjectEncoding && isEnumOrModuleValue(subTpe)) {
                 CaseDef(Typed(x.asTerm, Inferred(subTpe)), None,
                   genWriteConstantVal(discriminatorValue(subTpe), out).asTerm)
               } else {
