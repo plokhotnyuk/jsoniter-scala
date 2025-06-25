@@ -755,11 +755,13 @@ object JsonCodecMaker {
         case AppliedType(_, typeArgs) => typeArgs.map(_.dealias)
         case _ => Nil
 
-      def typeArg1(tpe: TypeRepr): TypeRepr =
-        typeArgs(tpe).headOption.getOrElse(fail(s"Cannot get 1st type argument in '${tpe.show}'"))
+      def typeArg1(tpe: TypeRepr): TypeRepr = tpe match
+        case AppliedType(_, typeArg1 :: _) => typeArg1.dealias
+        case _ => fail(s"Cannot get 1st type argument in '${tpe.show}'")
 
-      def typeArg2(tpe: TypeRepr): TypeRepr =
-        typeArgs(tpe).tail.headOption.getOrElse(fail(s"Cannot get 2nd type argument in '${tpe.show}'"))
+      def typeArg2(tpe: TypeRepr): TypeRepr = tpe match
+        case AppliedType(_, _ :: typeArg2 :: _) => typeArg2.dealias
+        case _ => fail(s"Cannot get 2nd type argument in '${tpe.show}'")
 
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 
@@ -1097,7 +1099,7 @@ object JsonCodecMaker {
 
         def resolveParentTypeArgs(child: Symbol, nudeChildParentTags: List[TypeRepr], parentTags: List[TypeRepr],
                                   binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
-          nudeChildParentTags.zip(parentTags).foldLeft(binding)((s, e) => resolveParentTypeArg(child, e._1, e._2, s))
+          nudeChildParentTags.zip(parentTags).foldLeft(binding)((b, e) => resolveParentTypeArg(child, e._1, e._2, b))
 
         tpe.typeSymbol.children.map { sym =>
           if (sym.isType) {

@@ -673,9 +673,17 @@ object JsonCodecMaker {
 
       def warn(msg: String): Unit = c.warning(c.enclosingPosition, msg)
 
-      def typeArg1(tpe: Type): Type = tpe.typeArgs.head.dealias
+      def typeArgs(tpe: Type): List[Type] = tpe.typeArgs.map(_.dealias)
 
-      def typeArg2(tpe: Type): Type = tpe.typeArgs(1).dealias
+      def typeArg1(tpe: Type): Type = tpe.typeArgs match {
+        case typeArg1 :: _ => typeArg1.dealias
+        case _ => fail(s"Cannot get 1st type argument in '$tpe'")
+      }
+
+      def typeArg2(tpe: Type): Type = tpe.typeArgs match {
+        case _ :: typeArg2 :: _ => typeArg2.dealias
+        case _ => fail(s"Cannot get 2nd type argument in '$tpe'")
+      }
 
       val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
@@ -690,7 +698,7 @@ object JsonCodecMaker {
           if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.typeParams
           else Nil
         if (tpeTypeParams.isEmpty) mtpe
-        else mtpe.substituteTypes(tpeTypeParams, tpe.typeArgs)
+        else mtpe.substituteTypes(tpeTypeParams, typeArgs(tpe))
       }
 
       def valueClassValueSymbol(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
@@ -957,11 +965,10 @@ object JsonCodecMaker {
             val subTpe =
               if (typeParams.isEmpty) classSymbol.toType
               else {
-                val typeParamsAndArgs = tpeClass.typeParams.map(_.toString).zip(tpe.typeArgs).toMap
-                val typeArgs = typeParams.map(s => typeParamsAndArgs.getOrElse(s.toString, fail {
+                val typeParamsAndArgs = tpeClass.typeParams.map(_.toString).zip(typeArgs(tpe)).toMap
+                classSymbol.toType.substituteTypes(typeParams, typeParams.map(tp => typeParamsAndArgs.getOrElse(tp.toString, fail {
                   s"Cannot resolve generic type(s) for `${classSymbol.toType}`. Please provide a custom implicitly accessible codec for it."
-                }))
-                classSymbol.toType.substituteTypes(typeParams, typeArgs)
+                })))
               }
             if (isSealedClass(subTpe)) collectRecursively(subTpe)
             else if (isValueClass(subTpe)) {
@@ -1687,8 +1694,9 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
           isMutableArraySeq(tpe)) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
+          val requiresArrayCopy = tpe1.typeArgs.nonEmpty || isValueClass(tpe1)
           val growArray =
-            if (tpe1.typeArgs.nonEmpty || isValueClass(tpe1)) {
+            if (requiresArrayCopy) {
               q"""l <<= 1
                   val x1 = new Array[$tpe1](l)
                   _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
@@ -1698,7 +1706,7 @@ object JsonCodecMaker {
                   _root_.java.util.Arrays.copyOf(x, l)"""
             }
           val shrinkArray =
-            if (tpe1.typeArgs.nonEmpty || isValueClass(tpe1)) {
+            if (requiresArrayCopy) {
               q"""val x1 = new Array[$tpe1](i)
                   _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
                   x1"""
@@ -1895,19 +1903,17 @@ object JsonCodecMaker {
                 ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}
               } else in.readNullOrTokenError(default, '"')"""
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default) {
-          val indexedTypes = tpe.typeArgs
-          val readFields = indexedTypes.tail.foldLeft[Tree] {
-            val t = typeArg1(tpe)
-            q"val _1: $t = ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}"
-          }{
-            var i = 1
-            (acc, ta) =>
+          val indexedTypes = typeArgs(tpe)
+          val readFields = indexedTypes.map {
+            var i = 0
+            t =>
               i += 1
-              val t = ta.dealias
-              q"""..$acc
-                  val ${TermName("_" + i)}: $t =
-                    if (in.isNextToken(',')) ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}
-                    else in.commaError()"""
+              if (i == 1) q"val _1: $t = ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}"
+              else {
+                q"""val ${TermName("_" + i)}: $t =
+                      if (in.isNextToken(',')) ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}
+                      else in.commaError()"""
+              }
           }
           val params = (1 to indexedTypes.length).map(i => TermName("_" + i))
           q"""if (in.isNextToken('[')) {
@@ -2257,11 +2263,11 @@ object JsonCodecMaker {
             else q"out.writeNonEscapedAsciiVal(x.name)"
           }
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
-          val writeFields = tpe.typeArgs.map {
+          val writeFields = typeArgs(tpe).map {
             var i = 0
-            ta =>
+            t =>
               i += 1
-              genWriteVal(q"x.${TermName("_" + i)}", ta.dealias :: types, isStringified, EmptyTree)
+              genWriteVal(q"x.${TermName("_" + i)}", t :: types, isStringified, EmptyTree)
           }
           q"""out.writeArrayStart()
               ..$writeFields
