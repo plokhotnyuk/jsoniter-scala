@@ -763,9 +763,9 @@ object JsonCodecMaker {
 
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 
-      def valueClassValueSymbol(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers(0)
+      def valueClassValueSymbol(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers.head
 
-      def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(tpe.typeSymbol.fieldMembers(0)).dealias
+      def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(valueClassValueSymbol(tpe)).dealias
 
       def isNonAbstractScalaClass(tpe: TypeRepr): Boolean = tpe.classSymbol.fold(false) { sym =>
         val flags = sym.flags
@@ -788,9 +788,10 @@ object JsonCodecMaker {
       def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< TypeRepr.of[Option[_]] &&
         (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< TypeRepr.of[Option[_]]))
 
-      def isCollection(tpe: TypeRepr): Boolean =
-        tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]] || tpe <:< TypeRepr.of[Array[_]] ||
-        tpe.typeSymbol.fullName == "scala.IArray$package$.IArray"
+      def isIArray(tpe: TypeRepr): Boolean = tpe.typeSymbol.fullName == "scala.IArray$package$.IArray"
+
+      def isCollection(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]] ||
+        tpe <:< TypeRepr.of[Array[_]] || isIArray(tpe)
 
       def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[_]]
 
@@ -1121,7 +1122,7 @@ object JsonCodecMaker {
                   case AppliedType(base, _) => base.appliedTo(ctArgs)
                   case AnnotatedType(AppliedType(base, _), annot) => AnnotatedType(base.appliedTo(ctArgs), annot)
                   case _ => polyRes.appliedTo(ctArgs)
-              case other => fail(s"Primary constructior for ${tpe.show} is not MethodType or PolyType but $other")
+              case other => fail(s"Primary constructor for ${tpe.show} is not MethodType or PolyType but $other")
           } else if (sym.isTerm) Ref(sym).tpe
           else fail("Only concrete (no free type parametes) Scala classes & objects are supported for ADT leaf classes. " +
             s"Please consider using of them for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base.")
@@ -1627,7 +1628,7 @@ object JsonCodecMaker {
                   }
                 })
               }
-        } else if (tpe1.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+        } else if (isIArray(tpe1)) {
           tpe1.asType match
             case '[t1] =>
               val x1 = x1t.asExprOf[IArray[t1]]
@@ -1646,7 +1647,7 @@ object JsonCodecMaker {
                   }
                 })
               }
-        } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+        } else if (isIArray(tpe)) {
           if (tpe1 =:= TypeRepr.of[AnyRef]) {
             '{ IArray.equals(${x1t.asExprOf[IArray[AnyRef]]}, ${x2t.asExprOf[IArray[AnyRef]]}) }
           } else {
@@ -1785,7 +1786,7 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[Array[_]]) withNullValueFor(tpe) {
           typeArg1(tpe).asType match
             case '[t1] => genNewArray[t1]('{ 0 }).asExprOf[T]
-        } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") withNullValueFor(tpe) {
+        } else if (isIArray(tpe)) withNullValueFor(tpe) {
           typeArg1(tpe).asType match
             case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1]('{ 0 })}) }.asExprOf[T]
         } else if (isConstType(tpe)) {
@@ -2255,8 +2256,7 @@ object JsonCodecMaker {
                 }
               }.asExprOf[T]
         } else if (decodeMethodSym.isDefined) Apply(Ref(decodeMethodSym.get), List(in.asTerm, default.asTerm)).asExprOf[T]
-        else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
-          tpe.typeSymbol.fullName == "scala.IArray$package$.IArray" ||
+        else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] || isIArray(tpe) ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val newArrayOnChange = tpe1 match
@@ -2300,7 +2300,7 @@ object JsonCodecMaker {
                   if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExprOf[Unit]}
                   mutable.ArraySeq.make[t1]($x)
                 }.asExprOf[mutable.ArraySeq[t1]], in).asExprOf[T]
-              } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+              } else if (isIArray(tpe)) {
                 genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
                   if ($i == $l) {
                     ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExprOf[Unit]}
@@ -2701,7 +2701,7 @@ object JsonCodecMaker {
                         ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                       }
                     }
-                  } else if (fTpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+                  } else if (isIArray(fTpe)) {
                     val fTpe1 = typeArg1(fTpe)
                     fTpe1.asType match
                       case '[ft1] => {
@@ -2756,7 +2756,7 @@ object JsonCodecMaker {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
-                  } else if (cfg.transientEmpty && fTpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+                  } else if (cfg.transientEmpty && isIArray(fTpe)) {
                     val fTpe1 = typeArg1(fTpe)
                     fTpe1.asType match
                       case '[ft1] => '{
@@ -2894,8 +2894,7 @@ object JsonCodecMaker {
                 else $out.writeNull()
               }
         } else if (encodeMethodSym.isDefined) Apply(Ref(encodeMethodSym.get), List(m.asTerm, out.asTerm)).asExprOf[Unit]
-        else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] ||
-          tpe.typeSymbol.fullName == "scala.IArray$package$.IArray" ||
+        else if (tpe <:< TypeRepr.of[Array[_]] || tpe <:< TypeRepr.of[immutable.ArraySeq[_]] || isIArray(tpe) ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -2926,7 +2925,7 @@ object JsonCodecMaker {
                   }
                   $out.writeArrayEnd()
                 }
-              } else if (tpe.typeSymbol.fullName == "scala.IArray$package$.IArray") {
+              } else if (isIArray(tpe)) {
                 val tx = x.asExprOf[IArray[t1]]
                 '{
                   $out.writeArrayStart()

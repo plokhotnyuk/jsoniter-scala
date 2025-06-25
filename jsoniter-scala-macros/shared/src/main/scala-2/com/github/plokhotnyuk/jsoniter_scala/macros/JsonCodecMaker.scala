@@ -681,8 +681,6 @@ object JsonCodecMaker {
 
       def isTuple(tpe: Type): Boolean = tupleSymbols(tpe.typeSymbol)
 
-      def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
-
       def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
 
       def decodeFieldName(s: Symbol): String = NameTransformer.decode(s.name.toString.trim) // FIXME: Why is there a space at the end of field name?!
@@ -695,9 +693,9 @@ object JsonCodecMaker {
         else mtpe.substituteTypes(tpeTypeParams, tpe.typeArgs)
       }
 
-      def paramType(tpe: Type, p: TermSymbol): Type = resolveConcreteType(tpe, p.typeSignature.dealias)
+      def valueClassValueSymbol(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
-      def valueClassValueType(tpe: Type): Type = resolveConcreteType(tpe, valueClassValueMethod(tpe).returnType.dealias)
+      def valueClassValueType(tpe: Type): Type = resolveConcreteType(tpe, valueClassValueSymbol(tpe).returnType.dealias)
 
       def isNonAbstractScalaClass(tpe: Type): Boolean =
         tpe.typeSymbol.isClass && !tpe.typeSymbol.isAbstract && !tpe.typeSymbol.isJava
@@ -939,7 +937,8 @@ object JsonCodecMaker {
                   Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
                 } else None
               val isStringified = annotationOption.exists(_.stringified)
-              Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, paramType(tpe, symbol), isStringified))
+              val resolvedTpe = resolveConcreteType(tpe, symbol.typeSignature.dealias)
+              Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, resolvedTpe, isStringified))
             }
           })
         })
@@ -1191,7 +1190,7 @@ object JsonCodecMaker {
           tpe =:= typeOf[LocalTime] || tpe =:= typeOf[MonthDay] || tpe =:= typeOf[OffsetDateTime] ||
           tpe =:= typeOf[OffsetTime] || tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
-        else if (isValueClass(tpe)) genWriteKey(q"$x.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types)
+        else if (isValueClass(tpe)) genWriteKey(q"$x.${valueClassValueSymbol(tpe)}", valueClassValueType(tpe) :: types)
         else if (tpe <:< typeOf[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) q"out.writeKey($x.id)"
           else q"out.writeKey($x.toString)"
@@ -2136,7 +2135,7 @@ object JsonCodecMaker {
           tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeVal($m)"
         else if (isValueClass(tpe)) {
-          genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types, isStringified, EmptyTree)
+          genWriteVal(q"$m.${valueClassValueSymbol(tpe)}", valueClassValueType(tpe) :: types, isStringified, EmptyTree)
         } else if (isOption(tpe, types.tail)) {
           q"""if ($m ne _root_.scala.None) ${genWriteVal(q"$m.get", typeArg1(tpe) :: types, isStringified, EmptyTree)}
               else out.writeNull()"""
