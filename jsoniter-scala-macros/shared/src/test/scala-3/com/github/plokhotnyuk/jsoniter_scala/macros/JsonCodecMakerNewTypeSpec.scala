@@ -114,6 +114,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         val nullValue: Year = null.asInstanceOf[Year]
       }
       verifySerDeser(make[Period], Period(Year.from(1976), Year.from(2022)), """{"start":1976,"end":2022}""")
+      verifySerDeser(make[Array[Year]], Array(Year(1976).get), "[1976]")
     }
     "serialize and deserialize a Scala3 union type using a custom codec" in {
       type Value = String | Boolean | Double

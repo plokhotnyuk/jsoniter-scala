@@ -774,6 +774,8 @@ object JsonCodecMaker {
         !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && !flags.is(Flags.Trait)
       }
 
+      def isOpaque(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Opaque)
+
       def isSealedClass(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Sealed)
 
       def hasSealedParent(tpe: TypeRepr): Boolean =
@@ -2263,7 +2265,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           val newArrayOnChange = tpe1 match
             case AppliedType(_, _) => true
-            case _ => isValueClass(tpe1)
+            case _ => isValueClass(tpe1) || isOpaque(tpe1)
           tpe1.asType match
             case '[t1] =>
               def growArray(x: Expr[Array[t1]], i: Expr[Int], l: Expr[Int])(using Quotes): Expr[Array[t1]] =
