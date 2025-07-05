@@ -704,6 +704,7 @@ object JsonCodecMaker {
 
     def makeOpenapiLike[A: Type](discriminatorFieldName: Expr[String])(using Quotes): Expr[JsonValueCodec[A]] =
       make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
+        .withRequireDiscriminatorFirst(false)
         .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
         .withDiscriminatorFieldName(Some(discriminatorFieldName.valueOrAbort)))
 
@@ -712,6 +713,7 @@ object JsonCodecMaker {
       make(
         CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
           .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
+          .withRequireDiscriminatorFirst(false)
           .withDiscriminatorFieldName(Some(discriminatorFieldName.valueOrAbort))
           .withAdtLeafClassNameMapper(ExprPartialFunctionWrapper(adtLeafClassNameMapper).apply.unlift
             .compose(PartialFunction.fromFunction(simpleClassName))))
