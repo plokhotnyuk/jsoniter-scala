@@ -1548,12 +1548,9 @@ final class JsonWriter private[jsoniter_scala](
       var pos = ensureBufCapacity(12)
       val buf = this.buf
       val ds = digits
-      var m: Short = 0x2B45
-      if (exp < 0) {
-        m = 0x2D45
-        exp = -exp
-      }
-      ByteArrayAccess.setShort(buf, pos, m)
+      val s = exp >> 63
+      exp = (exp + s) ^ s
+      ByteArrayAccess.setShort(buf, pos, (0x2B45L - (s << 9)).toShort)
       pos += 2
       var q = exp
       if (exp < 100000000L) {
@@ -1989,13 +1986,9 @@ final class JsonWriter private[jsoniter_scala](
       pos += 3
     } else {
       val ds = digits
-      var m = 0x2230303A00002B22L
-      if (y < 0) {
-        y = -y
-        m = 0x2230303A00002D22L
-      }
-      y *= 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-      m |= ds(y >>> 27) << 16
+      val s = y >> 31
+      y = ((y + s) ^ s) * 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      val m = ds(y >>> 27) << 16 | 0x2230303A00002B22L - (s << 9)
       if ((y & 0x7FF8000) == 0) { // check if totalSeconds is divisible by 3600
         ByteArrayAccess.setLong(buf, pos, m)
         pos += 8
@@ -2086,13 +2079,9 @@ final class JsonWriter private[jsoniter_scala](
       ByteArrayAccess.setShort(buf, pos, 0x225A)
       pos + 2
     } else {
-      var m = 0x2230303A00002BL
-      if (y < 0) {
-        y = -y
-        m = 0x2230303A00002DL
-      }
-      y *= 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-      m |= ds(y >>> 27) << 8
+      val s = y >> 31
+      y = ((y + s) ^ s) * 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      val m = ds(y >>> 27) << 8 | 0x2230303A00002BL - (s << 1)
       if ((y & 0x7FF8000) == 0) { // check if totalSeconds is divisible by 3600
         ByteArrayAccess.setLong(buf, pos, m)
         pos + 7
