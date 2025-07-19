@@ -11,8 +11,9 @@ import tools.jackson.databind.cfg.DateTimeFeature
 import tools.jackson.databind.module.SimpleModule
 import tools.jackson.databind.ser.std.StdSerializer
 import tools.jackson.module.scala.deser.{ImmutableBitSetDeserializer, MutableBitSetDeserializer}
-import tools.jackson.module.scala.{BitSetDeserializerModule, ClassTagExtensions, DefaultScalaModule}
+import tools.jackson.module.scala.{BitSetDeserializerModule, ClassTagExtensions, DefaultScalaModule, ScalaModule}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
+
 import java.time.Year
 import scala.collection.immutable.BitSet
 import scala.collection.mutable
@@ -20,6 +21,11 @@ import scala.collection.mutable
 object JacksonSerDesers {
   private[this] def createJacksonMapper(escapeNonAscii: Boolean = false, indentOutput: Boolean = false,
       booleanAsString: Boolean = false, byteArrayAsBase64String: Boolean = true): ObjectMapper with ClassTagExtensions = {
+    val scalaModuleConfig = new ScalaModule.Config {
+      override def shouldSupportScala3Classes(): Boolean = true
+
+      override def shouldDeserializeNullCollectionsAsEmpty(): Boolean = true
+    }
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
       .configure(JsonWriteFeature.ESCAPE_FORWARD_SLASHES, false)
@@ -51,8 +57,8 @@ object JacksonSerDesers {
       .addModule(BitSetDeserializerModule)
       .withConfigOverride(classOf[Year], x => x.setFormat(JsonFormat.Value.forShape(JsonFormat.Shape.STRING)))
       .addModule(new SimpleModule()
-        .addDeserializer(classOf[BitSet], ImmutableBitSetDeserializer)
-        .addDeserializer(classOf[mutable.BitSet], MutableBitSetDeserializer)
+        .addDeserializer(classOf[BitSet], new ImmutableBitSetDeserializer(scalaModuleConfig))
+        .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer(scalaModuleConfig))
         .addSerializer(classOf[SuitADT], new SuitADTSerializer)
         .addSerializer(classOf[SuitEnum], new SuiteEnumSerializer)
         .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
