@@ -24,6 +24,8 @@ class GoogleMapsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.weePickle()) shouldBe b.compactJsonString1
       toString(b.zioJson()) shouldBe b.compactJsonString1
       toString(b.zioSchemaJson()) shouldBe b.compactJsonString1
+      toString(b.zioSchemaAvro()) shouldBe toString(b.avroBytes)
+      toString(b.avro4s()) shouldBe toString(b.avroBytes)
     }
   }
 }

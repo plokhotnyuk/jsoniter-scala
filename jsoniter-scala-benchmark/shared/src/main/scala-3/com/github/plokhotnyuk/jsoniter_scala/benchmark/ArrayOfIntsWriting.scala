@@ -133,4 +133,18 @@ class ArrayOfIntsWriting extends ArrayOfIntsBenchmark {
 
     arrayOfIntsCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
   }
+
+  @Benchmark
+  def zioSchemaAvro(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaAvroCodecs._
+
+    arrayOfIntsCodec.encode(obj).toArray
+  }
+
+  @Benchmark
+  def avro4s(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Avro4sDecodersAndEncoders._
+
+    write(arrayOfIntsSchemaFor, arrayOfIntsEncoder, obj)
+  }
 }

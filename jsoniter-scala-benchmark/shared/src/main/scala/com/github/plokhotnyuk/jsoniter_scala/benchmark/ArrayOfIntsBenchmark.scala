@@ -2,12 +2,14 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import org.openjdk.jmh.annotations.{Param, Setup}
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaAvroCodecs._
 
 abstract class ArrayOfIntsBenchmark extends CommonParams {
   var obj: Array[Int] = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
   var jsonString: String = _
+  var avroBytes: Array[Byte] = _
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 512
 
@@ -17,5 +19,6 @@ abstract class ArrayOfIntsBenchmark extends CommonParams {
     jsonString = obj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
+    avroBytes = arrayOfIntsCodec.encode(obj).toArray
   }
 }

@@ -129,4 +129,19 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
 
     googleMapsAPICodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
   }
+
+  @Benchmark
+  def zioSchemaAvro(): DistanceMatrix = {
+    import zio.Chunk
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaAvroCodecs._
+
+    googleMapsAPICodec.decode(Chunk.fromArray(avroBytes)).fold(throw _, identity)
+  }
+
+  @Benchmark
+  def avro4s(): DistanceMatrix = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Avro4sDecodersAndEncoders._
+
+    read(googleMapsAPISchemaFor, googleMapsAPIDecoder, avroBytes)
+  }
 }

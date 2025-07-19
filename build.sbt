@@ -245,6 +245,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.playframework" %%% "play-json" % "3.0.5",
       "dev.zio" %%% "zio-json" % "0.7.44",
       "dev.zio" %%% "zio-schema-json" % "1.7.3",
+      "dev.zio" %% "zio-schema-avro" % "1.7.3",
       "io.circe" %%% "circe-generic" % "0.14.14",
       "io.circe" %%% "circe-jawn" % "0.14.14",
       "com.lihaoyi" %%% "upickle" % "4.2.1",
@@ -266,6 +267,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "com.dslplatform" %% "dsl-json-scala" % "2.0.2"
       )
       case _ => Seq(
+        "com.sksamuel.avro4s" %% "avro4s-core" % "5.0.14",
         "org.scala-lang" %% "scala3-staging" % scalaVersion.value, // required by `OpenRTBReading.json4sNative` and `OpenRTBReading.json4sNative` benchmarks for Scala 3
         "io.bullet" %%% "borer-derivation" % "1.16.1"
       )

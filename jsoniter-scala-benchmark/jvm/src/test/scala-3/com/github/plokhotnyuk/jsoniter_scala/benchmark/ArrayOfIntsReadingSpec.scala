@@ -24,6 +24,8 @@ class ArrayOfIntsReadingSpec extends BenchmarkSpecBase {
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
       benchmark.zioSchemaJson() shouldBe benchmark.obj
+      benchmark.zioSchemaAvro() shouldBe benchmark.obj
+      benchmark.avro4s() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
