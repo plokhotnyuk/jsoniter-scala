@@ -804,11 +804,9 @@ object JsonCodecMaker {
       def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< TypeRepr.of[Option[_]] &&
         (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< TypeRepr.of[Option[_]]))
 
-      def isNullable(tpe: TypeRepr): Boolean = {
-        tpe match {
-          case OrType(left, right) => right =:= TypeRepr.of[Null] || left =:= TypeRepr.of[Null]
-          case _ => !tpe.typeSymbol.flags.is(Flags.Final) && !(tpe <:< TypeRepr.of[AnyVal])
-        }
+      def isNullable(tpe: TypeRepr): Boolean = tpe match {
+        case OrType(left, right) => isNullable(right) || isNullable(left)
+        case _ => tpe =:= TypeRepr.of[Null]
       }
 
       def isIArray(tpe: TypeRepr): Boolean = tpe.typeSymbol.fullName == "scala.IArray$package$.IArray"
