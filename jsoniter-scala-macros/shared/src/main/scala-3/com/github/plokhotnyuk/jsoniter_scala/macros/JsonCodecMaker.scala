@@ -56,6 +56,8 @@ final class stringified extends StaticAnnotation
   *                               arrays or collections (turned on by default)
   * @param transientNone          a flag that turns on skipping serialization of fields that have empty values of
   *                               options (turned on by default)
+  * @param transientNull          a flag that turns on skipping serialization of fields that have null values of
+  *                               objects (turned off by default)
   * @param requireCollectionFields a flag that turn on checking of presence of collection fields and forces
   *                               serialization when they are empty
   * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default that is a precision for decimal128,
@@ -113,6 +115,7 @@ class CodecMakerConfig private[macros] (
     val transientDefault: Boolean,
     val transientEmpty: Boolean,
     val transientNone: Boolean,
+    val transientNull: Boolean,
     val requireCollectionFields: Boolean,
     val bigDecimalPrecision: Int,
     val bigDecimalScaleLimit: Int,
@@ -160,6 +163,8 @@ class CodecMakerConfig private[macros] (
   def withTransientEmpty(transientEmpty: Boolean): CodecMakerConfig = copy(transientEmpty = transientEmpty)
 
   def withTransientNone(transientNone: Boolean): CodecMakerConfig = copy(transientNone = transientNone)
+
+  def withTransientNull(transientNull: Boolean): CodecMakerConfig = copy(transientNull = transientNull)
 
   def withRequireCollectionFields(requireCollectionFields: Boolean): CodecMakerConfig =
     copy(requireCollectionFields = requireCollectionFields)
@@ -224,6 +229,7 @@ class CodecMakerConfig private[macros] (
                          transientDefault: Boolean = transientDefault,
                          transientEmpty: Boolean = transientEmpty,
                          transientNone: Boolean = transientNone,
+                         transientNull: Boolean = transientNull,
                          requireCollectionFields: Boolean = requireCollectionFields,
                          bigDecimalPrecision: Int = bigDecimalPrecision,
                          bigDecimalScaleLimit: Int = bigDecimalScaleLimit,
@@ -255,6 +261,7 @@ class CodecMakerConfig private[macros] (
       transientDefault = transientDefault,
       transientEmpty = transientEmpty,
       transientNone = transientNone,
+      transientNull = transientNull,
       requireCollectionFields = requireCollectionFields,
       bigDecimalPrecision = bigDecimalPrecision,
       bigDecimalScaleLimit = bigDecimalScaleLimit,
@@ -288,6 +295,7 @@ object CodecMakerConfig extends CodecMakerConfig(
   transientDefault = true,
   transientEmpty = true,
   transientNone = true,
+  transientNull = false,
   requireCollectionFields = false,
   bigDecimalPrecision = 34,
   bigDecimalScaleLimit = 6178,
@@ -340,6 +348,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withTransientDefault($v) } => Some(x.valueOrAbort.withTransientDefault(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withTransientEmpty($v) } => Some(x.valueOrAbort.withTransientEmpty(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withTransientNone($v) } => Some(x.valueOrAbort.withTransientNone(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withTransientNull($v) } => Some(x.valueOrAbort.withTransientNull(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireCollectionFields($v) } => Some(x.valueOrAbort.withRequireCollectionFields(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireDefaultFields($v) } => Some(x.valueOrAbort.withRequireDefaultFields(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withScalaTransientSupport($v) } => Some(x.valueOrAbort.withScalaTransientSupport(v.valueOrAbort))
@@ -677,6 +686,7 @@ object JsonCodecMaker {
         transientDefault = false,
         transientEmpty = false,
         transientNone = false,
+        transientNull = true,
         requireCollectionFields = false,
         bigDecimalPrecision = 34,
         bigDecimalScaleLimit = 6178,
@@ -793,6 +803,11 @@ object JsonCodecMaker {
 
       def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< TypeRepr.of[Option[_]] &&
         (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< TypeRepr.of[Option[_]]))
+
+      def isNullable(tpe: TypeRepr): Boolean = tpe match {
+        case OrType(left, right) => isNullable(right) || isNullable(left)
+        case _ => tpe =:= TypeRepr.of[Null]
+      }
 
       def isIArray(tpe: TypeRepr): Boolean = tpe.typeSymbol.fullName == "scala.IArray$package$.IArray"
 
@@ -1945,7 +1960,7 @@ object JsonCodecMaker {
           else mappedNames
         })
         val required = fields.collect {
-          case fieldInfo if !((!cfg.requireDefaultFields && fieldInfo.symbol.flags.is(Flags.HasDefault)) || isOption(fieldInfo.resolvedTpe, types) ||
+          case fieldInfo if !((!cfg.requireDefaultFields && fieldInfo.symbol.flags.is(Flags.HasDefault)) || isOption(fieldInfo.resolvedTpe, types) || isNullable(fieldInfo.resolvedTpe) ||
             (!cfg.requireCollectionFields && isCollection(fieldInfo.resolvedTpe))) => fieldInfo.mappedName
         }.toSet
         val paramVarNum = fields.size
@@ -2692,6 +2707,12 @@ object JsonCodecMaker {
                           ${genWriteVal('{v.get}, tpe1 :: fTpe :: types, fieldInfo.isStringified, None, out)}
                         }
                       }
+                  } else if (cfg.transientNull && isNullable(fTpe)) '{
+                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft]}
+                    if ((v != null) && v != ${d.asExprOf[ft]}) {
+                      ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                      ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
+                    }
                   } else if (fTpe <:< TypeRepr.of[Array[_]]) {
                     def cond(v: Expr[Array[_]])(using Quotes): Expr[Boolean] =
                       val da = d.asExprOf[Array[_]]
@@ -2756,6 +2777,12 @@ object JsonCodecMaker {
                           ${genWriteVal('{ v.get }, tpe1 :: fTpe :: types, fieldInfo.isStringified, None, out)}
                         }
                       }
+                  } else if (cfg.transientNull && isNullable(fTpe)) '{
+                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft]}
+                    if (v != null) {
+                      ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                      ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
+                    }
                   } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Array[_]]) '{
                     val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Array[_]]}
                     if (v.length != 0) {
