@@ -56,8 +56,6 @@ final class stringified extends StaticAnnotation
   *                               arrays or collections (turned on by default)
   * @param transientNone          a flag that turns on skipping serialization of fields that have empty values of
   *                               options (turned on by default)
-  * @param transientNull          a flag that turns on skipping serialization of fields that have null values of
-  *                               objects (turned off by default)
   * @param requireCollectionFields a flag that turn on checking of presence of collection fields and forces
   *                               serialization when they are empty
   * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default that is a precision for decimal128,
@@ -103,6 +101,8 @@ final class stringified extends StaticAnnotation
   *                               when the codec derived is for an ADT leaf class and not the ADT base class. Note that
   *                               this flag has no effect on generated decoders -- that is this flag does NOT cause
   *                               decoders to start requiring the discriminator field when they are not strictly necessary
+  * @param transientNull          a flag that turns on skipping serialization of fields that have null values of
+  *                               objects (turned off by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -115,7 +115,6 @@ class CodecMakerConfig private[macros] (
     val transientDefault: Boolean,
     val transientEmpty: Boolean,
     val transientNone: Boolean,
-    val transientNull: Boolean,
     val requireCollectionFields: Boolean,
     val bigDecimalPrecision: Int,
     val bigDecimalScaleLimit: Int,
@@ -135,7 +134,8 @@ class CodecMakerConfig private[macros] (
     val checkFieldDuplication: Boolean,
     val scalaTransientSupport: Boolean,
     val inlineOneValueClasses: Boolean,
-    val alwaysEmitDiscriminator: Boolean) {
+    val alwaysEmitDiscriminator: Boolean,
+    val transientNull: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -163,8 +163,6 @@ class CodecMakerConfig private[macros] (
   def withTransientEmpty(transientEmpty: Boolean): CodecMakerConfig = copy(transientEmpty = transientEmpty)
 
   def withTransientNone(transientNone: Boolean): CodecMakerConfig = copy(transientNone = transientNone)
-
-  def withTransientNull(transientNull: Boolean): CodecMakerConfig = copy(transientNull = transientNull)
 
   def withRequireCollectionFields(requireCollectionFields: Boolean): CodecMakerConfig =
     copy(requireCollectionFields = requireCollectionFields)
@@ -219,6 +217,8 @@ class CodecMakerConfig private[macros] (
   def withInlineOneValueClasses(inlineOneValueClasses: Boolean): CodecMakerConfig =
     copy(inlineOneValueClasses = inlineOneValueClasses)
 
+  def withTransientNull(transientNull: Boolean): CodecMakerConfig = copy(transientNull = transientNull)
+
   private[this] def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                          javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -229,7 +229,6 @@ class CodecMakerConfig private[macros] (
                          transientDefault: Boolean = transientDefault,
                          transientEmpty: Boolean = transientEmpty,
                          transientNone: Boolean = transientNone,
-                         transientNull: Boolean = transientNull,
                          requireCollectionFields: Boolean = requireCollectionFields,
                          bigDecimalPrecision: Int = bigDecimalPrecision,
                          bigDecimalScaleLimit: Int = bigDecimalScaleLimit,
@@ -249,7 +248,8 @@ class CodecMakerConfig private[macros] (
                          checkFieldDuplication: Boolean = checkFieldDuplication,
                          scalaTransientSupport: Boolean = scalaTransientSupport,
                          inlineOneValueClasses: Boolean = inlineOneValueClasses,
-                         alwaysEmitDiscriminator: Boolean = alwaysEmitDiscriminator): CodecMakerConfig =
+                         alwaysEmitDiscriminator: Boolean = alwaysEmitDiscriminator,
+                         transientNull: Boolean = transientNull): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -261,7 +261,6 @@ class CodecMakerConfig private[macros] (
       transientDefault = transientDefault,
       transientEmpty = transientEmpty,
       transientNone = transientNone,
-      transientNull = transientNull,
       requireCollectionFields = requireCollectionFields,
       bigDecimalPrecision = bigDecimalPrecision,
       bigDecimalScaleLimit = bigDecimalScaleLimit,
@@ -281,7 +280,8 @@ class CodecMakerConfig private[macros] (
       checkFieldDuplication = checkFieldDuplication,
       scalaTransientSupport = scalaTransientSupport,
       inlineOneValueClasses = inlineOneValueClasses,
-      alwaysEmitDiscriminator = alwaysEmitDiscriminator)
+      alwaysEmitDiscriminator = alwaysEmitDiscriminator,
+      transientNull = transientNull)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -295,7 +295,6 @@ object CodecMakerConfig extends CodecMakerConfig(
   transientDefault = true,
   transientEmpty = true,
   transientNone = true,
-  transientNull = false,
   requireCollectionFields = false,
   bigDecimalPrecision = 34,
   bigDecimalScaleLimit = 6178,
@@ -315,7 +314,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   checkFieldDuplication = true,
   scalaTransientSupport = false,
   inlineOneValueClasses = false,
-  alwaysEmitDiscriminator = false) {
+  alwaysEmitDiscriminator = false,
+  transientNull = false) {
 
   /**
     * Use to enable printing of codec during compilation:
@@ -348,7 +348,6 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withTransientDefault($v) } => Some(x.valueOrAbort.withTransientDefault(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withTransientEmpty($v) } => Some(x.valueOrAbort.withTransientEmpty(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withTransientNone($v) } => Some(x.valueOrAbort.withTransientNone(v.valueOrAbort))
-        case '{ ($x: CodecMakerConfig).withTransientNull($v) } => Some(x.valueOrAbort.withTransientNull(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireCollectionFields($v) } => Some(x.valueOrAbort.withRequireCollectionFields(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withRequireDefaultFields($v) } => Some(x.valueOrAbort.withRequireDefaultFields(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withScalaTransientSupport($v) } => Some(x.valueOrAbort.withScalaTransientSupport(v.valueOrAbort))
@@ -363,6 +362,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withSetMaxInsertNumber($v) } => Some(x.valueOrAbort.withSetMaxInsertNumber(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withSkipNestedOptionValues($v) } => Some(x.valueOrAbort.withSkipNestedOptionValues(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withCirceLikeObjectEncoding($v) } => Some(x.valueOrAbort.withCirceLikeObjectEncoding(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withTransientNull($v) } => Some(x.valueOrAbort.withTransientNull(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None

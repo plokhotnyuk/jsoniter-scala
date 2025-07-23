@@ -30,6 +30,29 @@ case class IArrays(aa: IArray[IArray[Int]], a: IArray[BigInt])
 
 case class IArrayDefaults(aa: IArray[IArray[Int]] = IArray(IArray[Int](1)), a: IArray[BigInt] = IArray[BigInt](2))
 
+case class NullableProperty(a: Int | Null | String)
+
+given nullableValueCodec: JsonValueCodec[Int | Null | String] = new JsonValueCodec[Int | Null | String] {
+  def decodeValue(in: JsonReader, default: Int | Null | String): Int | Null | String = {
+    val t = in.nextToken()
+    if (t != 'n') {
+      in.rollbackToken()
+      if (t == '"') in.readString(null)
+      else in.readInt()
+    } else {
+      in.readNullOrError("", "expected 'Int | Null | String'")
+      null
+    }
+  }
+
+  def encodeValue(x: Int | Null | String, out: JsonWriter): Unit =
+    if (x == null) out.writeNull()
+    else if (x.isInstanceOf[String]) out.writeVal(x.asInstanceOf[String])
+    else out.writeVal(x.asInstanceOf[Int])
+
+  def nullValue: Int | Null | String = null
+}
+
 class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
   val codecOfIArrays = make[IArrays]
 
@@ -286,6 +309,16 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
 
       verifySerDeser(jsonCodec, arr("VVV", 1.2, true, obj("WWW" -> None, "XXX" -> 777)),
         """["VVV",1.2,true,{"WWW":null,"XXX":777}]""")
+    }
+    "serialize and deserialize case class with union types having null value (default behavior)" in {
+      verifySerDeser(make[List[NullableProperty]],
+        List(NullableProperty(null), NullableProperty(1), NullableProperty("VVV")),
+        """[{"a":null},{"a":1},{"a":"VVV"}]""")
+    }
+    "serialize and deserialize case class with union types having null value (transient null behavior)" in {
+      verifySerDeser(make[List[NullableProperty]](CodecMakerConfig.withTransientNull(true)),
+        List(NullableProperty(null), NullableProperty(1), NullableProperty("VVV")),
+        """[{},{"a":1},{"a":"VVV"}]""")
     }
     "don't generate codecs for non-concrete ADTs with at least one free type parameter" in {
       assert(intercept[TestFailedException](assertCompiles {
