@@ -3113,6 +3113,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfFooForOption, Bar[Option](_root_.scala.Some(1)), """{"type":"Bar","a":1}""")
       verifySerDeser(codecOfFooForOption, Baz[Option](_root_.scala.Some("VVV")), """{"type":"Baz","a":"VVV"}""")
     }
+    "serialize and deserialize recursive higher-kinded types" in {
+      case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
+
+      verifySerDeser(JsonCodecMaker.make[HigherKindedType[Option]](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        HigherKindedType[Option](_root_.scala.Some(1), _root_.scala.Some(HigherKindedType[Option](_root_.scala.Some(2), _root_.scala.None))),
+        """{"f":1,"fs":{"f":2}}""")
+      verifySerDeser(JsonCodecMaker.make[HigherKindedType[Seq]](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        HigherKindedType[Seq](Seq(1, 2, 3), Seq(HigherKindedType[Seq](Seq(4, 5, 6), Seq()))),
+        """{"f":[1,2,3],"fs":[{"f":[4,5,6]}]}""")
+    }
     "serialize and deserialize case classes with an auxiliary constructor using primary one" in {
       case class AuxiliaryConstructor(i: Int, s: String = "") {
         def this(s: String) = this(0, s)
