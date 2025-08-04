@@ -777,6 +777,16 @@ object JsonCodecMaker {
 
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 
+      def isTupleXXL(tpe: TypeRepr): Boolean = tpe match {
+        case AppliedType(tTpe, _) if tTpe =:= TypeRepr.of[*:] => true
+        case _                                                => false
+      }
+
+      def tupleXXLTypeArgs(tpe: TypeRepr): List[TypeRepr] = tpe match {
+        case AppliedType(_, List(typeArg, tail)) => typeArg.dealias :: tupleXXLTypeArgs(tail)
+        case _                                   => Nil
+      }
+
       def valueClassValueSymbol(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers.head
 
       def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(valueClassValueSymbol(tpe)).dealias
@@ -2627,7 +2637,10 @@ object JsonCodecMaker {
             } else $in.readNullOrTokenError($default, '"')
           }
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val indexedTypes = typeArgs(tpe)
+          val isXXL = isTupleXXL(tpe)
+          val indexedTypes =
+            if (isXXL) tupleXXLTypeArgs(tpe)
+            else typeArgs(tpe)
           val valDefs = indexedTypes.map {
             var i = 0
             te =>
@@ -2646,9 +2659,13 @@ object JsonCodecMaker {
                   ValDef(sym, Some(rhs.asTerm.changeOwner(sym)))
           }
           val readCreateBlock = Block(valDefs, '{
-            if ($in.isNextToken(']')) {
-              ${Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"),
-                indexedTypes.map(x => Inferred(x))), valDefs.map(x => Ref(x.symbol))).asExpr}
+            if ($in.isNextToken(']')) ${
+              if (isXXL) {
+                Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
+              } else {
+                Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"),
+                  indexedTypes.map(x => Inferred(x))), valDefs.map(x => Ref(x.symbol))).asExpr
+              }
             } else $in.arrayEndError()
           }.asTerm)
           '{
@@ -3093,13 +3110,23 @@ object JsonCodecMaker {
             else '{ $out.writeNonEscapedAsciiVal(($tx.name: String)) }
           }
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val writeFields = typeArgs(tpe).map {
+          val isXXL = isTupleXXL(tpe)
+          val indexedTypes =
+            if (isXXL) tupleXXLTypeArgs(tpe)
+            else typeArgs(tpe)
+          val writeFields = indexedTypes.map {
             var i = 0
             te =>
               i += 1
               te.asType match
                 case '[t] =>
-                  genWriteVal(Select.unique(x.asTerm, "_" + i).asExprOf[t], te :: types, isStringified, None, out).asTerm
+                  val select =
+                    if (isXXL) {
+                      val getter =
+                        Select.unique(x.asTerm, "productElement").appliedTo(Literal(IntConstant(i - 1))).asExprOf[Any]
+                      '{ $getter.asInstanceOf[t] }.asExprOf[t]
+                    } else Select.unique(x.asTerm, "_" + i).asExprOf[t]
+                  genWriteVal(select, te :: types, isStringified, None, out).asTerm
           }
           if (writeFields.isEmpty) fail(s"Expected that ${tpe.show} should be an applied type")
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]

@@ -6,7 +6,6 @@ import java.util.{Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, _}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
-
 import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.switch
 import scala.util.control.NonFatal
