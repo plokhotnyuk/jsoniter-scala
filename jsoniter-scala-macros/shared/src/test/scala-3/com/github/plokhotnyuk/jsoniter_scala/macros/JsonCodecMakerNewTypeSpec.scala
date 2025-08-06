@@ -62,6 +62,11 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, "24"),
         """[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,"24"]""")
     }
+    "serialize and deserialize Scala 3 generic tuples" in {
+      verifySerDeser(make[(Byte *: Short *: Int *: Long *: EmptyTuple)],
+        (1: Byte) *: (2: Short) *: 3 *: 4L *: EmptyTuple,
+        """[1,2,3,4]""")
+    }
     "serialize and deserialize Scala 3 immutable array" in {
       val json = """{"aa":[[1,2],[3,4]],"a":[1,2,3,4]}"""
       val iArrays = IArrays(IArray(IArray[Int](1, 2), IArray[Int](3, 4)), IArray[BigInt](1, 2, 3, 4))

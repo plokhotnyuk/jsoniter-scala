@@ -777,13 +777,13 @@ object JsonCodecMaker {
 
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 
-      def isTupleXXL(tpe: TypeRepr): Boolean = tpe match {
+      def isGenericTuple(tpe: TypeRepr): Boolean = tpe match {
         case AppliedType(tTpe, _) if tTpe =:= TypeRepr.of[*:] => true
         case _                                                => false
       }
 
-      def tupleXXLTypeArgs(tpe: TypeRepr): List[TypeRepr] = tpe match {
-        case AppliedType(_, List(typeArg, tail)) => typeArg.dealias :: tupleXXLTypeArgs(tail)
+      def genericTupleTypeArgs(tpe: TypeRepr): List[TypeRepr] = tpe match {
+        case AppliedType(_, List(typeArg, tail)) => typeArg.dealias :: genericTupleTypeArgs(tail)
         case _                                   => Nil
       }
 
@@ -2637,9 +2637,9 @@ object JsonCodecMaker {
             } else $in.readNullOrTokenError($default, '"')
           }
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val isXXL = isTupleXXL(tpe)
+          val isGeneric = isGenericTuple(tpe)
           val indexedTypes =
-            if (isXXL) tupleXXLTypeArgs(tpe)
+            if (isGeneric) genericTupleTypeArgs(tpe)
             else typeArgs(tpe)
           val valDefs = indexedTypes.map {
             var i = 0
@@ -2660,7 +2660,7 @@ object JsonCodecMaker {
           }
           val readCreateBlock = Block(valDefs, '{
             if ($in.isNextToken(']')) ${
-              if (isXXL) {
+              if (isGeneric) {
                 Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
               } else {
                 Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"),
@@ -3110,9 +3110,9 @@ object JsonCodecMaker {
             else '{ $out.writeNonEscapedAsciiVal(($tx.name: String)) }
           }
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val isXXL = isTupleXXL(tpe)
+          val isGeneric = isGenericTuple(tpe)
           val indexedTypes =
-            if (isXXL) tupleXXLTypeArgs(tpe)
+            if (isGeneric) genericTupleTypeArgs(tpe)
             else typeArgs(tpe)
           val writeFields = indexedTypes.map {
             var i = 0
@@ -3121,7 +3121,7 @@ object JsonCodecMaker {
               te.asType match
                 case '[t] =>
                   val select =
-                    if (isXXL) {
+                    if (isGeneric) {
                       val getter =
                         Select.unique(x.asTerm, "productElement").appliedTo(Literal(IntConstant(i - 1))).asExprOf[Any]
                       '{ $getter.asInstanceOf[t] }.asExprOf[t]
