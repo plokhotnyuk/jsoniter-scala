@@ -952,9 +952,8 @@ object JsonCodecMaker {
         })
       })
 
-      def isValueClass(tpe: Type): Boolean = !isConstType(tpe) &&
-        (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
-          tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass)
+      def isValueClass(tpe: Type): Boolean = !isConstType(tpe) && isNonAbstractScalaClass(tpe) &&
+        (tpe.typeSymbol.asClass.isDerivedValueClass || cfg.inlineOneValueClasses && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1)
 
       def adtLeafClasses(adtBaseTpe: Type): Seq[Type] = {
         def collectRecursively(tpe: Type): Seq[Type] = {
