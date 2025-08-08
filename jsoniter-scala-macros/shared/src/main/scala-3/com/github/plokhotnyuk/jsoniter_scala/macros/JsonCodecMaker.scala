@@ -974,16 +974,16 @@ object JsonCodecMaker {
                            isStringified: Boolean,
                            nonTransientFieldIndex: Int)
 
-      case class ClassInfo(tpe: TypeRepr, primaryConstructor: Symbol, paramLists: List[List[FieldInfo]]) {
+      case class ClassInfo(tpe: TypeRepr, tpeTypeArgs: List[TypeRepr], primaryConstructor: Symbol, paramLists: List[List[FieldInfo]]) {
         val fields: List[FieldInfo] = paramLists.flatten.filter(!_.isTransient)
 
         def genNew(arg: Term): Term = genNew(List(List(arg)))
 
         def genNew(argss: List[List[Term]]): Term =
           val constructorNoTypes = Select(New(Inferred(tpe)), primaryConstructor)
-          val constructor = typeArgs(tpe) match
-            case Nil => constructorNoTypes
-            case typeArgs => TypeApply(constructorNoTypes, typeArgs.map(Inferred(_)))
+          val constructor =
+            if (tpeTypeArgs.isEmpty) constructorNoTypes
+            else TypeApply(constructorNoTypes, tpeTypeArgs.map(Inferred(_)))
           argss.tail.foldLeft(Apply(constructor, argss.head))((acc, args) => Apply(acc, args))
       }
 
@@ -1002,6 +1002,7 @@ object JsonCodecMaker {
           if (cfg.scalaTransientSupport) s"'${Type.show[transient]}' (or '${Type.show[scala.transient]}')"
           else s"'${Type.show[transient]}')"
 
+        val tpeTypeArgs = typeArgs(tpe)
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"Expected that ${tpe.show} has classSymbol"))
         var annotations = Map.empty[String, FieldAnnotations]
         tpeClassSym.fieldMembers.foreach {
@@ -1060,7 +1061,7 @@ object JsonCodecMaker {
                 val dvSelectNoTArgs = Ref(tpe.typeSymbol.companionModule).select(methodSymbol)
                 val dvSelect = methodSymbol.paramSymss match
                   case Nil => dvSelectNoTArgs
-                  case List(params) if params.exists(_.isTypeParam) => typeArgs(tpe) match
+                  case List(params) if params.exists(_.isTypeParam) => tpeTypeArgs match
                     case Nil => fail(s"Expected that ${tpe.show} is an applied type")
                     case typeArgs => TypeApply(dvSelectNoTArgs, typeArgs.map(Inferred(_)))
                   case paramss => fail(s"Default method for ${symbol.name} of class ${tpe.show} have a complex " +
@@ -1070,7 +1071,7 @@ object JsonCodecMaker {
             val isStringified = annotationOption.exists(_.stringified)
             val isTransient = annotationOption.exists(_.transient)
             val originFieldType = tpe.memberType(symbol).dealias
-            val fieldType = typeArgs(tpe) match
+            val fieldType = tpeTypeArgs match
               case Nil => originFieldType
               case typeArgs => originFieldType.substituteTypes(typeParams, typeArgs)
             fieldType match
@@ -1094,7 +1095,7 @@ object JsonCodecMaker {
             if (!isTransient) i += 1
             i
         }
-        ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
+        ClassInfo(tpe, tpeTypeArgs, primaryConstructor, primaryConstructor.paramSymss match {
           case tps :: pss if tps.exists(_.isTypeParam) => pss.map(ps => createFieldInfos(ps, tps, fieldIndex))
           case pss => pss.map(ps => createFieldInfos(ps, Nil, fieldIndex))
         })
@@ -1207,8 +1208,7 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
           vtpe.asType match
-            case '[vt] =>
-              getClassInfo(tpe).genNew(genReadKey[vt](vtpe :: types, in).asTerm).asExprOf[T]
+            case '[vt] => getClassInfo(tpe).genNew(genReadKey[vt](vtpe :: types, in).asTerm).asExprOf[T]
         } else if (tpe =:= TypeRepr.of[BigInt]) '{ $in.readKeyAsBigInt(${Expr(cfg.bigIntDigitsLimit)}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigDecimal]) {
           val mc = withMathContextFor(cfg.bigDecimalPrecision)
@@ -1552,7 +1552,7 @@ object JsonCodecMaker {
         } else s"No implicit '${TypeRepr.of[JsonValueCodec[_]].show}' defined for '${tpe.show}'.")
 
       def namedValueOpt(namedAnnotation: Option[Term], tpe: TypeRepr): Option[String] = namedAnnotation.map {
-        case Apply(_, List(param)) => CompileTimeEval.evalExpr(param.asExprOf[String]).asTerm match // TODO: write testcase
+        case Apply(_, List(param)) => CompileTimeEval.evalExpr(param.asExprOf[String]).asTerm match
           case Literal(StringConstant(s)) => s
           case _ => fail(s"Cannot evaluate a parameter of the '@named' annotation in type '${tpe.show}': $param.")
         case a => fail(s"Invalid named annotation ${a.show}")
@@ -1969,7 +1969,8 @@ object JsonCodecMaker {
           else mappedNames
         })
         val required = fields.collect {
-          case fieldInfo if !((!cfg.requireDefaultFields && fieldInfo.symbol.flags.is(Flags.HasDefault)) || isOption(fieldInfo.resolvedTpe, types) || isNullable(fieldInfo.resolvedTpe) ||
+          case fieldInfo if !((!cfg.requireDefaultFields && fieldInfo.symbol.flags.is(Flags.HasDefault)) ||
+            isOption(fieldInfo.resolvedTpe, types) || isNullable(fieldInfo.resolvedTpe) ||
             (!cfg.requireCollectionFields && isCollection(fieldInfo.resolvedTpe))) => fieldInfo.mappedName
         }.toSet
         val paramVarNum = fields.size
