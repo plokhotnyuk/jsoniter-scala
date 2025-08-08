@@ -779,12 +779,12 @@ object JsonCodecMaker {
 
       def isGenericTuple(tpe: TypeRepr): Boolean = tpe match {
         case AppliedType(tTpe, _) if tTpe =:= TypeRepr.of[*:] => true
-        case _                                                => false
+        case _ => false
       }
 
       def genericTupleTypeArgs(tpe: TypeRepr): List[TypeRepr] = tpe match {
         case AppliedType(_, List(typeArg, tail)) => typeArg.dealias :: genericTupleTypeArgs(tail)
-        case _                                   => Nil
+        case _ => Nil
       }
 
       def valueClassValueSymbol(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers.head
@@ -1100,9 +1100,8 @@ object JsonCodecMaker {
         })
       })
 
-      def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) &&
-        (cfg.inlineOneValueClasses && isNonAbstractScalaClass(tpe) && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1 ||
-          tpe <:< TypeRepr.of[AnyVal] && !tpe.classSymbol.fold(false)(x => defn.ScalaPrimitiveValueClasses.contains(x)))
+      def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) && isNonAbstractScalaClass(tpe) &&
+        (tpe <:< TypeRepr.of[AnyVal] || cfg.inlineOneValueClasses && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1)
 
       def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = {
         def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
@@ -2702,7 +2701,7 @@ object JsonCodecMaker {
             case '[ft] =>
               fDefault match {
                 case Some(d) =>
-                  if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[_]] ) '{
+                  if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[_]]) '{
                     val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterable[_]]}
                     if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
