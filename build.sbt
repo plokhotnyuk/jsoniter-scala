@@ -99,7 +99,8 @@ lazy val nativeSettings = Seq(
 
 lazy val noPublishSettings = Seq(
   publish / skip := true,
-  mimaPreviousArtifacts := Set()
+  mimaPreviousArtifacts := Set(),
+  Compile / doc / sources := Seq()
 )
 
 lazy val publishSettings = Seq(
@@ -142,6 +143,9 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-macrosJVM`,
     `jsoniter-scala-macrosJS`,
     `jsoniter-scala-macrosNative`,
+    `jsoniter-scala-next-testsJVM`,
+    `jsoniter-scala-next-testsJS`,
+    `jsoniter-scala-next-testsNative`,
     `jsoniter-scala-benchmarkJVM`,
     `jsoniter-scala-benchmarkJS`
   )
@@ -203,6 +207,27 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
   .settings(jsSettings)
 
 lazy val `jsoniter-scala-macrosNative` = `jsoniter-scala-macros`.native
+  .settings(nativeSettings)
+
+lazy val `jsoniter-scala-next-tests` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
+  .crossType(CrossType.Full)
+  .dependsOn(`jsoniter-scala-macros` % "compile->compile;test->test")
+  .settings(commonSettings)
+  .settings(noPublishSettings)
+  .settings(
+    crossScalaVersions := Seq("3.7.3-RC1", "2.13.16"),
+    libraryDependencies ++= Seq(
+      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.19" % Test
+    )
+  )
+
+lazy val `jsoniter-scala-next-testsJVM` = `jsoniter-scala-next-tests`.jvm
+
+lazy val `jsoniter-scala-next-testsJS` = `jsoniter-scala-next-tests`.js
+  .settings(jsSettings)
+
+lazy val `jsoniter-scala-next-testsNative` = `jsoniter-scala-next-tests`.native
   .settings(nativeSettings)
 
 lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -269,8 +294,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "org.scala-lang" %% "scala3-staging" % scalaVersion.value, // required by `OpenRTBReading.json4sNative` and `OpenRTBReading.json4sNative` benchmarks for Scala 3
         "io.bullet" %%% "borer-derivation" % "1.16.1"
       )
-    }),
-    Compile / doc / sources := Seq()
+    })
   )
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm

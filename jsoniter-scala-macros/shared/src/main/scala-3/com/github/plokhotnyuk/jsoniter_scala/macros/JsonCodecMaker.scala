@@ -713,26 +713,22 @@ object JsonCodecMaker {
         .withRequireCollectionFields(true).withAllowRecursiveTypes(true))
 
     def makeOpenapiLike[A: Type](discriminatorFieldName: Expr[String])(using Quotes): Expr[JsonValueCodec[A]] =
-      make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
-        .withRequireDiscriminatorFirst(false)
+      make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireDiscriminatorFirst(false)
         .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
         .withDiscriminatorFieldName(Some(discriminatorFieldName.valueOrAbort)))
 
     def makeOpenapiLike[A: Type](discriminatorFieldName: Expr[String],
                                  adtLeafClassNameMapper: Expr[PartialFunction[String, String]])(using Quotes): Expr[JsonValueCodec[A]] =
-      make(
-        CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
-          .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
-          .withRequireDiscriminatorFirst(false)
-          .withDiscriminatorFieldName(Some(discriminatorFieldName.valueOrAbort))
-          .withAdtLeafClassNameMapper(ExprPartialFunctionWrapper(adtLeafClassNameMapper).apply.unlift
-            .compose(PartialFunction.fromFunction(simpleClassName))))
+      make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true)
+        .withAllowRecursiveTypes(true).withRequireDiscriminatorFirst(false)
+        .withDiscriminatorFieldName(Some(discriminatorFieldName.valueOrAbort))
+        .withAdtLeafClassNameMapper(ExprPartialFunctionWrapper(adtLeafClassNameMapper).apply.unlift
+          .compose(PartialFunction.fromFunction(simpleClassName))))
 
     def makeOpenapiLikeWithoutDiscriminator[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       make(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
         .withRequireCollectionFields(true).withAllowRecursiveTypes(true)
         .withDiscriminatorFieldName(None))
-
 
     def makeWithSpecifiedConfig[A: Type](config: Expr[CodecMakerConfig])(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
@@ -784,6 +780,16 @@ object JsonCodecMaker {
 
       def genericTupleTypeArgs(tpe: TypeRepr): List[TypeRepr] = tpe match {
         case AppliedType(_, List(typeArg, tail)) => typeArg.dealias :: genericTupleTypeArgs(tail)
+        case _ => Nil
+      }
+
+      def isNamedTuple(tpe: TypeRepr): Boolean = tpe match {
+        case AppliedType(ntTpe, _) if ntTpe.dealias.typeSymbol.fullName == "scala.NamedTuple$.NamedTuple" => true
+        case _ => false
+      }
+
+      def namedGenericTupleNames(tpe: TypeRepr): List[String] = tpe match {
+        case AppliedType(_, List(ConstantType(StringConstant(name)), tail)) => name :: namedGenericTupleNames(tail)
         case _ => Nil
       }
 
@@ -965,20 +971,43 @@ object JsonCodecMaker {
         }
       }
 
-      case class FieldInfo(symbol: Symbol,
-                           mappedName: String,
-                           getterOrField: Symbol,
-                           defaultValue: Option[Term],
-                           resolvedTpe: TypeRepr,
-                           isTransient: Boolean,
-                           isStringified: Boolean,
-                           nonTransientFieldIndex: Int)
+      case class FieldInfo(symbol: Symbol, mappedName: String, getterOrField: Symbol, defaultValue: Option[Term],
+                           resolvedTpe: TypeRepr, isTransient: Boolean, isStringified: Boolean, nonTransientFieldIndex: Int)
 
-      case class ClassInfo(tpe: TypeRepr, tpeTypeArgs: List[TypeRepr], primaryConstructor: Symbol, paramLists: List[List[FieldInfo]]) {
+      abstract class TypeInfo(tpe: TypeRepr, val paramLists: List[List[FieldInfo]]) {
         val fields: List[FieldInfo] = paramLists.flatten.filter(!_.isTransient)
 
-        def genNew(arg: Term): Term = genNew(List(List(arg)))
+        def genNew(argss: List[List[Term]]): Term
+      }
 
+      case class NamedTupleInfo(tpe: TypeRepr, tupleType: Type[?],
+                                override val paramLists: List[List[FieldInfo]]) extends TypeInfo(tpe, paramLists) {
+        def genNew(argss: List[List[Term]]): Term =
+          // Borrowed from an amazing work of Aleksander Rainko: https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/ProductConstructor.scala#L22
+          Typed(Expr.ofTupleFromSeq(argss.flatten.map(_.asExpr)).asTerm, TypeTree.of(using tupleType))
+      }
+
+      val namedTupleInfos = new mutable.LinkedHashMap[TypeRepr, NamedTupleInfo]
+
+      def getNamedTupleInfo(tpe: TypeRepr): NamedTupleInfo = namedTupleInfos.getOrElseUpdate(tpe, {
+        tpe match {
+          case AppliedType(ntTpe, List(nTpe@AppliedType(_, nameConstants), tTpe)) if ntTpe.dealias.typeSymbol.fullName == "scala.NamedTuple$.NamedTuple" =>
+            val fields =
+              if (isGenericTuple(tTpe)) namedGenericTupleNames(nTpe).zip(genericTupleTypeArgs(tTpe))
+              else nameConstants.collect { case ConstantType(StringConstant(x)) => x}.zip(typeArgs(tTpe))
+            val noSymbol = Symbol.noSymbol
+            var i = - 1
+            NamedTupleInfo(tpe, tTpe.asType, List(fields.map { case (name, fTpe) =>
+              i += 1
+              val mappedName = cfg.fieldNameMapper (name).getOrElse (name)
+              FieldInfo (noSymbol, mappedName, noSymbol, None, fTpe, false, false, i)
+            }))
+          case _ => fail(s"Unexpected named type: ${tpe.show}")
+        }
+      })
+
+      case class ClassInfo(tpe: TypeRepr, tpeTypeArgs: List[TypeRepr], primaryConstructor: Symbol,
+                           override val paramLists: List[List[FieldInfo]]) extends TypeInfo(tpe, paramLists) {
         def genNew(argss: List[List[Term]]): Term =
           val constructorNoTypes = Select(New(Inferred(tpe)), primaryConstructor)
           val constructor =
@@ -1208,7 +1237,7 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
           vtpe.asType match
-            case '[vt] => getClassInfo(tpe).genNew(genReadKey[vt](vtpe :: types, in).asTerm).asExprOf[T]
+            case '[vt] => getClassInfo(tpe).genNew(List(List(genReadKey[vt](vtpe :: types, in).asTerm))).asExprOf[T]
         } else if (tpe =:= TypeRepr.of[BigInt]) '{ $in.readKeyAsBigInt(${Expr(cfg.bigIntDigitsLimit)}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigDecimal]) {
           val mc = withMathContextFor(cfg.bigDecimalPrecision)
@@ -1828,7 +1857,7 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
-            case '[t1] => getClassInfo(tpe).genNew(genNullValue[t1](tpe1 :: types).asTerm).asExprOf[T]
+            case '[t1] => getClassInfo(tpe).genNew(List(List(genNullValue[t1](tpe1 :: types).asTerm))).asExprOf[T]
         } else if (TypeRepr.of[Null] <:< tpe) '{ null }.asExprOf[T]
         else '{ null.asInstanceOf[T] }.asExprOf[T]
 
@@ -1854,8 +1883,12 @@ object JsonCodecMaker {
 
         def genReadLeafClass[T: Type](subTpe: TypeRepr)(using Quotes): Expr[T] =
           val useDiscriminator = cfg.discriminatorFieldName.isDefined
-          if (subTpe =:= tpe) genReadNonAbstractScalaClass(types, useDiscriminator, in, genNullValue[T](types))
-          else genReadVal(subTpe :: types, genNullValue[T](subTpe :: types), isStringified, useDiscriminator, in)
+          if (subTpe =:= tpe) {
+            val typeInfo =
+              if (isNamedTuple(tpe)) getNamedTupleInfo(tpe)
+              else getClassInfo(tpe)
+            genReadNonAbstractScalaClass(typeInfo, types, useDiscriminator, in, genNullValue[T](types))
+          } else genReadVal(subTpe :: types, genNullValue[T](subTpe :: types), isStringified, useDiscriminator, in)
 
         def genReadCollisions[T: Type](subTpes: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Expr[T] =
           subTpes.foldRight(discriminatorError.asExprOf[T]) { (subTpe, acc) =>
@@ -1958,11 +1991,10 @@ object JsonCodecMaker {
         } else genReadJsObjClass(leafClasses, false)
       }
 
-      def genReadNonAbstractScalaClass[T: Type](types: List[TypeRepr], useDiscriminator: Boolean, in: Expr[JsonReader],
-                                                default: Expr[T])(using Quotes): Expr[T] = {
+      def genReadNonAbstractScalaClass[T: Type](typeInfo: TypeInfo, types: List[TypeRepr], useDiscriminator: Boolean,
+                                                in: Expr[JsonReader], default: Expr[T])(using Quotes): Expr[T] = {
         val tpe = types.head
-        val classInfo = getClassInfo(tpe)
-        val fields = classInfo.fields
+        val fields = typeInfo.fields
         val mappedNames = fields.map(_.mappedName)
         checkFieldNameCollisions(tpe, {
           if (useDiscriminator) cfg.discriminatorFieldName.fold(mappedNames)(mappedNames :+ _)
@@ -2015,14 +2047,14 @@ object JsonCodecMaker {
           }
         val readVars = fields.map { fieldInfo =>
           val fTpe = fieldInfo.resolvedTpe
-          val sym = symbol("_" + fieldInfo.symbol.name, fTpe, Flags.Mutable)
+          val sym = symbol("_" + fieldInfo.mappedName, fTpe, Flags.Mutable)
           fTpe.asType match
             case '[ft] =>
               ValDef(sym, Some(fieldInfo.defaultValue.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
         }
-        val readVarsMap = fields.map(_.symbol.name).zip(readVars).toMap
+        val readVarsMap = fields.map(_.mappedName).zip(readVars).toMap
         var nonTransientFieldIndex = 0
-        val construct = classInfo.genNew(classInfo.paramLists.map(_.foldLeft(List.newBuilder[Term]) {
+        val construct = typeInfo.genNew(typeInfo.paramLists.map(_.foldLeft(List.newBuilder[Term]) {
           (params, fieldInfo) =>
             params.addOne(if (fieldInfo.isTransient) {
               fieldInfo.defaultValue
@@ -2049,7 +2081,7 @@ object JsonCodecMaker {
                 val fTpe = fieldInfo.resolvedTpe
                 fTpe.asType match
                   case '[ft] =>
-                    val tmpVar = Ref(tmpVars(fieldInfo.symbol.name).symbol)
+                    val tmpVar = Ref(tmpVars(fieldInfo.mappedName).symbol)
                     val readVal = genReadVal(fTpe :: types, tmpVar.asExprOf[ft], fieldInfo.isStringified, false, in).asTerm
                     Block(List({
                       val isRequired = required(fieldInfo.mappedName)
@@ -2270,7 +2302,7 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] =>
               val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
-              getClassInfo(tpe).genNew(readVal.asTerm).asExprOf[T]
+              getClassInfo(tpe).genNew(List(List(readVal.asTerm))).asExprOf[T]
         } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
           val nullValue =
@@ -2636,6 +2668,8 @@ object JsonCodecMaker {
               ${genReadJavaEnumValue(javaEnumValues(tpe), '{ $in.enumValueError(l) }, in, 'l) }
             } else $in.readNullOrTokenError($default, '"')
           }
+        } else if (isNamedTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
+          genReadNonAbstractScalaClass(getNamedTupleInfo(tpe), types, useDiscriminator, in, default)
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           val isGeneric = isGenericTuple(tpe)
           val indexedTypes =
@@ -2684,32 +2718,41 @@ object JsonCodecMaker {
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           genReadSealedClass(types, in, default, isStringified)
         } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
-          genReadNonAbstractScalaClass(types, useDiscriminator, in, default)
+          genReadNonAbstractScalaClass(getClassInfo(tpe), types, useDiscriminator, in, default)
         } else if (isConstType(tpe)) genReadConstType(tpe, isStringified, in)
         else cannotFindValueCodecError(tpe)
 
-      def genWriteNonAbstractScalaClass[T: Type](x: Expr[T], types: List[TypeRepr],
+      def genWriteNonAbstractScalaClass[T: Type](x: Expr[T], typeInfo: TypeInfo, types: List[TypeRepr],
                                                  optDiscriminator: Option[WriteDiscriminator],
                                                  out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         val tpe = types.head
-        val classInfo = getClassInfo(tpe)
-        val writeFields = classInfo.fields.map { fieldInfo =>
+        var i = -1
+        val writeFields = typeInfo.fields.map { fieldInfo =>
+          i += 1
           val fDefault =
             if (cfg.transientDefault) fieldInfo.defaultValue
             else None
           val fTpe = fieldInfo.resolvedTpe
           fTpe.asType match {
             case '[ft] =>
+              val getter = typeInfo match {
+                case namedTupleInfo: NamedTupleInfo =>
+                  if (typeInfo.fields.size > 22) '{ $x.asInstanceOf[Tuple].productElement(${Expr(i)}).asInstanceOf[ft] }.asTerm
+                  else namedTupleInfo.tupleType match {
+                    case '[tt] => Select.unique('{ $x.asInstanceOf[tt] }.asTerm, s"_${i + 1}")
+                  }
+                case _ => Select(x.asTerm, fieldInfo.getterOrField)
+              }
               fDefault match {
                 case Some(d) =>
                   if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[_]]) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterable[_]]}
+                    val v = ${getter.asExprOf[ft & Iterable[_]]}
                     if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
                   } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterator[_]]) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterator[_]]}
+                    val v = ${getter.asExprOf[ft & Iterator[_]]}
                     if (v.hasNext && v != ${d.asExprOf[ft]}) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2718,14 +2761,14 @@ object JsonCodecMaker {
                     val tpe1 = typeArg1(fTpe)
                     tpe1.asType match
                       case '[t1] => '{
-                        val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[Option[t1]]}
+                        val v = ${getter.asExprOf[Option[t1]]}
                         if ((v ne None) && v != ${d.asExprOf[ft]}) {
                           ${genWriteConstantKey(fieldInfo.mappedName, out)}
                           ${genWriteVal('{v.get}, tpe1 :: fTpe :: types, fieldInfo.isStringified, None, out)}
                         }
                       }
                   } else if (cfg.transientNull && isNullable(fTpe)) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft]}
+                    val v = ${getter.asExprOf[ft]}
                     if ((v != null) && v != ${d.asExprOf[ft]}) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2739,7 +2782,7 @@ object JsonCodecMaker {
                         '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
 
                     '{
-                      val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Array[_]]}
+                      val v = ${getter.asExprOf[ft & Array[_]]}
                       if (${cond('v)}) {
                         ${genWriteConstantKey(fieldInfo.mappedName, out)}
                         ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2757,7 +2800,7 @@ object JsonCodecMaker {
                             '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
 
                         '{
-                          val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[IArray[ft1]]}
+                          val v = ${getter.asExprOf[IArray[ft1]]}
                           if (${cond('v)}) {
                             ${genWriteConstantKey(fieldInfo.mappedName, out)}
                             ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2765,7 +2808,7 @@ object JsonCodecMaker {
                         }
                       }
                   } else '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft]}
+                    val v = ${getter.asExprOf[ft]}
                     if (v != ${d.asExprOf[ft]}) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2773,13 +2816,13 @@ object JsonCodecMaker {
                   }
                 case None =>
                   if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[_]]) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterable[_]]}
+                    val v = ${getter.asExprOf[ft & Iterable[_]]}
                     if (!v.isEmpty) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
                   } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterator[_]]) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Iterator[_]]}
+                    val v = ${getter.asExprOf[ft & Iterator[_]]}
                     if (v.hasNext) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2788,20 +2831,20 @@ object JsonCodecMaker {
                     val tpe1 = typeArg1(fTpe)
                     tpe1.asType match
                       case '[tf] => '{
-                        val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[Option[tf]]}
+                        val v = ${getter.asExprOf[Option[tf]]}
                         if (v ne None) {
                           ${genWriteConstantKey(fieldInfo.mappedName, out)}
                           ${genWriteVal('{ v.get }, tpe1 :: fTpe :: types, fieldInfo.isStringified, None, out)}
                         }
                       }
                   } else if (cfg.transientNull && isNullable(fTpe)) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft]}
+                    val v = ${getter.asExprOf[ft]}
                     if (v != null) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
                   } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Array[_]]) '{
-                    val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft & Array[_]]}
+                    val v = ${getter.asExprOf[ft & Array[_]]}
                     if (v.length != 0) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2810,7 +2853,7 @@ object JsonCodecMaker {
                     val fTpe1 = typeArg1(fTpe)
                     fTpe1.asType match
                       case '[ft1] => '{
-                        val v = ${Select(x.asTerm, fieldInfo.getterOrField).asExprOf[IArray[ft1]]}
+                        val v = ${getter.asExprOf[IArray[ft1]]}
                         if (v.length != 0) {
                           ${genWriteConstantKey(fieldInfo.mappedName, out)}
                           ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
@@ -2818,7 +2861,7 @@ object JsonCodecMaker {
                       }
                   } else '{
                     ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                    ${genWriteVal(Select(x.asTerm, fieldInfo.getterOrField).asExprOf[ft], fTpe :: types, fieldInfo.isStringified, None, out)}
+                    ${genWriteVal(getter.asExprOf[ft], fTpe :: types, fieldInfo.isStringified, None, out)}
                   }
               }
           }
@@ -3109,6 +3152,8 @@ object JsonCodecMaker {
             if (encodingRequired) '{ $out.writeVal(($tx.name: String)) }
             else '{ $out.writeNonEscapedAsciiVal(($tx.name: String)) }
           }
+        } else if (isNamedTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
+          genWriteNonAbstractScalaClass(x.asExprOf[T], getNamedTupleInfo(tpe), types, optWriteDiscriminator, out)
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           val isGeneric = isGenericTuple(tpe)
           val indexedTypes =
@@ -3140,8 +3185,12 @@ object JsonCodecMaker {
           def genWriteLeafClass(subTpe: TypeRepr, discriminator: Option[WriteDiscriminator], vx: Term): Expr[Unit] =
             subTpe.asType match
               case '[st] =>
-                if (subTpe =:= tpe) genWriteNonAbstractScalaClass(vx.asExprOf[st], types, discriminator, out)
-                else genWriteVal(vx.asExprOf[st], subTpe :: types, isStringified, discriminator, out)
+                if (subTpe =:= tpe) {
+                  val typeInfo =
+                    if (isNamedTuple(tpe)) getNamedTupleInfo(tpe)
+                    else getClassInfo(tpe)
+                  genWriteNonAbstractScalaClass(vx.asExprOf[st], typeInfo, types, discriminator, out)
+                } else genWriteVal(vx.asExprOf[st], subTpe :: types, isStringified, discriminator, out)
 
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = cfg.discriminatorFieldName.fold {
@@ -3169,7 +3218,7 @@ object JsonCodecMaker {
           }
           Match('{$x: @scala.unchecked}.asTerm, writeSubclasses.toList).asExprOf[Unit]
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
-          genWriteNonAbstractScalaClass(x.asExprOf[T], types, optWriteDiscriminator, out)
+          genWriteNonAbstractScalaClass(x.asExprOf[T], getClassInfo(tpe), types, optWriteDiscriminator, out)
         } else if (isConstType(tpe)) getWriteConstType(tpe, isStringified, out)
         else cannotFindValueCodecError(tpe)
 
