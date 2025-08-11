@@ -775,7 +775,7 @@ object JsonCodecMaker {
 
       def isGenericTuple(tpe: TypeRepr): Boolean = tpe match {
         case AppliedType(tTpe, _) if tTpe =:= TypeRepr.of[*:] => true
-        case _ => false
+        case _ => tpe =:= TypeRepr.of[EmptyTuple]
       }
 
       def isNamedTuple(tpe: TypeRepr): Boolean = tpe match {
@@ -992,7 +992,7 @@ object JsonCodecMaker {
             val typeArgs = tupleTypeArgs(tTpe.asType)
             val size = typeArgs.size
             val tupleTpe =
-              if (size <= 22) defn.TupleClass(size).typeRef.appliedTo(typeArgs)
+              if (size > 0 && size <= 22) defn.TupleClass(size).typeRef.appliedTo(typeArgs)
               else typeArgs.foldRight(TypeRepr.of[EmptyTuple]) {
                 val tupleCons = TypeRepr.of[*:]
                 (curr, acc) => tupleCons.appliedTo(curr :: acc :: Nil)
@@ -2698,7 +2698,8 @@ object JsonCodecMaker {
           val readCreateBlock = Block(valDefs, '{
             if ($in.isNextToken(']')) ${
               if (isGeneric) {
-                Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
+                if (indexedTypes.isEmpty) Expr(EmptyTuple)
+                else Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
               } else {
                 Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"),
                   indexedTypes.map(x => Inferred(x))), valDefs.map(x => Ref(x.symbol))).asExpr
@@ -3176,7 +3177,6 @@ object JsonCodecMaker {
                     } else Select.unique(x.asTerm, "_" + i).asExprOf[t]
                   genWriteVal(select, te :: types, isStringified, None, out).asTerm
           }
-          if (writeFields.isEmpty) fail(s"Expected that ${tpe.show} should be an applied type")
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
         } else if (isEnumOrModuleValue(tpe) && !(cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m, out) { (out, x) =>
           '{
