@@ -8,10 +8,24 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
     "serialize and deserialize Scala 3 named tuples" in {
       verifySerDeser(make[(i: Int, s: String)], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
     }
+    "serialize and deserialize Scala 3 named tuples with generic tuple for names" in {
+      verifySerDeser(make[NamedTuple.NamedTuple["i" *: "s" *: EmptyTuple, (Int, String)]], 
+      (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+    }
+    "serialize and deserialize Scala 3 named tuples with generic tuple for value types" in {
+      verifySerDeser(make[NamedTuple.NamedTuple[("i", "s"), Int *: String *: EmptyTuple]], 
+      (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+    }
     "serialize and deserialize generic Scala 3 named tuples" in {
-      type GenericNamedTuple[A, B] = (i: A, s: B)
+      type GenericNamedTuple[A, B] = (a: A, b: B)
 
-      verifySerDeser(make[GenericNamedTuple[Option[Int], List[String]]], (i = Some(1), s = List("VVV")),
+      verifySerDeser(make[GenericNamedTuple[Option[Int], List[String]]], (a = Some(1), b = List("VVV")),
+        """{"a":1,"b":["VVV"]}""")
+    }
+    "serialize and deserialize higher-kind Scala 3 named tuples" in {
+      type HKNamedTuple[F[_], G[_]] = (i: F[Int], s: G[String])
+
+      verifySerDeser(make[HKNamedTuple[Option, List]], (i = Some(1), s = List("VVV")),
         """{"i":1,"s":["VVV"]}""")
     }
     "serialize and deserialize nested Scala 3 named tuples" in {

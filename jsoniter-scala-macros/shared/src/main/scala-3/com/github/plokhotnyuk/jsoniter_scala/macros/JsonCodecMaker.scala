@@ -980,7 +980,7 @@ object JsonCodecMaker {
         def genNew(argss: List[List[Term]]): Term
       }
 
-      case class NamedTupleInfo(tpe: TypeRepr, tupleType: Type[?],
+      case class NamedTupleInfo(tpe: TypeRepr, tupleType: Type[?], isGeneric: Boolean,
                                 override val paramLists: List[List[FieldInfo]]) extends TypeInfo(tpe, paramLists) {
         def genNew(argss: List[List[Term]]): Term =
           // Borrowed from an amazing work of Aleksander Rainko: https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/ProductConstructor.scala#L22
@@ -991,16 +991,20 @@ object JsonCodecMaker {
 
       def getNamedTupleInfo(tpe: TypeRepr): NamedTupleInfo = namedTupleInfos.getOrElseUpdate(tpe, {
         tpe match {
-          case AppliedType(ntTpe, List(nTpe@AppliedType(_, nameConstants), tTpe)) if ntTpe.dealias.typeSymbol.fullName == "scala.NamedTuple$.NamedTuple" =>
-            val fields =
-              if (isGenericTuple(tTpe)) namedGenericTupleNames(nTpe).zip(genericTupleTypeArgs(tTpe))
-              else nameConstants.collect { case ConstantType(StringConstant(x)) => x}.zip(typeArgs(tTpe))
+          case AppliedType(_, List(nTpe @ AppliedType(_, nameConstants), tTpe)) =>
+            val names =
+              if (isGenericTuple(nTpe)) namedGenericTupleNames(nTpe)
+              else nameConstants.collect { case ConstantType(StringConstant(x)) => x }
+            val isGeneric = isGenericTuple(tTpe)
+            val types =
+              if (isGeneric) genericTupleTypeArgs(tTpe)
+              else typeArgs(tTpe)
             val noSymbol = Symbol.noSymbol
             var i = - 1
-            NamedTupleInfo(tpe, tTpe.asType, List(fields.map { case (name, fTpe) =>
+            NamedTupleInfo(tpe, tTpe.asType, isGeneric, List(names.zip(types).map { case (name, fTpe) =>
               i += 1
-              val mappedName = cfg.fieldNameMapper (name).getOrElse (name)
-              FieldInfo (noSymbol, mappedName, noSymbol, None, fTpe, false, false, i)
+              val mappedName = cfg.fieldNameMapper(name).getOrElse(name)
+              FieldInfo(noSymbol, mappedName, noSymbol, None, fTpe, false, false, i)
             }))
           case _ => fail(s"Unexpected named type: ${tpe.show}")
         }
@@ -2726,9 +2730,7 @@ object JsonCodecMaker {
                                                  optDiscriminator: Option[WriteDiscriminator],
                                                  out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         val tpe = types.head
-        var i = -1
         val writeFields = typeInfo.fields.map { fieldInfo =>
-          i += 1
           val fDefault =
             if (cfg.transientDefault) fieldInfo.defaultValue
             else None
@@ -2737,9 +2739,11 @@ object JsonCodecMaker {
             case '[ft] =>
               val getter = typeInfo match {
                 case namedTupleInfo: NamedTupleInfo =>
-                  if (typeInfo.fields.size > 22) '{ $x.asInstanceOf[Tuple].productElement(${Expr(i)}).asInstanceOf[ft] }.asTerm
-                  else namedTupleInfo.tupleType match {
-                    case '[tt] => Select.unique('{ $x.asInstanceOf[tt] }.asTerm, s"_${i + 1}")
+                  val idx = fieldInfo.nonTransientFieldIndex
+                  if (namedTupleInfo.isGeneric) {
+                    '{ $x.asInstanceOf[Tuple].productElement(${Expr(idx)}).asInstanceOf[ft] }.asTerm
+                  } else namedTupleInfo.tupleType match {
+                    case '[tt] => Select.unique('{ $x.asInstanceOf[tt] }.asTerm, s"_${idx + 1}")
                   }
                 case _ => Select(x.asTerm, fieldInfo.getterOrField)
               }
