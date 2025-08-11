@@ -778,18 +778,13 @@ object JsonCodecMaker {
         case _ => false
       }
 
-      def genericTupleTypeArgs(tpe: TypeRepr): List[TypeRepr] = tpe match {
-        case AppliedType(_, List(typeArg, tail)) => typeArg.dealias :: genericTupleTypeArgs(tail)
-        case _ => Nil
-      }
-
       def isNamedTuple(tpe: TypeRepr): Boolean = tpe match {
         case AppliedType(ntTpe, _) if ntTpe.dealias.typeSymbol.fullName == "scala.NamedTuple$.NamedTuple" => true
         case _ => false
       }
 
-      def namedGenericTupleNames(tpe: TypeRepr): List[String] = tpe match {
-        case AppliedType(_, List(ConstantType(StringConstant(name)), tail)) => name :: namedGenericTupleNames(tail)
+      def tupleTypeArgs(t: Type[?]): List[TypeRepr] = t match {
+        case '[head *: tail] => TypeRepr.of[head] :: tupleTypeArgs(Type.of[tail])
         case _ => Nil
       }
 
@@ -991,17 +986,21 @@ object JsonCodecMaker {
 
       def getNamedTupleInfo(tpe: TypeRepr): NamedTupleInfo = namedTupleInfos.getOrElseUpdate(tpe, {
         tpe match {
-          case AppliedType(_, List(nTpe @ AppliedType(_, nameConstants), tTpe)) =>
-            val names =
-              if (isGenericTuple(nTpe)) namedGenericTupleNames(nTpe)
-              else nameConstants.collect { case ConstantType(StringConstant(x)) => x }
-            val isGeneric = isGenericTuple(tTpe)
-            val types =
-              if (isGeneric) genericTupleTypeArgs(tTpe)
-              else typeArgs(tTpe)
+          case AppliedType(_, List(nTpe, tTpe)) =>
+            // Borrowed from an amazing work of Aleksander Rainko: https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/Structure.scala#L188-L199
+            val names = tupleTypeArgs(nTpe.asType).map { case ConstantType(StringConstant(n)) => n }
+            val typeArgs = tupleTypeArgs(tTpe.asType)
+            val size = typeArgs.size
+            val tupleTpe =
+              if (size <= 22) defn.TupleClass(size).typeRef.appliedTo(typeArgs)
+              else typeArgs.foldRight(TypeRepr.of[EmptyTuple]) {
+                val tupleCons = TypeRepr.of[*:]
+                (curr, acc) => tupleCons.appliedTo(curr :: acc :: Nil)
+              }
+            val isGeneric = isGenericTuple(tupleTpe)
             val noSymbol = Symbol.noSymbol
             var i = - 1
-            NamedTupleInfo(tpe, tTpe.asType, isGeneric, List(names.zip(types).map { case (name, fTpe) =>
+            NamedTupleInfo(tpe, tupleTpe.asType, isGeneric, List(names.zip(typeArgs).map { case (name, fTpe) =>
               i += 1
               val mappedName = cfg.fieldNameMapper(name).getOrElse(name)
               FieldInfo(noSymbol, mappedName, noSymbol, None, fTpe, false, false, i)
@@ -2677,7 +2676,7 @@ object JsonCodecMaker {
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           val isGeneric = isGenericTuple(tpe)
           val indexedTypes =
-            if (isGeneric) genericTupleTypeArgs(tpe)
+            if (isGeneric) tupleTypeArgs(tpe.asType)
             else typeArgs(tpe)
           val valDefs = indexedTypes.map {
             var i = 0
@@ -3161,7 +3160,7 @@ object JsonCodecMaker {
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           val isGeneric = isGenericTuple(tpe)
           val indexedTypes =
-            if (isGeneric) genericTupleTypeArgs(tpe)
+            if (isGeneric) tupleTypeArgs(tpe.asType)
             else typeArgs(tpe)
           val writeFields = indexedTypes.map {
             var i = 0

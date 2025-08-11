@@ -7,14 +7,34 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize Scala 3 named tuples" in {
       verifySerDeser(make[(i: Int, s: String)], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.Reverse[(i: Int, s: String)]], (s = "VVV", i = 1), """{"s":"VVV","i":1}""")
+      verifySerDeser(make[NamedTuple.Concat[(i: Int), (s: String)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.Tail[(l: Long, i: Int, s: String)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.Init[(i: Int, s: String, l: Long)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.Drop[(l: Long, i: Int, s: String), 1]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.Take[(i: Int, s: String, l: Long), 2]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.Split[(i: Int, s: String, l: Long), 2]], ((i = 1, s = "VVV"), (l = 2L)),
+        """[{"i":1,"s":"VVV"},{"l":2}]""")
+      verifySerDeser(make[NamedTuple.Zip[(i: Int, s: String), (i: Long, s: String)]], (i = (1, 2L), s = ("VVV", "WWW")),
+        """{"i":[1,2],"s":["VVV","WWW"]}""")
+    }
+    "serialize and deserialize Scala 3 tuples derived from named tuples" in {
+      verifySerDeser(make[NamedTuple.DropNames[(i: Int, s: String)]], (1, "VVV"), """[1,"VVV"]""")
+    }
+    "serialize and deserialize Scala 3 tuples derived from tuples" in {
+      verifySerDeser(make[Tuple.Reverse[(Long, Int, Short, Byte)]], (1: Byte, 2: Short, 3, 4L), """[1,2,3,4]""")
     }
     "serialize and deserialize Scala 3 named tuples with generic tuple for names" in {
       verifySerDeser(make[NamedTuple.NamedTuple["i" *: "s" *: EmptyTuple, (Int, String)]], 
-      (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+        (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.NamedTuple["i" *: ("s", "l"), (Int, String, Long)]],
+        (i = 1, s = "VVV", l = 2L), """{"i":1,"s":"VVV","l":2}""")
     }
     "serialize and deserialize Scala 3 named tuples with generic tuple for value types" in {
-      verifySerDeser(make[NamedTuple.NamedTuple[("i", "s"), Int *: String *: EmptyTuple]], 
-      (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.NamedTuple[("i", "s"), Int *: String *: EmptyTuple]],
+        (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.NamedTuple[("i", "s", "l"), Int *: Tuple2[String, Long]]],
+        (i = 1, s = "VVV", l = 2L), """{"i":1,"s":"VVV","l":2}""")
     }
     "serialize and deserialize generic Scala 3 named tuples" in {
       type GenericNamedTuple[A, B] = (a: A, b: B)
