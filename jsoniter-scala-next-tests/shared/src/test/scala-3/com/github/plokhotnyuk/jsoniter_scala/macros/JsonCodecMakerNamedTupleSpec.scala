@@ -10,25 +10,20 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
       verifySerDeser(make[(i: Int)], (i = 1), """{"i":1}""")
       verifySerDeser(make[(i: Int, s: String)], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
     }
-    "serialize and deserialize tuples derived from named tuples" in {
-      verifySerDeser(make[NamedTuple.DropNames[(i: Int, s: String)]], (1, "VVV"), """[1,"VVV"]""")
-    }
-    "serialize and deserialize tuples derived from tuples" in {
-      verifySerDeser(make[Tuple.Reverse[(Long, Int, Short, Byte)]], (1: Byte, 2: Short, 3, 4L), """[1,2,3,4]""")
-    }
     "serialize and deserialize generic named tuples" in {
       type GenericNamedTuple[A, B] = (a: A, b: B)
 
-      verifySerDeser(make[GenericNamedTuple[Option[Int], List[String]]], (a = Some(1), b = List("VVV")),
-        """{"a":1,"b":["VVV"]}""")
+      verifySerDeser(make[GenericNamedTuple[Option[Int], List[String]]], (a = Some(1), b = List("VVV")), """{"a":1,"b":["VVV"]}""")
     }
     "serialize and deserialize higher-kind named tuples" in {
       type HKNamedTuple[F[_], G[_]] = (i: F[Int], s: G[String])
 
-      verifySerDeser(make[HKNamedTuple[Option, List]], (i = Some(1), s = List("VVV")),
-        """{"i":1,"s":["VVV"]}""")
+      verifySerDeser(make[HKNamedTuple[Option, List]], (i = Some(1), s = List("VVV")), """{"i":1,"s":["VVV"]}""")
     }
     "serialize and deserialize complex named tuples" in {
+      case class Record(i: Int, s: String)
+
+      verifySerDeser(make[NamedTuple.From[Record]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.Reverse[(i: Int, s: String)]], (s = "VVV", i = 1), """{"s":"VVV","i":1}""")
       verifySerDeser(make[NamedTuple.Concat[(i: Int), (s: String)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.Tail[(l: Long, i: Int, s: String)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
@@ -47,6 +42,8 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
         ((i = 1, s = "VVV"), (l = 2L)), """[{"i":1,"s":"VVV"},{"l":2}]""")
       verifySerDeser(make[NamedTuple.Zip[(i: Int, s: String), (i: Long, s: String)]],
         (i = (1, 2L), s = ("VVV", "WWW")), """{"i":[1,2],"s":["VVV","WWW"]}""")
+      verifySerDeser(make[NamedTuple.Map[(i: Int, s: String), Option]],
+        (i = Some(1), s = Some("VVV")), """{"i":1,"s":"VVV"}""")
     }
     "serialize and deserialize nested named tuples" in {
       verifySerDeser(make[(i: Int, t: (d: Double, s: String))], (i = 1, t = (d = 2.0, s = "VVV")),
@@ -70,6 +67,11 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
     "serialize and deserialize a collection with fields that are named tuples" in {
       verifySerDeser(make[List[(i: Int, s: String)]], List((i = 1, s = "VVV"), (i = 2, s = "WWW")),
         """[{"i":1,"s":"VVV"},{"i":2,"s":"WWW"}]""")
+    }
+    "serialize and deserialize generic and named tuples" in {
+      verifySerDeser(make[Tuple.++[(Byte, Short), (Int, Long)]], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
+      verifySerDeser(make[Tuple.Reverse[(String, Int)]], (1, "VVV"), """[1,"VVV"]""")
+      verifySerDeser(make[NamedTuple.DropNames[(i: Int, s: String)]], (1, "VVV"), """[1,"VVV"]""")
     }
   }
 }
