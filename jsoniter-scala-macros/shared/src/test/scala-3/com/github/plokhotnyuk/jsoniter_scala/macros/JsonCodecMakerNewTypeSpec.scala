@@ -57,21 +57,21 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
   val codecOfIArrays = make[IArrays]
 
   "JsonCodecMaker.make generate codecs which" should {
-    "serialize and deserialize Scala 3 tuples with arities greater than 22" in {
+    "serialize and deserialize tuples with arities greater than 22" in {
       verifySerDeser(make[(Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, String)],
         (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, "24"),
         """[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,"24"]""")
     }
-    "serialize and deserialize Scala 3 generic tuples" in {
+    "serialize and deserialize generic tuples" in {
       verifySerDeser(make[EmptyTuple], EmptyTuple, "[]")
       verifySerDeser(make[Tuple.Drop[(Long, Int, String), 3]], EmptyTuple, "[]")
-      verifySerDeser(make[Byte *: Short *: Int *: Long *: EmptyTuple], (1: Byte) *: (2: Short) *: 3 *: 4L *: EmptyTuple, "[1,2,3,4]")
-      verifySerDeser(make[Byte *: Short *: Tuple2[Int, Long]], (1: Byte) *: (2: Short) *: (3, 4L), "[1,2,3,4]")
+      verifySerDeser(make[Byte *: Short *: Int *: Long *: EmptyTuple], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
+      verifySerDeser(make[Byte *: Short *: Tuple2[Int, Long]], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
       verifySerDeser(make[Tuple.Concat[(Byte, Short), (Int, Long)]], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
       verifySerDeser(make[Tuple.Drop[(Long, Int, String), 1]], (1, "VVV"), """[1,"VVV"]""")
       verifySerDeser(make[Tuple.Take[(Int, String, Long), 2]], (1, "VVV"), """[1,"VVV"]""")
     }
-    "serialize and deserialize Scala 3 immutable array" in {
+    "serialize and deserialize immutable arrays" in {
       val json = """{"aa":[[1,2],[3,4]],"a":[1,2,3,4]}"""
       val iArrays = IArrays(IArray(IArray[Int](1, 2), IArray[Int](3, 4)), IArray[BigInt](1, 2, 3, 4))
       verifySer(codecOfIArrays, iArrays, json)
@@ -79,7 +79,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       parsedObj.aa shouldBe iArrays.aa
       parsedObj.a shouldBe iArrays.a
     }
-    "don't serialize fields of case classes with empty Scala 3 immutable arrays" in {
+    "don't serialize fields of case classes with empty immutable arrays" in {
       val json = """{"aa":[[],[]]}"""
       val iArrays = IArrays(IArray(IArray[Int](), IArray[Int]()), IArray[BigInt]())
       verifySer(codecOfIArrays, iArrays, json)
@@ -87,7 +87,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       parsedObj.aa shouldBe iArrays.aa
       parsedObj.a shouldBe iArrays.a
     }
-    "serialize fields of case classes with empty Scala 3 immutable arrays when transientEmpty is off" in {
+    "serialize fields of case classes with empty immutable arrays when transientEmpty is off" in {
       val json = """{"aa":[[],[]],"a":[]}"""
       val iArrays = IArrays(IArray(IArray[Int](), IArray[Int]()), IArray[BigInt]())
       verifySer(make[IArrays](CodecMakerConfig.withTransientEmpty(false)), iArrays, json)
