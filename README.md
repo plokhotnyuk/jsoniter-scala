@@ -739,7 +739,7 @@ Then use command like this:
 ```sh
 sbt -java-home /usr/lib/jvm/jdk-21 jsoniter-scala-benchmarkJVM/clean 'jsoniter-scala-benchmarkJVM/Jmh/run -prof "async:dir=target/async-reports;interval=1000000;output=flamegraph;libPath=/opt/async-profiler/lib/libasyncProfiler.so" -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" --p size=128 -wi 5 -i 10 jsoniterScala'
 ```
-Now you can open direct and reverse flame graphs in the `jsoniter-scala-benchmark/jvmtarget/async-reports` directory.
+Now you can open direct and reverse flame graphs in the `jsoniter-scala-benchmark/jvm/target/async-reports` directory.
 
 Beware that `-XX:+DebugNonSafepoints` can lead to incorrect report due to [a bug which was fixed only for JDK 21 currently](https://bugs.openjdk.org/browse/JDK-8201516).  
 
