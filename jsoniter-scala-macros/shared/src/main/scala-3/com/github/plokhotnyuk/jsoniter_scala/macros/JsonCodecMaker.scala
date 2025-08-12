@@ -975,11 +975,23 @@ object JsonCodecMaker {
         def genNew(argss: List[List[Term]]): Term
       }
 
-      case class NamedTupleInfo(tpe: TypeRepr, tupleType: Type[?], isGeneric: Boolean,
+      case class NamedTupleInfo(tpe: TypeRepr, typeArgs: List[TypeRepr],
                                 override val paramLists: List[List[FieldInfo]]) extends TypeInfo(tpe, paramLists) {
-        def genNew(argss: List[List[Term]]): Term =
+        val tupleType: Type[?] = tpe.asType
+        val isGeneric: Boolean = isGenericTuple(tpe)
+
+        def genNew(argss: List[List[Term]]): Term = {
+          val args = argss.flatten
+          val constructor =
+            if (isGeneric) {
+              if (args.isEmpty) Expr(EmptyTuple)
+              else Expr.ofTupleFromSeq(args.map(_.asExpr))
+            } else {
+              Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"), typeArgs.map(x => Inferred(x))), args).asExpr
+            }
           // Borrowed from an amazing work of Aleksander Rainko: https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/ProductConstructor.scala#L22
-          Typed(Expr.ofTupleFromSeq(argss.flatten.map(_.asExpr)).asTerm, TypeTree.of(using tupleType))
+          Typed(constructor.asTerm, TypeTree.of(using tupleType))
+        }
       }
 
       val namedTupleInfos = new mutable.LinkedHashMap[TypeRepr, NamedTupleInfo]
@@ -997,10 +1009,9 @@ object JsonCodecMaker {
                 val tupleCons = TypeRepr.of[*:]
                 (curr, acc) => tupleCons.appliedTo(curr :: acc :: Nil)
               }
-            val isGeneric = isGenericTuple(tupleTpe)
             val noSymbol = Symbol.noSymbol
             var i = - 1
-            NamedTupleInfo(tpe, tupleTpe.asType, isGeneric, List(names.zip(typeArgs).map { case (name, fTpe) =>
+            NamedTupleInfo(tupleTpe, typeArgs, List(names.zip(typeArgs).map { case (name, fTpe) =>
               i += 1
               val mappedName = cfg.fieldNameMapper(name).getOrElse(name)
               FieldInfo(noSymbol, mappedName, noSymbol, None, fTpe, false, false, i)
