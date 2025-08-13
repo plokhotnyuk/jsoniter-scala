@@ -774,18 +774,18 @@ object JsonCodecMaker {
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 
       def isGenericTuple(tpe: TypeRepr): Boolean = tpe match {
-        case AppliedType(tTpe, _) if tTpe =:= TypeRepr.of[*:] => true
+        case AppliedType(gtTpe, _) if gtTpe.dealias =:= TypeRepr.of[*:] => true
         case _ => tpe =:= TypeRepr.of[EmptyTuple]
+      }
+
+      def tupleTypeArgs(t: Type[?]): List[TypeRepr] = t match {
+        case '[head *: tail] => TypeRepr.of[head].dealias :: tupleTypeArgs(Type.of[tail])
+        case _ => Nil
       }
 
       def isNamedTuple(tpe: TypeRepr): Boolean = tpe match {
         case AppliedType(ntTpe, _) if ntTpe.dealias.typeSymbol.fullName == "scala.NamedTuple$.NamedTuple" => true
         case _ => false
-      }
-
-      def tupleTypeArgs(t: Type[?]): List[TypeRepr] = t match {
-        case '[head *: tail] => TypeRepr.of[head] :: tupleTypeArgs(Type.of[tail])
-        case _ => Nil
       }
 
       def valueClassValueSymbol(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers.head
@@ -1000,14 +1000,14 @@ object JsonCodecMaker {
         tpe match {
           case AppliedType(_, List(nTpe, tTpe)) =>
             // Borrowed from an amazing work of Aleksander Rainko: https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/Structure.scala#L188-L199
-            val names = tupleTypeArgs(nTpe.asType).map { case ConstantType(StringConstant(n)) => n }
-            val typeArgs = tupleTypeArgs(tTpe.asType)
+            val names = tupleTypeArgs(nTpe.dealias.asType).map { case ConstantType(StringConstant(n)) => n }
+            val typeArgs = tupleTypeArgs(tTpe.dealias.asType)
             val size = typeArgs.size
             val tupleTpe =
               if (size > 0 && size <= 22) defn.TupleClass(size).typeRef.appliedTo(typeArgs)
               else typeArgs.foldRight(TypeRepr.of[EmptyTuple]) {
                 val tupleCons = TypeRepr.of[*:]
-                (curr, acc) => tupleCons.appliedTo(curr :: acc :: Nil)
+                (curr, acc) => tupleCons.appliedTo(List(curr, acc))
               }
             val noSymbol = Symbol.noSymbol
             var i = - 1

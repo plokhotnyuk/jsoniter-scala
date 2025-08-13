@@ -23,6 +23,13 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
     "serialize and deserialize complex named tuples" in {
       case class Record(i: Int, s: String)
 
+      type *:: = *:
+      type Names = "i" *:: "s" *:: EmptyTuple
+      type I = Int
+      type S = String
+      type Values = I *:: S *:: EmptyTuple
+
+      verifySerDeser(make[NamedTuple.NamedTuple[Names, Values]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.From[Record]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.Reverse[(i: Int, s: String)]], (s = "VVV", i = 1), """{"s":"VVV","i":1}""")
       verifySerDeser(make[NamedTuple.Concat[(i: Int), (s: String)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
