@@ -975,22 +975,15 @@ object JsonCodecMaker {
         def genNew(argss: List[List[Term]]): Term
       }
 
-      case class NamedTupleInfo(tpe: TypeRepr, typeArgs: List[TypeRepr],
+      case class NamedTupleInfo(tpe: TypeRepr, tupleTpe: TypeRepr, typeArgs: List[TypeRepr],
                                 override val paramLists: List[List[FieldInfo]]) extends TypeInfo(tpe, paramLists) {
-        val tupleType: Type[?] = tpe.asType
-        val isGeneric: Boolean = isGenericTuple(tpe)
+        val tupleType: Type[?] = tupleTpe.asType
+        val isGeneric: Boolean = isGenericTuple(tupleTpe)
 
         def genNew(argss: List[List[Term]]): Term = {
           val args = argss.flatten
-          val constructor =
-            if (isGeneric) {
-              if (args.isEmpty) Expr(EmptyTuple)
-              else Expr.ofTupleFromSeq(args.map(_.asExpr))
-            } else {
-              Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"), typeArgs.map(x => Inferred(x))), args).asExpr
-            }
-          // Borrowed from an amazing work of Aleksander Rainko: https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/ProductConstructor.scala#L22
-          Typed(constructor.asTerm, TypeTree.of(using tupleType))
+          if (isGeneric) Expr.ofTupleFromSeq(args.map(_.asExpr)).asTerm
+          else Apply(TypeApply(Select.unique(New(Inferred(tupleTpe)), "<init>"), typeArgs.map(x => Inferred(x))), args)
         }
       }
 
@@ -1011,7 +1004,7 @@ object JsonCodecMaker {
               }
             val noSymbol = Symbol.noSymbol
             var i = - 1
-            NamedTupleInfo(tupleTpe, typeArgs, List(names.zip(typeArgs).map { case (name, fTpe) =>
+            NamedTupleInfo(tpe, tupleTpe, typeArgs, List(names.zip(typeArgs).map { case (name, fTpe) =>
               i += 1
               val mappedName = cfg.fieldNameMapper(name).getOrElse(name)
               FieldInfo(noSymbol, mappedName, noSymbol, None, fTpe, false, false, i)
@@ -2098,8 +2091,7 @@ object JsonCodecMaker {
                     val tmpVar = Ref(tmpVars(fieldInfo.mappedName).symbol)
                     val readVal = genReadVal(fTpe :: types, tmpVar.asExprOf[ft], fieldInfo.isStringified, false, in).asTerm
                     Block(List({
-                      val isRequired = required(fieldInfo.mappedName)
-                      if (isRequired || cfg.checkFieldDuplication) {
+                      if (required(fieldInfo.mappedName) || cfg.checkFieldDuplication) {
                         val n = Ref(paramVars(fieldInfo.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
                         val m = Expr(1 << fieldInfo.nonTransientFieldIndex)
                         val nm = Expr(~(1 << fieldInfo.nonTransientFieldIndex))
@@ -2142,7 +2134,7 @@ object JsonCodecMaker {
           }
 
         def blockWithVars(next: Term): Term =
-          Block(readVars.toList ++ paramVars.toList ++ optDiscriminatorVar.toList, next.changeOwner(Symbol.spliceOwner))
+          Block(readVars ++ paramVars.toList ++ optDiscriminatorVar.toList, next.changeOwner(Symbol.spliceOwner))
             .changeOwner(Symbol.spliceOwner) // All owners should be from top Symbol.spliceOwner because vals are created with this owner
 
         val readNonEmpty = blockWithVars('{
@@ -2748,7 +2740,7 @@ object JsonCodecMaker {
           val fTpe = fieldInfo.resolvedTpe
           fTpe.asType match {
             case '[ft] =>
-              val getter = typeInfo match {
+              val getter = typeInfo match
                 case namedTupleInfo: NamedTupleInfo =>
                   val idx = fieldInfo.nonTransientFieldIndex
                   if (namedTupleInfo.isGeneric) {
@@ -2757,7 +2749,6 @@ object JsonCodecMaker {
                     case '[tt] => Select.unique('{ $x.asInstanceOf[tt] }.asTerm, s"_${idx + 1}")
                   }
                 case _ => Select(x.asTerm, fieldInfo.getterOrField)
-              }
               fDefault match {
                 case Some(d) =>
                   if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[_]]) '{
