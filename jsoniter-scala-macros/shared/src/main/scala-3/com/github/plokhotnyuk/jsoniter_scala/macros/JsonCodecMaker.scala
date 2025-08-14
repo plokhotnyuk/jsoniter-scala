@@ -778,9 +778,22 @@ object JsonCodecMaker {
         case _ => tpe =:= TypeRepr.of[EmptyTuple]
       }
 
+      // https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/Structure.scala#L253-L270
       def tupleTypeArgs(t: Type[?]): List[TypeRepr] = t match {
         case '[head *: tail] => TypeRepr.of[head].dealias :: tupleTypeArgs(Type.of[tail])
         case _ => Nil
+      }
+
+      // https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/Structure.scala#L277-L295
+      def toTuple(typeArgs: List[TypeRepr]): TypeRepr = {
+        val size     = typeArgs.size
+        if (size > 0 && size <= 22) defn.TupleClass(size).typeRef.appliedTo(typeArgs)
+        else {
+          typeArgs.foldRight(TypeRepr.of[EmptyTuple]) {
+            val tupleCons = TypeRepr.of[*:]
+            (curr, acc) => tupleCons.appliedTo(List(curr, acc))
+          }
+        }
       }
 
       def isNamedTuple(tpe: TypeRepr): Boolean = tpe match {
@@ -995,13 +1008,7 @@ object JsonCodecMaker {
             // Borrowed from an amazing work of Aleksander Rainko: https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/Structure.scala#L188-L199
             val names = tupleTypeArgs(nTpe.dealias.asType).map { case ConstantType(StringConstant(name)) => name }
             val typeArgs = tupleTypeArgs(tTpe.dealias.asType)
-            val size = typeArgs.size
-            val tupleTpe =
-              if (size > 0 && size <= 22) defn.TupleClass(size).typeRef.appliedTo(typeArgs)
-              else typeArgs.foldRight(TypeRepr.of[EmptyTuple]) {
-                val tupleCons = TypeRepr.of[*:]
-                (curr, acc) => tupleCons.appliedTo(List(curr, acc))
-              }
+            val tupleTpe = toTuple(typeArgs)
             val noSymbol = Symbol.noSymbol
             var i = - 1
             NamedTupleInfo(tpe, tupleTpe, typeArgs, List(names.zip(typeArgs).map { case (name, fTpe) =>
@@ -2677,10 +2684,10 @@ object JsonCodecMaker {
         } else if (isNamedTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           genReadNonAbstractScalaClass(getNamedTupleInfo(tpe), types, useDiscriminator, in, default)
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val isGeneric = isGenericTuple(tpe)
           val indexedTypes =
-            if (isGeneric) tupleTypeArgs(tpe.asType)
+            if (isGenericTuple(tpe)) tupleTypeArgs(tpe.asType)
             else typeArgs(tpe)
+          val tTpe = toTuple(indexedTypes)
           val valDefs = indexedTypes.map {
             var i = 0
             te =>
@@ -2700,11 +2707,11 @@ object JsonCodecMaker {
           }
           val readCreateBlock = Block(valDefs, '{
             if ($in.isNextToken(']')) ${
-              if (isGeneric) {
-                if (indexedTypes.isEmpty) Expr(EmptyTuple)
-                else Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
-              } else {
-                Apply(TypeApply(Select.unique(New(Inferred(tpe)), "<init>"),
+              val size = indexedTypes.size
+              if (size == 0) Expr(EmptyTuple)
+              else if (size > 22) Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
+              else {
+                Apply(TypeApply(Select.unique(New(Inferred(tTpe)), "<init>"),
                   indexedTypes.map(x => Inferred(x))), valDefs.map(x => Ref(x.symbol))).asExpr
               }
             } else $in.arrayEndError()
@@ -2744,7 +2751,7 @@ object JsonCodecMaker {
                       .unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple")
                       .appliedToTypeTrees(tpe.typeArgs.map { typeArg =>
                         typeArg.asType match
-                        case '[t] => TypeTree.of[t]
+                          case '[t] => TypeTree.of[t]
                       }),
                     List(x.asTerm)
                   )
@@ -3182,10 +3189,14 @@ object JsonCodecMaker {
         } else if (isNamedTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           genWriteNonAbstractScalaClass(x.asExprOf[T], getNamedTupleInfo(tpe), types, optWriteDiscriminator, out)
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val isGeneric = isGenericTuple(tpe)
           val indexedTypes =
-            if (isGeneric) tupleTypeArgs(tpe.asType)
+            if (isGenericTuple(tpe)) tupleTypeArgs(tpe.asType)
             else typeArgs(tpe)
+          val size = indexedTypes.size
+          val tTpe = toTuple(indexedTypes)
+          val xTerm =
+            tTpe.asType match
+              case '[tt] => '{ $x.asInstanceOf[tt & Tuple] }.asTerm
           val writeFields = indexedTypes.map {
             var i = 0
             te =>
@@ -3193,11 +3204,10 @@ object JsonCodecMaker {
               te.asType match
                 case '[t] =>
                   val select =
-                    if (isGeneric) {
-                      val getter =
-                        Select.unique(x.asTerm, "productElement").appliedTo(Literal(IntConstant(i - 1))).asExprOf[Any]
+                    if (size > 22) {
+                      val getter = Select.unique(xTerm, "productElement").appliedTo(Literal(IntConstant(i - 1))).asExprOf[Any]
                       '{ $getter.asInstanceOf[t] }.asExprOf[t]
-                    } else Select.unique(x.asTerm, "_" + i).asExprOf[t]
+                    } else Select.unique(xTerm, "_" + i).asExprOf[t]
                   genWriteVal(select, te :: types, isStringified, None, out).asTerm
           }
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
