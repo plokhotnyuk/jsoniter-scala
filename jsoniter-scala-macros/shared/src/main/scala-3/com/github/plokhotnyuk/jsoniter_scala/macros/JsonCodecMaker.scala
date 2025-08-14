@@ -879,7 +879,7 @@ object JsonCodecMaker {
           case '[t] =>
             val sym = symbol("ct" + classTags.size, TypeRepr.of[ClassTag[t]])
             val ct = Expr.summon[ClassTag[t]].fold(fail(s"Can't summon ClassTag[${tpe.show}]"))(_.asTerm)
-            ValDef(sym, Some(ct.changeOwner(sym)))
+            ValDef(sym, Some(ct))
       }).symbol)
 
       def inferImplicitValue[T: Type](typeToSearch: TypeRepr): Option[Expr[T]] = Implicits.search(typeToSearch) match
@@ -928,7 +928,7 @@ object JsonCodecMaker {
         else if (precision == MathContext.UNLIMITED.getPrecision) '{ (MathContext.UNLIMITED: java.math.MathContext) }
         else Ref(mathContexts.getOrElseUpdate(precision, {
           val sym = symbol("mc" + mathContexts.size, TypeRepr.of[MathContext])
-          ValDef(sym, Some('{ new MathContext(${Expr(cfg.bigDecimalPrecision)}, java.math.RoundingMode.HALF_EVEN) }.asTerm.changeOwner(sym)))
+          ValDef(sym, Some('{ new MathContext(${Expr(cfg.bigDecimalPrecision)}, java.math.RoundingMode.HALF_EVEN) }.asTerm))
         }).symbol).asExprOf[MathContext]
 
       val scalaEnumCaches = new mutable.LinkedHashMap[TypeRepr, ValDef]
@@ -936,7 +936,7 @@ object JsonCodecMaker {
       def withScalaEnumCacheFor[K: Type, T: Type](tpe: TypeRepr)(using Quotes): Expr[ConcurrentHashMap[K, T]] =
         Ref(scalaEnumCaches.getOrElseUpdate(tpe, {
           val sym = symbol("ec" + scalaEnumCaches.size, TypeRepr.of[ConcurrentHashMap[K, T]])
-          ValDef(sym, Some('{ new ConcurrentHashMap[K, T] }.asTerm.changeOwner(sym)))
+          ValDef(sym, Some('{ new ConcurrentHashMap[K, T] }.asTerm))
         }).symbol).asExprOf[ConcurrentHashMap[K, T]]
 
       case class JavaEnumValueInfo(value: Symbol, name: String, transformed: Boolean)
@@ -996,7 +996,10 @@ object JsonCodecMaker {
         def genNew(argss: List[List[Term]]): Term = {
           val args = argss.flatten
           if (isGeneric) Expr.ofTupleFromSeq(args.map(_.asExpr)).asTerm
-          else Apply(TypeApply(Select.unique(New(Inferred(tupleTpe)), "<init>"), typeArgs.map(x => Inferred(x))), args)
+          else {
+            val constructorNoTypes = Select(New(Inferred(tupleTpe)), tupleTpe.typeSymbol.primaryConstructor)
+            Apply(TypeApply(constructorNoTypes, typeArgs.map(Inferred(_))), args)
+          }
         }
       }
 
@@ -1644,10 +1647,7 @@ object JsonCodecMaker {
       val nullValues = new mutable.LinkedHashMap[TypeRepr, ValDef]
 
       def withNullValueFor[T: Type](tpe: TypeRepr)(f: => Expr[T]): Expr[T] =
-        Ref(nullValues.getOrElseUpdate(tpe, {
-          val sym = symbol("c" + nullValues.size, tpe)
-          ValDef(sym, Some(f.asTerm.changeOwner(sym)))
-        }).symbol).asExprOf[T]
+        Ref(nullValues.getOrElseUpdate(tpe, ValDef(symbol("c" + nullValues.size, tpe), Some(f.asTerm))).symbol).asExprOf[T]
 
       val fieldIndexAccessors = new mutable.LinkedHashMap[TypeRepr, DefDef]
 
@@ -1663,7 +1663,7 @@ object JsonCodecMaker {
                 i += 1
                 CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n)))
             }
-            Some(Match(param.asExprOf[Int].asTerm, cases).changeOwner(sym))
+            Some(Match(param.asExprOf[Int].asTerm, cases))
           })
         }).symbol)
 
@@ -2122,7 +2122,7 @@ object JsonCodecMaker {
             cfg.discriminatorFieldName.map { fieldName =>
               if (cfg.checkFieldDuplication) {
                 val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
-                ReadDiscriminator(Some(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym)))))
+                ReadDiscriminator(Some(ValDef(sym, Some(Literal(BooleanConstant(true))))))
               } else ReadDiscriminator(None)
             }
           } else None
@@ -2142,7 +2142,6 @@ object JsonCodecMaker {
 
         def blockWithVars(next: Term): Term =
           Block(readVars ++ paramVars.toList ++ optDiscriminatorVar.toList, next.changeOwner(Symbol.spliceOwner))
-            .changeOwner(Symbol.spliceOwner) // All owners should be from top Symbol.spliceOwner because vals are created with this owner
 
         val readNonEmpty = blockWithVars('{
           if (!$in.isNextToken('}')) {
@@ -2154,10 +2153,10 @@ object JsonCodecMaker {
             }
             if (!$in.isCurrentToken('}')) $in.objectEndOrCommaError()
           }
-          ${Block(checkReqVars, construct).changeOwner(Symbol.spliceOwner).asExprOf[T]}
+          ${Block(checkReqVars, construct).asExprOf[T]}
         }.asTerm)
-        If('{ $in.isNextToken('{') }.asTerm.changeOwner(Symbol.spliceOwner), readNonEmpty,
-          '{ $in.readNullOrTokenError($default, '{') }.asTerm.changeOwner(Symbol.spliceOwner)).asExprOf[T]
+        If('{ $in.isNextToken('{') }.asTerm, readNonEmpty,
+          '{ $in.readNullOrTokenError($default, '{') }.asTerm).asExprOf[T]
       }
 
       def genReadConstType[T: Type](tpe: TypeRepr, isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] = tpe match
@@ -2694,7 +2693,6 @@ object JsonCodecMaker {
               i += 1
               te.asType match
                 case '[t] =>
-                  val sym = symbol("_r" + i, te)
                   val nullVal = genNullValue[t](te :: types)
                   val rhs =
                     if (i == 1) genReadVal(te :: types, nullVal, isStringified, false, in)
@@ -2703,7 +2701,7 @@ object JsonCodecMaker {
                         ${genReadVal(te :: types, nullVal, isStringified, false, in)}
                       } else $in.commaError()
                     }
-                  ValDef(sym, Some(rhs.asTerm.changeOwner(sym)))
+                  ValDef(symbol("_r" + i, te), Some(rhs.asTerm))
           }
           val readCreateBlock = Block(valDefs, '{
             if ($in.isNextToken(']')) ${
@@ -2711,11 +2709,11 @@ object JsonCodecMaker {
               if (size == 0) Expr(EmptyTuple)
               else if (size > 22) Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
               else {
-                Apply(TypeApply(Select.unique(New(Inferred(tTpe)), "<init>"),
-                  indexedTypes.map(x => Inferred(x))), valDefs.map(x => Ref(x.symbol))).asExpr
+                val constructorNoTypes = Select(New(Inferred(tTpe)), tTpe.typeSymbol.primaryConstructor)
+                Apply(TypeApply(constructorNoTypes, indexedTypes.map(Inferred(_))), valDefs.map(x => Ref(x.symbol))).asExpr
               }
             } else $in.arrayEndError()
-          }.asTerm)
+          }.asTerm.changeOwner(Symbol.spliceOwner))
           '{
             if ($in.isNextToken('[')) ${readCreateBlock.asExprOf[T]}
             else $in.readNullOrTokenError($default, '[')
