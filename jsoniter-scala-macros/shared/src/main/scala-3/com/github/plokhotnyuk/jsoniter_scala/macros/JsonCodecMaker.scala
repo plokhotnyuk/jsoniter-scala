@@ -993,7 +993,7 @@ object JsonCodecMaker {
         tpe match {
           case AppliedType(_, List(nTpe, tTpe)) =>
             // Borrowed from an amazing work of Aleksander Rainko: https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/Structure.scala#L188-L199
-            val names = tupleTypeArgs(nTpe.dealias.asType).map { case ConstantType(StringConstant(n)) => n }
+            val names = tupleTypeArgs(nTpe.dealias.asType).map { case ConstantType(StringConstant(name)) => name }
             val typeArgs = tupleTypeArgs(tTpe.dealias.asType)
             val size = typeArgs.size
             val tupleTpe =
@@ -1020,7 +1020,7 @@ object JsonCodecMaker {
           val constructor =
             if (tpeTypeArgs.isEmpty) constructorNoTypes
             else TypeApply(constructorNoTypes, tpeTypeArgs.map(Inferred(_)))
-          argss.tail.foldLeft(Apply(constructor, argss.head))((acc, args) => Apply(acc, args))
+          argss.tail.foldLeft(Apply(constructor, argss.head))(Apply(_, _))
       }
 
       val classInfos = new mutable.LinkedHashMap[TypeRepr, ClassInfo]
@@ -2733,6 +2733,25 @@ object JsonCodecMaker {
                                                  optDiscriminator: Option[WriteDiscriminator],
                                                  out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         val tpe = types.head
+        val (valDefs, valRef) =
+          typeInfo match
+            case namedTupleInfo: NamedTupleInfo =>
+              val valDef = ValDef(
+                Symbol.newVal(Symbol.spliceOwner, "t", namedTupleInfo.tupleTpe, Flags.EmptyFlags, Symbol.noSymbol),
+                Some(
+                  Apply(
+                    Select
+                      .unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple")
+                      .appliedToTypeTrees(tpe.typeArgs.map { typeArg =>
+                        typeArg.asType match
+                        case '[t] => TypeTree.of[t]
+                      }),
+                    List(x.asTerm)
+                  )
+                )
+              )
+              (List(valDef), Ref(valDef.symbol))
+            case _ => (Nil, x.asTerm)
         val writeFields = typeInfo.fields.map { fieldInfo =>
           val fDefault =
             if (cfg.transientDefault) fieldInfo.defaultValue
@@ -2742,13 +2761,13 @@ object JsonCodecMaker {
             case '[ft] =>
               val getter = typeInfo match
                 case namedTupleInfo: NamedTupleInfo =>
-                  val idx = fieldInfo.nonTransientFieldIndex
-                  if (namedTupleInfo.isGeneric) {
-                    '{ $x.asInstanceOf[Tuple].productElement(${Expr(idx)}).asInstanceOf[ft] }.asTerm
-                  } else namedTupleInfo.tupleType match {
-                    case '[tt] => Select.unique('{ $x.asInstanceOf[tt] }.asTerm, s"_${idx + 1}")
-                  }
-                case _ => Select(x.asTerm, fieldInfo.getterOrField)
+                  namedTupleInfo.tupleType match
+                    case '[tt] =>
+                      val idx = fieldInfo.nonTransientFieldIndex
+                      if (namedTupleInfo.isGeneric) {
+                        '{ ${valRef.asExprOf[tt & Tuple]}.productElement(${Expr(idx)}).asInstanceOf[ft] }.asTerm
+                      } else Select.unique(valRef, s"_${idx + 1}")
+                case _ => Select(valRef, fieldInfo.getterOrField)
               fDefault match {
                 case Some(d) =>
                   if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[_]]) '{
@@ -2873,8 +2892,10 @@ object JsonCodecMaker {
           }
         }
         val allWriteFields = optDiscriminator.fold(writeFields)(_.write(out) :: writeFields)
-        Block('{ $out.writeObjectStart() }.asTerm :: allWriteFields.map(_.asTerm.changeOwner(Symbol.spliceOwner)),
-          '{ $out.writeObjectEnd() }.asTerm).asExprOf[Unit]
+        Block(valDefs,
+          Block('{ $out.writeObjectStart() }.asTerm :: allWriteFields.map(_.asTerm.changeOwner(Symbol.spliceOwner)),
+            '{ $out.writeObjectEnd() }.asTerm)
+        ).asExprOf[Unit]
 
       def getWriteConstType(tpe: TypeRepr, isStringified: Boolean, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         tpe match
