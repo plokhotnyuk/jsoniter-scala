@@ -778,15 +778,17 @@ object JsonCodecMaker {
         case _ => tpe =:= TypeRepr.of[EmptyTuple]
       }
 
+      // Borrowed from an amazing work of Aleksander Rainko:
       // https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/Structure.scala#L253-L270
       def tupleTypeArgs(t: Type[?]): List[TypeRepr] = t match {
         case '[head *: tail] => TypeRepr.of[head].dealias :: tupleTypeArgs(Type.of[tail])
         case _ => Nil
       }
 
+      // Borrowed from an amazing work of Aleksander Rainko:
       // https://github.com/arainko/ducktape/blob/8d779f0303c23fd45815d3574467ffc321a8db2b/ducktape/src/main/scala/io/github/arainko/ducktape/internal/Structure.scala#L277-L295
       def toTuple(typeArgs: List[TypeRepr]): TypeRepr = {
-        val size     = typeArgs.size
+        val size = typeArgs.size
         if (size > 0 && size <= 22) defn.TupleClass(size).typeRef.appliedTo(typeArgs)
         else {
           typeArgs.foldRight(TypeRepr.of[EmptyTuple]) {
@@ -879,7 +881,7 @@ object JsonCodecMaker {
           case '[t] =>
             val sym = symbol("ct" + classTags.size, TypeRepr.of[ClassTag[t]])
             val ct = Expr.summon[ClassTag[t]].fold(fail(s"Can't summon ClassTag[${tpe.show}]"))(_.asTerm)
-            ValDef(sym, Some(ct.changeOwner(sym)))
+            ValDef(sym, Some(ct))
       }).symbol)
 
       def inferImplicitValue[T: Type](typeToSearch: TypeRepr): Option[Expr[T]] = Implicits.search(typeToSearch) match
@@ -928,7 +930,7 @@ object JsonCodecMaker {
         else if (precision == MathContext.UNLIMITED.getPrecision) '{ (MathContext.UNLIMITED: java.math.MathContext) }
         else Ref(mathContexts.getOrElseUpdate(precision, {
           val sym = symbol("mc" + mathContexts.size, TypeRepr.of[MathContext])
-          ValDef(sym, Some('{ new MathContext(${Expr(cfg.bigDecimalPrecision)}, java.math.RoundingMode.HALF_EVEN) }.asTerm.changeOwner(sym)))
+          ValDef(sym, Some('{ new MathContext(${Expr(cfg.bigDecimalPrecision)}, java.math.RoundingMode.HALF_EVEN) }.asTerm))
         }).symbol).asExprOf[MathContext]
 
       val scalaEnumCaches = new mutable.LinkedHashMap[TypeRepr, ValDef]
@@ -936,7 +938,7 @@ object JsonCodecMaker {
       def withScalaEnumCacheFor[K: Type, T: Type](tpe: TypeRepr)(using Quotes): Expr[ConcurrentHashMap[K, T]] =
         Ref(scalaEnumCaches.getOrElseUpdate(tpe, {
           val sym = symbol("ec" + scalaEnumCaches.size, TypeRepr.of[ConcurrentHashMap[K, T]])
-          ValDef(sym, Some('{ new ConcurrentHashMap[K, T] }.asTerm.changeOwner(sym)))
+          ValDef(sym, Some('{ new ConcurrentHashMap[K, T] }.asTerm))
         }).symbol).asExprOf[ConcurrentHashMap[K, T]]
 
       case class JavaEnumValueInfo(value: Symbol, name: String, transformed: Boolean)
@@ -996,7 +998,10 @@ object JsonCodecMaker {
         def genNew(argss: List[List[Term]]): Term = {
           val args = argss.flatten
           if (isGeneric) Expr.ofTupleFromSeq(args.map(_.asExpr)).asTerm
-          else Apply(TypeApply(Select.unique(New(Inferred(tupleTpe)), "<init>"), typeArgs.map(x => Inferred(x))), args)
+          else {
+            val constructorNoTypes = Select(New(Inferred(tupleTpe)), tupleTpe.typeSymbol.primaryConstructor)
+            Apply(TypeApply(constructorNoTypes, typeArgs.map(Inferred(_))), args)
+          }
         }
       }
 
@@ -1644,10 +1649,7 @@ object JsonCodecMaker {
       val nullValues = new mutable.LinkedHashMap[TypeRepr, ValDef]
 
       def withNullValueFor[T: Type](tpe: TypeRepr)(f: => Expr[T]): Expr[T] =
-        Ref(nullValues.getOrElseUpdate(tpe, {
-          val sym = symbol("c" + nullValues.size, tpe)
-          ValDef(sym, Some(f.asTerm.changeOwner(sym)))
-        }).symbol).asExprOf[T]
+        Ref(nullValues.getOrElseUpdate(tpe, ValDef(symbol("c" + nullValues.size, tpe), Some(f.asTerm))).symbol).asExprOf[T]
 
       val fieldIndexAccessors = new mutable.LinkedHashMap[TypeRepr, DefDef]
 
@@ -1663,7 +1665,7 @@ object JsonCodecMaker {
                 i += 1
                 CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n)))
             }
-            Some(Match(param.asExprOf[Int].asTerm, cases).changeOwner(sym))
+            Some(Match(param.asExprOf[Int].asTerm, cases))
           })
         }).symbol)
 
@@ -1898,10 +1900,7 @@ object JsonCodecMaker {
         def genReadLeafClass[T: Type](subTpe: TypeRepr)(using Quotes): Expr[T] =
           val useDiscriminator = cfg.discriminatorFieldName.isDefined
           if (subTpe =:= tpe) {
-            val typeInfo =
-              if (isNamedTuple(tpe)) getNamedTupleInfo(tpe)
-              else getClassInfo(tpe)
-            genReadNonAbstractScalaClass(typeInfo, types, useDiscriminator, in, genNullValue[T](types))
+            genReadNonAbstractScalaClass(getClassInfo(tpe), types, useDiscriminator, in, genNullValue[T](types))
           } else genReadVal(subTpe :: types, genNullValue[T](subTpe :: types), isStringified, useDiscriminator, in)
 
         def genReadCollisions[T: Type](subTpes: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Expr[T] =
@@ -2122,7 +2121,7 @@ object JsonCodecMaker {
             cfg.discriminatorFieldName.map { fieldName =>
               if (cfg.checkFieldDuplication) {
                 val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
-                ReadDiscriminator(Some(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym)))))
+                ReadDiscriminator(Some(ValDef(sym, Some(Literal(BooleanConstant(true))))))
               } else ReadDiscriminator(None)
             }
           } else None
@@ -2142,7 +2141,6 @@ object JsonCodecMaker {
 
         def blockWithVars(next: Term): Term =
           Block(readVars ++ paramVars.toList ++ optDiscriminatorVar.toList, next.changeOwner(Symbol.spliceOwner))
-            .changeOwner(Symbol.spliceOwner) // All owners should be from top Symbol.spliceOwner because vals are created with this owner
 
         val readNonEmpty = blockWithVars('{
           if (!$in.isNextToken('}')) {
@@ -2154,10 +2152,10 @@ object JsonCodecMaker {
             }
             if (!$in.isCurrentToken('}')) $in.objectEndOrCommaError()
           }
-          ${Block(checkReqVars, construct).changeOwner(Symbol.spliceOwner).asExprOf[T]}
+          ${Block(checkReqVars, construct).asExprOf[T]}
         }.asTerm)
-        If('{ $in.isNextToken('{') }.asTerm.changeOwner(Symbol.spliceOwner), readNonEmpty,
-          '{ $in.readNullOrTokenError($default, '{') }.asTerm.changeOwner(Symbol.spliceOwner)).asExprOf[T]
+        If('{ $in.isNextToken('{') }.asTerm, readNonEmpty,
+          '{ $in.readNullOrTokenError($default, '{') }.asTerm).asExprOf[T]
       }
 
       def genReadConstType[T: Type](tpe: TypeRepr, isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] = tpe match
@@ -2694,7 +2692,6 @@ object JsonCodecMaker {
               i += 1
               te.asType match
                 case '[t] =>
-                  val sym = symbol("_r" + i, te)
                   val nullVal = genNullValue[t](te :: types)
                   val rhs =
                     if (i == 1) genReadVal(te :: types, nullVal, isStringified, false, in)
@@ -2703,7 +2700,7 @@ object JsonCodecMaker {
                         ${genReadVal(te :: types, nullVal, isStringified, false, in)}
                       } else $in.commaError()
                     }
-                  ValDef(sym, Some(rhs.asTerm.changeOwner(sym)))
+                  ValDef(symbol("_r" + i, te), Some(rhs.asTerm))
           }
           val readCreateBlock = Block(valDefs, '{
             if ($in.isNextToken(']')) ${
@@ -2711,11 +2708,11 @@ object JsonCodecMaker {
               if (size == 0) Expr(EmptyTuple)
               else if (size > 22) Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
               else {
-                Apply(TypeApply(Select.unique(New(Inferred(tTpe)), "<init>"),
-                  indexedTypes.map(x => Inferred(x))), valDefs.map(x => Ref(x.symbol))).asExpr
+                val constructorNoTypes = Select(New(Inferred(tTpe)), tTpe.typeSymbol.primaryConstructor)
+                Apply(TypeApply(constructorNoTypes, indexedTypes.map(Inferred(_))), valDefs.map(x => Ref(x.symbol))).asExpr
               }
             } else $in.arrayEndError()
-          }.asTerm)
+          }.asTerm.changeOwner(Symbol.spliceOwner))
           '{
             if ($in.isNextToken('[')) ${readCreateBlock.asExprOf[T]}
             else $in.readNullOrTokenError($default, '[')
@@ -2900,8 +2897,8 @@ object JsonCodecMaker {
         }
         val allWriteFields = optDiscriminator.fold(writeFields)(_.write(out) :: writeFields)
         Block(valDefs,
-          Block('{ $out.writeObjectStart() }.asTerm :: allWriteFields.map(_.asTerm.changeOwner(Symbol.spliceOwner)),
-            '{ $out.writeObjectEnd() }.asTerm)
+          Block('{ $out.writeObjectStart() }.asTerm :: allWriteFields.map(_.asTerm),
+            '{ $out.writeObjectEnd() }.asTerm).changeOwner(Symbol.spliceOwner)
         ).asExprOf[Unit]
 
       def getWriteConstType(tpe: TypeRepr, isStringified: Boolean, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
@@ -3192,23 +3189,23 @@ object JsonCodecMaker {
           val indexedTypes =
             if (isGenericTuple(tpe)) tupleTypeArgs(tpe.asType)
             else typeArgs(tpe)
-          val size = indexedTypes.size
           val tTpe = toTuple(indexedTypes)
           val xTerm =
             tTpe.asType match
               case '[tt] => '{ $x.asInstanceOf[tt & Tuple] }.asTerm
           val writeFields = indexedTypes.map {
+            val isGeneric = indexedTypes.size > 22
             var i = 0
             te =>
               i += 1
               te.asType match
                 case '[t] =>
-                  val select =
-                    if (size > 22) {
-                      val getter = Select.unique(xTerm, "productElement").appliedTo(Literal(IntConstant(i - 1))).asExprOf[Any]
-                      '{ $getter.asInstanceOf[t] }.asExprOf[t]
+                  val getter =
+                    if (isGeneric) {
+                      val select = Select.unique(xTerm, "productElement").appliedTo(Literal(IntConstant(i - 1))).asExprOf[Any]
+                      '{ $select.asInstanceOf[t] }.asExprOf[t]
                     } else Select.unique(xTerm, "_" + i).asExprOf[t]
-                  genWriteVal(select, te :: types, isStringified, None, out).asTerm
+                  genWriteVal(getter, te :: types, isStringified, None, out).asTerm
           }
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
         } else if (isEnumOrModuleValue(tpe) && !(cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m, out) { (out, x) =>
@@ -3222,10 +3219,7 @@ object JsonCodecMaker {
             subTpe.asType match
               case '[st] =>
                 if (subTpe =:= tpe) {
-                  val typeInfo =
-                    if (isNamedTuple(tpe)) getNamedTupleInfo(tpe)
-                    else getClassInfo(tpe)
-                  genWriteNonAbstractScalaClass(vx.asExprOf[st], typeInfo, types, discriminator, out)
+                  genWriteNonAbstractScalaClass(vx.asExprOf[st], getClassInfo(tpe), types, discriminator, out)
                 } else genWriteVal(vx.asExprOf[st], subTpe :: types, isStringified, discriminator, out)
 
           val leafClasses = adtLeafClasses(tpe)

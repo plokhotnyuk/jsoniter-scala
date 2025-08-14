@@ -1,17 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.nio.charset.StandardCharsets.UTF_8
-import java.time._
-import java.util.{LinkedHashMap, Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
-import org.scalatest.exceptions.TestFailedException
-import scala.annotation.switch
-import scala.collection.mutable
-import scala.compiletime.{error, requireConst}
-import scala.jdk.CollectionConverters._
-import scala.language.implicitConversions
-import scala.util.hashing.MurmurHash3
 
 class JsonCodecMakerGenericTuplesSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
