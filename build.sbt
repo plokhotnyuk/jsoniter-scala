@@ -215,7 +215,7 @@ lazy val `jsoniter-scala-next-tests` = crossProject(JVMPlatform, JSPlatform, Nat
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.7.3-RC1"),
+    crossScalaVersions := Seq("3.7.3-RC2"),
     libraryDependencies ++= Seq(
       "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.19" % Test
@@ -259,7 +259,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.7.3-RC1", "2.13.16"),
+    crossScalaVersions := Seq("3.7.3-RC2", "2.13.16"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq("-Wopt", "-opt:l:inline", "-opt-inline-from:**:!java.**")
       case _ => Seq("-source:3.3", "-Xmax-inlines:100", "-preview")
