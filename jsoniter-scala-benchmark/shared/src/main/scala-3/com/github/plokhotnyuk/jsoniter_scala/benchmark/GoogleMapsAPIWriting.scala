@@ -30,6 +30,13 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
+  def fory(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ForySerDesers._
+
+    forySerDeser.serialize(obj)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

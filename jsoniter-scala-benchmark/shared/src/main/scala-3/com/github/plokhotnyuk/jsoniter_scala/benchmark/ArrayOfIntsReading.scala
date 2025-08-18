@@ -28,6 +28,13 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
   }
 
   @Benchmark
+  def fory(): Array[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ForySerDesers._
+
+    forySerDeser.deserialize(foryBytes, classOf[Array[Int]])
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

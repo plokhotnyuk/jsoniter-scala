@@ -29,6 +29,14 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     Decoder[DistanceMatrix].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
   }
 
+
+  @Benchmark
+  def fory(): DistanceMatrix = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ForySerDesers._
+
+    forySerDeser.deserialize(foryBytes, classOf[DistanceMatrix])
+  }
+
   @Benchmark
   def jacksonScala(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

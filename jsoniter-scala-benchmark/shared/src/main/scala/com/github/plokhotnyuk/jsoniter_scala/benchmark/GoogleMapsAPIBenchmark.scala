@@ -8,6 +8,7 @@ import org.openjdk.jmh.annotations.Setup
 abstract class GoogleMapsAPIBenchmark extends CommonParams {
   var obj: GoogleMapsAPI.DistanceMatrix = _
   var jsonBytes: Array[Byte] = _
+  var foryBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
   //Distance Matrix API call for top-10 by population cities in US:
   //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
@@ -3529,8 +3530,9 @@ abstract class GoogleMapsAPIBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    jsonBytes = jsonString1.getBytes(UTF_8)
+    jsonBytes = compactJsonString1.getBytes(UTF_8)
     obj = readFromArray[GoogleMapsAPI.DistanceMatrix](jsonBytes)
+    foryBytes = ForySerDesers.forySerDeser.serialize(obj)
     preallocatedBuf = new Array(jsonBytes.length + 128 /*to avoid possible out-of-bounds error*/)
   }
 }
