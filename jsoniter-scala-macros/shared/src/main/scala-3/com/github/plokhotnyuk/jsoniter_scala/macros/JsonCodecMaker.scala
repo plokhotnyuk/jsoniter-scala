@@ -1846,8 +1846,7 @@ object JsonCodecMaker {
         else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty }.asExprOf[T])
         else if (tpe <:< TypeRepr.of[::[_]]) {
-          typeArg1(tpe).asType match
-            case '[t1] => '{ (null: ::[t1]) }.asExprOf[T]
+          typeArg1(tpe).asType match { case '[t1] => '{ (null: ::[t1]) }.asExprOf[T] }
         } else if (tpe <:< TypeRepr.of[List[_]] || tpe.typeSymbol == TypeRepr.of[Seq[_]].typeSymbol) '{ Nil }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[collection.SortedSet[_]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[_]]) {
           val tpe1 = typeArg1(tpe)
@@ -1875,11 +1874,9 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Iterator[_]]) {
           scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[Array[_]]) withNullValueFor(tpe) {
-          typeArg1(tpe).asType match
-            case '[t1] => genNewArray[t1]('{ 0 }).asExprOf[T]
+          typeArg1(tpe).asType match { case '[t1] => genNewArray[t1]('{ 0 }).asExprOf[T] }
         } else if (isIArray(tpe)) withNullValueFor(tpe) {
-          typeArg1(tpe).asType match
-            case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1]('{ 0 })}) }.asExprOf[T]
+          typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1]('{ 0 })}) }.asExprOf[T] }
         } else if (isConstType(tpe)) {
           tpe match
             case ConstantType(c) => Literal(c).asExprOf[T]
@@ -2712,9 +2709,8 @@ object JsonCodecMaker {
                   val rhs =
                     if (i == 1) genReadVal(te :: types, nullVal, isStringified, false, in)
                     else '{
-                      if ($in.isNextToken(',')) {
-                        ${genReadVal(te :: types, nullVal, isStringified, false, in)}
-                      } else $in.commaError()
+                      if ($in.isNextToken(',')) ${genReadVal(te :: types, nullVal, isStringified, false, in)}
+                      else $in.commaError()
                     }
                   ValDef(symbol("_r" + i, te), Some(rhs.asTerm))
           }
@@ -2773,10 +2769,7 @@ object JsonCodecMaker {
                   Apply(
                     Select
                       .unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple")
-                      .appliedToTypeTrees(tpe.typeArgs.map { typeArg =>
-                        typeArg.asType match
-                          case '[t] => TypeTree.of[t]
-                      }),
+                      .appliedToTypeTrees(tpe.typeArgs.map(_.asType match { case '[t] => TypeTree.of[t] })),
                     List(x.asTerm)
                   )
                 )
@@ -2845,8 +2838,7 @@ object JsonCodecMaker {
                       }
                     }
                   } else if (isIArray(fTpe)) {
-                    val fTpe1 = typeArg1(fTpe)
-                    fTpe1.asType match
+                    typeArg1(fTpe).asType match
                       case '[ft1] => {
                         def cond(v: Expr[IArray[ft1]])(using Quotes): Expr[Boolean] =
                           val da = d.asExprOf[IArray[ft1]]
@@ -2906,8 +2898,7 @@ object JsonCodecMaker {
                       ${genWriteVal('v, fTpe :: types, fieldInfo.isStringified, None, out)}
                     }
                   } else if (cfg.transientEmpty && isIArray(fTpe)) {
-                    val fTpe1 = typeArg1(fTpe)
-                    fTpe1.asType match
+                    typeArg1(fTpe).asType match
                       case '[ft1] => '{
                         val v = ${getter.asExprOf[IArray[ft1]]}
                         if (v.length != 0) {
@@ -3217,9 +3208,7 @@ object JsonCodecMaker {
             if (isGenericTuple(tpe)) tupleTypeArgs(tpe.asType)
             else typeArgs(tpe)
           val tTpe = toTuple(indexedTypes)
-          val xTerm =
-            tTpe.asType match
-              case '[tt] => '{ $x.asInstanceOf[tt & Tuple] }.asTerm
+          val xTerm = tTpe.asType match { case '[tt] => '{ $x.asInstanceOf[tt & Tuple] }.asTerm }
           val writeFields = indexedTypes.map {
             val isGeneric = indexedTypes.size > 22
             var i = 0
