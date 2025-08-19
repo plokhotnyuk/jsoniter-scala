@@ -997,8 +997,24 @@ object JsonCodecMaker {
 
         def genNew(argss: List[List[Term]]): Term = {
           val args = argss.flatten
-          if (isGeneric) Expr.ofTupleFromSeq(args.map(_.asExpr)).asTerm
-          else {
+          if (isGeneric) {
+            if (typeArgs.isEmpty) Expr(EmptyTuple).asTerm
+            else {
+              val arraySym = symbol("as", TypeRepr.of[Array[Any]])
+              val arrayRef = Ref(arraySym).asExprOf[Array[Any]]
+              val arrayValDef = ValDef(arraySym, Some('{ new Array[Any](${Expr(typeArgs.size)}) }.asTerm))
+              val assignments = args.map {
+                var i = -1
+                term =>
+                  i += 1
+                  '{ $arrayRef(${Expr(i)}) = ${term.asExprOf[Any]} }.asTerm
+              }
+              val block = Block(arrayValDef :: assignments, arrayRef.asTerm).asExprOf[Array[Any]]
+              tupleType match
+                case '[tt] =>
+                  '{ scala.runtime.TupleXXL.fromIArray($block.asInstanceOf[IArray[Object]]).asInstanceOf[tt] }.asTerm
+            }
+          } else {
             val constructorNoTypes = Select(New(Inferred(tupleTpe)), tupleTpe.typeSymbol.primaryConstructor)
             Apply(TypeApply(constructorNoTypes, typeArgs.map(Inferred(_))), args)
           }
@@ -2706,8 +2722,19 @@ object JsonCodecMaker {
             if ($in.isNextToken(']')) ${
               val size = indexedTypes.size
               if (size == 0) Expr(EmptyTuple)
-              else if (size > 22) Expr.ofTupleFromSeq(valDefs.map(x => Ref(x.symbol).asExprOf[Any]))
-              else {
+              else if (size > 22) {
+                val arraySym = symbol("as", TypeRepr.of[Array[Any]])
+                val arrayRef = Ref(arraySym).asExprOf[Array[Any]]
+                val arrayValDef = ValDef(arraySym, Some('{ new Array[Any](${Expr(size)}) }.asTerm))
+                val assignments = valDefs.map {
+                  var i = - 1
+                  valDef =>
+                    i += 1
+                    '{ $arrayRef(${Expr(i)}) = ${Ref(valDef.symbol).asExprOf[Any]} }.asTerm
+                }
+                val block = Block(arrayValDef :: assignments, arrayRef.asTerm).asExprOf[Array[Any]]
+                '{ scala.runtime.TupleXXL.fromIArray($block.asInstanceOf[IArray[Object]]).asInstanceOf[T] }
+              } else {
                 val constructorNoTypes = Select(New(Inferred(tTpe)), tTpe.typeSymbol.primaryConstructor)
                 Apply(TypeApply(constructorNoTypes, indexedTypes.map(Inferred(_))), valDefs.map(x => Ref(x.symbol))).asExpr
               }
