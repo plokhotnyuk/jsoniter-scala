@@ -79,7 +79,7 @@ private[macros] object CompileTimeEval {
               case _ =>
                 throw CompileTimeEvalException(s"Expected that partial function have one parameter ${ft.show}", ft.asExpr)
             case _ =>
-              if (ft.tpe <:< TypeRepr.of[PartialFunction[_, _]]) {
+              if (ft.tpe <:< TypeRepr.of[PartialFunction[?, ?]]) {
                 val isDefinedTerm =
                   try Apply(Select.unique(ft, "isDefinedAt"), List(inputLiteral)) catch {
                     case ex: Throwable =>
@@ -92,7 +92,7 @@ private[macros] object CompileTimeEval {
                   }
                 if (evalCondition(isDefinedTerm, bindings)) evalTerm(applyTerm, bindings, None)
                 else nullTerm
-              } else if (ft.tpe <:< TypeRepr.of[Function[_, _]]) {
+              } else if (ft.tpe <:< TypeRepr.of[Function[?, ?]]) {
                 val applyTerm =
                   try Apply(Select.unique(ft, "apply"), List(inputLiteral)) catch {
                     case ex: Throwable =>
@@ -216,7 +216,7 @@ private[macros] object CompileTimeEval {
           } else {
             throw new CompileTimeEvalException(s"Expected that lambda call memeber name is 'apply', we have $memberName", posTerm.asExpr)
           }
-        case Apply(TypeApply(Select(frs, "andThen"), List(stringTpt)), List(snd)) =>
+        case Apply(TypeApply(Select(frs, "andThen"), List(_)), List(snd)) =>
           if (memberName == "isDefinedAt") {
             if (runIsDefinedAt(frs)) {
               val r1 = evalApplySelect(posTerm, frs, "apply", args, bindings)
@@ -228,7 +228,7 @@ private[macros] object CompileTimeEval {
           } else {
             throw new CompileTimeEvalException(s"Expected that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
           }
-        case Apply(TypeApply(Select(frs, "orElse"), List(stringTpt)), List(snd)) =>
+        case Apply(TypeApply(Select(frs, "orElse"), List(_)), List(snd)) =>
           if (memberName == "isDefinedAt") {
             if (runIsDefinedAt(frs)) Literal(BooleanConstant(true))
             else evalApplySelect(posTerm, snd, "isDefinedAt", args, bindings)
@@ -238,7 +238,7 @@ private[macros] object CompileTimeEval {
           } else {
             throw new CompileTimeEvalException(s"expected that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
           }
-        case other =>
+        case _ =>
           jvmToTerm(posTerm, javaReflectionCall(posTerm, evalQualJvm(qual, bindings), memberName, args))
     }
 
@@ -335,7 +335,7 @@ private[macros] object CompileTimeEval {
     // Field is a Scala field, we search for an access method with the same name
     private def retrieveRuntimeField(obj: AnyRef, name: String): AnyRef =
       try obj.getClass.getMethod(name).invoke(obj) catch { // TODO: error handling
-        case ex: NoSuchMethodException => obj.getClass.getField(name).get(obj)
+        case _: NoSuchMethodException => obj.getClass.getField(name).get(obj)
       }
 
     private def applyJavaReflectedModuleField(applyTerm: Term, qualSym: Symbol, memberName: String,
@@ -350,8 +350,8 @@ private[macros] object CompileTimeEval {
     sealed trait JvmReflectionMethodCall {
       def process(): AnyRef
 
-      protected def retrieveArgTypes(args: Array[AnyRef]): Array[java.lang.Class[_]] =
-        val argsTypes = new Array[Class[_]](args.length)
+      protected def retrieveArgTypes(args: Array[AnyRef]): Array[java.lang.Class[?]] =
+        val argsTypes = new Array[Class[?]](args.length)
         var i = 0
         while (i < argsTypes.length) {
           argsTypes(i) = args(i).getClass()
@@ -365,13 +365,13 @@ private[macros] object CompileTimeEval {
       def process(): AnyRef =
         val argsTypes = retrieveArgTypes(args)
         val method =
-          try obj.getClass.getMethod(name, argsTypes: _*) catch {
+          try obj.getClass.getMethod(name, argsTypes*) catch {
             case ex: NoSuchMethodException =>
               throw JvmReflectionMethodCallException(s"Can't find method $name of object $obj (class ${obj.getClass}) with argument types: ${argsTypes.toList}", ex)
             case ex: SecurityException =>
               throw JvmReflectionMethodCallException(s"Can't get method $name of object $obj (class ${obj.getClass})", ex)
           }
-        try method.invoke(obj, args: _*) catch {
+        try method.invoke(obj, args*) catch {
           case ex: Exception =>
             throw JvmReflectionMethodCallException(s"Can't invoke method $name of object $obj (class ${obj.getClass})", ex)
         }
@@ -391,13 +391,13 @@ private[macros] object CompileTimeEval {
         val nArgs = prependArgument(obj, args)
         val argsTypes = retrieveArgTypes(nArgs)
         val method =
-          try helperObj.getClass().getMethod(name, argsTypes: _*) catch {
+          try helperObj.getClass().getMethod(name, argsTypes*) catch {
             case ex: NoSuchMethodException =>
               throw JvmReflectionMethodCallException(s"Can't find method $name of object $helperObj (class ${helperObj.getClass}) with argument types: ${argsTypes.toList}", ex)
             case ex: SecurityException =>
               throw JvmReflectionMethodCallException(s"Can't get method $name of object $helperObj (class ${helperObj.getClass})", ex)
           }
-        try method.invoke(helperObj, nArgs: _*) catch {
+        try method.invoke(helperObj, nArgs*) catch {
           case ex: Exception =>
             throw JvmReflectionMethodCallException(s"Can't invoke method $name of object $helperObj (class ${helperObj.getClass})", ex)
         }
