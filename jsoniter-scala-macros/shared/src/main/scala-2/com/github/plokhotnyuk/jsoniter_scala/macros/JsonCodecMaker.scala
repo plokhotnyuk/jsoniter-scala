@@ -752,8 +752,6 @@ object JsonCodecMaker {
 
       val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
       val rootTpe = weakTypeOf[A].dealias
-      val inferredKeyCodecs = mutable.Map.empty[Type, Tree]
-      val inferredValueCodecs = mutable.Map.empty[Type, Tree]
 
       def isImmutableArraySeq(tpe: Type): Boolean =
         isScala213 && tpe.typeSymbol.fullName == "scala.collection.immutable.ArraySeq"
@@ -780,6 +778,8 @@ object JsonCodecMaker {
           }
         }
 
+      val inferredKeyCodecs = mutable.Map.empty[Type, Tree]
+
       def findImplicitKeyCodec(types: List[Type]): Tree = {
         checkRecursionInTypes(types)
         val tpe = types.head
@@ -789,6 +789,8 @@ object JsonCodecMaker {
             inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]"))
         }
       }
+
+      val inferredValueCodecs = mutable.Map.empty[Type, Tree]
 
       def findImplicitValueCodec(types: List[Type]): Tree = {
         checkRecursionInTypes(types)
@@ -1560,7 +1562,7 @@ object JsonCodecMaker {
           if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
             genReadCollisions(readFields)
           } else {
-            val hashCode = (fieldInfo: FieldInfo) => JsonReader.toHashCode(fieldInfo.mappedName.toCharArray, fieldInfo.mappedName.length)
+            val hashCode = (fi: FieldInfo) => JsonReader.toHashCode(fi.mappedName.toCharArray, fi.mappedName.length)
             val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
               cq"$hash => ${genReadCollisions(fs)}"
             } :+ cq"_ => $unexpectedFieldHandler"
