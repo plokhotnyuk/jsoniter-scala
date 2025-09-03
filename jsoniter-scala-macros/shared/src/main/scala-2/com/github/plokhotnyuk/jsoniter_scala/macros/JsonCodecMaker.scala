@@ -1773,18 +1773,6 @@ object JsonCodecMaker {
             val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
             genReadMapAsArray(newBuilder, q"x.update($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })")
           } else genReadMap(newBuilder, q"x.update(${genReadKey(tpe1 :: types)}, $readVal2)")
-        } else if (tpe <:< typeOf[immutable.Map[_, _]]) withDecoderFor(methodKey, default) {
-          val tpe1 = typeArg1(tpe)
-          val tpe2 = typeArg2(tpe)
-          val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2]")}"
-          val readVal2 = genReadVal(tpe2 :: types, genNullValue(tpe2 :: types), isStringified, EmptyTree)
-          if (cfg.mapAsArray) {
-            val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
-            genReadMapAsArray(newBuilder, q"x = x.updated($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })")
-          } else {
-            val readKey = genReadKey(tpe1 :: types)
-            genReadMap(newBuilder, q"x = x.updated($readKey, $readVal2)")
-          }
         } else if (tpe <:< typeOf[collection.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)

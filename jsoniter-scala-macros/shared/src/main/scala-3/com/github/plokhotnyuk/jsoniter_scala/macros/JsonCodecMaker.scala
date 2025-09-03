@@ -2487,41 +2487,20 @@ object JsonCodecMaker {
                 genReadMap(newBuilder, x => '{ $x.update(${genReadKey[t1](tpe1 :: types, in)}, $readVal2) },
                   identity, in, tDefault).asExprOf[T]
               }
-        } else if (tpe <:< TypeRepr.of[immutable.Map[?, ?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          val tpe2 = typeArg2(tpe)
-          (tpe1.asType, tpe2.asType) match
-            case ('[t1], '[t2]) =>
-              lazy val readKey = genReadKey[t1](tpe1 :: types, in)
-              lazy val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
-              val readVal2 = genReadVal(tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, false, in)
-              val newBuilder =
-                (if (tpe <:< TypeRepr.of[immutable.SortedMap[?, ?]] || tpe <:< TypeRepr.of[immutable.TreeMap[?, ?]]) {
-                  Apply(scalaMapEmptyNoArgs(tpe, tpe1, tpe2), List(summonOrdering(tpe1)))
-                } else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[?, ?]]) {
-                  '{ immutable.TreeSeqMap.Empty.asInstanceOf[immutable.TreeSeqMap[t1, t2]] }.asTerm
-                } else withNullValueFor(tpe)(scalaMapEmptyNoArgs(tpe, tpe1, tpe2).asExprOf[T]).asTerm).asExprOf[T & immutable.Map[t1, t2]]
-              if (cfg.mapAsArray) {
-                genReadMapAsArray(newBuilder,
-                  x => Assign(x.asTerm, '{ $x.updated($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })}.asTerm).asExprOf[Unit],
-                  identity, in, default.asExprOf[T & immutable.Map[t1, t2]]).asExprOf[T]
-              } else {
-                genReadMap(newBuilder,
-                  x => Assign(x.asTerm, '{ $x.updated($readKey, $readVal2) }.asTerm).asExprOf[Unit],
-                  identity, in, default.asExprOf[T & immutable.Map[t1, t2]]).asExprOf[T]
-              }
         } else if (tpe <:< TypeRepr.of[collection.Map[?, ?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           (tpe1.asType, tpe2.asType) match
             case ('[t1], '[t2]) =>
-              val builderNoApply =
+              def builderNoApply =
                 TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1], TypeTree.of[t2]))
+
               lazy val readKey = genReadKey[t1](tpe1 :: types, in)
               lazy val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
               val readVal2 = genReadVal(tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, false, in)
               val newBuilder =
                 (if (tpe <:< TypeRepr.of[collection.SortedMap[?, ?]]) Apply(builderNoApply, List(summonOrdering(tpe1)))
+                else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[?, ?]]) '{ immutable.TreeSeqMap.newBuilder[t1, t2] }.asTerm
                 else builderNoApply).asExprOf[mutable.Builder[(t1, t2), T & collection.Map[t1, t2]]]
               if (cfg.mapAsArray) {
                 genReadMapAsArray(newBuilder,
