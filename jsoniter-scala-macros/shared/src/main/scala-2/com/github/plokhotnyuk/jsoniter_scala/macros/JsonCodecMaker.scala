@@ -888,14 +888,12 @@ object JsonCodecMaker {
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: Option[String], transient: Boolean, stringified: Boolean)
 
-        def hasSupportedAnnotation(m: TermSymbol): Boolean = {
-          m.info: Unit // to enforce the type information completeness and availability of annotations
+        def hasSupportedAnnotation(m: TermSymbol): Boolean =
           m.annotations.exists { a =>
             val tpe = a.tree.tpe
             tpe =:= typeOf[named] || tpe =:= typeOf[transient] || tpe =:= typeOf[stringified] ||
               (cfg.scalaTransientSupport && tpe =:= typeOf[scala.transient])
           }
-        }
 
         def supportedTransientTypeNames: String =
           if (cfg.scalaTransientSupport) s"'${typeOf[transient]}' (or '${typeOf[scala.transient]}')"
@@ -903,12 +901,9 @@ object JsonCodecMaker {
 
         lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
         var getters = Map.empty[String, MethodSymbol]
-        tpe.members.foreach {
-          case m: MethodSymbol if m.isParamAccessor && m.isGetter => getters = getters.updated(decodeName(m), m)
-          case _ =>
-        }
         var annotations = Map.empty[String, FieldAnnotations]
         tpe.members.foreach {
+          case m: MethodSymbol if m.isParamAccessor && m.isGetter => getters = getters.updated(decodeName(m), m)
           case m: TermSymbol if hasSupportedAnnotation(m) =>
             val name = decodeFieldName(m)
             val named = m.annotations.count(_.tree.tpe =:= typeOf[named])
@@ -926,7 +921,7 @@ object JsonCodecMaker {
             annotations = annotations.updated(name, FieldAnnotations(partiallyMappedName, trans > 0, strings > 0))
           case _ =>
         }
-        ClassInfo(tpe, {
+        new ClassInfo(tpe, {
           var i = 0
           tpe.decls.collectFirst {
             case m: MethodSymbol if m.isPrimaryConstructor => m // FIXME: sometime it cannot be accessed from the place of the `make` call
@@ -944,11 +939,11 @@ object JsonCodecMaker {
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor."))
               val defaultValue =
                 if (!cfg.requireDefaultFields && symbol.isParamWithDefault) {
-                  Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
+                  new Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
                 } else None
               val isStringified = annotationOption.exists(_.stringified)
               val resolvedTpe = resolveConcreteType(tpe, symbol.typeSignature.dealias)
-              Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, resolvedTpe, isStringified))
+              new Some(new FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, resolvedTpe, isStringified))
             }
           })
         })

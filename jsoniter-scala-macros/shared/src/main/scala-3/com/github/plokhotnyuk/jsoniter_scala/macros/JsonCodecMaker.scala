@@ -1013,7 +1013,7 @@ object JsonCodecMaker {
               }
               val block = Block(arrayValDef :: assignments, Ref(arraySym)).asExprOf[Array[Any]]
               tupleType match
-                case '[tt] => '{ TupleXXL.fromIArray($block.asInstanceOf[IArray[Object]]).asInstanceOf[tt] }.asTerm
+                case '[tt] => '{ TupleXXL.fromIArray($block.asInstanceOf[IArray[AnyRef]]).asInstanceOf[tt] }.asTerm
             }
           } else {
             val constructorNoTypes = Select(New(Inferred(tupleTpe)), tupleTpe.typeSymbol.primaryConstructor)
@@ -1874,9 +1874,9 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[Iterable[?]] || tpe <:< TypeRepr.of[Iterator[?]]) {
           scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[Array[?]]) withNullValueFor(tpe) {
-          typeArg1(tpe).asType match { case '[t1] => genNewArray[t1]('{ 0 }).asExprOf[T] }
+          typeArg1(tpe).asType match { case '[t1] => genNewArray[t1](Expr(0)).asExprOf[T] }
         } else if (isIArray(tpe)) withNullValueFor(tpe) {
-          typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1]('{ 0 })}) }.asExprOf[T] }
+          typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1](Expr(0))}) }.asExprOf[T] }
         } else if (isConstType(tpe)) {
           tpe match
             case ConstantType(c) => Literal(c).asExprOf[T]
@@ -2036,7 +2036,7 @@ object JsonCodecMaker {
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVars =
           if (required.isEmpty && !cfg.checkFieldDuplication) Nil
-          else (0 to lastParamVarIndex).map(i => ValDef(symbol("p" + i, TypeRepr.of[Int], Flags.Mutable), Some(Literal(IntConstant {
+          else (0 to lastParamVarIndex).map(i => ValDef(symbol("p" + i, TypeRepr.of[Int], Flags.Mutable), new Some(Literal(IntConstant {
             if (i == lastParamVarIndex) lastParamVarBits
             else -1
           }))))
@@ -2076,7 +2076,7 @@ object JsonCodecMaker {
           val sym = symbol("_" + fieldInfo.mappedName, fTpe, Flags.Mutable)
           fTpe.asType match
             case '[ft] =>
-              ValDef(sym, Some(fieldInfo.defaultValue.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
+              ValDef(sym, new Some(fieldInfo.defaultValue.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
         }
         val readVarsMap = fields.map(_.mappedName).zip(readVars).toMap
         var nonTransientFieldIndex = 0
@@ -2134,7 +2134,7 @@ object JsonCodecMaker {
             cfg.discriminatorFieldName.map { _ =>
               if (cfg.checkFieldDuplication) {
                 val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
-                ReadDiscriminator(Some(ValDef(sym, Some(Literal(BooleanConstant(true))))))
+                ReadDiscriminator(new Some(ValDef(sym, new Some(Literal(BooleanConstant(true))))))
               } else ReadDiscriminator(None)
             }
           } else None
@@ -2493,7 +2493,7 @@ object JsonCodecMaker {
           (tpe1.asType, tpe2.asType) match
             case ('[t1], '[t2]) =>
               def builderNoApply =
-                TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1], TypeTree.of[t2]))
+                TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(Inferred(tpe1), Inferred(tpe2)))
 
               lazy val readKey = genReadKey[t1](tpe1 :: types, in)
               lazy val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
@@ -2552,8 +2552,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
-              val builderNoOrdering =
-                TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1]))
+              val builderNoOrdering = TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(Inferred(tpe1)))
               val builder =
                 (if (tpe <:< TypeRepr.of[collection.SortedSet[?]]) Apply(builderNoOrdering, List(summonOrdering(tpe1)))
                 else builderNoOrdering).asExprOf[mutable.Builder[t1, T & collection.Set[t1]]]
@@ -2628,7 +2627,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
-              val builder = TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1]))
+              val builder = TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(Inferred(tpe1)))
               genReadCollection(builder.asExprOf[mutable.Builder[t1, T]],
                 x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, x => '{ $x.result() }, in)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withDecoderFor(methodKey, default, in) { (in, default) =>
@@ -2701,7 +2700,7 @@ object JsonCodecMaker {
                       if ($in.isNextToken(',')) ${genReadVal(te :: types, nullVal, isStringified, false, in)}
                       else $in.commaError()
                     }
-                  ValDef(symbol("_r" + i, te), Some(rhs.asTerm))
+                  ValDef(symbol("_r" + i, te), new Some(rhs.asTerm))
           }
           val readCreateBlock = Block(valDefs, '{
             if ($in.isNextToken(']')) ${
@@ -2709,7 +2708,7 @@ object JsonCodecMaker {
               if (size == 0) Expr(EmptyTuple)
               else if (size > 22) {
                 val arraySym = symbol("as", TypeRepr.of[Array[Any]])
-                val arrayValDef = ValDef(arraySym, Some('{ new Array[Any](${Expr(size)}) }.asTerm))
+                val arrayValDef = ValDef(arraySym, new Some('{ new Array[Any](${Expr(size)}) }.asTerm))
                 val arrayUpdate = Select.unique(Ref(arraySym), "update")
                 val assignments = valDefs.map {
                   var i = - 1
@@ -2718,7 +2717,7 @@ object JsonCodecMaker {
                     Apply(arrayUpdate, List(Literal(IntConstant(i)), Ref(valDef.symbol)))
                 }
                 val block = Block(arrayValDef :: assignments, Ref(arraySym)).asExprOf[Array[Any]]
-                '{ TupleXXL.fromIArray($block.asInstanceOf[IArray[Object]]).asInstanceOf[T] }
+                '{ TupleXXL.fromIArray($block.asInstanceOf[IArray[AnyRef]]).asInstanceOf[T] }
               } else {
                 val constructorNoTypes = Select(New(Inferred(tTpe)), tTpe.typeSymbol.primaryConstructor)
                 Apply(TypeApply(constructorNoTypes, indexedTypes.map(Inferred(_))), valDefs.map(x => Ref(x.symbol))).asExpr
@@ -2753,9 +2752,9 @@ object JsonCodecMaker {
           typeInfo match
             case namedTupleInfo: NamedTupleInfo =>
               val sym = symbol("t", namedTupleInfo.tupleTpe)
-              val toTupleMethod =
-                Select.unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple").appliedToTypes(tpe.typeArgs)
-              val valDef = ValDef(sym, Some(Apply(toTupleMethod, List(x.asTerm))))
+              val toTupleMethod = TypeApply(Select.unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple"),
+                tpe.typeArgs.map(Inferred(_)))
+              val valDef = ValDef(sym, new Some(Apply(toTupleMethod, List(x.asTerm))))
               (List(valDef), Ref(sym))
             case _ => (Nil, x.asTerm)
         val writeFields = typeInfo.fields.map { fieldInfo =>
@@ -3191,6 +3190,7 @@ object JsonCodecMaker {
             else typeArgs(tpe)
           val tTpe = toTuple(indexedTypes)
           val xTerm = tTpe.asType match { case '[tt] => '{ $x.asInstanceOf[tt & Tuple] }.asTerm }
+          lazy val productElement = Select.unique(xTerm, "productElement")
           val writeFields = indexedTypes.map {
             val isGeneric = indexedTypes.size > 22
             var i = 0
@@ -3200,7 +3200,7 @@ object JsonCodecMaker {
                 case '[t] =>
                   val getter =
                     if (isGeneric) {
-                      val select = Select.unique(xTerm, "productElement").appliedTo(Literal(IntConstant(i - 1))).asExprOf[Any]
+                      val select = productElement.appliedTo(Literal(IntConstant(i - 1))).asExprOf[Any]
                       '{ $select.asInstanceOf[t] }.asExprOf[t]
                     } else Select.unique(xTerm, "_" + i).asExprOf[t]
                   genWriteVal(getter, te :: types, isStringified, None, out).asTerm
