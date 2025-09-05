@@ -504,7 +504,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        java.lang.Float.floatToIntBits(s.toFloat) shouldBe java.lang.Float.floatToIntBits(n) // no data loss when parsing by JVM, Native or JS Platform
+        java.lang.Float.floatToRawIntBits(s.toFloat) shouldBe java.lang.Float.floatToRawIntBits(n)
         l should be <= es.length + {
           if (TestUtils.isJS) {
             if (es.indexOf('.') < 0) 3 // formatting differs from JS for floats represented as whole numbers
@@ -621,7 +621,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        java.lang.Double.doubleToLongBits(s.toDouble) shouldBe java.lang.Double.doubleToLongBits(n) // no data loss when parsing by JVM, Native or JS Platform
+        java.lang.Double.doubleToRawLongBits(s.toDouble) shouldBe java.lang.Double.doubleToRawLongBits(n)
         l should be <= es.length + {
           if (TestUtils.isJS) {
             if (es.indexOf('.') < 0) 4 // formatting differs from JS for doubles represented as whole numbers

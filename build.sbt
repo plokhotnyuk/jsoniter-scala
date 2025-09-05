@@ -79,7 +79,7 @@ lazy val jsSettings = Seq(
         .withNegativeArraySizes(CheckedBehavior.Unchecked)
         .withNullPointers(CheckedBehavior.Unchecked)
     }).withClosureCompiler(true)
-      .withESFeatures(_.withESVersion(ESVersion.ES2015))
+      .withESFeatures(_.withESVersion(ESVersion.ES2021))
       .withModuleKind(ModuleKind.CommonJSModule)
   },
   coverageEnabled := false // FIXME: Unexpected crash of scalac
