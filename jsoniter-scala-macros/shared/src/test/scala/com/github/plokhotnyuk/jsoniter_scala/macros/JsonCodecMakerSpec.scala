@@ -943,7 +943,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfApp, App("Skype", Version.`Current`), """{"name":"Skype","version":"8.10"}""")
       verifyDeserError(codecOfApp, """{"name":"Skype","version":"9.0"}""", "illegal version, offset: 0x0000001e")
     }
-    "serialize and deserialize outer types using custom value codecs for opaque types" in {
+    "serialize and deserialize outer types using custom value codecs for newtypes" in {
       abstract class Foo {
         type Bar
       }

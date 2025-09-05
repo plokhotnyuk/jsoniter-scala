@@ -813,6 +813,12 @@ object JsonCodecMaker {
 
       def isOpaque(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Opaque)
 
+      @tailrec
+      def opaqueDealias(tpe: TypeRepr): TypeRepr = tpe match {
+        case trTpe @ TypeRef(_, _) if trTpe.isOpaqueAlias => opaqueDealias(trTpe.translucentSuperType.dealias)
+        case _ => tpe
+      }
+
       def isSealedClass(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Sealed)
 
       def hasSealedParent(tpe: TypeRepr): Boolean =
@@ -1345,6 +1351,11 @@ object JsonCodecMaker {
             case ConstantType(DoubleConstant(v)) =>
               '{ if ($in.readKeyAsDouble() != ${Expr(v)}) $in.decodeError(${Expr(s"expected key: \"$v\"")}); ${Expr(v)} }
             case _ => cannotFindKeyCodecError(tpe)
+        } else if (isOpaque(tpe)) {
+          val sTpe = opaqueDealias(tpe)
+          sTpe.asType match { case '[s] =>
+            '{ ${genReadKey[s](sTpe :: types.tail, in)}.asInstanceOf[T] }
+          }
         } else cannotFindKeyCodecError(tpe)
       }.asExprOf[T]
 
@@ -1560,6 +1571,12 @@ object JsonCodecMaker {
             case ConstantType(FloatConstant(v)) => '{ $out.writeKey(${Expr(v)}) }
             case ConstantType(DoubleConstant(v)) => '{ $out.writeKey(${Expr(v)}) }
             case _ => cannotFindKeyCodecError(tpe)
+        } else if (isOpaque(tpe)) {
+          val sTpe = opaqueDealias(tpe)
+          sTpe.asType match { case '[s] =>
+            val newX = '{ $x.asInstanceOf[s] }
+            genWriteKey[s](newX, sTpe :: types.tail, out)
+          }
         } else cannotFindKeyCodecError(tpe)
 
       def genWriteConstantKey(name: String, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
@@ -1891,7 +1908,10 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] => getClassInfo(tpe).genNew(List(List(genNullValue[t1](tpe1 :: types).asTerm))).asExprOf[T]
         } else if (TypeRepr.of[Null] <:< tpe) '{ null }.asExprOf[T]
-        else '{ null.asInstanceOf[T] }.asExprOf[T]
+        else if (isOpaque(tpe) && !isNamedTuple(tpe)) {
+          val sTpe = opaqueDealias(tpe)
+          sTpe.asType match { case '[st] => '{ ${genNullValue[st](sTpe :: types.tail)}.asInstanceOf[T] }.asExprOf[T] }
+        } else '{ null.asInstanceOf[T] }.asExprOf[T]
 
       case class ReadDiscriminator(valDefOpt: Option[ValDef]) {
         def skip(in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[Unit] = valDefOpt match {
@@ -2743,7 +2763,13 @@ object JsonCodecMaker {
         } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           genReadNonAbstractScalaClass(getClassInfo(tpe), types, useDiscriminator, in, default)
         } else if (isConstType(tpe)) genReadConstType(tpe, isStringified, in)
-        else cannotFindValueCodecError(tpe)
+        else if (isOpaque(tpe)) {
+          val sTpe = opaqueDealias(tpe)
+          sTpe.asType match { case '[s] =>
+            val newDefault = '{ $default.asInstanceOf[s] }.asExprOf[s]
+            '{ ${genReadVal[s](sTpe :: types.tail, newDefault, isStringified, useDiscriminator, in)}.asInstanceOf[T] }
+          }
+        } else cannotFindValueCodecError(tpe)
 
       def genWriteNonAbstractScalaClass[T: Type](x: Expr[T], typeInfo: TypeInfo, types: List[TypeRepr],
                                                  optDiscriminator: Option[WriteDiscriminator],
@@ -3249,7 +3275,12 @@ object JsonCodecMaker {
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           genWriteNonAbstractScalaClass(x, getClassInfo(tpe), types, optWriteDiscriminator, out)
         } else if (isConstType(tpe)) getWriteConstType(tpe, isStringified, out)
-        else cannotFindValueCodecError(tpe)
+        else if (isOpaque(tpe)) {
+          val sTpe = opaqueDealias(tpe)
+          sTpe.asType match { case '[s] =>
+            genWriteVal[s]('{ $m.asInstanceOf[s] }, sTpe :: types.tail, isStringified, optWriteDiscriminator, out)
+          }
+        } else cannotFindValueCodecError(tpe)
 
       val codecDef = '{ // FIXME: generate a type class instance using `ClassDef.apply` and `Symbol.newClass` calls after graduating from experimental API: https://www.scala-lang.org/blog/2022/06/21/scala-3.1.3-released.html
         new JsonValueCodec[A] {
