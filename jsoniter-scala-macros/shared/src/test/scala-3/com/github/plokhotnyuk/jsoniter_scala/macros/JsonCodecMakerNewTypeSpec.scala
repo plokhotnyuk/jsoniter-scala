@@ -13,12 +13,27 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 import scala.util.hashing.MurmurHash3
 
+opaque type Gram = Double
+
+object Gram {
+  inline def apply(x: Double): Gram = x
+
+  extension (x: Gram)
+    inline def toDouble: Double = x
+}
+
+opaque type Meter <: Double = Double
+
+object Meter {
+  inline def apply(x: Double): Meter = x
+}
+
 opaque type Year = Int
 
 object Year {
   def apply(x: Int): Option[Year] = if (x > 1900) Some(x) else None
 
-  inline def from(inline x: Int): Year =
+  inline def of(inline x: Int): Year =
     requireConst(x)
     inline if x > 1900 then x else error("expected year > 1900")
 
@@ -123,6 +138,16 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for '"A" | "B" | "C"'."""
       })
     }
+    "serialize and deserialize Scala3 opaque types" in {
+      case class Planet(@stringified radius: Meter, mass: Gram)
+
+      verifySerDeser(make[Meter], Meter(6.37814e6), "6378140.0")
+      verifySerDeser(make[Gram](CodecMakerConfig.withIsStringified(true)), Gram(5.976e+27), """"5.976E27"""")
+      verifySerDeser(make[Array[Meter]], Array(Meter(6.37814e6)), "[6378140.0]")
+      verifySerDeser(make[Array[Gram]], Array(Gram(5.976e+27)), "[5.976E27]")
+      verifySerDeser(make[Map[Meter, Gram]], Map(Meter(6.37814e6) -> Gram(5.976e+27)), """{"6378140.0":5.976E27}""")
+      verifySerDeser(make[Planet], Planet(Meter(6.37814e6), Gram(5.976e+27)), """{"radius":"6378140.0","mass":5.976E27}""")
+    }
     "serialize and deserialize Scala3 opaque types using custom value codecs" in {
       case class Period(start: Year, end: Year)
 
@@ -136,8 +161,8 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
 
         val nullValue: Year = null.asInstanceOf[Year]
       }
-      verifySerDeser(make[Period], Period(Year.from(1976), Year.from(2022)), """{"start":1976,"end":2022}""")
-      verifySerDeser(make[Array[Year]], Array(Year(1976).get), "[1976]")
+      verifySerDeser(make[Period], Period(Year.of(1976), Year.of(2022)), """{"start":1976,"end":2022}""")
+      verifySerDeser(make[Array[Year]], Array(Year.of(1976)), "[1976]")
     }
     "serialize and deserialize a Scala3 union type using a custom codec" in {
       type Value = String | Boolean | Double
