@@ -2395,7 +2395,7 @@ final class JsonWriter private[jsoniter_scala](
         val vbl = rop(g1, g0, cb - cblCorr << h) + vbCorr
         val vbr = rop(g1, g0, cb + 2 << h) - vbCorr
         var diff = 0
-        if (vb < 400 || {
+        if (vb < 400L || {
           m10 = Math.multiplyHigh(vb, 461168601842738792L) // divide a positive long by 40
           val vb40 = m10 * 40
           diff = (vbl - vb40).toInt

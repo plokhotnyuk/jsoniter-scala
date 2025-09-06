@@ -2682,7 +2682,7 @@ final class JsonWriter private[jsoniter_scala](
         val vbr = rop(g1, g0, cbh + (2 << h))
         val m10i = vb >>> 2
         var diff = 0
-        if (vb < 400 || {
+        if (vb < 400L || {
           m10 = (vb >>> 1) + m10i // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
           m10 += m10 >>> 4
           m10 += m10 >>> 8
@@ -2763,22 +2763,26 @@ final class JsonWriter private[jsoniter_scala](
 
   @inline
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x = multiplyHigh(g0, cp) + (g1 * cp >>> 1)
-    var y = multiplyHigh(g1, cp)
-    if (x < 0L) y += 1
-    if (-x != x) y |= 1
+    val cp2 = cp & 0xFFFFFFFFL
+    val cp1 = cp >>> 32
+    val cps = cp1 + cp2
+    val x = { // Math.multiplyHigh(g0, cp)
+      val g02 = g0 & 0xFFFFFFFFL
+      val g01 = g0 >>> 32
+      val b0 = g02 * cp2
+      val a0 = g01 * cp1
+      ((g01 + g02) * cps + (b0 >>> 32) - (b0 + a0) >>> 32) + a0
+    } + (g1 * cp >>> 1)
+    var y = { // Math.multiplyHigh(g1, cp)
+      val g12 = g1 & 0xFFFFFFFFL
+      val g11 = g1 >>> 32
+      val b1 = g12 * cp2
+      val a1 = g11 * cp1
+      ((g11 + g12) * cps + (b1 >>> 32) - (b1 + a1) >>> 32) + a1
+    }
+    if (x < 0L) y += 1L
+    if (x << 1 != 0L) y |= 1L
     y
-  }
-
-  @inline
-  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Karatsuba technique for two positive longs
-    val x2 = x & 0xFFFFFFFFL
-    val y2 = y & 0xFFFFFFFFL
-    val b = x2 * y2
-    val x1 = x >>> 32
-    val y1 = y >>> 32
-    val a = x1 * y1
-    ((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a >>> 32) + a
   }
 
   @inline
