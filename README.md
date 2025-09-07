@@ -165,7 +165,8 @@ view of an error context
   [scala-java-time documentation](https://cquiroz.github.io/scala-java-time/#time-zones) for adding a time zone database
   to your application
 - Codecs and runtime configurations implement `java.io.Serializable` for easier usage in distributive computing
-- Support of tuples with arities greater than 22 for Scala 3
+- Support of simple opaque types like `opaque type Foo = Int` and `opaque type Bar <: String = String`
+- Support of tuples with arities greater than 22 for Scala 3 backed by `scala.runtime.TupleXXL`
 - Support of named tuples from Scala 3.7 while staying on Scala 3.3 (LTS)
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
@@ -501,7 +502,7 @@ object DeResultCodecs extends DeResultCodecs
 import DeResultCodecs.given
 ```
 
-8. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 opaque and union types.
+8. Currently, the `JsonCodecMaker.make` call cannot derive codecs for Scala 3 union or complex opaque types.
 The workaround is using a custom codec for these types defined with `implicit val` before the `JsonCodecMaker.make`
 call, like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L16-L45)
 and [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/7da4af1c45e11f3877708ab6d394dad9f92a3766/jsoniter-scala-macros/shared/src/test/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMakerNewTypeSpec.scala#L47-L137).
