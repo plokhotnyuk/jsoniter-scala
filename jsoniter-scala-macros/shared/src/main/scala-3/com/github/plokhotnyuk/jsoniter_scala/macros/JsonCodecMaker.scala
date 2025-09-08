@@ -2629,7 +2629,7 @@ object JsonCodecMaker {
               genReadCollection('{ new immutable.VectorBuilder[t1] },
                 x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
                 default, x => '{ $x.result() }, in).asExprOf[T]
-        } else if (tpe <:< TypeRepr.of[mutable.Iterable[?] with mutable.Growable[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[mutable.Iterable[?] & mutable.Growable[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
