@@ -888,12 +888,14 @@ object JsonCodecMaker {
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: Option[String], transient: Boolean, stringified: Boolean)
 
-        def hasSupportedAnnotation(m: TermSymbol): Boolean =
+        def hasSupportedAnnotation(m: TermSymbol): Boolean = {
+          m.info: Unit // required to enforce the type information completeness and availability of annotations
           m.annotations.exists { a =>
             val tpe = a.tree.tpe
             tpe =:= typeOf[named] || tpe =:= typeOf[transient] || tpe =:= typeOf[stringified] ||
               (cfg.scalaTransientSupport && tpe =:= typeOf[scala.transient])
           }
+        }
 
         def supportedTransientTypeNames: String =
           if (cfg.scalaTransientSupport) s"'${typeOf[transient]}' (or '${typeOf[scala.transient]}')"
