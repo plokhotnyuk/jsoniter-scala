@@ -965,7 +965,7 @@ object JsonCodecMaker {
               else {
                 val typeParamsAndArgs = tpeClass.typeParams.map(_.toString).zip(typeArgs(tpe)).toMap
                 classSymbol.toType.substituteTypes(typeParams, typeParams.map(tp => typeParamsAndArgs.getOrElse(tp.toString, fail {
-                  s"Cannot resolve generic type(s) for `${classSymbol.toType}`. Please provide a custom implicitly accessible codec for it."
+                  s"Cannot resolve generic type(s) for '${classSymbol.toType}'. Please provide a custom implicitly accessible codec for it."
                 })))
               }
             if (isSealedClass(subTpe)) collectRecursively(subTpe)

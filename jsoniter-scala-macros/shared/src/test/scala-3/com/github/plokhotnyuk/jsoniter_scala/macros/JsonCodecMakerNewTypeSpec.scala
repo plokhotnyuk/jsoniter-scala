@@ -68,6 +68,42 @@ given nullableValueCodec: JsonValueCodec[Int | Null | String] = new JsonValueCod
   def nullValue: Int | Null | String = null
 }
 
+// Borrowed from an amazing work of Matthias Berndt: https://scastie.scala-lang.org/rCmIrOrnRdydyDvWfJRAzw
+object FixTypes:
+  opaque type Fix[F[_]] = F[Any]
+
+  object Fix:
+    def EqPoly[F[_]]: F[Fix[F]] =:= Fix[F] = <:<.refl.asInstanceOf
+
+    extension[F[_]] (fix: Fix[F]) def unfix: F[Fix[F]] = EqPoly[F].flip(fix)
+
+  trait FixCompanion[F[_]]:
+    val Eq: F[Fix[F]] =:= Fix[F] = Fix.EqPoly[F]
+
+    def apply(unfix: F[Fix[F]]): Fix[F] = Eq(unfix)
+
+import FixTypes.*
+
+type JsonF[A] = mutable.Buffer[A] | mutable.Map[String, A] | String | Double | Boolean | None.type
+
+type Json = Fix[JsonF]
+
+object Json extends FixCompanion[JsonF]
+
+def obj(values: (String, JsonF[Json] | Json)*): Json =
+  val len = values.length
+  val map = new LinkedHashMap[String, JsonF[Json] | Json](len << 1, 0.5f)
+  var i = 0
+  while (i < len) {
+    val kv = values(i)
+    map.put(kv._1, kv._2)
+    i += 1
+  }
+  Json(Json.Eq.substituteCo[[A] =>> mutable.Map[String, A | Json]](map.asScala))
+
+def arr(values: JsonF[Json] | Json*): Json =
+  Json(Json.Eq.substituteCo[[A] =>> mutable.Buffer[A | Json]](mutable.ArrayBuffer[JsonF[Json] | Json](values*)))
+
 class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
   val codecOfIArrays = make[IArrays]
 
@@ -227,27 +263,14 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySerDeser(summon[JsonValueCodec[Int | BigDecimal]], BigDecimal("1" * 33), "1" * 33)
     }
     "serialize and deserialize recursive Scala3 union types using a custom value codec" in {
-      type JsonPrimitive = String | Int | Double | Boolean | None.type
-
-      type Rec[JA[_], JO[_], A] = A match { // FIXME: remove this workaround after adding support of recursive types
-        case JsonPrimitive => JsonPrimitive | JA[Rec[JA, JO, JsonPrimitive]] | JO[Rec[JA, JO, JsonPrimitive]]
-        case _ => A | JA[Rec[JA, JO, A]] | JO[Rec[JA, JO, A]]
-      }
-
-      type Json = Rec[[A] =>> mutable.Buffer[A], [A] =>> mutable.Map[String, A], JsonPrimitive]
-
-      type JsonObject = mutable.Map[String, Json]
-
-      type JsonArray = mutable.Buffer[Json]
-
       val jsonCodec: JsonValueCodec[Json] = new JsonValueCodec[Json] {
         def decodeValue(in: JsonReader, default: Json): Json = decode(in, 128)
 
         def encodeValue(x: Json, out: JsonWriter): Unit = encode(x, out, 128)
 
-        val nullValue: Json = None
+        val nullValue: Json = Json(None)
 
-        private[this] def decode(in: JsonReader, depth: Int): Json =
+        private def decode(in: JsonReader, depth: Int): Json = Json {
           val b = in.nextToken()
           if (b == '"') {
             in.rollbackToken()
@@ -257,13 +280,10 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
             in.readBoolean()
           } else if ((b >= '0' && b <= '9') || b == '-') {
             in.rollbackToken()
-            val d = in.readDouble()
-            val i = d.toInt
-            if (i.toDouble == d) i
-            else d
+            in.readDouble()
           } else if (b == '[') {
             if (depth <= 0) in.decodeError("depth limit exceeded")
-            val arr = new mutable.ArrayBuffer[Json](8)
+            val arr = new mutable.ArrayBuffer[Json](4)
             if (!in.isNextToken(']')) {
               in.rollbackToken()
               val dp = depth - 1
@@ -288,13 +308,13 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
             }
             obj.asScala
           } else in.readNullOrError(None, "expected JSON value")
+        }
 
-        private[this] def encode(x: Json, out: JsonWriter, depth: Int): Unit = x match
+        private def encode(x: Json, out: JsonWriter, depth: Int): Unit = x match
           case str: String => out.writeVal(str)
           case b: Boolean => out.writeVal(b)
-          case i: Int => out.writeVal(i)
           case d: Double => out.writeVal(d)
-          case arr: JsonArray =>
+          case arr: mutable.Buffer[Json] =>
             if (depth <= 0) out.encodeError("depth limit exceeded")
             out.writeArrayStart()
             val dp = depth - 1
@@ -305,7 +325,7 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
               i += 1
             }
             out.writeArrayEnd()
-          case obj: JsonObject =>
+          case obj: mutable.Map[String, Json] =>
             if (depth <= 0) out.encodeError("depth limit exceeded")
             out.writeObjectStart()
             val dp = depth - 1
@@ -319,21 +339,8 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
           case _ => out.writeNull()
       }
 
-      def obj(values: (String, Json)*): Json =
-        val len = values.length
-        val map = new LinkedHashMap[String, Json](len << 1, 0.5f)
-        var i = 0
-        while (i < len) {
-          val kv = values(i)
-          map.put(kv._1, kv._2)
-          i += 1
-        }
-        map.asScala
-
-      def arr(values: Json*): Json = mutable.ArrayBuffer[Json](values*)
-
       verifySerDeser(jsonCodec, arr("VVV", 1.2, true, obj("WWW" -> None, "XXX" -> 777)),
-        """["VVV",1.2,true,{"WWW":null,"XXX":777}]""")
+        """["VVV",1.2,true,{"WWW":null,"XXX":777.0}]""")
     }
     "serialize and deserialize case class with union types having null value (default behavior)" in {
       verifySerDeser(make[List[NullableProperty]],

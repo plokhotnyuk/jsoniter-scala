@@ -1215,8 +1215,8 @@ object JsonCodecMaker {
               case PolyType(names, _, resPolyTp) =>
                 val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, typeArgs(tpe), Map.empty)
                 val ctArgs = names.map { name =>
-                  tpBinding.getOrElse(name, fail(s"Type parameter $name of $sym can't be deduced from " +
-                    s"type arguments of ${tpe.show}. Please provide a custom implicitly accessible codec for it."))
+                  tpBinding.getOrElse(name, fail(s"Type parameter '$name' of '$sym' can't be deduced from " +
+                    s"type arguments of '${tpe.show}'. Please provide a custom implicitly accessible codec for it."))
                 }
                 val polyRes = resPolyTp match
                   case MethodType(_, _, resTp) => resTp
@@ -1226,7 +1226,7 @@ object JsonCodecMaker {
                   case AppliedType(base, _) => base.appliedTo(ctArgs)
                   case AnnotatedType(AppliedType(base, _), annot) => AnnotatedType(base.appliedTo(ctArgs), annot)
                   case _ => polyRes.appliedTo(ctArgs)
-              case other => fail(s"Primary constructor for ${tpe.show} is not MethodType or PolyType but $other")
+              case other => fail(s"Primary constructor for '${tpe.show}' is not 'MethodType' or 'PolyType' but '$other''")
           } else if (sym.isTerm) Ref(sym).tpe
           else fail("Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes. " +
             s"Please consider using of them for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base.")

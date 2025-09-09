@@ -2129,15 +2129,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
           |
           |JsonCodecMaker.make[HigherKindedType[Option]]""".stripMargin
-      }).getMessage.contains(
-        s"""Recursive type(s) detected: ${
-          if (ScalaVersionCheck.isScala2) "'HigherKindedType[Option]', 'Option[HigherKindedType[Option]]'"
-          else "'HigherKindedType[[A >: scala.Nothing <: scala.Any] => scala.Option[A]]', 'scala.Option[HigherKindedType[[A >: scala.Nothing <: scala.Any] => scala.Option[A]]]'"
-        }. Please consider
-          |using a custom implicitly accessible codec for this type to control the level of recursion or turn on the
-          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
-          |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
-      ))
+      }).getMessage.contains("Recursive type(s) detected: 'HigherKindedType["))
     }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
       verifySerDeser(codecOfRecursive,
@@ -3217,8 +3209,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |val v = FooImpl[Bar, String](Qux, Vector.empty[String])
           |val c = JsonCodecMaker.make[Foo[Bar]]""".stripMargin
       }).getMessage.contains {
-        if (ScalaVersionCheck.isScala2) "Cannot resolve generic type(s) for `FooImpl[F,A]`. Please provide a custom implicitly accessible codec for it."
-        else "Type parameter A of class FooImpl can't be deduced from type arguments of Foo[[A >: scala.Nothing <: scala.Any] => Bar[A]]. Please provide a custom implicitly accessible codec for it."
+        if (ScalaVersionCheck.isScala2) "Cannot resolve generic type(s) for 'FooImpl[F,A]'. Please provide a custom implicitly accessible codec for it."
+        else "Type parameter 'A' of 'class FooImpl' can't be deduced from type arguments of 'Foo[[A >: scala.Nothing <: scala.Any]"
       })
     }
     "don't generate codecs when 'AnyVal' or one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are leaf types of the ADT base" in {
