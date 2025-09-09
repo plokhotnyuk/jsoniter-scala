@@ -1096,7 +1096,6 @@ object JsonCodecMaker {
           case _ =>
         }
         val primaryConstructor = tpeClassSym.primaryConstructor
-        if (!primaryConstructor.exists) fail(s"Cannot find a primary constructor for '$tpe'")
 
         def createFieldInfos(params: List[Symbol], typeParams: List[Symbol],
                              fieldIndex: Boolean => Int): List[FieldInfo] = params.map {
