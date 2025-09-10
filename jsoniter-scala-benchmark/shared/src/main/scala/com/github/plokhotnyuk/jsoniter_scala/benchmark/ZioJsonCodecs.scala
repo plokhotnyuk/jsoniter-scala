@@ -26,27 +26,37 @@ object ZioJsonCodecs {
       implicit val c3: JsonCodec[OpenRTB.Deal] = DeriveJsonCodec.gen
       implicit val c4: JsonCodec[OpenRTB.Metric] = DeriveJsonCodec.gen
       implicit val c5: JsonCodec[OpenRTB.Banner] = DeriveJsonCodec.gen
-      implicit val c6: JsonCodec[OpenRTB.Audio] = DeriveJsonCodec.gen
-      implicit val c7: JsonCodec[OpenRTB.Video] = DeriveJsonCodec.gen
 
       def genOpenRTBBidRequestC3c2: JsonCodec[OpenRTB.BidRequest] = {
-        implicit val c8: JsonCodec[OpenRTB.Native] = DeriveJsonCodec.gen
-        implicit val c9: JsonCodec[OpenRTB.Pmp] = DeriveJsonCodec.gen
-        implicit val c10: JsonCodec[OpenRTB.Producer] = DeriveJsonCodec.gen
-        implicit val c11: JsonCodec[OpenRTB.Data] = DeriveJsonCodec.gen
-        implicit val c12: JsonCodec[OpenRTB.Content] = DeriveJsonCodec.gen
-        implicit val c13: JsonCodec[OpenRTB.Publisher] = DeriveJsonCodec.gen
-        implicit val c14: JsonCodec[OpenRTB.Geo] = DeriveJsonCodec.gen
+        implicit val c6: JsonCodec[OpenRTB.Audio] = DeriveJsonCodec.gen
+        implicit val c7: JsonCodec[OpenRTB.Native] = DeriveJsonCodec.gen
+        implicit val c8: JsonCodec[OpenRTB.Pmp] = DeriveJsonCodec.gen
+        implicit val c9: JsonCodec[OpenRTB.Video] = DeriveJsonCodec.gen
 
         def genOpenRTBBidRequestC3c3: JsonCodec[OpenRTB.BidRequest] = {
-          implicit val c15: JsonCodec[OpenRTB.Imp] = DeriveJsonCodec.gen
-          implicit val c16: JsonCodec[OpenRTB.Site] = DeriveJsonCodec.gen
-          implicit val c17: JsonCodec[OpenRTB.App] = DeriveJsonCodec.gen
-          implicit val c18: JsonCodec[OpenRTB.Device] = DeriveJsonCodec.gen
-          implicit val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
-          implicit val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
-          implicit val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
-          DeriveJsonCodec.gen
+          implicit val c10: JsonCodec[OpenRTB.Producer] = DeriveJsonCodec.gen
+          implicit val c11: JsonCodec[OpenRTB.Data] = DeriveJsonCodec.gen
+          implicit val c12: JsonCodec[OpenRTB.Content] = DeriveJsonCodec.gen
+          implicit val c13: JsonCodec[OpenRTB.Publisher] = DeriveJsonCodec.gen
+
+          def genOpenRTBBidRequestC3c4: JsonCodec[OpenRTB.BidRequest] = {
+            implicit val c14: JsonCodec[OpenRTB.Geo] = DeriveJsonCodec.gen
+            implicit val c15: JsonCodec[OpenRTB.Imp] = DeriveJsonCodec.gen
+            implicit val c16: JsonCodec[OpenRTB.Site] = DeriveJsonCodec.gen
+            implicit val c17: JsonCodec[OpenRTB.App] = DeriveJsonCodec.gen
+
+            def genOpenRTBBidRequestC3c5: JsonCodec[OpenRTB.BidRequest] = {
+              implicit val c18: JsonCodec[OpenRTB.Device] = DeriveJsonCodec.gen
+              implicit val c19: JsonCodec[OpenRTB.User] = DeriveJsonCodec.gen
+              implicit val c20: JsonCodec[OpenRTB.Source] = DeriveJsonCodec.gen
+              implicit val c21: JsonCodec[OpenRTB.Reqs] = DeriveJsonCodec.gen
+              DeriveJsonCodec.gen
+            }
+
+            genOpenRTBBidRequestC3c5
+          }
+
+          genOpenRTBBidRequestC3c4
         }
 
         genOpenRTBBidRequestC3c3
@@ -58,18 +68,28 @@ object ZioJsonCodecs {
     genOpenRTBBidRequestC3c1
   }
   implicit val twitterAPIC3c: JsonCodec[TwitterAPI.Tweet] = {
-    def genTwitterAPIC3c: JsonCodec[TwitterAPI.Tweet] = {
+    def genTwitterAPIC3c1: JsonCodec[TwitterAPI.Tweet] = {
       implicit val c1: JsonCodec[TwitterAPI.UserMentions] = DeriveJsonCodec.gen
       implicit val c2: JsonCodec[TwitterAPI.Urls] = DeriveJsonCodec.gen
       implicit val c3: JsonCodec[TwitterAPI.Entities] = DeriveJsonCodec.gen
       implicit val c4: JsonCodec[TwitterAPI.Url] = DeriveJsonCodec.gen
       implicit val c5: JsonCodec[TwitterAPI.UserEntities] = DeriveJsonCodec.gen
-      implicit val c6: JsonCodec[TwitterAPI.User] = DeriveJsonCodec.gen
-      implicit val c7: JsonCodec[TwitterAPI.RetweetedStatus] = DeriveJsonCodec.gen
-      DeriveJsonCodec.gen
+
+      def genTwitterAPIC3c2: JsonCodec[TwitterAPI.Tweet] = {
+        implicit val c6: JsonCodec[TwitterAPI.User] = DeriveJsonCodec.gen
+
+        def genTwitterAPIC3c3: JsonCodec[TwitterAPI.Tweet] = {
+          implicit val c7: JsonCodec[TwitterAPI.RetweetedStatus] = DeriveJsonCodec.gen
+          DeriveJsonCodec.gen
+        }
+
+        genTwitterAPIC3c3
+      }
+
+      genTwitterAPIC3c2
     }
 
-    genTwitterAPIC3c
+    genTwitterAPIC3c1
   }
   val base64C3c: JsonCodec[Array[Byte]] = new JsonCodec[Array[Byte]](
     (a: Array[Byte], _: Option[Int], out: Write) => {

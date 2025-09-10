@@ -11,7 +11,7 @@ import com.rallyhealth.weepickle.v1.WeePickle._
 import com.rallyhealth.weepickle.v1.core.Visitor
 import java.time._
 
-object WeePickleFromTos extends WeePickleFromTos2 {
+object WeePickleFromTos extends WeePickleFromTos1 with WeePickleFromTos2 {
   private[this] def defaultJsonFactoryBuilder: JsonFactoryBuilder = new JsonFactoryBuilder()
     .configure(StreamReadFeature.USE_FAST_DOUBLE_PARSER, true)
     .configure(StreamWriteFeature.USE_FAST_DOUBLE_WRITER, true)
@@ -85,7 +85,7 @@ object WeePickleFromTos extends WeePickleFromTos2 {
   implicit val offsetTimeFromTo: FromTo[OffsetTime] = fromTo[String].bimap(_.toString, OffsetTime.parse)
 }
 
-trait WeePickleFromTos2 {
+trait WeePickleFromTos1 {
   implicit val openRTBBidRequestFromTos: FromTo[OpenRTB.BidRequest] = {
     implicit val ft1: FromTo[OpenRTB.Segment] = macroFromTo
     implicit val ft2: FromTo[OpenRTB.Format] = macroFromTo
@@ -110,6 +110,9 @@ trait WeePickleFromTos2 {
     implicit val ft21: FromTo[OpenRTB.Reqs] = macroFromTo
     macroFromTo
   }
+}
+
+trait WeePickleFromTos2 {
   implicit val periodFromTo: FromTo[Period] = fromTo[String].bimap(_.toString, Period.parse)
   implicit val twitterAPIFromTos: FromTo[TwitterAPI.Tweet] = {
     implicit val ft1: FromTo[TwitterAPI.Urls] = macroFromTo
