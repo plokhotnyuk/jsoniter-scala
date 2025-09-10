@@ -1106,25 +1106,14 @@ object JsonCodecMaker {
             val annotationOption = annotations.get(name)
             val mappedName = annotationOption.flatMap(_.partiallyMappedName)
               .getOrElse(cfg.fieldNameMapper(name).getOrElse(name))
-            val field = tpeClassSym.fieldMember(name)
-            val getterOrField =
-              if (field.exists) {
-                if (field.flags.is(Flags.PrivateLocal)) fail(s"Field '$name' in class '${tpe.show}' is private. " +
-                  "It should be defined as 'val' or 'var' in the primary constructor.")
-                field
-              } else {
-                val getters = tpeClassSym.methodMember(name)
-                  .filter(_.flags.is(Flags.CaseAccessor | Flags.FieldAccessor | Flags.ParamAccessor))
-                if (getters.isEmpty) { // Scala3 doesn't set FieldAccess flag for val parameters of constructor
-                  tpeClassSym.methodMember(name).find(_.paramSymss.isEmpty) match
-                    case None => fail(s"Field and getter not found: '$name' parameter of '${tpe.show}' " +
-                      s"should be defined as 'val' or 'var' in the primary constructor.")
-                    case Some(firstNamedMember) =>
-                      if (firstNamedMember.privateWithin.isDefined) fail(s"Getter is private: '$name' paramter of " +
-                        s"'${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")
-                      firstNamedMember
-                } else getters.head // TODO: check length ?  when we have both reader and writer getters.filter(_.paramSymss == List(List()))
-              }
+            var getterOrField = tpeClassSym.fieldMember(name)
+            if (!getterOrField.exists) { // workaround for older Scala 3 versions
+              val flags = Flags.FieldAccessor | Flags.ParamAccessor
+              getterOrField = tpeClassSym.methodMember(name).filter(_.flags.is(flags)).headOption.getOrElse(Symbol.noSymbol)
+            }
+            if (!getterOrField.exists || getterOrField.flags.is(Flags.PrivateLocal)) {
+              fail(s"Getter or field '$name' of '${tpe.show}' is private. It should be defined as 'val' or 'var' in the primary constructor.")
+            }
             val defaultValue =
               if (!cfg.requireDefaultFields && symbol.flags.is(Flags.HasDefault)) {
                 val dvMembers = tpe.typeSymbol.companionClass.methodMember("$lessinit$greater$default$" + i)

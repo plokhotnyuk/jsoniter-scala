@@ -3181,7 +3181,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |JsonCodecMaker.make[MultiListOfArgsWithNonPublicParam]""".stripMargin
       }).getMessage.contains {
         if (ScalaVersionCheck.isScala2) "'l' parameter of 'MultiListOfArgsWithNonPublicParam' should be defined as 'val' or 'var' in the primary constructor."
-        else "Field 'l' in class 'MultiListOfArgsWithNonPublicParam' is private. It should be defined as 'val' or 'var' in the primary constructor."
+        else "'l' of 'MultiListOfArgsWithNonPublicParam' is private. It should be defined as 'val' or 'var' in the primary constructor."
       })
     }
     "don't generate codecs for classes with parameters in a primary constructor that have no accessor for read" in {
@@ -3191,7 +3191,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |JsonCodecMaker.make[ParamHasNoAccessor]""".stripMargin
       }).getMessage.contains {
         if (ScalaVersionCheck.isScala2) "'a' parameter of 'ParamHasNoAccessor' should be defined as 'val' or 'var' in the primary constructor."
-        else "Field 'a' in class 'ParamHasNoAccessor' is private. It should be defined as 'val' or 'var' in the primary constructor."
+        else "'a' of 'ParamHasNoAccessor' is private. It should be defined as 'val' or 'var' in the primary constructor."
       })
     }
     "don't generate codecs when all generic type parameters cannot be resolved" in {
