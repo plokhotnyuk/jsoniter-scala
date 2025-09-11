@@ -2766,13 +2766,13 @@ final class JsonWriter private[jsoniter_scala](
     val cp2 = cp & 0xFFFFFFFFL
     val cp1 = cp >>> 32
     val cps = cp1 + cp2
-    val x = { // Math.multiplyHigh(g0, cp)
+    val x = (g1 * cp >>> 1) + { // Math.multiplyHigh(g0, cp)
       val g02 = g0 & 0xFFFFFFFFL
       val g01 = g0 >>> 32
       val b0 = g02 * cp2
       val a0 = g01 * cp1
       ((g01 + g02) * cps + (b0 >>> 32) - (b0 + a0) >>> 32) + a0
-    } + (g1 * cp >>> 1)
+    }
     var y = { // Math.multiplyHigh(g1, cp)
       val g12 = g1 & 0xFFFFFFFFL
       val g11 = g1 >>> 32
