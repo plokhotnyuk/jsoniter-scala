@@ -36,6 +36,7 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
       verifySerDeser(make[NamedTuple.Tail[(l: Long, i: Int, s: String)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.Init[(i: Int, s: String, l: Long)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.Drop[(l: Long, i: Int, s: String), 1]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      verifySerDeser(make[NamedTuple.Drop[(l: Long, i: Int, s: String), 3]], EmptyTuple, """{}""")
       verifySerDeser(make[NamedTuple.Take[(i: Int, s: String, l: Long), 2]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.NamedTuple["i" *: "s" *: EmptyTuple, (Int, String)]],
         (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")

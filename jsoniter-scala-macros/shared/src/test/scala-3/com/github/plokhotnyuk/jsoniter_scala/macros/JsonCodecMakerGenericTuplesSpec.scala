@@ -17,13 +17,13 @@ class JsonCodecMakerGenericTuplesSpec extends VerifyingSpec {
       type S = Short
 
       verifySerDeser(make[EmptyTuple], EmptyTuple, "[]")
-      verifySerDeser(make[Tuple.Drop[(Long, Int, String), 3]], EmptyTuple, "[]")
       verifySerDeser(make[Byte *: Short *: Int *: Long *: EmptyTuple], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
       verifySerDeser(make[B *: S *: I *: L *: EmptyTuple], (1: B) *: (2: S) *: 3 *: 4L *: EmptyTuple, "[1,2,3,4]")
       verifySerDeser(make[Byte *: Short *: Tuple2[Int, Long]], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
       verifySerDeser(make[Tuple.Concat[(Byte, Short), (Int, Long)]], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
       verifySerDeser(make[Tuple.Append[(Byte, Short), Int]], (1: Byte, 2: Short, 3), "[1,2,3]")
       verifySerDeser(make[Tuple.Drop[(Long, Int, String), 1]], (1, "VVV"), """[1,"VVV"]""")
+      verifySerDeser(make[Tuple.Drop[(Long, Int, String), 3]], EmptyTuple, "[]")
       verifySerDeser(make[Tuple.Take[(Int, String, Long), 2]], 1 *: "VVV" *: EmptyTuple, """[1,"VVV"]""")
       verifySerDeser(make[Tuple.Zip[Tuple1[Int], Tuple1[String]]], (1, "VVV") *: EmptyTuple, """[[1,"VVV"]]""")
       verifySerDeser(make[Tuple.Map[(Int, String), Option]], (Some(1), Some("VVV")), """[1,"VVV"]""")
