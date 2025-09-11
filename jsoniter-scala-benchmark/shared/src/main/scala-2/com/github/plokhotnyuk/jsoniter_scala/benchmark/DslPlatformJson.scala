@@ -15,7 +15,7 @@ object DslPlatformJson {
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
 
   dslJson.registerReader(classOf[Char], new JsonReader.ReadObject[Char] {
-    override def read(reader: JsonReader[_]): Char = {
+    override def read(reader: JsonReader[?]): Char = {
       val s = reader.readString()
       if (s.length != 1) reader.newParseError("expected string with a single char (not surrogate pair)")
       s.charAt(0)
@@ -28,8 +28,8 @@ object DslPlatformJson {
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJson.newWriter
   }
-  private[this] val threadLocalJsonReader = new ThreadLocal[JsonReader[_]] {
-    override def initialValue(): JsonReader[_] = dslJson.newReader
+  private[this] val threadLocalJsonReader = new ThreadLocal[JsonReader[?]] {
+    override def initialValue(): JsonReader[?] = dslJson.newReader
   }
 
   val (stringEncoder: JsonWriter.WriteObject[String],

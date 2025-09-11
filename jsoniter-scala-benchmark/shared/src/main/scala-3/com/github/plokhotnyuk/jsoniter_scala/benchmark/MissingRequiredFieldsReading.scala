@@ -12,7 +12,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
     try {
       Json.decode(jsonBytes).to[MissingRequiredFields].value.toString // toString shouldn't be called
     } catch {
-      case ex: Error[_] => ex.getMessage
+      case ex: Error[?] => ex.getMessage
     }
   }
 

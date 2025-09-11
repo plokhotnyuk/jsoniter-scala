@@ -146,8 +146,8 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
         List(ColorADT.Red, ColorADT.Green, ColorADT.Mix(0)), """["Red","Green",{"Mix":{"mix":0}}]""")
     }
     "serialize and deserialize Scala3 generic enum ADTs" in {
-      verifySerDeser(make[Array[GEnum[_]]],
-        Array[GEnum[_]](GEnum.Exists("WWW"), GEnum.ReadBytes("QQQ"), GEnum.CopyOver(ArraySeq.unsafeWrapArray("AAA".getBytes(UTF_8)), "OOO")),
+      verifySerDeser(make[Array[GEnum[?]]],
+        Array(GEnum.Exists("WWW"), GEnum.ReadBytes("QQQ"), GEnum.CopyOver(ArraySeq.unsafeWrapArray("AAA".getBytes(UTF_8)), "OOO")),
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize enum ADTs with self-recursive (aka F-bounded) types" in {

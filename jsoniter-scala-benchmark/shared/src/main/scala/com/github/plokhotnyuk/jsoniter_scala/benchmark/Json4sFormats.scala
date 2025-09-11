@@ -87,11 +87,11 @@ object StringifiedFormats {
     }))
 }
 
-class SimpleTypeHints(override val hints: List[Class[_]],
+class SimpleTypeHints(override val hints: List[Class[?]],
                       override val typeHintFieldName: String = "type") extends TypeHints {
-  override def hintFor(clazz: Class[_]): Option[String] = new Some(clazz.getSimpleName)
+  override def hintFor(clazz: Class[?]): Option[String] = new Some(clazz.getSimpleName)
 
-  override def classFor(hint: String, parent: Class[_]): Option[Class[_]] = hints.collectFirst {
+  override def classFor(hint: String, parent: Class[?]): Option[Class[?]] = hints.collectFirst {
     case clazz if clazz.getSimpleName == hint => clazz
   }
 }

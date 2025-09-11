@@ -3085,11 +3085,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       case object Qux extends GADT[String]
 
-      verifySerDeser(makeWithoutDiscriminator[Array[GADT[_]]],
+      verifySerDeser(makeWithoutDiscriminator[Array[GADT[?]]],
         _root_.scala.Array[GADT[_]](Foo, Bar, Baz, Qux), """["Foo","Bar","Baz","Qux"]""")
-      verifySerDeser(make[Array[GADT[_]]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
+      verifySerDeser(make[Array[GADT[?]]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
         _root_.scala.Array[GADT[_]](Foo, Bar, Baz, Qux), """["Foo","Bar","Baz","Qux"]""")
-      verifySerDeser(make[Array[GADT2[_]]],
+      verifySerDeser(make[Array[GADT2[?]]],
         _root_.scala.Array[GADT2[_]](GADT2.Exists("WWW"), GADT2.ReadBytes("QQQ"), GADT2.CopyOver("AAA".getBytes.toSeq, "OOO")),
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }

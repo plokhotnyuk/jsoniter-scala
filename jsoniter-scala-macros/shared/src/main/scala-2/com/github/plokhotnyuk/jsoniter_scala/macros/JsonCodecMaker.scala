@@ -737,10 +737,10 @@ object JsonCodecMaker {
       }
 
       def isOption(tpe: Type, types: List[Type]): Boolean =
-        tpe <:< typeOf[Option[_]] && (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< typeOf[Option[_]]))
+        tpe <:< typeOf[Option[?]] && (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< typeOf[Option[?]]))
 
       def isCollection(tpe: Type): Boolean =
-        tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Iterator[_]] || tpe <:< typeOf[Array[_]]
+        tpe <:< typeOf[Iterable[?]] || tpe <:< typeOf[Iterator[?]] || tpe <:< typeOf[Array[?]]
 
       def scalaCollectionCompanion(tpe: Type): Tree =
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ident(tpe.typeSymbol.companion)
@@ -830,7 +830,7 @@ object JsonCodecMaker {
 
       val enumValueInfos = new mutable.LinkedHashMap[Type, List[JavaEnumValueInfo]]
 
-      def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[_]]
+      def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[?]]
 
       def javaEnumValues(tpe: Type): List[JavaEnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
         val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
@@ -1281,13 +1281,13 @@ object JsonCodecMaker {
             out.writeArrayEnd()"""
 
       def cannotFindKeyCodecError(tpe: Type): Nothing =
-        fail(s"No implicit '${typeOf[JsonKeyCodec[_]]}' defined for '$tpe'.")
+        fail(s"No implicit '${typeOf[JsonKeyCodec[?]]}' defined for '$tpe'.")
 
       def cannotFindValueCodecError(tpe: Type): Nothing =
         fail(if (tpe.typeSymbol.isAbstract) {
           "Only sealed traits or abstract classes are supported as an ADT base. " +
             s"Please consider sealing the '$tpe' or provide a custom implicitly accessible codec for it."
-        } else s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
+        } else s"No implicit '${typeOf[JsonValueCodec[?]]}' defined for '$tpe'.")
 
       def namedValueOpt(namedOpt: Option[Annotation], tpe: Type): Option[String] = namedOpt.map { a =>
         a.tree.children.tail.collectFirst { case Literal(Constant(s: String)) => s }.getOrElse {
@@ -1375,7 +1375,7 @@ object JsonCodecMaker {
 
       def genArrayEquals(tpe: Type): Tree = {
         val tpe1 = typeArg1(tpe)
-        if (tpe1 <:< typeOf[Array[_]]) {
+        if (tpe1 <:< typeOf[Array[?]]) {
           val equals = withEqualsFor(tpe1, q"x1(i)", q"x2(i)")(genArrayEquals(tpe1))
           q"""(x1 eq x2) || ((x1 ne null) && (x2 ne null) && {
                 val l = x1.length
@@ -1435,22 +1435,22 @@ object JsonCodecMaker {
         else if (isOption(tpe, types.tail)) q"_root_.scala.None"
         else if (tpe <:< typeOf[mutable.BitSet]) q"new _root_.scala.collection.mutable.BitSet"
         else if (tpe <:< typeOf[collection.BitSet]) withNullValueFor(tpe)(q"_root_.scala.collection.immutable.BitSet.empty")
-        else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-        else if (tpe <:< typeOf[::[_]]) q"null"
-        else if (tpe <:< typeOf[List[_]] || tpe.typeSymbol == typeOf[Seq[_]].typeSymbol) q"_root_.scala.Nil"
-        else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[immutable.LongMap[_]] ||
-          tpe <:< typeOf[immutable.Seq[_]] || tpe <:< typeOf[immutable.Set[_]]) withNullValueFor(tpe) {
+        else if (tpe <:< typeOf[mutable.LongMap[?]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+        else if (tpe <:< typeOf[::[?]]) q"null"
+        else if (tpe <:< typeOf[List[?]] || tpe.typeSymbol == typeOf[Seq[?]].typeSymbol) q"_root_.scala.Nil"
+        else if (tpe <:< typeOf[immutable.IntMap[?]] || tpe <:< typeOf[immutable.LongMap[?]] ||
+          tpe <:< typeOf[immutable.Seq[?]] || tpe <:< typeOf[immutable.Set[?]]) withNullValueFor(tpe) {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-        } else if (tpe <:< typeOf[immutable.Map[_, _]]) withNullValueFor(tpe) {
+        } else if (tpe <:< typeOf[immutable.Map[?, ?]]) withNullValueFor(tpe) {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe <:< typeOf[collection.Map[_, _]]) {
+        } else if (tpe <:< typeOf[collection.Map[?, ?]]) {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe <:< typeOf[Iterable[_]]) {
+        } else if (tpe <:< typeOf[Iterable[?]]) {
           q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-        } else if (tpe <:< typeOf[Iterator[_]]) {
+        } else if (tpe <:< typeOf[Iterator[?]]) {
           if (isScala213) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
           else q"${scalaCollectionCompanion(tpe)}.empty"
-        } else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new _root_.scala.Array[${typeArg1(tpe)}](0)")
+        } else if (tpe <:< typeOf[Array[?]]) withNullValueFor(tpe)(q"new _root_.scala.Array[${typeArg1(tpe)}](0)")
         else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(v: String)) => q"$v"
@@ -1681,7 +1681,7 @@ object JsonCodecMaker {
         } else if (isOption(tpe, types.tail)) {
           val tpe1 = typeArg1(tpe)
           val nullValue =
-            if (cfg.skipNestedOptionValues && tpe <:< typeOf[Option[Option[_]]]) q"new _root_.scala.Some(_root_.scala.None)"
+            if (cfg.skipNestedOptionValues && tpe <:< typeOf[Option[Option[?]]]) q"new _root_.scala.Some(_root_.scala.None)"
             else default
           q"""if (in.isNextToken('n')) in.readNullOrError($nullValue, "expected value or null")
               else {
@@ -1689,7 +1689,7 @@ object JsonCodecMaker {
                 new _root_.scala.Some(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})
               }"""
         } else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
-        else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
+        else if (tpe <:< typeOf[Array[?]] || isImmutableArraySeq(tpe) ||
           isMutableArraySeq(tpe)) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val requiresArrayCopy = tpe1.typeArgs.nonEmpty || isValueClass(tpe1)
@@ -1728,7 +1728,7 @@ object JsonCodecMaker {
                     x"""
               }
             })
-        } else if (tpe <:< typeOf[immutable.IntMap[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[immutable.IntMap[?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
           val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
@@ -1739,7 +1739,7 @@ object JsonCodecMaker {
             genReadMapAsArray(newBuilder,
               q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
           } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsInt(), $readVal)")
-        } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[mutable.LongMap[?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }"
           val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
@@ -1750,7 +1750,7 @@ object JsonCodecMaker {
             genReadMapAsArray(newBuilder,
               q"x.update($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
           } else genReadMap(newBuilder, q"x.update(in.readKeyAsLong(), $readVal)")
-        } else if (tpe <:< typeOf[immutable.LongMap[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[immutable.LongMap[?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
           val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
@@ -1761,7 +1761,7 @@ object JsonCodecMaker {
             genReadMapAsArray(newBuilder,
               q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
           } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsLong(), $readVal)")
-        } else if (tpe <:< typeOf[mutable.Map[_, _]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[mutable.Map[?, ?]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2] }"
@@ -1770,7 +1770,7 @@ object JsonCodecMaker {
             val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
             genReadMapAsArray(newBuilder, q"x.update($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })")
           } else genReadMap(newBuilder, q"x.update(${genReadKey(tpe1 :: types)}, $readVal2)")
-        } else if (tpe <:< typeOf[collection.Map[_, _]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[collection.Map[?, ?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val newBuilder = q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2] }"
@@ -1800,15 +1800,15 @@ object JsonCodecMaker {
                 x(i) = x(i) | 1L << v""",
             if (tpe <:< typeOf[mutable.BitSet]) q"_root_.scala.collection.mutable.BitSet.fromBitMaskNoCopy(x)"
             else q"_root_.scala.collection.immutable.BitSet.fromBitMaskNoCopy(x)")
-        } else if (tpe <:< typeOf[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[mutable.Set[?] with mutable.Builder[?, ?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadSet(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified))
-        } else if (tpe <:< typeOf[collection.Set[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[collection.Set[?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadSet(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
-        } else if (tpe <:< typeOf[::[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[::[?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val readVal = genReadValForGrowable(tpe1 :: types, isStringified)
           q"""if (in.isNextToken('[')) {
@@ -1829,24 +1829,24 @@ object JsonCodecMaker {
                 if (default ne null) in.readNullOrTokenError(default, '[')
                 else in.decodeError("expected non-empty JSON array")
               }"""
-        } else if (tpe <:< typeOf[List[_]] || tpe.typeSymbol == typeOf[Seq[_]].typeSymbol) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[List[?]] || tpe.typeSymbol == typeOf[Seq[?]].typeSymbol) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
-        } else if (tpe <:< typeOf[Vector[_]] || tpe.typeSymbol == typeOf[IndexedSeq[_]].typeSymbol) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[Vector[?]] || tpe.typeSymbol == typeOf[IndexedSeq[?]].typeSymbol) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = new _root_.scala.collection.immutable.VectorBuilder[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
-        } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
-            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.12.x
+        } else if (tpe <:< typeOf[mutable.Iterable[?] with mutable.Builder[?, ?]] &&
+            !(tpe <:< typeOf[mutable.ArrayStack[?]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.12.x
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified))
-        } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[Iterable[?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
-        } else if (tpe <:< typeOf[Iterator[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[Iterator[?]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray({
             if (isScala213) q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }"
@@ -2032,13 +2032,13 @@ object JsonCodecMaker {
           (if (cfg.transientDefault) fieldInfo.defaultValue
           else None) match {
             case Some(d) =>
-              if (cfg.transientEmpty && fTpe <:< typeOf[Iterable[_]]) {
+              if (cfg.transientEmpty && fTpe <:< typeOf[Iterable[?]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (cfg.transientEmpty && fTpe <:< typeOf[Iterator[_]]) {
+              } else if (cfg.transientEmpty && fTpe <:< typeOf[Iterator[?]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.hasNext && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
@@ -2050,7 +2050,7 @@ object JsonCodecMaker {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v.get", typeArg1(fTpe) :: fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (fTpe <:< typeOf[Array[_]]) {
+              } else if (fTpe <:< typeOf[Array[?]]) {
                 val cond =
                   if (cfg.transientEmpty) {
                     q"v.length != 0 && !${withEqualsFor(fTpe, q"v", d)(genArrayEquals(fTpe))}"
@@ -2068,13 +2068,13 @@ object JsonCodecMaker {
                     }"""
               }
             case None =>
-              if (cfg.transientEmpty && fTpe <:< typeOf[Iterable[_]]) {
+              if (cfg.transientEmpty && fTpe <:< typeOf[Iterable[?]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (cfg.transientEmpty && fTpe <:< typeOf[Iterator[_]]) {
+              } else if (cfg.transientEmpty && fTpe <:< typeOf[Iterator[?]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.hasNext) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
@@ -2086,7 +2086,7 @@ object JsonCodecMaker {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
                       ..${genWriteVal(q"v.get", typeArg1(fTpe) :: fTpe :: types, fieldInfo.isStringified, EmptyTree)}
                     }"""
-              } else if (cfg.transientEmpty && fTpe <:< typeOf[Array[_]]) {
+              } else if (cfg.transientEmpty && fTpe <:< typeOf[Array[?]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.length != 0) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
@@ -2144,7 +2144,7 @@ object JsonCodecMaker {
           q"""if ($m ne _root_.scala.None) ${genWriteVal(q"$m.get", typeArg1(tpe) :: types, isStringified, EmptyTree)}
               else out.writeNull()"""
         } else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
-        else if (tpe <:< typeOf[Array[_]] || isImmutableArraySeq(tpe) ||
+        else if (tpe <:< typeOf[Array[?]] || isImmutableArraySeq(tpe) ||
           isMutableArraySeq(tpe)) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           if (isImmutableArraySeq(tpe)) {
@@ -2177,8 +2177,8 @@ object JsonCodecMaker {
                 }
                 out.writeArrayEnd()"""
           }
-        } else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
-            tpe <:< typeOf[immutable.LongMap[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[immutable.IntMap[?]] || tpe <:< typeOf[mutable.LongMap[?]] ||
+            tpe <:< typeOf[immutable.LongMap[?]]) withEncoderFor(methodKey, m) {
           if (isScala213) {
             val writeVal2 = genWriteVal(q"v", typeArg1(tpe) :: types, isStringified, EmptyTree)
             if (cfg.mapAsArray) {
@@ -2196,7 +2196,7 @@ object JsonCodecMaker {
               genWriteMapAsArray(q"x", writeVal1, writeVal2)
             } else genWriteMap(q"x", q"out.writeKey(kv._1)", writeVal2)
           }
-        } else if (tpe <:< typeOf[collection.Map[_, _]] || isCollisionProofHashMap(tpe)) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[collection.Map[?, ?]] || isCollisionProofHashMap(tpe)) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           if (isScala213) {
@@ -2214,7 +2214,7 @@ object JsonCodecMaker {
           genWriteArray(q"x",
             if (isStringified) q"out.writeValAsString(x)"
             else q"out.writeVal(x)")
-        } else if (tpe <:< typeOf[List[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[List[?]]) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           q"""out.writeArrayStart()
               val n = _root_.scala.Nil
@@ -2224,7 +2224,7 @@ object JsonCodecMaker {
                 l = l.tail
               }
               out.writeArrayEnd()"""
-        } else if (tpe <:< typeOf[IndexedSeq[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[IndexedSeq[?]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()
               val l = x.length
               if (l <= 32) {
@@ -2239,9 +2239,9 @@ object JsonCodecMaker {
                 }
               }
               out.writeArrayEnd()"""
-        } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[Iterable[?]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree))
-        } else if (tpe <:< typeOf[Iterator[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[Iterator[?]]) withEncoderFor(methodKey, m) {
           genWriteArray2(q"x", genWriteVal(q"x.next()", typeArg1(tpe) :: types, isStringified, EmptyTree))
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           if (cfg.useScalaEnumValueId) {
