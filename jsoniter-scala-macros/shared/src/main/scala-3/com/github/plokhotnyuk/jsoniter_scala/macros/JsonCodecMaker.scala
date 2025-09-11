@@ -756,6 +756,22 @@ object JsonCodecMaker {
     private def make[A: Type](cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
 
+      val booleanTpe = defn.BooleanClass.typeRef
+      val byteTpe = defn.ByteClass.typeRef
+      val shortTpe = defn.ShortClass.typeRef
+      val intTpe = defn.IntClass.typeRef
+      val longTpe = defn.LongClass.typeRef
+      val floatTpe = defn.FloatClass.typeRef
+      val doubleTpe = defn.DoubleClass.typeRef
+      val charTpe = defn.CharClass.typeRef
+      val anyRefTpe = defn.AnyRefClass.typeRef
+      val anyValTpe = defn.AnyValClass.typeRef
+      val unitTpe = defn.UnitClass.typeRef
+      lazy val arrayOfAnyTpe = defn.ArrayClass.typeRef.appliedTo(defn.AnyClass.typeRef)
+      lazy val newArray = Select(New(TypeIdent(defn.ArrayClass)), defn.ArrayClass.primaryConstructor)
+      lazy val newArrayOfAny = TypeApply(newArray, List(Inferred(defn.AnyClass.typeRef)))
+      lazy val toTupleMethod = Select.unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple")
+
       def fail(msg: String): Nothing = report.errorAndAbort(msg, Position.ofMacroExpansion)
 
       def warn(msg: String): Unit = report.warning(msg, Position.ofMacroExpansion)
@@ -870,8 +886,7 @@ object JsonCodecMaker {
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.toString == $name) }.asExprOf[Option[C]]
 
       def genNewArray[T: Type](size: Expr[Int])(using Quotes): Expr[Array[T]] =
-        Apply(TypeApply(Select(New(TypeIdent(defn.ArrayClass)), defn.ArrayClass.primaryConstructor), List(TypeTree.of[T])),
-          List(size.asTerm)).asExprOf[Array[T]]
+        Apply(TypeApply(newArray, List(TypeTree.of[T])), List(size.asTerm)).asExprOf[Array[T]]
 
       def symbol(name: String, tpe: TypeRepr, flags: Flags = Flags.EmptyFlags): Symbol =
         Symbol.newVal(Symbol.spliceOwner, name, tpe, flags, Symbol.noSymbol)
@@ -985,7 +1000,7 @@ object JsonCodecMaker {
         else {
           val hashCode = (e: JavaEnumValueInfo) => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
           val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
-            val sym = Symbol.newBind(Symbol.spliceOwner, "b" + hash, Flags.EmptyFlags, TypeRepr.of[Int])
+            val sym = Symbol.newBind(Symbol.spliceOwner, "b" + hash, Flags.EmptyFlags, intTpe)
             CaseDef(Bind(sym, Expr(hash).asTerm), None, genReadCollisions(fs).asTerm)
           } :+ CaseDef(Wildcard(), None, unexpectedEnumValueHandler.asTerm)
           Match('{ $in.charBufToHashCode($l) }.asTerm, cases.toList).asExprOf[E]
@@ -1011,16 +1026,17 @@ object JsonCodecMaker {
           if (isGeneric) {
             if (typeArgs.isEmpty) Expr(EmptyTuple).asTerm
             else {
-              val arraySym = symbol("as", TypeRepr.of[Array[Any]])
-              val arrayValDef = ValDef(arraySym, new Some('{ new Array[Any](${Expr(typeArgs.size)}) }.asTerm))
-              val arrayUpdate = Select.unique(Ref(arraySym), "update")
+              val arraySym = symbol("xs", arrayOfAnyTpe)
+              val arrayRef = Ref(arraySym)
+              val arrayValDef = ValDef(arraySym, new Some(Apply(newArrayOfAny, List(Literal(IntConstant(typeArgs.size))))))
               val assignments = args.map {
+                val arrayUpdate = Select(arrayRef, defn.Array_update)
                 var i = -1
                 term =>
                   i += 1
                   Apply(arrayUpdate, List(Literal(IntConstant(i)), term))
               }
-              val block = Block(arrayValDef :: assignments, Ref(arraySym)).asExprOf[Array[Any]]
+              val block = Block(arrayValDef :: assignments, arrayRef).asExprOf[Array[Any]]
               tupleType match
                 case '[tt] => '{ TupleXXL.fromIArray($block.asInstanceOf[IArray[AnyRef]]).asInstanceOf[tt] }.asTerm
             }
@@ -1163,13 +1179,14 @@ object JsonCodecMaker {
       })
 
       def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) && isNonAbstractScalaClass(tpe) &&
-        (tpe <:< TypeRepr.of[AnyVal] || cfg.inlineOneValueClasses && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1)
+        (tpe <:< anyValTpe || cfg.inlineOneValueClasses && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1)
 
       def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = {
         def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
-                                 binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
-          if (fromNudeChildTarg.typeSymbol.isTypeParam) { // TODO: check for paramRef instead ?
-            val paramName = fromNudeChildTarg.typeSymbol.name
+                                 binding: Map[String, TypeRepr]): Map[String, TypeRepr] = {
+          val typeSymbol = fromNudeChildTarg.typeSymbol
+          if (typeSymbol.isTypeParam) { // TODO: check for paramRef instead ?
+            val paramName = typeSymbol.name
             binding.get(paramName) match
               case None => binding.updated(paramName, parentTarg)
               case Some(oldBinding) =>
@@ -1186,6 +1203,7 @@ object JsonCodecMaker {
               case _ => fail(s"Failed unification of type parameters of ${tpe.show} from child $child - " +
                 s"${fromNudeChildTarg.show} and ${parentTarg.show}")
           }
+        }
 
         def resolveParentTypeArgs(child: Symbol, nudeChildParentTags: List[TypeRepr], parentTags: List[TypeRepr],
                                   binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
@@ -1196,7 +1214,7 @@ object JsonCodecMaker {
             if (sym.name == "<local child>") // problem - we have no other way to find this other return the name
               fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a " +
                 "custom implicitly accessible codec")
-            val nudeSubtype = TypeIdent(sym).tpe
+            val nudeSubtype = sym.typeRef
             val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(tpe.typeSymbol))
             nudeSubtype.memberType(sym.primaryConstructor) match
               case MethodType(_, _, _) => nudeSubtype
@@ -1250,22 +1268,22 @@ object JsonCodecMaker {
         val implKeyCodec = findImplicitKeyCodec(types)
         if (implKeyCodec.isDefined) '{ ${implKeyCodec.get}.decodeKey($in) }
         else if (tpe =:= TypeRepr.of[String]) '{ $in.readKeyAsString() }
-        else if (tpe =:= TypeRepr.of[Boolean]) '{ $in.readKeyAsBoolean() }
-        else if (tpe =:= TypeRepr.of[Byte]) '{ $in.readKeyAsByte() }
-        else if (tpe =:= TypeRepr.of[Char]) '{ $in.readKeyAsChar() }
-        else if (tpe =:= TypeRepr.of[Short]) '{ $in.readKeyAsShort() }
-        else if (tpe =:= TypeRepr.of[Int]) '{ $in.readKeyAsInt() }
-        else if (tpe =:= TypeRepr.of[Long]) '{ $in.readKeyAsLong() }
-        else if (tpe =:= TypeRepr.of[Float]) '{ $in.readKeyAsFloat() }
-        else if (tpe =:= TypeRepr.of[Double]) '{ $in.readKeyAsDouble() }
+        else if (tpe =:= booleanTpe) '{ $in.readKeyAsBoolean() }
+        else if (tpe =:= byteTpe) '{ $in.readKeyAsByte() }
+        else if (tpe =:= shortTpe) '{ $in.readKeyAsShort() }
+        else if (tpe =:= intTpe) '{ $in.readKeyAsInt() }
+        else if (tpe =:= longTpe) '{ $in.readKeyAsLong() }
+        else if (tpe =:= floatTpe) '{ $in.readKeyAsFloat() }
+        else if (tpe =:= doubleTpe) '{ $in.readKeyAsDouble() }
+        else if (tpe =:= charTpe) '{ $in.readKeyAsChar() }
         else if (tpe =:= TypeRepr.of[java.lang.Boolean]) '{ java.lang.Boolean.valueOf($in.readKeyAsBoolean()) }
         else if (tpe =:= TypeRepr.of[java.lang.Byte]) '{ java.lang.Byte.valueOf($in.readKeyAsByte()) }
-        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ java.lang.Character.valueOf($in.readKeyAsChar()) }
         else if (tpe =:= TypeRepr.of[java.lang.Short]) '{ java.lang.Short.valueOf($in.readKeyAsShort()) }
         else if (tpe =:= TypeRepr.of[java.lang.Integer]) '{ java.lang.Integer.valueOf($in.readKeyAsInt()) }
         else if (tpe =:= TypeRepr.of[java.lang.Long]) '{ java.lang.Long.valueOf($in.readKeyAsLong()) }
         else if (tpe =:= TypeRepr.of[java.lang.Float]) '{ java.lang.Float.valueOf($in.readKeyAsFloat()) }
         else if (tpe =:= TypeRepr.of[java.lang.Double]) '{ java.lang.Double.valueOf($in.readKeyAsDouble()) }
+        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ java.lang.Character.valueOf($in.readKeyAsChar()) }
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
           vtpe.asType match
@@ -1493,22 +1511,22 @@ object JsonCodecMaker {
         val implKeyCodec = findImplicitKeyCodec(types)
         if (implKeyCodec.isDefined) '{ ${implKeyCodec.get.asExprOf[JsonKeyCodec[T]]}.encodeKey($x, $out) }
         else if (tpe =:= TypeRepr.of[String]) '{ $out.writeKey(${x.asExprOf[String]}) }
-        else if (tpe =:= TypeRepr.of[Boolean]) '{ $out.writeKey(${x.asExprOf[Boolean]}) }
+        else if (tpe =:= booleanTpe) '{ $out.writeKey(${x.asExprOf[Boolean]}) }
+        else if (tpe =:= byteTpe) '{ $out.writeKey(${x.asExprOf[Byte]}) }
+        else if (tpe =:= shortTpe) '{ $out.writeKey(${x.asExprOf[Short]}) }
+        else if (tpe =:= intTpe) '{ $out.writeKey(${x.asExprOf[Int]}) }
+        else if (tpe =:= longTpe) '{ $out.writeKey(${x.asExprOf[Long]}) }
+        else if (tpe =:= floatTpe) '{ $out.writeKey(${x.asExprOf[Float]}) }
+        else if (tpe =:= doubleTpe) '{ $out.writeKey(${x.asExprOf[Double]}) }
+        else if (tpe =:= charTpe) '{ $out.writeKey(${x.asExprOf[Char]}) }
         else if (tpe =:= TypeRepr.of[java.lang.Boolean]) '{ $out.writeKey(${x.asExprOf[java.lang.Boolean]}) }
-        else if (tpe =:= TypeRepr.of[Byte]) '{ $out.writeKey(${x.asExprOf[Byte]}) }
         else if (tpe =:= TypeRepr.of[java.lang.Byte]) '{ $out.writeKey(${x.asExprOf[java.lang.Byte]}) }
-        else if (tpe =:= TypeRepr.of[Char]) '{ $out.writeKey(${x.asExprOf[Char]}) }
-        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ $out.writeKey(${x.asExprOf[java.lang.Character]}) }
-        else if (tpe =:= TypeRepr.of[Short]) '{ $out.writeKey(${x.asExprOf[Short]}) }
         else if (tpe =:= TypeRepr.of[java.lang.Short]) '{ $out.writeKey(${x.asExprOf[java.lang.Short]}) }
-        else if (tpe =:= TypeRepr.of[Int]) '{ $out.writeKey(${x.asExprOf[Int]}) }
-        else if (tpe =:= TypeRepr.of[Integer]) '{ $out.writeKey(${x.asExprOf[java.lang.Integer]}) }
-        else if (tpe =:= TypeRepr.of[Long]) '{ $out.writeKey(${x.asExprOf[Long]}) }
+        else if (tpe =:= TypeRepr.of[java.lang.Integer]) '{ $out.writeKey(${x.asExprOf[java.lang.Integer]}) }
         else if (tpe =:= TypeRepr.of[java.lang.Long]) '{ $out.writeKey(${x.asExprOf[java.lang.Long]}) }
-        else if (tpe =:= TypeRepr.of[Float]) '{ $out.writeKey(${x.asExprOf[Float]}) }
         else if (tpe =:= TypeRepr.of[java.lang.Float]) '{ $out.writeKey(${x.asExprOf[java.lang.Float]}) }
-        else if (tpe =:= TypeRepr.of[Double]) '{ $out.writeKey(${x.asExprOf[Double]}) }
         else if (tpe =:= TypeRepr.of[java.lang.Double]) '{ $out.writeKey(${x.asExprOf[java.lang.Double]}) }
+        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ $out.writeKey(${x.asExprOf[java.lang.Character]}) }
         else if (tpe =:= TypeRepr.of[BigInt]) '{ $out.writeKey(${x.asExprOf[BigInt]}) }
         else if (tpe =:= TypeRepr.of[BigDecimal]) '{ $out.writeKey(${x.asExprOf[BigDecimal]}) }
         else if (tpe =:= TypeRepr.of[java.util.UUID]) '{ $out.writeKey(${x.asExprOf[java.util.UUID]}) }
@@ -1681,7 +1699,7 @@ object JsonCodecMaker {
       def withFieldsByIndexFor(tpe: TypeRepr)(f: => List[String]): Term =
         Ref(fieldIndexAccessors.getOrElseUpdate(tpe, { // [Int => String], we don't want eta-expand without reason, so let this will be just index
           val sym = Symbol.newMethod(Symbol.spliceOwner, "f" + fieldIndexAccessors.size,
-            MethodType(List("i"))(_ => List(TypeRepr.of[Int]), _ => TypeRepr.of[String]))
+            MethodType(List("i"))(_ => List(intTpe), _ => TypeRepr.of[String]))
           DefDef(sym, params => {
             val List(List(param)) = params
             val cases = f.map {
@@ -1700,7 +1718,7 @@ object JsonCodecMaker {
                                 (f: (Expr[T], Expr[T]) => Expr[Boolean]): Expr[Boolean] =
         Apply(Ref(equalsMethods.getOrElseUpdate(tpe, {
           val sym = Symbol.newMethod(Symbol.spliceOwner, "q" + equalsMethods.size,
-            MethodType(List("x1", "x2"))(_ => List(tpe, tpe), _ => TypeRepr.of[Boolean]))
+            MethodType(List("x1", "x2"))(_ => List(tpe, tpe), _ => booleanTpe))
           DefDef(sym, params => {
             val List(List(x1, x2)) = params
             new Some(f(x1.asExprOf[T], x2.asExprOf[T]).asTerm.changeOwner(sym))
@@ -1748,7 +1766,7 @@ object JsonCodecMaker {
                 })
               }
         } else if (isIArray(tpe)) {
-          if (tpe1 =:= TypeRepr.of[AnyRef]) {
+          if (tpe1 =:= anyRefTpe) {
             '{ IArray.equals(${x1t.asExprOf[IArray[AnyRef]]}, ${x2t.asExprOf[IArray[AnyRef]]}) }
           } else {
             tpe1.asType match
@@ -1767,23 +1785,23 @@ object JsonCodecMaker {
                   })
                 }
           }
-        } else if (tpe1 =:= TypeRepr.of[Boolean]) {
+        } else if (tpe1 =:= booleanTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Boolean]]}, ${x2t.asExprOf[Array[Boolean]]}) }
-        } else if (tpe1 =:= TypeRepr.of[Byte]) {
+        } else if (tpe1 =:= byteTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Byte]]}, ${x2t.asExprOf[Array[Byte]]}) }
-        } else if (tpe1 =:= TypeRepr.of[Short]) {
+        } else if (tpe1 =:= shortTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Short]]}, ${x2t.asExprOf[Array[Short]]}) }
-        } else if (tpe1 =:= TypeRepr.of[Int]) {
+        } else if (tpe1 =:= intTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Int]]}, ${x2t.asExprOf[Array[Int]]}) }
-        } else if (tpe1 =:= TypeRepr.of[Long]) {
+        } else if (tpe1 =:= longTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Long]]}, ${x2t.asExprOf[Array[Long]]}) }
-        } else if (tpe1 =:= TypeRepr.of[Float]) {
+        } else if (tpe1 =:= floatTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Float]]}, ${x2t.asExprOf[Array[Float]]}) }
-        } else if (tpe1 =:= TypeRepr.of[Double]) {
+        } else if (tpe1 =:= doubleTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Double]]}, ${x2t.asExprOf[Array[Double]]}) }
-        } else if (tpe1 =:= TypeRepr.of[Char]) {
+        } else if (tpe1 =:= charTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Char]]}, ${x2t.asExprOf[Array[Char]]}) }
-        } else if (tpe1 <:< TypeRepr.of[AnyRef]) {
+        } else if (tpe1 <:< anyRefTpe) {
           '{ java.util.Arrays.equals(${x1t.asExprOf[Array[AnyRef]]}, ${x2t.asExprOf[Array[AnyRef]]}) }
         } else fail(s"Can't compare arrays of type ${tpe1.show}")
 
@@ -1821,7 +1839,7 @@ object JsonCodecMaker {
                                  (f: (Expr[JsonWriter], Expr[T]) => Expr[Unit]): Expr[Unit] =
         Apply(Ref(encodeMethodSyms.getOrElse(methodKey, {
           val sym = Symbol.newMethod(Symbol.spliceOwner, "e" + encodeMethodSyms.size,
-            MethodType(List("x", "out"))(_ => List(TypeRepr.of[T], TypeRepr.of[JsonWriter]), _ => TypeRepr.of[Unit]))
+            MethodType(List("x", "out"))(_ => List(TypeRepr.of[T], TypeRepr.of[JsonWriter]), _ => unitTpe))
           encodeMethodSyms.update(methodKey, sym)
           encodeMethodDefs.addOne(DefDef(sym, params => {
             val List(List(x, out)) = params
@@ -1835,22 +1853,22 @@ object JsonCodecMaker {
         val implValueCodec = findImplicitValueCodec(types)
         if (implValueCodec.isDefined) '{ ${implValueCodec.get}.nullValue }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[String]) '{ (null: String) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Boolean]) Literal(BooleanConstant(false)).asExprOf[T]
+        else if (tpe =:= booleanTpe) Literal(BooleanConstant(false)).asExprOf[T]
+        else if (tpe =:= byteTpe) Literal(ByteConstant(0)).asExprOf[T]
+        else if (tpe =:= shortTpe) Literal(ShortConstant(0)).asExprOf[T]
+        else if (tpe =:= intTpe) Literal(IntConstant(0)).asExprOf[T]
+        else if (tpe =:= longTpe) Literal(LongConstant(0)).asExprOf[T]
+        else if (tpe =:= floatTpe) Literal(FloatConstant(0f)).asExprOf[T]
+        else if (tpe =:= doubleTpe) Literal(DoubleConstant(0d)).asExprOf[T]
+        else if (tpe =:= charTpe) '{ '\u0000' }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[java.lang.Boolean]) '{ java.lang.Boolean.valueOf(false) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Byte]) Literal(ByteConstant(0)).asExprOf[T]
         else if (tpe =:= TypeRepr.of[java.lang.Byte]) '{ java.lang.Byte.valueOf(0: Byte) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Char]) '{ '\u0000' }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ java.lang.Character.valueOf('\u0000') }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Short]) Literal(ShortConstant(0)).asExprOf[T]
         else if (tpe =:= TypeRepr.of[java.lang.Short]) '{ java.lang.Short.valueOf(0: Short) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Int]) Literal(IntConstant(0)).asExprOf[T]
         else if (tpe =:= TypeRepr.of[java.lang.Integer]) '{ java.lang.Integer.valueOf(0) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Long]) Literal(LongConstant(0)).asExprOf[T]
         else if (tpe =:= TypeRepr.of[java.lang.Long]) '{ java.lang.Long.valueOf(0L) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Float]) Literal(FloatConstant(0f)).asExprOf[T]
         else if (tpe =:= TypeRepr.of[java.lang.Float]) '{ java.lang.Float.valueOf(0f) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Double]) Literal(DoubleConstant(0d)).asExprOf[T]
         else if (tpe =:= TypeRepr.of[java.lang.Double]) '{ java.lang.Double.valueOf(0d) }.asExprOf[T]
+        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ java.lang.Character.valueOf('\u0000') }.asExprOf[T]
         else if (isOption(tpe, types.tail)) '{ None }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty }.asExprOf[T])
@@ -1978,12 +1996,10 @@ object JsonCodecMaker {
                 val r = ${genReadSubclassesBlock(objClasses, 'l)}
                 if ($in.isNextToken('}')) r
                 else $in.objectEndOrCommaError()
-              } else {
-                val m =
-                  if ($default == null) "expected '\"' or '{'"
-                  else "expected '\"' or '{' or null"
-                $in.readNullOrError($default, m)
-              }
+              } else $in.readNullOrError($default, {
+                if ($default == null) "expected '\"' or '{'"
+                else "expected '\"' or '{' or null"
+              })
             }
             case Some(discrFieldName) =>
               if (cfg.requireDiscriminatorFirst) '{
@@ -2047,7 +2063,7 @@ object JsonCodecMaker {
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVars =
           if (required.isEmpty && !cfg.checkFieldDuplication) Nil
-          else (0 to lastParamVarIndex).map(i => ValDef(symbol("p" + i, TypeRepr.of[Int], Flags.Mutable), new Some(Literal(IntConstant {
+          else (0 to lastParamVarIndex).map(i => ValDef(symbol("p" + i, intTpe, Flags.Mutable), new Some(Literal(IntConstant {
             if (i == lastParamVarIndex) lastParamVarBits
             else -1
           }))))
@@ -2143,7 +2159,7 @@ object JsonCodecMaker {
           if (useDiscriminator) {
             cfg.discriminatorFieldName.map { _ =>
               if (cfg.checkFieldDuplication) {
-                val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
+                val sym = symbol("pd", booleanTpe, Flags.Mutable)
                 ReadDiscriminator(new Some(ValDef(sym, new Some(Literal(BooleanConstant(true))))))
               } else ReadDiscriminator(None)
             }
@@ -2226,25 +2242,16 @@ object JsonCodecMaker {
           '{ $x.addOne(${genReadVal(types, genNullValue[V](types), isStringified, false, in)}) }
 
       def genArraysCopyOf[T: Type](tpe: TypeRepr, x: Expr[Array[T]], newLen: Expr[Int])(using Quotes): Expr[Array[T]] = {
-        if (tpe =:= TypeRepr.of[Boolean]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Boolean]]}, $newLen) }
-        } else if (tpe =:= TypeRepr.of[Byte]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Byte]]}, $newLen) }
-        } else if (tpe =:= TypeRepr.of[Short]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Short]]}, $newLen) }
-        } else if (tpe =:= TypeRepr.of[Int]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Int]]}, $newLen) }
-        } else if (tpe =:= TypeRepr.of[Long]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Long]]}, $newLen) }
-        } else if (tpe =:= TypeRepr.of[Char]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Char]]}, $newLen) }
-        } else if (tpe =:= TypeRepr.of[Float]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Float]]}, $newLen) }
-        } else if (tpe =:= TypeRepr.of[Double]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Double]]}, $newLen) }
-        } else if (tpe <:< TypeRepr.of[AnyRef]) {
-          '{ java.util.Arrays.copyOf(${x.asExprOf[Array[AnyRef & T]]}, $newLen) }
-        } else fail(s"Can't find Arrays.copyOf for ${tpe.show}")
+        if (tpe =:= booleanTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Boolean]]}, $newLen) }
+        else if (tpe =:= byteTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Byte]]}, $newLen) }
+        else if (tpe =:= shortTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Short]]}, $newLen) }
+        else if (tpe =:= intTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Int]]}, $newLen) }
+        else if (tpe =:= longTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Long]]}, $newLen) }
+        else if (tpe =:= floatTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Float]]}, $newLen) }
+        else if (tpe =:= doubleTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Double]]}, $newLen) }
+        else if (tpe =:= charTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[Char]]}, $newLen) }
+        else if (tpe <:< anyRefTpe) '{ java.util.Arrays.copyOf(${x.asExprOf[Array[AnyRef & T]]}, $newLen) }
+        else fail(s"Can't find Arrays.copyOf for ${tpe.show}")
       }.asExprOf[Array[T]]
 
       def genReadVal[T: Type](types: List[TypeRepr], default: Expr[T], isStringified: Boolean,
@@ -2255,51 +2262,51 @@ object JsonCodecMaker {
         val implValueCodec = findImplicitValueCodec(types)
         if (implValueCodec.isDefined) '{ ${implValueCodec.get.asExprOf[JsonValueCodec[T]]}.decodeValue($in, $default) }
         else if (tpe =:= TypeRepr.of[String]) '{ $in.readString(${default.asExprOf[String]}) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Boolean]) {
+        else if (tpe =:= booleanTpe) {
           if (isStringified) '{ $in.readStringAsBoolean() }.asExprOf[T]
           else '{ $in.readBoolean() }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[java.lang.Boolean]) {
-          if (isStringified) '{ java.lang.Boolean.valueOf($in.readStringAsBoolean()) }.asExprOf[T]
-          else '{ java.lang.Boolean.valueOf($in.readBoolean()) }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[Byte]) {
+        } else if (tpe =:= byteTpe) {
           if (isStringified) '{ $in.readStringAsByte() }.asExprOf[T]
           else '{ $in.readByte() }.asExprOf[T]
+        } else if (tpe =:= shortTpe) {
+          if (isStringified) '{ $in.readStringAsShort() }.asExprOf[T]
+          else '{ $in.readShort() }.asExprOf[T]
+        } else if (tpe =:= intTpe) {
+          if (isStringified) '{ $in.readStringAsInt() }.asExprOf[T]
+          else '{ $in.readInt() }.asExprOf[T]
+        } else if (tpe =:= longTpe) {
+          if (isStringified) '{ $in.readStringAsLong() }.asExprOf[T]
+          else '{ $in.readLong() }.asExprOf[T]
+        } else if (tpe =:= floatTpe) {
+          if (isStringified) '{ $in.readStringAsFloat() }.asExprOf[T]
+          else '{ $in.readFloat() }.asExprOf[T]
+        } else if (tpe =:= doubleTpe) {
+          if (isStringified) '{ $in.readStringAsDouble() }.asExprOf[T]
+          else '{ $in.readDouble() }.asExprOf[T]
+        } else if (tpe =:= charTpe) '{ $in.readChar() }.asExprOf[T]
+        else if (tpe =:= TypeRepr.of[java.lang.Boolean]) {
+          if (isStringified) '{ java.lang.Boolean.valueOf($in.readStringAsBoolean()) }.asExprOf[T]
+          else '{ java.lang.Boolean.valueOf($in.readBoolean()) }.asExprOf[T]
         } else if (tpe =:= TypeRepr.of[java.lang.Byte]) {
           if (isStringified) '{ java.lang.Byte.valueOf($in.readStringAsByte()) }.asExprOf[T]
           else '{ java.lang.Byte.valueOf($in.readByte()) }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[Char]) '{ $in.readChar() }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ java.lang.Character.valueOf($in.readChar()) }.asExprOf[T]
-        else if (tpe =:= TypeRepr.of[Short]) {
-          if (isStringified) '{ $in.readStringAsShort() }.asExprOf[T]
-          else '{ $in.readShort() }.asExprOf[T]
         } else if (tpe =:= TypeRepr.of[java.lang.Short]) {
           if (isStringified) '{ java.lang.Short.valueOf($in.readStringAsShort()) }.asExprOf[T]
           else '{ java.lang.Short.valueOf($in.readShort()) }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[Int]) {
-          if (isStringified) '{ $in.readStringAsInt() }.asExprOf[T]
-          else '{ $in.readInt() }.asExprOf[T]
         } else if (tpe =:= TypeRepr.of[java.lang.Integer]) {
           if (isStringified) '{ java.lang.Integer.valueOf($in.readStringAsInt()) }.asExprOf[T]
           else '{ java.lang.Integer.valueOf($in.readInt()) }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[Long]) {
-          if (isStringified) '{ $in.readStringAsLong() }.asExprOf[T]
-          else '{ $in.readLong() }.asExprOf[T]
         } else if (tpe =:= TypeRepr.of[java.lang.Long]) {
           if (isStringified) '{ java.lang.Long.valueOf($in.readStringAsLong()) }.asExprOf[T]
           else '{ java.lang.Long.valueOf($in.readLong()) }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[Float]) {
-          if (isStringified) '{ $in.readStringAsFloat() }.asExprOf[T]
-          else '{ $in.readFloat() }.asExprOf[T]
         } else if (tpe =:= TypeRepr.of[java.lang.Float]) {
           if (isStringified) '{ java.lang.Float.valueOf($in.readStringAsFloat()) }.asExprOf[T]
           else '{ java.lang.Float.valueOf($in.readFloat()) }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[Double]) {
-          if (isStringified) '{ $in.readStringAsDouble() }.asExprOf[T]
-          else '{ $in.readDouble() }.asExprOf[T]
         } else if (tpe =:= TypeRepr.of[java.lang.Double]) {
           if (isStringified) '{ java.lang.Double.valueOf($in.readStringAsDouble()) }.asExprOf[T]
           else '{ java.lang.Double.valueOf($in.readDouble()) }.asExprOf[T]
-        } else if (tpe =:= TypeRepr.of[java.util.UUID]) '{ $in.readUUID(${default.asExprOf[java.util.UUID]}) }.asExprOf[T]
+        } else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ java.lang.Character.valueOf($in.readChar()) }.asExprOf[T]
+        else if (tpe =:= TypeRepr.of[java.util.UUID]) '{ $in.readUUID(${default.asExprOf[java.util.UUID]}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Duration]) '{ $in.readDuration(${default.asExprOf[Duration]}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Instant]) '{ $in.readInstant(${default.asExprOf[Instant]}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[LocalDate]) '{ $in.readLocalDate(${default.asExprOf[LocalDate]}) }.asExprOf[T]
@@ -2716,16 +2723,17 @@ object JsonCodecMaker {
               val size = indexedTypes.size
               if (size == 0) Expr(EmptyTuple)
               else if (size > 22) {
-                val arraySym = symbol("xs", TypeRepr.of[Array[Any]])
-                val arrayValDef = ValDef(arraySym, new Some('{ new Array[Any](${Expr(size)}) }.asTerm))
-                val arrayUpdate = Select.unique(Ref(arraySym), "update")
+                val arraySym = symbol("xs", arrayOfAnyTpe)
+                val arrayRef = Ref(arraySym)
+                val arrayValDef = ValDef(arraySym, new Some(Apply(newArrayOfAny, List(Literal(IntConstant(size))))))
                 val assignments = valDefs.map {
+                  val arrayUpdate = Select(arrayRef, defn.Array_update)
                   var i = - 1
                   valDef =>
                     i += 1
                     Apply(arrayUpdate, List(Literal(IntConstant(i)), Ref(valDef.symbol)))
                 }
-                val block = Block(arrayValDef :: assignments, Ref(arraySym)).asExprOf[Array[Any]]
+                val block = Block(arrayValDef :: assignments, arrayRef).asExprOf[Array[Any]]
                 '{ TupleXXL.fromIArray($block.asInstanceOf[IArray[AnyRef]]).asInstanceOf[T] }
               } else {
                 val constructorNoTypes = Select(New(Inferred(tTpe)), tTpe.typeSymbol.primaryConstructor)
@@ -2767,17 +2775,15 @@ object JsonCodecMaker {
           typeInfo match
             case namedTupleInfo: NamedTupleInfo =>
               val sym = symbol("t", namedTupleInfo.tupleTpe)
-              val toTupleMethod = TypeApply(Select.unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple"),
-                tpe.typeArgs.map(Inferred(_)))
-              val valDef = ValDef(sym, new Some(Apply(toTupleMethod, List(x.asTerm))))
+              val valDef = ValDef(sym, new Some(Apply(TypeApply(toTupleMethod, tpe.typeArgs.map(Inferred(_))), List(x.asTerm))))
               (List(valDef), Ref(sym))
             case _ => (Nil, x.asTerm)
-        val writeFields = typeInfo.fields.map { fieldInfo =>
+        var writeFields = typeInfo.fields.map { fieldInfo =>
           val fDefault =
             if (cfg.transientDefault) fieldInfo.defaultValue
             else None
           val fTpe = fieldInfo.resolvedTpe
-          fTpe.asType match {
+          (fTpe.asType match {
             case '[ft] =>
               val getter = typeInfo match
                 case namedTupleInfo: NamedTupleInfo =>
@@ -2907,13 +2913,12 @@ object JsonCodecMaker {
                     ${genWriteVal(getter.asExprOf[ft], fTpe :: types, fieldInfo.isStringified, None, out)}
                   }
               }
-          }
+          }).asTerm
         }
-        val allWriteFields = optDiscriminator.fold(writeFields)(_.write(out) :: writeFields)
-        Block(valDefs,
-          Block('{ $out.writeObjectStart() }.asTerm :: allWriteFields.map(_.asTerm),
-            '{ $out.writeObjectEnd() }.asTerm).changeOwner(Symbol.spliceOwner)
-        ).asExprOf[Unit]
+        if (optDiscriminator.isDefined) writeFields = optDiscriminator.get.write(out).asTerm :: writeFields
+        val block = Block('{ $out.writeObjectStart() }.asTerm :: writeFields, '{ $out.writeObjectEnd() }.asTerm)
+        (if (valDefs.isEmpty) block
+        else Block(valDefs, block.changeOwner(Symbol.spliceOwner))).asExprOf[Unit]
 
       def getWriteConstType(tpe: TypeRepr, isStringified: Boolean, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         tpe match
@@ -2952,45 +2957,46 @@ object JsonCodecMaker {
         val implValueCodec = findImplicitValueCodec(types)
         if (implValueCodec.isDefined) '{ ${implValueCodec.get.asExprOf[JsonValueCodec[T]]}.encodeValue($m, $out) }
         else if (tpe =:= TypeRepr.of[String]) '{ $out.writeVal(${m.asExprOf[String]}) }
-        else if (tpe =:= TypeRepr.of[Boolean]) {
+        else if (tpe =:= booleanTpe) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Boolean]}) }
           else '{ $out.writeVal(${m.asExprOf[Boolean]}) }
-        } else if (tpe =:= TypeRepr.of[java.lang.Boolean]) {
-          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Boolean]}) }
-          else '{ $out.writeVal(${m.asExprOf[java.lang.Boolean]}) }
-        } else if (tpe =:= TypeRepr.of[Byte]) {
+        } else if (tpe =:= byteTpe) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Byte]}) }
           else '{ $out.writeVal(${m.asExprOf[Byte]}) }
+        } else if (tpe =:= shortTpe) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Short]}) }
+          else '{ $out.writeVal(${m.asExprOf[Short]}) }
+        } else if (tpe =:= intTpe) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Int]}) }
+          else '{ $out.writeVal(${m.asExprOf[Int]}) }
+        } else if (tpe =:= longTpe) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Long]}) }
+          else '{ $out.writeVal(${m.asExprOf[Long]}) }
+        } else if (tpe =:= floatTpe) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Float]}) }
+          else '{ $out.writeVal(${m.asExprOf[Float]}) }
+        } else if (tpe =:= doubleTpe) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Double]}) }
+          else '{ $out.writeVal(${m.asExprOf[Double]}) }
+        } else if (tpe =:= charTpe) '{ $out.writeVal(${m.asExprOf[Char]}) }
+        else if (tpe =:= TypeRepr.of[java.lang.Boolean]) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Boolean]}) }
+          else '{ $out.writeVal(${m.asExprOf[java.lang.Boolean]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Byte]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Byte]}) }
           else '{ $out.writeVal(${m.asExprOf[java.lang.Byte]}) }
-        } else if (tpe =:= TypeRepr.of[Short]) {
-          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Short]}) }
-          else '{ $out.writeVal(${m.asExprOf[Short]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Short]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Short]}) }
           else '{ $out.writeVal(${m.asExprOf[java.lang.Short]}) }
-        } else if (tpe =:= TypeRepr.of[Int]) {
-          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Int]}) }
-          else '{ $out.writeVal(${m.asExprOf[Int]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Integer]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Integer]}) }
           else '{ $out.writeVal(${m.asExprOf[java.lang.Integer]}) }
-        } else if (tpe =:= TypeRepr.of[Long]) {
-          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Long]}) }
-          else '{ $out.writeVal(${m.asExprOf[Long]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Long]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Long]}) }
           else '{ $out.writeVal(${m.asExprOf[java.lang.Long]}) }
-        } else if (tpe =:= TypeRepr.of[Float]) {
-          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Float]}) }
-          else '{ $out.writeVal(${m.asExprOf[Float]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Float]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Float]}) }
           else '{ $out.writeVal(${m.asExprOf[java.lang.Float]}) }
-        } else if (tpe =:= TypeRepr.of[Double]) {
-          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Double]}) }
-          else '{ $out.writeVal(${m.asExprOf[Double]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Double]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Double]}) }
           else '{ $out.writeVal(${m.asExprOf[java.lang.Double]}) }
@@ -3000,8 +3006,7 @@ object JsonCodecMaker {
         } else if (tpe =:= TypeRepr.of[BigDecimal]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[BigDecimal]}) }
           else '{ $out.writeVal(${m.asExprOf[BigDecimal]}) }
-        } else if (tpe =:= TypeRepr.of[Char]) '{ $out.writeVal(${m.asExprOf[Char]}) }
-        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ $out.writeVal(${m.asExprOf[java.lang.Character]}) }
+        } else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ $out.writeVal(${m.asExprOf[java.lang.Character]}) }
         else if (tpe =:= TypeRepr.of[java.util.UUID]) '{ $out.writeVal(${m.asExprOf[java.util.UUID]}) }
         else if (tpe =:= TypeRepr.of[Duration]) '{ $out.writeVal(${m.asExprOf[Duration]}) }
         else if (tpe =:= TypeRepr.of[Instant]) '{ $out.writeVal(${m.asExprOf[Instant]}) }
