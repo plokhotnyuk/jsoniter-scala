@@ -444,6 +444,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         Map(_root_.java.lang.Float.valueOf(1.0f) -> _root_.java.lang.Float.valueOf(11.0f),
           _root_.java.lang.Float.valueOf(2.0f) -> _root_.java.lang.Float.valueOf(12.0f)),
         """{"1.0":11.0,"2.0":12.0}""")
+      verifySerDeser(make[Map[_root_.java.lang.Character, _root_.java.lang.Character]],
+        Map(_root_.java.lang.Character.valueOf('a') -> _root_.java.lang.Character.valueOf('1'),
+          _root_.java.lang.Character.valueOf('2') -> _root_.java.lang.Character.valueOf('b')),
+        """{"a":"1","2":"b"}""")
     }
     "serialize and deserialize case classes with standard types" in {
       val text = "text" * 100000
@@ -1402,6 +1406,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize arrays of value classes" in {
       verifySerDeser(make[Array[UserId]], _root_.scala.Array(UserId("123abc"), UserId("123def")), """["123abc","123def"]""")
       verifySerDeser(make[Array[OrderId]], _root_.scala.Array(OrderId(123123), OrderId(123456)), "[123123,123456]")
+    }
+    "serialize and deserialize maps with value class keys" in {
+      verifySerDeser(make[Map[OrderId, UserId]], Map(OrderId(123123) -> UserId("123abc")), """{"123123":"123abc"}""")
+      verifySerDeser(make[Map[UserId, OrderId]], Map(UserId("123abc") -> OrderId(123123)), """{"123abc":123123}""")
     }
     "serialize and deserialize stringified top-level value classes" in {
       verifySerDeser(make[OrderId](CodecMakerConfig.withIsStringified(true)), OrderId(123123), """"123123"""")

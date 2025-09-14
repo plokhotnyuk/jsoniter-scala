@@ -987,7 +987,6 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"in.readKeyAsLong()"
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readKeyAsFloat()"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readKeyAsDouble()"
-        else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe) :: types)})"
         else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt(${cfg.bigIntDigitsLimit})"
         else if (tpe =:= typeOf[BigDecimal]) {
           val mc = withMathContextFor(cfg.bigDecimalPrecision)
@@ -1007,6 +1006,7 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZonedDateTime]) q"in.readKeyAsZonedDateTime()"
         else if (tpe =:= typeOf[ZoneId]) q"in.readKeyAsZoneId()"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
+        else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe) :: types)})"
         else if (tpe <:< typeOf[Enumeration#Value]) {
           val ec = withScalaEnumCacheFor(tpe)
           if (cfg.useScalaEnumValueId) {
@@ -1420,6 +1420,7 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
         else if (isOption(tpe, types.tail)) q"_root_.scala.None"
+        else if (isValueClass(tpe)) q"new $tpe(${genNullValue(valueClassValueType(tpe) :: types)})"
         else if (tpe <:< typeOf[mutable.BitSet]) q"new _root_.scala.collection.mutable.BitSet"
         else if (tpe <:< typeOf[collection.BitSet]) withNullValueFor(tpe)(q"_root_.scala.collection.immutable.BitSet.empty")
         else if (tpe <:< typeOf[mutable.LongMap[?]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
@@ -1452,7 +1453,6 @@ object JsonCodecMaker {
             case _ => cannotFindValueCodecError(tpe)
           }
         } else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
-        else if (isValueClass(tpe)) q"new $tpe(${genNullValue(valueClassValueType(tpe) :: types)})"
         else if (tpe <:< typeOf[AnyRef]) q"null"
         else q"null.asInstanceOf[$tpe]"
       }
@@ -1638,6 +1638,16 @@ object JsonCodecMaker {
         } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
           if (isStringified) q"in.readStringAsDouble()"
           else q"in.readDouble()"
+        } else if (tpe =:= typeOf[BigInt]) {
+          if (isStringified) q"in.readStringAsBigInt($default, ${cfg.bigIntDigitsLimit})"
+          else q"in.readBigInt($default, ${cfg.bigIntDigitsLimit})"
+        } else if (tpe =:= typeOf[BigDecimal]) {
+          val mc = withMathContextFor(cfg.bigDecimalPrecision)
+          if (isStringified) {
+            q"in.readStringAsBigDecimal($default, $mc, ${cfg.bigDecimalScaleLimit}, ${cfg.bigDecimalDigitsLimit})"
+          } else {
+            q"in.readBigDecimal($default, $mc, ${cfg.bigDecimalScaleLimit}, ${cfg.bigDecimalDigitsLimit})"
+          }
         } else if (tpe =:= typeOf[java.util.UUID]) q"in.readUUID($default)"
         else if (tpe =:= typeOf[Duration]) q"in.readDuration($default)"
         else if (tpe =:= typeOf[Instant]) q"in.readInstant($default)"
@@ -1653,17 +1663,7 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZonedDateTime]) q"in.readZonedDateTime($default)"
         else if (tpe =:= typeOf[ZoneId]) q"in.readZoneId($default)"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readZoneOffset($default)"
-        else if (tpe =:= typeOf[BigInt]) {
-          if (isStringified) q"in.readStringAsBigInt($default, ${cfg.bigIntDigitsLimit})"
-          else q"in.readBigInt($default, ${cfg.bigIntDigitsLimit})"
-        } else if (tpe =:= typeOf[BigDecimal]) {
-          val mc = withMathContextFor(cfg.bigDecimalPrecision)
-          if (isStringified) {
-            q"in.readStringAsBigDecimal($default, $mc, ${cfg.bigDecimalScaleLimit}, ${cfg.bigDecimalDigitsLimit})"
-          } else {
-            q"in.readBigDecimal($default, $mc, ${cfg.bigDecimalScaleLimit}, ${cfg.bigDecimalDigitsLimit})"
-          }
-        } else if (isValueClass(tpe)) {
+        else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})"
         } else if (isOption(tpe, types.tail)) {
