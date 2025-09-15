@@ -14,7 +14,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.quoted._
 import scala.reflect.ClassTag
-import scala.runtime.TupleXXL
 
 @field
 final class named(val name: String) extends StaticAnnotation
@@ -767,10 +766,14 @@ object JsonCodecMaker {
       val anyRefTpe = defn.AnyRefClass.typeRef
       val anyValTpe = defn.AnyValClass.typeRef
       val unitTpe = defn.UnitClass.typeRef
-      lazy val arrayOfAnyTpe = defn.ArrayClass.typeRef.appliedTo(defn.AnyClass.typeRef)
+      lazy val anyTpe = defn.AnyClass.typeRef
+      lazy val arrayOfAnyTpe = defn.ArrayClass.typeRef.appliedTo(anyTpe)
+      lazy val iArrayOfAnyRefTpe = TypeRepr.of[IArray[AnyRef]]
       lazy val newArray = Select(New(TypeIdent(defn.ArrayClass)), defn.ArrayClass.primaryConstructor)
-      lazy val newArrayOfAny = TypeApply(newArray, List(Inferred(defn.AnyClass.typeRef)))
+      lazy val newArrayOfAny = TypeApply(newArray, List(Inferred(anyTpe)))
       lazy val toTupleMethod = Select.unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple")
+      lazy val fromIArrayMethod = Select.unique(Ref(Symbol.requiredModule("scala.runtime.TupleXXL")), "fromIArray")
+      lazy val asInstanceOfMethod = anyTpe.typeSymbol.methodMember("asInstanceOf").head
 
       def fail(msg: String): Nothing = report.errorAndAbort(msg, Position.ofMacroExpansion)
 
@@ -818,7 +821,7 @@ object JsonCodecMaker {
 
       def isNonAbstractScalaClass(tpe: TypeRepr): Boolean = tpe.classSymbol.fold(false) { sym =>
         val flags = sym.flags
-        !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && !flags.is(Flags.Trait)
+        !(flags.is(Flags.Abstract) || flags.is(Flags.JavaDefined) || flags.is(Flags.Trait))
       }
 
       def isOpaque(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Opaque)
@@ -860,7 +863,8 @@ object JsonCodecMaker {
       def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[?]]
 
       def scalaCollectionCompanion(tpe: TypeRepr): Term =
-        if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ref(tpe.typeSymbol.companionModule)
+        val typeSymbol = tpe.typeSymbol
+        if (typeSymbol.fullName.startsWith("scala.collection.")) Ref(typeSymbol.companionModule)
         else fail(s"Unsupported type '${tpe.show}'. Please consider using a custom implicitly accessible codec for it.")
 
       def scalaCollectionBuilder(tpe: TypeRepr, eTpe: TypeRepr): Term =
@@ -873,7 +877,7 @@ object JsonCodecMaker {
         TypeApply(Select.unique(scalaCollectionCompanion(cTpe), "empty"), List(Inferred(kTpe), Inferred(vTpe)))
 
       def scala2EnumerationObject(tpe: TypeRepr): Expr[Enumeration] = tpe match
-        case TypeRef(ct, _) => Ref(ct.termSymbol).asExpr.asInstanceOf[Expr[Enumeration]]
+        case TypeRef(eTpe, _) => Ref(eTpe.termSymbol).asExpr.asInstanceOf[Expr[Enumeration]]
 
       def findScala2EnumerationById[C <: AnyRef: Type](tpe: TypeRepr, i: Expr[Int])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.id == $i) }.asInstanceOf[Expr[Option[C]]]
@@ -886,10 +890,6 @@ object JsonCodecMaker {
 
       def symbol(name: String, tpe: TypeRepr, flags: Flags = Flags.EmptyFlags): Symbol =
         Symbol.newVal(Symbol.spliceOwner, name, tpe, flags, Symbol.noSymbol)
-
-      def summon(tpe: TypeRepr): Option[Term] = Implicits.search(tpe) match
-        case s: ImplicitSearchSuccess => new Some(s.tree)
-        case _ => None
 
       def checkRecursionInTypes(types: List[TypeRepr]): Unit = if (!cfg.allowRecursiveTypes) {
         val tpe = types.head
@@ -908,7 +908,9 @@ object JsonCodecMaker {
       lazy val orderingTpe = TypeRepr.of[Ordering]
 
       def summonOrdering(tpe: TypeRepr): Term = inferredOrderings.getOrElseUpdate(tpe, {
-        summon(orderingTpe.appliedTo(tpe)).getOrElse(fail(s"Can't summon 'Ordering[${tpe.show}]'"))
+        Implicits.search(orderingTpe.appliedTo(tpe)) match
+          case s: ImplicitSearchSuccess => s.tree
+          case _ => fail(s"Can't summon 'Ordering[${tpe.show}]'")
       })
 
       val classTags = new mutable.LinkedHashMap[TypeRepr, ValDef]
@@ -916,22 +918,27 @@ object JsonCodecMaker {
 
       def summonClassTag(tpe: TypeRepr): Term = Ref(classTags.getOrElseUpdate(tpe, {
         val classTagTpeApplied = classTagTpe.appliedTo(tpe)
-        ValDef(symbol("ct" + classTags.size, classTagTpeApplied),
-          new Some(summon(classTagTpeApplied).getOrElse(fail(s"Can't summon 'ClassTag[${tpe.show}]'"))))
+        Implicits.search(classTagTpeApplied) match
+          case s: ImplicitSearchSuccess => ValDef(symbol("ct" + classTags.size, classTagTpeApplied), new Some(s.tree))
+          case _ => fail(s"Can't summon 'ClassTag[${tpe.show}]'")
       }).symbol)
 
       val inferredKeyCodecs = mutable.Map[TypeRepr, Option[Expr[JsonKeyCodec[?]]]]((rootTpe, None))
       val jsonKeyCodecTpe = TypeRepr.of[JsonKeyCodec]
 
       def findImplicitKeyCodec(tpe: TypeRepr): Option[Expr[JsonKeyCodec[?]]] = inferredKeyCodecs.getOrElseUpdate(tpe, {
-        summon(jsonKeyCodecTpe.appliedTo(tpe)).map(_.asExpr.asInstanceOf[Expr[JsonKeyCodec[?]]])
+        Implicits.search(jsonKeyCodecTpe.appliedTo(tpe)) match
+          case s: ImplicitSearchSuccess => new Some(s.tree.asExpr.asInstanceOf[Expr[JsonKeyCodec[?]]])
+          case _ => None
       })
 
       val inferredValueCodecs = mutable.Map[TypeRepr, Option[Expr[JsonValueCodec[?]]]]((rootTpe, None))
       val jsonValueCodecTpe = TypeRepr.of[JsonValueCodec]
 
       def findImplicitValueCodec(tpe: TypeRepr): Option[Expr[JsonValueCodec[?]]] = inferredValueCodecs.getOrElseUpdate(tpe, {
-        summon(jsonValueCodecTpe.appliedTo(tpe)).map(_.asExpr.asInstanceOf[Expr[JsonValueCodec[?]]])
+        Implicits.search(jsonValueCodecTpe.appliedTo(tpe)) match
+          case s: ImplicitSearchSuccess => new Some(s.tree.asExpr.asInstanceOf[Expr[JsonValueCodec[?]]])
+          case _ => None
       })
 
       val mathContexts = new mutable.LinkedHashMap[Int, ValDef]
@@ -1005,13 +1012,12 @@ object JsonCodecMaker {
 
       case class NamedTupleInfo(tpe: TypeRepr, tupleTpe: TypeRepr, typeArgs: List[TypeRepr],
                                 override val paramLists: List[List[FieldInfo]]) extends TypeInfo(paramLists) {
-        val tupleType: Type[?] = tupleTpe.asType
         val isGeneric: Boolean = isGenericTuple(tupleTpe)
 
         def genNew(argss: List[List[Term]]): Term = {
           val args = argss.flatten
           if (isGeneric) {
-            if (typeArgs.isEmpty) Expr(EmptyTuple).asTerm
+            if (typeArgs.isEmpty) enumOrModuleValueRef(TypeRepr.of[EmptyTuple])
             else {
               val arraySym = symbol("xs", arrayOfAnyTpe)
               val arrayRef = Ref(arraySym)
@@ -1023,9 +1029,9 @@ object JsonCodecMaker {
                   i += 1
                   Apply(arrayUpdate, List(Literal(IntConstant(i)), term))
               }
-              val block = Block(arrayValDef :: assignments, arrayRef).asExpr
-              tupleType match
-                case '[tt] => '{ TupleXXL.fromIArray($block.asInstanceOf[IArray[AnyRef]]).asInstanceOf[tt] }.asTerm
+              val block = Block(arrayValDef :: assignments, arrayRef)
+              val iArray = TypeApply(Select(block, asInstanceOfMethod), List(Inferred(iArrayOfAnyRefTpe)))
+              TypeApply(Select(Apply(fromIArrayMethod, List(iArray)), asInstanceOfMethod), List(Inferred(tupleTpe)))
             }
           } else {
             val constructorNoTypes = Select(New(Inferred(tupleTpe)), tupleTpe.typeSymbol.primaryConstructor)
@@ -1090,6 +1096,8 @@ object JsonCodecMaker {
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"Expected that ${tpe.show} has classSymbol"))
         val primaryConstructor = tpeClassSym.primaryConstructor
         var annotations = Map.empty[String, FieldAnnotations]
+        lazy val companionClass = tpe.typeSymbol.companionClass
+        lazy val companionModuleRef = Ref(tpe.typeSymbol.companionModule)
 
         tpeClassSym.fieldMembers.foreach {
           case m: Symbol if hasSupportedAnnotation(m) =>
@@ -1105,7 +1113,7 @@ object JsonCodecMaker {
               warn(s"Both $supportedTransientTypeNames and '${Type.show[named]}' or " +
                 s"$supportedTransientTypeNames and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
             val partiallyMappedName = namedValueOpt(m.annotations.find(_.tpe =:= TypeRepr.of[named]), tpe)
-            annotations = annotations.updated(name, FieldAnnotations(partiallyMappedName, trans > 0, strings > 0))
+            annotations = annotations.updated(name, new FieldAnnotations(partiallyMappedName, trans > 0, strings > 0))
           case _ =>
         }
 
@@ -1114,52 +1122,40 @@ object JsonCodecMaker {
           symbol =>
             i += 1
             val name = symbol.name
-            val annotationOption = annotations.get(name)
-            val mappedName = annotationOption.flatMap(_.partiallyMappedName)
-              .getOrElse(cfg.fieldNameMapper(name).getOrElse(name))
+            var fieldTpe = tpe.memberType(symbol).dealias
+            if (tpeTypeArgs ne Nil) fieldTpe = fieldTpe.substituteTypes(typeParams, tpeTypeArgs)
+            fieldTpe match
+              case TypeLambda(_, _, _) =>
+                fail(s"Hight-kinded types are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
+              case TypeBounds(_, _) =>
+                fail(s"Type bounds are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
+              case _ =>
+            val defaultValue =
+              if (!cfg.requireDefaultFields && symbol.flags.is(Flags.HasDefault)) {
+                val dvMembers = companionClass.methodMember("$lessinit$greater$default$" + i)
+                if (dvMembers.isEmpty) fail(s"Can't find default value for $name in class ${tpe.show}")
+                val methodSymbol = dvMembers.head
+                val dvSelectNoTArgs = companionModuleRef.select(methodSymbol)
+                val dvSelect = methodSymbol.paramSymss match
+                  case Nil => dvSelectNoTArgs
+                  case List(params) if params.exists(_.isTypeParam) =>
+                    TypeApply(dvSelectNoTArgs, tpeTypeArgs.map(Inferred(_)))
+                  case paramss => fail(s"Default method for $name of class ${tpe.show} have a complex parameter list: $paramss")
+                new Some(dvSelect)
+              } else None
             var getterOrField = tpeClassSym.fieldMember(name)
-            if (!getterOrField.exists) { // workaround for older Scala 3 versions
-              val flags = Flags.FieldAccessor | Flags.ParamAccessor
-              getterOrField = tpeClassSym.methodMember(name).filter(_.flags.is(flags)).headOption.getOrElse(Symbol.noSymbol)
+            if (!getterOrField.exists) {
+              getterOrField = tpeClassSym.methodMember(name).filter(_.flags.is(Flags.FieldAccessor)).headOption.getOrElse(Symbol.noSymbol)
             }
             if (!getterOrField.exists || getterOrField.flags.is(Flags.PrivateLocal)) {
               fail(s"Getter or field '$name' of '${tpe.show}' is private. It should be defined as 'val' or 'var' in the primary constructor.")
             }
-            val defaultValue =
-              if (!cfg.requireDefaultFields && symbol.flags.is(Flags.HasDefault)) {
-                val dvMembers = tpe.typeSymbol.companionClass.methodMember("$lessinit$greater$default$" + i)
-                if (dvMembers.isEmpty) fail(s"Can't find default value for $symbol in class ${tpe.show}")
-                val methodSymbol = dvMembers.head
-                val dvSelectNoTArgs = Ref(tpe.typeSymbol.companionModule).select(methodSymbol)
-                val dvSelect = methodSymbol.paramSymss match
-                  case Nil => dvSelectNoTArgs
-                  case List(params) if params.exists(_.isTypeParam) => tpeTypeArgs match
-                    case Nil => fail(s"Expected that ${tpe.show} is an applied type")
-                    case typeArgs => TypeApply(dvSelectNoTArgs, typeArgs.map(Inferred(_)))
-                  case paramss => fail(s"Default method for ${symbol.name} of class ${tpe.show} have a complex " +
-                    s"parameter list: $paramss")
-                Some(dvSelect)
-              } else None
+            val annotationOption = annotations.get(name)
+            val mappedName = annotationOption.flatMap(_.partiallyMappedName).getOrElse(cfg.fieldNameMapper(name).getOrElse(name))
             val isStringified = annotationOption.exists(_.stringified)
             val isTransient = annotationOption.exists(_.transient)
-            val originFieldType = tpe.memberType(symbol).dealias
-            val fieldType = tpeTypeArgs match
-              case Nil => originFieldType
-              case typeArgs => originFieldType.substituteTypes(typeParams, typeArgs)
-            fieldType match
-              case TypeLambda(_, _, _) => fail(s"Hight-kinded types are not supported for type ${tpe.show} " +
-                  s"with field type for '$name' (symbol=$symbol) : ${fieldType.show}, originFieldType=" +
-                  s"${originFieldType.show}, constructor typeParams=$typeParams, ")
-              case TypeBounds(_, _) => fail(s"Type bounds are not supported for type '${tpe.show}' with field " +
-                  s"type for $name '${fieldType.show}'")
-              case _ =>
-                if (defaultValue.isDefined && !(defaultValue.get.tpe <:< fieldType)) {
-                  fail("Polymorphic expression cannot be instantiated to expected type: default value for " +
-                    s"field $symbol of class ${tpe.show} have type ${defaultValue.get.tpe.show} but field type " +
-                    s"is ${fieldType.show}")
-                }
             val index = fieldIndex(isTransient)
-            new FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, index)
+            new FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldTpe, isTransient, isStringified, index)
           }
 
         val fieldIndex: Boolean => Int = {
@@ -1205,13 +1201,14 @@ object JsonCodecMaker {
                                   binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
           nudeChildParentTags.zip(parentTags).foldLeft(binding)((b, e) => resolveParentTypeArg(child, e._1, e._2, b))
 
-        tpe.typeSymbol.children.map { sym =>
+        val typeSymbol = tpe.typeSymbol
+        typeSymbol.children.map { sym =>
           if (sym.isType) {
             if (sym.name == "<local child>") // problem - we have no other way to find this other return the name
               fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a " +
                 "custom implicitly accessible codec")
             val nudeSubtype = sym.typeRef
-            val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(tpe.typeSymbol))
+            val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(typeSymbol))
             nudeSubtype.memberType(sym.primaryConstructor) match
               case MethodType(_, _, _) => nudeSubtype
               case PolyType(names, _, resPolyTp) =>
@@ -1303,7 +1300,7 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) {
           val vtpe = valueClassValueType(tpe)
           vtpe.asType match
-          case '[vt] => getClassInfo(tpe).genNew(List(List(genReadKey[vt](vtpe :: types, in).asTerm))).asExpr
+            case '[vt] => getClassInfo(tpe).genNew(List(List(genReadKey[vt](vtpe :: types, in).asTerm))).asExpr
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) {
             val ec = withScalaEnumCacheFor[Int, T & Enumeration#Value](tpe)
@@ -1543,7 +1540,7 @@ object JsonCodecMaker {
           val vtpe = valueClassValueType(tpe)
           vtpe.asType match
             case '[vt] =>
-              val valueExpr = Select.unique(x.asTerm, valueClassValueSymbol(tpe).name).asExpr.asInstanceOf[Expr[vt]]
+              val valueExpr = Select(x.asTerm, valueClassValueSymbol(tpe)).asExpr.asInstanceOf[Expr[vt]]
               genWriteKey(valueExpr, vtpe :: types, out)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) '{ $out.writeKey(${x.asInstanceOf[Expr[Enumeration#Value]]}.id) }
@@ -1576,7 +1573,7 @@ object JsonCodecMaker {
             case _ => cannotFindKeyCodecError(tpe)
         } else if (isOpaque(tpe)) {
           val sTpe = opaqueDealias(tpe)
-          sTpe.asType match { case '[s] => genWriteKey[s]('{ $x.asInstanceOf[s] }, sTpe :: types.tail, out) }
+          sTpe.asType match { case '[s] => genWriteKey('{ $x.asInstanceOf[s] }, sTpe :: types.tail, out) }
         } else cannotFindKeyCodecError(tpe)
 
       def genWriteConstantKey(name: String, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
@@ -1869,45 +1866,47 @@ object JsonCodecMaker {
         else if (isOption(tpe, types.tail)) Ref(defn.NoneModule).asExpr
         else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
-          tpe1.asType match { case'[t1] => getClassInfo (tpe).genNew(List(List(genNullValue(tpe1 :: types).asTerm))).asExpr }
-        } else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }
-        else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty })
-        else if (tpe <:< TypeRepr.of[::[?]]) Literal(NullConstant()).asExpr
-        else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) '{ Nil }
-        else if (tpe <:< TypeRepr.of[collection.SortedSet[?]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
-          val tpe1 = typeArg1(tpe)
-          Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1))).asExpr
-        } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] ||
-            tpe <:< TypeRepr.of[mutable.UnrolledBuffer[?]]) {
-          val tpe1 = typeArg1(tpe)
-          Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1))).asExpr
-        } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]] || tpe <:< TypeRepr.of[immutable.LongMap[?]] ||
-            tpe <:< TypeRepr.of[immutable.Seq[?]] || tpe <:< TypeRepr.of[immutable.Set[?]]) withNullValueFor(tpe) {
-          scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExpr
-        } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExpr
-        else if (tpe <:< TypeRepr.of[collection.SortedMap[?, ?]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) {
-          val tpe1 = typeArg1(tpe)
-          Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExpr
-        } else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[?, ?]]) withNullValueFor(tpe) {
-          (typeArg1(tpe).asType, typeArg2(tpe).asType) match
-            case ('[t1], '[t2]) => '{ immutable.TreeSeqMap.empty[t1, t2] }
-        } else if (tpe <:< TypeRepr.of[immutable.Map[?, ?]]) withNullValueFor(tpe) {
-          scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExpr
-        } else if (tpe <:< TypeRepr.of[collection.Map[?, ?]]) {
-          scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExpr
-        } else if (tpe <:< TypeRepr.of[Iterable[?]] || tpe <:< TypeRepr.of[Iterator[?]]) {
-          scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExpr
-        } else if (tpe <:< TypeRepr.of[Array[?]]) withNullValueFor(tpe) {
-          typeArg1(tpe).asType match { case '[t1] => genNewArray[t1](Expr(0)) }
-        } else if (isIArray(tpe)) withNullValueFor(tpe) {
-          typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1](Expr(0))}) } }
+          tpe1.asType match { case'[t1] => getClassInfo(tpe).genNew(List(List(genNullValue[t1](tpe1 :: types).asTerm))).asExpr }
+        } else if (isCollection(tpe)) {
+          if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }
+          else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty })
+          else if (tpe <:< TypeRepr.of[::[?]]) Literal(NullConstant()).asExpr
+          else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) '{ Nil }
+          else if (tpe <:< TypeRepr.of[collection.SortedSet[?]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
+            val tpe1 = typeArg1(tpe)
+            Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1))).asExpr
+          } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] ||
+              tpe <:< TypeRepr.of[mutable.UnrolledBuffer[?]]) {
+            val tpe1 = typeArg1(tpe)
+            Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonClassTag(tpe1))).asExpr
+          } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]] || tpe <:< TypeRepr.of[immutable.LongMap[?]] ||
+              tpe <:< TypeRepr.of[immutable.Seq[?]] || tpe <:< TypeRepr.of[immutable.Set[?]]) withNullValueFor(tpe) {
+            scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExpr
+          } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExpr
+          else if (tpe <:< TypeRepr.of[collection.SortedMap[?, ?]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) {
+            val tpe1 = typeArg1(tpe)
+            Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExpr
+          } else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[?, ?]]) withNullValueFor(tpe) {
+            (typeArg1(tpe).asType, typeArg2(tpe).asType) match
+              case ('[t1], '[t2]) => '{ immutable.TreeSeqMap.empty[t1, t2] }
+          } else if (tpe <:< TypeRepr.of[immutable.Map[?, ?]]) withNullValueFor(tpe) {
+            scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExpr
+          } else if (tpe <:< TypeRepr.of[collection.Map[?, ?]]) {
+            scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExpr
+          } else if (tpe <:< TypeRepr.of[Iterable[?]] || tpe <:< TypeRepr.of[Iterator[?]]) {
+            scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExpr
+          } else if (tpe <:< TypeRepr.of[Array[?]]) withNullValueFor(tpe) {
+            typeArg1(tpe).asType match { case '[t1] => genNewArray[t1](Expr(0)) }
+          } else if (isIArray(tpe)) withNullValueFor(tpe) {
+            typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1](Expr(0))}) } }
+          } else '{ null.asInstanceOf[T] }
         } else if (isConstType(tpe)) {
           tpe match { case ConstantType(c) => Literal(c).asExpr }
         } else if (isEnumOrModuleValue(tpe)) enumOrModuleValueRef(tpe).asExpr
         else if (TypeRepr.of[Null] <:< tpe) Literal(NullConstant()).asExpr
         else if (isOpaque(tpe) && !isNamedTuple(tpe)) {
           val sTpe = opaqueDealias(tpe)
-          sTpe.asType match { case '[st] => '{ ${genNullValue(sTpe :: types.tail)}.asInstanceOf[T] } }
+          sTpe.asType match { case '[st] => '{ ${genNullValue[st](sTpe :: types.tail)}.asInstanceOf[T] } }
         } else '{ null.asInstanceOf[T] }
       }.asInstanceOf[Expr[T]]
 
@@ -1933,8 +1932,8 @@ object JsonCodecMaker {
         def genReadLeafClass[T: Type](subTpe: TypeRepr)(using Quotes): Expr[T] =
           val useDiscriminator = cfg.discriminatorFieldName.isDefined
           if (subTpe =:= tpe) {
-            genReadNonAbstractScalaClass(getClassInfo(tpe), types, useDiscriminator, in, genNullValue(types))
-          } else genReadVal(subTpe :: types, genNullValue(subTpe :: types), isStringified, useDiscriminator, in)
+            genReadNonAbstractScalaClass(getClassInfo(tpe), types, useDiscriminator, in, genNullValue[T](types))
+          } else genReadVal(subTpe :: types, genNullValue[T](subTpe :: types), isStringified, useDiscriminator, in)
 
         def genReadCollisions(subTpes: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Expr[T] =
           subTpes.foldRight(discriminatorError.asInstanceOf[Expr[T]]) { (subTpe, acc) =>
@@ -1943,7 +1942,7 @@ object JsonCodecMaker {
                 if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) ${
                   if (currentDiscriminator.isDefined) '{
                     $in.rollbackToMark()
-                    ${genReadLeafClass(subTpe)}
+                    ${genReadLeafClass[st](subTpe)}
                   } else if (!cfg.circeLikeObjectEncoding && isEnumOrModuleValue(subTpe)) {
                     enumOrModuleValueRef(subTpe).asExpr
                   } else genReadLeafClass[st](subTpe)
@@ -2095,11 +2094,11 @@ object JsonCodecMaker {
         val readVarsMap = new mutable.HashMap[String, ValDef](paramVarNum << 1, 0.5)
         fields.foreach { fieldInfo =>
           val fTpe = fieldInfo.resolvedTpe
-          val mappedName = fieldInfo.mappedName
-          val sym = symbol("_" + fieldInfo.mappedName, fTpe, Flags.Mutable)
           fTpe.asType match
             case '[ft] =>
-              val valDef = ValDef(sym, new Some(fieldInfo.defaultValue.getOrElse(genNullValue(fTpe :: types).asTerm.changeOwner(sym))))
+              val mappedName = fieldInfo.mappedName
+              val sym = symbol("_" + mappedName, fTpe, Flags.Mutable)
+              val valDef = ValDef(sym, new Some(fieldInfo.defaultValue.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
               readVars.addOne(valDef)
               readVarsMap.addOne((mappedName, valDef))
         }
@@ -2117,8 +2116,19 @@ object JsonCodecMaker {
           if (useDiscriminator) cfg.discriminatorFieldName.fold(fields) { n =>
             fields :+ new FieldInfo(Symbol.noSymbol, n, Symbol.noSymbol, None, TypeRepr.of[String], false, true, paramVarNum)
           } else fields
+        val readBlock = new mutable.ListBuffer[Statement].addAll(readVars).addAll(paramVars)
+        val discriminator =
+          if (useDiscriminator && cfg.discriminatorFieldName.isDefined) {
+            new Some(new ReadDiscriminator(
+              if (cfg.checkFieldDuplication) {
+                val valDef = ValDef(symbol("pd", booleanTpe, Flags.Mutable), new Some(Literal(BooleanConstant(true))))
+                readBlock.addOne(valDef)
+                new Some(Ref(valDef.symbol))
+              } else None
+            ))
+          } else None
 
-        def genReadCollisions(fieldInfos: collection.Seq[FieldInfo], discriminator: Option[ReadDiscriminator], l: Expr[Int])(using Quotes): Expr[Unit] =
+        def genReadCollisions(fieldInfos: collection.Seq[FieldInfo], l: Expr[Int])(using Quotes): Expr[Unit] =
           fieldInfos.foldRight(unexpectedFieldHandler(in, l)) { (fieldInfo, acc) =>
             val readValue =
               if (discriminator.isDefined && cfg.discriminatorFieldName.contains(fieldInfo.mappedName)) {
@@ -2146,26 +2156,14 @@ object JsonCodecMaker {
             }
           }
 
-        val readBlock = new mutable.ListBuffer[Statement].addAll(readVars).addAll(paramVars)
-        val discriminator =
-          if (useDiscriminator && cfg.discriminatorFieldName.isDefined) {
-            new Some(new ReadDiscriminator(
-              if (cfg.checkFieldDuplication) {
-                val valDef = ValDef(symbol("pd", booleanTpe, Flags.Mutable), new Some(Literal(BooleanConstant(true))))
-                readBlock.addOne(valDef)
-                new Some(Ref(valDef.symbol))
-              } else None
-            ))
-          } else None
-
         def readFieldsBlock(l: Expr[Int])(using Quotes): Expr[Unit] =
           if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
-            genReadCollisions(readFields, discriminator, l)
+            genReadCollisions(readFields, l)
           } else {
             val hashCode = (fieldInfo: FieldInfo) =>
               JsonReader.toHashCode(fieldInfo.mappedName.toCharArray, fieldInfo.mappedName.length)
             val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fieldInfos) =>
-              CaseDef(Literal(IntConstant(hash)), None, genReadCollisions(fieldInfos, discriminator, l).asTerm)
+              CaseDef(Literal(IntConstant(hash)), None, genReadCollisions(fieldInfos, l).asTerm)
             } :+ CaseDef(Wildcard(), None, unexpectedFieldHandler(in, l).asTerm)
             Match('{ $in.charBufToHashCode($l): @scala.annotation.switch }.asTerm, cases.toList).asExpr.asInstanceOf[Expr[Unit]]
           }
@@ -2181,7 +2179,7 @@ object JsonCodecMaker {
               }
               if (!$in.isCurrentToken('}')) $in.objectEndOrCommaError()
             }
-          }.asTerm.changeOwner(Symbol.spliceOwner)).addAll(checkReqVars).result(), construct),
+          }.asTerm.changeOwner(Symbol.spliceOwner)).addAll(checkReqVars).toList, construct),
           '{ $in.readNullOrTokenError($default, '{') }.asTerm).asExpr.asInstanceOf[Expr[T]]
       }
 
@@ -2332,7 +2330,7 @@ object JsonCodecMaker {
             else default
           tpe1.asType match
             case '[t1] =>
-              val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
+              val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
               '{
                 if ($in.isNextToken('n')) $in.readNullOrError($nullValue, "expected value or null")
                 else {
@@ -2344,297 +2342,299 @@ object JsonCodecMaker {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
             case '[t1] =>
-              val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
+              val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
               getClassInfo(tpe).genNew(List(List(readVal.asTerm))).asExpr
         } else if (decodeMethodRef.isDefined) Apply(decodeMethodRef.get, List(in.asTerm, default.asTerm)).asExpr
-        else if (tpe <:< TypeRepr.of[Array[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] || isIArray(tpe) ||
-          tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          val newArrayOnChange = tpe1 match
-            case AppliedType(_, _) => true
-            case _ => isValueClass(tpe1) || isOpaque(tpe1)
-          tpe1.asType match
-            case '[t1] =>
-              def growArray(x: Expr[Array[t1]], i: Expr[Int], l: Expr[Int])(using Quotes): Expr[Array[t1]] =
-                if (newArrayOnChange) '{
-                  val x1 = ${genNewArray[t1](l)}
-                  java.lang.System.arraycopy($x, 0, x1, 0, $i)
-                  x1
-                } else genArraysCopyOf[t1](tpe1, x, l)
+        else if (isCollection(tpe)) {
+          if (tpe <:< TypeRepr.of[Array[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] || isIArray(tpe) ||
+            tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            val newArrayOnChange = tpe1 match
+              case AppliedType(_, _) => true
+              case _ => isValueClass(tpe1) || isOpaque(tpe1)
+            tpe1.asType match
+              case '[t1] =>
+                def growArray(x: Expr[Array[t1]], i: Expr[Int], l: Expr[Int])(using Quotes): Expr[Array[t1]] =
+                  if (newArrayOnChange) '{
+                    val x1 = ${genNewArray[t1](l)}
+                    java.lang.System.arraycopy($x, 0, x1, 0, $i)
+                    x1
+                  } else genArraysCopyOf[t1](tpe1, x, l)
 
-              def shrinkArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
-                if (newArrayOnChange) '{
-                  val x1 = ${genNewArray[t1](i)}
-                  java.lang.System.arraycopy($x, 0, x1, 0, $i)
-                  x1
-                } else genArraysCopyOf[t1](tpe1, x, i)
+                def shrinkArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
+                  if (newArrayOnChange) '{
+                    val x1 = ${genNewArray[t1](i)}
+                    java.lang.System.arraycopy($x, 0, x1, 0, $i)
+                    x1
+                  } else genArraysCopyOf[t1](tpe1, x, i)
 
-              (if (tpe <:< TypeRepr.of[immutable.ArraySeq[?]]) {
-                genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
-                  if ($i == $l) {
-                    ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExpr}
-                    ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExpr}
-                  }
-                  $x($i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)}
-                }, default.asInstanceOf[Expr[immutable.ArraySeq[t1]]], (x, i, l) => '{
-                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExpr}
-                  immutable.ArraySeq.unsafeWrapArray[t1]($x)
-                }.asInstanceOf[Expr[immutable.ArraySeq[t1]]], in)
-              } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) {
-                genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
-                  if ($i == $l) {
-                    ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExpr}
-                    ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExpr}
-                  }
-                  $x($i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)}
-                }, default.asInstanceOf[Expr[mutable.ArraySeq[t1]]], (x, i, l) => '{
-                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExpr}
-                  mutable.ArraySeq.make[t1]($x)
-                }.asInstanceOf[Expr[mutable.ArraySeq[t1]]], in)
-              } else if (isIArray(tpe)) {
-                genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
-                  if ($i == $l) {
-                    ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExpr}
-                    ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExpr}
-                  }
-                  $x($i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)}
-                }, default.asInstanceOf[Expr[IArray[t1]]], (x, i, l) => '{
-                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExpr}
-                  IArray.unsafeFromArray[t1]($x)
-                }.asInstanceOf[Expr[IArray[t1]]], in)
-              } else {
-                genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
-                  if ($i == $l) {
-                    ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExpr}
-                    ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExpr}
-                  }
-                  $x($i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)}
-                }, default.asInstanceOf[Expr[Array[t1]]], (x, i, l) => '{
-                  if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExpr}
-                  $x
-                }.asInstanceOf[Expr[Array[t1]]], in)
-              }).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val newBuilder = withNullValueFor(tpe)(scalaCollectionEmptyNoArgs(tpe, tpe1).asExpr.asInstanceOf[Expr[immutable.IntMap[t1]]])
-              val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
-              (if (cfg.mapAsArray) {
-                val readKey =
-                  if (cfg.isStringified) '{ $in.readStringAsInt() }
-                  else '{ $in.readInt() }
-                genReadMapAsArray(newBuilder, x => Assign(x.asTerm, '{
-                  $x.updated($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() })
-                }.asTerm).asExpr.asInstanceOf[Expr[Unit]], identity, in, default)
-              } else {
-                genReadMap(newBuilder,
-                  x => Assign(x.asTerm, '{ $x.updated($in.readKeyAsInt(), $readVal) }.asTerm).asExpr.asInstanceOf[Expr[Unit]],
-                  identity, in, default)
-              }).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val tDefault = default.asInstanceOf[Expr[mutable.LongMap[t1]]]
-              val newBuilder = '{
-                if ($tDefault.isEmpty) $tDefault
-                else ${scalaCollectionEmptyNoArgs(tpe, tpe1).asExpr.asInstanceOf[Expr[mutable.LongMap[t1]]]}
-              }
-              val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
-              (if (cfg.mapAsArray) {
-                val readKey =
-                  if (cfg.isStringified) '{ $in.readStringAsLong() }
-                  else '{ $in.readLong() }
-                genReadMapAsArray(newBuilder,
-                  x => '{ $x.update($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() }) },
-                  identity, in, tDefault)
-              } else {
-                genReadMap(newBuilder, x => '{ $x.update($in.readKeyAsLong(), $readVal) }, identity, in, tDefault)
-              }).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[immutable.LongMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val newBuilder = withNullValueFor(tpe)(scalaCollectionEmptyNoArgs(tpe, tpe1).asExpr.asInstanceOf[Expr[immutable.LongMap[t1]]])
-              val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
-              (if (cfg.mapAsArray) {
-                val readKey =
-                  if (cfg.isStringified) '{ $in.readStringAsLong() }
-                  else '{ $in.readLong() }
-                genReadMapAsArray(newBuilder, x => Assign(x.asTerm, '{
-                    $x.updated($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() })
-                  }.asTerm).asExpr.asInstanceOf[Expr[Unit]],
-                  identity, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]])
-              } else {
-                genReadMap(newBuilder, x => Assign(x.asTerm, '{ $x.updated($in.readKeyAsLong(), $readVal) }.asTerm)
-                  .asExpr.asInstanceOf[Expr[Unit]],
-                  identity, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]])
-              }).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[mutable.Map[?, ?]] ||
-            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          val tpe2 = typeArg2(tpe)
-          (tpe1.asType, tpe2.asType) match
-            case ('[t1], '[t2]) =>
-              val tDefault = default.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
-              val emptyMapNoArgs = scalaMapEmptyNoArgs(tpe, tpe1, tpe2)
-              val tEmpty =
-                (if (tpe <:< TypeRepr.of[mutable.SortedMap[?, ?]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) {
-                  Apply(emptyMapNoArgs, List(summonOrdering(tpe1)))
-                } else emptyMapNoArgs).asExpr.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
-              val newBuilder = '{
-                if ($tDefault.isEmpty) $tDefault
-                else $tEmpty
-              }.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
-              val readVal2 = genReadVal(tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, false, in)
-              (if (cfg.mapAsArray) {
-                val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
-                genReadMapAsArray(newBuilder,
-                  x => '{ $x.update($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() }) }, identity, in, tDefault)
-              } else {
-                genReadMap(newBuilder, x => '{ $x.update(${genReadKey[t1](tpe1 :: types, in)}, $readVal2) }, identity, in, tDefault)
-              }).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[collection.Map[?, ?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          val tpe2 = typeArg2(tpe)
-
-          def builderNoApply =
-            TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(Inferred(tpe1), Inferred(tpe2)))
-
-          (tpe1.asType, tpe2.asType) match
-            case ('[t1], '[t2]) =>
-              val readVal2 = genReadVal(tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, false, in)
-              val newBuilder =
-                (if (tpe <:< TypeRepr.of[collection.SortedMap[?, ?]]) Apply(builderNoApply, List(summonOrdering(tpe1))).asExpr
-                else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[?, ?]]) '{ immutable.TreeSeqMap.newBuilder[t1, t2] }
-                else builderNoApply.asExpr).asInstanceOf[Expr[mutable.Builder[(t1, t2), T & collection.Map[t1, t2]]]]
-              (if (cfg.mapAsArray) {
-                val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
-                genReadMapAsArray(newBuilder,
-                  x => '{ $x.addOne(new Tuple2($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })): Unit},
-                  x => '{ $x.result() }, in, default)
-              } else {
-                val readKey = genReadKey[t1](tpe1 :: types, in)
-                genReadMap(newBuilder, x => '{ $x.addOne(new Tuple2($readKey, $readVal2)): Unit },
-                  x => '{ $x.result() }, in, default)
-              }).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[BitSet]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val readVal =
-            if (isStringified) '{ $in.readStringAsInt() }
-            else '{ $in.readInt() }
-          '{
-            if ($in.isNextToken('[')) {
-              if ($in.isNextToken(']')) $default
-              else {
-                $in.rollbackToken()
-                var x = new Array[Long](2)
-                while ({
-                  val v = $readVal
-                  if (v < 0 || v >= ${Expr(cfg.bitSetValueLimit)}) $in.decodeError("illegal value for bit set")
-                  val i = v >>> 6
-                  if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
-                  x(i) = x(i) | 1L << v
-                  $in.isNextToken(',')
-                }) ()
-                if ($in.isCurrentToken(']')) ${
-                  if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ mutable.BitSet.fromBitMaskNoCopy(x) }
-                  else '{ immutable.BitSet.fromBitMaskNoCopy(x) }
-                } else $in.arrayEndOrCommaError()
-              }
-            } else $in.readNullOrTokenError($default, '[')
-          }.asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[mutable.Set[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val tDefault = default.asInstanceOf[Expr[T & mutable.Set[t1]]]
-              val emptySetNoOrdering = scalaCollectionEmptyNoArgs(tpe, tpe1)
-              val emptySet =
-                (if (tpe <:< TypeRepr.of[mutable.SortedSet[?]]) Apply(emptySetNoOrdering, List(summonOrdering(tpe1)))
-                else emptySetNoOrdering).asExpr.asInstanceOf[Expr[T & mutable.Set[t1]]]
-              genReadSet('{
-                if ($tDefault.isEmpty) $tDefault
-                else $emptySet
-              }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, identity, in).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[collection.Set[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val builderNoOrdering = scalaCollectionBuilder(tpe, tpe1)
-              val builder =
-                (if (tpe <:< TypeRepr.of[collection.SortedSet[?]]) Apply(builderNoOrdering, List(summonOrdering(tpe1)))
-                else builderNoOrdering).asExpr.asInstanceOf[Expr[mutable.Builder[t1, T & collection.Set[t1]]]]
-              genReadSet(builder, b => genReadValForGrowable(tpe1 :: types, isStringified, b, in),
-                default.asInstanceOf[Expr[T & collection.Set[t1]]], b => '{ $b.result() }, in).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[::[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val tDefault = default.asInstanceOf[Expr[::[t1]]]
-              '{
-                if ($in.isNextToken('[')) {
-                  if ($in.isNextToken(']')) {
-                    if ($tDefault ne null) $tDefault
-                    else $in.decodeError("expected non-empty JSON array")
-                  } else {
-                    $in.rollbackToken()
-                    val x = new mutable.ListBuffer[t1]
-                    while ({
-                      ${genReadValForGrowable(tpe1 :: types, isStringified, 'x, in)}
-                      $in.isNextToken(',')
-                    }) ()
-                    if ($in.isCurrentToken(']')) x.toList.asInstanceOf[::[t1]]
-                    else $in.arrayEndOrCommaError()
-                  }
+                (if (tpe <:< TypeRepr.of[immutable.ArraySeq[?]]) {
+                  genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
+                    if ($i == $l) {
+                      ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExpr}
+                      ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExpr}
+                    }
+                    $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
+                  }, default.asInstanceOf[Expr[immutable.ArraySeq[t1]]], (x, i, l) => '{
+                    if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExpr}
+                    immutable.ArraySeq.unsafeWrapArray[t1]($x)
+                  }.asInstanceOf[Expr[immutable.ArraySeq[t1]]], in)
+                } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) {
+                  genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
+                    if ($i == $l) {
+                      ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExpr}
+                      ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExpr}
+                    }
+                    $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
+                  }, default.asInstanceOf[Expr[mutable.ArraySeq[t1]]], (x, i, l) => '{
+                    if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExpr}
+                    mutable.ArraySeq.make[t1]($x)
+                  }.asInstanceOf[Expr[mutable.ArraySeq[t1]]], in)
+                } else if (isIArray(tpe)) {
+                  genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
+                    if ($i == $l) {
+                      ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExpr}
+                      ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExpr}
+                    }
+                    $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
+                  }, default.asInstanceOf[Expr[IArray[t1]]], (x, i, l) => '{
+                    if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExpr}
+                    IArray.unsafeFromArray[t1]($x)
+                  }.asInstanceOf[Expr[IArray[t1]]], in)
                 } else {
-                  if ($tDefault ne null) $in.readNullOrTokenError($tDefault, '[')
-                  else $in.decodeError("expected non-empty JSON array")
+                  genReadArray(l => genNewArray[t1](l), (x, i, l) => '{
+                    if ($i == $l) {
+                      ${Assign(l.asTerm, '{ $l << 1 }.asTerm).asExpr}
+                      ${Assign(x.asTerm, growArray(x, i, l).asTerm).asExpr}
+                    }
+                    $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
+                  }, default.asInstanceOf[Expr[Array[t1]]], (x, i, l) => '{
+                    if ($i != $l) ${Assign(x.asTerm, shrinkArray(x, i).asTerm).asExpr}
+                    $x
+                  }.asInstanceOf[Expr[Array[t1]]], in)
+                }).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val newBuilder = withNullValueFor(tpe)(scalaCollectionEmptyNoArgs(tpe, tpe1).asExpr.asInstanceOf[Expr[immutable.IntMap[t1]]])
+                val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
+                (if (cfg.mapAsArray) {
+                  val readKey =
+                    if (cfg.isStringified) '{ $in.readStringAsInt() }
+                    else '{ $in.readInt() }
+                  genReadMapAsArray(newBuilder, x => Assign(x.asTerm, '{
+                    $x.updated($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() })
+                  }.asTerm).asExpr.asInstanceOf[Expr[Unit]], identity, in, default)
+                } else {
+                  genReadMap(newBuilder,
+                    x => Assign(x.asTerm, '{ $x.updated($in.readKeyAsInt(), $readVal) }.asTerm).asExpr.asInstanceOf[Expr[Unit]],
+                    identity, in, default)
+                }).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val tDefault = default.asInstanceOf[Expr[mutable.LongMap[t1]]]
+                val newBuilder = '{
+                  if ($tDefault.isEmpty) $tDefault
+                  else ${scalaCollectionEmptyNoArgs(tpe, tpe1).asExpr.asInstanceOf[Expr[mutable.LongMap[t1]]]}
                 }
-              }.asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              genReadCollection('{ new mutable.ListBuffer[t1] }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
-                default, x => '{ $x.toList }, in).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[mutable.ListBuffer[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val tDefault = default.asInstanceOf[Expr[mutable.ListBuffer[t1]]]
-              genReadCollection('{
-                if ($tDefault.isEmpty) $tDefault
-                else new mutable.ListBuffer[t1]
-              }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, identity, in).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[Vector[?]] || tpe.typeSymbol == TypeRepr.of[IndexedSeq[?]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              genReadCollection('{ new immutable.VectorBuilder[t1] }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
-                default, x => '{ $x.result() }, in).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[mutable.Iterable[?] & mutable.Growable[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val emptyCollectionNoArgs = scalaCollectionEmptyNoArgs(tpe, tpe1)
-              val emptyCollection =
-                (if (tpe <:< TypeRepr.of[mutable.UnrolledBuffer[?]]) {
-                  Apply(emptyCollectionNoArgs, List(summonClassTag(tpe1)))
-                } else if (tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
-                  Apply(emptyCollectionNoArgs, List(summonOrdering(tpe1)))
-                } else emptyCollectionNoArgs).asExpr.asInstanceOf[Expr[T & mutable.Growable[t1]]]
-              genReadCollection('{
-                if (${default.asInstanceOf[Expr[Iterable[?]]]}.isEmpty) $default
-                else $emptyCollection
-              }.asInstanceOf[Expr[T & mutable.Growable[t1]]],
-                x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, identity, in).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[Iterable[?]] || tpe <:< TypeRepr.of[Iterator[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              genReadCollection(scalaCollectionBuilder(tpe, tpe1).asExpr.asInstanceOf[Expr[mutable.Builder[t1, T]]],
-                x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, x => '{ $x.result() }, in)
+                val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
+                (if (cfg.mapAsArray) {
+                  val readKey =
+                    if (cfg.isStringified) '{ $in.readStringAsLong() }
+                    else '{ $in.readLong() }
+                  genReadMapAsArray(newBuilder,
+                    x => '{ $x.update($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() }) },
+                    identity, in, tDefault)
+                } else {
+                  genReadMap(newBuilder, x => '{ $x.update($in.readKeyAsLong(), $readVal) }, identity, in, tDefault)
+                }).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[immutable.LongMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val newBuilder = withNullValueFor(tpe)(scalaCollectionEmptyNoArgs(tpe, tpe1).asExpr.asInstanceOf[Expr[immutable.LongMap[t1]]])
+                val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
+                (if (cfg.mapAsArray) {
+                  val readKey =
+                    if (cfg.isStringified) '{ $in.readStringAsLong() }
+                    else '{ $in.readLong() }
+                  genReadMapAsArray(newBuilder, x => Assign(x.asTerm, '{
+                      $x.updated($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() })
+                    }.asTerm).asExpr.asInstanceOf[Expr[Unit]],
+                    identity, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]])
+                } else {
+                  genReadMap(newBuilder, x => Assign(x.asTerm, '{ $x.updated($in.readKeyAsLong(), $readVal) }.asTerm)
+                    .asExpr.asInstanceOf[Expr[Unit]],
+                    identity, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]])
+                }).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[mutable.Map[?, ?]] ||
+              tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            val tpe2 = typeArg2(tpe)
+            (tpe1.asType, tpe2.asType) match
+              case ('[t1], '[t2]) =>
+                val tDefault = default.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
+                val emptyMapNoArgs = scalaMapEmptyNoArgs(tpe, tpe1, tpe2)
+                val tEmpty =
+                  (if (tpe <:< TypeRepr.of[mutable.SortedMap[?, ?]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) {
+                    Apply(emptyMapNoArgs, List(summonOrdering(tpe1)))
+                  } else emptyMapNoArgs).asExpr.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
+                val newBuilder = '{
+                  if ($tDefault.isEmpty) $tDefault
+                  else $tEmpty
+                }.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
+                val readVal2 = genReadVal(tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, false, in)
+                (if (cfg.mapAsArray) {
+                  val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
+                  genReadMapAsArray(newBuilder,
+                    x => '{ $x.update($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() }) }, identity, in, tDefault)
+                } else {
+                  genReadMap(newBuilder, x => '{ $x.update(${genReadKey[t1](tpe1 :: types, in)}, $readVal2) }, identity, in, tDefault)
+                }).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[collection.Map[?, ?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            val tpe2 = typeArg2(tpe)
+
+            def builderNoApply =
+              TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(Inferred(tpe1), Inferred(tpe2)))
+
+            (tpe1.asType, tpe2.asType) match
+              case ('[t1], '[t2]) =>
+                val readVal2 = genReadVal(tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, false, in)
+                val newBuilder =
+                  (if (tpe <:< TypeRepr.of[collection.SortedMap[?, ?]]) Apply(builderNoApply, List(summonOrdering(tpe1))).asExpr
+                  else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[?, ?]]) '{ immutable.TreeSeqMap.newBuilder[t1, t2] }
+                  else builderNoApply.asExpr).asInstanceOf[Expr[mutable.Builder[(t1, t2), T & collection.Map[t1, t2]]]]
+                (if (cfg.mapAsArray) {
+                  val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
+                  genReadMapAsArray(newBuilder,
+                    x => '{ $x.addOne(new Tuple2($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() })): Unit},
+                    x => '{ $x.result() }, in, default)
+                } else {
+                  val readKey = genReadKey[t1](tpe1 :: types, in)
+                  genReadMap(newBuilder, x => '{ $x.addOne(new Tuple2($readKey, $readVal2)): Unit },
+                    x => '{ $x.result() }, in, default)
+                }).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[BitSet]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val readVal =
+              if (isStringified) '{ $in.readStringAsInt() }
+              else '{ $in.readInt() }
+            '{
+              if ($in.isNextToken('[')) {
+                if ($in.isNextToken(']')) $default
+                else {
+                  $in.rollbackToken()
+                  var x = new Array[Long](2)
+                  while ({
+                    val v = $readVal
+                    if (v < 0 || v >= ${Expr(cfg.bitSetValueLimit)}) $in.decodeError("illegal value for bit set")
+                    val i = v >>> 6
+                    if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
+                    x(i) = x(i) | 1L << v
+                    $in.isNextToken(',')
+                  }) ()
+                  if ($in.isCurrentToken(']')) ${
+                    if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ mutable.BitSet.fromBitMaskNoCopy(x) }
+                    else '{ immutable.BitSet.fromBitMaskNoCopy(x) }
+                  } else $in.arrayEndOrCommaError()
+                }
+              } else $in.readNullOrTokenError($default, '[')
+            }.asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[mutable.Set[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val tDefault = default.asInstanceOf[Expr[T & mutable.Set[t1]]]
+                val emptySetNoOrdering = scalaCollectionEmptyNoArgs(tpe, tpe1)
+                val emptySet =
+                  (if (tpe <:< TypeRepr.of[mutable.SortedSet[?]]) Apply(emptySetNoOrdering, List(summonOrdering(tpe1)))
+                  else emptySetNoOrdering).asExpr.asInstanceOf[Expr[T & mutable.Set[t1]]]
+                genReadSet('{
+                  if ($tDefault.isEmpty) $tDefault
+                  else $emptySet
+                }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, identity, in).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[collection.Set[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val builderNoOrdering = scalaCollectionBuilder(tpe, tpe1)
+                val builder =
+                  (if (tpe <:< TypeRepr.of[collection.SortedSet[?]]) Apply(builderNoOrdering, List(summonOrdering(tpe1)))
+                  else builderNoOrdering).asExpr.asInstanceOf[Expr[mutable.Builder[t1, T & collection.Set[t1]]]]
+                genReadSet(builder, b => genReadValForGrowable(tpe1 :: types, isStringified, b, in),
+                  default.asInstanceOf[Expr[T & collection.Set[t1]]], b => '{ $b.result() }, in).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[::[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val tDefault = default.asInstanceOf[Expr[::[t1]]]
+                '{
+                  if ($in.isNextToken('[')) {
+                    if ($in.isNextToken(']')) {
+                      if ($tDefault ne null) $tDefault
+                      else $in.decodeError("expected non-empty JSON array")
+                    } else {
+                      $in.rollbackToken()
+                      val x = new mutable.ListBuffer[t1]
+                      while ({
+                        ${genReadValForGrowable(tpe1 :: types, isStringified, 'x, in)}
+                        $in.isNextToken(',')
+                      }) ()
+                      if ($in.isCurrentToken(']')) x.toList.asInstanceOf[::[t1]]
+                      else $in.arrayEndOrCommaError()
+                    }
+                  } else {
+                    if ($tDefault ne null) $in.readNullOrTokenError($tDefault, '[')
+                    else $in.decodeError("expected non-empty JSON array")
+                  }
+                }.asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                genReadCollection('{ new mutable.ListBuffer[t1] }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
+                  default, x => '{ $x.toList }, in).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[mutable.ListBuffer[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val tDefault = default.asInstanceOf[Expr[mutable.ListBuffer[t1]]]
+                genReadCollection('{
+                  if ($tDefault.isEmpty) $tDefault
+                  else new mutable.ListBuffer[t1]
+                }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, identity, in).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[Vector[?]] || tpe.typeSymbol == TypeRepr.of[IndexedSeq[?]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                genReadCollection('{ new immutable.VectorBuilder[t1] }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in),
+                  default, x => '{ $x.result() }, in).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[mutable.Iterable[?] & mutable.Growable[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val emptyCollectionNoArgs = scalaCollectionEmptyNoArgs(tpe, tpe1)
+                val emptyCollection =
+                  (if (tpe <:< TypeRepr.of[mutable.UnrolledBuffer[?]]) {
+                    Apply(emptyCollectionNoArgs, List(summonClassTag(tpe1)))
+                  } else if (tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
+                    Apply(emptyCollectionNoArgs, List(summonOrdering(tpe1)))
+                  } else emptyCollectionNoArgs).asExpr.asInstanceOf[Expr[T & mutable.Growable[t1]]]
+                genReadCollection('{
+                  if (${default.asInstanceOf[Expr[Iterable[?]]]}.isEmpty) $default
+                  else $emptyCollection
+                }.asInstanceOf[Expr[T & mutable.Growable[t1]]],
+                  x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, identity, in).asInstanceOf[Expr[T]]
+          } else if (tpe <:< TypeRepr.of[Iterable[?]] || tpe <:< TypeRepr.of[Iterator[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                genReadCollection(scalaCollectionBuilder(tpe, tpe1).asExpr.asInstanceOf[Expr[mutable.Builder[t1, T]]],
+                  x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, x => '{ $x.result() }, in)
+          } else cannotFindValueCodecError(tpe)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withDecoderFor(methodKey, default, in) { (in, default) =>
           if (cfg.useScalaEnumValueId) {
             val ec = withScalaEnumCacheFor[Int, T & Enumeration#Value](tpe)
@@ -2700,7 +2700,7 @@ object JsonCodecMaker {
             te.asType match
               case '[t] =>
                 i += 1
-                val nullVal = genNullValue(te :: types)
+                val nullVal = genNullValue[t](te :: types)
                 val rhs =
                   if (i == 1) genReadVal(te :: types, nullVal, isStringified, false, in)
                   else '{
@@ -2724,8 +2724,9 @@ object JsonCodecMaker {
                     i += 1
                     Apply(arrayUpdate, List(Literal(IntConstant(i)), Ref(valDef.symbol)))
                 }
-                val block = Block(arrayValDef :: assignments, arrayRef).asExpr
-                '{ TupleXXL.fromIArray($block.asInstanceOf[IArray[AnyRef]]).asInstanceOf[T] }
+                val block = Block(arrayValDef :: assignments, arrayRef)
+                val iArray = TypeApply(Select(block, asInstanceOfMethod), List(Inferred(iArrayOfAnyRefTpe)))
+                TypeApply(Select(Apply(fromIArrayMethod, List(iArray)), asInstanceOfMethod), List(Inferred(tTpe))).asExpr
               } else {
                 val constructorNoTypes = Select(New(Inferred(tTpe)), tTpe.typeSymbol.primaryConstructor)
                 Apply(TypeApply(constructorNoTypes, tTypeArgs.map(Inferred(_))), valDefs.map(x => Ref(x.symbol))).asExpr
@@ -2769,6 +2770,7 @@ object JsonCodecMaker {
               val valDef = ValDef(sym, new Some(Apply(TypeApply(toTupleMethod, tpe.typeArgs.map(Inferred(_))), List(x.asTerm))))
               (List(valDef), Ref(sym))
             case _ => (Nil, x.asTerm)
+        lazy val productElement = Select.unique(valRef, "productElement")
         var writeFields = typeInfo.fields.map { fieldInfo =>
           val fDefault =
             if (cfg.transientDefault) fieldInfo.defaultValue
@@ -2776,15 +2778,15 @@ object JsonCodecMaker {
           val fTpe = fieldInfo.resolvedTpe
           (fTpe.asType match {
             case '[ft] =>
-              val getter = typeInfo match
-                case namedTupleInfo: NamedTupleInfo =>
-                  namedTupleInfo.tupleType match
-                    case '[tt] =>
-                      val idx = fieldInfo.nonTransientFieldIndex
-                      if (namedTupleInfo.isGeneric) {
-                        '{ ${valRef.asExpr.asInstanceOf[Expr[tt & Tuple]]}.productElement(${Expr(idx)}).asInstanceOf[ft] }
-                      } else Select.unique(valRef, s"_${idx + 1}").asExpr
-                case _ => Select(valRef, fieldInfo.getterOrField).asExpr
+              val getter = {
+                typeInfo match
+                  case namedTupleInfo: NamedTupleInfo =>
+                    val i = fieldInfo.nonTransientFieldIndex
+                    if (namedTupleInfo.isGeneric) {
+                      TypeApply(Select(productElement.appliedTo(Literal(IntConstant(i))), asInstanceOfMethod), List(Inferred(fTpe)))
+                    } else Select.unique(valRef, s"_${i + 1}")
+                  case _ => Select(valRef, fieldInfo.getterOrField)
+              }.asExpr
               fDefault match {
                 case Some(d) =>
                   if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[?]]) '{
@@ -3031,151 +3033,153 @@ object JsonCodecMaker {
             case '[vt] =>
               genWriteVal(Select(m.asTerm, vsym).asExpr.asInstanceOf[Expr[vt]], vtpe :: types, isStringified, None, out)
         } else if (encodeMethodRef.isDefined) Apply(encodeMethodRef.get, List(m.asTerm, out.asTerm)).asExpr
-        else if (tpe <:< TypeRepr.of[Array[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] || isIArray(tpe) ||
-          tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              if (tpe <:< TypeRepr.of[immutable.ArraySeq[?]]) {
-                val tx = x.asInstanceOf[Expr[immutable.ArraySeq[t1]]]
+        else if (isCollection(tpe)) {
+          if (tpe <:< TypeRepr.of[Array[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] || isIArray(tpe) ||
+            tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                if (tpe <:< TypeRepr.of[immutable.ArraySeq[?]]) {
+                  val tx = x.asInstanceOf[Expr[immutable.ArraySeq[t1]]]
+                  '{
+                    $out.writeArrayStart()
+                    val xs = $tx.unsafeArray.asInstanceOf[Array[t1]]
+                    val l = xs.length
+                    var i = 0
+                    while (i < l) {
+                      ${genWriteVal('{ xs(i) }, tpe1 :: types, isStringified, None, out)}
+                      i += 1
+                    }
+                    $out.writeArrayEnd()
+                  }
+                } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) {
+                  val tx = x.asInstanceOf[Expr[mutable.ArraySeq[t1]]]
+                  '{
+                    $out.writeArrayStart()
+                    val xs = $tx.array.asInstanceOf[Array[t1]]
+                    val l = xs.length
+                    var i = 0
+                    while (i < l) {
+                      ${genWriteVal('{ xs(i) }, tpe1 :: types, isStringified, None, out)}
+                      i += 1
+                    }
+                    $out.writeArrayEnd()
+                  }
+                } else if (isIArray(tpe)) {
+                  val tx = x.asInstanceOf[Expr[IArray[t1]]]
+                  '{
+                    $out.writeArrayStart()
+                    val l = $tx.length
+                    var i = 0
+                    while (i < l) {
+                      ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
+                      i += 1
+                    }
+                    $out.writeArrayEnd()
+                  }
+                } else {
+                  val tx = x.asInstanceOf[Expr[Array[t1]]]
+                  '{
+                    $out.writeArrayStart()
+                    val l = $tx.length
+                    var i = 0
+                    while (i < l) {
+                      ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
+                      i += 1
+                    }
+                    $out.writeArrayEnd()
+                  }
+                }
+          } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]] || tpe <:< TypeRepr.of[mutable.LongMap[?]] ||
+              tpe <:< TypeRepr.of[immutable.LongMap[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                def writeVal2(out: Expr[JsonWriter], v: Expr[t1])(using Quotes): Expr[Unit] =
+                  genWriteVal(v, tpe1 :: types, isStringified, None, out)
+
+                if (tpe <:< TypeRepr.of[immutable.IntMap[?]]) {
+                  val tx = x.asInstanceOf[Expr[immutable.IntMap[t1]]]
+                  if (cfg.mapAsArray) {
+                    def writeVal1(out: Expr[JsonWriter], k: Expr[Int])(using Quotes): Expr[Unit] =
+                      if (isStringified) '{ $out.writeValAsString($k) }
+                      else '{ $out.writeVal($k) }
+
+                    genWriteMapAsArrayScala(tx, writeVal1, writeVal2, out)
+                  } else genWriteMapScala(tx, (out, k) => '{ $out.writeKey($k) }, writeVal2, out)
+                } else {
+                  val tx = x.asInstanceOf[Expr[collection.Map[Long, t1]]]
+                  if (cfg.mapAsArray) {
+                    def writeVal1(out: Expr[JsonWriter], k: Expr[Long])(using Quotes): Expr[Unit] =
+                      if (isStringified) '{ $out.writeValAsString($k) }
+                      else '{ $out.writeVal($k) }
+
+                    genWriteMapAsArrayScala(tx, writeVal1, writeVal2, out)
+                  } else genWriteMapScala(tx, (out, k) => '{ $out.writeKey($k) }, writeVal2, out)
+                }
+          } else if (tpe <:< TypeRepr.of[collection.Map[?, ?]] ||
+              tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+            val tpe1 = typeArg1(tpe)
+            val tpe2 = typeArg2(tpe)
+            (tpe1.asType, tpe2.asType) match
+              case ('[t1], '[t2]) =>
+                def writeVal2(out: Expr[JsonWriter], v: Expr[t2])(using Quotes): Expr[Unit] =
+                  genWriteVal(v, tpe2 :: types, isStringified, None, out)
+
+                val tx = x.asInstanceOf[Expr[collection.Map[t1, t2]]]
+                if (cfg.mapAsArray) {
+                  genWriteMapAsArrayScala(tx, (out, k) => genWriteVal(k, tpe1 :: types, isStringified, None, out), writeVal2, out)
+                } else genWriteMapScala(tx, (out, k) => genWriteKey(k, tpe1 :: types, out), writeVal2, out)
+          } else if (tpe <:< TypeRepr.of[BitSet]) withEncoderFor(methodKey, m, out) { (out, x) =>
+            genWriteArray(x.asInstanceOf[Expr[BitSet]], (out, x1) => {
+              if (isStringified) '{ $out.writeValAsString($x1) }
+              else '{ $out.writeVal($x1) }
+            }, out)
+          } else if (tpe <:< TypeRepr.of[List[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val tx = x.asInstanceOf[Expr[List[t1]]]
                 '{
                   $out.writeArrayStart()
-                  val xs = $tx.unsafeArray.asInstanceOf[Array[t1]]
-                  val l = xs.length
-                  var i = 0
-                  while (i < l) {
-                    ${genWriteVal('{ xs(i) }, tpe1 :: types, isStringified, None, out)}
-                    i += 1
+                  val n = Nil
+                  var l = $tx
+                  while (l ne n) {
+                    ${genWriteVal('{ l.head }, tpe1 :: types, isStringified, None, out)}
+                    l = l.tail
                   }
                   $out.writeArrayEnd()
                 }
-              } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) {
-                val tx = x.asInstanceOf[Expr[mutable.ArraySeq[t1]]]
-                '{
-                  $out.writeArrayStart()
-                  val xs = $tx.array.asInstanceOf[Array[t1]]
-                  val l = xs.length
-                  var i = 0
-                  while (i < l) {
-                    ${genWriteVal('{ xs(i) }, tpe1 :: types, isStringified, None, out)}
-                    i += 1
-                  }
-                  $out.writeArrayEnd()
-                }
-              } else if (isIArray(tpe)) {
-                val tx = x.asInstanceOf[Expr[IArray[t1]]]
+          } else if (tpe <:< TypeRepr.of[IndexedSeq[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                val tx = x.asInstanceOf[Expr[IndexedSeq[t1]]]
                 '{
                   $out.writeArrayStart()
                   val l = $tx.length
-                  var i = 0
-                  while (i < l) {
-                    ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
-                    i += 1
-                  }
+                  if (l <= 32) {
+                    var i = 0
+                    while (i < l) {
+                      ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
+                      i += 1
+                    }
+                  } else $tx.foreach(x => ${genWriteVal('x, tpe1 :: types, isStringified, None, out)})
                   $out.writeArrayEnd()
                 }
-              } else {
-                val tx = x.asInstanceOf[Expr[Array[t1]]]
-                '{
-                  $out.writeArrayStart()
-                  val l = $tx.length
-                  var i = 0
-                  while (i < l) {
-                    ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
-                    i += 1
-                  }
-                  $out.writeArrayEnd()
-                }
-              }
-        } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]] || tpe <:< TypeRepr.of[mutable.LongMap[?]] ||
-            tpe <:< TypeRepr.of[immutable.LongMap[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              def writeVal2(out: Expr[JsonWriter], v: Expr[t1])(using Quotes): Expr[Unit] =
-                genWriteVal(v, tpe1 :: types, isStringified, None, out)
-
-              if (tpe <:< TypeRepr.of[immutable.IntMap[?]]) {
-                val tx = x.asInstanceOf[Expr[immutable.IntMap[t1]]]
-                if (cfg.mapAsArray) {
-                  def writeVal1(out: Expr[JsonWriter], k: Expr[Int])(using Quotes): Expr[Unit] =
-                    if (isStringified) '{ $out.writeValAsString($k) }
-                    else '{ $out.writeVal($k) }
-
-                  genWriteMapAsArrayScala(tx, writeVal1, writeVal2, out)
-                } else genWriteMapScala(tx, (out, k) => '{ $out.writeKey($k) }, writeVal2, out)
-              } else {
-                val tx = x.asInstanceOf[Expr[collection.Map[Long, t1]]]
-                if (cfg.mapAsArray) {
-                  def writeVal1(out: Expr[JsonWriter], k: Expr[Long])(using Quotes): Expr[Unit] =
-                    if (isStringified) '{ $out.writeValAsString($k) }
-                    else '{ $out.writeVal($k) }
-
-                  genWriteMapAsArrayScala(tx, writeVal1, writeVal2, out)
-                } else genWriteMapScala(tx, (out, k) => '{ $out.writeKey($k) }, writeVal2, out)
-              }
-        } else if (tpe <:< TypeRepr.of[collection.Map[?, ?]] ||
-            tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tpe1 = typeArg1(tpe)
-          val tpe2 = typeArg2(tpe)
-          (tpe1.asType, tpe2.asType) match
-            case ('[t1], '[t2]) =>
-              def writeVal2(out: Expr[JsonWriter], v: Expr[t2])(using Quotes): Expr[Unit] =
-                genWriteVal(v, tpe2 :: types, isStringified, None, out)
-
-              val tx = x.asInstanceOf[Expr[collection.Map[t1, t2]]]
-              if (cfg.mapAsArray) {
-                genWriteMapAsArrayScala(tx, (out, k) => genWriteVal(k, tpe1 :: types, isStringified, None, out), writeVal2, out)
-              } else genWriteMapScala(tx, (out, k) => genWriteKey(k, tpe1 :: types, out), writeVal2, out)
-        } else if (tpe <:< TypeRepr.of[BitSet]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          genWriteArray(x.asInstanceOf[Expr[BitSet]], (out, x1) => {
-            if (isStringified) '{ $out.writeValAsString($x1) }
-            else '{ $out.writeVal($x1) }
-          }, out)
-        } else if (tpe <:< TypeRepr.of[List[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val tx = x.asInstanceOf[Expr[List[t1]]]
-              '{
-                $out.writeArrayStart()
-                val n = Nil
-                var l = $tx
-                while (l ne n) {
-                  ${genWriteVal('{ l.head }, tpe1 :: types, isStringified, None, out)}
-                  l = l.tail
-                }
-                $out.writeArrayEnd()
-              }
-        } else if (tpe <:< TypeRepr.of[IndexedSeq[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              val tx = x.asInstanceOf[Expr[IndexedSeq[t1]]]
-              '{
-                $out.writeArrayStart()
-                val l = $tx.length
-                if (l <= 32) {
-                  var i = 0
-                  while (i < l) {
-                    ${genWriteVal('{ $tx(i) }, tpe1 :: types, isStringified, None, out)}
-                    i += 1
-                  }
-                } else $tx.foreach(x => ${genWriteVal('x, tpe1 :: types, isStringified, None, out)})
-                $out.writeArrayEnd()
-              }
-        } else if (tpe <:< TypeRepr.of[Iterable[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              genWriteArray(x.asInstanceOf[Expr[Iterable[t1]]],
-                (out, x1) => genWriteVal(x1, tpe1 :: types, isStringified, None, out), out)
-        } else if (tpe <:< TypeRepr.of[Iterator[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              genWriteArray2(x.asInstanceOf[Expr[Iterator[t1]]],
-                (out, x1) => genWriteVal(x1, tpe1 :: types, isStringified, None, out), out)
+          } else if (tpe <:< TypeRepr.of[Iterable[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                genWriteArray(x.asInstanceOf[Expr[Iterable[t1]]],
+                  (out, x1) => genWriteVal(x1, tpe1 :: types, isStringified, None, out), out)
+          } else if (tpe <:< TypeRepr.of[Iterator[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case'[t1] =>
+                genWriteArray2(x.asInstanceOf[Expr[Iterator[t1]]],
+                  (out, x1) => genWriteVal(x1, tpe1 :: types, isStringified, None, out), out)
+          } else cannotFindValueCodecError(tpe)
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tx = x.asInstanceOf[Expr[Enumeration#Value]]
           if (cfg.useScalaEnumValueId) {
@@ -3207,7 +3211,7 @@ object JsonCodecMaker {
               typeArgs
             } else typeArgs(tpe)
           val writeFields = tTypeArgs.map {
-            val xTerm = tTpe.asType match { case '[tt] => '{ $x.asInstanceOf[tt & Tuple] }.asTerm }
+            val xTerm = TypeApply(Select(x.asTerm, asInstanceOfMethod), List(Inferred(tTpe)))
             lazy val productElement = Select.unique(xTerm, "productElement")
             val isGeneric = tTypeArgs.size > 22
             var i = 0
@@ -3217,9 +3221,8 @@ object JsonCodecMaker {
                 case '[t] =>
                   val getter =
                     (if (isGeneric) {
-                      val select = productElement.appliedTo(Literal(IntConstant(i - 1))).asExpr
-                      '{ $select.asInstanceOf[t] }
-                    } else Select.unique(xTerm, "_" + i).asExpr).asInstanceOf[Expr[t]]
+                      TypeApply(Select(productElement.appliedTo(Literal(IntConstant(i - 1))), asInstanceOfMethod), List(Inferred(te)))
+                    } else Select.unique(xTerm, "_" + i)).asExpr.asInstanceOf[Expr[t]]
                   genWriteVal(getter, te :: types, isStringified, None, out).asTerm
           }
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields, '{ $out.writeArrayEnd() }.asTerm).asExpr.asInstanceOf[Expr[Unit]]
@@ -3279,7 +3282,7 @@ object JsonCodecMaker {
           @inline
           def nullValue: A = ${
             if (cfg.encodingOnly) '{ ??? }
-            else genNullValue(List(rootTpe))
+            else genNullValue[A](List(rootTpe))
           }
 
           @inline
@@ -3300,9 +3303,11 @@ object JsonCodecMaker {
         .addAll(fieldIndexAccessors.values).addAll(decodeMethodDefs).addAll(encodeMethodDefs)
       val codec = Block(needDefs.toList, codecDef).asExpr.asInstanceOf[Expr[JsonValueCodec[A]]]
       if (// FIXME: uncomment after graduating from experimental API: CompilationInfo.XmacroSettings.contains("print-codecs") ||
-        summon(TypeRepr.of[CodecMakerConfig.PrintCodec]).isDefined) {
-        report.info(s"Generated JSON codec for type '${rootTpe.show}':\n${codec.show}", Position.ofMacroExpansion)
-      }
+      {
+        Implicits.search(TypeRepr.of[CodecMakerConfig.PrintCodec]) match
+          case s: ImplicitSearchSuccess => true
+          case _ => false
+      }) report.info(s"Generated JSON codec for type '${rootTpe.show}':\n${codec.show}", Position.ofMacroExpansion)
       codec
     }
   }

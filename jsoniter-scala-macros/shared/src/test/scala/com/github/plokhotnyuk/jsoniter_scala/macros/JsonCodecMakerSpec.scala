@@ -2254,7 +2254,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         "JsonCodecMaker.make[PolymorphicDefaults[String, Int]]"
       }).getMessage.contains {
         if (ScalaVersionCheck.isScala2) "polymorphic expression cannot be instantiated to expected type"
-        else "Polymorphic expression cannot be instantiated to expected type"
+        else "Found:    Int\nRequired: String"
       })
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
