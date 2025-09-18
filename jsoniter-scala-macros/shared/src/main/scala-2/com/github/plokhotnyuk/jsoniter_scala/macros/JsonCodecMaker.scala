@@ -697,7 +697,7 @@ object JsonCodecMaker {
         val tpeTypeParams =
           if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.typeParams
           else Nil
-        if (tpeTypeParams.isEmpty) mtpe
+        if (tpeTypeParams eq Nil) mtpe
         else mtpe.substituteTypes(tpeTypeParams, typeArgs(tpe))
       }
 
@@ -794,20 +794,18 @@ object JsonCodecMaker {
         else if (precision == java.math.MathContext.DECIMAL32.getPrecision) q"_root_.java.math.MathContext.DECIMAL32"
         else if (precision == java.math.MathContext.UNLIMITED.getPrecision) q"_root_.java.math.MathContext.UNLIMITED"
         else Ident(mathContexts.getOrElseUpdate(precision, {
-          val name = TermName("mc" + mathContexts.size)
-          (name,
-            q"private[this] val $name = new _root_.java.math.MathContext(${cfg.bigDecimalPrecision}, _root_.java.math.RoundingMode.HALF_EVEN)")
+          val name = TermName(s"mc${mathContexts.size}")
+          (name, q"private[this] val $name = new _root_.java.math.MathContext(${cfg.bigDecimalPrecision}, _root_.java.math.RoundingMode.HALF_EVEN)")
         })._1)
 
       val scalaEnumCaches = new mutable.LinkedHashMap[Type, (TermName, Tree)]
 
       def withScalaEnumCacheFor(tpe: Type): Tree = Ident(scalaEnumCaches.getOrElseUpdate(tpe, {
-        val name = TermName("ec" + scalaEnumCaches.size)
+        val name = TermName(s"ec${scalaEnumCaches.size}")
         val keyTpe =
           if (cfg.useScalaEnumValueId) tq"Int"
           else tq"String"
-        (name,
-          q"private[this] val $name = new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]")
+        (name, q"private[this] val $name = new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]")
       })._1)
 
       case class JavaEnumValueInfo(value: Tree, name: String, transformed: Boolean)
@@ -823,7 +821,7 @@ object JsonCodecMaker {
           val transformedName = javaEnumValueNameMapper(name)
           JavaEnumValueInfo(q"$s", transformedName, name != transformedName)
         }
-        if (values.isEmpty) {
+        if (values eq Nil) {
           val comp = companion(tpe)
           values =
             comp.typeSignature.members.sorted.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
@@ -920,13 +918,12 @@ object JsonCodecMaker {
             else {
               val mappedName = annotationOption.flatMap(_.partiallyMappedName)
                 .getOrElse(cfg.fieldNameMapper.lift(name).getOrElse(name))
-              val tmpName = TermName("_" + symbol.name)
+              val tmpName = TermName(s"_${symbol.name}")
               val getter = getters.getOrElse(name,
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor."))
-              val defaultValue =
-                if (!cfg.requireDefaultFields && symbol.isParamWithDefault) {
-                  new Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
-                } else None
+              val defaultValue = if (!cfg.requireDefaultFields && symbol.isParamWithDefault) {
+                new Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
+              } else None
               val isStringified = annotationOption.exists(_.stringified)
               val resolvedTpe = resolveConcreteType(tpe, symbol.typeSignature.dealias)
               new Some(new FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, resolvedTpe, isStringified))
@@ -945,7 +942,7 @@ object JsonCodecMaker {
             val classSymbol = s.asClass
             val typeParams = classSymbol.typeParams
             val subTpe =
-              if (typeParams.isEmpty) classSymbol.toType
+              if (typeParams eq Nil) classSymbol.toType
               else {
                 val typeParamsAndArgs = tpeClass.typeParams.map(_.toString).zip(typeArgs(tpe)).toMap
                 classSymbol.toType.substituteTypes(typeParams, typeParams.map(tp => typeParamsAndArgs.getOrElse(tp.toString, fail {
@@ -974,7 +971,6 @@ object JsonCodecMaker {
       }
 
       def genReadKey(types: List[Type]): Tree = {
-        checkRecursionInTypes(types)
         val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(tpe)
         if (implKeyCodec.nonEmpty) q"$implKeyCodec.decodeKey(in)"
@@ -1006,7 +1002,10 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZonedDateTime]) q"in.readKeyAsZonedDateTime()"
         else if (tpe =:= typeOf[ZoneId]) q"in.readKeyAsZoneId()"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
-        else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe) :: types)})"
+        else if ({
+          checkRecursionInTypes(types)
+          isValueClass(tpe)
+        }) q"new $tpe(${genReadKey(valueClassValueType(tpe) :: types)})"
         else if (tpe <:< typeOf[Enumeration#Value]) {
           val ec = withScalaEnumCacheFor(tpe)
           if (cfg.useScalaEnumValueId) {
@@ -1166,7 +1165,6 @@ object JsonCodecMaker {
 
       @tailrec
       def genWriteKey(x: Tree, types: List[Type]): Tree = {
-        checkRecursionInTypes(types)
         val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(tpe)
         if (implKeyCodec.nonEmpty) q"$implKeyCodec.encodeKey($x, out)"
@@ -1181,7 +1179,10 @@ object JsonCodecMaker {
           tpe =:= typeOf[LocalTime] || tpe =:= typeOf[MonthDay] || tpe =:= typeOf[OffsetDateTime] ||
           tpe =:= typeOf[OffsetTime] || tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
-        else if (isValueClass(tpe)) genWriteKey(q"$x.${valueClassValueSymbol(tpe)}", valueClassValueType(tpe) :: types)
+        else if ({
+          checkRecursionInTypes(types)
+          isValueClass(tpe)
+        }) genWriteKey(q"$x.${valueClassValueSymbol(tpe)}", valueClassValueType(tpe) :: types)
         else if (tpe <:< typeOf[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) q"out.writeKey($x.id)"
           else q"out.writeKey($x.toString)"
@@ -1328,14 +1329,14 @@ object JsonCodecMaker {
       val nullValues = new mutable.LinkedHashMap[Type, (TermName, Tree)]
 
       def withNullValueFor(tpe: Type)(f: => Tree): Tree = Ident(nullValues.getOrElseUpdate(tpe, {
-        val name = TermName("c" + nullValues.size)
+        val name = TermName(s"c${nullValues.size}")
         (name, q"private[this] val $name: $tpe = $f")
       })._1)
 
       val fields = new mutable.LinkedHashMap[Type, (TermName, Tree)]
 
       def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = Ident(fields.getOrElseUpdate(tpe, {
-        val name = TermName("f" + fields.size)
+        val name = TermName(s"f${fields.size}")
         val cases = f.map {
           var i = -1
           n =>
@@ -1353,7 +1354,7 @@ object JsonCodecMaker {
 
       def withEqualsFor(tpe: Type, arg1: Tree, arg2: Tree)(f: => Tree): Tree = {
         val equalsMethodName = equalsMethods.getOrElseUpdate(tpe, {
-          val name = TermName("q" + equalsMethods.size)
+          val name = TermName(s"q${equalsMethods.size}")
           (name, q"private[this] def $name(x1: $tpe, x2: $tpe): _root_.scala.Boolean = $f")
         })._1
         q"$equalsMethodName($arg1, $arg2)"
@@ -1381,7 +1382,7 @@ object JsonCodecMaker {
 
       def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val decodeMethodName = decodeMethodNames.getOrElse(methodKey, {
-          val name = TermName("d" + decodeMethodNames.size)
+          val name = TermName(s"d${decodeMethodNames.size}")
           val mtpe = methodKey.tpe
           decodeMethodNames.update(methodKey, name)
           decodeMethodTrees +=
@@ -1396,7 +1397,7 @@ object JsonCodecMaker {
 
       def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val encodeMethodName = encodeMethodNames.getOrElse(methodKey, {
-          val name = TermName("e" + encodeMethodNames.size)
+          val name = TermName(s"e${encodeMethodNames.size}")
           encodeMethodNames.update(methodKey, name)
           encodeMethodTrees +=
             q"private[this] def $name(x: ${methodKey.tpe}, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = $f"
@@ -1406,7 +1407,6 @@ object JsonCodecMaker {
       }
 
       def genNullValue(types: List[Type]): Tree = {
-        checkRecursionInTypes(types)
         val tpe = types.head
         val implValueCodec = findImplicitValueCodec(tpe)
         if (implValueCodec.nonEmpty) q"$implValueCodec.nullValue"
@@ -1419,7 +1419,10 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"0L"
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
-        else if (isOption(tpe, types.tail)) q"_root_.scala.None"
+        else if ({
+          checkRecursionInTypes(types)
+          isOption(tpe, types.tail)
+        }) q"_root_.scala.None"
         else if (isValueClass(tpe)) q"new $tpe(${genNullValue(valueClassValueType(tpe) :: types)})"
         else if (isCollection(tpe)) {
           if (tpe <:< typeOf[mutable.BitSet]) q"new _root_.scala.collection.mutable.BitSet"
@@ -1475,7 +1478,7 @@ object JsonCodecMaker {
         val paramVarNum = fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
-        val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
+        val paramVarNames = (0 to lastParamVarIndex).map(i => TermName(s"p$i"))
         val checkAndResetFieldPresenceFlags = fields.map {
           var i = -1
           fieldInfo =>
@@ -1611,10 +1614,7 @@ object JsonCodecMaker {
           else q"x += ${genReadVal(types, genNullValue(types), isStringified, EmptyTree)}"
 
       def genReadVal(types: List[Type], default: Tree, isStringified: Boolean, discriminator: Tree): Tree = {
-        checkRecursionInTypes(types)
         val tpe = types.head
-        lazy val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
-        lazy val decodeMethodName = decodeMethodNames.get(methodKey)
         val implValueCodec = findImplicitValueCodec(tpe)
         if (implValueCodec.nonEmpty) q"$implValueCodec.decodeValue(in, $default)"
         else if (tpe =:= typeOf[String]) q"in.readString($default)"
@@ -1665,354 +1665,375 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZonedDateTime]) q"in.readZonedDateTime($default)"
         else if (tpe =:= typeOf[ZoneId]) q"in.readZoneId($default)"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readZoneOffset($default)"
-        else if (isValueClass(tpe)) {
-          val tpe1 = valueClassValueType(tpe)
-          q"new $tpe(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})"
-        } else if (isOption(tpe, types.tail)) {
+        else if ({
+          checkRecursionInTypes(types)
+          isOption(tpe, types.tail)
+        }) {
           val tpe1 = typeArg1(tpe)
+          val types1 = tpe1 :: types
           val nullValue =
             if (cfg.skipNestedOptionValues && tpe <:< typeOf[Option[Option[?]]]) q"new _root_.scala.Some(_root_.scala.None)"
             else default
           q"""if (in.isNextToken('n')) in.readNullOrError($nullValue, "expected value or null")
               else {
                 in.rollbackToken()
-                new _root_.scala.Some(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})
+                new _root_.scala.Some(${genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)})
               }"""
-        } else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
-        else if (isCollection(tpe)) {
-          if (tpe <:< typeOf[Array[?]] || isImmutableArraySeq(tpe) || isMutableArraySeq(tpe)) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            val requiresArrayCopy = tpe1.typeArgs.nonEmpty || isValueClass(tpe1)
-            val growArray =
-              if (requiresArrayCopy) {
-                q"""l <<= 1
-                    val x1 = new Array[$tpe1](l)
-                    _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
-                    x1"""
-              } else {
-                q"""l <<= 1
-                    _root_.java.util.Arrays.copyOf(x, l)"""
-              }
-            val shrinkArray =
-              if (requiresArrayCopy) {
-                q"""val x1 = new Array[$tpe1](i)
-                    _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
-                    x1"""
-              } else q"_root_.java.util.Arrays.copyOf(x, i)"
-            genReadArray(
-              q"""var l = 8
-                  var x = new Array[$tpe1](l)
-                  var i = 0""",
-              q"""if (i == l) x = $growArray
-                  x(i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)}
-                  i += 1""",
-              {
-                if (isImmutableArraySeq(tpe)) {
-                  q"""if (i != l) x = $shrinkArray
-                      _root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1](x)"""
-                } else if (isMutableArraySeq(tpe)) {
-                  q"""if (i != l) x = $shrinkArray
-                      _root_.scala.collection.mutable.ArraySeq.make[$tpe1](x)"""
+        } else if (isValueClass(tpe)) {
+          val tpe1 = valueClassValueType(tpe)
+          val types1 = tpe1 :: types
+          q"new $tpe(${genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)})"
+        } else {
+          val isColl = isCollection(tpe)
+          val methodKey = new MethodKey(tpe, isColl & isStringified, discriminator)
+          if (isColl) {
+            if (tpe <:< typeOf[Array[?]] || isImmutableArraySeq(tpe) || isMutableArraySeq(tpe)) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              val types1 = tpe1 :: types
+              val requiresArrayCopy = tpe1.typeArgs.nonEmpty || isValueClass(tpe1)
+              val growArray =
+                if (requiresArrayCopy) {
+                  q"""l <<= 1
+                      val x1 = new Array[$tpe1](l)
+                      _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
+                      x1"""
                 } else {
-                  q"""if (i != l) x = $shrinkArray
-                      x"""
+                  q"""l <<= 1
+                      _root_.java.util.Arrays.copyOf(x, l)"""
                 }
-              })
-          } else if (tpe <:< typeOf[immutable.IntMap[?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
-            val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
-            if (cfg.mapAsArray) {
-              val readKey =
-                if (cfg.isStringified) q"in.readStringAsInt()"
-                else q"in.readInt()"
-              genReadMapAsArray(newBuilder,
-                q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
-            } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsInt(), $readVal)")
-          } else if (tpe <:< typeOf[mutable.LongMap[?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }"
-            val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
-            if (cfg.mapAsArray) {
-              val readKey =
-                if (cfg.isStringified) q"in.readStringAsLong()"
-                else q"in.readLong()"
-              genReadMapAsArray(newBuilder,
-                q"x.update($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
-            } else genReadMap(newBuilder, q"x.update(in.readKeyAsLong(), $readVal)")
-          } else if (tpe <:< typeOf[immutable.LongMap[?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
-            val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
-            if (cfg.mapAsArray) {
-              val readKey =
-                if (cfg.isStringified) q"in.readStringAsLong()"
-                else q"in.readLong()"
-              genReadMapAsArray(newBuilder,
-                q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
-            } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsLong(), $readVal)")
-          } else if (tpe <:< typeOf[mutable.Map[?, ?]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            val tpe2 = typeArg2(tpe)
-            val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2] }"
-            val readVal2 = genReadVal(tpe2 :: types, genNullValue(tpe2 :: types), isStringified, EmptyTree)
-            if (cfg.mapAsArray) {
-              val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
-              genReadMapAsArray(newBuilder, q"x.update($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })")
-            } else genReadMap(newBuilder, q"x.update(${genReadKey(tpe1 :: types)}, $readVal2)")
-          } else if (tpe <:< typeOf[collection.Map[?, ?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            val tpe2 = typeArg2(tpe)
-            val newBuilder = q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2] }"
-            val readVal2 = genReadVal(tpe2 :: types, genNullValue(tpe2 :: types), isStringified, EmptyTree)
-            if (cfg.mapAsArray) {
-              val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
-              val readKV =
-                if (isScala213) q"x.addOne(new _root_.scala.Tuple2($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
-                else q"x += new _root_.scala.Tuple2($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })"
-              genReadMapAsArray(newBuilder, readKV, q"x.result()")
-            } else {
-              val readKey = genReadKey(tpe1 :: types)
-              val readKV =
-                if (isScala213) q"x.addOne(new _root_.scala.Tuple2($readKey, $readVal2))"
-                else q"x += new _root_.scala.Tuple2($readKey, $readVal2)"
-              genReadMap(newBuilder, readKV, q"x.result()")
-            }
-          } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
-            val readVal =
-              if (isStringified) q"in.readStringAsInt()"
-              else q"in.readInt()"
-            genReadArray(q"var x = new _root_.scala.Array[Long](2)",
-              q"""val v = $readVal
-                  if (v < 0 || v >= ${cfg.bitSetValueLimit}) in.decodeError("illegal value for bit set")
-                  val i = v >>> 6
-                  if (i >= x.length) x = _root_.java.util.Arrays.copyOf(x, _root_.java.lang.Integer.highestOneBit(i) << 1)
-                  x(i) = x(i) | 1L << v""",
-              if (tpe <:< typeOf[mutable.BitSet]) q"_root_.scala.collection.mutable.BitSet.fromBitMaskNoCopy(x)"
-              else q"_root_.scala.collection.immutable.BitSet.fromBitMaskNoCopy(x)")
-          } else if (tpe <:< typeOf[mutable.Set[?] with mutable.Builder[?, ?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            genReadSet(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
-              genReadValForGrowable(tpe1 :: types, isStringified))
-          } else if (tpe <:< typeOf[collection.Set[?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            genReadSet(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
-              genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
-          } else if (tpe <:< typeOf[::[?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            val readVal = genReadValForGrowable(tpe1 :: types, isStringified)
-            q"""if (in.isNextToken('[')) {
-                  if (in.isNextToken(']')) {
-                    if (default ne null) default
-                    else in.decodeError("expected non-empty JSON array")
+              val shrinkArray =
+                if (requiresArrayCopy) {
+                  q"""val x1 = new Array[$tpe1](i)
+                      _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
+                      x1"""
+                } else q"_root_.java.util.Arrays.copyOf(x, i)"
+              genReadArray(
+                q"""var l = 8
+                    var x = new Array[$tpe1](l)
+                    var i = 0""",
+                q"""if (i == l) x = $growArray
+                    x(i) = ${genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)}
+                    i += 1""",
+                {
+                  if (isImmutableArraySeq(tpe)) {
+                    q"""if (i != l) x = $shrinkArray
+                        _root_.scala.collection.immutable.ArraySeq.unsafeWrapArray[$tpe1](x)"""
+                  } else if (isMutableArraySeq(tpe)) {
+                    q"""if (i != l) x = $shrinkArray
+                        _root_.scala.collection.mutable.ArraySeq.make[$tpe1](x)"""
                   } else {
-                    in.rollbackToken()
-                    val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]
-                    while ({
-                      ..$readVal
-                      in.isNextToken(',')
-                    }) ()
-                    if (in.isCurrentToken(']')) x.toList.asInstanceOf[_root_.scala.collection.immutable.::[$tpe1]]
-                    else in.arrayEndOrCommaError()
+                    q"""if (i != l) x = $shrinkArray
+                        x"""
                   }
-                } else {
-                  if (default ne null) in.readNullOrTokenError(default, '[')
-                  else in.decodeError("expected non-empty JSON array")
-                }"""
-          } else if (tpe <:< typeOf[List[?]] || tpe.typeSymbol == typeOf[Seq[?]].typeSymbol) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            genReadArray(q"{ val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1] }",
-              genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
-          } else if (tpe <:< typeOf[Vector[?]] || tpe.typeSymbol == typeOf[IndexedSeq[?]].typeSymbol) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            genReadArray(q"{ val x = new _root_.scala.collection.immutable.VectorBuilder[$tpe1] }",
-              genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
-          } else if (tpe <:< typeOf[mutable.Iterable[?] with mutable.Builder[?, ?]] &&
-              !(tpe <:< typeOf[mutable.ArrayStack[?]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.12.x
-            val tpe1 = typeArg1(tpe)
-            genReadArray(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
-              genReadValForGrowable(tpe1 :: types, isStringified))
-          } else if (tpe <:< typeOf[Iterable[?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            genReadArray(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
-              genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
-          } else if (tpe <:< typeOf[Iterator[?]]) withDecoderFor(methodKey, default) {
-            val tpe1 = typeArg1(tpe)
-            genReadArray({
-              if (isScala213) q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }"
-              else q"{ val x = Seq.newBuilder[$tpe1] }"
-            }, genReadValForGrowable(tpe1 :: types, isStringified), {
-              if (isScala213) q"x.result()"
-              else q"x.result().iterator"
-            })
-          } else cannotFindValueCodecError(tpe)
-        } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
-          val ec = withScalaEnumCacheFor(tpe)
-          if (cfg.useScalaEnumValueId) {
-            if (isStringified) {
+                })
+            } else if (tpe <:< typeOf[immutable.IntMap[?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              val types1 = tpe1 :: types
+              val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
+              val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
+              if (cfg.mapAsArray) {
+                val readKey =
+                  if (cfg.isStringified) q"in.readStringAsInt()"
+                  else q"in.readInt()"
+                genReadMapAsArray(newBuilder,
+                  q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
+              } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsInt(), $readVal)")
+            } else if (tpe <:< typeOf[mutable.LongMap[?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              val types1 = tpe1 :: types
+              val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }"
+              val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
+              if (cfg.mapAsArray) {
+                val readKey =
+                  if (cfg.isStringified) q"in.readStringAsLong()"
+                  else q"in.readLong()"
+                genReadMapAsArray(newBuilder,
+                  q"x.update($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
+              } else genReadMap(newBuilder, q"x.update(in.readKeyAsLong(), $readVal)")
+            } else if (tpe <:< typeOf[immutable.LongMap[?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              val types1 = tpe1 :: types
+              val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
+              val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
+              if (cfg.mapAsArray) {
+                val readKey =
+                  if (cfg.isStringified) q"in.readStringAsLong()"
+                  else q"in.readLong()"
+                genReadMapAsArray(newBuilder,
+                  q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
+              } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsLong(), $readVal)")
+            } else if (tpe <:< typeOf[mutable.Map[?, ?]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              val tpe2 = typeArg2(tpe)
+              val types1 = tpe1 :: types
+              val types2 = tpe2 :: types
+              val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2] }"
+              val readVal2 = genReadVal(types2, genNullValue(types2), isStringified, EmptyTree)
+              if (cfg.mapAsArray) {
+                val readVal1 = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
+                genReadMapAsArray(newBuilder, q"x.update($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })")
+              } else genReadMap(newBuilder, q"x.update(${genReadKey(types1)}, $readVal2)")
+            } else if (tpe <:< typeOf[collection.Map[?, ?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              val tpe2 = typeArg2(tpe)
+              val types1 = tpe1 :: types
+              val types2 = tpe2 :: types
+              val newBuilder = q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2] }"
+              val readVal2 = genReadVal(types2, genNullValue(types2), isStringified, EmptyTree)
+              if (cfg.mapAsArray) {
+                val readVal1 = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
+                val readKV =
+                  if (isScala213) q"x.addOne(new _root_.scala.Tuple2($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
+                  else q"x += new _root_.scala.Tuple2($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })"
+                genReadMapAsArray(newBuilder, readKV, q"x.result()")
+              } else {
+                val readKey = genReadKey(types1)
+                val readKV =
+                  if (isScala213) q"x.addOne(new _root_.scala.Tuple2($readKey, $readVal2))"
+                  else q"x += new _root_.scala.Tuple2($readKey, $readVal2)"
+                genReadMap(newBuilder, readKV, q"x.result()")
+              }
+            } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
+              val readVal =
+                if (isStringified) q"in.readStringAsInt()"
+                else q"in.readInt()"
+              genReadArray(q"var x = new _root_.scala.Array[Long](2)",
+                q"""val v = $readVal
+                    if (v < 0 || v >= ${cfg.bitSetValueLimit}) in.decodeError("illegal value for bit set")
+                    val i = v >>> 6
+                    if (i >= x.length) x = _root_.java.util.Arrays.copyOf(x, _root_.java.lang.Integer.highestOneBit(i) << 1)
+                    x(i) = x(i) | 1L << v""",
+                if (tpe <:< typeOf[mutable.BitSet]) q"_root_.scala.collection.mutable.BitSet.fromBitMaskNoCopy(x)"
+                else q"_root_.scala.collection.immutable.BitSet.fromBitMaskNoCopy(x)")
+            } else if (tpe <:< typeOf[mutable.Set[?] with mutable.Builder[?, ?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              genReadSet(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
+                genReadValForGrowable(tpe1 :: types, isStringified))
+            } else if (tpe <:< typeOf[collection.Set[?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              genReadSet(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
+                genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
+            } else if (tpe <:< typeOf[::[?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              val readVal = genReadValForGrowable(tpe1 :: types, isStringified)
+              q"""if (in.isNextToken('[')) {
+                    if (in.isNextToken(']')) {
+                      if (default ne null) default
+                      else in.decodeError("expected non-empty JSON array")
+                    } else {
+                      in.rollbackToken()
+                      val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]
+                      while ({
+                        ..$readVal
+                        in.isNextToken(',')
+                      }) ()
+                      if (in.isCurrentToken(']')) x.toList.asInstanceOf[_root_.scala.collection.immutable.::[$tpe1]]
+                      else in.arrayEndOrCommaError()
+                    }
+                  } else {
+                    if (default ne null) in.readNullOrTokenError(default, '[')
+                    else in.decodeError("expected non-empty JSON array")
+                  }"""
+            } else if (tpe <:< typeOf[List[?]] || tpe.typeSymbol == typeOf[Seq[?]].typeSymbol) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              genReadArray(q"{ val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1] }",
+                genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
+            } else if (tpe <:< typeOf[Vector[?]] || tpe.typeSymbol == typeOf[IndexedSeq[?]].typeSymbol) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              genReadArray(q"{ val x = new _root_.scala.collection.immutable.VectorBuilder[$tpe1] }",
+                genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
+            } else if (tpe <:< typeOf[mutable.Iterable[?] with mutable.Builder[?, ?]] &&
+                !(tpe <:< typeOf[mutable.ArrayStack[?]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.12.x
+              val tpe1 = typeArg1(tpe)
+              genReadArray(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
+                genReadValForGrowable(tpe1 :: types, isStringified))
+            } else if (tpe <:< typeOf[Iterable[?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              genReadArray(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
+                genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
+            } else if (tpe <:< typeOf[Iterator[?]]) withDecoderFor(methodKey, default) {
+              val tpe1 = typeArg1(tpe)
+              genReadArray({
+                if (isScala213) q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }"
+                else q"{ val x = Seq.newBuilder[$tpe1] }"
+              }, genReadValForGrowable(tpe1 :: types, isStringified), {
+                if (isScala213) q"x.result()"
+                else q"x.result().iterator"
+              })
+            } else cannotFindValueCodecError(tpe)
+          } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
+            val ec = withScalaEnumCacheFor(tpe)
+            if (cfg.useScalaEnumValueId) {
+              if (isStringified) {
+                q"""if (in.isNextToken('"')) {
+                      in.rollbackToken()
+                      val i = in.readStringAsInt()
+                      var x = $ec.get(i)
+                      if (x eq null) {
+                        x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.enumValueError(i.toString))
+                        $ec.put(i, x)
+                      }
+                      x
+                    } else in.readNullOrTokenError(default, '"')"""
+              } else {
+                q"""val t = in.nextToken()
+                    if (t >= '0' && t <= '9') {
+                      in.rollbackToken()
+                      val i = in.readInt()
+                      var x = $ec.get(i)
+                      if (x eq null) {
+                        x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.decodeError("illegal enum value " + i))
+                        $ec.put(i, x)
+                      }
+                      x
+                    } else in.readNullOrError(default, "expected digit")"""
+              }
+            } else {
               q"""if (in.isNextToken('"')) {
                     in.rollbackToken()
-                    val i = in.readStringAsInt()
-                    var x = $ec.get(i)
+                    val s = in.readString(null)
+                    var x = $ec.get(s)
                     if (x eq null) {
-                      x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.enumValueError(i.toString))
-                      $ec.put(i, x)
+                      x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
+                      $ec.put(s, x)
                     }
                     x
                   } else in.readNullOrTokenError(default, '"')"""
-            } else {
-              q"""val t = in.nextToken()
-                  if (t >= '0' && t <= '9') {
-                    in.rollbackToken()
-                    val i = in.readInt()
-                    var x = $ec.get(i)
-                    if (x eq null) {
-                      x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.decodeError("illegal enum value " + i))
-                      $ec.put(i, x)
-                    }
-                    x
-                  } else in.readNullOrError(default, "expected digit")"""
             }
-          } else {
+          } else if (isJavaEnum(tpe)) withDecoderFor(methodKey, default) {
             q"""if (in.isNextToken('"')) {
                   in.rollbackToken()
-                  val s = in.readString(null)
-                  var x = $ec.get(s)
-                  if (x eq null) {
-                    x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
-                    $ec.put(s, x)
-                  }
-                  x
+                  val l = in.readStringAsCharBuf()
+                  ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}
                 } else in.readNullOrTokenError(default, '"')"""
-          }
-        } else if (isJavaEnum(tpe)) withDecoderFor(methodKey, default) {
-          q"""if (in.isNextToken('"')) {
-                in.rollbackToken()
-                val l = in.readStringAsCharBuf()
-                ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}
-              } else in.readNullOrTokenError(default, '"')"""
-        } else if (isTuple(tpe)) withDecoderFor(methodKey, default) {
-          val indexedTypes = typeArgs(tpe)
-          val readFields = indexedTypes.map {
-            var i = 0
-            t =>
-              i += 1
-              if (i == 1) q"val _1: $t = ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}"
+          } else if (isTuple(tpe)) withDecoderFor(methodKey, default) {
+            val indexedTypes = typeArgs(tpe)
+            val readFields = indexedTypes.map {
+              var i = 0
+              fTpe =>
+                i += 1
+                val allTypes = fTpe :: types
+                val readVal = genReadVal(allTypes, genNullValue(allTypes), isStringified, EmptyTree)
+                if (i == 1) q"val _1: $fTpe = $readVal"
+                else {
+                  q"""val ${TermName(s"_$i")}: $fTpe =
+                        if (in.isNextToken(',')) $readVal
+                        else in.commaError()"""
+                }
+            }
+            val params = (1 to indexedTypes.length).map(i => TermName(s"_$i"))
+            q"""if (in.isNextToken('[')) {
+                  ..$readFields
+                  if (in.isNextToken(']')) new $tpe(..$params)
+                  else in.arrayEndError()
+                } else in.readNullOrTokenError(default, '[')"""
+          } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
+            q"""if (in.isNextToken('{')) {
+                  in.rollbackToken()
+                  in.skip()
+                  ${tpe.typeSymbol.asClass.module}
+                } else in.readNullOrTokenError(default, '{')"""
+          } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default) {
+            val leafClasses = adtLeafClasses(tpe)
+            val discriminatorError = cfg.discriminatorFieldName
+              .fold(q"in.discriminatorError()")(n => q"in.discriminatorValueError($n)")
+
+            def genReadLeafClass(subTpe: Type): Tree =
+              if (subTpe =:= tpe) genReadNonAbstractScalaClass(types, skipDiscriminatorField)
               else {
-                q"""val ${TermName("_" + i)}: $t =
-                      if (in.isNextToken(',')) ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}
-                      else in.commaError()"""
+                val allTypes = subTpe :: types
+                genReadVal(allTypes, genNullValue(allTypes), isStringified, skipDiscriminatorField)
               }
-          }
-          val params = (1 to indexedTypes.length).map(i => TermName("_" + i))
-          q"""if (in.isNextToken('[')) {
-                ..$readFields
-                if (in.isNextToken(']')) new $tpe(..$params)
-                else in.arrayEndError()
-              } else in.readNullOrTokenError(default, '[')"""
-        } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
-          q"""if (in.isNextToken('{')) {
-                in.rollbackToken()
-                in.skip()
-                ${tpe.typeSymbol.asClass.module}
-              } else in.readNullOrTokenError(default, '{')"""
-        } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default) {
-          val leafClasses = adtLeafClasses(tpe)
-          val discriminatorError = cfg.discriminatorFieldName
-            .fold(q"in.discriminatorError()")(n => q"in.discriminatorValueError($n)")
 
-          def genReadLeafClass(subTpe: Type): Tree =
-            if (subTpe =:= tpe) genReadNonAbstractScalaClass(types, skipDiscriminatorField)
-            else genReadVal(subTpe :: types, genNullValue(subTpe :: types), isStringified, skipDiscriminatorField)
-
-          def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
-            subTpes.foldRight(discriminatorError) { (subTpe, acc) =>
-              val readVal =
-                if (cfg.discriminatorFieldName.isDefined) {
-                  q"""in.rollbackToMark()
-                      ..${genReadLeafClass(subTpe)}"""
-                } else if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
-                  q"${subTpe.typeSymbol.asClass.module}"
-                } else genReadLeafClass(subTpe)
-              q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) $readVal else $acc"
-            }
-
-          def genReadSubclassesBlock(leafClasses: collection.Seq[Type]): Tree =
-            if (leafClasses.size <= 8 && leafClasses.foldLeft(0)(_ + discriminatorValue(_).length) <= 64) {
-              genReadCollisions(leafClasses)
-            } else {
-              val hashCode = (t: Type) => {
-                val cs = discriminatorValue(t).toCharArray
-                JsonReader.toHashCode(cs, cs.length)
+            def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
+              subTpes.foldRight(discriminatorError) { (subTpe, acc) =>
+                val readVal =
+                  if (cfg.discriminatorFieldName.isDefined) {
+                    q"""in.rollbackToMark()
+                        ..${genReadLeafClass(subTpe)}"""
+                  } else if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
+                    q"${subTpe.typeSymbol.asClass.module}"
+                  } else genReadLeafClass(subTpe)
+                q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) $readVal else $acc"
               }
-              val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
-                val checkNameAndReadValue = genReadCollisions(ts)
-                cq"$hash => $checkNameAndReadValue"
-              }
-              q"""(in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
-                    case ..$cases
-                    case _ => $discriminatorError
-                  }"""
-            }
 
-          checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
-          cfg.discriminatorFieldName match {
-            case None =>
-              val (leafModuleClasses, leafCaseClasses) =
-                leafClasses.partition(!cfg.circeLikeObjectEncoding && _.typeSymbol.isModuleClass)
-              if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
-                q"""if (in.isNextToken('"')) {
-                      in.rollbackToken()
-                      val l = in.readStringAsCharBuf()
-                      ${genReadSubclassesBlock(leafModuleClasses)}
-                    } else if (in.isCurrentToken('{')) {
-                      val l = in.readKeyAsCharBuf()
-                      val r = ${genReadSubclassesBlock(leafCaseClasses)}
-                      if (in.isNextToken('}')) r
-                      else in.objectEndOrCommaError()
-                    } else {
-                      val m =
-                        if (default == null) "expected '\"' or '{'"
-                        else "expected '\"' or '{' or null"
-                      in.readNullOrError(default, m)
+            def genReadSubclassesBlock(leafClasses: collection.Seq[Type]): Tree =
+              if (leafClasses.size <= 8 && leafClasses.foldLeft(0)(_ + discriminatorValue(_).length) <= 64) {
+                genReadCollisions(leafClasses)
+              } else {
+                val hashCode = (t: Type) => {
+                  val cs = discriminatorValue(t).toCharArray
+                  JsonReader.toHashCode(cs, cs.length)
+                }
+                val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
+                  val checkNameAndReadValue = genReadCollisions(ts)
+                  cq"$hash => $checkNameAndReadValue"
+                }
+                q"""(in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
+                      case ..$cases
+                      case _ => $discriminatorError
                     }"""
-              } else if (leafCaseClasses.nonEmpty) {
-                q"""if (in.isNextToken('{')) {
-                      val l = in.readKeyAsCharBuf()
-                      val r = ${genReadSubclassesBlock(leafCaseClasses)}
-                      if (in.isNextToken('}')) r
-                      else in.objectEndOrCommaError()
-                    } else in.readNullOrTokenError(default, '{')"""
-              } else {
-                q"""if (in.isNextToken('"')) {
-                      in.rollbackToken()
-                      val l = in.readStringAsCharBuf()
-                      ${genReadSubclassesBlock(leafModuleClasses)}
-                    } else in.readNullOrTokenError(default, '"')"""
               }
-            case Some(discrFieldName) =>
-              if (cfg.requireDiscriminatorFirst) {
-                q"""in.setMark()
-                    if (in.isNextToken('{')) {
-                      if (in.isCharBufEqualsTo(in.readKeyAsCharBuf(), $discrFieldName)) {
+
+            checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
+            cfg.discriminatorFieldName match {
+              case None =>
+                val (leafModuleClasses, leafCaseClasses) =
+                  leafClasses.partition(!cfg.circeLikeObjectEncoding && _.typeSymbol.isModuleClass)
+                if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
+                  q"""if (in.isNextToken('"')) {
+                        in.rollbackToken()
                         val l = in.readStringAsCharBuf()
-                        ..${genReadSubclassesBlock(leafClasses)}
-                      } else in.decodeError(${"expected key: \"" + discrFieldName + '"'})
-                    } else in.readNullOrTokenError(default, '{')"""
-              } else {
-                q"""in.setMark()
-                    if (in.isNextToken('{')) {
-                      if (in.skipToKey($discrFieldName)) {
+                        ${genReadSubclassesBlock(leafModuleClasses)}
+                      } else if (in.isCurrentToken('{')) {
+                        val l = in.readKeyAsCharBuf()
+                        val r = ${genReadSubclassesBlock(leafCaseClasses)}
+                        if (in.isNextToken('}')) r
+                        else in.objectEndOrCommaError()
+                      } else {
+                        val m =
+                          if (default == null) "expected '\"' or '{'"
+                          else "expected '\"' or '{' or null"
+                        in.readNullOrError(default, m)
+                      }"""
+                } else if (leafCaseClasses.nonEmpty) {
+                  q"""if (in.isNextToken('{')) {
+                        val l = in.readKeyAsCharBuf()
+                        val r = ${genReadSubclassesBlock(leafCaseClasses)}
+                        if (in.isNextToken('}')) r
+                        else in.objectEndOrCommaError()
+                      } else in.readNullOrTokenError(default, '{')"""
+                } else {
+                  q"""if (in.isNextToken('"')) {
+                        in.rollbackToken()
                         val l = in.readStringAsCharBuf()
-                        ..${genReadSubclassesBlock(leafClasses)}
-                      } else in.requiredFieldError($discrFieldName)
-                    } else in.readNullOrTokenError(default, '{')"""
-              }
-          }
-        } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
-          genReadNonAbstractScalaClass(types, discriminator)
-        } else if (isConstType(tpe)) genReadConstType(tpe, isStringified)
-        else cannotFindValueCodecError(tpe)
+                        ${genReadSubclassesBlock(leafModuleClasses)}
+                      } else in.readNullOrTokenError(default, '"')"""
+                }
+              case Some(discrFieldName) =>
+                if (cfg.requireDiscriminatorFirst) {
+                  q"""in.setMark()
+                      if (in.isNextToken('{')) {
+                        if (in.isCharBufEqualsTo(in.readKeyAsCharBuf(), $discrFieldName)) {
+                          val l = in.readStringAsCharBuf()
+                          ..${genReadSubclassesBlock(leafClasses)}
+                        } else in.decodeError(${"expected key: \"" + discrFieldName + '"'})
+                      } else in.readNullOrTokenError(default, '{')"""
+                } else {
+                  q"""in.setMark()
+                      if (in.isNextToken('{')) {
+                        if (in.skipToKey($discrFieldName)) {
+                          val l = in.readStringAsCharBuf()
+                          ..${genReadSubclassesBlock(leafClasses)}
+                        } else in.requiredFieldError($discrFieldName)
+                      } else in.readNullOrTokenError(default, '{')"""
+                }
+            }
+          } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
+            genReadNonAbstractScalaClass(types, discriminator)
+          } else if (isConstType(tpe)) genReadConstType(tpe, isStringified)
+          else cannotFindValueCodecError(tpe)
+        }
       }
 
       def genWriteNonAbstractScalaClass(types: List[Type], discriminator: Tree): Tree = {
@@ -2020,6 +2041,7 @@ object JsonCodecMaker {
         val classInfo = getClassInfo(tpe)
         val writeFields = classInfo.fields.map { fieldInfo =>
           val fTpe = fieldInfo.resolvedTpe
+          val allTypes = fTpe :: types
           (if (cfg.transientDefault) fieldInfo.defaultValue
           else None) match {
             case Some(d) =>
@@ -2027,19 +2049,19 @@ object JsonCodecMaker {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v", allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else if (cfg.transientEmpty && fTpe <:< typeOf[Iterator[?]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.hasNext && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v", allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else if (cfg.transientNone && isOption(fTpe, types)) {
                 q"""val v = x.${fieldInfo.getter}
                     if ((v ne _root_.scala.None) && v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v.get", typeArg1(fTpe) :: fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v.get", typeArg1(fTpe) :: allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else if (fTpe <:< typeOf[Array[?]]) {
                 val cond =
@@ -2049,13 +2071,13 @@ object JsonCodecMaker {
                 q"""val v = x.${fieldInfo.getter}
                     if ($cond) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v", allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else {
                 q"""val v = x.${fieldInfo.getter}
                     if (v != $d) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v", allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               }
             case None =>
@@ -2063,29 +2085,29 @@ object JsonCodecMaker {
                 q"""val v = x.${fieldInfo.getter}
                     if (!v.isEmpty) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v", allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else if (cfg.transientEmpty && fTpe <:< typeOf[Iterator[?]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.hasNext) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v", allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else if (cfg.transientNone && isOption(fTpe, types)) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v ne _root_.scala.None) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v.get", typeArg1(fTpe) :: fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v.get", typeArg1(fTpe) :: allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else if (cfg.transientEmpty && fTpe <:< typeOf[Array[?]]) {
                 q"""val v = x.${fieldInfo.getter}
                     if (v.length != 0) {
                       ..${genWriteConstantKey(fieldInfo.mappedName)}
-                      ..${genWriteVal(q"v", fTpe :: types, fieldInfo.isStringified, EmptyTree)}
+                      ..${genWriteVal(q"v", allTypes, fieldInfo.isStringified, EmptyTree)}
                     }"""
               } else {
                 q"""..${genWriteConstantKey(fieldInfo.mappedName)}
-                    ..${genWriteVal(q"x.${fieldInfo.getter}", fTpe :: types, fieldInfo.isStringified, EmptyTree)}"""
+                    ..${genWriteVal(q"x.${fieldInfo.getter}", allTypes, fieldInfo.isStringified, EmptyTree)}"""
               }
           }
         }
@@ -2109,10 +2131,7 @@ object JsonCodecMaker {
       }
 
       def genWriteVal(m: Tree, types: List[Type], isStringified: Boolean, discriminator: Tree): Tree = {
-        checkRecursionInTypes(types)
         val tpe = types.head
-        lazy val methodKey = MethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe, types.tail)), discriminator)
-        lazy val encodeMethodName = encodeMethodNames.get(methodKey)
         val implValueCodec = findImplicitValueCodec(tpe)
         if (implValueCodec.nonEmpty) q"$implValueCodec.encodeValue($m, out)"
         else if (tpe =:= typeOf[String]) q"out.writeVal($m)"
@@ -2130,178 +2149,190 @@ object JsonCodecMaker {
           tpe =:= typeOf[MonthDay] || tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[OffsetTime] ||
           tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeVal($m)"
-        else if (isValueClass(tpe)) {
-          genWriteVal(q"$m.${valueClassValueSymbol(tpe)}", valueClassValueType(tpe) :: types, isStringified, EmptyTree)
-        } else if (isOption(tpe, types.tail)) {
+        else if ({
+          checkRecursionInTypes(types)
+          isOption(tpe, types.tail)
+        }) {
           q"""if ($m ne _root_.scala.None) ${genWriteVal(q"$m.get", typeArg1(tpe) :: types, isStringified, EmptyTree)}
               else out.writeNull()"""
-        } else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
-        else if (isCollection(tpe)) {
-          if (tpe <:< typeOf[Array[?]] || isImmutableArraySeq(tpe) || isMutableArraySeq(tpe)) withEncoderFor(methodKey, m) {
-            val tpe1 = typeArg1(tpe)
-            if (isImmutableArraySeq(tpe)) {
+        } else if (isValueClass(tpe)) {
+          genWriteVal(q"$m.${valueClassValueSymbol(tpe)}", valueClassValueType(tpe) :: types, isStringified, EmptyTree)
+        } else {
+          val isColl = isCollection(tpe)
+          val methodKey = new MethodKey(tpe, isColl & isStringified, discriminator)
+          if (isColl) {
+            if (tpe <:< typeOf[Array[?]] || isImmutableArraySeq(tpe) || isMutableArraySeq(tpe)) withEncoderFor(methodKey, m) {
+              val tpe1 = typeArg1(tpe)
+              val types1 = tpe1 :: types
+              if (isImmutableArraySeq(tpe)) {
+                q"""out.writeArrayStart()
+                    val xs = x.unsafeArray.asInstanceOf[Array[$tpe1]]
+                    val l = xs.length
+                    var i = 0
+                    while (i < l) {
+                      ..${genWriteVal(q"xs(i)", types1, isStringified, EmptyTree)}
+                      i += 1
+                    }
+                    out.writeArrayEnd()"""
+              } else if (isMutableArraySeq(tpe)) {
+                q"""out.writeArrayStart()
+                    val xs = x.array.asInstanceOf[Array[$tpe1]]
+                    val l = xs.length
+                    var i = 0
+                    while (i < l) {
+                      ..${genWriteVal(q"xs(i)", types1, isStringified, EmptyTree)}
+                      i += 1
+                    }
+                    out.writeArrayEnd()"""
+              } else {
+                q"""out.writeArrayStart()
+                    val l = x.length
+                    var i = 0
+                    while (i < l) {
+                      ..${genWriteVal(q"x(i)", types1, isStringified, EmptyTree)}
+                      i += 1
+                    }
+                    out.writeArrayEnd()"""
+              }
+            } else if (tpe <:< typeOf[immutable.IntMap[?]] || tpe <:< typeOf[mutable.LongMap[?]] ||
+                tpe <:< typeOf[immutable.LongMap[?]]) withEncoderFor(methodKey, m) {
+              val types1 = typeArg1(tpe) :: types
+              if (isScala213) {
+                val writeVal2 = genWriteVal(q"v", types1, isStringified, EmptyTree)
+                if (cfg.mapAsArray) {
+                  val writeVal1 =
+                    if (isStringified) q"out.writeValAsString(k)"
+                    else q"out.writeVal(k)"
+                  genWriteMapAsArrayScala213(q"x", writeVal1, writeVal2)
+                } else genWriteMapScala213(q"x", q"out.writeKey(k)", writeVal2)
+              } else {
+                val writeVal2 = genWriteVal(q"kv._2", types1, isStringified, EmptyTree)
+                if (cfg.mapAsArray) {
+                  val writeVal1 =
+                    if (isStringified) q"out.writeValAsString(kv._1)"
+                    else q"out.writeVal(kv._1)"
+                  genWriteMapAsArray(q"x", writeVal1, writeVal2)
+                } else genWriteMap(q"x", q"out.writeKey(kv._1)", writeVal2)
+              }
+            } else if (tpe <:< typeOf[collection.Map[?, ?]] || isCollisionProofHashMap(tpe)) withEncoderFor(methodKey, m) {
+              val tpe1 = typeArg1(tpe)
+              val tpe2 = typeArg2(tpe)
+              val types1 = tpe1 :: types
+              val types2 = tpe2 :: types
+              if (isScala213) {
+                val writeVal2 = genWriteVal(q"v", types2, isStringified, EmptyTree)
+                if (cfg.mapAsArray) {
+                  genWriteMapAsArrayScala213(q"x", genWriteVal(q"k", types1, isStringified, EmptyTree), writeVal2)
+                } else genWriteMapScala213(q"x", genWriteKey(q"k", types1), writeVal2)
+              } else {
+                val writeVal2 = genWriteVal(q"kv._2", types2, isStringified, EmptyTree)
+                if (cfg.mapAsArray) {
+                  genWriteMapAsArray(q"x", genWriteVal(q"kv._1", types1, isStringified, EmptyTree), writeVal2)
+                } else genWriteMap(q"x", genWriteKey(q"kv._1", types1), writeVal2)
+              }
+            } else if (tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
+              genWriteArray(q"x",
+                if (isStringified) q"out.writeValAsString(x)"
+                else q"out.writeVal(x)")
+            } else if (tpe <:< typeOf[List[?]]) withEncoderFor(methodKey, m) {
+              val tpe1 = typeArg1(tpe)
               q"""out.writeArrayStart()
-                  val xs = x.unsafeArray.asInstanceOf[Array[$tpe1]]
-                  val l = xs.length
-                  var i = 0
-                  while (i < l) {
-                    ..${genWriteVal(q"xs(i)", tpe1 :: types, isStringified, EmptyTree)}
-                    i += 1
+                  val n = _root_.scala.Nil
+                  var l: _root_.scala.collection.immutable.List[$tpe1] = x
+                  while (l ne n) {
+                    ..${genWriteVal(q"l.head", tpe1 :: types, isStringified, EmptyTree)}
+                    l = l.tail
                   }
                   out.writeArrayEnd()"""
-            } else if (isMutableArraySeq(tpe)) {
-              q"""out.writeArrayStart()
-                  val xs = x.array.asInstanceOf[Array[$tpe1]]
-                  val l = xs.length
-                  var i = 0
-                  while (i < l) {
-                    ..${genWriteVal(q"xs(i)", tpe1 :: types, isStringified, EmptyTree)}
-                    i += 1
-                  }
-                  out.writeArrayEnd()"""
-            } else {
+            } else if (tpe <:< typeOf[IndexedSeq[?]]) withEncoderFor(methodKey, m) {
+              val types1 = typeArg1(tpe) :: types
               q"""out.writeArrayStart()
                   val l = x.length
-                  var i = 0
-                  while (i < l) {
-                    ..${genWriteVal(q"x(i)", tpe1 :: types, isStringified, EmptyTree)}
-                    i += 1
+                  if (l <= 32) {
+                    var i = 0
+                    while (i < l) {
+                      ..${genWriteVal(q"x(i)", types1, isStringified, EmptyTree)}
+                      i += 1
+                    }
+                  } else {
+                    x.foreach { x =>
+                      ..${genWriteVal(q"x", types1, isStringified, EmptyTree)}
+                    }
                   }
                   out.writeArrayEnd()"""
-            }
-          } else if (tpe <:< typeOf[immutable.IntMap[?]] || tpe <:< typeOf[mutable.LongMap[?]] ||
-              tpe <:< typeOf[immutable.LongMap[?]]) withEncoderFor(methodKey, m) {
-            if (isScala213) {
-              val writeVal2 = genWriteVal(q"v", typeArg1(tpe) :: types, isStringified, EmptyTree)
-              if (cfg.mapAsArray) {
-                val writeVal1 =
-                  if (isStringified) q"out.writeValAsString(k)"
-                  else q"out.writeVal(k)"
-                genWriteMapAsArrayScala213(q"x", writeVal1, writeVal2)
-              } else genWriteMapScala213(q"x", q"out.writeKey(k)", writeVal2)
+            } else if (tpe <:< typeOf[Iterable[?]]) withEncoderFor(methodKey, m) {
+              genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree))
+            } else if (tpe <:< typeOf[Iterator[?]]) withEncoderFor(methodKey, m) {
+              genWriteArray2(q"x", genWriteVal(q"x.next()", typeArg1(tpe) :: types, isStringified, EmptyTree))
+            } else cannotFindValueCodecError(tpe)
+          } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
+            if (cfg.useScalaEnumValueId) {
+              if (isStringified) q"out.writeValAsString(x.id)"
+              else q"out.writeVal(x.id)"
+            } else q"out.writeVal(x.toString)"
+          } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
+            val es = javaEnumValues(tpe)
+            val encodingRequired = es.exists(e => isEncodingRequired(e.name))
+            if (es.exists(_.transformed)) {
+              val cases = es.map(e => cq"${e.value} => ${e.name}") :+
+                cq"""_ => out.encodeError("illegal enum value: " + x)"""
+              if (encodingRequired) q"out.writeVal(x match { case ..$cases })"
+              else q"out.writeNonEscapedAsciiVal(x match { case ..$cases })"
             } else {
-              val writeVal2 = genWriteVal(q"kv._2", typeArg1(tpe) :: types, isStringified, EmptyTree)
-              if (cfg.mapAsArray) {
-                val writeVal1 =
-                  if (isStringified) q"out.writeValAsString(kv._1)"
-                  else q"out.writeVal(kv._1)"
-                genWriteMapAsArray(q"x", writeVal1, writeVal2)
-              } else genWriteMap(q"x", q"out.writeKey(kv._1)", writeVal2)
+              if (encodingRequired) q"out.writeVal(x.name)"
+              else q"out.writeNonEscapedAsciiVal(x.name)"
             }
-          } else if (tpe <:< typeOf[collection.Map[?, ?]] || isCollisionProofHashMap(tpe)) withEncoderFor(methodKey, m) {
-            val tpe1 = typeArg1(tpe)
-            val tpe2 = typeArg2(tpe)
-            if (isScala213) {
-              val writeVal2 = genWriteVal(q"v", tpe2 :: types, isStringified, EmptyTree)
-              if (cfg.mapAsArray) {
-                genWriteMapAsArrayScala213(q"x", genWriteVal(q"k", tpe1 :: types, isStringified, EmptyTree), writeVal2)
-              } else genWriteMapScala213(q"x", genWriteKey(q"k", tpe1 :: types), writeVal2)
-            } else {
-              val writeVal2 = genWriteVal(q"kv._2", tpe2 :: types, isStringified, EmptyTree)
-              if (cfg.mapAsArray) {
-                genWriteMapAsArray(q"x", genWriteVal(q"kv._1", tpe1 :: types, isStringified, EmptyTree), writeVal2)
-              } else genWriteMap(q"x", genWriteKey(q"kv._1", tpe1 :: types), writeVal2)
+          } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
+            val writeFields = typeArgs(tpe).map {
+              var i = 0
+              fTpe =>
+                i += 1
+                genWriteVal(q"x.${TermName(s"_$i")}", fTpe :: types, isStringified, EmptyTree)
             }
-          } else if (tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
-            genWriteArray(q"x",
-              if (isStringified) q"out.writeValAsString(x)"
-              else q"out.writeVal(x)")
-          } else if (tpe <:< typeOf[List[?]]) withEncoderFor(methodKey, m) {
-            val tpe1 = typeArg1(tpe)
             q"""out.writeArrayStart()
-                val n = _root_.scala.Nil
-                var l: _root_.scala.collection.immutable.List[$tpe1] = x
-                while (l ne n) {
-                  ..${genWriteVal(q"l.head", tpe1 :: types, isStringified, EmptyTree)}
-                  l = l.tail
-                }
+                ..$writeFields
                 out.writeArrayEnd()"""
-          } else if (tpe <:< typeOf[IndexedSeq[?]]) withEncoderFor(methodKey, m) {
-            q"""out.writeArrayStart()
-                val l = x.length
-                if (l <= 32) {
-                  var i = 0
-                  while (i < l) {
-                    ..${genWriteVal(q"x(i)", typeArg1(tpe) :: types, isStringified, EmptyTree)}
-                    i += 1
-                  }
-                } else {
-                  x.foreach { x =>
-                    ..${genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree)}
-                  }
-                }
-                out.writeArrayEnd()"""
-          } else if (tpe <:< typeOf[Iterable[?]]) withEncoderFor(methodKey, m) {
-            genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe) :: types, isStringified, EmptyTree))
-          } else if (tpe <:< typeOf[Iterator[?]]) withEncoderFor(methodKey, m) {
-            genWriteArray2(q"x", genWriteVal(q"x.next()", typeArg1(tpe) :: types, isStringified, EmptyTree))
-          } else cannotFindValueCodecError(tpe)
-        } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
-          if (cfg.useScalaEnumValueId) {
-            if (isStringified) q"out.writeValAsString(x.id)"
-            else q"out.writeVal(x.id)"
-          } else q"out.writeVal(x.toString)"
-        } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
-          val es = javaEnumValues(tpe)
-          val encodingRequired = es.exists(e => isEncodingRequired(e.name))
-          if (es.exists(_.transformed)) {
-            val cases = es.map(e => cq"${e.value} => ${e.name}") :+
-              cq"""_ => out.encodeError("illegal enum value: " + x)"""
-            if (encodingRequired) q"out.writeVal(x match { case ..$cases })"
-            else q"out.writeNonEscapedAsciiVal(x match { case ..$cases })"
-          } else {
-            if (encodingRequired) q"out.writeVal(x.name)"
-            else q"out.writeNonEscapedAsciiVal(x.name)"
-          }
-        } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
-          val writeFields = typeArgs(tpe).map {
-            var i = 0
-            t =>
-              i += 1
-              genWriteVal(q"x.${TermName("_" + i)}", t :: types, isStringified, EmptyTree)
-          }
-          q"""out.writeArrayStart()
-              ..$writeFields
-              out.writeArrayEnd()"""
-        } else if (tpe.typeSymbol.isModuleClass && !(cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m) {
-          q"""out.writeObjectStart()
-              ..$discriminator
-              out.writeObjectEnd()"""
-        } else if (isSealedClass(tpe) || (cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m) {
-          def genWriteLeafClass(subTpe: Type, discriminator: Tree): Tree =
-            if (subTpe != tpe) genWriteVal(q"x", subTpe :: types, isStringified, discriminator)
-            else genWriteNonAbstractScalaClass(types, discriminator)
+          } else if (tpe.typeSymbol.isModuleClass && !(cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m) {
+            q"""out.writeObjectStart()
+                ..$discriminator
+                out.writeObjectEnd()"""
+          } else if (isSealedClass(tpe) || (cfg.alwaysEmitDiscriminator && hasSealedParent(tpe))) withEncoderFor(methodKey, m) {
+            def genWriteLeafClass(subTpe: Type, discriminator: Tree): Tree =
+              if (subTpe != tpe) genWriteVal(q"x", subTpe :: types, isStringified, discriminator)
+              else genWriteNonAbstractScalaClass(types, discriminator)
 
-          val leafClasses = adtLeafClasses(tpe)
-          val writeSubclasses = cfg.discriminatorFieldName.fold {
-            leafClasses.map { subTpe =>
-              if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
-                cq"x: $subTpe => ${genWriteConstantVal(discriminatorValue(subTpe))}"
-              } else {
-                cq"""x: $subTpe =>
-                     out.writeObjectStart()
-                     ${genWriteConstantKey(discriminatorValue(subTpe))}
-                     ${genWriteLeafClass(subTpe, EmptyTree)}
-                     out.writeObjectEnd()"""
-              }
-            }
-          } { discrFieldName =>
+            val leafClasses = adtLeafClasses(tpe)
+            val writeSubclasses = cfg.discriminatorFieldName.fold {
               leafClasses.map { subTpe =>
-                val writeDiscriminatorField =
-                  q"""..${genWriteConstantKey(discrFieldName)}
-                      ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
-                cq"x: $subTpe => ${genWriteLeafClass(subTpe, writeDiscriminatorField)}"
+                if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
+                  cq"x: $subTpe => ${genWriteConstantVal(discriminatorValue(subTpe))}"
+                } else {
+                  cq"""x: $subTpe =>
+                       out.writeObjectStart()
+                       ${genWriteConstantKey(discriminatorValue(subTpe))}
+                       ${genWriteLeafClass(subTpe, EmptyTree)}
+                       out.writeObjectEnd()"""
+                }
               }
-          }
-          q"""x match {
-                case ..$writeSubclasses
-              }"""
-        } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
-          genWriteNonAbstractScalaClass(types, discriminator)
-        } else if (isConstType(tpe)) getWriteConstType(tpe, m, isStringified)
-        else cannotFindValueCodecError(tpe)
+            } { discrFieldName =>
+                leafClasses.map { subTpe =>
+                  val writeDiscriminatorField =
+                    q"""..${genWriteConstantKey(discrFieldName)}
+                        ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
+                  cq"x: $subTpe => ${genWriteLeafClass(subTpe, writeDiscriminatorField)}"
+                }
+            }
+            q"""x match {
+                  case ..$writeSubclasses
+                }"""
+          } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
+            genWriteNonAbstractScalaClass(types, discriminator)
+          } else if (isConstType(tpe)) getWriteConstType(tpe, m, isStringified)
+          else cannotFindValueCodecError(tpe)
+        }
       }
 
+      val types = rootTpe :: Nil
       val codec =
         q"""{
               @_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.All"))
@@ -2309,19 +2340,19 @@ object JsonCodecMaker {
                 @_root_.scala.inline
                 def nullValue: $rootTpe = ${
                   if (cfg.encodingOnly) q"_root_.scala.Predef.???"
-                  else genNullValue(rootTpe :: Nil)
+                  else genNullValue(types)
                 }
 
                 @_root_.scala.inline
                 def decodeValue(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $rootTpe): $rootTpe = ${
                   if (cfg.encodingOnly) q"_root_.scala.Predef.???"
-                  else genReadVal(rootTpe :: Nil, q"default", cfg.isStringified, EmptyTree)
+                  else genReadVal(types, q"default", cfg.isStringified, EmptyTree)
                 }
 
                 @_root_.scala.inline
                 def encodeValue(x: $rootTpe, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = ${
                   if (cfg.decodingOnly) q"_root_.scala.Predef.???"
-                  else genWriteVal(q"x", rootTpe :: Nil, cfg.isStringified, EmptyTree)
+                  else genWriteVal(q"x", types, cfg.isStringified, EmptyTree)
                 }
                 ..$decodeMethodTrees
                 ..$encodeMethodTrees
