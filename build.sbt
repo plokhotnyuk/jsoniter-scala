@@ -27,9 +27,18 @@ lazy val commonSettings = Seq(
     "-unchecked",
     "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => Seq("-language:higherKinds", "-opt:l:method")
-    case Some((2, 13)) => Seq("-opt:l:method")
-    case _ => Seq("-Xcheck-macros", "-explain")
+    case Some((2, 12)) => Seq(
+      "-language:higherKinds",
+      "-opt:l:method")
+    case Some((2, 13)) => Seq(
+      "-opt:l:method"
+    )
+    case _ => Seq(
+      "-Xcheck-macros",
+      "-explain",
+      "-Wconf:msg=Ignoring [this] qualifier.:s",
+      "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
+    )
   }),
   compileOrder := CompileOrder.JavaThenScala,
   Test / testOptions += Tests.Argument("-oDF"),
@@ -156,6 +165,12 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(publishSettings)
   .settings(
     crossScalaVersions := Seq("3.3.6", "2.13.16", "2.12.20"),
+    scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq()
+      case _ => Seq(
+        "-source:3.3"
+      )
+    }),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.13.0" % Test,
       "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
@@ -188,6 +203,12 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(publishSettings)
   .settings(
     crossScalaVersions := Seq("3.3.6", "2.13.16", "2.12.20"),
+    scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq()
+      case _ => Seq(
+        "-source:3.3"
+      )
+    }),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -237,6 +258,12 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(publishSettings)
   .settings(
     crossScalaVersions := Seq("3.3.6", "2.13.16", "2.12.20"),
+    scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq()
+      case _ => Seq(
+        "-source:3.3"
+      )
+    }),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.14",
       "io.circe" %%% "circe-parser" % "0.14.14" % Test,
@@ -261,8 +288,16 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     crossScalaVersions := Seq("3.7.3", "2.13.16"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq("-Wopt", "-opt:l:inline", "-opt-inline-from:**:!java.**")
-      case _ => Seq("-source:3.3", "-Xmax-inlines:100", "-preview")
+      case Some((2, _)) => Seq(
+        "-Wopt",
+        "-opt:l:inline",
+        "-opt-inline-from:**:!java.**"
+      )
+      case _ => Seq(
+        "-source:3.3",
+        "-Xmax-inlines:100",
+        "-preview"
+      )
     }),
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.42",
