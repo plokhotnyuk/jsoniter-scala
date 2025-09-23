@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core.*
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt.*
 import scala.scalanative.build.*
@@ -136,7 +137,10 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaReportSignatureProblems := true,
-  mimaBinaryIssueFilters := Seq()
+  mimaBinaryIssueFilters := Seq(
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerInstance$FieldAnnotations"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerInstance$FieldAnnotations$")
+  )
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))

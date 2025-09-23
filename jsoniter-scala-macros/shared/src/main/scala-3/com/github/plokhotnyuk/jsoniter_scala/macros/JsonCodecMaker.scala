@@ -809,8 +809,6 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     }
   }
 
-  private case class FieldAnnotations(partiallyMappedName: Option[String], transient: Boolean, stringified: Boolean)
-
   private case class DecoderMethodKey(tpe: TypeRepr, isStringified: Boolean, useDiscriminator: Boolean)
 
   private case class EncoderMethodKey(tpe: TypeRepr, isStringified: Boolean, discriminatorKeyValue: Option[(String, String)])
@@ -846,15 +844,22 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private val unitTpe = defn.UnitClass.typeRef
   private val anyTpe = defn.AnyClass.typeRef
   private val arrayOfAnyTpe = defn.ArrayClass.typeRef.appliedTo(anyTpe)
-  private val iArrayOfAnyRefTpe = TypeRepr.of[IArray[AnyRef]]
   private val stringTpe = TypeRepr.of[String]
+  private val optionTpe = TypeRepr.of[Option[?]]
   private val tupleTpe = TypeRepr.of[Tuple]
+  private val iterableTpe = TypeRepr.of[Iterable[?]]
+  private val iteratorTpe = TypeRepr.of[Iterator[?]]
+  private val arrayTpe = TypeRepr.of[Array[?]]
+  private val iArrayOfAnyRefTpe = TypeRepr.of[IArray[AnyRef]]
+  private val namedTpe = TypeRepr.of[named]
+  private val stringifiedTpe = TypeRepr.of[stringified]
+  private val transientTpe = TypeRepr.of[transient]
   private val jsonKeyCodecTpe = TypeRepr.of[JsonKeyCodec]
   private val jsonValueCodecTpe = TypeRepr.of[JsonValueCodec]
   private val newArray = Select(New(TypeIdent(defn.ArrayClass)), defn.ArrayClass.primaryConstructor)
   private val newArrayOfAny = TypeApply(newArray, List(Inferred(anyTpe)))
   private val fromIArrayMethod = Select.unique(Ref(Symbol.requiredModule("scala.runtime.TupleXXL")), "fromIArray")
-  private val asInstanceOfMethod = anyTpe.typeSymbol.methodMember("asInstanceOf").head
+  private val asInstanceOfMethod = anyTpe.typeSymbol.declaredMethod("asInstanceOf").head
   private val inferredKeyCodecs = new mutable.HashMap[TypeRepr, Option[Expr[JsonKeyCodec[?]]]]
   private val inferredValueCodecs = new mutable.HashMap[TypeRepr, Option[Expr[JsonValueCodec[?]]]]
   private val inferredOrderings = new mutable.HashMap[TypeRepr, Term]
@@ -959,8 +964,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     else tpe.typeSymbol.companionModule
   }
 
-  private def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< TypeRepr.of[Option[?]] &&
-    (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< TypeRepr.of[Option[?]]))
+  private def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< optionTpe &&
+    (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< optionTpe))
 
   private def isNullable(tpe: TypeRepr): Boolean = tpe match
     case OrType(left, right) => isNullable(right) || isNullable(left)
@@ -968,8 +973,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
 
   private def isIArray(tpe: TypeRepr): Boolean = tpe.typeSymbol.fullName == "scala.IArray$package$.IArray"
 
-  private def isCollection(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Iterable[?]] ||
-    tpe <:< TypeRepr.of[Iterator[?]] || tpe <:< TypeRepr.of[Array[?]] || isIArray(tpe)
+  private def isCollection(tpe: TypeRepr): Boolean =
+    tpe <:< iterableTpe || tpe <:< iteratorTpe || tpe <:< arrayTpe || isIArray(tpe)
 
   private def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[?]]
 
@@ -1121,42 +1126,17 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   })
 
   private def getClassInfo(tpe: TypeRepr): ClassInfo = classInfos.getOrElseUpdate(tpe, {
-    def hasSupportedAnnotation(m: Symbol): Boolean = m.annotations.exists { a =>
-      val tpe = a.tpe
-      tpe =:= TypeRepr.of[named] || tpe =:= TypeRepr.of[transient] || tpe =:= TypeRepr.of[stringified] ||
-        (cfg.scalaTransientSupport && tpe =:= TypeRepr.of[scala.transient])
-    }
-
     def supportedTransientTypeNames: String =
-      if (cfg.scalaTransientSupport) s"'${Type.show[transient]}' (or '${Type.show[scala.transient]}')"
-      else s"'${Type.show[transient]}')"
+      if (cfg.scalaTransientSupport) s"'${transientTpe.show}' (or '${TypeRepr.of[scala.transient].show}')"
+      else s"'${transientTpe.show}')"
 
     val tpeTypeArgs = typeArgs(tpe)
     val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"Expected that ${tpe.show} has classSymbol"))
     val primaryConstructor = tpeClassSym.primaryConstructor
-    var annotations = Map.empty[String, FieldAnnotations]
     val caseFields = tpeClassSym.caseFields
-    var companionRefAndMembers: (Ref, List[Symbol]) = null
     var fieldMembers: List[Symbol] = null
+    var companionRefAndClass: (Ref, Symbol) = null
     var methodMembers: List[Symbol] = null
-
-    tpeClassSym.fieldMembers.foreach {
-      case m: Symbol if hasSupportedAnnotation(m) =>
-        val name = m.name
-        val named = m.annotations.count(_.tpe =:= TypeRepr.of[named])
-        if (named > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
-        val trans = m.annotations.count(a => a.tpe =:= TypeRepr.of[transient] ||
-          (cfg.scalaTransientSupport && a.tpe =:= TypeRepr.of[scala.transient]))
-        if (trans > 1) warn(s"Duplicated $supportedTransientTypeNames defined for '$name' of '${tpe.show}'.")
-        val strings = m.annotations.count(_.tpe =:= TypeRepr.of[stringified])
-        if (strings > 1) warn(s"Duplicated '${TypeRepr.of[stringified].show}' defined for '$name' of '${tpe.show}'.")
-        if ((named > 0 || strings > 0) && trans > 0)
-          warn(s"Both $supportedTransientTypeNames and '${Type.show[named]}' or " +
-            s"$supportedTransientTypeNames and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
-        val partiallyMappedName = namedValueOpt(m.annotations.find(_.tpe =:= TypeRepr.of[named]), tpe)
-        annotations = annotations.updated(name, new FieldAnnotations(partiallyMappedName, trans > 0, strings > 0))
-      case _ =>
-    }
 
     def createFieldInfos(params: List[Symbol], typeParams: List[Symbol], fieldIndex: Boolean => Int): List[FieldInfo] = params.map {
       var i = 0
@@ -1171,20 +1151,18 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           case _: TypeBounds =>
             fail(s"Type bounds are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
           case _ =>
-        val defaultValue = if (!cfg.requireDefaultFields && symbol.flags.is(Flags.HasDefault)) {
-          val dvMemberName = "$lessinit$greater$default$" + i
-          if (companionRefAndMembers eq null) {
+        val defaultValue = if (!cfg.requireDefaultFields && symbol.flags.is(Flags.HasDefault)) new Some({
+          if (companionRefAndClass eq null) {
             val typeSymbol = tpe.typeSymbol
-            companionRefAndMembers = (Ref(typeSymbol.companionModule), typeSymbol.companionClass.methodMembers)
+            companionRefAndClass = (Ref(typeSymbol.companionModule), typeSymbol.companionClass)
           }
-          companionRefAndMembers._2.collectFirst { case methodSymbol if methodSymbol.name == dvMemberName =>
-            val dvSelectNoTypes = Select(companionRefAndMembers._1, methodSymbol)
-            methodSymbol.paramSymss match
-              case Nil => dvSelectNoTypes
-              case List(params) if params.exists(_.isTypeParam) => TypeApply(dvSelectNoTypes, tpeTypeArgs.map(Inferred(_)))
-              case paramss => fail(s"Default method for $name of class ${tpe.show} have a complex parameter list: $paramss")
-          }
-        } else None
+          val methodSymbol = companionRefAndClass._2.declaredMethod("$lessinit$greater$default$" + i).head
+          val dvSelectNoTypes = Select(companionRefAndClass._1, methodSymbol)
+          methodSymbol.paramSymss match
+            case Nil => dvSelectNoTypes
+            case List(params) if params.exists(_.isTypeParam) => TypeApply(dvSelectNoTypes, tpeTypeArgs.map(Inferred(_)))
+            case paramss => fail(s"Default method for $name of class ${tpe.show} have a complex parameter list: $paramss")
+        }) else None
         val getterOrField = caseFields.find(_.name == name) match
           case Some(caseField) => caseField
           case _ =>
@@ -1199,10 +1177,31 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         if (!getterOrField.exists || getterOrField.flags.is(Flags.PrivateLocal)) {
           fail(s"Getter or field '$name' of '${tpe.show}' is private. It should be defined as 'val' or 'var' in the primary constructor.")
         }
-        val annotationOption = annotations.get(name)
-        val mappedName = annotationOption.flatMap(_.partiallyMappedName).getOrElse(cfg.fieldNameMapper(name).getOrElse(name))
-        val isStringified = annotationOption.exists(_.stringified)
-        val isTransient = annotationOption.exists(_.transient)
+        var named: Option[Term] = None
+        var isStringified: Boolean = false
+        var isTransient: Boolean = false
+        getterOrField.annotations.foreach { annotation =>
+          val aTpe = annotation.tpe
+          if (aTpe =:= namedTpe) {
+            if (named eq None) named = new Some(annotation)
+            else fail(s"Duplicated '${namedTpe.show}' defined for '$name' of '${tpe.show}'.")
+          } else if (aTpe =:= stringifiedTpe) {
+            if (isStringified) warn(s"Duplicated '${stringifiedTpe.show}' defined for '$name' of '${tpe.show}'.")
+            isStringified = true
+          } else if (aTpe =:= transientTpe || (cfg.scalaTransientSupport && aTpe =:= TypeRepr.of[scala.transient])) {
+            if (isTransient) warn(s"Duplicated $supportedTransientTypeNames defined for '$name' of '${tpe.show}'.")
+            isTransient = true
+          }
+        }
+        if (((named ne None) || isStringified) && isTransient) {
+          warn(s"Both $supportedTransientTypeNames and '${namedTpe.show}' or " +
+            s"$supportedTransientTypeNames and '${stringifiedTpe.show}' defined for '$name' of '${tpe.show}'.")
+        }
+        val mappedName = namedValueOpt(named, tpe) match
+          case Some(name1) => name1
+          case _ => cfg.fieldNameMapper(name) match
+            case Some(name2) => name2
+            case _ => name
         val index = fieldIndex(isTransient)
         new FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldTpe, isTransient, isStringified, index)
       }
