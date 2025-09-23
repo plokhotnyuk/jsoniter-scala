@@ -931,6 +931,16 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     case trTpe: TypeRef if trTpe.isOpaqueAlias => opaqueDealias(trTpe.translucentSuperType.dealias)
     case _ => tpe
 
+  private def isTypeRef(tpe: TypeRepr): Boolean = tpe match
+    case trTpe: TypeRef =>
+      val typeSymbol = trTpe.typeSymbol
+      typeSymbol.isTypeDef && typeSymbol.isAliasType
+    case _ => false
+
+  private def typeRefDealias(tpe: TypeRepr): TypeRepr = tpe match
+    case trTpe: TypeRef => trTpe.translucentSuperType.dealias
+    case _ => tpe
+
   private def isSealedClass(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Sealed)
 
   private def hasSealedParent(tpe: TypeRepr): Boolean =
@@ -1395,6 +1405,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     } else if (isOpaque(tpe)) {
       val sTpe = opaqueDealias(tpe)
       sTpe.asType match { case '[s] => '{ ${genReadKey[s](sTpe :: types.tail, in)}.asInstanceOf[T] } }
+    } else if (isTypeRef(tpe)) {
+      val sTpe = typeRefDealias(tpe)
+      sTpe.asType match { case '[s] => '{ ${genReadKey[s](sTpe :: types.tail, in)}.asInstanceOf[T] } }
     } else cannotFindKeyCodecError(tpe)
   }.asInstanceOf[Expr[T]]
 
@@ -1617,6 +1630,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         case _ => cannotFindKeyCodecError(tpe)
     } else if (isOpaque(tpe)) {
       val sTpe = opaqueDealias(tpe)
+      sTpe.asType match { case '[s] => genWriteKey('{ $x.asInstanceOf[s] }, sTpe :: types.tail, out) }
+    } else if (isTypeRef(tpe)) {
+      val sTpe = typeRefDealias(tpe)
       sTpe.asType match { case '[s] => genWriteKey('{ $x.asInstanceOf[s] }, sTpe :: types.tail, out) }
     } else cannotFindKeyCodecError(tpe)
 
@@ -1927,6 +1943,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     else if (TypeRepr.of[Null] <:< tpe) Literal(NullConstant()).asExpr
     else if (isOpaque(tpe) && !isNamedTuple(tpe)) {
       val sTpe = opaqueDealias(tpe)
+      sTpe.asType match { case '[st] => '{ ${genNullValue[st](sTpe :: types.tail)}.asInstanceOf[T] } }
+    } else if (isTypeRef(tpe)) {
+      val sTpe = typeRefDealias(tpe)
       sTpe.asType match { case '[st] => '{ ${genNullValue[st](sTpe :: types.tail)}.asInstanceOf[T] } }
     } else if (isConstType(tpe)) tpe match { case ConstantType(c) => Literal(c).asExpr }
     else '{ null.asInstanceOf[T] }
@@ -2370,7 +2389,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           val types1 = tpe1 :: types
           val newArrayOnChange = tpe1 match
             case _: AppliedType => true
-            case _ => isValueClass(tpe1) || isOpaque(tpe1)
+            case _ => isValueClass(tpe1) || isOpaque(tpe1) || isTypeRef(tpe1)
           tpe1.asType match
             case '[t1] =>
               def growArray(x: Expr[Array[t1]], i: Expr[Int], l: Expr[Int])(using Quotes): Expr[Array[t1]] =
@@ -2778,6 +2797,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         genReadNonAbstractScalaClass(getClassInfo(tpe), types, useDiscriminator, in, default)
       } else if (isOpaque(tpe)) {
         val sTpe = opaqueDealias(tpe)
+        sTpe.asType match
+          case '[s] =>
+            val newDefault = '{ $default.asInstanceOf[s] }.asInstanceOf[Expr[s]]
+            '{ ${genReadVal[s](sTpe :: types.tail, newDefault, isStringified, useDiscriminator, in)}.asInstanceOf[T] }
+      } else if (isTypeRef(tpe)) {
+        val sTpe = typeRefDealias(tpe)
         sTpe.asType match
           case '[s] =>
             val newDefault = '{ $default.asInstanceOf[s] }.asInstanceOf[Expr[s]]
@@ -3302,6 +3327,11 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       } else if (isConstType(tpe)) getWriteConstType(tpe, isStringified, out)
       else if (isOpaque(tpe)) {
         val sTpe = opaqueDealias(tpe)
+        sTpe.asType match
+          case '[s] =>
+            genWriteVal[s]('{ $m.asInstanceOf[s] }, sTpe :: types.tail, isStringified, optWriteDiscriminator, out)
+      } else if (isTypeRef(tpe)) {
+        val sTpe = typeRefDealias(tpe)
         sTpe.asType match
           case '[s] =>
             genWriteVal[s]('{ $m.asInstanceOf[s] }, sTpe :: types.tail, isStringified, optWriteDiscriminator, out)

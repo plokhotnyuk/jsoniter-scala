@@ -76,10 +76,18 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
       verifySerDeser(make[List[(i: Int, s: String)]], List((i = 1, s = "VVV"), (i = 2, s = "WWW")),
         """[{"i":1,"s":"VVV"},{"i":2,"s":"WWW"}]""")
     }
-    "serialize and deserialize generic and named tuples" in {
+    "serialize and deserialize complex generic and named tuples" in {
       verifySerDeser(make[Tuple.++[(Byte, Short), (Int, Long)]], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
       verifySerDeser(make[Tuple.Reverse[(String, Int)]], (1, "VVV"), """[1,"VVV"]""")
       verifySerDeser(make[NamedTuple.DropNames[(i: Int, s: String)]], (1, "VVV"), """[1,"VVV"]""")
+    }
+    "serialize and deserialize recursive regular and named tuples" in {
+      type RecursiveTuple = (Int, Option[RecursiveTuple])
+      type RecursiveNamedTuple = (value: Int, next: Option[RecursiveNamedTuple])
+      verifySerDeser(make[RecursiveTuple](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        (1, Some((2, None))), "[1,[2,null]]")
+      verifySerDeser(make[RecursiveNamedTuple](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        (value = 1, next = Some((2, None))), """{"value":1,"next":{"value":2}}""")
     }
   }
 }
