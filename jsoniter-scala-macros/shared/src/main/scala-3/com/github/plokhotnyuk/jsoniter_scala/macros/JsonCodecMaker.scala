@@ -999,10 +999,10 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   }
 
   private def summonOrdering(tpe: TypeRepr): Term = inferredOrderings.getOrElseUpdate(tpe, {
-    val orderingTpeApplied = TypeRepr.of[Ordering]
-    Implicits.search(orderingTpeApplied.appliedTo(tpe)) match
+    val orderingTpeApplied = TypeRepr.of[Ordering].appliedTo(tpe)
+    Implicits.search(orderingTpeApplied) match
       case s: ImplicitSearchSuccess => s.tree
-      case _ => fail(s"Can't summon '${tpe.show}'")
+      case _ => fail(s"Can't summon '${orderingTpeApplied.show}'")
   })
 
   private def summonClassTag(tpe: TypeRepr): Term = Ref(classTags.getOrElseUpdate(tpe, {

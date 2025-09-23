@@ -716,7 +716,7 @@ object JsonCodecMaker {
       }
 
       def isConstType(tpe: Type): Boolean = tpe match {
-        case ConstantType(Constant(_)) => true
+        case ConstantType(_: Constant) => true
         case _ => false
       }
 
