@@ -928,7 +928,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
 
   @tailrec
   private def opaqueDealias(tpe: TypeRepr): TypeRepr = tpe match
-    case trTpe @ TypeRef(_, _) if trTpe.isOpaqueAlias => opaqueDealias(trTpe.translucentSuperType.dealias)
+    case trTpe: TypeRef if trTpe.isOpaqueAlias => opaqueDealias(trTpe.translucentSuperType.dealias)
     case _ => tpe
 
   private def isSealedClass(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Sealed)
@@ -937,7 +937,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     isSealedClass(tpe) || tpe.baseClasses.exists(_.flags.is(Flags.Sealed))
 
   private def isConstType(tpe: TypeRepr): Boolean = tpe match
-    case ConstantType(_) => true
+    case _: ConstantType => true
     case _ => false
 
   private def isEnumValue(tpe: TypeRepr): Boolean = tpe.termSymbol.flags.is(Flags.Enum)
@@ -1126,10 +1126,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     val primaryConstructor = tpeClassSym.primaryConstructor
     var annotations = Map.empty[String, FieldAnnotations]
     val caseFields = tpeClassSym.caseFields
-    var companionClassMethodMembers: List[Symbol] = null
+    var companionRefAndMembers: (Ref, List[Symbol]) = null
     var fieldMembers: List[Symbol] = null
     var methodMembers: List[Symbol] = null
-    val companionModuleRef = Ref(tpe.typeSymbol.companionModule)
 
     tpeClassSym.fieldMembers.foreach {
       case m: Symbol if hasSupportedAnnotation(m) =>
@@ -1157,38 +1156,36 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         var fieldTpe = tpe.memberType(symbol).dealias
         if (tpeTypeArgs ne Nil) fieldTpe = fieldTpe.substituteTypes(typeParams, tpeTypeArgs)
         fieldTpe match
-          case TypeLambda(_, _, _) =>
+          case _: TypeLambda =>
             fail(s"Type lambdas are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
-          case TypeBounds(_, _) =>
+          case _: TypeBounds =>
             fail(s"Type bounds are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
           case _ =>
         val defaultValue = if (!cfg.requireDefaultFields && symbol.flags.is(Flags.HasDefault)) {
           val dvMemberName = "$lessinit$greater$default$" + i
-          if (companionClassMethodMembers eq null) {
-            companionClassMethodMembers = tpe.typeSymbol.companionClass.methodMembers
+          if (companionRefAndMembers eq null) {
+            val typeSymbol = tpe.typeSymbol
+            companionRefAndMembers = (Ref(typeSymbol.companionModule), typeSymbol.companionClass.methodMembers)
           }
-          companionClassMethodMembers.collectFirst { case methodSymbol if methodSymbol.name == dvMemberName =>
-            val dvSelectNoTypes = Select(companionModuleRef, methodSymbol)
+          companionRefAndMembers._2.collectFirst { case methodSymbol if methodSymbol.name == dvMemberName =>
+            val dvSelectNoTypes = Select(companionRefAndMembers._1, methodSymbol)
             methodSymbol.paramSymss match
               case Nil => dvSelectNoTypes
               case List(params) if params.exists(_.isTypeParam) => TypeApply(dvSelectNoTypes, tpeTypeArgs.map(Inferred(_)))
               case paramss => fail(s"Default method for $name of class ${tpe.show} have a complex parameter list: $paramss")
           }
         } else None
-        val getterOrField = caseFields.find(_.name == name) match {
+        val getterOrField = caseFields.find(_.name == name) match
           case Some(caseField) => caseField
           case _ =>
             if (fieldMembers eq null) fieldMembers = tpeClassSym.fieldMembers
-            fieldMembers.find(_.name == name) match {
+            fieldMembers.find(_.name == name) match
               case Some(fieldMember) => fieldMember
               case _ =>
                 if (methodMembers eq null) methodMembers = tpeClassSym.methodMembers
-                methodMembers.find(x => x.flags.is(Flags.FieldAccessor) && x.name == name) match {
+                methodMembers.find(x => x.flags.is(Flags.FieldAccessor) && x.name == name) match
                   case Some(methodMember) => methodMember
                   case _ => Symbol.noSymbol
-                }
-            }
-        }
         if (!getterOrField.exists || getterOrField.flags.is(Flags.PrivateLocal)) {
           fail(s"Getter or field '$name' of '${tpe.show}' is private. It should be defined as 'val' or 'var' in the primary constructor.")
         }
@@ -1252,7 +1249,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         val nudeSubtype = sym.typeRef
         val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(typeSymbol))
         nudeSubtype.memberType(sym.primaryConstructor) match
-          case MethodType(_, _, _) => nudeSubtype
+          case _: MethodType => nudeSubtype
           case PolyType(names, _, resPolyTp) =>
             val tpBinding = resolveParentTypeArgs(sym, tpeArgsFromChild, typeArgs(tpe), Map.empty)
             val ctArgs = names.map { name =>
@@ -1283,7 +1280,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
             s"supported as leaf classes for ADT with base '${adtBaseTpe.show}'.")
         } else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
-        else fail((if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
+        else fail((if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait)) {
           "Only sealed intermediate traits or abstract classes are supported."
         } else {
           "Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes."
@@ -2372,7 +2369,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           val tpe1 = typeArg1(tpe)
           val types1 = tpe1 :: types
           val newArrayOnChange = tpe1 match
-            case AppliedType(_, _) => true
+            case _: AppliedType => true
             case _ => isValueClass(tpe1) || isOpaque(tpe1)
           tpe1.asType match
             case '[t1] =>
@@ -2818,123 +2815,122 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             } else Select.unique(valRef, s"_${i + 1}")
           case _ => Select(valRef, fieldInfo.getterOrField)
       }.asExpr
-      (fTpe.asType match {
-        case '[ft] =>
-          fDefault match {
-            case Some(d) =>
-              if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[?]]) '{
-                val v = ${getter.asInstanceOf[Expr[ft & Iterable[?]]]}
-                if (!v.isEmpty && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
-                  ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                  ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
-                }
-              } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterator[?]]) '{
-                val v = ${getter.asInstanceOf[Expr[ft & Iterator[?]]]}
-                if (v.hasNext && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
-                  ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                  ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
-                }
-              } else if (cfg.transientNone && isOption(fTpe, types)) {
-                val tpe1 = typeArg1(fTpe)
-                tpe1.asType match
-                  case '[t1] => '{
-                    val v = ${getter.asInstanceOf[Expr[Option[t1]]]}
-                    if ((v ne None) && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
-                      ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                      ${genWriteVal('{v.get}, tpe1 :: allTypes, fieldInfo.isStringified, None, out)}
-                    }
-                  }
-              } else if (cfg.transientNull && isNullable(fTpe)) '{
-                val v = ${getter.asInstanceOf[Expr[ft]]}
-                if ((v != null) && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
-                  ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                  ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
-                }
-              } else if (fTpe <:< TypeRepr.of[Array[?]]) {
-                def cond(v: Expr[Array[?]])(using Quotes): Expr[Boolean] =
-                  val da = d.asExpr.asInstanceOf[Expr[Array[?]]]
-                  if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
-                  else '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
-
-                '{
-                  val v = ${getter.asInstanceOf[Expr[ft & Array[?]]]}
-                  if (${cond('v)}) {
+      (fTpe.asType match { case '[ft] =>
+        fDefault match {
+          case Some(d) =>
+            if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[?]]) '{
+              val v = ${getter.asInstanceOf[Expr[ft & Iterable[?]]]}
+              if (!v.isEmpty && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
+            } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterator[?]]) '{
+              val v = ${getter.asInstanceOf[Expr[ft & Iterator[?]]]}
+              if (v.hasNext && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
+            } else if (cfg.transientNone && isOption(fTpe, types)) {
+              val tpe1 = typeArg1(fTpe)
+              tpe1.asType match
+                case '[t1] => '{
+                  val v = ${getter.asInstanceOf[Expr[Option[t1]]]}
+                  if ((v ne None) && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
                     ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                    ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+                    ${genWriteVal('{v.get}, tpe1 :: allTypes, fieldInfo.isStringified, None, out)}
                   }
                 }
-              } else if (isIArray(fTpe)) {
-                typeArg1(fTpe).asType match
-                  case '[ft1] => {
-                    def cond(v: Expr[IArray[ft1]])(using Quotes): Expr[Boolean] =
-                      val da = d.asExpr.asInstanceOf[Expr[IArray[ft1]]]
-                      if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
-                      else '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+            } else if (cfg.transientNull && isNullable(fTpe)) '{
+              val v = ${getter.asInstanceOf[Expr[ft]]}
+              if ((v != null) && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
+            } else if (fTpe <:< TypeRepr.of[Array[?]]) {
+              def cond(v: Expr[Array[?]])(using Quotes): Expr[Boolean] =
+                val da = d.asExpr.asInstanceOf[Expr[Array[?]]]
+                if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                else '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
 
-                    '{
-                      val v = ${getter.asInstanceOf[Expr[IArray[ft1]]]}
-                      if (${cond('v)}) {
-                        ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                        ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
-                      }
-                    }
-                  }
-              } else '{
-                val v = ${getter.asInstanceOf[Expr[ft]]}
-                if (v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
+              '{
+                val v = ${getter.asInstanceOf[Expr[ft & Array[?]]]}
+                if (${cond('v)}) {
                   ${genWriteConstantKey(fieldInfo.mappedName, out)}
                   ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
                 }
               }
-            case None =>
-              if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[?]]) '{
-                val v = ${getter.asInstanceOf[Expr[ft & Iterable[?]]]}
-                if (!v.isEmpty) {
-                  ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                  ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
-                }
-              } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterator[?]]) '{
-                val v = ${getter.asInstanceOf[Expr[ft & Iterator[?]]]}
-                if (v.hasNext) {
-                  ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                  ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
-                }
-              } else if (cfg.transientNone && isOption(fTpe, types)) {
-                val tpe1 = typeArg1(fTpe)
-                tpe1.asType match
-                  case '[tf] => '{
-                    val v = ${getter.asInstanceOf[Expr[Option[tf]]]}
-                    if (v ne None) {
-                      ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                      ${genWriteVal('{ v.get }, tpe1 :: allTypes, fieldInfo.isStringified, None, out)}
-                    }
-                  }
-              } else if (cfg.transientNull && isNullable(fTpe)) '{
-                val v = ${getter.asInstanceOf[Expr[ft]]}
-                if (v != null) {
-                  ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                  ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
-                }
-              } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Array[?]]) '{
-                val v = ${getter.asInstanceOf[Expr[ft & Array[?]]]}
-                if (v.length != 0) {
-                  ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                  ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
-                }
-              } else if (cfg.transientEmpty && isIArray(fTpe)) {
-                typeArg1(fTpe).asType match
-                  case '[ft1] => '{
+            } else if (isIArray(fTpe)) {
+              typeArg1(fTpe).asType match
+                case '[ft1] => {
+                  def cond(v: Expr[IArray[ft1]])(using Quotes): Expr[Boolean] =
+                    val da = d.asExpr.asInstanceOf[Expr[IArray[ft1]]]
+                    if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                    else '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+
+                  '{
                     val v = ${getter.asInstanceOf[Expr[IArray[ft1]]]}
-                    if (v.length != 0) {
+                    if (${cond('v)}) {
                       ${genWriteConstantKey(fieldInfo.mappedName, out)}
                       ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
                     }
                   }
-              } else '{
+                }
+            } else '{
+              val v = ${getter.asInstanceOf[Expr[ft]]}
+              if (v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
-                ${genWriteVal(getter.asInstanceOf[Expr[ft]], allTypes, fieldInfo.isStringified, None, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
               }
-          }
+            }
+          case None =>
+            if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[?]]) '{
+              val v = ${getter.asInstanceOf[Expr[ft & Iterable[?]]]}
+              if (!v.isEmpty) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
+            } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterator[?]]) '{
+              val v = ${getter.asInstanceOf[Expr[ft & Iterator[?]]]}
+              if (v.hasNext) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
+            } else if (cfg.transientNone && isOption(fTpe, types)) {
+              val tpe1 = typeArg1(fTpe)
+              tpe1.asType match
+                case '[tf] => '{
+                  val v = ${getter.asInstanceOf[Expr[Option[tf]]]}
+                  if (v ne None) {
+                    ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                    ${genWriteVal('{ v.get }, tpe1 :: allTypes, fieldInfo.isStringified, None, out)}
+                  }
+                }
+            } else if (cfg.transientNull && isNullable(fTpe)) '{
+              val v = ${getter.asInstanceOf[Expr[ft]]}
+              if (v != null) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
+            } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Array[?]]) '{
+              val v = ${getter.asInstanceOf[Expr[ft & Array[?]]]}
+              if (v.length != 0) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
+            } else if (cfg.transientEmpty && isIArray(fTpe)) {
+              typeArg1(fTpe).asType match
+                case '[ft1] => '{
+                  val v = ${getter.asInstanceOf[Expr[IArray[ft1]]]}
+                  if (v.length != 0) {
+                    ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                    ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+                  }
+                }
+            } else '{
+              ${genWriteConstantKey(fieldInfo.mappedName, out)}
+              ${genWriteVal(getter.asInstanceOf[Expr[ft]], allTypes, fieldInfo.isStringified, None, out)}
+            }
+        }
       }).asTerm
     }
     if (optDiscriminator.isDefined) writeFields = optDiscriminator.get.write(out).asTerm :: writeFields
