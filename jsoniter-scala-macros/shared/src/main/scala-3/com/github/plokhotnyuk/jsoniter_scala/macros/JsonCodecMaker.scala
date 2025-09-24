@@ -831,6 +831,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       }
   }
 
+  private val stringTpe = defn.StringClass.typeRef
   private val booleanTpe = defn.BooleanClass.typeRef
   private val byteTpe = defn.ByteClass.typeRef
   private val shortTpe = defn.ShortClass.typeRef
@@ -842,20 +843,21 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private val anyRefTpe = defn.AnyRefClass.typeRef
   private val anyValTpe = defn.AnyValClass.typeRef
   private val unitTpe = defn.UnitClass.typeRef
+  private val nullTpe = defn.NullClass.typeRef
   private val anyTpe = defn.AnyClass.typeRef
+  private val wildcardBounds = TypeBounds(defn.NothingClass.typeRef, anyTpe)
+  private val optionOfWildcardTpe = defn.OptionClass.typeRef.appliedTo(wildcardBounds)
+  private val arrayOfWildcardTpe = defn.ArrayClass.typeRef.appliedTo(wildcardBounds)
   private val arrayOfAnyTpe = defn.ArrayClass.typeRef.appliedTo(anyTpe)
-  private val stringTpe = TypeRepr.of[String]
-  private val optionTpe = TypeRepr.of[Option[?]]
-  private val tupleTpe = TypeRepr.of[Tuple]
-  private val iterableTpe = TypeRepr.of[Iterable[?]]
-  private val iteratorTpe = TypeRepr.of[Iterator[?]]
-  private val arrayTpe = TypeRepr.of[Array[?]]
+  private val iterableOfWildcardTpe = Symbol.requiredClass("scala.collection.Iterable").typeRef.appliedTo(wildcardBounds)
+  private val iteratorOfWildcardTpe = Symbol.requiredClass("scala.collection.Iterator").typeRef.appliedTo(wildcardBounds)
+  private val tupleTpe = Symbol.requiredClass("scala.Tuple").typeRef
   private val iArrayOfAnyRefTpe = TypeRepr.of[IArray[AnyRef]]
-  private val namedTpe = TypeRepr.of[named]
-  private val stringifiedTpe = TypeRepr.of[stringified]
-  private val transientTpe = TypeRepr.of[transient]
-  private val jsonKeyCodecTpe = TypeRepr.of[JsonKeyCodec]
-  private val jsonValueCodecTpe = TypeRepr.of[JsonValueCodec]
+  private val namedTpe = Symbol.requiredClass("com.github.plokhotnyuk.jsoniter_scala.macros.named").typeRef
+  private val stringifiedTpe = Symbol.requiredClass("com.github.plokhotnyuk.jsoniter_scala.macros.stringified").typeRef
+  private val transientTpe = Symbol.requiredClass("com.github.plokhotnyuk.jsoniter_scala.macros.transient").typeRef
+  private val jsonKeyCodecTpe = Symbol.requiredClass("com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec").typeRef
+  private val jsonValueCodecTpe = Symbol.requiredClass("com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec").typeRef
   private val newArray = Select(New(TypeIdent(defn.ArrayClass)), defn.ArrayClass.primaryConstructor)
   private val newArrayOfAny = TypeApply(newArray, List(Inferred(anyTpe)))
   private val fromIArrayMethod = Select.unique(Ref(Symbol.requiredModule("scala.runtime.TupleXXL")), "fromIArray")
@@ -964,17 +966,17 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     else tpe.typeSymbol.companionModule
   }
 
-  private def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< optionTpe &&
-    (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< optionTpe))
+  private def isOption(tpe: TypeRepr, types: List[TypeRepr]): Boolean = tpe <:< optionOfWildcardTpe &&
+    (cfg.skipNestedOptionValues || !types.headOption.exists(_ <:< optionOfWildcardTpe))
 
   private def isNullable(tpe: TypeRepr): Boolean = tpe match
     case OrType(left, right) => isNullable(right) || isNullable(left)
-    case _ => tpe =:= TypeRepr.of[Null]
+    case _ => tpe =:= nullTpe
 
   private def isIArray(tpe: TypeRepr): Boolean = tpe.typeSymbol.fullName == "scala.IArray$package$.IArray"
 
   private def isCollection(tpe: TypeRepr): Boolean =
-    tpe <:< iterableTpe || tpe <:< iteratorTpe || tpe <:< arrayTpe || isIArray(tpe)
+    tpe <:< arrayOfWildcardTpe || isIArray(tpe) || tpe <:< iterableOfWildcardTpe || tpe <:< iteratorOfWildcardTpe
 
   private def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[?]]
 
@@ -1274,7 +1276,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               case AnnotatedType(AppliedType(base, _), annot) => AnnotatedType(base.appliedTo(ctArgs), annot)
               case _ => polyRes.appliedTo(ctArgs)
           case other => fail(s"Primary constructor for '${tpe.show}' is not 'MethodType' or 'PolyType' but '$other''")
-      } else if (sym.isTerm) Ref(sym).tpe
+      } else if (sym.isTerm) sym.termRef
       else fail("Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes. " +
         s"Please consider using of them for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base.")
     }
@@ -1746,7 +1748,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       val sym = Symbol.newMethod(Symbol.spliceOwner, s"f${fieldIndexAccessors.size}",
         MethodType(List("i"))(_ => intTpe :: Nil, _ => stringTpe))
       DefDef(sym, params => {
-        val List(List(param)) = params
+        val param = params.head.head
         val cases = f.map {
           var i = -1
           n =>
@@ -1763,14 +1765,14 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       val sym = Symbol.newMethod(Symbol.spliceOwner, s"q${equalsMethods.size}",
         MethodType("x1" :: "x2" :: Nil)(_ => tpe :: tpe :: Nil, _ => booleanTpe))
       DefDef(sym, params => {
-        val List(List(x1, x2)) = params
+        val List(x1, x2) = params.head
         new Some(f(x1.asExpr.asInstanceOf[Expr[T]], x2.asExpr.asInstanceOf[Expr[T]]).asTerm.changeOwner(sym))
       })
     }).symbol), List(arg1.asTerm, arg2.asTerm)).asExpr.asInstanceOf[Expr[Boolean]]
 
   private def genArrayEquals[T: Type](tpe: TypeRepr, x1t: Expr[T], x2t: Expr[T]): Expr[Boolean] =
     val tpe1 = typeArg1(tpe)
-    if (tpe1 <:< TypeRepr.of[Array[?]]) {
+    if (tpe1 <:< arrayOfWildcardTpe) {
       tpe1.asType match
         case '[t1] =>
           val x1 = x1t.asInstanceOf[Expr[Array[t1]]]
@@ -1856,7 +1858,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       val ref = Ref(sym)
       decodeMethodRefs.update(methodKey, ref)
       decodeMethodDefs.addOne(DefDef(sym, params => {
-        val List(List(in, default)) = params
+        val List(in, default) = params.head
         new Some(f(in.asExpr.asInstanceOf[Expr[JsonReader]], default.asExpr.asInstanceOf[Expr[T]]).asTerm.changeOwner(sym))
       }))
       ref
@@ -1870,7 +1872,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       val ref = Ref(sym)
       encodeMethodRefs.update(methodKey, ref)
       encodeMethodDefs.addOne(DefDef(sym, params => {
-        val List(List(x, out)) = params
+        val List(x, out) = params.head
         new Some(f(out.asExpr.asInstanceOf[Expr[JsonWriter]], x.asExpr.asInstanceOf[Expr[T]]).asTerm.changeOwner(sym))
       }))
       ref
@@ -1905,7 +1907,11 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       val tpe1 = valueClassValueType(tpe)
       tpe1.asType match { case'[t1] => getClassInfo(tpe).genNew(List(List(genNullValue[t1](tpe1 :: types).asTerm))).asExpr }
     } else if (isCollection(tpe)) {
-      if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }
+      if (tpe <:< arrayOfWildcardTpe) withNullValueFor(tpe) {
+        typeArg1(tpe).asType match { case '[t1] => genNewArray[t1](Expr(0)) }
+      } else if (isIArray(tpe)) withNullValueFor(tpe) {
+        typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1](Expr(0))}) } }
+      } else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }
       else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty })
       else if (tpe <:< TypeRepr.of[::[?]]) Literal(NullConstant()).asExpr
       else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) '{ Nil }
@@ -1931,15 +1937,11 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         scalaMapEmpty(tpe, typeArg1(tpe), typeArg2(tpe)).asExpr
       } else if (tpe <:< TypeRepr.of[collection.Map[?, ?]]) {
         scalaMapEmpty(tpe, typeArg1(tpe), typeArg2(tpe)).asExpr
-      } else if (tpe <:< TypeRepr.of[Iterable[?]] || tpe <:< TypeRepr.of[Iterator[?]]) {
+      } else if (tpe <:< iterableOfWildcardTpe || tpe <:< iteratorOfWildcardTpe) {
         scalaCollectionEmpty(tpe, typeArg1(tpe)).asExpr
-      } else if (tpe <:< TypeRepr.of[Array[?]]) withNullValueFor(tpe) {
-        typeArg1(tpe).asType match { case '[t1] => genNewArray[t1](Expr(0)) }
-      } else if (isIArray(tpe)) withNullValueFor(tpe) {
-        typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1](Expr(0))}) } }
       } else '{ null.asInstanceOf[T] }
     } else if (isEnumOrModuleValue(tpe)) enumOrModuleValueRef(tpe).asExpr
-    else if (TypeRepr.of[Null] <:< tpe) Literal(NullConstant()).asExpr
+    else if (nullTpe <:< tpe) Literal(NullConstant()).asExpr
     else if (isOpaque(tpe) && !isNamedTuple(tpe)) {
       val sTpe = opaqueDealias(tpe)
       sTpe.asType match { case '[st] => '{ ${genNullValue[st](sTpe :: types.tail)}.asInstanceOf[T] } }
@@ -2382,7 +2384,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       val isColl = isCollection(tpe)
       val methodKey = new DecoderMethodKey(tpe, isColl & isStringified, useDiscriminator)
       if (isColl) {
-        if (tpe <:< TypeRepr.of[Array[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] || isIArray(tpe) ||
+        if (tpe <:< arrayOfWildcardTpe || isIArray(tpe) || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] ||
           tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val types1 = tpe1 :: types
@@ -2672,7 +2674,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 else $emptyCollection
               }.asInstanceOf[Expr[T & mutable.Growable[t1]]],
                 x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, identity, in).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[Iterable[?]] || tpe <:< TypeRepr.of[Iterator[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< iterableOfWildcardTpe || tpe <:< iteratorOfWildcardTpe) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
@@ -2842,13 +2844,13 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       (fTpe.asType match { case '[ft] =>
         fDefault match {
           case Some(d) =>
-            if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[?]]) '{
+            if (cfg.transientEmpty && fTpe <:< iterableOfWildcardTpe) '{
               val v = ${getter.asInstanceOf[Expr[ft & Iterable[?]]]}
               if (!v.isEmpty && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
                 ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
               }
-            } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterator[?]]) '{
+            } else if (cfg.transientEmpty && fTpe <:< iteratorOfWildcardTpe) '{
               val v = ${getter.asInstanceOf[Expr[ft & Iterator[?]]]}
               if (v.hasNext && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
@@ -2870,7 +2872,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
                 ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
               }
-            } else if (fTpe <:< TypeRepr.of[Array[?]]) {
+            } else if (fTpe <:< arrayOfWildcardTpe) {
               def cond(v: Expr[Array[?]])(using Quotes): Expr[Boolean] =
                 val da = d.asExpr.asInstanceOf[Expr[Array[?]]]
                 if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
@@ -2907,13 +2909,13 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               }
             }
           case None =>
-            if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterable[?]]) '{
+            if (cfg.transientEmpty && fTpe <:< iterableOfWildcardTpe) '{
               val v = ${getter.asInstanceOf[Expr[ft & Iterable[?]]]}
               if (!v.isEmpty) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
                 ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
               }
-            } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Iterator[?]]) '{
+            } else if (cfg.transientEmpty && fTpe <:< iteratorOfWildcardTpe) '{
               val v = ${getter.asInstanceOf[Expr[ft & Iterator[?]]]}
               if (v.hasNext) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
@@ -2935,7 +2937,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
                 ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
               }
-            } else if (cfg.transientEmpty && fTpe <:< TypeRepr.of[Array[?]]) '{
+            } else if (cfg.transientEmpty && fTpe <:< arrayOfWildcardTpe) '{
               val v = ${getter.asInstanceOf[Expr[ft & Array[?]]]}
               if (v.length != 0) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
@@ -3084,7 +3086,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       val isColl = isCollection(tpe)
       val methodKey = new EncoderMethodKey(tpe, isColl & isStringified, optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
       if (isColl) {
-        if (tpe <:< TypeRepr.of[Array[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] || isIArray(tpe) ||
+        if (tpe <:< arrayOfWildcardTpe || isIArray(tpe)  || tpe <:< TypeRepr.of[immutable.ArraySeq[?]]||
           tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -3222,13 +3224,13 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 } else $tx.foreach(x => ${genWriteVal('x, types1, isStringified, None, out)})
                 $out.writeArrayEnd()
               }
-        } else if (tpe <:< TypeRepr.of[Iterable[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< iterableOfWildcardTpe) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
               genWriteArray(x.asInstanceOf[Expr[Iterable[t1]]],
                 (out, x1) => genWriteVal(x1, tpe1 :: types, isStringified, None, out), out)
-        } else if (tpe <:< TypeRepr.of[Iterator[?]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< iteratorOfWildcardTpe) withEncoderFor(methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case'[t1] =>
