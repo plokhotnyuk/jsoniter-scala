@@ -1882,7 +1882,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     val tpe = types.head
     val implValueCodec = findImplicitValueCodec(tpe)
     if (implValueCodec.isDefined) '{ ${implValueCodec.get}.nullValue }
-    else if (tpe =:= stringTpe) Literal(NullConstant()).asExpr
+    else if (tpe =:= stringTpe) '{ null.asInstanceOf[String] }
     else if (tpe =:= booleanTpe) Literal(BooleanConstant(false)).asExpr
     else if (tpe =:= byteTpe) Literal(ByteConstant(0)).asExpr
     else if (tpe =:= shortTpe) Literal(ShortConstant(0)).asExpr
@@ -1913,7 +1913,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1](Expr(0))}) } }
       } else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }
       else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty })
-      else if (tpe <:< TypeRepr.of[::[?]]) Literal(NullConstant()).asExpr
+      else if (tpe <:< TypeRepr.of[::[?]]) '{ null.asInstanceOf[T] }
       else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) '{ Nil }
       else if (tpe <:< TypeRepr.of[collection.SortedSet[?]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
         val tpe1 = typeArg1(tpe)

@@ -241,6 +241,12 @@ lazy val `jsoniter-scala-next-tests` = crossProject(JVMPlatform, JSPlatform, Nat
   .settings(noPublishSettings)
   .settings(
     crossScalaVersions := Seq("3.7.3"),
+    scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq()
+      case _ => Seq(
+        "-Yexplicit-nulls"
+      )
+    }),
     libraryDependencies ++= Seq(
       "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.19" % Test
