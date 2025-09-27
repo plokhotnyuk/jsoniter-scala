@@ -21,8 +21,8 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json),
 [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ Ultra 9 285K CPU @ 3.7GHz
-(max 5.7GHz, 200S Boost), RAM 64Gb DDR5-6400, Ubuntu 25.04 (Linux 6.14), and latest versions of JDK 17/21/25-ea,
-GraalVM Community JDK 17/21/25-ea, and GraalVM JDK 17/21/25-ea[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
+(max 5.7GHz, 200S Boost), RAM 64Gb DDR5-6400, Ubuntu 25.04 (Linux 6.14), and latest versions of JDK 17/21/25,
+GraalVM Community JDK 17/21/25, and GraalVM JDK 17/21/25[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that
 compare performance of jsoniter-scala with: [circe](https://github.com/circe/circe), 
@@ -204,10 +204,11 @@ There are configurable options that can be set in compile-time:
 - Ability to derive codecs that can distinguish `null` field values and missing fields as `Some(None)` and `None` values
   of `Option[Option[_]]`
 - Ability to turn on circe-like encoding of Scala objects in ADTs
-- Ability to disable generation of implementation for decoding or encoding
+- Ability to disable generation of implementation for decoding or encoding for faster derivation and less class/js/binary size
 - Ability to require fields that have defined default values
 - Ability to generate smaller and more efficient codecs for classes when checking of field duplication is not needed
-- Ability to inline non value classes which have the primary constructor with just one argument 
+- Ability to inline non value classes which have the primary constructor with just one argument
+- Ability toggle serialization of fields with `null` values when using use custom codecs for Scala 3 union types with `Null` values 
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
