@@ -138,8 +138,7 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerInstance$FieldAnnotations"),
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerInstance$FieldAnnotations$")
+    ProblemFilters.exclude[Problem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerInstance*")
   )
 )
 

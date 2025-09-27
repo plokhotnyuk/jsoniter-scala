@@ -742,6 +742,8 @@ object JsonCodecMaker {
       def isCollection(tpe: Type): Boolean =
         tpe <:< typeOf[Iterable[?]] || tpe <:< typeOf[Iterator[?]] || tpe <:< typeOf[Array[?]]
 
+      def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[?]]
+
       def scalaCollectionCompanion(tpe: Type): Tree =
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ident(tpe.typeSymbol.companion)
         else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
@@ -808,18 +810,33 @@ object JsonCodecMaker {
         (name, q"private[this] val $name = new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]")
       })._1)
 
-      case class JavaEnumValueInfo(value: Tree, name: String, transformed: Boolean)
+      sealed trait TypeInfo
 
-      val enumValueInfos = new mutable.LinkedHashMap[Type, List[JavaEnumValueInfo]]
+      case class JavaEnumValueInfo(value: Tree, name: String)
 
-      def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[?]]
+      case class JavaEnumInfo(valueInfos: List[JavaEnumValueInfo], hasTransformed: Boolean, doEncoding: Boolean) extends TypeInfo {
+        val doLinearSearch: Boolean = valueInfos.size <= 8 && valueInfos.foldLeft(0)(_ + _.name.length) <= 64
+      }
 
-      def javaEnumValues(tpe: Type): List[JavaEnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
+      case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
+                           defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
+
+      case class ClassInfo(tpe: Type, paramLists: List[List[FieldInfo]]) extends TypeInfo {
+        val fields: List[FieldInfo] = paramLists.flatten
+      }
+
+      val typeInfos = new mutable.HashMap[Type, TypeInfo]
+
+      def getJavaEnumInfo(tpe: Type): JavaEnumInfo = typeInfos.getOrElseUpdate(tpe, {
         val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
+        var hasTransformed = false
+        var doEncoding = false
         var values = tpe.typeSymbol.asClass.knownDirectSubclasses.toList.map { s: Symbol =>
           val name = s.name.toString
           val transformedName = javaEnumValueNameMapper(name)
-          JavaEnumValueInfo(q"$s", transformedName, name != transformedName)
+          hasTransformed |= name != transformedName
+          doEncoding |= isEncodingRequired(transformedName)
+          new JavaEnumValueInfo(q"$s", transformedName)
         }
         if (values eq Nil) {
           val comp = companion(tpe)
@@ -827,7 +844,9 @@ object JsonCodecMaker {
             comp.typeSignature.members.sorted.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
               val name = decodeName(m)
               val transformedName = javaEnumValueNameMapper(name)
-              JavaEnumValueInfo(q"$comp.${TermName(name)}", transformedName, name != transformedName)
+              hasTransformed |= name != transformedName
+              doEncoding |= isEncodingRequired(transformedName)
+              new JavaEnumValueInfo(q"$comp.${TermName(name)}", transformedName)
             }
         }
         val nameCollisions = duplicated(values.map(_.name))
@@ -837,19 +856,19 @@ object JsonCodecMaker {
             s"names of the enum that are mapped by the '${typeOf[CodecMakerConfig]}.javaEnumValueNameMapper' function. " +
             s"Result values should be unique per enum class.")
         }
-        values
-      })
+        new JavaEnumInfo(values, hasTransformed, doEncoding)
+      }).asInstanceOf[JavaEnumInfo]
 
-      def genReadEnumValue(enumValues: Seq[JavaEnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
+      def genReadEnumValue(enumInfo: JavaEnumInfo, unexpectedEnumValueHandler: Tree): Tree = {
         def genReadCollisions(es: collection.Seq[JavaEnumValueInfo]): Tree =
           es.foldRight(unexpectedEnumValueHandler) { (e, acc) =>
             q"if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value} else $acc"
           }
 
-        if (enumValues.size <= 8 && enumValues.foldLeft(0)(_ + _.name.length) <= 64) genReadCollisions(enumValues)
+        if (enumInfo.doLinearSearch) genReadCollisions(enumInfo.valueInfos)
         else {
           val hashCode = (e: JavaEnumValueInfo) => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
-          val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
+          val cases = groupByOrdered(enumInfo.valueInfos)(hashCode).map { case (hash, fs) =>
             cq"$hash => ${genReadCollisions(fs)}"
           } :+ cq"_ => $unexpectedEnumValueHandler"
           q"""(in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
@@ -858,16 +877,7 @@ object JsonCodecMaker {
         }
       }
 
-      case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
-                           defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
-
-      case class ClassInfo(tpe: Type, paramLists: List[List[FieldInfo]]) {
-        val fields: List[FieldInfo] = paramLists.flatten
-      }
-
-      val classInfos = new mutable.LinkedHashMap[Type, ClassInfo]
-
-      def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
+      def getClassInfo(tpe: Type): ClassInfo = typeInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: Option[String], transient: Boolean, stringified: Boolean)
 
         def hasSupportedAnnotation(m: TermSymbol): Boolean = {
@@ -930,7 +940,7 @@ object JsonCodecMaker {
             }
           })
         })
-      })
+      }).asInstanceOf[ClassInfo]
 
       def isValueClass(tpe: Type): Boolean = !isConstType(tpe) && isNonAbstractScalaClass(tpe) &&
         (tpe.typeSymbol.asClass.isDerivedValueClass || cfg.inlineOneValueClasses && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1)
@@ -1027,7 +1037,7 @@ object JsonCodecMaker {
           }
         } else if (isJavaEnum(tpe)) {
           q"""val l = in.readKeyAsCharBuf()
-              ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}"""
+              ${genReadEnumValue(getJavaEnumInfo(tpe), q"in.enumValueError(l)")}"""
         } else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(v: String)) =>
@@ -1187,15 +1197,14 @@ object JsonCodecMaker {
           if (cfg.useScalaEnumValueId) q"out.writeKey($x.id)"
           else q"out.writeKey($x.toString)"
         } else if (isJavaEnum(tpe)) {
-          val es = javaEnumValues(tpe)
-          val encodingRequired = es.exists(e => isEncodingRequired(e.name))
-          if (es.exists(_.transformed)) {
-            val cases = es.map(e => cq"${e.value} => ${e.name}") :+
+          val enumInfo = getJavaEnumInfo(tpe)
+          if (enumInfo.hasTransformed) {
+            val cases = enumInfo.valueInfos.map(e => cq"${e.value} => ${e.name}") :+
               cq"""_ => out.encodeError("illegal enum value: " + $x)"""
-            if (encodingRequired) q"out.writeKey($x match { case ..$cases })"
+            if (enumInfo.doEncoding) q"out.writeKey($x match { case ..$cases })"
             else q"out.writeNonEscapedAsciiKey($x match { case ..$cases })"
           } else {
-            if (encodingRequired) q"out.writeKey($x.name)"
+            if (enumInfo.doEncoding) q"out.writeKey($x.name)"
             else q"out.writeNonEscapedAsciiKey($x.name)"
           }
         } else if (isConstType(tpe)) {
@@ -1378,14 +1387,14 @@ object JsonCodecMaker {
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
       val decodeMethodNames = new mutable.HashMap[MethodKey, TermName]
-      val decodeMethodTrees = new mutable.ArrayBuffer[Tree]
+      val methodTrees = new mutable.ArrayBuffer[Tree]
 
       def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val decodeMethodName = decodeMethodNames.getOrElse(methodKey, {
           val name = TermName(s"d${decodeMethodNames.size}")
           val mtpe = methodKey.tpe
           decodeMethodNames.update(methodKey, name)
-          decodeMethodTrees +=
+          methodTrees +=
             q"private[this] def $name(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $mtpe): $mtpe = $f"
           name
         })
@@ -1393,13 +1402,12 @@ object JsonCodecMaker {
       }
 
       val encodeMethodNames = new mutable.HashMap[MethodKey, TermName]
-      val encodeMethodTrees = new mutable.ArrayBuffer[Tree]
 
       def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val encodeMethodName = encodeMethodNames.getOrElse(methodKey, {
           val name = TermName(s"e${encodeMethodNames.size}")
           encodeMethodNames.update(methodKey, name)
-          encodeMethodTrees +=
+          methodTrees +=
             q"private[this] def $name(x: ${methodKey.tpe}, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = $f"
           name
         })
@@ -1458,7 +1466,7 @@ object JsonCodecMaker {
             case _ => cannotFindValueCodecError(tpe)
           }
         } else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
-        else if (tpe <:< typeOf[AnyRef]) q"null"
+        else if (tpe <:< definitions.AnyRefTpe) q"null"
         else q"null.asInstanceOf[$tpe]"
       }
 
@@ -1904,7 +1912,7 @@ object JsonCodecMaker {
             q"""if (in.isNextToken('"')) {
                   in.rollbackToken()
                   val l = in.readStringAsCharBuf()
-                  ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}
+                  ${genReadEnumValue(getJavaEnumInfo(tpe), q"in.enumValueError(l)")}
                 } else in.readNullOrTokenError(default, '"')"""
           } else if (isTuple(tpe)) withDecoderFor(methodKey, default) {
             val indexedTypes = typeArgs(tpe)
@@ -2271,15 +2279,14 @@ object JsonCodecMaker {
               else q"out.writeVal(x.id)"
             } else q"out.writeVal(x.toString)"
           } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
-            val es = javaEnumValues(tpe)
-            val encodingRequired = es.exists(e => isEncodingRequired(e.name))
-            if (es.exists(_.transformed)) {
-              val cases = es.map(e => cq"${e.value} => ${e.name}") :+
+            val enumInfo = getJavaEnumInfo(tpe)
+            if (enumInfo.hasTransformed) {
+              val cases = enumInfo.valueInfos.map(e => cq"${e.value} => ${e.name}") :+
                 cq"""_ => out.encodeError("illegal enum value: " + x)"""
-              if (encodingRequired) q"out.writeVal(x match { case ..$cases })"
+              if (enumInfo.doEncoding) q"out.writeVal(x match { case ..$cases })"
               else q"out.writeNonEscapedAsciiVal(x match { case ..$cases })"
             } else {
-              if (encodingRequired) q"out.writeVal(x.name)"
+              if (enumInfo.doEncoding) q"out.writeVal(x.name)"
               else q"out.writeNonEscapedAsciiVal(x.name)"
             }
           } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
@@ -2354,8 +2361,7 @@ object JsonCodecMaker {
                   if (cfg.decodingOnly) q"_root_.scala.Predef.???"
                   else genWriteVal(q"x", types, cfg.isStringified, EmptyTree)
                 }
-                ..$decodeMethodTrees
-                ..$encodeMethodTrees
+                ..$methodTrees
                 ..${fields.values.map(_._2)}
                 ..${equalsMethods.values.map(_._2)}
                 ..${nullValues.values.map(_._2)}
