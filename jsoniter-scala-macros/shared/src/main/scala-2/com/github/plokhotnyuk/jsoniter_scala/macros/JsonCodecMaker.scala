@@ -924,8 +924,10 @@ object JsonCodecMaker {
             val symbol = p.asTerm
             val name = decodeName(symbol)
             val annotationOption = annotations.get(name)
-            if (annotationOption.exists(_.transient)) None
-            else {
+            if (annotationOption.exists(_.transient)) {
+              if (symbol.isParamWithDefault) None
+              else fail(s"Transient field '$name' in class '$tpe' should have default value.")
+            } else {
               val mappedName = annotationOption.flatMap(_.partiallyMappedName)
                 .getOrElse(cfg.fieldNameMapper.lift(name).getOrElse(name))
               val tmpName = TermName(s"_${symbol.name}")

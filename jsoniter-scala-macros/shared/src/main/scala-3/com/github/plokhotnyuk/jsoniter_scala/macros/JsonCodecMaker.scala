@@ -2145,7 +2145,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     val construct = typeInfo.genNew(typeInfo.paramLists.map(_.foldLeft(new mutable.ListBuffer[Term]) { (params, fieldInfo) =>
       params.addOne(if (fieldInfo.isTransient) {
         fieldInfo.defaultValue
-          .getOrElse(fail(s"Transient field ${fieldInfo.symbol.name} in class ${tpe.show} have no default value"))
+          .getOrElse(fail(s"Transient field '${fieldInfo.symbol.name}' in class '${tpe.show}' should have default value."))
       } else {
         nonTransientFieldIndex += 1
         Ref(readVars(nonTransientFieldIndex).symbol)

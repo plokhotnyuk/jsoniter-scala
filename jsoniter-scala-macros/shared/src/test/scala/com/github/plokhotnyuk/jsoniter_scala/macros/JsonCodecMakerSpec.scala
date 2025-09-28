@@ -3252,6 +3252,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         else "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for '_root_.java.util.Date'."
       })
     }
+    "don't generate codecs for classes with transient field without default value" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class TransientFieldWithoutDefaultValue(@transient x: Int)
+          |
+          |JsonCodecMaker.make[TransientFieldWithoutDefaultValue]""".stripMargin
+      }).getMessage.contains {
+        "Transient field 'x' in class 'TransientFieldWithoutDefaultValue' should have default value."
+      })
+    }
   }
   "deserialize using the nullValue of codecs that are injected by implicits" in {
     import test._
