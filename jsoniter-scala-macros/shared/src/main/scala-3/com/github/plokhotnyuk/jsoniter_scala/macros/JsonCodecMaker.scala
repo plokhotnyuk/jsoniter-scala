@@ -815,9 +815,23 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     }
   }
 
-  private case class DecoderMethodKey(tpe: TypeRepr, isStringified: Boolean, useDiscriminator: Boolean)
+  private sealed trait RefKey
 
-  private case class EncoderMethodKey(tpe: TypeRepr, isStringified: Boolean, optWriteDiscriminator: Option[WriteDiscriminator])
+  private case class DecoderMethodKey(tpe: TypeRepr, isStringified: Boolean, useDiscriminator: Boolean) extends RefKey
+
+  private case class EncoderMethodKey(tpe: TypeRepr, isStringified: Boolean, optWriteDiscriminator: Option[WriteDiscriminator]) extends RefKey
+
+  private case class EqualsMethodKey(tpe: TypeRepr) extends RefKey
+
+  private case class FieldIndexMethodKey(tpe: TypeRepr) extends RefKey
+
+  private case class NullValueKey(tpe: TypeRepr) extends RefKey
+
+  private case class ClassTagValueKey(tpe: TypeRepr) extends RefKey
+
+  private case class ScalaEnumValueKey(tpe: TypeRepr) extends RefKey
+
+  private case class MathContextValueKey(precision: Int) extends RefKey
 
   private case class WriteDiscriminator(fieldName: String, fieldValue: String) {
     def write(out: Expr[JsonWriter]): Expr[Unit] = '{
@@ -873,16 +887,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private val inferredKeyCodecs = new mutable.HashMap[TypeRepr, Option[Expr[JsonKeyCodec[?]]]]
   private val inferredValueCodecs = new mutable.HashMap[TypeRepr, Option[Expr[JsonValueCodec[?]]]]
   private val inferredOrderings = new mutable.HashMap[TypeRepr, Term]
-  private val decodeMethodRefs = new mutable.HashMap[DecoderMethodKey, Ref]
-  private val encodeMethodRefs = new mutable.HashMap[EncoderMethodKey, Ref]
-  private val methodDefs = new mutable.ArrayBuffer[DefDef]
   private val typeInfos = new mutable.HashMap[TypeRepr, TypeInfo]
-  private val nullValues = new mutable.LinkedHashMap[TypeRepr, ValDef]
-  private val fieldIndexAccessors = new mutable.LinkedHashMap[TypeRepr, DefDef]
-  private val classTags = new mutable.LinkedHashMap[TypeRepr, ValDef]
-  private val equalsMethods = new mutable.LinkedHashMap[TypeRepr, DefDef]
-  private val scalaEnumCaches = new mutable.LinkedHashMap[TypeRepr, ValDef]
-  private val mathContexts = new mutable.LinkedHashMap[Int, ValDef]
+  private val refs = new mutable.HashMap[RefKey, Ref]
+  private val defs = new mutable.ListBuffer[Definition]
 
   // used by Scala 3.7+ only
   private lazy val toTupleMethod = Select.unique(Ref(Symbol.requiredModule("scala.NamedTuple")), "toTuple")
@@ -1027,12 +1034,18 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       case _ => fail(s"Can't summon '${orderingTpeApplied.show}'")
   })
 
-  private def summonClassTag(tpe: TypeRepr): Term = Ref(classTags.getOrElseUpdate(tpe, {
-    val classTagTpeApplied = TypeRepr.of[ClassTag].appliedTo(tpe)
-    Implicits.search(classTagTpeApplied) match
-      case s: ImplicitSearchSuccess => ValDef(symbol(s"ct${classTags.size}", classTagTpeApplied), new Some(s.tree))
-      case _ => fail(s"Can't summon '${classTagTpeApplied.show}'")
-  }).symbol)
+  private def summonClassTag(tpe: TypeRepr): Term =
+    val refKey = new ClassTagValueKey(tpe)
+    refs.getOrElse(refKey, {
+      val classTagTpeApplied = TypeRepr.of[ClassTag].appliedTo(tpe)
+      val sym = symbol(s"ct${refs.size}", classTagTpeApplied)
+      val ref = Ref(sym)
+      refs.update(refKey, ref)
+      Implicits.search(classTagTpeApplied) match
+        case s: ImplicitSearchSuccess => defs.addOne(ValDef(sym, new Some(s.tree)))
+        case _ => fail(s"Can't summon '${classTagTpeApplied.show}'")
+      ref
+    })
 
   private def findImplicitKeyCodec(tpe: TypeRepr): Option[Expr[JsonKeyCodec[?]]] = inferredKeyCodecs.getOrElseUpdate(tpe, {
     Implicits.search(jsonKeyCodecTpe.appliedTo(tpe)) match
@@ -1051,10 +1064,16 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     else if (precision == MathContext.DECIMAL64.getPrecision) '{ (MathContext.DECIMAL64: java.math.MathContext) }
     else if (precision == MathContext.DECIMAL32.getPrecision) '{ (MathContext.DECIMAL32: java.math.MathContext) }
     else if (precision == MathContext.UNLIMITED.getPrecision) '{ (MathContext.UNLIMITED: java.math.MathContext) }
-    else Ref(mathContexts.getOrElseUpdate(precision, {
-      val sym = symbol(s"mc${mathContexts.size}", TypeRepr.of[MathContext])
-      ValDef(sym, new Some('{ new MathContext(${Expr(cfg.bigDecimalPrecision)}, java.math.RoundingMode.HALF_EVEN) }.asTerm))
-    }).symbol).asExpr.asInstanceOf[Expr[MathContext]]
+    else {
+      val refKey = new MathContextValueKey(precision)
+      refs.getOrElse(refKey, {
+        val sym = symbol(s"mc${refs.size}", TypeRepr.of[MathContext])
+        val ref = Ref(sym)
+        refs.update(refKey, ref)
+        defs.addOne(ValDef(sym, new Some('{ new MathContext(${Expr(precision)}, java.math.RoundingMode.HALF_EVEN) }.asTerm)))
+        ref
+      }).asExpr.asInstanceOf[Expr[MathContext]]
+    }
 
   private def genNewArray[T: Type](size: Expr[Int]): Expr[Array[T]] =
     Apply(TypeApply(newArray, List(TypeTree.of[T])), List(size.asTerm)).asExpr.asInstanceOf[Expr[Array[T]]]
@@ -1066,10 +1085,14 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.toString == $name) }.asInstanceOf[Expr[Option[C]]]
 
   private def withScalaEnumCacheFor[K: Type, T: Type](tpe: TypeRepr)(using Quotes): Expr[ConcurrentHashMap[K, T]] =
-    Ref(scalaEnumCaches.getOrElseUpdate(tpe, {
-      val sym = symbol(s"ec${scalaEnumCaches.size}", TypeRepr.of[ConcurrentHashMap[K, T]])
-      ValDef(sym, new Some('{ new ConcurrentHashMap[K, T] }.asTerm))
-    }).symbol).asExpr.asInstanceOf[Expr[ConcurrentHashMap[K, T]]]
+    val refKey = new ScalaEnumValueKey(tpe)
+    refs.getOrElse(refKey, {
+      val sym = symbol(s"ec${refs.size}", TypeRepr.of[ConcurrentHashMap[K, T]])
+      val ref = Ref(sym)
+      refs.update(refKey, ref)
+      defs.addOne(ValDef(sym, new Some('{ new ConcurrentHashMap[K, T] }.asTerm)))
+      ref
+    }).asExpr.asInstanceOf[Expr[ConcurrentHashMap[K, T]]]
 
   private def getJavaEnumInfo(tpe: TypeRepr): JavaEnumInfo = typeInfos.getOrElseUpdate(tpe, {
     val classSym = tpe.classSymbol.get
@@ -1292,27 +1315,34 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   }
 
   private def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
-    def collectRecursively(tpe: TypeRepr): Seq[TypeRepr] =
-      val leafTpes = adtChildren(tpe).flatMap { subTpe =>
-        if (isEnumOrModuleValue(subTpe)) Seq(subTpe)
-        else if (isSealedClass(subTpe)) collectRecursively(subTpe)
+    val seen = new mutable.HashSet[TypeRepr]
+    val subTypes = new mutable.ListBuffer[TypeRepr]
+
+    def collectRecursively(tpe: TypeRepr): Unit =
+      adtChildren(tpe).foreach { subTpe =>
+        if (isEnumOrModuleValue(subTpe)) {
+          if (seen.add(subTpe)) subTypes.addOne(subTpe)
+        } else if (isSealedClass(subTpe)) collectRecursively(subTpe)
         else if (isValueClass(subTpe)) {
           fail("'AnyVal' and one value classes with 'CodecMakerConfig.withInlineOneValueClasses(true)' are not " +
             s"supported as leaf classes for ADT with base '${adtBaseTpe.show}'.")
-        } else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
-        else fail((if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait)) {
+        } else if (isNonAbstractScalaClass(subTpe)) {
+          if (seen.add(subTpe)) subTypes.addOne(subTpe)
+        } else fail((if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait)) {
           "Only sealed intermediate traits or abstract classes are supported."
         } else {
           "Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes."
         }) + s" Please consider using of them for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base.")
       }
-      if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
-      else leafTpes
+      if (isNonAbstractScalaClass(tpe)) {
+        if (seen.add(tpe)) subTypes.addOne(tpe)
+      }
 
-    val classes = distinct(collectRecursively(adtBaseTpe))
-    if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '${adtBaseTpe.show}'. " +
+
+    collectRecursively(adtBaseTpe)
+    if (subTypes.isEmpty) fail(s"Cannot find leaf classes for ADT base '${adtBaseTpe.show}'. " +
       "Please add them or provide a custom implicitly accessible codec for the ADT base.")
-    classes
+    subTypes.toList
   }
 
   private def genReadKey[T: Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] = {
@@ -1748,35 +1778,46 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     }
 
   private def withNullValueFor[T: Type](tpe: TypeRepr)(f: => Expr[T]): Expr[T] =
-    Ref(nullValues.getOrElseUpdate(tpe, ValDef(symbol(s"c${nullValues.size}", tpe), new Some(f.asTerm))).symbol)
-      .asExpr.asInstanceOf[Expr[T]]
+    val refKey = new NullValueKey(tpe)
+    refs.getOrElse(refKey, {
+      val sym = symbol(s"c${refs.size}", tpe)
+      val ref = Ref(sym)
+      refs.update(refKey, ref)
+      defs.addOne(ValDef(sym, new Some(f.asTerm)))
+      ref
+    }).asExpr.asInstanceOf[Expr[T]]
 
-  private def withFieldsByIndexFor(tpe: TypeRepr)(f: => List[String]): Term =
-    Ref(fieldIndexAccessors.getOrElseUpdate(tpe, { // [Int => String], we don't want eta-expand without reason, so let this will be just index
-      val sym = Symbol.newMethod(Symbol.spliceOwner, s"f${fieldIndexAccessors.size}",
-        MethodType(List("i"))(_ => intTpe :: Nil, _ => stringTpe))
-      DefDef(sym, params => {
-        val param = params.head.head
-        val cases = f.map {
-          var i = -1
-          n =>
-            i += 1
-            CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n)))
-        }
-        new Some(Match(param.asExpr.asTerm, cases))
-      })
-    }).symbol)
+  private def withFieldsByIndexFor(refKey: FieldIndexMethodKey)(f: => List[String]): Term = refs.getOrElse(refKey, {
+    val sym = Symbol.newMethod(Symbol.spliceOwner, s"f${refs.size}",
+      MethodType(List("i"))(_ => intTpe :: Nil, _ => stringTpe))
+    val ref = Ref(sym)
+    refs.update(refKey, ref)
+    defs.addOne(DefDef(sym, params => {
+      val param = params.head.head
+      val cases = f.map {
+        var i = -1
+        n =>
+          i += 1
+          CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n)))
+      }
+      new Some(Match(param.asExpr.asTerm, cases))
+    }))
+    ref
+  })
 
-  private def withEqualsFor[T: Type](tpe: TypeRepr, arg1: Expr[T], arg2: Expr[T])
-                                     (f: (Expr[T], Expr[T]) => Expr[Boolean]): Expr[Boolean] =
-    Apply(Ref(equalsMethods.getOrElseUpdate(tpe, {
-      val sym = Symbol.newMethod(Symbol.spliceOwner, s"q${equalsMethods.size}",
-        MethodType("x1" :: "x2" :: Nil)(_ => tpe :: tpe :: Nil, _ => booleanTpe))
-      DefDef(sym, params => {
+  private def withEqualsFor[T: Type](refKey: EqualsMethodKey, arg1: Expr[T], arg2: Expr[T])
+                                    (f: (Expr[T], Expr[T]) => Expr[Boolean]): Expr[Boolean] =
+    Apply(refs.getOrElse(refKey, {
+      val sym = Symbol.newMethod(Symbol.spliceOwner, s"q${refs.size}",
+        MethodType("x1" :: "x2" :: Nil)(_ => refKey.tpe :: refKey.tpe :: Nil, _ => booleanTpe))
+      val ref = Ref(sym)
+      refs.update(refKey, ref)
+      defs.addOne(DefDef(sym, params => {
         val List(x1, x2) = params.head
         new Some(f(x1.asExpr.asInstanceOf[Expr[T]], x2.asExpr.asInstanceOf[Expr[T]]).asTerm.changeOwner(sym))
-      })
-    }).symbol), List(arg1.asTerm, arg2.asTerm)).asExpr.asInstanceOf[Expr[Boolean]]
+      }))
+      ref
+    }), List(arg1.asTerm, arg2.asTerm)).asExpr.asInstanceOf[Expr[Boolean]]
 
   private def genArrayEquals[T: Type](tpe: TypeRepr, x1t: Expr[T], x2t: Expr[T]): Expr[Boolean] =
     val tpe1 = typeArg1(tpe)
@@ -1787,7 +1828,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           val x2 = x2t.asInstanceOf[Expr[Array[t1]]]
 
           def arrEquals(i: Expr[Int])(using Quotes): Expr[Boolean] =
-            withEqualsFor(tpe1, '{ $x1($i) }, '{ $x2($i) })((x1, x2) => genArrayEquals(tpe1, x1, x2))
+            withEqualsFor(new EqualsMethodKey(tpe1), '{ $x1($i) }, '{ $x2($i) })((x1, x2) => genArrayEquals(tpe1, x1, x2))
 
           '{
             ($x1 eq $x2) || (($x1 ne null) && ($x2 ne null) && {
@@ -1806,7 +1847,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           val x2 = x2t.asInstanceOf[Expr[IArray[t1]]]
 
           def arrEquals(i: Expr[Int])(using Quotes): Expr[Boolean] =
-            withEqualsFor(tpe1, '{ $x1($i) }, '{ $x2($i) })((x1, x2) => genArrayEquals(tpe1, x1, x2))
+            withEqualsFor(new EqualsMethodKey(tpe1), '{ $x1($i) }, '{ $x2($i) })((x1, x2) => genArrayEquals(tpe1, x1, x2))
 
           '{
             (($x1 ne null) && ($x2 ne null) && {
@@ -1858,28 +1899,28 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       '{ java.util.Arrays.equals(${x1t.asInstanceOf[Expr[Array[AnyRef]]]}, ${x2t.asInstanceOf[Expr[Array[AnyRef]]]}) }
     } else fail(s"Can't compare arrays of type ${tpe1.show}")
 
-  private def withDecoderFor[T: Type](methodKey: DecoderMethodKey, arg: Expr[T], in: Expr[JsonReader])
-                             (f: (Expr[JsonReader], Expr[T]) => Expr[T]): Expr[T] =
-    Apply(decodeMethodRefs.getOrElse(methodKey, {
-      val sym = Symbol.newMethod(Symbol.spliceOwner, s"d${decodeMethodRefs.size}",
-        MethodType("in" :: "default" :: Nil)(_ => jsonReaderTpe :: methodKey.tpe :: Nil, _ => methodKey.tpe))
+  private def withDecoderFor[T: Type](refKey: DecoderMethodKey, arg: Expr[T], in: Expr[JsonReader])
+                                     (f: (Expr[JsonReader], Expr[T]) => Expr[T]): Expr[T] =
+    Apply(refs.getOrElse(refKey, {
+      val sym = Symbol.newMethod(Symbol.spliceOwner, s"d${refs.size}",
+        MethodType("in" :: "default" :: Nil)(_ => jsonReaderTpe :: refKey.tpe :: Nil, _ => refKey.tpe))
       val ref = Ref(sym)
-      decodeMethodRefs.update(methodKey, ref)
-      methodDefs.addOne(DefDef(sym, params => {
+      refs.update(refKey, ref)
+      defs.addOne(DefDef(sym, params => {
         val List(in, default) = params.head
         new Some(f(in.asExpr.asInstanceOf[Expr[JsonReader]], default.asExpr.asInstanceOf[Expr[T]]).asTerm.changeOwner(sym))
       }))
       ref
     }), in.asTerm :: arg.asTerm :: Nil).asExpr.asInstanceOf[Expr[T]]
 
-  private def withEncoderFor[T: Type](methodKey: EncoderMethodKey, arg: Expr[T], out: Expr[JsonWriter])
-                                      (f: (Expr[JsonWriter], Expr[T]) => Expr[Unit]): Expr[Unit] =
-    Apply(encodeMethodRefs.getOrElse(methodKey, {
-      val sym = Symbol.newMethod(Symbol.spliceOwner, s"e${encodeMethodRefs.size}",
-        MethodType("x" :: "out" :: Nil)(_ => methodKey.tpe :: jsonWriterTpe :: Nil, _ => unitTpe))
+  private def withEncoderFor[T: Type](refKey: EncoderMethodKey, arg: Expr[T], out: Expr[JsonWriter])
+                                     (f: (Expr[JsonWriter], Expr[T]) => Expr[Unit]): Expr[Unit] =
+    Apply(refs.getOrElse(refKey, {
+      val sym = Symbol.newMethod(Symbol.spliceOwner, s"e${refs.size}",
+        MethodType("x" :: "out" :: Nil)(_ => refKey.tpe :: jsonWriterTpe :: Nil, _ => unitTpe))
       val ref = Ref(sym)
-      encodeMethodRefs.update(methodKey, ref)
-      methodDefs.addOne(DefDef(sym, params => {
+      refs.update(refKey, ref)
+      defs.addOne(DefDef(sym, params => {
         val List(x, out) = params.head
         new Some(f(out.asExpr.asInstanceOf[Expr[JsonWriter]], x.asExpr.asInstanceOf[Expr[T]]).asTerm.changeOwner(sym))
       }))
@@ -2103,7 +2144,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     val checkReqVars =
       if (required.isEmpty) Nil
       else paramVars.map {
-        val nameByIndex = withFieldsByIndexFor(tpe)(mappedNames)
+        val nameByIndex = withFieldsByIndexFor(new FieldIndexMethodKey(tpe))(mappedNames)
         val reqMasks = fields.grouped(32).toArray.map(_.foldLeft(0) {
           var i = -1
           (acc, fieldInfo) =>
@@ -2879,8 +2920,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             } else if (fTpe <:< arrayOfWildcardTpe) {
               def cond(v: Expr[Array[?]])(using Quotes): Expr[Boolean] =
                 val da = d.asExpr.asInstanceOf[Expr[Array[?]]]
-                if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
-                else '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                val methodKey = new EqualsMethodKey(fTpe)
+                if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(methodKey, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                else '{ !${withEqualsFor(methodKey, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
 
               '{
                 val v = ${getter.asInstanceOf[Expr[ft & Array[?]]]}
@@ -2894,8 +2936,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 case '[ft1] => {
                   def cond(v: Expr[IArray[ft1]])(using Quotes): Expr[Boolean] =
                     val da = d.asExpr.asInstanceOf[Expr[IArray[ft1]]]
-                    if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
-                    else '{ !${withEqualsFor(fTpe, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                    val methodKey = new EqualsMethodKey(fTpe)
+                    if (cfg.transientEmpty) '{ $v.length != 0 && !${withEqualsFor(methodKey, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
+                    else '{ !${withEqualsFor(methodKey, v, da)((x1, x2) => genArrayEquals(fTpe, x1, x2))} }
 
                   '{
                     val v = ${getter.asInstanceOf[Expr[IArray[ft1]]]}
@@ -3360,11 +3403,6 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     x => !seen.add(x)
   }
 
-  private def distinct[A](xs: Seq[A]): Seq[A] = xs.filter {
-    val seen = new mutable.HashSet[A]
-    x => seen.add(x)
-  }
-
   def make[A: Type](using Quotes): Expr[JsonValueCodec[A]] = {
     val rootTpe = TypeRepr.of[A].dealias
     inferredKeyCodecs.put(rootTpe, None)
@@ -3391,10 +3429,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         }
       }
     }.asTerm
-    val needDefs = (new mutable.ListBuffer).addAll(classTags.values).addAll(mathContexts.values)
-      .addAll(nullValues.values).addAll(equalsMethods.values).addAll(scalaEnumCaches.values)
-      .addAll(fieldIndexAccessors.values).addAll(methodDefs)
-    val codec = Block(needDefs.toList, codecDef).asExpr.asInstanceOf[Expr[JsonValueCodec[A]]]
+    val codec = Block(defs.toList, codecDef).asExpr.asInstanceOf[Expr[JsonValueCodec[A]]]
     if (// FIXME: uncomment after graduating from experimental API: CompilationInfo.XmacroSettings.contains("print-codecs") ||
     {
       Implicits.search(TypeRepr.of[CodecMakerConfig.PrintCodec]) match

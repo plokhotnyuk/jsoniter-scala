@@ -28,11 +28,11 @@ class JsonCodecMakerJVMSpec extends VerifyingSpec {
       val json = "{" + "\"n\":{" * 1000000 + "}" * 1000000 + "}"
       val readStackTrace = TestUtils.assertStackOverflow(readFromString[Nested](json))
       assert(readStackTrace.contains("d0"))
-      assert(!readStackTrace.contains("d1"))
+      assert(!readStackTrace.contains("d2"))
       assert(!readStackTrace.contains("decodeValue"))
       val writeStackTrace = TestUtils.assertStackOverflow(writeToString[Nested](construct()))
-      assert(writeStackTrace.contains("e0"))
-      assert(!writeStackTrace.contains("e1"))
+      assert(writeStackTrace.contains("e1"))
+      assert(!writeStackTrace.contains("e3"))
       assert(!writeStackTrace.contains("encodeValue"))
     }
   }
