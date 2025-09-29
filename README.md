@@ -347,6 +347,7 @@ Usages of jsoniter-scala in OSS libraries:
 - [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala) - implicitly converts typeclass encoders to kafka Serializer, Deserializer, Serde
 - [logging4s](https://github.com/logging4s/logging4s) - structured logging for Scala 3
 - [neotype](https://github.com/kitlangton/neotype) - a friendly newtype library for Scala 3
+- [openapi-generator](https://github.com/OpenAPITools/openapi-generator) - a generator for Scala3 + sttp4 + jsoniter-scala
 - [oath](https://github.com/scala-jwt/oath) - yet another scala-jwt library which has the aim to enhance user experience
 - [pekko-http-json](https://github.com/pjfanning/pekko-http-json) - integrates some of the best JSON libs in Scala with Pekko HTTP 
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
