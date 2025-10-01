@@ -43,6 +43,7 @@ lazy val commonSettings = Seq(
   }),
   compileOrder := CompileOrder.JavaThenScala,
   Test / testOptions += Tests.Argument("-oDF"),
+  //resolvers += ("Insecure Maven Central" at "http://insecure.repo1.maven.org/maven2").withAllowInsecureProtocol(true),
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
   Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -314,8 +315,8 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.playframework" %%% "play-json" % "3.0.5",
       "dev.zio" %%% "zio-json" % "0.7.44",
       "dev.zio" %%% "zio-schema-json" % "1.7.5",
-      "io.circe" %%% "circe-generic" % "0.14.14",
-      "io.circe" %%% "circe-jawn" % "0.14.14",
+      "io.circe" %%% "circe-generic" % "0.14.15",
+      "io.circe" %%% "circe-jawn" % "0.14.15",
       "com.lihaoyi" %%% "upickle" % "4.3.2",
       "com.rallyhealth" %% "weepickle-v1" % "1.9.1",
       "io.spray" %% "spray-json" % "1.3.6",
