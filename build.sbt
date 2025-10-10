@@ -168,7 +168,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.6", "2.13.17", "2.12.20"),
+    crossScalaVersions := Seq("3.3.7", "2.13.17", "2.12.20"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
@@ -206,11 +206,12 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.6", "2.13.17", "2.12.20"),
+    crossScalaVersions := Seq("3.3.7", "2.13.17", "2.12.20"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
-        "-source:3.3"
+        "-source:3.3",
+        "-Ydebug"
       )
     }),
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -267,7 +268,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.6", "2.13.17", "2.12.20"),
+    crossScalaVersions := Seq("3.3.7", "2.13.17", "2.12.20"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(

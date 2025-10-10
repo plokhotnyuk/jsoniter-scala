@@ -1308,7 +1308,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               case AnnotatedType(AppliedType(base, _), annot) => AnnotatedType(base.appliedTo(ctArgs), annot)
               case _ => polyRes.appliedTo(ctArgs)
           case other => fail(s"Primary constructor for '${tpe.show}' is not 'MethodType' or 'PolyType' but '$other''")
-      } else if (sym.isTerm) sym.termRef
+      } else if (sym.isTerm) Ref(sym).tpe
       else fail("Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes. " +
         s"Please consider using of them for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base.")
     }
