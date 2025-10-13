@@ -139,7 +139,7 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[Problem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerInstance*")
+    ProblemFilters.exclude[Problem]("com.github.plokhotnyuk.jsoniter_scala.core.NativeMath*")
   )
 )
 

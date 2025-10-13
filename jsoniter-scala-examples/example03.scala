@@ -6,7 +6,7 @@ object Main extends App {
   var r = 0x3333333333333333L
   var i = 1L
   while (i <= 10000000000L) {
-    r += Math.multiplyHigh(r, i) // Replace by `NativeMath.multiplyHigh` for Scala Native
+    r += Math.multiplyHigh(r, i)
     i += 1L
   }
   println(r)

@@ -131,7 +131,7 @@ Expected output:
 ```sh
 sudo apt install linux-tools-common linux-tools-generic clang libstdc++-12-dev libgc-dev
 sudo sysctl kernel.perf_event_paranoid=1
-scala-cli --power package --native-version 0.5.8 --native example01.sc --native-mode release-full --force -o example01_native.bin
+scala-cli --power package --native-version 0.5.9 --native example01.sc --native-mode release-full --force -o example01_native.bin
 ls -l ./example01_native.bin
 perf stat -r 100 ./example01_native.bin > /dev/null
 ```
@@ -215,7 +215,7 @@ sys	0m2.424s
 ### Build Scala Native image, print its size, and measure its running time
 
 ```sh
-scala-cli --power package --native-version 0.5.8 --native example02.sc --native-mode release-full --native-gc none --native-lto thin --native-multithreading=false --force -o example02_native.bin
+scala-cli --power package --native-version 0.5.9 --native example02.sc --native-mode release-full --native-gc none --native-lto thin --native-multithreading=false --force -o example02_native.bin
 ls -l ./example02_native.bin
 time ./example02_native.bin < 2023_06_430_65B0_in_network_rates.json 2> /dev/null
 ```
@@ -245,7 +245,7 @@ sys	0m0.038s
 
 ### Build Scala Native image and measure its running time
 ```sh
-scala-cli --power package --native-version 0.5.8 --native example03.scala --native-mode release-full --native-gc none --native-lto thin --native-multithreading=false --force -o example03_native.bin
+scala-cli --power package --native-version 0.5.9 --native example03.scala --native-mode release-full --native-gc none --native-lto thin --native-multithreading=false --force -o example03_native.bin
 time ./example03_native.bin
 ```
 Expected output:
