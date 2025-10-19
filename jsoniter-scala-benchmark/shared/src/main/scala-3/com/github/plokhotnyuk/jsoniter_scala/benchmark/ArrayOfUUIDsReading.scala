@@ -99,7 +99,7 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   def uPickle(): Array[UUID] = {
     import upickle.default._
 
-    read[Array[UUID]](jsonBytes)
+    read[Array[UUID]](jsonBytes, trace = false)
   }
 
   @Benchmark

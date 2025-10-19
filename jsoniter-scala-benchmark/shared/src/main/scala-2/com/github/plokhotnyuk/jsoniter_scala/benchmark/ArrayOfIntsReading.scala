@@ -111,7 +111,7 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
   def uPickle(): Array[Int] = {
     import upickle.default._
 
-    read[Array[Int]](jsonBytes)
+    read[Array[Int]](jsonBytes, trace = false)
   }
 
   @Benchmark

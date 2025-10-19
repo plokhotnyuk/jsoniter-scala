@@ -115,7 +115,7 @@ class NestedStructsReading extends NestedStructsBenchmark {
   def uPickle(): NestedStructs = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[NestedStructs](jsonBytes)
+    read[NestedStructs](jsonBytes, trace = false)
   }
 
   @Benchmark

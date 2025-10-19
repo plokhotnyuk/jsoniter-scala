@@ -93,7 +93,7 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
   def uPickle(): Array[ZoneId] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[ZoneId]](jsonBytes)
+    read[Array[ZoneId]](jsonBytes, trace = false)
   }
 
   @Benchmark

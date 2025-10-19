@@ -112,7 +112,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   def uPickle(): Array[Float] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[Float]](jsonBytes)
+    read[Array[Float]](jsonBytes, trace = false)
   }
 
   @Benchmark

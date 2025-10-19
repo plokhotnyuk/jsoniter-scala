@@ -99,7 +99,7 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   def uPickle(): Array[Byte] = {
     import upickle.default._
 
-    read[Array[Byte]](jsonBytes)
+    read[Array[Byte]](jsonBytes, trace = false)
   }
 
   @Benchmark

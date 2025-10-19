@@ -100,7 +100,7 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
   def uPickle(): Array[YearMonth] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[YearMonth]](jsonBytes)
+    read[Array[YearMonth]](jsonBytes, trace = false)
   }
 
   @Benchmark

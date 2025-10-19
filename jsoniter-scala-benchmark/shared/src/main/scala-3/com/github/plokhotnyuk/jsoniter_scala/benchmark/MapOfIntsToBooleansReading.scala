@@ -90,7 +90,7 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   def uPickle(): Map[Int, Boolean] = {
     import upickle.default._
 
-    read[Map[Int, Boolean]](jsonBytes)
+    read[Map[Int, Boolean]](jsonBytes, trace = false)
   }
 
   @Benchmark

@@ -116,7 +116,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   def uPickle(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[DistanceMatrix](jsonBytes)
+    read[DistanceMatrix](jsonBytes, trace = false)
   }
 
   @Benchmark

@@ -93,6 +93,6 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
   def uPickle(): IntMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[IntMap[Boolean]](jsonBytes)
+    read[IntMap[Boolean]](jsonBytes, trace = false)
   }
 }

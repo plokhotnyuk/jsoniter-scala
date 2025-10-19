@@ -93,6 +93,6 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
   def uPickle(): mutable.LongMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[mutable.LongMap[Boolean]](jsonBytes)
+    read[mutable.LongMap[Boolean]](jsonBytes, trace = false)
   }
 }

@@ -101,7 +101,7 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
   def uPickle(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[ExtractFields](jsonBytes)
+    read[ExtractFields](jsonBytes, trace = false)
   }
 
   @Benchmark

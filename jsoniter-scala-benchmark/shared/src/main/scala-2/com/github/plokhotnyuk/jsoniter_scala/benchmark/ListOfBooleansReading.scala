@@ -110,7 +110,7 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
   def uPickle(): List[Boolean] = {
     import upickle.default._
 
-    read[List[Boolean]](jsonBytes)
+    read[List[Boolean]](jsonBytes, trace = false)
   }
 
   @Benchmark

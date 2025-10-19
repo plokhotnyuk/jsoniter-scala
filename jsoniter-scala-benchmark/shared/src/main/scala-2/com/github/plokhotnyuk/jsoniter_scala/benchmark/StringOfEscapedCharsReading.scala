@@ -111,7 +111,7 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   def uPickle(): String = {
     import upickle.default._
 
-    read[String](jsonBytes)
+    read[String](jsonBytes, trace = false)
   }
 
   @Benchmark

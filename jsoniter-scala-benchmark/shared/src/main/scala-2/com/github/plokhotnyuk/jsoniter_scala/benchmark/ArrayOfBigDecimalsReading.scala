@@ -113,7 +113,7 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   def uPickle(): Array[BigDecimal] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[BigDecimal]](jsonBytes)
+    read[Array[BigDecimal]](jsonBytes, trace = false)
   }
 
   @Benchmark

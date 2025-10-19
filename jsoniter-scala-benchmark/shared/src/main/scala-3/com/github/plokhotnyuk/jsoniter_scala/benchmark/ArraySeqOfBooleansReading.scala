@@ -99,7 +99,7 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   def uPickle(): ArraySeq[Boolean] = {
     import upickle.default._
 
-    read[ArraySeq[Boolean]](jsonBytes)
+    read[ArraySeq[Boolean]](jsonBytes, trace = false)
   }
 
   @Benchmark

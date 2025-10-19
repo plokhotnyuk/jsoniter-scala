@@ -98,7 +98,7 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   def uPickle(): Array[Char] = {
     import upickle.default._
 
-    read[Array[Char]](jsonBytes)
+    read[Array[Char]](jsonBytes, trace = false)
   }
 
   @Benchmark

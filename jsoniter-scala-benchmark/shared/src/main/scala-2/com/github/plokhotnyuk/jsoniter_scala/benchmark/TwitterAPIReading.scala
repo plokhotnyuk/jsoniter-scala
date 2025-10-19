@@ -116,7 +116,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   def uPickle(): Seq[Tweet] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Seq[Tweet]](jsonBytes)
+    read[Seq[Tweet]](jsonBytes, trace = false)
   }
 
   @Benchmark

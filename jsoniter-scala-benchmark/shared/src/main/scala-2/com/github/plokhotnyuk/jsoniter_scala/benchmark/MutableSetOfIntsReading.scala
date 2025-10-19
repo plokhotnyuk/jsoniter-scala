@@ -95,7 +95,7 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   def uPickle(): mutable.Set[Int] = {
     import upickle.default._
 
-    read[mutable.Set[Int]](jsonBytes)
+    read[mutable.Set[Int]](jsonBytes, trace = false)
   }
 
   @Benchmark

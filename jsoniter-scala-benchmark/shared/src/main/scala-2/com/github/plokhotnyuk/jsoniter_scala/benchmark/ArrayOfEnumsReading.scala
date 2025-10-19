@@ -101,7 +101,7 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
   def uPickle(): Array[SuitEnum] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[SuitEnum]](jsonBytes)
+    read[Array[SuitEnum]](jsonBytes, trace = false)
   }
 
   @Benchmark

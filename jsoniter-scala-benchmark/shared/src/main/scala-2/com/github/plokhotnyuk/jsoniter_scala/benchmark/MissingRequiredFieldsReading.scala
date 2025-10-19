@@ -191,7 +191,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
     import upickle.core.AbortException
 
     try {
-      read[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
+      read[MissingRequiredFields](jsonBytes, trace = false).toString // toString shouldn't be called
     } catch {
       case ex: AbortException => ex.getMessage
     }

@@ -91,7 +91,7 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
   def uPickle(): mutable.Map[Int, Boolean] = {
     import upickle.default._
 
-    read[mutable.Map[Int, Boolean]](jsonBytes)
+    read[mutable.Map[Int, Boolean]](jsonBytes, trace = false)
   }
 
   @Benchmark

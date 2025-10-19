@@ -110,7 +110,7 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
   def uPickle(): Array[Boolean] = {
     import upickle.default._
 
-    read[Array[Boolean]](jsonBytes)
+    read[Array[Boolean]](jsonBytes, trace = false)
   }
 
   @Benchmark

@@ -100,7 +100,7 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   def uPickle(): Array[Period] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[Period]](jsonBytes)
+    read[Array[Period]](jsonBytes, trace = false)
   }
 
   @Benchmark

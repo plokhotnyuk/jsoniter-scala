@@ -108,7 +108,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
   def uPickle(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[GeoJSON](jsonBytes)
+    read[GeoJSON](jsonBytes, trace = false)
   }
 
   @Benchmark

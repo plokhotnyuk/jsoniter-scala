@@ -110,7 +110,7 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   def uPickle(): Vector[Boolean] = {
     import upickle.default._
 
-    read[Vector[Boolean]](jsonBytes)
+    read[Vector[Boolean]](jsonBytes, trace = false)
   }
 
   @Benchmark

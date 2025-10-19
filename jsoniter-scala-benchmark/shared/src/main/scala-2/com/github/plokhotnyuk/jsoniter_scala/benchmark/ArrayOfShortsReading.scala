@@ -111,7 +111,7 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   def uPickle(): Array[Short] = {
     import upickle.default._
 
-    read[Array[Short]](jsonBytes)
+    read[Array[Short]](jsonBytes, trace = false)
   }
 
   @Benchmark

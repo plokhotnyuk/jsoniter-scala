@@ -107,7 +107,7 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
   def uPickle(): Array[OffsetTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[OffsetTime]](jsonBytes)
+    read[Array[OffsetTime]](jsonBytes, trace = false)
   }
 
   @Benchmark

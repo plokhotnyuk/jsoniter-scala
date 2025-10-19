@@ -100,7 +100,7 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
   def uPickle(): Array[Duration] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[Duration]](jsonBytes)
+    read[Array[Duration]](jsonBytes, trace = false)
   }
 
   @Benchmark

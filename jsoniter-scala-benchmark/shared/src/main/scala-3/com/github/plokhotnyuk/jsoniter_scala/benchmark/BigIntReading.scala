@@ -93,7 +93,7 @@ class BigIntReading extends BigIntBenchmark {
   def uPickle(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[BigInt](jsonBytes)
+    read[BigInt](jsonBytes, trace = false)
   }
 
   @Benchmark

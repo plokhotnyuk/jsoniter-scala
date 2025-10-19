@@ -98,7 +98,7 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
   def uPickle(): Set[Int] = {
     import upickle.default._
 
-    read[Set[Int]](jsonBytes)
+    read[Set[Int]](jsonBytes, trace = false)
   }
 
   @Benchmark

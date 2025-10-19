@@ -98,7 +98,7 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   def uPickle(): Array[Double] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[Double]](jsonBytes)
+    read[Array[Double]](jsonBytes, trace = false)
   }
 
   @Benchmark

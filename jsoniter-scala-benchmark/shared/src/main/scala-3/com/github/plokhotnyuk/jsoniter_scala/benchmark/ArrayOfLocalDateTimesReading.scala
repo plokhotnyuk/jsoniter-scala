@@ -93,7 +93,7 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   def uPickle(): Array[LocalDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[LocalDateTime]](jsonBytes)
+    read[Array[LocalDateTime]](jsonBytes, trace = false)
   }
 
   @Benchmark

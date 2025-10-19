@@ -93,7 +93,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
   def uPickle(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[BigDecimal](jsonBytes)
+    read[BigDecimal](jsonBytes, trace = false)
   }
 
   @Benchmark

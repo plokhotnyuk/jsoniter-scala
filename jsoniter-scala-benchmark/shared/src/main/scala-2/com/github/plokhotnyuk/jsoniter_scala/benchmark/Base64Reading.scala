@@ -115,7 +115,7 @@ class Base64Reading extends Base64Benchmark {
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[Byte]](jsonBytes)(base64ReadWriter)
+    read[Array[Byte]](jsonBytes, trace = false)(base64ReadWriter)
   }
 
   @Benchmark

@@ -107,7 +107,7 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   def uPickle(): Array[SuitADT] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[Array[SuitADT]](jsonBytes)
+    read[Array[SuitADT]](jsonBytes, trace = false)
   }
 
   @Benchmark

@@ -108,7 +108,7 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   def uPickle(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 
-    read[GitHubActionsAPI.Response](jsonBytes)
+    read[GitHubActionsAPI.Response](jsonBytes, trace = false)
   }
 
   @Benchmark
