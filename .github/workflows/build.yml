@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: 16
       - name: Test with Scala Next
-        run: "sbt ++3.7.3! jsoniter-scala-macrosJVM/test jsoniter-scala-next-testsJVM/test"
+        run: "sbt ++3.7.4! jsoniter-scala-macrosJVM/test jsoniter-scala-next-testsJVM/test"
         shell: bash    
       - name: Test with Scala 2 and 3 LTS and Check Binary Compatibility
         run: "sbt -batch +clean +test +mimaReportBinaryIssues"
