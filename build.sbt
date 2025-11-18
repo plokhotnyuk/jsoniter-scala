@@ -20,7 +20,7 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  scalaVersion := "2.13.17",
+  scalaVersion := "2.13.18",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -168,7 +168,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.7", "2.13.17", "2.12.20"),
+    crossScalaVersions := Seq("3.3.7", "2.13.18", "2.12.20"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
@@ -206,7 +206,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.7", "2.13.17", "2.12.20"),
+    crossScalaVersions := Seq("3.3.7", "2.13.18", "2.12.20"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
@@ -268,7 +268,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.7", "2.13.17", "2.12.20"),
+    crossScalaVersions := Seq("3.3.7", "2.13.18", "2.12.20"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
@@ -297,7 +297,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.7.4", "2.13.17"),
+    crossScalaVersions := Seq("3.7.4", "2.13.18"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "-Wopt",
