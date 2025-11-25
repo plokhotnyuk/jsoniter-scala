@@ -555,7 +555,7 @@ final class JsonReader private[jsoniter_scala](
     * Reads a JSON number value into a `Byte` value.
     *
     * @return a `Byte` value of the parsed JSON value
-    * @throws JsonReaderException in cases of reaching the end of input or dection of leading zero or
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Byte`
     */
   @inline

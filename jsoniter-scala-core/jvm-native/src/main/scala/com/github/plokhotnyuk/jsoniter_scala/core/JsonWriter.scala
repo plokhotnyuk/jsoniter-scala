@@ -1961,6 +1961,7 @@ final class JsonWriter private[jsoniter_scala](
       writeLocalTime(x.toLocalTime, writeLocalDateWithT(x.toLocalDate, pos + 1, buf, ds), buf, ds), buf, ds)
     val zone = x.getZone
     if (!zone.isInstanceOf[ZoneOffset]) {
+      buf(pos - 1) = '['
       val zoneId = zone.getId
       val len = zoneId.length
       val required = len + 3
@@ -1968,7 +1969,6 @@ final class JsonWriter private[jsoniter_scala](
         pos = flushAndGrowBuf(required, pos)
         buf = this.buf
       }
-      buf(pos - 1) = '['
       zoneId.getBytes(0, len, buf, pos)
       pos += len
       ByteArrayAccess.setShort(buf, pos, 0x225D)

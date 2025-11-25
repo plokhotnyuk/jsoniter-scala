@@ -2058,7 +2058,6 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkError(s""""+10:10:1${nonDigit}"""", "expected digit, offset: 0x00000009")
         checkError(s""""+10:10:10${nonDoubleQuotes}"""", """expected '"', offset: 0x0000000a""")
       }
-
     }
   }
   "JsonReader.isCharBufEqualsTo" should {

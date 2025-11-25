@@ -2191,6 +2191,8 @@ final class JsonWriter private[jsoniter_scala](
     pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
     val zone = x.getZone
     if (!zone.isInstanceOf[ZoneOffset]) {
+      buf(pos) = '['
+      pos += 1
       val zoneId = zone.getId
       val len = zoneId.length
       val required = len + 3
@@ -2198,8 +2200,6 @@ final class JsonWriter private[jsoniter_scala](
         pos = flushAndGrowBuf(required, pos)
         buf = this.buf
       }
-      buf(pos) = '['
-      pos += 1
       var i = 0
       while (i < len) {
         buf(pos) = zoneId.charAt(i).toByte
