@@ -4051,9 +4051,7 @@ final class JsonReader private[jsoniter_scala](
       if (mark > 0) mark = 0
       tail = remaining
       head = newPos
-    } else {
-      if (tail > 0) growBuf()
-    }
+    } else if (buf.length == tail) growBuf()
     var len = buf.length - tail
     if (bbuf ne null) {
       len = Math.min(bbuf.remaining, len)
