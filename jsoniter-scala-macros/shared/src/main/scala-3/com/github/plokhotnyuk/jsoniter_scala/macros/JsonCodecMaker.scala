@@ -2079,7 +2079,10 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 val l = $in.readStringAsCharBuf()
                 ${genReadSubclassesBlock(objClasses, 'l)}
               } else $in.decodeError(${Expr("expected key: \"" + discrFieldName + '"')})
-            } else $in.readNullOrTokenError($default, '{')
+            } else {
+              $in.resetMark()
+              $in.readNullOrTokenError($default, '{')
+            }
           } else '{
             ${setMark}
             if ($in.isNextToken('{')) {
@@ -2087,7 +2090,10 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 val l = $in.readStringAsCharBuf()
                 ${genReadSubclassesBlock(objClasses, 'l)}
               } else $in.requiredFieldError(${Expr(discrFieldName)})
-            } else $in.readNullOrTokenError($default, '{')
+            } else {
+              $in.resetMark()
+              $in.readNullOrTokenError($default, '{')
+            }
           }
     }
 

@@ -2060,7 +2060,10 @@ object JsonCodecMaker {
                           val l = in.readStringAsCharBuf()
                           ..${genReadSubclassesBlock(leafClasses)}
                         } else in.decodeError(${"expected key: \"" + discrFieldName + '"'})
-                      } else in.readNullOrTokenError(default, '{')"""
+                      } else {
+                        in.resetMark()
+                        in.readNullOrTokenError(default, '{')
+                      }"""
                 } else {
                   q"""in.setMark()
                       if (in.isNextToken('{')) {
@@ -2068,7 +2071,10 @@ object JsonCodecMaker {
                           val l = in.readStringAsCharBuf()
                           ..${genReadSubclassesBlock(leafClasses)}
                         } else in.requiredFieldError($discrFieldName)
-                      } else in.readNullOrTokenError(default, '{')"""
+                      } else {
+                        in.resetMark()
+                        in.readNullOrTokenError(default, '{')
+                      }"""
                 }
             }
           } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
