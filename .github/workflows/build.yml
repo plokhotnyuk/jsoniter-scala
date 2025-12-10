@@ -21,7 +21,7 @@ jobs:
       matrix:
         java:
           - 17
-          - 21
+          - 25
         os:
           - ubuntu-22.04-arm
           - ubuntu-22.04
@@ -36,6 +36,10 @@ jobs:
           fetch-depth: 300
       - name: Fetch tags
         run: git fetch --depth=300 origin +refs/tags/*:refs/tags/*
+      - name: Set JVM options for JDK 25+
+        if: matrix.java >= 25
+        run: echo "JAVA_TOOL_OPTIONS=-XX:+UseCompactObjectHeaders" >> $GITHUB_ENV
+        shell: bash
       - name: Cache SBT deps
         uses: coursier/cache-action@v6
       - name: Setup Scala with SBT
