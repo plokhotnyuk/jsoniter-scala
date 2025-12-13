@@ -119,6 +119,9 @@ class ArrayOfIntsWriting extends ArrayOfIntsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.arrayOfIntsCodec.encode(obj)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import zio.json.EncoderOps
     import java.nio.charset.StandardCharsets.UTF_8

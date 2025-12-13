@@ -114,6 +114,9 @@ class OpenRTBReading extends OpenRTBBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): BidRequest = ZioBlocksCodecs.openRTBBidRequestCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

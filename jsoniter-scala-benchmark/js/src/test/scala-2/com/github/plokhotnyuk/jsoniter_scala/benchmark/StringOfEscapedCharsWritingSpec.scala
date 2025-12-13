@@ -17,6 +17,7 @@ class StringOfEscapedCharsWritingSpec extends BenchmarkSpecBase {
       toString(b.playJsonJsoniter()) shouldBe b.jsonString1
       toString(b.smithy4sJson()) shouldBe b.jsonString1
       toString(b.uPickle()) shouldBe b.jsonString1
+      toString(b.zioBlocks()) shouldBe b.jsonString1
     }
   }
 }

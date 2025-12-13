@@ -25,6 +25,7 @@ class StringOfAsciiCharsReadingSpec extends BenchmarkSpecBase {
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
+      benchmark.zioBlocks() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
       benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
@@ -47,6 +48,7 @@ class StringOfAsciiCharsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
+      intercept[Throwable](b.zioBlocks())
       intercept[Throwable](b.zioJson())
       intercept[Throwable](b.zioSchemaJson())
     }

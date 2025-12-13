@@ -119,6 +119,9 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[LocalDate] = ZioBlocksCodecs.arrayOfLocalDatesCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[LocalDate] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

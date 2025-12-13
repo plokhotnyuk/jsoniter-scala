@@ -188,6 +188,9 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): String = ZioBlocksCodecs.missingRequiredFieldsCodec.decode(jsonBytes).fold(_.getMessage, _.toString)
+
+  @Benchmark
   def zioJson(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

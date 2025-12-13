@@ -113,6 +113,9 @@ class GeoJSONReading extends GeoJSONBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): GeoJSON = ZioBlocksCodecs.geoJsonCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

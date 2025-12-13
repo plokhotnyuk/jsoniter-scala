@@ -113,6 +113,9 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Instant] = ZioBlocksCodecs.arrayOfInstantsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[Instant] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

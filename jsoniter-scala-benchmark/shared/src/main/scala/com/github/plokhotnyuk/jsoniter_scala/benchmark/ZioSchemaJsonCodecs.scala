@@ -31,7 +31,6 @@ object ZioSchemaJsonCodecs {
   implicit def seq[A](implicit schemaA: Schema[A]): Schema[Seq[A]] =
     Schema.Sequence[Seq[A], A, String](schemaA, _.toSeq, Chunk.fromIterable, Chunk.empty, "Seq")
 
-  val arrayBufferOfBooleansCodec: JsonCodec[mutable.ArrayBuffer[Boolean]] = jsonCodec(arrayBuffer[Boolean])
   val arrayOfBooleansCodec: JsonCodec[Array[Boolean]] = jsonCodec(array[Boolean])
   val arrayOfBytesCodec: JsonCodec[Array[Byte]] = jsonCodec(array[Byte])
   val arrayOfCharsCodec: JsonCodec[Array[Char]] = jsonCodec(array[Char])

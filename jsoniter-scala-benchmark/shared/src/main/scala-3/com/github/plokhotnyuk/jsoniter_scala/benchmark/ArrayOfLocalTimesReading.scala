@@ -106,6 +106,9 @@ class ArrayOfLocalTimesReading extends ArrayOfLocalTimesBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[LocalTime] = ZioBlocksCodecs.arrayOfLocalTimesCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[LocalTime] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

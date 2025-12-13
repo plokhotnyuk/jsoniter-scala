@@ -123,6 +123,9 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Short] = ZioBlocksCodecs.arrayOfShortsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[Short] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

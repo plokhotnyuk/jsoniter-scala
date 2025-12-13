@@ -105,6 +105,10 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[OffsetDateTime] =
+    ZioBlocksCodecs.arrayOfOffsetDateTimesCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[OffsetDateTime] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

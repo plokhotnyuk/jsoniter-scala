@@ -100,4 +100,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
 
     FromScala(obj).transform(ToEscapedNonAsciiJson.bytes)
   }
+
+  @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.stringCodec.encode(obj, ZioBlocksCodecs.escapingConfig)
 }

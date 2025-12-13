@@ -127,6 +127,9 @@ class NestedStructsReading extends NestedStructsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): NestedStructs = ZioBlocksCodecs.nestedStructsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): NestedStructs = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

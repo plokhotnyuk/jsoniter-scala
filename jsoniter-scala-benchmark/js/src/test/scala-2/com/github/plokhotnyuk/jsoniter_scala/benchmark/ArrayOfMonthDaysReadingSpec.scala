@@ -17,6 +17,7 @@ class ArrayOfMonthDaysReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.zioBlocks() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
       benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
@@ -31,6 +32,7 @@ class ArrayOfMonthDaysReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioBlocks())
       intercept[Throwable](b.zioJson())
       intercept[Throwable](b.zioSchemaJson())
     }

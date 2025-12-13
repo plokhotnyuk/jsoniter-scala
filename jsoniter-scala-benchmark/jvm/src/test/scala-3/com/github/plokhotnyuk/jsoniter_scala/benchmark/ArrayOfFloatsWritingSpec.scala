@@ -22,6 +22,7 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
       check(toString(b.sprayJson()), b.jsonString)
       check(toString(b.uPickle()), b.jsonString)
       check(toString(b.weePickle()), b.jsonString)
+      check(toString(b.zioBlocks()), b.jsonString)
       check(toString(b.zioJson()), b.jsonString)
       check(toString(b.zioSchemaJson()), b.jsonString)
     }

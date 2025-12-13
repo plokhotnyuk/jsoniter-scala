@@ -113,6 +113,10 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): GitHubActionsAPI.Response =
+    ZioBlocksCodecs.gitHubActionsAPICodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): GitHubActionsAPI.Response = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

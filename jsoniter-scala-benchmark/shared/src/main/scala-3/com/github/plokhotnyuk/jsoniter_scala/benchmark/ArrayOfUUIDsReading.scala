@@ -111,6 +111,9 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[UUID] = ZioBlocksCodecs.arrayOfUUIDsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[UUID] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

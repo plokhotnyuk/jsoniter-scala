@@ -125,6 +125,9 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[BigDecimal] = ZioBlocksCodecs.arrayOfBigDecimalsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[BigDecimal] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

@@ -19,6 +19,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.playJsonJsoniter() shouldBe benchmark.sourceObj
       benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
+      benchmark.zioBlocks() shouldBe benchmark.sourceObj
       benchmark.zioJson() shouldBe benchmark.sourceObj
     }
     "fail on invalid input" in {
@@ -33,6 +34,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioBlocks())
       intercept[Throwable](b.zioJson())
     }
   }

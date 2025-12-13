@@ -129,6 +129,9 @@ class ArrayOfEnumADTsWriting extends ArrayOfEnumADTsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.arrayOfEnumADTsCodec.encode(obj)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.EncoderOps

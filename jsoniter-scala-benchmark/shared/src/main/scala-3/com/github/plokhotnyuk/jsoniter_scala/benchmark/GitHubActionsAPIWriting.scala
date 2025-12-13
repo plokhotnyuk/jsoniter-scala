@@ -121,6 +121,9 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.gitHubActionsAPICodec.encode(obj)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.EncoderOps

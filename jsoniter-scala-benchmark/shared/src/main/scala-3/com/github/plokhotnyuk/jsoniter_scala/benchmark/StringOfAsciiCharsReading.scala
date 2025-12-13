@@ -110,6 +110,9 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): String = ZioBlocksCodecs.stringCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): String = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

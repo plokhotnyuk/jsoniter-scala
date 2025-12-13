@@ -118,6 +118,9 @@ class ArraySeqOfBooleansWriting extends ArraySeqOfBooleansBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.arraySeqOfBooleansCodec.encode(obj)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import zio.json.EncoderOps
     import java.nio.charset.StandardCharsets.UTF_8

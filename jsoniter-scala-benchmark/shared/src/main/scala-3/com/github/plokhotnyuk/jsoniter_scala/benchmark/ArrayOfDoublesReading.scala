@@ -110,6 +110,9 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Double] = ZioBlocksCodecs.arrayOfDoublesCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[Double] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

@@ -126,6 +126,9 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[BigInt] = ZioBlocksCodecs.arrayOfBigIntsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[BigInt] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
