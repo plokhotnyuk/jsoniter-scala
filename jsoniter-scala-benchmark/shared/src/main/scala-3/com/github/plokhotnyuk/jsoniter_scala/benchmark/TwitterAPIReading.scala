@@ -114,6 +114,9 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Seq[Tweet] = ZioBlocksCodecs.twitterAPICodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Seq[Tweet] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

@@ -105,6 +105,10 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[ZonedDateTime] =
+    ZioBlocksCodecs.arrayOfZonedDateTimesCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[ZonedDateTime] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

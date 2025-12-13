@@ -17,6 +17,7 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
       check(toString(b.playJsonJsoniter()), b.jsonString)
       check(toString(b.smithy4sJson()), b.jsonString)
       check(toString(b.uPickle()), b.jsonString)
+      check(toString(b.zioBlocks()), b.jsonString)
       check(toString(b.zioJson()), b.jsonString)
       check(toString(b.zioSchemaJson()), b.jsonString)
     }

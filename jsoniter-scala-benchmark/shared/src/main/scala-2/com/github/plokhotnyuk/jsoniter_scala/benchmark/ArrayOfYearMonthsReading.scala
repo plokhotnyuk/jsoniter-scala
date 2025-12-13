@@ -112,6 +112,9 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[YearMonth] = ZioBlocksCodecs.arrayOfYearMonthsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[YearMonth] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

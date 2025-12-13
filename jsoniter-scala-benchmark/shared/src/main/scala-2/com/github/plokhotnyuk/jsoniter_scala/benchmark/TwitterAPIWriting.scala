@@ -139,6 +139,9 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.twitterAPICodec.encode(obj)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.EncoderOps

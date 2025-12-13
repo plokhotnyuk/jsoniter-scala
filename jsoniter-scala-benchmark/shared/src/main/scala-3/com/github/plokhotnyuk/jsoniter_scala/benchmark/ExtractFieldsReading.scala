@@ -113,6 +113,9 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): ExtractFields = ZioBlocksCodecs.extractFieldsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

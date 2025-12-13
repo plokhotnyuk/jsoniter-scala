@@ -124,6 +124,9 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.googleMapsAPICodec.encode(obj, ZioBlocksCodecs.prettyConfig)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json._

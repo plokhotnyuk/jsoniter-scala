@@ -105,6 +105,9 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Period] = ZioBlocksCodecs.arrayOfPeriodsCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[Period] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

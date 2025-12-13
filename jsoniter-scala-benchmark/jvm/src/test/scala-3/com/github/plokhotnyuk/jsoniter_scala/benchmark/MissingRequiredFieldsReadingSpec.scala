@@ -44,6 +44,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.sprayJson() shouldBe "Object is missing required member 's'"
       b.uPickle() shouldBe "missing keys in dictionary: s, i at index 1"
       b.weePickle() shouldBe "Parser or Visitor failure jsonPointer= index=2 line=1 col=3 token=END_OBJECT"
+      b.zioBlocks() shouldBe "missing required field \"s\" at: ."
       b.zioJson() shouldBe ".s(missing)"
       b.zioSchemaJson() shouldBe ".s(missing)"
     }
@@ -65,6 +66,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.sprayJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
       b.weePickle() shouldBe "MissingRequiredFields(VVV,1)"
+      b.zioBlocks() shouldBe "MissingRequiredFields(VVV,1)"
       b.zioJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.zioSchemaJson() shouldBe "MissingRequiredFields(VVV,1)"
     }

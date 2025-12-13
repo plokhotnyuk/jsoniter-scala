@@ -109,6 +109,9 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): List[Boolean] = ZioBlocksCodecs.listOfBooleansCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): List[Boolean] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

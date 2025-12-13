@@ -22,6 +22,7 @@ class ArrayOfMonthDaysWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.weePickle()) shouldBe b.jsonString
+      toString(b.zioBlocks()) shouldBe b.jsonString
       toString(b.zioJson()) shouldBe b.jsonString
       toString(b.zioSchemaJson()) shouldBe b.jsonString
     }

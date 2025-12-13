@@ -124,6 +124,9 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.arrayOfBytesCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8

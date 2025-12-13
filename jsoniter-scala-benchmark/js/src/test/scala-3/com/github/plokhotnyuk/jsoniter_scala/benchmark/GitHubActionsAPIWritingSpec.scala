@@ -17,6 +17,7 @@ class GitHubActionsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.playJsonJsoniter()) shouldBe b.compactJsonString1
       toString(b.smithy4sJson()) shouldBe b.compactJsonString1
       toString(b.uPickle()) shouldBe b.compactJsonString1
+      toString(b.zioBlocks()) shouldBe b.compactJsonString1
       toString(b.zioJson()) shouldBe b.compactJsonString1
       toString(b.zioSchemaJson()) shouldBe b.compactJsonString1
     }

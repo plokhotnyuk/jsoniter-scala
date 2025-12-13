@@ -121,6 +121,9 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.googleMapsAPICodec.encode(obj)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.EncoderOps

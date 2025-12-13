@@ -128,6 +128,9 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): DistanceMatrix = ZioBlocksCodecs.googleMapsAPICodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

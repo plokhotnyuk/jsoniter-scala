@@ -27,6 +27,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -41,6 +42,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -52,6 +54,7 @@ object Main {
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -65,6 +68,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -78,6 +82,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -93,6 +98,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -107,6 +113,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -122,6 +129,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -135,6 +143,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -149,6 +158,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -163,6 +173,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -178,6 +189,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -191,6 +203,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -205,6 +218,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -218,6 +232,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -232,6 +247,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -272,6 +288,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -287,6 +304,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -301,6 +319,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -316,6 +335,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -330,6 +350,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -345,6 +366,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -381,6 +403,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -395,6 +418,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -408,6 +432,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -422,6 +447,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -435,6 +461,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -449,6 +476,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -464,6 +492,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -479,6 +508,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -492,6 +522,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -506,6 +537,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -519,6 +551,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -533,6 +566,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -546,6 +580,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -560,6 +595,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -573,6 +609,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -587,6 +624,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -601,6 +639,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -616,6 +655,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -630,6 +670,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -645,6 +686,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -658,6 +700,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -672,6 +715,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -685,6 +729,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -699,6 +744,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -712,6 +758,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -726,6 +773,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -739,6 +787,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -753,6 +802,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -766,6 +816,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -780,6 +831,7 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -794,6 +846,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -809,6 +862,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -979,6 +1033,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -994,6 +1049,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1010,6 +1066,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1024,6 +1081,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1039,6 +1097,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1070,6 +1129,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1085,6 +1145,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1096,6 +1157,7 @@ object Main {
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1108,6 +1170,7 @@ object Main {
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1124,6 +1187,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1215,6 +1279,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1229,6 +1294,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1243,6 +1309,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1257,7 +1324,8 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks())
       // FIXME: zio-json serializes default values
       // B("zioJson")(benchmark.zioJson()),
       // FIXME: zio-schema-json serializes default values
@@ -1274,6 +1342,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1289,6 +1358,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1303,6 +1373,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1318,6 +1389,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1332,6 +1404,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1345,7 +1418,8 @@ object Main {
       B("playJson")(benchmark.playJson()),
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks())
     ))
   }, {
     val benchmark = new StringOfNonAsciiCharsReading { size = 512; setup() }
@@ -1358,6 +1432,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1373,6 +1448,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1388,6 +1464,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1403,6 +1480,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1417,6 +1495,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
@@ -1432,6 +1511,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson()),
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))

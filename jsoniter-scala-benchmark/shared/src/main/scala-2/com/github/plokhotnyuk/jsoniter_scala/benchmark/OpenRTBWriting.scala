@@ -130,6 +130,9 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
+
+  @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.openRTBBidRequestCodec.encode(obj)
 /* FIXME: zio-json serializes default values
   @Benchmark
   def zioJson(): Array[Byte] = {

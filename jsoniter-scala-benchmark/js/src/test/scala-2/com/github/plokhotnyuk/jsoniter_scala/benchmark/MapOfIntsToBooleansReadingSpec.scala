@@ -17,6 +17,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.zioBlocks() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
       benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
@@ -31,6 +32,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioBlocks())
       intercept[Throwable](b.zioJson())
       intercept[Throwable](b.zioSchemaJson())
     }

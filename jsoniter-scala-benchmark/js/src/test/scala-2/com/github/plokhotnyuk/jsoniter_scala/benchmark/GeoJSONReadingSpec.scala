@@ -18,6 +18,8 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      // FIXME: zio-blocks-schema does not flatten the trait hierarchy
+      //benchmark.zioBlocks() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
       benchmark.zioSchemaJson() shouldBe benchmark.obj
     }
@@ -33,6 +35,8 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
       intercept[Throwable](b.uPickle())
+      // FIXME: zio-blocks-schema does not flatten the trait hierarchy
+      //intercept[Throwable](b.zioBlocks())
       intercept[Throwable](b.zioJson())
       intercept[Throwable](b.zioSchemaJson())
     }

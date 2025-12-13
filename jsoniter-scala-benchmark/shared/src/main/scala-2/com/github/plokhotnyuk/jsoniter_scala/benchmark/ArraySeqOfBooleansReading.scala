@@ -124,6 +124,9 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): ArraySeq[Boolean] = ZioBlocksCodecs.arraySeqOfBooleansCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

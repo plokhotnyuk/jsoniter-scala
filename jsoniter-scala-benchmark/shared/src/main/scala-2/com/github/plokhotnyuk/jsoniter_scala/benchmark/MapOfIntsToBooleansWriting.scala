@@ -125,6 +125,9 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.mapOfIntsToBooleansCodec.encode(obj)
+
+  @Benchmark
   def zioJson(): Array[Byte] = {
     import zio.json.EncoderOps
     import java.nio.charset.StandardCharsets.UTF_8

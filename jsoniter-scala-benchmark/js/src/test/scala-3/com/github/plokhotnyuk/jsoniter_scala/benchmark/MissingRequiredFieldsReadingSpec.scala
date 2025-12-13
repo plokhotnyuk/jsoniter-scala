@@ -33,6 +33,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.playJsonJsoniter() shouldBe "JsResultException(errors:List((/s,List(JsonValidationError(List(error.path.missing),ArraySeq())))))"
       b.smithy4sJson() shouldBe "Missing required field (path: .s)"
       b.uPickle() shouldBe "missing keys in dictionary: s, i at index 1"
+      b.zioBlocks() shouldBe "missing required field \"s\" at: ."
       b.zioJson() shouldBe ".s(missing)"
       b.zioSchemaJson() shouldBe ".s(missing)"
     }
@@ -49,6 +50,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.playJsonJsoniter() shouldBe "MissingRequiredFields(VVV,1)"
       b.smithy4sJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
+      b.zioBlocks() shouldBe "MissingRequiredFields(VVV,1)"
       b.zioJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.zioSchemaJson() shouldBe "MissingRequiredFields(VVV,1)"
     }
