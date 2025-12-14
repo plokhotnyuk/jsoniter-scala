@@ -1196,24 +1196,6 @@ object SprayFormats extends DefaultJsonProtocol {
     def write(obj: T): JsValue = new JsString(obj.toString)
   }
 
-  implicit def arrayBufferJsonFormat[T : JsonFormat]: RootJsonFormat[mutable.ArrayBuffer[T]] =
-    new RootJsonFormat[mutable.ArrayBuffer[T]] {
-      def read(json: JsValue): mutable.ArrayBuffer[T] =
-        if (!json.isInstanceOf[JsArray]) deserializationError(s"Expected JSON array")
-        else {
-          val es = json.asInstanceOf[JsArray].elements
-          val buf = new mutable.ArrayBuffer[T](es.size)
-          es.foreach(e => buf.addOne(e.convertTo[T]))
-          buf
-        }
-
-      def write(buf: mutable.ArrayBuffer[T]): JsValue = {
-        val vs = Vector.newBuilder[JsValue]
-        buf.foreach(x => vs.addOne(x.toJson))
-        new JsArray(vs.result())
-      }
-    }
-
   implicit def arraySeqJsonFormat[T : JsonFormat : ClassTag]: RootJsonFormat[ArraySeq[T]] =
     new RootJsonFormat[ArraySeq[T]] {
       def read(json: JsValue): ArraySeq[T] = json match {

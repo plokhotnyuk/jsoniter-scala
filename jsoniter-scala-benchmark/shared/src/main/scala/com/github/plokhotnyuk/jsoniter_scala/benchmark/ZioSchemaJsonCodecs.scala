@@ -18,9 +18,6 @@ object ZioSchemaJsonCodecs {
   implicit def array[A: ClassTag](implicit schemaA: Schema[A]): Schema[Array[A]] =
    Schema.Sequence[Array[A], A, String](schemaA, _.toArray, Chunk.fromArray, Chunk.empty, "Array")
 
-  implicit def arrayBuffer[A](implicit schemaA: Schema[A]): Schema[mutable.ArrayBuffer[A]] =
-   Schema.Sequence(schemaA, mutable.ArrayBuffer.from, Chunk.fromIterable, Chunk.empty, "ArrayBuffer")
-
   implicit def arraySeq[A: ClassTag](implicit schemaA: Schema[A]): Schema[ArraySeq[A]] =
    Schema.Sequence[ArraySeq[A], A, String](schemaA, x => ArraySeq.unsafeWrapArray(x.toArray),
      x => Chunk.fromArray[A](x.unsafeArray.asInstanceOf[Array[A]]), Chunk.empty, "ArraySeq")

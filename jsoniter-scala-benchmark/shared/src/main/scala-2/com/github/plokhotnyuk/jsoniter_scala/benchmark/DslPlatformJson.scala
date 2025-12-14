@@ -34,8 +34,6 @@ object DslPlatformJson {
 
   val (stringEncoder: JsonWriter.WriteObject[String],
   stringDecoder: JsonReader.ReadObject[String]) = codec[String]
-  implicit val (arrayBufferOfBooleansEncoder: JsonWriter.WriteObject[mutable.ArrayBuffer[Boolean]],
-  arrayBufferOfBooleansDecoder: JsonReader.ReadObject[mutable.ArrayBuffer[Boolean]]) = codec[mutable.ArrayBuffer[Boolean]]
   implicit val (arrayOfBigDecimalsEncoder: JsonWriter.WriteObject[Array[BigDecimal]],
   arrayOfBigDecimalsDecoder: JsonReader.ReadObject[Array[BigDecimal]]) = codec[Array[BigDecimal]]
   implicit val (arrayOfBigIntsEncoder: JsonWriter.WriteObject[Array[BigInt]],
@@ -83,9 +81,9 @@ object DslPlatformJson {
   implicit val (googleMapsAPIEncoder: JsonWriter.WriteObject[GoogleMapsAPI.DistanceMatrix],
   googleMapsAPIDecoder: JsonReader.ReadObject[GoogleMapsAPI.DistanceMatrix]) = codec[GoogleMapsAPI.DistanceMatrix]
   implicit val (intEncoder: JsonWriter.WriteObject[Int], intDecoder: JsonReader.ReadObject[Int]) = codec[Int]
-  /* FIXME: DSL-JSON doesn't support immutable.IntMap
+/* FIXME: DSL-JSON doesn't support immutable.IntMap
   implicit val (intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]],
-    intMapOfBooleansDecoder: JsonReader.ReadObject[IntMap[Boolean]]) = codec[IntMap[Boolean]]
+  intMapOfBooleansDecoder: JsonReader.ReadObject[IntMap[Boolean]]) = codec[IntMap[Boolean]]
 */
   implicit val (listOfBooleansEncoder: JsonWriter.WriteObject[List[Boolean]],
   listOfBooleansDecoder: JsonReader.ReadObject[List[Boolean]]) = codec[List[Boolean]]
@@ -93,8 +91,9 @@ object DslPlatformJson {
   mapOfIntsToBooleansDecoder: JsonReader.ReadObject[Map[Int, Boolean]]) = codec[Map[Int, Boolean]]
   implicit val (mutableBitSetEncoder: JsonWriter.WriteObject[mutable.BitSet],
   mutableBitSetDecoder: JsonReader.ReadObject[mutable.BitSet]) = codec[mutable.BitSet]
-  /* FIXME: DSL-JSON doesn't support mutable.LongMap
-  implicit val (mutableLongMapOfBooleansEncoder: JsonWriter.WriteObject[mutable.LongMap[Boolean]], mutableLongMapOfBooleansDecoder: JsonReader.ReadObject[mutable.LongMap[Boolean]]) = codec[mutable.LongMap[Boolean]]
+/* FIXME: DSL-JSON doesn't support mutable.LongMap
+  implicit val (mutableLongMapOfBooleansEncoder: JsonWriter.WriteObject[mutable.LongMap[Boolean]],
+  mutableLongMapOfBooleansDecoder: JsonReader.ReadObject[mutable.LongMap[Boolean]]) = codec[mutable.LongMap[Boolean]]
 */
   implicit val (mutableMapOfIntsToBooleansEncoder: JsonWriter.WriteObject[mutable.Map[Int, Boolean]],
   mutableMapOfIntsToBooleansDecoder: JsonReader.ReadObject[mutable.Map[Int, Boolean]]) = codec[mutable.Map[Int, Boolean]]
