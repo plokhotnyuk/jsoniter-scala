@@ -586,8 +586,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      check(1.0E-43f, "9.9E-44") // 71 * 2 ^ -149 == 9.94... * 10 ^ -44
-      check(1.0E-45f, "1.4E-45") // 1 * 2 ^ -149 == 1.40... * 10 ^ -45
+      check(1.0E-43f, "1.0E-43")
+      check(1.0E-45f, "1.0E-45")
       check(7.1E10f, "7.1E10") // Java serializes it to "7.0999998E10" (string of redundant 9s)
       check(1.1E15f, "1.1E15") // Java serializes it to "1.09999998E15" (string of redundant 9s)
       check(1.0E17f, "1.0E17") // Java serializes it to "9.9999998E16" (string of redundant 9s)
@@ -680,8 +680,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      check(1.0E-322, "9.9E-323") // 20 * 2 ^ -1074 == 9.88... * 10 ^ -323
-      check(5.0E-324, "4.9E-324") // 1 * 2 ^ -1074 == 4.94... * 10 ^ -324
+      check(1.0E-322, "1.0E-322")
+      check(5.0E-324, "5.0E-324")
       check(1.0E23, "1.0E23") // Java serializes it to "9.999999999999999E22" (string of redundant 9s)
       check(8.41E21, "8.41E21") // Java serializes it to "8.409999999999999E21" (string of redundant 9s)
       check(8.962E21, "8.962E21") // Java serializes it to "8.961999999999999E21" (string of redundant 9s)
