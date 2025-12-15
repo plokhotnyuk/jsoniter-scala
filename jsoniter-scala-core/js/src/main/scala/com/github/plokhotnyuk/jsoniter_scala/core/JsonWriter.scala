@@ -2544,7 +2544,7 @@ final class JsonWriter private[jsoniter_scala](
           else (e2 * 315653) >> 20
         val h = (((e10 + 1) * -217707) >> 16) + e2
         val pow10 = floatPow10s(31 - e10)
-        val hi64 = unsignedMultiplyHigh1(pow10, m2.toLong << (h + 37)) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10, m2.toLong << (h + 37))
+        val hi64 = unsignedMultiplyHigh(pow10, m2.toLong << (h + 37)) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10, m2.toLong << (h + 37))
         m10 = (hi64 >>> 36).toInt * 10
         val dotOne = hi64 & 0xFFFFFFFFFL
         val halfUlpPlusEven = (pow10 >>> (28 - h)) + ((m2IEEE + 1) & 1)
@@ -2613,10 +2613,6 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
-  @inline
-  private[this] def unsignedMultiplyHigh1(x: Long, y: Long): Long =
-    Math.multiplyHigh(x, y) + y // Use implementation that works only when x is negative and y is positive
-
   // Based on the ingenious work of Xiang JunBo and Wang TieJun
   // "xjb: Fast Float to String Algorithm": https://github.com/xjb714/xjb/blob/4852e533287bd0e8d554c2a9f4cc6eaa93ca799f/fast_f2s.pdf
   // Sources with the license are here: https://github.com/xjb714/xjb
@@ -2656,35 +2652,37 @@ final class JsonWriter private[jsoniter_scala](
         val pow10_1 = pow10s(i)
         val pow10_2 = pow10s(i + 1)
         val cb = m2 << (h + 7)
-        val lo64_1 = unsignedMultiplyHigh2(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
+        val lo64_1 = unsignedMultiplyHigh(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
         val lo64_2 = pow10_1 * cb
-        var hi64 = unsignedMultiplyHigh2(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
+        var hi64 = unsignedMultiplyHigh(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
         val lo64 = lo64_1 + lo64_2
         hi64 += java.lang.Long.compareUnsigned(lo64, lo64_1) >>> 31
         val dotOne = (hi64 << 58) | (lo64 >>> 6)
         val halfUlp = pow10_1 >>> -h
-        val even = (m2 + 1L) & 1L
-        m10 = hi64 >>> 6
-        m10 = (m10 << 3) + (m10 << 1)
-        if (java.lang.Long.compareUnsigned(halfUlp + even, -1 - dotOne) > 0) m10 += 10L
-        else if (m2IEEE != 0) {
-          if (java.lang.Long.compareUnsigned(halfUlp + even, dotOne) <= 0) {
-            m10 = (unsignedMultiplyHigh2(lo64, 10L) + (hi64 << 3) + (hi64 << 1) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
-              if (dotOne == 0x4000000000000000L) 0x1FL
-              else 0x20L
-            }) >>> 6
+        val even = (m2.toInt + 1) & 1
+        if (java.lang.Long.compareUnsigned(halfUlp + even, -1 - dotOne) > 0) {
+          m10 = hi64 >>> 6
+          m10 = (m10 << 3) + (m10 << 1) + 10L
+        } else if (m2IEEE != 0) {
+          if (java.lang.Long.compareUnsigned(halfUlp + even, dotOne) > 0) {
+            m10 = hi64 >>> 6
+            m10 = (m10 << 3) + (m10 << 1)
+          } else {
+            m10 = calculateM10(hi64, lo64, dotOne)
           }
         } else {
           var tmp1 = dotOne >>> 4
           tmp1 = (tmp1 << 3) + (tmp1 << 1)
           var tmp2 = halfUlp >>> 4
           tmp2 += tmp2 << 2
-          if (java.lang.Long.compareUnsigned((tmp1 << 4) >>> 4, tmp2) > 0) m10 += (tmp1 >>> 60).toInt + 1
-          else if (java.lang.Long.compareUnsigned(halfUlp >>> 1, dotOne) <= 0) {
-            m10 = (unsignedMultiplyHigh2(lo64, 10L) + (hi64 << 3) + (hi64 << 1) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
-              if (dotOne == 0x4000000000000000L) 0x1FL
-              else 0x20L
-            }) >>> 6
+          if (java.lang.Long.compareUnsigned((tmp1 << 4) >>> 4, tmp2) > 0) {
+            m10 = hi64 >>> 6
+            m10 = (m10 << 3) + (m10 << 1) + ((tmp1 >>> 60).toInt + 1)
+          } else if (java.lang.Long.compareUnsigned(halfUlp >>> 1, dotOne) > 0) {
+            m10 = hi64 >>> 6
+            m10 = (m10 << 3) + (m10 << 1)
+          } else {
+            m10 = calculateM10(hi64, lo64, dotOne)
           }
         }
       }
@@ -2743,9 +2741,25 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
+  // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
+  // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
+  // https://doc.lagout.org/security/Hackers%20Delight.pdf
   @inline
-  private[this] def unsignedMultiplyHigh2(x: Long, y: Long): Long =
-    Math.multiplyHigh(x, y) + (y & (x >> 63)) // Use implementation that works only when y is positive
+  private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long = {
+    val xl = x & 0xFFFFFFFFL
+    val xh = x >>> 32
+    val yl = y & 0xFFFFFFFFL
+    val yh = y >>> 32
+    val t = xh * yl + (xl * yl >>> 32)
+    xh * yh + (t >>> 32) + (xl * yh + (t & 0xFFFFFFFFL) >>> 32)
+  }
+
+  @inline
+  private[this] def calculateM10(hi: Long, lo: Long, dotOne: Long): Long = ((hi << 3) + (hi << 1) +
+    ((lo >>> 61).toInt + (lo >>> 63).toInt + (java.lang.Long.compareUnsigned((lo << 3) + (lo << 1), lo << 1) >>> 31) + {
+      if (dotOne == 0x4000000000000000L) 0x1F
+      else 0x20
+    })) >>> 6
 
   @inline
   private[this] def digitCount(x: Long): Int =

@@ -2377,25 +2377,26 @@ final class JsonWriter private[jsoniter_scala](
         hi64 += java.lang.Long.compareUnsigned(lo64, lo64_1) >>> 31
         val dotOne = (hi64 << 58) | (lo64 >>> 6)
         val halfUlp = pow10_1 >>> -h
-        val even = (m2 + 1L) & 1L
-        m10 = hi64 >>> 6
-        m10 = (m10 << 3) + (m10 << 1)
-        if (java.lang.Long.compareUnsigned(halfUlp + even, -1 - dotOne) > 0) m10 += 10L
-        else if (m2IEEE != 0) {
-          if (java.lang.Long.compareUnsigned(halfUlp + even, dotOne) <= 0) {
-            m10 = (unsignedMultiplyHigh2(lo64, 10L) + (hi64 << 3) + (hi64 << 1) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
+        val even = (m2.toInt + 1) & 1
+        if (java.lang.Long.compareUnsigned(halfUlp + even, -1 - dotOne) > 0) {
+          m10 = (hi64 >>> 6) * 10L + 10L
+        } else if (m2IEEE != 0) {
+          if (java.lang.Long.compareUnsigned(halfUlp + even, dotOne) > 0) {
+            m10 = (hi64 >>> 6) * 10L
+          } else {
+            m10 = (hi64 * 10L + unsignedMultiplyHigh2(lo64, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
               if (dotOne == 0x4000000000000000L) 0x1FL
               else 0x20L
             }) >>> 6
           }
         } else {
-          var tmp1 = dotOne >>> 4
-          tmp1 = (tmp1 << 3) + (tmp1 << 1)
-          var tmp2 = halfUlp >>> 4
-          tmp2 += tmp2 << 2
-          if (java.lang.Long.compareUnsigned((tmp1 << 4) >>> 4, tmp2) > 0) m10 += (tmp1 >>> 60).toInt + 1
-          else if (java.lang.Long.compareUnsigned(halfUlp >>> 1, dotOne) <= 0) {
-            m10 = (unsignedMultiplyHigh2(lo64, 10L) + (hi64 << 3) + (hi64 << 1) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
+          val tmp = (dotOne >>> 4) * 10L
+          if (java.lang.Long.compareUnsigned((tmp << 4) >>> 4, (halfUlp >>> 4) * 5L) > 0) {
+            m10 = (hi64 >>> 6) * 10L + ((tmp >>> 60).toInt + 1)
+          } else if (java.lang.Long.compareUnsigned(halfUlp >>> 1, dotOne) > 0) {
+            m10 = (hi64 >>> 6) * 10L
+          } else {
+            m10 = (hi64 * 10L + unsignedMultiplyHigh2(lo64, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
               if (dotOne == 0x4000000000000000L) 0x1FL
               else 0x20L
             }) >>> 6
