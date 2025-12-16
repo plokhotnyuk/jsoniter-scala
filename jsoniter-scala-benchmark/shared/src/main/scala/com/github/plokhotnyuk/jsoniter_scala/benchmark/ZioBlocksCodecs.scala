@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import zio.blocks.schema.json._
 import zio.blocks.schema._
+import java.math.MathContext
 import java.time._
 import java.util.UUID
 import scala.collection.immutable.ArraySeq
@@ -36,6 +37,17 @@ object ZioBlocksCodecs {
   val arrayOfZoneIdsCodec: JsonBinaryCodec[Array[ZoneId]] = Schema.derived.derive(JsonBinaryCodecDeriver)
   val arrayOfZoneOffsetsCodec: JsonBinaryCodec[Array[ZoneOffset]] = Schema.derived.derive(JsonBinaryCodecDeriver)
   val arraySeqOfBooleansCodec: JsonBinaryCodec[ArraySeq[Boolean]] = Schema[ArraySeq[Boolean]].derive(JsonBinaryCodecDeriver)
+  val bigDecimalCodec: JsonBinaryCodec[BigDecimal] = new JsonBinaryCodec[BigDecimal]() {
+    override def decodeValue(in: JsonReader, default: BigDecimal): BigDecimal =
+      in.readBigDecimal(default, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
+
+    override def encodeValue(x: BigDecimal, out: JsonWriter): Unit = out.writeVal(x)
+  }
+  val bigIntCodec: JsonBinaryCodec[BigInt] = new JsonBinaryCodec[BigInt]() {
+    override def decodeValue(in: JsonReader, default: BigInt): BigInt = in.readBigInt(default, Int.MaxValue)
+
+    override def encodeValue(x: BigInt, out: JsonWriter): Unit = out.writeVal(x)
+  }
   val extractFieldsCodec: JsonBinaryCodec[ExtractFields] = Schema.derived.derive(JsonBinaryCodecDeriver)
   val geoJsonCodec: JsonBinaryCodec[GeoJSON.GeoJSON] =
     Schema.derived.derive(JsonBinaryCodecDeriver.withDiscriminatorKind(DiscriminatorKind.Field("type")))

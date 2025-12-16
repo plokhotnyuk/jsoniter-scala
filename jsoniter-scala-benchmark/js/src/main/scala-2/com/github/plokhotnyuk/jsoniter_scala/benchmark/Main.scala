@@ -981,6 +981,7 @@ object Main {
       // B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -996,6 +997,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -1011,6 +1013,7 @@ object Main {
       // FIXME: smithy4sJson parses up to 308 digits only
       // B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -1025,6 +1028,7 @@ object Main {
       B("playJsonJsoniter")(benchmark.playJsonJsoniter()),
       B("smithy4sJson")(benchmark.smithy4sJson()),
       B("uPickle")(benchmark.uPickle()),
+      B("zioBlocks")(benchmark.zioBlocks()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
