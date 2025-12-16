@@ -9,6 +9,7 @@ import java.util.UUID
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter._
 import scala.annotation.tailrec
 import scala.{specialized => sp}
+import java.lang.Long.compareUnsigned
 
 /**
  * A writer for iterative serialization of JSON keys and values.
@@ -2269,8 +2270,8 @@ final class JsonWriter private[jsoniter_scala](
         val pow10 = floatPow10s(31 - e10)
         val hi64 = unsignedMultiplyHigh1(pow10, m2.toLong << (h + 37)) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10, m2.toLong << (h + 37))
         m10 = (hi64 >>> 36).toInt * 10
-        val dotOne = hi64 & 0xFFFFFFFFFL
         val halfUlpPlusEven = (pow10 >>> (28 - h)) + ((m2IEEE + 1) & 1)
+        val dotOne = hi64 & 0xFFFFFFFFFL
         var m10Corr =
           if ({
             if (m2IEEE == 0) halfUlpPlusEven >>> 1
@@ -2374,33 +2375,17 @@ final class JsonWriter private[jsoniter_scala](
         val lo64_2 = pow10_1 * cb
         var hi64 = unsignedMultiplyHigh2(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
         val lo64 = lo64_1 + lo64_2
-        hi64 += java.lang.Long.compareUnsigned(lo64, lo64_1) >>> 31
+        hi64 += compareUnsigned(lo64, lo64_1) >>> 31
+        m10 = (hi64 >>> 6) * 10L
+        val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
         val dotOne = (hi64 << 58) | (lo64 >>> 6)
-        val halfUlp = pow10_1 >>> -h
-        val even = (m2.toInt + 1) & 1
-        if (java.lang.Long.compareUnsigned(halfUlp + even, -1 - dotOne) > 0) {
-          m10 = (hi64 >>> 6) * 10L + 10L
-        } else if (m2IEEE != 0) {
-          if (java.lang.Long.compareUnsigned(halfUlp + even, dotOne) > 0) {
-            m10 = (hi64 >>> 6) * 10L
-          } else {
-            m10 = (hi64 * 10L + unsignedMultiplyHigh2(lo64, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
-              if (dotOne == 0x4000000000000000L) 0x1FL
-              else 0x20L
-            }) >>> 6
-          }
+        if (compareUnsigned(halfUlpPlusEven, -1 - dotOne) > 0) m10 += 10L
+        else if (m2IEEE != 0) {
+          if (compareUnsigned(halfUlpPlusEven, dotOne) <= 0) m10 = calculateM10(hi64, lo64, dotOne)
         } else {
           val tmp = (dotOne >>> 4) * 10L
-          if (java.lang.Long.compareUnsigned((tmp << 4) >>> 4, (halfUlp >>> 4) * 5L) > 0) {
-            m10 = (hi64 >>> 6) * 10L + ((tmp >>> 60).toInt + 1)
-          } else if (java.lang.Long.compareUnsigned(halfUlp >>> 1, dotOne) > 0) {
-            m10 = (hi64 >>> 6) * 10L
-          } else {
-            m10 = (hi64 * 10L + unsignedMultiplyHigh2(lo64, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
-              if (dotOne == 0x4000000000000000L) 0x1FL
-              else 0x20L
-            }) >>> 6
-          }
+          if (compareUnsigned((tmp << 4) >>> 4, (halfUlpPlusEven >>> 4) * 5L) > 0) m10 += (tmp >>> 60).toInt + 1
+          else if (compareUnsigned(halfUlpPlusEven >>> 1, dotOne) <= 0) m10 = calculateM10(hi64, lo64, dotOne)
         }
       }
       val len = digitCount(m10)
@@ -2451,6 +2436,12 @@ final class JsonWriter private[jsoniter_scala](
     }
     count = pos
   }
+
+  private[this] def calculateM10(hi: Long, lo: Long, dotOne: Long): Long =
+    (hi * 10L + unsignedMultiplyHigh2(lo, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
+      if (dotOne == 0x4000000000000000L) 0x1FL
+      else 0x20L
+    }) >>> 6
 
   private[this] def unsignedMultiplyHigh2(x: Long, y: Long): Long =
     Math.multiplyHigh(x, y) + (y & (x >> 63)) // Use implementation that works only when y is positive
