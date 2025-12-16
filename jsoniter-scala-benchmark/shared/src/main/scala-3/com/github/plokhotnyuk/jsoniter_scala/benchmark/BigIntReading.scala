@@ -105,6 +105,9 @@ class BigIntReading extends BigIntBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): BigInt = ZioBlocksCodecs.bigIntCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps

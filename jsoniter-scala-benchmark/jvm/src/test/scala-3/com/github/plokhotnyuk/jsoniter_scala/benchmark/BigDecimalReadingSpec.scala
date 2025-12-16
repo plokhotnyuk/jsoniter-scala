@@ -26,6 +26,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       benchmark.sprayJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
       benchmark.weePickle() shouldBe benchmark.sourceObj
+      benchmark.zioBlocks() shouldBe benchmark.sourceObj
       benchmark.zioJson() shouldBe benchmark.sourceObj
     }
     "fail on invalid input" in {
@@ -46,6 +47,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
+      intercept[Throwable](b.zioBlocks())
       intercept[Throwable](b.zioJson())
     }
   }

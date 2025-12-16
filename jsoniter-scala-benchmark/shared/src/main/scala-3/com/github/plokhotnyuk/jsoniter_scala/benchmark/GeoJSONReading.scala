@@ -129,7 +129,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    geoJSONCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    geoJsonCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
   }
 */
 }

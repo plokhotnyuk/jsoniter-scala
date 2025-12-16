@@ -105,6 +105,9 @@ class BigDecimalReading extends BigDecimalBenchmark {
   }
 
   @Benchmark
+  def zioBlocks(): BigDecimal = ZioBlocksCodecs.bigDecimalCodec.decode(jsonBytes).fold(throw _, identity)
+
+  @Benchmark
   def zioJson(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
     import zio.json.DecoderOps
