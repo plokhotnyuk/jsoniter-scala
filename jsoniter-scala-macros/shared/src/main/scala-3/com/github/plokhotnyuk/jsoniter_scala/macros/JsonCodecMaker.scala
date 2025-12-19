@@ -1286,9 +1286,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     val typeSymbol = tpe.typeSymbol
     typeSymbol.children.map { sym =>
       if (sym.isType) {
-        if (sym.name == "<local child>") // problem - we have no other way to find this other return the name
-          fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a " +
-            "custom implicitly accessible codec")
+        if (
+            sym.name == "<local child>" // scala 2 anonymous class anonymous class extending typeSymbol type
+            || sym == typeSymbol // scala 3 anonymous class extending typeSymbol type
+          )
+            fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a " +
+              "custom implicitly accessible codec")
         val nudeSubtype = sym.typeRef
         val tpeArgsFromChild = typeArgs(nudeSubtype.baseType(typeSymbol))
         nudeSubtype.memberType(sym.primaryConstructor) match
