@@ -118,10 +118,10 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
     FromJson(jsonBytes).transform(ToScala[GeoJSON])
   }
-/* FIXME: zio-blocks-schema does not flatten the trait hierarchy
+
   @Benchmark
   def zioBlocks(): GeoJSON = ZioBlocksCodecs.geoJsonCodec.decode(jsonBytes).fold(throw _, identity)
-*/
+
   @Benchmark
   def zioJson(): GeoJSON = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._

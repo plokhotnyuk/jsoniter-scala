@@ -22,8 +22,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
-      // FIXME: zio-blocks-schema does not flatten the trait hierarchy
-      //benchmark.zioBlocks() shouldBe benchmark.obj
+      benchmark.zioBlocks() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
       // FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
       // benchmark.zioSchemaJson() shouldBe benchmark.obj
@@ -44,8 +43,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
-      // FIXME: zio-blocks-schema does not flatten the trait hierarchy
-      //intercept[Throwable](b.zioBlocks())
+      intercept[Throwable](b.zioBlocks())
       intercept[Throwable](b.zioJson())
       // FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
       // intercept[Throwable](b.zioSchemaJson())

@@ -119,10 +119,10 @@ class GeoJSONWriting extends GeoJSONBenchmark {
 
     FromScala(obj).transform(ToJson.bytes)
   }
-/* FIXME: zio-blocks-schema does not flatten the trait hierarchy
+
   @Benchmark
   def zioBlocks(): Array[Byte] = ZioBlocksCodecs.geoJsonCodec.encode(obj)
-*/
+
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._

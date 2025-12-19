@@ -22,8 +22,7 @@ class GeoJSONWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.jsonString2
       toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString1
-      // FIXME: zio-blocks-schema does not flatten the trait hierarchy
-      //toString(b.zioBlocks()) shouldBe b.jsonString1
+      toString(b.zioBlocks()) shouldBe b.jsonString1
       toString(b.zioJson()) shouldBe b.jsonString1
       toString(b.zioSchemaJson()) shouldBe b.jsonString1
     }
