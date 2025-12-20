@@ -43,7 +43,6 @@ lazy val commonSettings = Seq(
   }),
   compileOrder := CompileOrder.JavaThenScala,
   Test / testOptions += Tests.Argument("-oDF"),
-  resolvers += Resolver.sonatypeCentralSnapshots,
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
   Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -314,7 +313,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.45",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3" intransitive(),
       "org.playframework" %%% "play-json" % "3.0.6",
-      "dev.zio" %%% "zio-blocks-schema" % "0.0.0+796-07e99fe2-SNAPSHOT",
+      "dev.zio" %%% "zio-blocks-schema" % "0.0.1",
       "dev.zio" %%% "zio-json" % "0.7.45",
       "dev.zio" %%% "zio-schema-json" % "1.7.5",
       "io.circe" %%% "circe-generic" % "0.14.15",
