@@ -973,7 +973,21 @@ object JsonCodecMaker {
       def adtLeafClasses(adtBaseTpe: Type): Seq[Type] = {
         val seen = new mutable.HashSet[Type]
         val subTypes = new mutable.ListBuffer[Type]
-        implicit val subTypeOrdering: Ordering[Symbol] = (x: Symbol, y: Symbol) => x.fullName.compareTo(y.fullName)
+        implicit val subTypeOrdering: Ordering[Symbol] = (x: Symbol, y: Symbol) => {
+          val xPos  = x.pos
+          val yPos  = y.pos
+          val xFile = xPos.source.file.absolute
+          val yFile = yPos.source.file.absolute
+          var diff  = xFile.path.compareTo(yFile.path)
+          if (diff == 0) diff = xFile.name.compareTo(yFile.name)
+          if (diff == 0) diff = xPos.line.compareTo(yPos.line)
+          if (diff == 0) diff = xPos.column.compareTo(yPos.column)
+          if (diff == 0) {
+            // make sorting stable in case of missing sources for sub-project or *.jar dependencies
+            diff = NameTransformer.decode(x.fullName).compareTo(NameTransformer.decode(y.fullName))
+          }
+          diff
+        }
 
         def collectRecursively(tpe: Type): Unit = {
           val tpeTypeArgs = typeArgs(tpe)
