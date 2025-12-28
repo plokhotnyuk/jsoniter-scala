@@ -978,20 +978,30 @@ object JsonCodecMaker {
         def collectRecursively(tpe: Type): Unit = {
           val tpeTypeArgs = typeArgs(tpe)
           val tpeClass = tpe.typeSymbol.asClass
-          var typeParamsAndArgs = Map.empty[String, Type]
+          var typeParamsAndArgs = Map.empty[Symbol, Type]
           if (tpeTypeArgs ne Nil) tpeClass.typeParams.zip(tpeTypeArgs).foreach { case (typeParam, typeArg) =>
-            typeParamsAndArgs = typeParamsAndArgs.updated(typeParam.toString, typeArg)
+            typeParamsAndArgs = typeParamsAndArgs.updated(typeParam, typeArg)
           }
           val subClasses = tpeClass.knownDirectSubclasses.toArray
           scala.util.Sorting.stableSort(subClasses)
           subClasses.foreach { s =>
             val classSymbol = s.asClass
             var subTpe = classSymbol.toType
-            if (tpeTypeArgs ne Nil) {
-              val typeParams = classSymbol.typeParams
-              subTpe = subTpe.substituteTypes(typeParams, typeParams.map(tp => typeParamsAndArgs.getOrElse(tp.toString, fail {
-                s"Cannot resolve generic type(s) for '$subTpe'. Please provide a custom implicitly accessible codec for it."
-              })))
+            val typeParams = classSymbol.typeParams
+            if (typeParams.nonEmpty) {
+              val subTpeBaseTypeArgs = typeArgs(subTpe.baseType(tpeClass))
+              var subTpeParamsToArgs = Map.empty[Symbol, Type]
+              subTpeBaseTypeArgs.zip(tpeTypeArgs).foreach { case (childBaseTypeArg, typeArg) =>
+                childBaseTypeArg match {
+                  case TypeRef(_, typeParam, Nil) => subTpeParamsToArgs = subTpeParamsToArgs.updated(typeParam, typeArg)
+                  case _ =>
+                }
+              }
+              subTpe = subTpe.substituteTypes(typeParams, typeParams.map { typeParam =>
+                subTpeParamsToArgs.getOrElse(typeParam, typeParamsAndArgs.getOrElse(typeParam, fail {
+                  s"Cannot resolve generic type(s) for '$subTpe'. Please provide a custom implicitly accessible codec for it."
+                }))
+              })
             }
             if (isSealedClass(subTpe)) collectRecursively(subTpe)
             else if (isValueClass(subTpe)) {

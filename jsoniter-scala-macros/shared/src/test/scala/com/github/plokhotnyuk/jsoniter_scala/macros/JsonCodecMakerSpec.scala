@@ -6,6 +6,7 @@ import java.util.{Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, _}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
+
 import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.switch
 import scala.util.control.NonFatal
@@ -3111,6 +3112,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codecOfFooForOption = make[Foo[Option]]
       verifySerDeser(codecOfFooForOption, Bar[Option](_root_.scala.Some(1)), """{"type":"Bar","a":1}""")
       verifySerDeser(codecOfFooForOption, Baz[Option](_root_.scala.Some("VVV")), """{"type":"Baz","a":"VVV"}""")
+    }
+    "serialize and deserialize generic ADT with free type parameters for cases" in {
+      sealed trait GADT[A] extends Product with Serializable
+
+      case class FixedType(value: Int) extends GADT[Int]
+
+      case class VarType[B](value: B)  extends GADT[B]
+
+      verifySerDeser(make[List[GADT[Int]]], List(FixedType(100), VarType(200)),
+        """[{"type":"FixedType","value":100},{"type":"VarType","value":200}]""")
     }
     "serialize and deserialize recursive higher-kinded types" in {
       case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
