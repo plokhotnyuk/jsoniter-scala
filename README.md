@@ -18,10 +18,10 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [play-json with jsoniter-scala booster](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [spray-json](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
-[weePickle](https://github.com/rallyhealth/weePickle), [zio-json](https://github.com/zio/zio-json),
-[zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
+[weePickle](https://github.com/rallyhealth/weePickle), [zio-blocks](https://github.com/zio/zio-blocks), 
+[zio-json](https://github.com/zio/zio-json), [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ Ultra 9 285K CPU @ 3.7GHz
-(max 5.7GHz, 200S Boost), RAM 64Gb DDR5-6400, Ubuntu 25.04 (Linux 6.14), and latest versions of JDK 17/21/25,
+(max 5.7GHz, 200S Boost), RAM 64Gb DDR5-6400, Ubuntu Server 25.04 (Linux 6.14), and latest versions of JDK 17/21/25,
 GraalVM Community JDK 17/21/25, and GraalVM JDK 17/21/25[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that
@@ -30,9 +30,11 @@ compare performance of jsoniter-scala with: [circe](https://github.com/circe/cir
 [play-json](https://github.com/playframework/play-json),
 [play-json with jsoniter-scala booster](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
-[uPickle](https://github.com/lihaoyi/upickle), [zio-json](https://github.com/zio/zio-json), and [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
+[uPickle](https://github.com/lihaoyi/upickle), [zio-blocks](https://github.com/zio/zio-blocks), 
+[zio-json](https://github.com/zio/zio-json), and [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
 compiled by Scala.js 1.20.1 to ES 2021 with GCC v20220202 optimizations applied on
-Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz, 200S Boost), RAM 64Gb DDR5-6400, on Windows 11 Pro (24H2).
+Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz, 200S Boost), RAM 64Gb DDR5-6400, Ubuntu Desktop 25.04 (Linux 6.14) and 
+latest versions of web browsers.
 
 ## Contents
 
@@ -855,7 +857,7 @@ that is used in the Scala ecosystem.
 Double-check binary and source compatibility, including behavior, and release using the following command on the
 environment with 16+GB of RAM:
 ```sh
-sbt -java-home /usr/lib/jvm/jdk-11 -J-Xmx12g clean release
+sbt -java-home /usr/lib/jvm/jdk-11 -J-Xmx16g clean release
 ```
 
 Do not push changes to GitHub until promoted artifacts for the new version are not available for downloading on
