@@ -2,10 +2,12 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import zio.blocks.schema.json._
 import zio.blocks.schema._
+
 import java.math.MathContext
 import java.time._
 import java.util.UUID
 import scala.collection.immutable.ArraySeq
+import scala.util.control.NonFatal
 
 object ZioBlocksCodecs {
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2)
@@ -36,29 +38,64 @@ object ZioBlocksCodecs {
   val arrayOfZonedDateTimesCodec: JsonBinaryCodec[Array[ZonedDateTime]] = Schema.derived.derive(JsonBinaryCodecDeriver)
   val arrayOfZoneIdsCodec: JsonBinaryCodec[Array[ZoneId]] = Schema.derived.derive(JsonBinaryCodecDeriver)
   val arrayOfZoneOffsetsCodec: JsonBinaryCodec[Array[ZoneOffset]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arraySeqOfBooleansCodec: JsonBinaryCodec[ArraySeq[Boolean]] = Schema[ArraySeq[Boolean]].derive(JsonBinaryCodecDeriver)
+  val arraySeqOfBooleansCodec: JsonBinaryCodec[ArraySeq[Boolean]] = Schema.derived.derive(JsonBinaryCodecDeriver)
   val bigDecimalCodec: JsonBinaryCodec[BigDecimal] = new JsonBinaryCodec[BigDecimal]() {
     override def decodeValue(in: JsonReader, default: BigDecimal): BigDecimal =
-      in.readBigDecimal(default, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
+      in.readBigDecimal(default, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue) // WARNING: It is an unsafe option for open systems
 
     override def encodeValue(x: BigDecimal, out: JsonWriter): Unit = out.writeVal(x)
   }
   val bigIntCodec: JsonBinaryCodec[BigInt] = new JsonBinaryCodec[BigInt]() {
-    override def decodeValue(in: JsonReader, default: BigInt): BigInt = in.readBigInt(default, Int.MaxValue)
+    override def decodeValue(in: JsonReader, default: BigInt): BigInt =
+      in.readBigInt(default, Int.MaxValue) // WARNING: It is an unsafe option for open systems
 
     override def encodeValue(x: BigInt, out: JsonWriter): Unit = out.writeVal(x)
   }
   val extractFieldsCodec: JsonBinaryCodec[ExtractFields] = Schema.derived.derive(JsonBinaryCodecDeriver)
   val geoJsonCodec: JsonBinaryCodec[GeoJSON.GeoJSON] =
-    Schema.derived.derive(JsonBinaryCodecDeriver.withDiscriminatorKind(DiscriminatorKind.Field("type")))
+    Schema.derived
+      .deriving(JsonBinaryCodecDeriver.withDiscriminatorKind(DiscriminatorKind.Field("type")))
+      .instance( // use a custom codec for (Double, Double) to improve parsing and serialization performance
+        TypeName[(Double, Double)](Namespace(Seq("scala")), "Tuple2", Seq(TypeName.double, TypeName.double)),
+        new JsonBinaryCodec[(Double, Double)] {
+          override def decodeValue(in: JsonReader, default: (Double, Double)): (Double, Double) =
+            if (in.isNextToken('[')) {
+              val x =
+                try in.readDouble()
+                catch {
+                  case error if NonFatal(error) => in.decodeError(new DynamicOptic.Node.Field("_1"), error)
+                }
+              if (in.isNextToken(',')) {
+                val y =
+                  try in.readDouble()
+                  catch {
+                    case error if NonFatal(error) => in.decodeError(new DynamicOptic.Node.Field("_2"), error)
+                  }
+                if (in.isNextToken(']')) new Tuple2[Double, Double](x, y)
+                else in.decodeError("expected ']'")
+              } else in.decodeError("expected ','")
+            } else in.decodeError("expected '['")
+
+          override def encodeValue(x: (Double, Double), out: JsonWriter): Unit = {
+            out.writeArrayStart()
+            out.writeVal(x._1)
+            out.writeVal(x._2)
+            out.writeArrayEnd()
+          }
+        }
+      )
+      .derive
   val gitHubActionsAPICodec: JsonBinaryCodec[GitHubActionsAPI.Response] =
     Schema.derived
       .deriving(JsonBinaryCodecDeriver)
-      .instance(TypeName.boolean, new JsonBinaryCodec[Boolean](JsonBinaryCodec.booleanType) {
-        override def decodeValue(in: JsonReader, default: Boolean): Boolean = in.readStringAsBoolean()
+      .instance( // use a custom codec to stringify booleans
+        TypeName.boolean,
+        new JsonBinaryCodec[Boolean](JsonBinaryCodec.booleanType) {
+          override def decodeValue(in: JsonReader, default: Boolean): Boolean = in.readStringAsBoolean()
 
-        override def encodeValue(x: Boolean, out: JsonWriter): Unit = out.writeValAsString(x)
-      })
+          override def encodeValue(x: Boolean, out: JsonWriter): Unit = out.writeValAsString(x)
+        }
+      )
       .derive
   val googleMapsAPICodec: JsonBinaryCodec[GoogleMapsAPI.DistanceMatrix] = Schema.derived.derive(JsonBinaryCodecDeriver)
   val listOfBooleansCodec: JsonBinaryCodec[List[Boolean]] = Schema[List[Boolean]].derive(JsonBinaryCodecDeriver)
