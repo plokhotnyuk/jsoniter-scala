@@ -994,7 +994,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
 
   private def scalaCollectionCompanion(tpe: TypeRepr): Term =
     val typeSymbol = tpe.typeSymbol
-    if (typeSymbol.fullName.startsWith("scala.collection.")) Ref(typeSymbol.companionModule)
+    def isScalaCollection(s: Symbol) = s.fullName.startsWith("scala.collection.") 
+    if (isScalaCollection(typeSymbol) || tpe.baseClasses.exists(isScalaCollection)) Ref(typeSymbol.companionModule)
     else fail(s"Unsupported type '${tpe.show}'. Please consider using a custom implicitly accessible codec for it.")
 
   private def scalaCollectionBuilder(tpe: TypeRepr, eTpe: TypeRepr): Term =

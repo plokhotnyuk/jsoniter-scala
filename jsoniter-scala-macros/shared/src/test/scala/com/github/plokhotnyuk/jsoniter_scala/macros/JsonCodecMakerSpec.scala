@@ -1391,6 +1391,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(myEventCodec, MyEvent(Props("John", 42)), """{"props":{"name":"John","age":42}}""")
     }
+    "serialize and deserialize a custom collection that implements a scala collection" in {
+      verifySerDeser(make[zio.Chunk[String]], zio.Chunk("VVV", "WWW"), """["VVV","WWW"]""")
+    }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
 
