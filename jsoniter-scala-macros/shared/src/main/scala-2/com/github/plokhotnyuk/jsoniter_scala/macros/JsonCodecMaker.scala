@@ -744,9 +744,11 @@ object JsonCodecMaker {
 
       def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[?]]
 
-      def scalaCollectionCompanion(tpe: Type): Tree =
-        if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ident(tpe.typeSymbol.companion)
+      def scalaCollectionCompanion(tpe: Type): Tree = {
+        def isScalaCollection(s: Symbol) = s.fullName.startsWith("scala.collection.")
+        if (isScalaCollection(tpe.typeSymbol) || tpe.baseClasses.exists(isScalaCollection)) Ident(tpe.typeSymbol.companion)
         else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
+      }
 
       def enumSymbol(tpe: Type): Symbol = tpe match {
         case TypeRef(SingleType(_, enumSymbol), _, _) => enumSymbol
