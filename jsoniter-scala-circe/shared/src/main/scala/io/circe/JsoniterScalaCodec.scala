@@ -313,7 +313,11 @@ object JsoniterScalaCodec {
       var p = bd.precision
       val s = bd.scale
       if (p <= s || p - 10 > s) return null
-      val bd0 = bd.setScale(0, RoundingMode.UNNECESSARY)
+      val bd0 =
+        try bd.setScale(0, RoundingMode.UNNECESSARY)
+        catch {
+          case _: ArithmeticException => return null
+        }
       p = bd0.precision
       if (p > 10 || p == 10 && (bd0.compareTo(intMin) < 0 || bd0.compareTo(intMax) > 0)) return null
       bd0
@@ -324,7 +328,11 @@ object JsoniterScalaCodec {
       var p = bd.precision
       val s = bd.scale
       if (p <= s || p - 19 > s) return null
-      val bd0 = bd.setScale(0, RoundingMode.UNNECESSARY)
+      val bd0 =
+        try bd.setScale(0, RoundingMode.UNNECESSARY)
+        catch {
+          case _: ArithmeticException => return null
+        }
       p = bd0.precision
       if (p > 19 || p == 19 && (bd0.compareTo(longMin) < 0 || bd0.compareTo(longMax) > 0)) return null
       bd0
