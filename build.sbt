@@ -177,7 +177,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.14.0" % Test,
       "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.19" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.20" % Test
     )
   )
 
@@ -222,7 +222,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
     }) ++ Seq(
       "dev.zio" %%% "zio" % "2.1.24" % Test,
       "com.epam.deltix" % "dfp" % "1.0.10" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.20" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.14.0" % Test
     )
   )
@@ -250,7 +250,7 @@ lazy val `jsoniter-scala-next-tests` = crossProject(JVMPlatform, JSPlatform, Nat
     }),
     libraryDependencies ++= Seq(
       "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.19" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.20" % Test
     )
   )
 
@@ -279,7 +279,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
       "io.circe" %%% "circe-core" % "0.14.15",
       "io.circe" %%% "circe-parser" % "0.14.15" % Test,
       "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.19" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.20" % Test
     )
   )
 
@@ -330,7 +330,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37",
-      "org.scalatest" %%% "scalatest" % "3.2.19" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.20" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
