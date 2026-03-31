@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import zio.blocks.schema.json._
 import zio.blocks.schema._
-
+import zio.blocks.typeid._
 import java.math.MathContext
 import java.time._
 import java.util.UUID
@@ -12,69 +12,69 @@ import scala.util.control.NonFatal
 object ZioBlocksCodecs {
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2)
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
-  val arrayOfBigDecimalsCodec: JsonBinaryCodec[Array[BigDecimal]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfBigIntsCodec: JsonBinaryCodec[Array[BigInt]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfBooleansCodec: JsonBinaryCodec[Array[Boolean]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfBytesCodec: JsonBinaryCodec[Array[Byte]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfCharsCodec: JsonBinaryCodec[Array[Char]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfDoublesCodec: JsonBinaryCodec[Array[Double]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfDurationsCodec: JsonBinaryCodec[Array[Duration]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfEnumADTsCodec: JsonBinaryCodec[Array[SuitADT]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfFloatsCodec: JsonBinaryCodec[Array[Float]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfInstantsCodec: JsonBinaryCodec[Array[Instant]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfIntsCodec: JsonBinaryCodec[Array[Int]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfLocalDatesCodec: JsonBinaryCodec[Array[LocalDate]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfLocalDateTimesCodec: JsonBinaryCodec[Array[LocalDateTime]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfLocalTimesCodec: JsonBinaryCodec[Array[LocalTime]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfLongsCodec: JsonBinaryCodec[Array[Long]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfMonthDaysCodec: JsonBinaryCodec[Array[MonthDay]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfOffsetDateTimesCodec: JsonBinaryCodec[Array[OffsetDateTime]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfOffsetTimesCodec: JsonBinaryCodec[Array[OffsetTime]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfPeriodsCodec: JsonBinaryCodec[Array[Period]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfShortsCodec: JsonBinaryCodec[Array[Short]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfUUIDsCodec: JsonBinaryCodec[Array[UUID]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfYearMonthsCodec: JsonBinaryCodec[Array[YearMonth]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfYearsCodec: JsonBinaryCodec[Array[Year]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfZonedDateTimesCodec: JsonBinaryCodec[Array[ZonedDateTime]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfZoneIdsCodec: JsonBinaryCodec[Array[ZoneId]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arrayOfZoneOffsetsCodec: JsonBinaryCodec[Array[ZoneOffset]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val arraySeqOfBooleansCodec: JsonBinaryCodec[ArraySeq[Boolean]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val bigDecimalCodec: JsonBinaryCodec[BigDecimal] = new JsonBinaryCodec[BigDecimal]() {
-    override def decodeValue(in: JsonReader, default: BigDecimal): BigDecimal =
-      in.readBigDecimal(default, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue) // WARNING: It is an unsafe option for open systems
+  val arrayOfBigDecimalsCodec: JsonCodec[Array[BigDecimal]] = Schema.derived.jsonCodec
+  val arrayOfBigIntsCodec: JsonCodec[Array[BigInt]] = Schema.derived.jsonCodec
+  val arrayOfBooleansCodec: JsonCodec[Array[Boolean]] = Schema.derived.jsonCodec
+  val arrayOfBytesCodec: JsonCodec[Array[Byte]] = Schema.derived.jsonCodec
+  val arrayOfCharsCodec: JsonCodec[Array[Char]] = Schema.derived.jsonCodec
+  val arrayOfDoublesCodec: JsonCodec[Array[Double]] = Schema.derived.jsonCodec
+  val arrayOfDurationsCodec: JsonCodec[Array[Duration]] = Schema.derived.jsonCodec
+  val arrayOfEnumADTsCodec: JsonCodec[Array[SuitADT]] = Schema.derived.jsonCodec
+  val arrayOfFloatsCodec: JsonCodec[Array[Float]] = Schema.derived.jsonCodec
+  val arrayOfInstantsCodec: JsonCodec[Array[Instant]] = Schema.derived.jsonCodec
+  val arrayOfIntsCodec: JsonCodec[Array[Int]] = Schema.derived.jsonCodec
+  val arrayOfLocalDatesCodec: JsonCodec[Array[LocalDate]] = Schema.derived.jsonCodec
+  val arrayOfLocalDateTimesCodec: JsonCodec[Array[LocalDateTime]] = Schema.derived.jsonCodec
+  val arrayOfLocalTimesCodec: JsonCodec[Array[LocalTime]] = Schema.derived.jsonCodec
+  val arrayOfLongsCodec: JsonCodec[Array[Long]] = Schema.derived.jsonCodec
+  val arrayOfMonthDaysCodec: JsonCodec[Array[MonthDay]] = Schema.derived.jsonCodec
+  val arrayOfOffsetDateTimesCodec: JsonCodec[Array[OffsetDateTime]] = Schema.derived.jsonCodec
+  val arrayOfOffsetTimesCodec: JsonCodec[Array[OffsetTime]] = Schema.derived.jsonCodec
+  val arrayOfPeriodsCodec: JsonCodec[Array[Period]] = Schema.derived.jsonCodec
+  val arrayOfShortsCodec: JsonCodec[Array[Short]] = Schema.derived.jsonCodec
+  val arrayOfUUIDsCodec: JsonCodec[Array[UUID]] = Schema.derived.jsonCodec
+  val arrayOfYearMonthsCodec: JsonCodec[Array[YearMonth]] = Schema.derived.jsonCodec
+  val arrayOfYearsCodec: JsonCodec[Array[Year]] = Schema.derived.jsonCodec
+  val arrayOfZonedDateTimesCodec: JsonCodec[Array[ZonedDateTime]] = Schema.derived.jsonCodec
+  val arrayOfZoneIdsCodec: JsonCodec[Array[ZoneId]] = Schema.derived.jsonCodec
+  val arrayOfZoneOffsetsCodec: JsonCodec[Array[ZoneOffset]] = Schema.derived.jsonCodec
+  val arraySeqOfBooleansCodec: JsonCodec[ArraySeq[Boolean]] = Schema.derived.jsonCodec
+  val bigDecimalCodec: JsonCodec[BigDecimal] = new JsonCodec[BigDecimal] {
+    override def decodeValue(in: JsonReader): BigDecimal =
+      in.readBigDecimal(MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue) // WARNING: It is an unsafe option for open systems
 
     override def encodeValue(x: BigDecimal, out: JsonWriter): Unit = out.writeVal(x)
   }
-  val bigIntCodec: JsonBinaryCodec[BigInt] = new JsonBinaryCodec[BigInt]() {
-    override def decodeValue(in: JsonReader, default: BigInt): BigInt =
-      in.readBigInt(default, Int.MaxValue) // WARNING: It is an unsafe option for open systems
+  val bigIntCodec: JsonCodec[BigInt] = new JsonCodec[BigInt] {
+    override def decodeValue(in: JsonReader): BigInt =
+      in.readBigInt(Int.MaxValue) // WARNING: It is an unsafe option for open systems
 
     override def encodeValue(x: BigInt, out: JsonWriter): Unit = out.writeVal(x)
   }
-  val extractFieldsCodec: JsonBinaryCodec[ExtractFields] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val geoJsonCodec: JsonBinaryCodec[GeoJSON.GeoJSON] =
+  val extractFieldsCodec: JsonCodec[ExtractFields] = Schema.derived.jsonCodec
+  val geoJsonCodec: JsonCodec[GeoJSON.GeoJSON] =
     Schema.derived
-      .deriving(JsonBinaryCodecDeriver.withDiscriminatorKind(DiscriminatorKind.Field("type")))
+      .deriving(JsonCodecDeriver.withDiscriminatorKind(DiscriminatorKind.Field("type")))
       .instance( // use a custom codec for (Double, Double) to improve parsing and serialization performance
-        TypeName[(Double, Double)](Namespace(Seq("scala")), "Tuple2", Seq(TypeName.double, TypeName.double)),
-        new JsonBinaryCodec[(Double, Double)] {
-          override def decodeValue(in: JsonReader, default: (Double, Double)): (Double, Double) =
+        TypeId.of[(Double, Double)],
+        new JsonCodec[(Double, Double)] {
+          override def decodeValue(in: JsonReader): (Double, Double) =
             if (in.isNextToken('[')) {
               val x =
                 try in.readDouble()
                 catch {
-                  case error if NonFatal(error) => in.decodeError(new DynamicOptic.Node.Field("_1"), error)
+                  case err if NonFatal(err) => error(new DynamicOptic.Node.Field("_1"), err)
                 }
               if (in.isNextToken(',')) {
                 val y =
                   try in.readDouble()
                   catch {
-                    case error if NonFatal(error) => in.decodeError(new DynamicOptic.Node.Field("_2"), error)
+                    case err if NonFatal(err) => error(new DynamicOptic.Node.Field("_2"), err)
                   }
                 if (in.isNextToken(']')) new Tuple2[Double, Double](x, y)
-                else in.decodeError("expected ']'")
-              } else in.decodeError("expected ','")
-            } else in.decodeError("expected '['")
+                else error("expected ']'")
+              } else error("expected ','")
+            } else error("expected '['")
 
           override def encodeValue(x: (Double, Double), out: JsonWriter): Unit = {
             out.writeArrayStart()
@@ -85,26 +85,26 @@ object ZioBlocksCodecs {
         }
       )
       .derive
-  val gitHubActionsAPICodec: JsonBinaryCodec[GitHubActionsAPI.Response] =
+  val gitHubActionsAPICodec: JsonCodec[GitHubActionsAPI.Response] =
     Schema.derived
-      .deriving(JsonBinaryCodecDeriver)
+      .deriving(JsonCodecDeriver)
       .instance( // use a custom codec to stringify booleans
-        TypeName.boolean,
-        new JsonBinaryCodec[Boolean](JsonBinaryCodec.booleanType) {
-          override def decodeValue(in: JsonReader, default: Boolean): Boolean = in.readStringAsBoolean()
+        TypeId.boolean,
+        new JsonCodec[Boolean] {
+          override def decodeValue(in: JsonReader): Boolean = in.readStringAsBoolean()
 
           override def encodeValue(x: Boolean, out: JsonWriter): Unit = out.writeValAsString(x)
         }
       )
       .derive
-  val googleMapsAPICodec: JsonBinaryCodec[GoogleMapsAPI.DistanceMatrix] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val listOfBooleansCodec: JsonBinaryCodec[List[Boolean]] = Schema[List[Boolean]].derive(JsonBinaryCodecDeriver)
-  val mapOfIntsToBooleansCodec: JsonBinaryCodec[Map[Int, Boolean]] = Schema[Map[Int, Boolean]].derive(JsonBinaryCodecDeriver)
-  val missingRequiredFieldsCodec: JsonBinaryCodec[MissingRequiredFields] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val nestedStructsCodec: JsonBinaryCodec[NestedStructs] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val openRTBBidRequestCodec: JsonBinaryCodec[OpenRTB.BidRequest] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val setOfIntsCodec: JsonBinaryCodec[Set[Int]] = Schema[Set[Int]].derive(JsonBinaryCodecDeriver)
-  val stringCodec: JsonBinaryCodec[String] = Schema[String].derive(JsonBinaryCodecDeriver)
-  val twitterAPICodec: JsonBinaryCodec[Seq[TwitterAPI.Tweet]] = Schema.derived.derive(JsonBinaryCodecDeriver)
-  val vectorOfBooleansCodec: JsonBinaryCodec[Vector[Boolean]] = Schema[Vector[Boolean]].derive(JsonBinaryCodecDeriver)
+  val googleMapsAPICodec: JsonCodec[GoogleMapsAPI.DistanceMatrix] = Schema.derived.jsonCodec
+  val listOfBooleansCodec: JsonCodec[List[Boolean]] = Schema[List[Boolean]].jsonCodec
+  val mapOfIntsToBooleansCodec: JsonCodec[Map[Int, Boolean]] = Schema[Map[Int, Boolean]].jsonCodec
+  val missingRequiredFieldsCodec: JsonCodec[MissingRequiredFields] = Schema.derived.jsonCodec
+  val nestedStructsCodec: JsonCodec[NestedStructs] = Schema.derived.jsonCodec
+  val openRTBBidRequestCodec: JsonCodec[OpenRTB.BidRequest] = Schema.derived.jsonCodec
+  val setOfIntsCodec: JsonCodec[Set[Int]] = Schema[Set[Int]].jsonCodec
+  val stringCodec: JsonCodec[String] = Schema[String].jsonCodec
+  val twitterAPICodec: JsonCodec[Seq[TwitterAPI.Tweet]] = Schema.derived.jsonCodec
+  val vectorOfBooleansCodec: JsonCodec[Vector[Boolean]] = Schema[Vector[Boolean]].jsonCodec
 }

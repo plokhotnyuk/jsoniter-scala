@@ -159,7 +159,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-next-testsJS`,
     `jsoniter-scala-next-testsNative`,
     `jsoniter-scala-benchmarkJVM`,
-    `jsoniter-scala-benchmarkJS`
+    //`jsoniter-scala-benchmarkJS` TODO uncomment after Scala release with a fix for: https://github.com/scala/scala3/issues/25333
   )
 
 lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -241,7 +241,7 @@ lazy val `jsoniter-scala-next-tests` = crossProject(JVMPlatform, JSPlatform, Nat
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.7.4"),
+    crossScalaVersions := Seq("3.8.3"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
@@ -297,7 +297,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.7.4", "2.13.18"),
+    crossScalaVersions := Seq("3.8.3", "2.13.18"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "-Wopt",
@@ -305,6 +305,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "-opt-inline-from:**:!java.**"
       )
       case _ => Seq(
+        "-opt-inline:**,!java.**",
         "-source:3.3",
         "-Xmax-inlines:100",
         "-preview"
@@ -314,7 +315,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.18.50",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3" intransitive(),
       "org.playframework" %%% "play-json" % "3.0.6",
-      "dev.zio" %%% "zio-blocks-schema" % "0.0.14",
+      "dev.zio" %%% "zio-blocks-schema" % "0.0.33",
       "dev.zio" %%% "zio-json" % "0.7.45",
       "dev.zio" %%% "zio-schema-json" % "1.7.5",
       "io.circe" %%% "circe-generic" % "0.14.15",
