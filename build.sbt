@@ -305,6 +305,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "-opt-inline-from:**:!java.**"
       )
       case _ => Seq(
+        "-opt",
         "-opt-inline:**,!java.**",
         "-source:3.3",
         "-Xmax-inlines:100",
