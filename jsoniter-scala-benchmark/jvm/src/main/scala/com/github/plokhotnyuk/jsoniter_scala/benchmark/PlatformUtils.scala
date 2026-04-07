@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import java.time.Instant
 import play.api.libs.json._
 import play.api.libs.json.jackson.PlayJsonMapperModule
-import smithy4s.Timestamp
+import smithy4s.time.Timestamp
 
 object PlatformUtils {
   def toTimestamp(x: Instant): Timestamp = Timestamp.fromInstant(x)

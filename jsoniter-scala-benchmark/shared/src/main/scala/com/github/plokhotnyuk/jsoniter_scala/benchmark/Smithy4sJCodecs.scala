@@ -2,7 +2,8 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import alloy.Discriminated
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, ReaderConfig, WriterConfig}
-import smithy4s.{Blob, Schema, Timestamp}
+import smithy4s.{Blob, Schema}
+import smithy4s.time.Timestamp
 import smithy4s.json.Json
 import smithy4s.schema.Schema._
 import java.time.Instant
@@ -46,8 +47,8 @@ object Smithy4sJCodecs {
     }, (x: Array[Float]) => ArraySeq.unsafeWrapArray(x)))
   implicit val arrayOfInstantsJCodec: JsonCodec[Array[Instant]] =
     Json.deriveJsonCodec(bijection(indexedSeq(datetime),
-      (x: IndexedSeq[Timestamp]) => x.map(PlatformUtils.toInstant).toArray,
-      (x: Array[Instant]) => ArraySeq.unsafeWrapArray(x).map(PlatformUtils.toTimestamp)))
+      (x: IndexedSeq[Timestamp]) => x.toArray.map(PlatformUtils.toInstant),
+      (x: Array[Instant]) => ArraySeq.unsafeWrapArray(x.map(PlatformUtils.toTimestamp))))
   implicit val arrayOfIntsJCodec: JsonCodec[Array[Int]] =
     Json.deriveJsonCodec(bijection(indexedSeq(int), (x: IndexedSeq[Int]) => x match {
       case x: ArraySeq[Int] => x.unsafeArray.asInstanceOf[Array[Int]]
