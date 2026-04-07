@@ -1,5 +1,5 @@
 sed -i '/"gc./ s//"·gc./g' *.json
-echo 'var providedBenchmarks = ["JDK 17", "JDK 21", "JDK 25", "GraalVM CE JDK 17", "GraalVM CE JDK 21", "GraalVM CE JDK 25", "GraalVM JDK 17", "GraalVM JDK 21", "GraalVM JDK 25"];
+echo 'var providedBenchmarks = ["JDK 17", "JDK 21", "JDK 25", "JDK 27", "GraalVM CE JDK 17", "GraalVM CE JDK 21", "GraalVM CE JDK 25", "GraalVM JDK 17", "GraalVM JDK 21", "GraalVM JDK 25"];
 var providedBenchmarkStore = {
 "JDK 17":'
 jq -c . < jdk-17-t24.json
@@ -7,6 +7,8 @@ echo ', "JDK 21":'
 jq -c . < jdk-21-t24.json
 echo ', "JDK 25":'
 jq -c . < jdk-25-t24.json
+echo ', "JDK 27":'
+jq -c . < jdk-27-t24.json
 echo ', "GraalVM CE JDK 17":'
 jq -c . < graalvm-community-jdk-17-t24.json
 echo ', "GraalVM CE JDK 21":'
