@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import play.api.libs.json.{JsValue, StaticBinding}
-import smithy4s.Timestamp
+import smithy4s.time.Timestamp
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Instant
 
