@@ -2512,7 +2512,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   // Based on the ingenious work of Xiang JunBo and Wang TieJun
-  // "xjb: Fast Float to String Algorithm": https://github.com/xjb714/xjb/blob/4852e533287bd0e8d554c2a9f4cc6eaa93ca799f/fast_f2s.pdf
+  // "xjb: Fast Float to String Algorithm": https://github.com/xjb714/xjb/blob/main/xjb.pdf
   // Sources with the license are here: https://github.com/xjb714/xjb
   private[this] def writeFloat(x: Float): Unit = {
     val bits = java.lang.Float.floatToRawIntBits(x)
@@ -2613,7 +2613,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   // Based on the ingenious work of Xiang JunBo and Wang TieJun
-  // "xjb: Fast Float to String Algorithm": https://github.com/xjb714/xjb/blob/4852e533287bd0e8d554c2a9f4cc6eaa93ca799f/fast_f2s.pdf
+  // "xjb: Fast Float to String Algorithm": https://github.com/xjb714/xjb/blob/main/xjb.pdf
   // Sources with the license are here: https://github.com/xjb714/xjb
   private[this] def writeDouble(x: Double): Unit = {
     val bits = java.lang.Double.doubleToRawLongBits(x)
