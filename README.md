@@ -62,8 +62,8 @@ Ideas for the most efficient parsing and serialization of `java.time.*` values w
 
 Other projects and a blog post that have helped deliver unparalleled safety and performance characteristics for parsing
 and serialization of numbers:
-- [Schubfach](https://github.com/c4f7fcce9cb06515/Schubfach/) - the most efficient and concise way to serialize doubles 
-  and floats to the textual representation
+- [XJB](https://github.com/xjb714/xjb) - the most efficient and concise way to serialize doubles 
+  and floats to the textual representation that is based on the Schubfach algorithm and inspired by other state-of-the-art algorithms
 - [rust-lexical](https://github.com/Alexhuszagh/rust-lexical) - the most efficient way to parse floats and doubles from
   the textual representation precisely
 - [big-math](https://github.com/eobermuhlner/big-math) - parsing of `BigInt` and `BigDecimal` values with the `O(n^1.5)`
