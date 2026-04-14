@@ -3,10 +3,11 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import alloy.Discriminated
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, ReaderConfig, WriterConfig}
 import smithy4s.{Blob, Schema}
-import smithy4s.time.Timestamp
+import smithy4s.time._
 import smithy4s.json.Json
 import smithy4s.schema.Schema._
 import java.time.Instant
+import java.time.{LocalDate => JLocalDate, LocalTime => JLocalTime, OffsetDateTime => JOffsetDateTime, ZoneOffset => JZoneOffset}
 import java.util.UUID
 import scala.collection.immutable.{ArraySeq, Seq}
 
@@ -54,11 +55,45 @@ object Smithy4sJCodecs {
       case x: ArraySeq[Int] => x.unsafeArray.asInstanceOf[Array[Int]]
       case x => x.toArray
     }, (x: Array[Int]) => ArraySeq.unsafeWrapArray(x)))
+  implicit val arrayOfLocalDatesJCodec: JsonCodec[Array[JLocalDate]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(localdate),
+      (x: IndexedSeq[LocalDate]) => x.toArray.map(ld => JLocalDate.ofEpochDay(ld.epochDay)),
+      (x: Array[JLocalDate]) => ArraySeq.unsafeWrapArray(x.map(ld => LocalDate(ld.toEpochDay)))))
+  implicit val arrayOfLocalTimesJCodec: JsonCodec[Array[JLocalTime]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(localtime),
+      (x: IndexedSeq[LocalTime]) => x.toArray.map { lt =>
+        val minutesOfDay = lt.seconds / 60
+        val hour = minutesOfDay / 60
+        val minute = minutesOfDay - hour * 60
+        val second = lt.seconds - minutesOfDay * 60
+        JLocalTime.of(hour, minute, second, lt.nano)
+      },
+      (x: Array[JLocalTime]) => ArraySeq.unsafeWrapArray(x.map(lt => LocalTime.apply(lt.getHour, lt.getMinute, lt.getSecond, lt.getNano)))))
   implicit val arrayOfLongsJCodec: JsonCodec[Array[Long]] =
     Json.deriveJsonCodec(bijection(indexedSeq(long), (x: IndexedSeq[Long]) => x match {
       case x: ArraySeq[Long] => x.unsafeArray.asInstanceOf[Array[Long]]
       case x => x.toArray
     }, (x: Array[Long]) => ArraySeq.unsafeWrapArray(x)))
+  implicit val arrayOfOffsetDateTimesJCodec: JsonCodec[Array[JOffsetDateTime]] =
+    Json.deriveJsonCodec(bijection(indexedSeq(offsetdatetime),
+      (x: IndexedSeq[OffsetDateTime]) => x.toArray.map {odt =>
+        val offsetSeconds = odt.offset.seconds
+        val timestamp = odt.timestamp
+        JOffsetDateTime.ofInstant(Instant.ofEpochSecond(timestamp.epochSecond - offsetSeconds, timestamp.nano),
+          JZoneOffset.ofTotalSeconds(offsetSeconds))
+      },
+      (x: Array[JOffsetDateTime]) => ArraySeq.unsafeWrapArray(x.map({ odt =>
+        OffsetDateTime(
+          odt.getYear,
+          odt.getMonthValue,
+          odt.getDayOfMonth,
+          odt.getHour,
+          odt.getMinute,
+          odt.getSecond,
+          odt.getNano,
+          ZoneOffset(odt.getOffset.getTotalSeconds)
+        )
+      }))))
   implicit val arrayOfShortsJCodec: JsonCodec[Array[Short]] =
     Json.deriveJsonCodec(bijection(indexedSeq(short), (x: IndexedSeq[Short]) => x match {
       case x: ArraySeq[Short] => x.unsafeArray.asInstanceOf[Array[Short]]
@@ -232,7 +267,6 @@ object Smithy4sJCodecs {
       string.required[GoogleMapsAPI.DistanceMatrix]("status", _.status)
     )(GoogleMapsAPI.DistanceMatrix.apply)
   })
-  val intJCodec: JsonCodec[Int] = Json.deriveJsonCodec(int)
   implicit val listOfBooleansJCodec: JsonCodec[List[Boolean]] = Json.deriveJsonCodec(list(boolean))
   implicit val mapOfIntsToBooleansJCodec: JsonCodec[Map[Int, Boolean]] = Json.deriveJsonCodec(map(int, boolean))
   implicit val missingRequiredFieldsJCodec: JsonCodec[MissingRequiredFields] =
