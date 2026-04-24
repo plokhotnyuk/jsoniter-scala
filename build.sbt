@@ -159,7 +159,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-next-testsJS`,
     `jsoniter-scala-next-testsNative`,
     `jsoniter-scala-benchmarkJVM`,
-    //`jsoniter-scala-benchmarkJS` TODO uncomment after Scala release with a fix for: https://github.com/scala/scala3/issues/25333
+    `jsoniter-scala-benchmarkJS`
   )
 
 lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -316,7 +316,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.19.1",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3" intransitive(),
       "org.playframework" %%% "play-json" % "3.0.6",
-      "dev.zio" %%% "zio-blocks-schema" % "0.0.33",
+      "dev.zio" %%% "zio-blocks-schema" % "0.0.34",
       "dev.zio" %%% "zio-json" % "0.9.2",
       "dev.zio" %%% "zio-schema-json" % "1.8.3",
       "io.circe" %%% "circe-generic" % "0.14.15",
