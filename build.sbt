@@ -12,6 +12,7 @@ lazy val commonSettings = Seq(
   homepage := Some(url("https://github.com/plokhotnyuk/jsoniter-scala")),
   licenses := Seq(("MIT License", url("https://opensource.org/licenses/mit-license.html"))),
   startYear := Some(2017),
+  headerLicense := Some(HeaderLicense.MIT("2017-2026", "Andriy Plokhotnyuk, and respective contributors")),
   developers := List(
     Developer(
       id = "plokhotnyuk",

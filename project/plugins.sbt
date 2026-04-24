@@ -15,6 +15,7 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.15")
 addSbtPlugin("com.evolution" % "sbt-artifactory-plugin" % "0.0.2")
 addSbtPlugin("com.github.sbt" % "sbt-git" % "2.1.0")
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.3.1")
+addSbtPlugin("com.github.sbt" % "sbt-header" % "5.11.0")
 
 libraryDependencies ++= Seq(
   "org.openjdk.jmh" % "jmh-core" % "1.37",

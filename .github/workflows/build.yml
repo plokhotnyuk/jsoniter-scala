@@ -55,5 +55,5 @@ jobs:
         run: "sbt ++3.8.3! jsoniter-scala-macrosJVM/test jsoniter-scala-next-testsJVM/test"
         shell: bash    
       - name: Test with Scala 2 and 3 LTS and Check Binary Compatibility
-        run: "sbt -batch +clean +test +mimaReportBinaryIssues"
+        run: "sbt -batch +clean +test +mimaReportBinaryIssues +headerCheckAll"
         shell: bash
