@@ -635,7 +635,7 @@ sbt ";dependencyUpdates; reload plugins; dependencyUpdates; reload return"
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt -java-home /usr/lib/jvm/jdk-11 ++2.13.18 clean coverage jsoniter-scala-coreJVM/test jsoniter-scala-circeJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageReport
+sbt -java-home /usr/lib/jvm/jdk-17 ++2.13.18 clean coverage jsoniter-scala-coreJVM/test jsoniter-scala-circeJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageReport
 sbt -java-home /usr/lib/jvm/jdk-11 clean +test +mimaReportBinaryIssues
 ```
 
@@ -804,9 +804,9 @@ Other benchmarks with results for jsoniter-scala:
 
 ### Run Scala.js benchmarks
 
-Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module for Scala 2.13 and Scala 3:
+Use JDK 17+ for building of `jsoniter-scala-benchmarkJS` module for Scala 2.13 and Scala 3:
 ```sh
-sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-11 +jsoniter-scala-benchmarkJS/fullOptJS
+sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-17 +jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
