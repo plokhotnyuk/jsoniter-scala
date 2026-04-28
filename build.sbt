@@ -101,6 +101,9 @@ lazy val nativeSettings = Seq(
   libraryDependencies ++= Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
   ),
+  libraryDependencySchemes ++= Seq(
+    "org.scala-native" %% "test-interface_native0.5" % VersionScheme.Always
+  ),
   nativeConfig ~= {
     _.withMode(Mode.releaseFast) // TODO: Test with `Mode.releaseSize` and `Mode.releaseFull`
       .withLTO(LTO.none)
