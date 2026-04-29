@@ -20,7 +20,7 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [spray-json](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), [zio-blocks](https://github.com/zio/zio-blocks), 
 [zio-json](https://github.com/zio/zio-json), [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
-libraries complied by Scala 3.8.3 with `-opt -opt-inline:**,!java.**` options for optimization and inlining
+libraries complied by Scala 3.8.4-RC2 with `-opt -opt-inline:**,!java.**` options for optimization and inlining
 using different JDK and GraalVM versions on Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz, 200S Boost), 
 RAM 64Gb DDR5-6400, Ubuntu Server 25.04 (Linux 6.14), and latest versions of JDK 17/21/25/27ea,
 GraalVM Community JDK 17/21/25, and GraalVM JDK 17/21/25[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
@@ -33,7 +33,7 @@ compare performance of jsoniter-scala with: [circe](https://github.com/circe/cir
 [smithy4s-json](https://github.com/disneystreaming/smithy4s/tree/main/modules/json),
 [uPickle](https://github.com/lihaoyi/upickle), [zio-blocks](https://github.com/zio/zio-blocks), 
 [zio-json](https://github.com/zio/zio-json), and [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
-libraries complied by Scala 3.8.3 with `-opt -opt-inline:**,!java.**` options for optimization and inlining
+libraries complied by Scala 3.8.4-RC2 with `-opt -opt-inline:**,!java.**` options for optimization and inlining
 using Scala.js 1.21.0 to ES 2021 with GCC v20220202 optimizations applied on 
 Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz, 200S Boost), RAM 64Gb DDR5-6400, Ubuntu Desktop 25.04 (Linux 6.14) 
 and latest versions of web browsers.
