@@ -2113,10 +2113,26 @@ final class JsonReader private[jsoniter_scala](
       var pos = head
       var buf = this.buf
       var dec = 0
-      while (x > -214748 && (pos + 3 < tail || {
+      while ((x > -214748 && (pos + 3 < tail || {
         pos = loadMore(pos)
         buf = this.buf
         pos + 3 < tail
+      }) || {
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) {
+          if (x < -214748364 || {
+            x = x * 10 + ('0' - b)
+            x > 0
+          }) intOverflowError(pos)
+          pos += 1
+        }
+        false
       }) && {
         dec = ByteArrayAccess.getInt(buf, pos) - 0x30303030 // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         ((dec + 0x76767676 | dec) & 0x80808080) == 0 || {
@@ -2130,6 +2146,7 @@ final class JsonReader private[jsoniter_scala](
             dec >>= 8
             pos += 1
           }
+          b = (d + 0x30).toByte
           false
         }
       }) {
@@ -2137,20 +2154,6 @@ final class JsonReader private[jsoniter_scala](
         x *= 10000
         x -= dec
         pos += 4
-      }
-      while ((pos < tail || {
-        pos = loadMore(pos)
-        buf = this.buf
-        pos < tail
-      }) && {
-        b = buf(pos)
-        b >= '0' && b <= '9'
-      }) {
-        if (x < -214748364 || {
-          x = x * 10 + ('0' - b)
-          x > 0
-        }) intOverflowError(pos)
-        pos += 1
       }
       head = pos
       x ^= s
@@ -2177,10 +2180,26 @@ final class JsonReader private[jsoniter_scala](
       var pos = head
       var buf = this.buf
       var dec = 0
-      while (x > -922337203685477L && (pos + 3 < tail || {
+      while ((x > -922337203685477L && (pos + 3 < tail || {
         pos = loadMore(pos)
         buf = this.buf
         pos + 3 < tail
+      }) || {
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) {
+          if (x < -922337203685477580L || {
+            x = x * 10 + ('0' - b)
+            x > 0
+          }) longOverflowError(pos)
+          pos += 1
+        }
+        false
       }) && {
         dec = ByteArrayAccess.getInt(buf, pos) - 0x30303030 // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         ((dec + 0x76767676 | dec) & 0x80808080) == 0 || {
@@ -2194,6 +2213,7 @@ final class JsonReader private[jsoniter_scala](
             dec >>= 8
             pos += 1
           }
+          b = (d + 0x30).toByte
           false
         }
       }) {
@@ -2201,20 +2221,6 @@ final class JsonReader private[jsoniter_scala](
         x *= 10000
         x -= dec
         pos += 4
-      }
-      while ((pos < tail || {
-        pos = loadMore(pos)
-        buf = this.buf
-        pos < tail
-      }) && {
-        b = buf(pos)
-        b >= '0' && b <= '9'
-      }) {
-        if (x < -922337203685477580L || {
-          x = x * 10 + ('0' - b)
-          x > 0
-        }) longOverflowError(pos)
-        pos += 1
       }
       head = pos
       x ^= s
@@ -2287,10 +2293,27 @@ final class JsonReader private[jsoniter_scala](
       e10 += digits
       var noFracDigits = true
       var dec = 0
-      while (m10 < 922337203685477L && (pos + 3 < tail || {
+      while ((m10 < 922337203685477L && (pos + 3 < tail || {
         pos = loadMore(pos)
         buf = this.buf
         pos + 3 < tail
+      }) || {
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) {
+          if (m10 < 922337203685477580L) {
+            m10 = m10 * 10 + (b - '0')
+            digits += 1
+          }
+          noFracDigits = false
+          pos += 1
+        }
+        false
       }) && {
         dec = ByteArrayAccess.getInt(buf, pos) - 0x30303030 // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
         ((dec + 0x76767676 | dec) & 0x80808080) == 0 || {
@@ -2306,6 +2329,7 @@ final class JsonReader private[jsoniter_scala](
             dec >>= 8
             pos += 1
           }
+          b = (d + 0x30).toByte
           false
         }
       }) {
@@ -2315,23 +2339,6 @@ final class JsonReader private[jsoniter_scala](
         noFracDigits = false
         digits += 4
         pos += 4
-      }
-      while ((pos < tail || {
-        pos = loadMore(pos)
-        buf = this.buf
-        pos < tail
-      }) && {
-        b = buf(pos)
-        b >= '0' && b <= '9'
-      }) {
-        if (m10 < 922337203685477580L) {
-          m10 *= 10
-          m10 += b
-          m10 -= '0'
-          digits += 1
-        }
-        noFracDigits = false
-        pos += 1
       }
       e10 -= digits
       if (noFracDigits) numberError(pos)
