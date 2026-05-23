@@ -25,7 +25,7 @@ using different JDK and GraalVM versions on Intel® Core™ Ultra 9 285K CPU @ 3
 RAM 64Gb DDR5-6400, Ubuntu Server 25.04 (Linux 6.14), and latest versions of JDK 17/21/25/27ea,
 GraalVM Community JDK 17/21/25, and GraalVM JDK 17/21/25[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
 
-[**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that
+[**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs-arm.html) that
 compare performance of jsoniter-scala with: [circe](https://github.com/circe/circe), 
 [circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
 [play-json](https://github.com/playframework/play-json),
@@ -35,7 +35,7 @@ compare performance of jsoniter-scala with: [circe](https://github.com/circe/cir
 [zio-json](https://github.com/zio/zio-json), and [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
 libraries complied by Scala 3.8.3 with `-opt -opt-inline:**,!java.**` options for optimization and inlining
 using Scala.js 1.21.0 to ES 2021 with GCC v20220202 optimizations applied on 
-Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz, 200S Boost), RAM 64Gb DDR5-6400, Ubuntu Desktop 25.04 (Linux 6.14) 
+Apple M5 Pro CPU @ 3.0GHz (max 4.6GHz, 18-cores), RAM 64Gb LPDDR5X-9600, macOS (Tahoe 26.5) 
 and latest versions of web browsers.
 
 ## Contents
