@@ -1573,18 +1573,19 @@ final class JsonReader private[jsoniter_scala](
       totalRead = 0
       mark = -1
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
-      var continue = true
+      var t: Byte = 0
       if (isNextToken('[', head)) {
         if (!isNextToken(']', head)) {
           head -= 1
           while ({
-            continue = f(codec.decodeValue(this, codec.nullValue))
-            continue && isNextToken(',', head)
+            if (!f(codec.decodeValue(this, codec.nullValue))) return
+            t = nextToken(head)
+            t == ','
           }) ()
-          if (continue && !isCurrentToken(']', head)) arrayEndOrCommaError()
+          if (t != ']') arrayEndOrCommaError()
         }
       } else readNullOrTokenError((), '[')
-      if (continue && config.checkForEndOfInput) endOfInputOrError()
+      if (config.checkForEndOfInput) endOfInputOrError()
     } finally {
       this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()

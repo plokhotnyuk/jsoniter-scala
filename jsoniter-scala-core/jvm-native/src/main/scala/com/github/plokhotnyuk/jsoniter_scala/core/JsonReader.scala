@@ -1273,7 +1273,11 @@ final class JsonReader private[jsoniter_scala](
     * @return `true` if the current token matches `t`, `false` otherwise.
     * @throws java.lang.IllegalStateException if no any token was parsed yet
     */
-  def isCurrentToken(t: Byte): Boolean = isCurrentToken(t, head)
+  def isCurrentToken(t: Byte): Boolean = {
+    val pos = head
+    if (pos == 0) illegalTokenOperation()
+    buf(pos - 1) == t
+  }
 
   /**
     * Checks if there are more bytes available for reading in the input.
@@ -1597,18 +1601,19 @@ final class JsonReader private[jsoniter_scala](
       totalRead = 0
       mark = -1
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
-      var continue = true
+      var t: Byte = 0
       if (isNextToken('[', head)) {
         if (!isNextToken(']', head)) {
           head -= 1
           while ({
-            continue = f(codec.decodeValue(this, codec.nullValue))
-            continue && isNextToken(',', head)
+            if (!f(codec.decodeValue(this, codec.nullValue))) return
+            t = nextToken(head)
+            t == ','
           }) ()
-          if (continue && !isCurrentToken(']', head)) arrayEndOrCommaError()
+          if (t != ']') arrayEndOrCommaError()
         }
       } else readNullOrTokenError((), '[')
-      if (continue && config.checkForEndOfInput) endOfInputOrError()
+      if (config.checkForEndOfInput) endOfInputOrError()
     } finally {
       this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -1737,12 +1742,6 @@ final class JsonReader private[jsoniter_scala](
       head = pos + 1
       b == t || ((b == ' ' || b == '\n' || (b | 0x4) == '\r') && nextToken(pos + 1) == t)
     } else isNextToken(t, loadMoreOrError(pos))
-
-  @inline
-  private[this] def isCurrentToken(t: Byte, pos: Int): Boolean = {
-    if (pos == 0) illegalTokenOperation()
-    buf(pos - 1) == t
-  }
 
   @noinline
   private[this] def illegalTokenOperation(): Nothing =
