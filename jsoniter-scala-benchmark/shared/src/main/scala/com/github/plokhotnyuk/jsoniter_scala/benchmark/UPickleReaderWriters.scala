@@ -155,7 +155,7 @@ object UPickleReaderWriters extends AttributeTagged {
     mapOfIntsToBooleansWriter.asInstanceOf[Writer[IntMap[Boolean]]]
   implicit val mutableLongMapOfBooleansReader: Reader[mutable.LongMap[Boolean]] =
     reader[Obj].map[mutable.LongMap[Boolean]] {
-      _.value.foldLeft(mutable.LongMap.empty[Boolean]) { (m, kv) => m.update(kv._1.toLong, kv._2.bool); m }
+      _.value.foldLeft(new mutable.LongMap[Boolean]) { (m, kv) => m.update(kv._1.toLong, kv._2.bool); m }
     }
   implicit val mutableLongMapOfBooleansWriter: Writer[mutable.LongMap[Boolean]] =
     MapWriter3(stringKeyW(longWriter), BooleanWriter).asInstanceOf[Writer[mutable.LongMap[Boolean]]]

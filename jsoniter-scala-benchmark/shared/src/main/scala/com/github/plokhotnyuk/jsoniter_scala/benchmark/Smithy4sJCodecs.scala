@@ -157,28 +157,28 @@ object Smithy4sJCodecs {
     val pointSchema: Schema[GeoJSON.Point] =
       struct(
         coordinatesSchema.required[GeoJSON.Point]("coordinates", _.coordinates),
-      )(GeoJSON.Point.apply)
+      )(coordinates => new GeoJSON.Point(coordinates))
     val multiPointSchema: Schema[GeoJSON.MultiPoint] =
       struct(
         indexedSeq(coordinatesSchema).required[GeoJSON.MultiPoint]("coordinates", _.coordinates),
-      )(GeoJSON.MultiPoint.apply)
+      )(coordinates => new GeoJSON.MultiPoint(coordinates))
     val lineStringSchema: Schema[GeoJSON.LineString] =
       struct(
         indexedSeq(coordinatesSchema).required[GeoJSON.LineString]("coordinates", _.coordinates),
-      )(GeoJSON.LineString.apply)
+      )(coordinates => new GeoJSON.LineString(coordinates))
     val multiLineStringSchema: Schema[GeoJSON.MultiLineString] =
       struct(
         indexedSeq(indexedSeq(coordinatesSchema)).required[GeoJSON.MultiLineString]("coordinates", _.coordinates),
-      )(GeoJSON.MultiLineString.apply)
+      )(coordinates => new GeoJSON.MultiLineString(coordinates))
     val polygonSchema: Schema[GeoJSON.Polygon] =
       struct(
         indexedSeq(indexedSeq(coordinatesSchema)).required[GeoJSON.Polygon]("coordinates", _.coordinates),
-      )(GeoJSON.Polygon.apply)
+      )(coordinates => new GeoJSON.Polygon(coordinates))
     val multiPolygonSchema: Schema[GeoJSON.MultiPolygon] =
       struct(
         indexedSeq(indexedSeq(indexedSeq(coordinatesSchema)))
           .required[GeoJSON.MultiPolygon]("coordinates", _.coordinates),
-      )(GeoJSON.MultiPolygon.apply)
+      )(coordinates => new GeoJSON.MultiPolygon(coordinates))
     val simpleGeometrySchema: Schema[GeoJSON.SimpleGeometry] =  {
       union(
         pointSchema.oneOf[GeoJSON.SimpleGeometry]("Point"),
@@ -199,7 +199,7 @@ object Smithy4sJCodecs {
     val geometryCollectionSchema: Schema[GeoJSON.GeometryCollection] =
       struct(
         indexedSeq(simpleGeometrySchema).required[GeoJSON.GeometryCollection]("geometries", _.geometries),
-      )(GeoJSON.GeometryCollection.apply)
+      )(geometries => new GeoJSON.GeometryCollection(geometries))
     val geometrySchema: Schema[GeoJSON.Geometry] =
       union(
         pointSchema.oneOf[GeoJSON.Geometry]("Point"),
@@ -223,7 +223,7 @@ object Smithy4sJCodecs {
         map(string, string).required[GeoJSON.Feature]("properties", _.properties),
         geometrySchema.required[GeoJSON.Feature]("geometry", _.geometry),
         bboxSchema.optional[GeoJSON.Feature]("bbox", _.bbox)
-      )((properties, geometry, bbox) => GeoJSON.Feature(properties, geometry, bbox))
+      )((properties, geometry, bbox) => new GeoJSON.Feature(properties, geometry, bbox))
     val simpleGeoJSONSchema: Schema[GeoJSON.SimpleGeoJSON] =
       union(
         featureSchema.oneOf[GeoJSON.SimpleGeoJSON]("Feature")
@@ -234,7 +234,7 @@ object Smithy4sJCodecs {
       struct(
         indexedSeq(simpleGeoJSONSchema).required[GeoJSON.FeatureCollection]("features", _.features),
         bboxSchema.optional[GeoJSON.FeatureCollection]("bbox", _.bbox)
-      )(GeoJSON.FeatureCollection.apply)
+      )((features, bbox) => new GeoJSON.FeatureCollection(features, bbox))
     union(
       featureSchema.oneOf[GeoJSON.GeoJSON]("Feature"),
       featureCollectionSchema.oneOf[GeoJSON.GeoJSON]("FeatureCollection")
@@ -256,37 +256,37 @@ object Smithy4sJCodecs {
         datetime.required[GitHubActionsAPI.Artifact]("created_at", (x: GitHubActionsAPI.Artifact) => PlatformUtils.toTimestamp(x.created_at)),
         datetime.required[GitHubActionsAPI.Artifact]("expires_at", (x: GitHubActionsAPI.Artifact) => PlatformUtils.toTimestamp(x.expires_at))
       )((id, node_id, name, size_in_bytes, url, archive_download_url, expired, created_at, expires_at) =>
-        GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url, expired.toBoolean,
+        new GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url, expired.toBoolean,
           PlatformUtils.toInstant(created_at), PlatformUtils.toInstant(expires_at)))
     struct(
       int.required[GitHubActionsAPI.Response]("total_count", _.total_count),
       list(rowsSchema).required[GitHubActionsAPI.Response]("artifacts", _.artifacts.toList)
-    ) { (total_count, artifacts) =>
-      GitHubActionsAPI.Response(total_count, artifacts)
-    }
+    )((total_count, artifacts) => new GitHubActionsAPI.Response(total_count, artifacts))
   })
   implicit val googleMapsAPIJCodec: JsonCodec[GoogleMapsAPI.DistanceMatrix] = Json.deriveJsonCodec({
     val valueSchema: Schema[GoogleMapsAPI.Value] =
       struct(
         string.required[GoogleMapsAPI.Value]("text", _.text),
         int.required[GoogleMapsAPI.Value]("value", _.value)
-      )(GoogleMapsAPI.Value.apply)
+      )((text, value) => new GoogleMapsAPI.Value(text, value))
     val elementsSchema: Schema[GoogleMapsAPI.Elements] =
       struct(
         valueSchema.required[GoogleMapsAPI.Elements]("distance", _.distance),
         valueSchema.required[GoogleMapsAPI.Elements]("duration", _.duration),
         string.required[GoogleMapsAPI.Elements]("status", _.status)
-      )(GoogleMapsAPI.Elements.apply)
+      )((distance, duration, status) => new GoogleMapsAPI.Elements(distance, duration, status))
     val rowsSchema: Schema[GoogleMapsAPI.Rows] =
       struct(
         indexedSeq(elementsSchema).required[GoogleMapsAPI.Rows]("elements", _.elements)
-      )(GoogleMapsAPI.Rows.apply)
+      )(elements => new GoogleMapsAPI.Rows(elements))
     struct(
       indexedSeq(string).required[GoogleMapsAPI.DistanceMatrix]("destination_addresses", _.destination_addresses),
       indexedSeq(string).required[GoogleMapsAPI.DistanceMatrix]("origin_addresses", _.origin_addresses),
       indexedSeq(rowsSchema).required[GoogleMapsAPI.DistanceMatrix]("rows", _.rows),
       string.required[GoogleMapsAPI.DistanceMatrix]("status", _.status)
-    )(GoogleMapsAPI.DistanceMatrix.apply)
+    ) { (destination_addresses, origin_addresses, rows, status) =>
+      new GoogleMapsAPI.DistanceMatrix(destination_addresses, origin_addresses, rows, status)
+    }
   })
   implicit val listOfBooleansJCodec: JsonCodec[List[Boolean]] = Json.deriveJsonCodec(list(boolean))
   implicit val mapOfIntsToBooleansJCodec: JsonCodec[Map[Int, Boolean]] = Json.deriveJsonCodec(map(int, boolean))
@@ -294,9 +294,9 @@ object Smithy4sJCodecs {
     Json.deriveJsonCodec(struct(
       string.required[MissingRequiredFields]("s", _.s),
       int.required[MissingRequiredFields]("i", _.i)
-    )(MissingRequiredFields.apply))
+    )((s, i) => new MissingRequiredFields(s, i)))
   private[this] val nestedStructsSchema: Schema[NestedStructs] =
-    recursive(struct(nestedStructsSchema.optional[NestedStructs]("n", _.n))(NestedStructs.apply))
+    recursive(struct(nestedStructsSchema.optional[NestedStructs]("n", _.n))(n => new NestedStructs(n)))
   implicit val nestedStructsJCodec: JsonCodec[NestedStructs] = Json.deriveJsonCodec(nestedStructsSchema)
   implicit val openRTBJCodec: JsonCodec[OpenRTB.BidRequest] = Json.deriveJsonCodec {
     val metricSchema: Schema[OpenRTB.Metric] =
@@ -304,7 +304,7 @@ object Smithy4sJCodecs {
         string.required[OpenRTB.Metric]("type", _.`type`),
         double.required[OpenRTB.Metric]("value", _.value),
         string.optional[OpenRTB.Metric]("vendor", _.vendor),
-      )(OpenRTB.Metric.apply)
+      )((`type`, value, vendor) => new OpenRTB.Metric(`type`, value, vendor))
     val formatSchema: Schema[OpenRTB.Format] =
       struct(
         int.optional[OpenRTB.Format]("w", _.w),
@@ -312,7 +312,7 @@ object Smithy4sJCodecs {
         int.optional[OpenRTB.Format]("wratio", _.wratio),
         int.optional[OpenRTB.Format]("hratio", _.hratio),
         int.optional[OpenRTB.Format]("wmin", _.wmin)
-      )(OpenRTB.Format.apply)
+      )((w, h, wratio, hratio, wmin) => new OpenRTB.Format(w, h, wratio, hratio, wmin))
     val bannerSchema: Schema[OpenRTB.Banner] =
       struct(
         formatSchema.optional[OpenRTB.Banner]("format", _.format),
@@ -332,7 +332,7 @@ object Smithy4sJCodecs {
         string.optional[OpenRTB.Banner]("id", _.id),
         int.optional[OpenRTB.Banner]("vcm", _.vcm),
       ) { (format, w, h, wmax, hmax, wmin, hmin, btype, battr, pos, mimes, topframe, expdir, api, id, vcm) =>
-        OpenRTB.Banner(format, w, h, wmax, hmax, wmin, hmin, btype.getOrElse(Nil), battr.getOrElse(Nil), pos,
+        new OpenRTB.Banner(format, w, h, wmax, hmax, wmin, hmin, btype.getOrElse(Nil), battr.getOrElse(Nil), pos,
           mimes.getOrElse(Nil), topframe, expdir.getOrElse(Nil), api.getOrElse(Nil), id, vcm)
       }
     val videoSchema: Schema[OpenRTB.Video] =
@@ -364,7 +364,7 @@ object Smithy4sJCodecs {
         list(int).optional[OpenRTB.Video]("api", x => toOptList(x.api)),
         list(int).optional[OpenRTB.Video]("companiontype", x => toOptList(x.companiontype))
       ) { (ps: IndexedSeq[Any]) =>
-        OpenRTB.Video(
+        new OpenRTB.Video(
           ps(0).asInstanceOf[Option[List[String]]].getOrElse(Nil),
           ps(1).asInstanceOf[Option[Int]],
           ps(2).asInstanceOf[Option[Int]],
@@ -415,7 +415,7 @@ object Smithy4sJCodecs {
         int.optional[OpenRTB.Audio]("nvol", _.nvol)
       ) { (mimes, minduration, maxduration, protocols, startdelay, sequence, battr, maxextended, minbitrate, maxbitrate,
         delivery, companionad, api, companiontype, maxseq, feed, stitched, nvol) =>
-        OpenRTB.Audio(mimes.getOrElse(Nil), minduration, maxduration, protocols.getOrElse(Nil), startdelay, sequence,
+        new OpenRTB.Audio(mimes.getOrElse(Nil), minduration, maxduration, protocols.getOrElse(Nil), startdelay, sequence,
           battr.getOrElse(Nil), maxextended, minbitrate, maxbitrate, delivery.getOrElse(Nil),
           companionad.getOrElse(Nil), api.getOrElse(Nil), companiontype.getOrElse(Nil), maxseq, feed, stitched, nvol)
       }
@@ -426,7 +426,7 @@ object Smithy4sJCodecs {
         list(int).optional[OpenRTB.Native]("api", x => toOptList(x.api)),
         list(int).optional[OpenRTB.Native]("battr", x => toOptList(x.battr))
       ) { (request, ver, api, battr) =>
-        OpenRTB.Native(request, ver, api.getOrElse(Nil), battr.getOrElse(Nil))
+        new OpenRTB.Native(request, ver, api.getOrElse(Nil), battr.getOrElse(Nil))
       }
     val dealSchema: Schema[OpenRTB.Deal] =
       struct(
@@ -437,7 +437,7 @@ object Smithy4sJCodecs {
         list(string).optional[OpenRTB.Deal]("wseat", x => toOptList(x.wseat)),
         list(string).optional[OpenRTB.Deal]("wadomain", x => toOptList(x.wadomain))
       ) { (id, bidfloor, bidfloorcur, at, wseat, wadomain) =>
-        OpenRTB.Deal(id, bidfloor.getOrElse(0.0), bidfloorcur.getOrElse("USD"), at, wseat.getOrElse(Nil),
+        new OpenRTB.Deal(id, bidfloor.getOrElse(0.0), bidfloorcur.getOrElse("USD"), at, wseat.getOrElse(Nil),
           wadomain.getOrElse(Nil))
       }
     val pmpSchema: Schema[OpenRTB.Pmp] =
@@ -445,7 +445,7 @@ object Smithy4sJCodecs {
         int.optional[OpenRTB.Pmp]("private_auction", x => toOpt(x.private_auction, 0)),
         list(dealSchema).optional[OpenRTB.Pmp]("deals", x => toOptList(x.deals)),
       ) { (private_auction, deals) =>
-        OpenRTB.Pmp(private_auction.getOrElse(0), deals.getOrElse(Nil))
+        new OpenRTB.Pmp(private_auction.getOrElse(0), deals.getOrElse(Nil))
       }
     val impSchema: Schema[OpenRTB.Imp] =
       struct(
@@ -468,7 +468,7 @@ object Smithy4sJCodecs {
         int.optional[OpenRTB.Imp]("exp", _.exp),
       ) { (id, metric, banner, video, audio, native, pmp, displaymanager, displaymanagerver, instl, tagid, bidfloor,
            bidfloorcur, clickbrowser, secure, iframebuster, exp) =>
-        OpenRTB.Imp(id, metric.getOrElse(Nil), banner, video, audio, native, pmp, displaymanager, displaymanagerver,
+        new OpenRTB.Imp(id, metric.getOrElse(Nil), banner, video, audio, native, pmp, displaymanager, displaymanagerver,
           instl.getOrElse(0), tagid, bidfloor.getOrElse(0.0), bidfloorcur.getOrElse("USD"), clickbrowser,
           secure.getOrElse(0), iframebuster.getOrElse(Nil), exp)
       }
@@ -478,32 +478,26 @@ object Smithy4sJCodecs {
         string.optional[OpenRTB.Publisher]("name", _.name),
         list(string).optional[OpenRTB.Publisher]("cat", x => toOptList(x.cat)),
         string.optional[OpenRTB.Publisher]("domain", _.domain),
-      ) { (id, name, cat, domain) =>
-        OpenRTB.Publisher(id, name, cat.getOrElse(Nil), domain)
-      }
+      )((id, name, cat, domain) => new OpenRTB.Publisher(id, name, cat.getOrElse(Nil), domain))
     val producerSchema: Schema[OpenRTB.Producer] =
       struct(
         string.optional[OpenRTB.Producer]("id", _.id),
         string.optional[OpenRTB.Producer]("name", _.name),
         list(string).optional[OpenRTB.Producer]("cat", x => toOptList(x.cat)),
         string.optional[OpenRTB.Producer]("domain", _.domain),
-      ) { (id, name, cat, domain) =>
-        OpenRTB.Producer(id, name, cat.getOrElse(Nil), domain)
-      }
+      )((id, name, cat, domain) => new OpenRTB.Producer(id, name, cat.getOrElse(Nil), domain))
     val segmentSchema: Schema[OpenRTB.Segment] =
       struct(
         string.optional[OpenRTB.Segment]("id", _.id),
         string.optional[OpenRTB.Segment]("name", _.name),
         string.optional[OpenRTB.Segment]("value", _.value),
-      )(OpenRTB.Segment.apply)
+      )((id, name, value) => new OpenRTB.Segment(id, name, value))
     val dataSchema: Schema[OpenRTB.Data] =
       struct(
         string.optional[OpenRTB.Data]("id", _.id),
         string.optional[OpenRTB.Data]("name", _.name),
         list(segmentSchema).optional[OpenRTB.Data]("segment", x => toOptList(x.segment)),
-      ) { (id, name, segment) =>
-        OpenRTB.Data(id, name, segment.getOrElse(Nil))
-      }
+      )((id, name, segment) => new OpenRTB.Data(id, name, segment.getOrElse(Nil)))
     val contentSchema: Schema[OpenRTB.Content] =
       struct.genericArity(
         string.optional[OpenRTB.Content]("id", _.id),
@@ -532,7 +526,7 @@ object Smithy4sJCodecs {
         int.optional[OpenRTB.Content]("embeddable", _.embeddable),
         dataSchema.optional[OpenRTB.Content]("data", _.data)
       ) { (ps: IndexedSeq[Any]) =>
-        OpenRTB.Content(
+        new OpenRTB.Content(
           ps(0).asInstanceOf[Option[String]],
           ps(1).asInstanceOf[Option[Int]],
           ps(2).asInstanceOf[Option[String]],
@@ -576,10 +570,9 @@ object Smithy4sJCodecs {
         publisherSchema.optional[OpenRTB.Site]("publisher", _.publisher),
         contentSchema.optional[OpenRTB.Site]("content", _.content),
         string.optional[OpenRTB.Site]("keywords", _.keywords)
-      ) { (id, name, domain, cat, sectioncat, pagecat, page, ref, search, mobile, privacypolicy, publisher, content,
-        keywords) =>
-        OpenRTB.Site(id, name, domain, cat.getOrElse(Nil), sectioncat.getOrElse(Nil), pagecat.getOrElse(Nil), page, ref,
-          search, mobile, privacypolicy, publisher, content, keywords)
+      ) { (id, name, domain, cat, sectioncat, pagecat, page, ref, search, mobile, privacypolicy, publisher, content, keywords) =>
+        new OpenRTB.Site(id, name, domain, cat.getOrElse(Nil), sectioncat.getOrElse(Nil), pagecat.getOrElse(Nil), page,
+          ref, search, mobile, privacypolicy, publisher, content, keywords)
       }
     val appSchema: Schema[OpenRTB.App] =
       struct(
@@ -597,9 +590,8 @@ object Smithy4sJCodecs {
         publisherSchema.optional[OpenRTB.App]("publisher", _.publisher),
         contentSchema.optional[OpenRTB.App]("content", _.content),
         string.optional[OpenRTB.App]("keywords", _.keywords)
-      ) { (id, name, bundle, domain, storeurl, cat, sectioncat, pagecat, ver, privacypolicy, paid, publisher, content,
-        keywords) =>
-        OpenRTB.App(id, name, bundle, domain, storeurl, cat.getOrElse(Nil), sectioncat.getOrElse(Nil),
+      ) { (id, name, bundle, domain, storeurl, cat, sectioncat, pagecat, ver, privacypolicy, paid, publisher, content, keywords) =>
+        new OpenRTB.App(id, name, bundle, domain, storeurl, cat.getOrElse(Nil), sectioncat.getOrElse(Nil),
           pagecat.getOrElse(Nil), ver, privacypolicy, paid, publisher, content, keywords)
       }
     val geoSchema: Schema[OpenRTB.Geo] =
@@ -650,7 +642,7 @@ object Smithy4sJCodecs {
         string.optional[OpenRTB.Device]("macsha1", _.macsha1),
         string.optional[OpenRTB.Device]("macmd5", _.macmd5)
       ) { (ps: IndexedSeq[Any]) =>
-        OpenRTB.Device(
+        new OpenRTB.Device(
           ps(0).asInstanceOf[Option[String]],
           ps(1).asInstanceOf[Option[OpenRTB.Geo]],
           ps(2).asInstanceOf[Option[Int]],
@@ -692,17 +684,19 @@ object Smithy4sJCodecs {
         string.optional[OpenRTB.User]("customdata", _.customdata),
         geoSchema.optional[OpenRTB.User]("geo", _.geo),
         dataSchema.optional[OpenRTB.User]("data", _.data),
-      )(OpenRTB.User.apply)
+      ) { (id, buyeruid, yob, gender, keywords, customdata, geo, data) =>
+        new OpenRTB.User(id, buyeruid, yob, gender, keywords, customdata, geo, data)
+      }
     val sourceSchema: Schema[OpenRTB.Source] =
       struct(
         int.optional[OpenRTB.Source]("fd", _.fd),
         string.optional[OpenRTB.Source]("tid", _.tid),
         string.optional[OpenRTB.Source]("pchain", _.pchain),
-      )(OpenRTB.Source.apply)
+      )((fd, tid, pchain) => new OpenRTB.Source(fd, tid, pchain))
     val reqsSchema: Schema[OpenRTB.Reqs] =
       struct(
         int.required[OpenRTB.Reqs]("coppa", _.coppa),
-      )(OpenRTB.Reqs.apply)
+      )(coppa => new OpenRTB.Reqs(coppa))
     struct(
       string.required[OpenRTB.BidRequest]("id", _.id),
       list(impSchema).optional[OpenRTB.BidRequest]("imp", x => toOptList(x.imp)),
@@ -724,7 +718,7 @@ object Smithy4sJCodecs {
       sourceSchema.optional[OpenRTB.BidRequest]("source", _.source),
       reqsSchema.optional[OpenRTB.BidRequest]("reqs", _.reqs),
     ) { (id, imp, site, app, device, user, test, at, tmax, wset, bset, allimps, cur, wlang, bcat, badv, bapp, source, reqs) =>
-      OpenRTB.BidRequest(id, imp.getOrElse(Nil), site, app, device, user, test.getOrElse(0), at.getOrElse(2), tmax,
+      new OpenRTB.BidRequest(id, imp.getOrElse(Nil), site, app, device, user, test.getOrElse(0), at.getOrElse(2), tmax,
         wset.getOrElse(Nil), bset.getOrElse(Nil), allimps.getOrElse(0), cur.getOrElse(Nil), wlang.getOrElse(Nil),
         bcat.getOrElse(Nil), badv.getOrElse(Nil), bapp.getOrElse(Nil), source, reqs)
     }
@@ -738,7 +732,7 @@ object Smithy4sJCodecs {
       string.required[TwitterAPI.Urls]("display_url", _.display_url),
       list(int).optional[TwitterAPI.Urls]("indices", xs => toOptList(xs.indices.toList))
     ) { (url, expanded_url, display_url, indices) =>
-      TwitterAPI.Urls(url, expanded_url, display_url, indices.getOrElse(Nil))
+      new TwitterAPI.Urls(url, expanded_url, display_url, indices.getOrElse(Nil))
     }
     val urlSchema: Schema[TwitterAPI.Url] = struct(
       list(urlsSchema).optional[TwitterAPI.Url]("urls", xs => toOptList(xs.urls.toList))
@@ -746,7 +740,7 @@ object Smithy4sJCodecs {
     val userEntitiesSchema: Schema[TwitterAPI.UserEntities] = struct(
       urlSchema.required[TwitterAPI.UserEntities]("url", _.url),
       urlSchema.required[TwitterAPI.UserEntities]("description", _.description),
-    )(TwitterAPI.UserEntities.apply)
+    )((url, description) => new TwitterAPI.UserEntities(url, description))
     val userMentionsSchema: Schema[TwitterAPI.UserMentions] = struct(
       string.required[TwitterAPI.UserMentions]("screen_name", _.screen_name),
       string.required[TwitterAPI.UserMentions]("name", _.name),
@@ -754,7 +748,7 @@ object Smithy4sJCodecs {
       string.required[TwitterAPI.UserMentions]("id_str", _.id_str),
       list(int).optional[TwitterAPI.UserMentions]("indices", xs => toOptList(xs.indices.toList))
     ) { (screen_name, name, id, id_str, indices) =>
-      TwitterAPI.UserMentions(screen_name, name, id, id_str, indices.getOrElse(Nil))
+      new TwitterAPI.UserMentions(screen_name, name, id, id_str, indices.getOrElse(Nil))
     }
     val entitiesSchema: Schema[TwitterAPI.Entities] = struct(
       list(string).optional[TwitterAPI.Entities]("hashtags", xs => toOptList(xs.hashtags.toList)),
@@ -762,7 +756,7 @@ object Smithy4sJCodecs {
       list(userMentionsSchema).optional[TwitterAPI.Entities]("user_mentions", xs => toOptList(xs.user_mentions.toList)),
       list(urlsSchema).optional[TwitterAPI.Entities]("urls", xs => toOptList(xs.urls.toList))
     ) { (hashtags, symbols, user_mentions, urls) =>
-      TwitterAPI.Entities(hashtags.getOrElse(Nil), symbols.getOrElse(Nil), user_mentions.getOrElse(Nil), urls.getOrElse(Nil))
+      new TwitterAPI.Entities(hashtags.getOrElse(Nil), symbols.getOrElse(Nil), user_mentions.getOrElse(Nil), urls.getOrElse(Nil))
     }
     val userSchema: Schema[TwitterAPI.User] = struct.genericArity(
       long.required[TwitterAPI.User]("id", _.id),
@@ -808,7 +802,7 @@ object Smithy4sJCodecs {
       boolean.required[TwitterAPI.User]("notifications", _.notifications),
       string.required[TwitterAPI.User]("translator_type", _.translator_type),
     ) { (ps: IndexedSeq[Any]) =>
-      TwitterAPI.User(
+      new TwitterAPI.User(
         ps(0).asInstanceOf[Long],
         ps(1).asInstanceOf[String],
         ps(2).asInstanceOf[String],
@@ -879,7 +873,7 @@ object Smithy4sJCodecs {
       boolean.required[TwitterAPI.RetweetedStatus]("possibly_sensitive", _.possibly_sensitive),
       string.required[TwitterAPI.RetweetedStatus]("lang", _.lang)
     ) { (ps: IndexedSeq[Any]) =>
-      TwitterAPI.RetweetedStatus(
+      new TwitterAPI.RetweetedStatus(
         ps(0).asInstanceOf[String],
         ps(1).asInstanceOf[Long],
         ps(2).asInstanceOf[String],
@@ -933,7 +927,7 @@ object Smithy4sJCodecs {
       boolean.required[TwitterAPI.Tweet]("possibly_sensitive", _.possibly_sensitive),
       string.required[TwitterAPI.Tweet]("lang", _.lang)
     ) { (ps: IndexedSeq[Any]) =>
-      TwitterAPI.Tweet(
+      new TwitterAPI.Tweet(
         ps(0).asInstanceOf[String],
         ps(1).asInstanceOf[Long],
         ps(2).asInstanceOf[String],
@@ -961,17 +955,17 @@ object Smithy4sJCodecs {
         ps(24).asInstanceOf[String]
       )
     }
-    bijection(list(tweetSchema), (x: List[TwitterAPI.Tweet]) => x.toSeq, (x: Seq[TwitterAPI.Tweet]) => x.toList)
+    bijection(list(tweetSchema), (x: List[TwitterAPI.Tweet]) => x, (x: Seq[TwitterAPI.Tweet]) => x.toList)
   })
   implicit val vectorOfBooleansJCodec: JsonCodec[Vector[Boolean]] = Json.deriveJsonCodec(vector(boolean))
 
   @inline
   private[this] def toOptList[A](xs: List[A]): Option[List[A]] =
     if (xs.isEmpty) None
-    else Some(xs)
+    else new Some(xs)
 
   @inline
   private[this] def toOpt[A](x: A, default: A): Option[A] =
     if (x == default) None
-    else Some(x)
+    else new Some(x)
 }
