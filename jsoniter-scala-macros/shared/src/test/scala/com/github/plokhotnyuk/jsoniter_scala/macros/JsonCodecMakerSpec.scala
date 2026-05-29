@@ -3317,12 +3317,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "transform PascalCase names to camelCase" in {
       enforceCamelCase("OoOo111") shouldBe "ooOo111"
       enforceCamelCase("OOoo111") shouldBe "oOoo111"
+      enforceCamelCase("OOOOooo") shouldBe "oooOooo"
+      enforceCamelCase("OOOO") shouldBe "oooo"
     }
     "leave camelCase names as is" in {
       enforceCamelCase("") shouldBe ""
       enforceCamelCase("o") shouldBe "o"
       enforceCamelCase("oO") shouldBe "oO"
       enforceCamelCase("oOoo") shouldBe "oOoo"
+      enforceCamelCase("oooOooo") shouldBe "oooOooo"
+      enforceCamelCase("oooo") shouldBe "oooo"
     }
   }
   "JsonCodecMaker.EnforcePascalCase" should {
@@ -3346,6 +3350,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       EnforcePascalCase("O") shouldBe "O"
       EnforcePascalCase("Oo") shouldBe "Oo"
       EnforcePascalCase("OOoo") shouldBe "OOoo"
+      EnforcePascalCase("OOOOooo") shouldBe "OOOOooo"
+      EnforcePascalCase("OOOO") shouldBe "OOOO"
     }
   }
   "JsonCodecMaker.enforce_snake_case" should {

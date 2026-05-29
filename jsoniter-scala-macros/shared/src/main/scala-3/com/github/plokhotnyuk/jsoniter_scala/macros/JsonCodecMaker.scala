@@ -449,19 +449,34 @@ object JsonCodecMaker {
   val `enforce-kebab-case2`: PartialFunction[String, String] =
     { case s => enforceSnakeOrKebabCaseWithJoinedNonAphabetic(s, '-') }
 
-  private def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
-    if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
-      if (s.isEmpty) s
-      else {
-        val ch = s.charAt(0)
-        val fixedCh =
-          if (toPascal) toUpperCase(ch)
-          else toLowerCase(ch)
-        s"$fixedCh${s.substring(1)}"
+  private def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String = {
+    val len = s.length
+    val sb = new java.lang.StringBuilder(len)
+    if (s.indexOf('_') < 0 && s.indexOf('-') < 0) {
+      if (len > 0) {
+        val firstChar = s.charAt(0)
+        sb.append({
+          if (toPascal) toUpperCase(firstChar)
+          else toLowerCase(firstChar)
+        })
+        var i = 1
+        if (!toPascal) {
+          i = 0
+          while (i < len && isUpperCase(s.charAt(i))) i += 1
+          if (i > 1 && i < len && isLowerCase(s.charAt(i))) i -= 1
+          val limit = Math.max(i, 1)
+          i = 1
+          while (i < limit) {
+            sb.append(toLowerCase(s.charAt(i)))
+            i += 1
+          }
+        }
+        while (i < len) {
+          sb.append(s.charAt(i))
+          i += 1
+        }
       }
     } else {
-      val len = s.length
-      val sb = new java.lang.StringBuilder(len)
       var i = 0
       var isPrecedingDash = toPascal
       while (i < len) isPrecedingDash = {
@@ -475,8 +490,9 @@ object JsonCodecMaker {
           false
         }
       }
-      sb.toString
     }
+    sb.toString
+  }
 
   private def enforceSnakeOrKebabCaseWithSeparatedNonAlphabetic(s: String, separator: Char): String = {
     val len = s.length
