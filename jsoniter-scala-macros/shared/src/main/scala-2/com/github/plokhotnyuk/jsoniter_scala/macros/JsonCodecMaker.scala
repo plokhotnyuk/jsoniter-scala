@@ -464,7 +464,7 @@ object JsonCodecMaker {
         sb.append(ch)
         true
       } else {
-        if (isPrecedingNotUpperCased || i > 1 && i < len && !isUpperCase(s.charAt(i))) sb.append(separator)
+        if (isPrecedingNotUpperCased || i > 1 && i < len && isLowerCase(s.charAt(i))) sb.append(separator)
         sb.append(toLowerCase(ch))
         false
       }

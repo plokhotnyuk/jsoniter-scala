@@ -3374,6 +3374,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       enforce_snake_case("o_ooo111") shouldBe "o_ooo_111"
       enforce_snake_case("o_ooo_111") shouldBe "o_ooo_111"
       enforce_snake_case("o_ooo$") shouldBe "o_ooo_$"
+      enforce_snake_case("OOO_OOO") shouldBe "ooo_ooo"
     }
   }
   "JsonCodecMaker.enforce_snake_case2" should {
@@ -3402,6 +3403,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       enforce_snake_case2("o_ooo111") shouldBe "o_ooo111"
       enforce_snake_case2("o_ooo_111") shouldBe "o_ooo111"
       enforce_snake_case2("o_ooo_$") shouldBe "o_ooo$"
+      enforce_snake_case2("OOO_OOO") shouldBe "ooo_ooo"
     }
   }
   "JsonCodecMaker.enforce-kebab-case" should {
