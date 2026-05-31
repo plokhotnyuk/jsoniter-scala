@@ -31,7 +31,8 @@ lazy val commonSettings = Seq(
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, 12)) => Seq(
       "-language:higherKinds",
-      "-opt:l:method")
+      "-opt:l:method"
+    )
     case Some((2, 13)) => Seq(
       "-opt:l:method"
     )
@@ -43,6 +44,9 @@ lazy val commonSettings = Seq(
     )
   }),
   compileOrder := CompileOrder.JavaThenScala,
+  libraryDependencies ++= Seq(
+    "org.scalatest" %%% "scalatest" % "3.2.20" % Test
+  ),
   Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
@@ -180,8 +184,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
     }),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.14.0" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.20" % Test
+      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test
     )
   )
 
@@ -226,7 +229,6 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
     }) ++ Seq(
       "dev.zio" %%% "zio" % "2.1.26" % Test,
       "com.epam.deltix" % "dfp" % "1.0.10" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.20" % Test,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.14.0" % Test
     )
   )
@@ -253,8 +255,7 @@ lazy val `jsoniter-scala-next-tests` = crossProject(JVMPlatform, JSPlatform, Nat
       )
     }),
     libraryDependencies ++= Seq(
-      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.20" % Test
+      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test
     )
   )
 
@@ -282,8 +283,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.15",
       "io.circe" %%% "circe-parser" % "0.14.15" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.20" % Test
+      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test
     )
   )
 
@@ -335,8 +335,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-core" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
-      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37",
-      "org.scalatest" %%% "scalatest" % "3.2.20" % Test
+      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37"
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "io.bullet" %%% "borer-derivation" % "1.8.0",
@@ -368,8 +367,16 @@ lazy val assemblyJSBenchmarks = sys.props.get("assemblyJSBenchmarks").isDefined
 
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins({
-    if (assemblyJSBenchmarks) Seq(JSDependenciesPlugin)
-    else Seq(JSDependenciesPlugin, ScalaJSBundlerPlugin)
+    if (assemblyJSBenchmarks) {
+      Seq(
+        JSDependenciesPlugin
+      )
+    } else {
+      Seq(
+        JSDependenciesPlugin,
+        ScalaJSBundlerPlugin
+      )
+    }
   }*)
   .settings(jsSettings)
   .settings(
@@ -378,8 +385,16 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main")
   )
   .settings({
-    if (assemblyJSBenchmarks) Seq(scalaJSLinkerConfig ~= {
-      _.withModuleKind(ModuleKind.NoModule)
-    }, Test / test := {})
-    else Seq(Test / requireJsDomEnv := true)
+    if (assemblyJSBenchmarks) {
+      Seq(
+        scalaJSLinkerConfig ~= {
+          _.withModuleKind(ModuleKind.NoModule)
+        },
+        Test / test := {}
+      )
+    } else {
+      Seq(
+        Test / requireJsDomEnv := true
+      )
+    }
   }*)
