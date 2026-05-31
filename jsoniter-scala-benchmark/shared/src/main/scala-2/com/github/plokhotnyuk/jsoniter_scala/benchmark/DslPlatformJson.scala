@@ -43,7 +43,7 @@ object DslPlatformJson {
     }
   })
   dslJson.registerWriter(classOf[Char], new JsonWriter.WriteObject[Char] {
-    override def write(writer: JsonWriter, value: Char): Unit = writer.writeString(value.toString)
+    override def write(writer: JsonWriter, value: Char): Unit = writer.writeString(String.valueOf(value))
   })
 
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {

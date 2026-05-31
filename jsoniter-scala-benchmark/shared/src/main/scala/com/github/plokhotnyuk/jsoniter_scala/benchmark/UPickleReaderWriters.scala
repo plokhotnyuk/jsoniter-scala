@@ -39,7 +39,7 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val longWriter: Writer[Long] = new Writer[Long] {
     def write0[R](out: Visitor[_, R], v: Long): R =
       if (v > -4503599627370496L && v < 4503599627370496L) out.visitInt64(v, -1)
-      else out.visitFloat64String(v.toString, -1)
+      else out.visitFloat64String(String.valueOf(v), -1)
   }
   val base64ReadWriter: ReadWriter[Array[Byte]] =
     readwriter[String].bimap(Base64.getEncoder.encodeToString, Base64.getDecoder.decode)

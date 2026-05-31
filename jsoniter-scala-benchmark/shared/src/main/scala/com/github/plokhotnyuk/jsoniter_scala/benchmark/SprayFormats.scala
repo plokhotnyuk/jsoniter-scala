@@ -168,7 +168,7 @@ object SprayFormats extends DefaultJsonProtocol {
         ("size_in_bytes", JsNumber(x.size_in_bytes)),
         ("url", new JsString(x.url)),
         ("archive_download_url", new JsString(x.archive_download_url)),
-        ("expired", new JsString(x.expired.toString)),
+        ("expired", new JsString(String.valueOf(x.expired))),
         ("created_at", new JsString(x.created_at.toString)),
         ("expires_at", new JsString(x.expires_at.toString)))
     }

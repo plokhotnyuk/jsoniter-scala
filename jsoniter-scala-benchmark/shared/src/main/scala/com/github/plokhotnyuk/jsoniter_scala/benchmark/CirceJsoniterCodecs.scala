@@ -598,7 +598,7 @@ object CirceJsoniterCodecs {
             expired.toBoolean, created_at, expires_at)
       } { a =>
         (a.id, a.node_id, a.name, a.size_in_bytes, a.url, a.archive_download_url,
-          a.expired.toString, a.created_at, a.expires_at)
+          String.valueOf(a.expired), a.created_at, a.expires_at)
       }
     deriveCodec
   }

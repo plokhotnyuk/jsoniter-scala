@@ -126,7 +126,7 @@ class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]
 
 class StringifiedBooleanSerializer extends ValueSerializer[Boolean] {
   override def serialize(value: Boolean, gen: JsonGenerator, ctxt: SerializationContext): Unit =
-    gen.writeString(value.toString)
+    gen.writeString(String.valueOf(value))
 }
 
 class SuiteEnumSerializer extends ValueSerializer[SuitEnum] {

@@ -252,7 +252,7 @@ object Smithy4sJCodecs {
         long.required[GitHubActionsAPI.Artifact]("size_in_bytes", _.size_in_bytes),
         string.required[GitHubActionsAPI.Artifact]("url", _.url),
         string.required[GitHubActionsAPI.Artifact]("archive_download_url", _.archive_download_url),
-        string.required[GitHubActionsAPI.Artifact]("expired", _.expired.toString),
+        string.required[GitHubActionsAPI.Artifact]("expired", x => String.valueOf(x.expired)),
         datetime.required[GitHubActionsAPI.Artifact]("created_at", (x: GitHubActionsAPI.Artifact) => PlatformUtils.toTimestamp(x.created_at)),
         datetime.required[GitHubActionsAPI.Artifact]("expires_at", (x: GitHubActionsAPI.Artifact) => PlatformUtils.toTimestamp(x.expires_at))
       )((id, node_id, name, size_in_bytes, url, archive_download_url, expired, created_at, expires_at) =>
