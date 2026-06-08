@@ -1187,7 +1187,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             tTpe = normalizeGenericTuple(typeArgs)
             typeArgs
           } else typeArgs(tTpe)
-        var i = - 1
+        var i = -1
         new NamedTupleInfo(tpe, tTpe, tTypeArgs, List(nTypeArgs.zip(tTypeArgs).map {
           case (ConstantType(StringConstant(name)), fTpe) =>
             i += 1
@@ -2858,7 +2858,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val arrayValDef = ValDef(arraySym, new Some(Apply(newArrayOfAny, List(Literal(IntConstant(size))))))
               val assignments = valDefs.map {
                 val arrayUpdate = Select(arrayRef, defn.Array_update)
-                var i = - 1
+                var i = -1
                 valDef =>
                   i += 1
                   Apply(arrayUpdate, List(Literal(IntConstant(i)), Ref(valDef.symbol)))
