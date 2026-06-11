@@ -1,5 +1,5 @@
 #!/bin/bash
-(cd ..; sbt -java-home /usr/lib/jvm/jdk-17 ++3.9.0-RC1 clean jsoniter-scala-benchmarkJVM/assembly)
+(cd ..; sbt -java-home /usr/lib/jvm/jdk-17 ++3.9.0-RC1! clean jsoniter-scala-benchmarkJVM/assembly)
 /usr/lib/jvm/jdk-27/bin/java -jar jvm/target/scala-3.9.0-RC1/benchmarks.jar -t 24 -p size=512 -prof gc -rf json -rff jdk-27-t24.json .* 2>&1 | tee jdk-27-t24.txt
 /usr/lib/jvm/graalvm-jdk-25/bin/java -jar jvm/target/scala-3.9.0-RC1/benchmarks.jar -jvmArgsAppend "-XX:+UseCompactObjectHeaders" -t 24 -p size=512 -prof gc -rf json -rff graalvm-jdk-25-t24.json .* 2>&1 | tee graalvm-jdk-25-t24.txt
 /usr/lib/jvm/jdk-25/bin/java -jar jvm/target/scala-3.9.0-RC1/benchmarks.jar -jvmArgsAppend "-XX:+UseCompactObjectHeaders" -t 24 -p size=512 -prof gc -rf json -rff jdk-25-t24.json .* 2>&1 | tee jdk-25-t24.txt
