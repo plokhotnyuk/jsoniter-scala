@@ -1312,7 +1312,7 @@ final class JsonReader private[jsoniter_scala](
   def skip(): Unit = {
     val b = nextToken(head)
     var pos = head
-    if (b == '"') pos = skipString(evenBackSlashes = true, pos)
+    if (b == '"') pos = skipString(pos)
     else if ((b >= '0' && b <= '9') || b == '-') pos = skipNumber(pos)
     else if (b == 'n' || b == 't') pos = skipFixedBytes(3, pos)
     else if (b == 'f') pos = skipFixedBytes(4, pos)
@@ -4058,14 +4058,23 @@ final class JsonReader private[jsoniter_scala](
     if (charBuf.length < required) growCharBuf(required): Unit
 
   @tailrec
-  private[this] def skipString(evenBackSlashes: Boolean, pos: Int): Int =
-    if (pos < tail) {
-      if (evenBackSlashes) {
-        val b = buf(pos)
-        if (b == '"') pos + 1
-        else skipString(b != '\\', pos + 1)
-      } else skipString(evenBackSlashes = true, pos + 1)
-    } else skipString(evenBackSlashes, loadMoreOrError(pos))
+  private def skipString(p: Int): Int = {
+    var buf = this.buf
+    var pos = p
+    while (pos < tail) {
+      val b = buf(pos)
+      pos += 1
+      if (b == '"') return pos
+      if (b == '\\') {
+        pos += 1
+        if (pos > tail) {
+          pos = loadMoreOrError(pos - 2)
+          buf = this.buf
+        }
+      }
+    }
+    skipString(loadMoreOrError(pos))
+  }
 
   private[this] def skipNumber(p: Int): Int = {
     var pos = p
@@ -4085,22 +4094,26 @@ final class JsonReader private[jsoniter_scala](
   private[this] def skipObject(level: Int, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == '"') skipObject(level, skipString(evenBackSlashes = true, pos + 1))
-      else if (b == '{') skipObject(level + 1, pos + 1)
-      else if (b != '}') skipObject(level, pos + 1)
-      else if (level != 0) skipObject(level - 1, pos + 1)
-      else pos + 1
+      if (b == '"') skipObject(level, skipString(pos + 1))
+      else skipObject({
+        if (b == '{') level + 1
+        else if (b != '}') level
+        else if (level != 0) level - 1
+        else return pos + 1
+      }, pos + 1)
     } else skipObject(level, loadMoreOrError(pos))
 
   @tailrec
   private[this] def skipArray(level: Int, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == '"') skipArray(level, skipString(evenBackSlashes = true, pos + 1))
-      else if (b == '[') skipArray(level + 1, pos + 1)
-      else if (b != ']') skipArray(level, pos + 1)
-      else if (level != 0) skipArray(level - 1, pos + 1)
-      else pos + 1
+      if (b == '"') skipArray(level, skipString(pos + 1))
+      else skipArray({
+        if (b == '[') level + 1
+        else if (b != ']') level
+        else if (level != 0) level - 1
+        else return pos + 1
+      }, pos + 1)
     } else skipArray(level, loadMoreOrError(pos))
 
   @tailrec
