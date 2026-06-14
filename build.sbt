@@ -81,7 +81,7 @@ lazy val jsSettings = Seq(
     }
   },
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.7.0" % Test
   ),
   scalaJSLinkerConfig ~= {
     _.withSemantics({
@@ -103,7 +103,7 @@ lazy val jsSettings = Seq(
 lazy val nativeSettings = Seq(
   scalacOptions ++= Seq("-P:scalanative:genStaticForwardersForNonTopLevelObjects"),
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0" % Test
+    "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.7.0" % Test
   ),
   libraryDependencySchemes ++= Seq(
     "org.scala-native" %% "test-interface_native0.5" % VersionScheme.Always
@@ -194,7 +194,7 @@ lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(jsSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
+      "io.github.cquiroz" %%% "scala-java-time" % "2.7.0"
     )
   )
 
@@ -202,7 +202,7 @@ lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
   .settings(nativeSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
+      "io.github.cquiroz" %%% "scala-java-time" % "2.7.0"
     )
   )
 
