@@ -22,7 +22,7 @@ serialization performance of jsoniter-scala with: [borer](https://github.com/sir
 [zio-json](https://github.com/zio/zio-json), [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
 libraries complied by Scala 3.9.0-RC1 with `-opt -opt-inline:**,!java.**` options for optimization and inlining
 using different JDK and GraalVM versions on Intel® Core™ Ultra 9 285K CPU @ 3.7GHz (max 5.7GHz, 200S Boost), 
-RAM 64Gb DDR5-6400, Ubuntu Server 25.04 (Linux 6.14), and latest versions of JDK 17/21/25/27ea,
+RAM 64Gb DDR5-6400, Ubuntu Server 25.04 (Linux 6.14), and latest versions of JDK 17/21/25/28ea,
 GraalVM Community JDK 17/21/25, and GraalVM JDK 17/21/25[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing).
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs-arm.html) that
