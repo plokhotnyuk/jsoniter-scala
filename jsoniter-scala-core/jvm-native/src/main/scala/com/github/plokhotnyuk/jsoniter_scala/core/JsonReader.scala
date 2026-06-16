@@ -1965,7 +1965,14 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    var hash = 0
+    var hash, bs = 0
+    while (pos + 3 < tail && {
+      bs = ByteArrayAccess.getInt(buf, pos)
+      (((bs ^ 0x22222222) - 0x01010101) & ~bs & 0x80808080) == 0
+    }) {
+      hash = (hash << 5) - hash + bs
+      pos += 4
+    }
     var b: Byte = 0
     while ({
       if (pos >= tail) {
@@ -3861,7 +3868,14 @@ final class JsonReader private[jsoniter_scala](
         if (oldMark < 0) from
         else oldMark
       mark = newMark
-      var hash = 0
+      var hash, bs = 0
+      while (pos + 3 < tail && {
+        bs = ByteArrayAccess.getInt(buf, pos)
+        (((bs ^ 0x5D5D5D5D) - 0x01010101) & ~bs & 0x80808080) == 0
+      }) {
+        hash = (hash << 5) - hash + bs
+        pos += 4
+      }
       while ({
         if (pos >= tail) {
           pos = loadMoreOrError(pos)
@@ -5160,13 +5174,14 @@ private class Key {
     val off = from
     val koff = k.fromIndex
     val len = to - off
-    k.toIndex - koff == len && {
-      val bs = this.bs
-      val kbs = k.bytes
-      var i = 0
-      while (i < len && kbs(koff + i) == bs(off + i)) i += 1
-      i == len
-    }
+    if (k.toIndex - koff != len) return false
+    val bs = this.bs
+    val kbs = k.bytes
+    val lenM3 = len - 3
+    var i = 0
+    while (i < lenM3 && ByteArrayAccess.getInt(kbs, koff + i) == ByteArrayAccess.getInt(bs, off + i)) i += 4
+    while (i < len && kbs(koff + i) == bs(off + i)) i += 1
+    i == len
   }
 
   @inline
