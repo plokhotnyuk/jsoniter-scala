@@ -4583,13 +4583,12 @@ private class Key {
     val off = from
     val koff = k.fromIndex
     val len = to - off
-    k.toIndex - koff == len && {
-      val bs = this.bs
-      val kbs = k.bytes
-      var i = 0
-      while (i < len && kbs(koff + i) == bs(off + i)) i += 1
-      i == len
-    }
+    if (k.toIndex - koff != len) return false
+    val bs = this.bs
+    val kbs = k.bytes
+    var i = 0
+    while (i < len && kbs(koff + i) == bs(off + i)) i += 1
+    i == len
   }
 
   @inline

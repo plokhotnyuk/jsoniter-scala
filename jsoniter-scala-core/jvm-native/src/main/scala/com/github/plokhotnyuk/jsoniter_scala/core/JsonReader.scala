@@ -1965,17 +1965,43 @@ final class JsonReader private[jsoniter_scala](
       if (oldMark < 0) from
       else oldMark
     mark = newMark
-    var hash = 0
-    var b: Byte = 0
-    while ({
-      if (pos >= tail) {
-        pos = loadMoreOrError(pos)
-        buf = this.buf
+    var hash, bs = 0L
+    while ((pos + 7 < tail || {
+      var b: Byte = 0
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        pos += 1
+        b != '"'
+      }) {
+        bs >>>= 8
+        bs |= b.toLong << 56
+        if (bs.toByte != 0) {
+          hash = (hash << 5) - hash + bs
+          bs = 0
+        }
       }
-      b = buf(pos)
-      pos += 1
-      b != '"'
-    }) hash = (hash << 5) - hash + b
+      if (bs != 0) hash = (hash << 5) - hash + bs
+      false
+    }) && {
+      bs = ByteArrayAccess.getLong(buf, pos)
+      val m = ((bs ^ 0x2222222222222222L) - 0x0101010101010101L) & ~bs & 0x8080808080808080L
+      m == 0 || {
+        val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+        pos += offset + 1
+        if (offset > 0) {
+          bs <<= -offset << 3
+          hash = (hash << 5) - hash + bs
+        }
+        false
+      }
+    }) {
+      hash = (hash << 5) - hash + bs
+      pos += 8
+    }
     if (mark == 0) from -= newMark
     if (mark > oldMark) mark = oldMark
     var k = zoneIdKey
@@ -1983,7 +2009,7 @@ final class JsonReader private[jsoniter_scala](
       k = new Key
       zoneIdKey = k
     }
-    k.set(hash, buf, from, pos - 1)
+    k.set(((hash >> 32) ^ hash).toInt, buf, from, pos - 1)
     var zoneId = zoneIds.get(k)
     if (zoneId eq null) zoneId = toZoneId(k, pos)
     head = pos
@@ -3861,16 +3887,42 @@ final class JsonReader private[jsoniter_scala](
         if (oldMark < 0) from
         else oldMark
       mark = newMark
-      var hash = 0
-      while ({
-        if (pos >= tail) {
-          pos = loadMoreOrError(pos)
-          buf = this.buf
+      var hash, bs = 0L
+      while ((pos + 7 < tail || {
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          b != ']'
+        }) {
+          bs >>>= 8
+          bs |= b.toLong << 56
+          if (bs.toByte != 0) {
+            hash = (hash << 5) - hash + bs
+            bs = 0
+          }
         }
-        b = buf(pos)
-        pos += 1
-        b != ']'
-      }) hash = (hash << 5) - hash + b
+        if (bs != 0) hash = (hash << 5) - hash + bs
+        false
+      }) && {
+        bs = ByteArrayAccess.getLong(buf, pos)
+        val m = ((bs ^ 0x5D5D5D5D5D5D5D5DL) - 0x0101010101010101L) & ~bs & 0x8080808080808080L
+        m == 0 || {
+          val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
+          pos += offset + 1
+          if (offset > 0) {
+            bs <<= -offset << 3
+            hash = (hash << 5) - hash + bs
+          }
+          false
+        }
+      }) {
+        hash = (hash << 5) - hash + bs
+        pos += 8
+      }
       if (mark == 0) from -= newMark
       if (mark > oldMark) mark = oldMark
       var k = zoneIdKey
@@ -3878,7 +3930,7 @@ final class JsonReader private[jsoniter_scala](
         k = new Key
         zoneIdKey = k
       }
-      k.set(hash, buf, from, pos - 1)
+      k.set(((hash >> 32) ^ hash).toInt, buf, from, pos - 1)
       var zoneId = zoneIds.get(k)
       if (zoneId eq null) zoneId = toZoneId(k, pos)
       if (pos >= tail) {
@@ -5160,13 +5212,12 @@ private class Key {
     val off = from
     val koff = k.fromIndex
     val len = to - off
-    k.toIndex - koff == len && {
-      val bs = this.bs
-      val kbs = k.bytes
-      var i = 0
-      while (i < len && kbs(koff + i) == bs(off + i)) i += 1
-      i == len
-    }
+    if (k.toIndex - koff != len) return false
+    val bs = this.bs
+    val kbs = k.bytes
+    var i = 0
+    while (i < len && kbs(koff + i) == bs(off + i)) i += 1
+    i == len
   }
 
   @inline
