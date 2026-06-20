@@ -1967,6 +1967,7 @@ final class JsonReader private[jsoniter_scala](
     mark = newMark
     var hash, bs = 0L
     while ((pos + 7 < tail || {
+      bs = 0L
       var b: Byte = 0
       while ({
         if (pos >= tail) {
@@ -3889,6 +3890,7 @@ final class JsonReader private[jsoniter_scala](
       mark = newMark
       var hash, bs = 0L
       while ((pos + 7 < tail || {
+        bs = 0L
         while ({
           if (pos >= tail) {
             pos = loadMoreOrError(pos)
@@ -3946,8 +3948,9 @@ final class JsonReader private[jsoniter_scala](
   private[this] def toZoneId(k: Key, pos: Int): ZoneId =
     try {
       val zoneId = ZoneId.of(k.toString)
-      if (!zoneId.isInstanceOf[ZoneOffset] ||
-        (zoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
+      val normalizedZoneId = zoneId.normalized
+      if (!normalizedZoneId.isInstanceOf[ZoneOffset] ||
+        (normalizedZoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
         zoneIds.put(k.copy, zoneId)
       }
       return zoneId

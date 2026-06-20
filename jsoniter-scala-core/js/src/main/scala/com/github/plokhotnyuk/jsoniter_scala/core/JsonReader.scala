@@ -3365,8 +3365,9 @@ final class JsonReader private[jsoniter_scala](
   private[this] def toZoneId(k: Key, pos: Int): ZoneId =
     try {
       val zoneId = ZoneId.of(k.toString)
-      if (!zoneId.isInstanceOf[ZoneOffset] ||
-        (zoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
+      val normalizedZoneId = zoneId.normalized
+      if (!normalizedZoneId.isInstanceOf[ZoneOffset] ||
+        (normalizedZoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
         zoneIds.put(k.copy, zoneId)
       }
       return zoneId
