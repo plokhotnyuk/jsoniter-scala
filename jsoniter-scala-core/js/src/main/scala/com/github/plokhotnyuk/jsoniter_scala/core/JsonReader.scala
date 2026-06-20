@@ -4572,6 +4572,7 @@ private class Key {
     this.to = to
   }
 
+  @inline
   def copy: Key = {
     val len = to - from
     val bs1 = new Array[Byte](len)
@@ -4581,8 +4582,10 @@ private class Key {
     k
   }
 
+  @inline
   override def hashCode: Int = hash
 
+  @inline
   override def equals(obj: Any): Boolean = {
     val k = obj.asInstanceOf[Key]
     val off = from
@@ -4596,6 +4599,7 @@ private class Key {
     i == len
   }
 
+  @inline
   override def toString: String = new String(bs, from, to - from)
 
   @inline
