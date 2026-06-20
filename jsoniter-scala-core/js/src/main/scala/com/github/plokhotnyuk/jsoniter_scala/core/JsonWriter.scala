@@ -1319,6 +1319,7 @@ final class JsonWriter private[jsoniter_scala](
     count = pos + 1
   }
 
+  @inline
   private[this] def writeBase16Bytes(bs: Array[Byte], ds: Array[Short]): Unit = {
     val lenM1 = bs.length - 1
     var posLim = limit - 6
@@ -1430,6 +1431,7 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
+  @noinline
   private[this] def writeLongNonEscapedAsciiKey(x: String): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -1452,6 +1454,7 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  @noinline
   private[this] def writeLongNonEscapedAsciiVal(x: String): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -1561,7 +1564,7 @@ final class JsonWriter private[jsoniter_scala](
     if (pos < minLim) {
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
-      if (ch >= 0x80 || escapedChars(ch.toInt) != 0) writeEscapedOrEncodedString(s, from, pos, escapedChars)
+      if (ch >= 0x80 || escapedChars(ch.toInt) != 0) writeEscapedOrEncodedString(s, from, pos)
       else writeString(s, from + 1, pos + 1, minLim, escapedChars)
     } else {
       val remaining = s.length - from
@@ -1571,7 +1574,8 @@ final class JsonWriter private[jsoniter_scala](
       } else pos
     }
 
-  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]): Int =
+  @noinline
+  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int): Int =
     if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars, lowerCaseHexDigits)
     else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
 
@@ -2265,6 +2269,7 @@ final class JsonWriter private[jsoniter_scala](
     if (year >= 0 && year < 10000) write4Digits(year, pos, buf, ds)
     else writeYearWithSign(year, pos, buf, ds)
 
+  @noinline
   private[this] def writeYearWithSign(year: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var q0 = year
     var pos = p

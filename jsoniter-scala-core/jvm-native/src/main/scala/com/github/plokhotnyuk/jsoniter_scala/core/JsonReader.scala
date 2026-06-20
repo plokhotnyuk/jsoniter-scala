@@ -1775,6 +1775,7 @@ final class JsonReader private[jsoniter_scala](
       } else parseNon4DigitYearWithByte(t, 9, year, pos)
     } else parseYearWithByte(t, loadMoreOrError(pos))
 
+  @noinline
   private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, y: Int, p: Int): Int = {
     val b1 = (y + 0x30).toByte
     if (b1 != '-' && b1 != '+') fourDigitYearWithByteError(t, p, y)
@@ -1898,6 +1899,7 @@ final class JsonReader private[jsoniter_scala](
       b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else parseSecond(loadMoreOrError(pos))
 
+  @noinline
   @tailrec
   private[this] def parseOffsetHour(pos: Int): Int =
     if (pos + 1 < tail) {
@@ -1912,6 +1914,7 @@ final class JsonReader private[jsoniter_scala](
       offsetHour
     } else parseOffsetHour(loadMoreOrError(pos))
 
+  @noinline
   @tailrec
   private[this] def parseOffsetMinute(pos: Int): Int =
     if (pos + 1 < tail) {
@@ -3945,6 +3948,7 @@ final class JsonReader private[jsoniter_scala](
     } else zonedDateTimeError(nanoDigitWeight)
   }
 
+  @noinline
   private[this] def toZoneId(k: Key, pos: Int): ZoneId =
     try {
       val zoneId = ZoneId.of(k.toString)
@@ -3977,6 +3981,7 @@ final class JsonReader private[jsoniter_scala](
     } else decodeError("expected '+' or '-' or 'Z'")
   }
 
+  @noinline
   private[this] def parseOffsetTotalWithDoubleQuotes(pos: Int): Int = {
     var offsetTotal = parseOffsetHour(pos) * 3600
     var b = nextByte(head)
@@ -4238,6 +4243,7 @@ final class JsonReader private[jsoniter_scala](
       parseString(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
     } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
+  @noinline
   @tailrec
   private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int = {
     val remaining = tail - pos
@@ -4385,6 +4391,7 @@ final class JsonReader private[jsoniter_scala](
     x.toChar
   }
 
+  @inline
   private[this] def parseBase16(ns: Array[Byte]): Array[Byte] = {
     var charBuf = this.charBuf
     var len = charBuf.length
@@ -4640,6 +4647,7 @@ final class JsonReader private[jsoniter_scala](
     appendChars(dumpBorder, i)
   }
 
+  @inline
   private[this] def appendHexOffset(d: Long, i: Int): Int = {
     ensureCharBufCapacity(i + 16)
     val ds = hexDigits
@@ -5207,7 +5215,6 @@ private class Key {
     k
   }
 
-  @inline
   override def hashCode: Int = hash
 
   override def equals(obj: Any): Boolean = {
@@ -5223,7 +5230,6 @@ private class Key {
     i == len
   }
 
-  @inline
   override def toString: String = new String(bs, 0, from, to - from)
 
   @inline

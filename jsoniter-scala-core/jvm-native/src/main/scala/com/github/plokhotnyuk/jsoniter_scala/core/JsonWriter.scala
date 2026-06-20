@@ -1237,6 +1237,7 @@ final class JsonWriter private[jsoniter_scala](
     count = pos + 1
   }
 
+  @inline
   private[this] def writeBase16Bytes(bs: Array[Byte], ds: Array[Short]): Unit = {
     val lenM1 = bs.length - 1
     var posLim = limit - 6
@@ -1336,6 +1337,7 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
+  @noinline
   private[this] def writeLongNonEscapedAsciiKey(x: String): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
@@ -1356,6 +1358,7 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
+  @noinline
   private[this] def writeLongNonEscapedAsciiVal(x: String): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
@@ -1434,6 +1437,7 @@ final class JsonWriter private[jsoniter_scala](
       writeString(s, from, newPos, this.buf, Math.min(s.length - from, limit - newPos - 1) + newPos)
     }
 
+  @noinline
   private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int): Int =
     if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars, lowerCaseHexDigits)
     else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
@@ -1816,6 +1820,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
+  @noinline
   private[this] def writeBeforeEpochInstant(epochSecond: Long, nano: Int): Unit = {
     val epochDay = (Math.multiplyHigh(epochSecond - 86399, 1749024623285053783L) >> 13) + 1 // (epochSecond - 86399) / 86400
     var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
@@ -2050,6 +2055,7 @@ final class JsonWriter private[jsoniter_scala](
     if (year >= 0 && year < 10000) write4Digits(year, pos, buf, ds)
     else writeYearWithSign(year, pos, buf, ds)
 
+  @noinline
   private[this] def writeYearWithSign(year: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var q0 = year
     var pos = p
@@ -2365,6 +2371,7 @@ final class JsonWriter private[jsoniter_scala](
     count = pos
   }
 
+  @inline
   private[this] def unsignedMultiplyHigh1(x: Long, y: Long): Long =
     Math.multiplyHigh(x, y) + y // Use implementation that works only when x is negative and y is positive
 
