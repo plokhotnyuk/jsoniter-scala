@@ -42,7 +42,7 @@ lazy val commonSettings = Seq(
       "-Wconf:msg=Ignoring [this] qualifier.:s",
       "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
     ) ++ {
-      if (scalaVersion.value == "3.3.8") Seq(
+      if (scalaVersion.value == "3.8.4") Seq(
         "-java-output-version", "11",
         "-Yfuture-lazy-vals",
       ) else Seq()
@@ -181,7 +181,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.8", "2.13.18", "2.12.21"),
+    crossScalaVersions := Seq("3.8.4", "2.13.18", "2.12.21"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
@@ -218,7 +218,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.8", "2.13.18", "2.12.21"),
+    crossScalaVersions := Seq("3.8.4", "2.13.18", "2.12.21"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
@@ -279,7 +279,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.3.8", "2.13.18", "2.12.21"),
+    crossScalaVersions := Seq("3.8.4", "2.13.18", "2.12.21"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
