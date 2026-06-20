@@ -37,11 +37,16 @@ lazy val commonSettings = Seq(
       "-opt:l:method"
     )
     case _ => Seq(
-      "-Xcheck-macros",
       "-explain",
+      "-Xcheck-macros",
       "-Wconf:msg=Ignoring [this] qualifier.:s",
       "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
-    )
+    ) ++ {
+      if (scalaVersion.value == "3.3.8") Seq(
+        "-java-output-version", "11",
+        "-Yfuture-lazy-vals",
+      ) else Seq()
+    }
   }),
   compileOrder := CompileOrder.JavaThenScala,
   libraryDependencies ++= Seq(
@@ -102,6 +107,7 @@ lazy val jsSettings = Seq(
 
 lazy val nativeSettings = Seq(
   scalacOptions ++= Seq("-P:scalanative:genStaticForwardersForNonTopLevelObjects"),
+  scalacOptions -= "-Yfuture-lazy-vals",
   libraryDependencies ++= Seq(
     "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.7.0" % Test
   ),
