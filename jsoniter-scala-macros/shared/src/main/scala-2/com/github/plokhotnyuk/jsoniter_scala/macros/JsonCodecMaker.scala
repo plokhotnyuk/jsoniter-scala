@@ -404,17 +404,14 @@ object JsonCodecMaker {
           if (toPascal) toUpperCase(firstChar)
           else toLowerCase(firstChar)
         })
-        var i = 1
-        if (!toPascal) {
-          i = 0
-          while (i < len && isUpperCase(s.charAt(i))) i += 1
-          if (i > 1 && i < len && isLowerCase(s.charAt(i))) i -= 1
-          val limit = Math.max(i, 1)
-          i = 1
-          while (i < limit) {
-            sb.append(toLowerCase(s.charAt(i)))
-            i += 1
-          }
+        var i = 0
+        while (i < len && isUpperCase(s.charAt(i))) i += 1
+        if (i > 1 && i < len && isLowerCase(s.charAt(i))) i -= 1
+        val limit = Math.max(i, 1)
+        i = 1
+        while (i < limit) {
+          sb.append(toLowerCase(s.charAt(i)))
+          i += 1
         }
         while (i < len) {
           sb.append(s.charAt(i))

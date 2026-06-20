@@ -3350,8 +3350,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       EnforcePascalCase("O") shouldBe "O"
       EnforcePascalCase("Oo") shouldBe "Oo"
       EnforcePascalCase("OOoo") shouldBe "OOoo"
-      EnforcePascalCase("OOOOooo") shouldBe "OOOOooo"
-      EnforcePascalCase("OOOO") shouldBe "OOOO"
+      EnforcePascalCase("OOOOooo") shouldBe "OooOooo"
+      EnforcePascalCase("OOOO") shouldBe "Oooo"
     }
   }
   "JsonCodecMaker.enforce_snake_case" should {
