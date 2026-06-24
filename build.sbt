@@ -287,8 +287,8 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
       )
     }),
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.15",
-      "io.circe" %%% "circe-parser" % "0.14.15" % Test,
+      "io.circe" %%% "circe-core" % "0.14.16",
+      "io.circe" %%% "circe-parser" % "0.14.16" % Test,
       "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test
     )
   )
@@ -329,8 +329,8 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "dev.zio" %%% "zio-blocks-schema" % "0.0.43",
       "dev.zio" %%% "zio-json" % "0.9.2",
       "dev.zio" %%% "zio-schema-json" % "1.8.5",
-      "io.circe" %%% "circe-generic" % "0.14.15",
-      "io.circe" %%% "circe-jawn" % "0.14.15",
+      "io.circe" %%% "circe-generic" % "0.14.16",
+      "io.circe" %%% "circe-jawn" % "0.14.16",
       "org.typelevel" %%% "jawn-parser" % "1.7.0",
       "com.lihaoyi" %%% "upickle" % "4.4.3",
       "com.rallyhealth" %% "weepickle-v1" % "1.9.1",
