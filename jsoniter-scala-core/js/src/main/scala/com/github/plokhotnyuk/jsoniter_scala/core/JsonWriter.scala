@@ -1923,7 +1923,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos += digitCount(q)
           pos = lastPos
         } else {
-          q = (hours * 1e-8).toInt // divide a medium positive long by 100000000
+          q = (hours * 1e-8).toInt // divide a small positive long by 100000000
           lastPos += digitCount(q)
           pos = write8Digits((hours - q * 100000000L).toInt, lastPos, buf, ds)
         }
@@ -2421,8 +2421,8 @@ final class JsonWriter private[jsoniter_scala](
   @inline
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = ((x >>> 8) * 2.56e-6).toLong  // divide a medium positive long by 100000000
-    val q2 = (q1 >>> 8) * 1441151881L >>> 49 // divide a small positive long by 100000000
-    val d = ds(q2.toInt)
+    val q2 = (q1 * 1e-8).toInt // divide a small positive long by 100000000
+    val d = ds(q2)
     buf(pos) = d.toByte
     buf(pos + 1) = (d >> 8).toByte
     write8Digits((x - q1 * 100000000L).toInt, write8Digits((q1 - q2 * 100000000L).toInt, pos + 2, buf, ds), buf, ds)
@@ -2529,7 +2529,7 @@ final class JsonWriter private[jsoniter_scala](
         lastPos += digitCount(q)
         pos = lastPos
       } else {
-        q = ((q1 >>> 8) * 1441151881L >>> 49).toInt // divide a small positive long by 100000000
+        q = (q1 * 1e-8).toInt // divide a small positive long by 100000000
         lastPos += ((9 - q) >>> 31) + 1
         pos = write8Digits((q1 - q * 100000000L).toInt, lastPos, buf, ds)
       }
@@ -2768,11 +2768,15 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private[this] def calculateM10(hi: Long, lo: Long, dotOne: Long): Long = ((hi << 3) + (hi << 1) +
-    ((lo >>> 61).toInt + (lo >>> 63).toInt + (compareUnsigned((lo << 3) + (lo << 1), lo << 1) >>> 31) + {
-      if (dotOne == 0x4000000000000000L) 0x1F
-      else 0x20
-    })) >>> 6
+  private[this] def calculateM10(hi: Long, lo: Long, dotOne: Long): Long =
+    ((hi << 3) + (hi << 1) + {
+      val x = (lo >>> 61).toInt
+      val y = lo << 1
+      (x >> 2) + x + (compareUnsigned((lo << 3) + y, y) >>> 31) + {
+        if (dotOne == 0x4000000000000000L) 0x1F
+        else 0x20
+      }
+    }) >>> 6
 
   @inline
   private[this] def digitCount(x: Long): Int =

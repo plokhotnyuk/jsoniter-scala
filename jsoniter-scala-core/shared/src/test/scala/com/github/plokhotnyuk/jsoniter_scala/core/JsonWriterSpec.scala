@@ -718,6 +718,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(1.9400994884341945E25, "1.9400994884341945E25") // Java serializes it to "1.9400994884341944E25" (not the closest to the intermediate double)
       check(3.6131332396758635E25, "3.6131332396758635E25") // Java serializes it to "3.6131332396758634E25" (not the closest to the intermediate double)
       check(2.5138990223946153E25, "2.5138990223946153E25") // Java serializes it to "2.5138990223946152E25" (not the closest to the intermediate double)
+      check(3.9799999999999997e-13, "3.9799999999999997E-13")
     }
     "write round-even double values" in {
       def check(n: Double, s: String): Unit = {
@@ -808,6 +809,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
+      check(BigDecimal("3.9799999999999997E-13"))
       check(BigDecimal("1E-2147483647"))
       check(BigDecimal("1E+2147483647"))
       check(BigDecimal("126.09999999999999001")) // see https://github.com/plokhotnyuk/jsoniter-scala/issues/879

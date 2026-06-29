@@ -21,6 +21,8 @@
 
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import scala.util.control.NonFatal
+
 class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfDoublesWriting = new ArrayOfDoublesWriting {
     setup()
@@ -47,6 +49,16 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
   private[this] def check(actual: String, expected: String): Unit =
     actual.substring(1, actual.length - 1).split(',')
       .zip(expected.substring(1, expected.length - 1).split(',')).foreach { case (a, e) =>
-      require(a.toDouble == e.toDouble, s"expected: $e, but got: $a when parsed back to double")
+        val d1 =
+          try a.toDouble
+          catch {
+            case ex if NonFatal(ex) => Double.NaN
+          }
+        val d2 =
+          try e.toDouble
+          catch {
+            case ex if NonFatal(ex) => Double.NaN
+          }
+        assert(d1 == d2, s"expected: $e, but got: $a when parsed back to double")
     }
 }
