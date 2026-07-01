@@ -2571,10 +2571,10 @@ final class JsonWriter private[jsoniter_scala](
         else e10 = (e2 * 315653) >> 20
         val h = (((e10 + 1) * -217707) >> 16) + e2
         val pow10 = floatPow10s(31 - e10)
-        val hi64 = unsignedMultiplyHigh(pow10, m2.toLong << (h + 37)) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10, m2.toLong << (h + 37))
-        m10 = (hi64 >>> 36).toInt * 10
         val halfUlpPlusEven = (pow10 >>> (28 - h)) + ((m2IEEE + 1) & 1)
+        val hi64 = unsignedMultiplyHigh(pow10, m2.toLong << (h + 37)) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10, m2.toLong << (h + 37))
         val dotOne = hi64 & 0xFFFFFFFFFL
+        m10 = (hi64 >>> 36).toInt * 10
         if ({
           if (m2IEEE == 0) halfUlpPlusEven >>> 1
           else halfUlpPlusEven
@@ -2676,16 +2676,16 @@ final class JsonWriter private[jsoniter_scala](
         val i = 292 - e10 << 1
         val pow10_1 = pow10s(i)
         val pow10_2 = pow10s(i + 1)
+        val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
         val cb = m2 << (h + 7)
         val lo64_1 = unsignedMultiplyHigh(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
         val lo64_2 = pow10_1 * cb
         var hi64 = unsignedMultiplyHigh(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
         val lo64 = lo64_1 + lo64_2
         if ((lo64 ^ 0x8000000000000000L) < (lo64_1 ^ 0x8000000000000000L)) hi64 += 1L
+        val dotOne = (hi64 << 58) | (lo64 >>> 6)
         m10 = hi64 >>> 6
         m10 = (m10 << 3) + (m10 << 1)
-        val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
-        val dotOne = (hi64 << 58) | (lo64 >>> 6)
         if (((-1 - dotOne) ^ 0x8000000000000000L) < (halfUlpPlusEven ^ 0x8000000000000000L)) m10 += 10L
         else if ({
           if (m2IEEE != 0L) (halfUlpPlusEven ^ 0x8000000000000000L) <= (dotOne ^ 0x8000000000000000L)
