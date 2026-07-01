@@ -2419,8 +2419,8 @@ final class JsonWriter private[jsoniter_scala](
 
   @inline
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q2 = (x * 1e-16).toInt // divide a medium positive long by 10^16
     val q1 = ((x >>> 8) * 2.56e-6).toLong  // divide a medium positive long by 100000000
-    val q2 = (q1 * 1e-8).toInt // divide a small positive long by 100000000
     val d = ds(q2)
     buf(pos) = d.toByte
     buf(pos + 1) = (d >> 8).toByte
@@ -2504,35 +2504,17 @@ final class JsonWriter private[jsoniter_scala](
       lastPos += digitCount(q)
       pos = lastPos
     } else {
-      var posCorr = 0
-      if (q0 >= 1000000000000000000L) {
-        var z = q0
-        q0 = (q0 >>> 1) + (q0 >>> 2) // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
-        q0 += q0 >>> 4
-        q0 += q0 >>> 8
-        q0 += q0 >>> 16
-        q0 += q0 >>> 32
-        z -= q0 & 0xFFFFFFFFFFFFFFF8L
-        q0 >>>= 3
-        var r = (z - (q0 << 1)).toInt
-        if (r >= 10) {
-          q0 += 1L
-          r -= 10
-        }
-        buf(pos + 18) = (r | '0').toByte
-        posCorr = 1
-      }
-      val q1 = ((q0 >>> 8) * 2.56e-6).toLong // divide a medium positive long by 100000000
+      val q1 = q0 / 100000000L
       q = q1.toInt
       if (q1 == q) {
         lastPos += digitCount(q)
         pos = lastPos
       } else {
-        q = (q1 * 1e-8).toInt // divide a small positive long by 100000000
-        lastPos += ((9 - q) >>> 31) + 1
+        q = (q0 * 1e-16).toInt // divide a positive long by 10^16
+        lastPos += digitCount(q)
         pos = write8Digits((q1 - q * 100000000L).toInt, lastPos, buf, ds)
       }
-      pos = write8Digits((q0 - q1 * 100000000L).toInt, pos, buf, ds) + posCorr
+      pos = write8Digits((q0 - q1 * 100000000L).toInt, pos, buf, ds)
     }
     writePositiveIntDigits(q, lastPos, buf, ds)
     pos

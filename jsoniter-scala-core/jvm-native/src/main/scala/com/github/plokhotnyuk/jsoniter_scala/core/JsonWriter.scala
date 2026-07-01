@@ -2154,7 +2154,7 @@ final class JsonWriter private[jsoniter_scala](
 
   @inline
   private[this] def write8Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val y1 = x * 140737489 // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y1 = x * 140737489L // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val m1 = 0x7FFFFFFFFFFFL
     val m2 = 100L
     val y2 = (y1 & m1) * m2
@@ -2170,9 +2170,8 @@ final class JsonWriter private[jsoniter_scala](
 
   @inline
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val m1 = 6189700196426901375L
-    val q1 = Math.multiplyHigh(x, m1) >>> 25 // divide a positive long by 100000000
-    val q2 = Math.multiplyHigh(q1, m1) >>> 25 // divide a positive long by 100000000
+    val q2 = Math.multiplyHigh(x, 8307674973655724206L) >>> 52 // divide a positive long by 10^16
+    val q1 = Math.multiplyHigh(x, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
     ByteArrayAccess.setShort(buf, pos, ds(q2.toInt))
     write8Digits(x - q1 * 100000000L, write8Digits(q1 - q2 * 100000000L, pos + 2, buf, ds), buf, ds)
   }
@@ -2261,14 +2260,13 @@ final class JsonWriter private[jsoniter_scala](
       lastPos += digitCount(q0)
       pos = lastPos
     } else {
-      val m2 = 6189700196426901375L
-      val q1 = Math.multiplyHigh(q0, m2) >>> 25 // divide a positive long by 100000000
+      val q1 = Math.multiplyHigh(q0, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
       if (q1 < m1) {
         q2 = q1
         lastPos += digitCount(q1)
         pos = lastPos
       } else {
-        q2 = Math.multiplyHigh(q1, m2) >>> 25 // divide a small positive long by 100000000
+        q2 = Math.multiplyHigh(q0, 8307674973655724206L) >>> 52 // divide a positive long by 10^16
         lastPos += digitCount(q2)
         pos = write8Digits(q1 - q2 * m1, lastPos, buf, ds)
       }
