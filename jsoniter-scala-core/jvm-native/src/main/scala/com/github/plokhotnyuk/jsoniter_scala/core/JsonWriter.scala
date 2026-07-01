@@ -2309,10 +2309,10 @@ final class JsonWriter private[jsoniter_scala](
         else e10 = (e2 * 315653) >> 20
         val h = (((e10 + 1) * -217707) >> 16) + e2
         val pow10 = floatPow10s(31 - e10)
-        val hi64 = unsignedMultiplyHigh1(pow10, m2.toLong << (h + 37)) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10, m2.toLong << (h + 37))
-        m10 = (hi64 >>> 36).toInt * 10
         val halfUlpPlusEven = (pow10 >>> (28 - h)) + ((m2IEEE + 1) & 1)
+        val hi64 = unsignedMultiplyHigh1(pow10, m2.toLong << (h + 37)) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10, m2.toLong << (h + 37))
         val dotOne = hi64 & 0xFFFFFFFFFL
+        m10 = (hi64 >>> 36).toInt * 10
         if ({
           if (m2IEEE == 0) halfUlpPlusEven >>> 1
           else halfUlpPlusEven
@@ -2410,22 +2410,24 @@ final class JsonWriter private[jsoniter_scala](
         val i = 292 - e10 << 1
         val pow10_1 = pow10s(i)
         val pow10_2 = pow10s(i + 1)
+        val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
         val cb = m2 << (h + 7)
         val lo64_1 = unsignedMultiplyHigh2(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
         val lo64_2 = pow10_1 * cb
-        var hi64 = unsignedMultiplyHigh2(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
+        var hi64 = unsignedMultiplyHigh1(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
         val lo64 = lo64_1 + lo64_2
         hi64 += compareUnsigned(lo64, lo64_1) >>> 31
-        m10 = (hi64 >>> 6) * 10L
-        val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
         val dotOne = (hi64 << 58) | (lo64 >>> 6)
-        if (compareUnsigned(halfUlpPlusEven, -1 - dotOne) > 0) m10 += 10L
-        else if ({
-          if (m2IEEE != 0) compareUnsigned(halfUlpPlusEven, dotOne) <= 0
+        var mCorr = 0
+        if ({
+          if (compareUnsigned(-1 - dotOne, halfUlpPlusEven) < 0) {
+            mCorr = 10
+            false
+          } else if (m2IEEE != 0) compareUnsigned(halfUlpPlusEven, dotOne) <= 0
           else {
             val tmp = (dotOne >>> 4) * 10L
-            if (compareUnsigned((tmp << 4) >>> 4, (halfUlpPlusEven >>> 4) * 5L) > 0) {
-              m10 += (tmp >>> 60).toInt + 1
+            if (compareUnsigned(tmp & 0x0FFFFFFFFFFFFFFFL, (halfUlpPlusEven >>> 4) * 5L) > 0) {
+              mCorr = (tmp >>> 60).toInt + 1
               false
             } else compareUnsigned(halfUlpPlusEven >>> 1, dotOne) <= 0
           }
@@ -2434,7 +2436,7 @@ final class JsonWriter private[jsoniter_scala](
             if (dotOne == 0x4000000000000000L) 0x1FL
             else 0x20L
           }) >>> 6
-        }
+        } else m10 = (hi64 >>> 6) * 10L + mCorr
       }
       val len = digitCount(m10)
       e10 += len - 1
@@ -2487,7 +2489,7 @@ final class JsonWriter private[jsoniter_scala](
 
   @inline
   private[this] def unsignedMultiplyHigh2(x: Long, y: Long): Long =
-    Math.multiplyHigh(x, y) + (y & (x >> 63)) // Use implementation that works only when y is positive
+    Math.multiplyHigh(x, y) + ((x >> 63) & y) // Use implementation that works only when y is positive
 
   // Adoption of a nice trick from Daniel Lemire's blog that works for numbers up to 10^18:
   // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
