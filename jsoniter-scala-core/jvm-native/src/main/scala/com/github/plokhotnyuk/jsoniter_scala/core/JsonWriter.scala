@@ -2338,9 +2338,20 @@ final class JsonWriter private[jsoniter_scala](
         ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
         pos = lastPos
       } else {
-        pos = writePositiveIntDigits(m10, pos, buf, ds)
+        pos += len
         ByteArrayAccess.setShort(buf, pos, 0x302E)
-        pos += 2
+        val lastPos = pos
+        while ({
+          pos -= 2
+          m10 >= 100
+        }) {
+          val q1 = (m10 * 1374389535L >> 37).toInt // divide a positive int by 100
+          ByteArrayAccess.setShort(buf, pos, ds(m10 - q1 * 100))
+          m10 = q1
+        }
+        if (m10 < 10) buf(pos + 1) = (m10 | '0').toByte
+        else ByteArrayAccess.setShort(buf, pos, ds(m10))
+        pos = lastPos + 2
       }
     }
     count = pos
@@ -2453,9 +2464,21 @@ final class JsonWriter private[jsoniter_scala](
         ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3)
         pos = lastPos
       } else {
-        pos = writePositiveIntDigits(m10.toInt, pos, buf, ds)
+        pos += len
         ByteArrayAccess.setShort(buf, pos, 0x302E)
-        pos += 2
+        var q0 = m10.toInt
+        val lastPos = pos
+        while ({
+          pos -= 2
+          q0 >= 100
+        }) {
+          val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
+          ByteArrayAccess.setShort(buf, pos, ds(q0 - q1 * 100))
+          q0 = q1
+        }
+        if (q0 < 10) buf(pos + 1) = (q0 | '0').toByte
+        else ByteArrayAccess.setShort(buf, pos, ds(q0))
+        pos = lastPos + 2
       }
     }
     count = pos
