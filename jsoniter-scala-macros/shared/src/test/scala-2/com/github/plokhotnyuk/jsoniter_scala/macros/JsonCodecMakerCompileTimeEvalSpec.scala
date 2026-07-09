@@ -25,6 +25,19 @@ import org.scalatest.exceptions.TestFailedException
 
 class JsonCodecMakerCompileTimeEvalSpec extends VerifyingSpec {
   "JsonCodecMaker.make" should {
+    "compile codecs for case classes with Either fields" in {
+      assertCompiles {
+        """import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+          |import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+          |
+          |case class Foo(value: Either[Int, String])
+          |
+          |object Foo {
+          |  implicit val codec: JsonValueCodec[Foo] = JsonCodecMaker.make[Foo]
+          |}
+          |""".stripMargin
+      }
+    }
     "don't generate codecs when a parameter of the 'make' call depends on not yet compiled code" in {
       assert(intercept[TestFailedException](assertCompiles {
         """object A {
