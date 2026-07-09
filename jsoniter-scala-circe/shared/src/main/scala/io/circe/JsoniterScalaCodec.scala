@@ -37,24 +37,11 @@ object JsoniterScalaCodec {
    * @return a JSON number value
    */
   val defaultNumberParser: JsonReader => Json = in => new JNumber({
-    in.setMark()
-    var b = in.nextByte()
-    if (b == '-') b = in.nextByte()
-    var digits = 0
-    while ((b >= '0' && b <= '9') && {
-      digits += 1
-      in.hasRemaining()
-    }) b = in.nextByte()
-    in.rollbackToMark()
-    if ((b | 0x20) != 'e' && b != '.') {
-      if (digits < 10) new JsonLong(in.readInt())
-      else if (digits < 19) new JsonLong(in.readLong())
-      else {
-        val x = in.readBigInt(null)
-        if (x.isValidLong) new JsonLong(x.longValue)
-        else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
-      }
-    } else new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
+    in.readNumber(null) match {
+      case l: java.lang.Long => new JsonLong(l.longValue)
+      case bd: java.math.BigDecimal => new JsonBigDecimal(bd)
+      case bi: java.math.BigInteger => new JsonBigDecimal(new java.math.BigDecimal(bi))
+    }
   })
 
   val defaultNumberSerializer: (JsonWriter, JsonNumber) => Unit = (out: JsonWriter, x: JsonNumber) => x match {
