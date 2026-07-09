@@ -3006,6 +3006,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse big number values without overflow up to limits" in {
       forAll(genWhitespaces) { ws =>
+        check(BigInt("20016609818878733144904388672456953615"), ws)
         check(BigInt(bigNumber), ws)
         check(BigInt(s"-$bigNumber"), ws)
       }
@@ -3081,6 +3082,166 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       compare(reader(ws + s).readBigDecimal(null, mc, scaleLimit, digitsLimit), n)
       compare(reader(s"""$ws"$s":""").readKeyAsBigDecimal(mc, scaleLimit, digitsLimit), n)
       compare(reader(s"""$ws"$s"""").readStringAsBigDecimal(null, mc, scaleLimit, digitsLimit), n)
+    }
+
+    def check2(s: String, mc: MathContext, scaleLimit: Int, digitsLimit: Int, ws: String): Unit = {
+      def compare(a: BigDecimal, b: BigDecimal): Unit = {
+        a.bigDecimal shouldBe b.bigDecimal
+        a.mc shouldBe b.mc
+      }
+
+      val n = BigDecimal(s, mc)
+      compare(reader(s"""$ws"$s":""").readKeyAsBigDecimal(mc, scaleLimit, digitsLimit), n)
+      compare(reader(s"""$ws"$s"""").readStringAsBigDecimal(null, mc, scaleLimit, digitsLimit), n)
+    }
+
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonReaderException](reader(s).readBigDecimal(null)).getMessage.startsWith(error1))
+      assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsBigDecimal()).getMessage.startsWith(error2))
+      assert(intercept[JsonReaderException](reader(s""""$s"""").readStringAsBigDecimal(null))
+        .getMessage.startsWith(error2))
+    }
+
+    def checkError2(s: String, error: String): Unit =
+      assert(intercept[JsonReaderException](reader(s).readBigDecimal(BigDecimal(0))).getMessage.startsWith(error))
+
+    "parse valid number values with scale less than specified maximum" in {
+      forAll(genBigDecimal, genWhitespaces, minSuccessful(10000)) { (n, ws) =>
+        check(n.toString, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+      }
+    }
+    "parse big number values without overflow up to limits" in {
+      forAll(genWhitespaces) { ws =>
+        check(fill('9', 300), bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check("12345e67", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check("-12345e67", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check("12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
+          MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
+          MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check("1E+2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max positive scale that can be parsed
+      }
+    }
+    "parse small number values without underflow up to limits" in {
+      forAll(genWhitespaces) { ws =>
+        check(s"0.${zeros(100)}1234567890123456789012345678901234",
+          bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check("12345e-67", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check("-12345e-67", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check("12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
+          MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
+          MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check("1E-2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max negative scale that can be parsed
+      }
+    }
+    "parse keys and strigified values with leading zeros in mantissas and exponents" in {
+      forAll(genBigDecimal, choose(1, 7), genWhitespaces, minSuccessful(1000)) { (x, z, ws) =>
+        check2({
+          val s = x.toString
+          if (x < 0) s.replace("-", "-" + zeros(z))
+          else zeros(z) + {
+            if (s.contains('-')) s.replace("-", "-" + zeros(z))
+            else s
+          }
+        }, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+      }
+    }
+    "throw number format exception for too big mantissa" in {
+      checkError(fill('9', 308),
+        "value exceeds limit for number of digits, offset: 0x00000133",
+        "value exceeds limit for number of digits, offset: 0x00000134")
+      checkError(s"-${fill('9', 308)}",
+        "value exceeds limit for number of digits, offset: 0x00000134",
+        "value exceeds limit for number of digits, offset: 0x00000135")
+      checkError(s"${fill('9', 154)}.${fill('9', 154)}",
+        "value exceeds limit for number of digits, offset: 0x00000134",
+        "value exceeds limit for number of digits, offset: 0x00000135")
+      checkError(s"0.${zeros(307)}",
+        "value exceeds limit for number of digits, offset: 0x00000134",
+        "value exceeds limit for number of digits, offset: 0x00000135")
+      checkError(s"${fill('9', 308)}.${zeros(307)}",
+        "value exceeds limit for number of digits, offset: 0x00000133",
+        "value exceeds limit for number of digits, offset: 0x00000134")
+    }
+    "throw number format exception for too big scale" in {
+      forAll(genWhitespaces) { ws =>
+        check(s"1e${bigDecimalScaleLimit - 1}", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check(s"1e-${bigDecimalScaleLimit - 1}", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check(s"${fill('1', 50)}e${bigDecimalScaleLimit - 17}",
+          MathContext.DECIMAL128, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+        check(s"${fill('1', 50)}e-${bigDecimalScaleLimit + 15}",
+          MathContext.DECIMAL128, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
+      }
+      checkError(s"1e$bigDecimalScaleLimit",
+        "value exceeds limit for scale, offset: 0x00000005",
+        "value exceeds limit for scale, offset: 0x00000006")
+      checkError(s"1e-$bigDecimalScaleLimit",
+        "value exceeds limit for scale, offset: 0x00000006",
+        "value exceeds limit for scale, offset: 0x00000007")
+      checkError(s"1.1e${bigDecimalScaleLimit + 1}",
+        "value exceeds limit for scale, offset: 0x00000007",
+        "value exceeds limit for scale, offset: 0x00000008")
+      checkError(s"1.1e-${bigDecimalScaleLimit + 1}",
+        "value exceeds limit for scale, offset: 0x00000008",
+        "value exceeds limit for scale, offset: 0x00000009")
+      checkError("1e2147483648",
+        "illegal number, offset: 0x0000000b",
+        "illegal number, offset: 0x0000000c")
+      checkError("1e-2147483649",
+        "illegal number, offset: 0x0000000c",
+        "illegal number, offset: 0x0000000d")
+      checkError("1e9999999999",
+        "illegal number, offset: 0x0000000b",
+        "illegal number, offset: 0x0000000c")
+      checkError("1e-9999999999",
+        "illegal number, offset: 0x0000000c",
+        "illegal number, offset: 0x0000000d")
+    }
+    "throw parsing exception on illegal or empty input" in {
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(".1", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("0e$", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0e-$", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")
+      checkError("0.E", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0.-", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0.+", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError2("nxxx", "expected number or null, offset: 0x00000001")
+    }
+    "throw parsing exception on leading zero" in {
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(s).readBigDecimal(null)).getMessage.startsWith(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
+    }
+    "throw parsing exception on too long input" in {
+      checkError(tooLongNumber, """too long part of input exceeded 'maxBufSize', offset: 0x02000000""",
+        """too long part of input exceeded 'maxBufSize', offset: 0x02000001""")
+    }
+  }
+  "JsonReader.readNumber, JsonReader.readKeyAsNumber and JsonReader.readStringAsNumber" should {
+    def check(s: String, mc: MathContext, scaleLimit: Int, digitsLimit: Int, ws: String): Unit = {
+      def compare(n: java.lang.Number, s: String): Unit = {
+        val a = BigDecimal(n.toString, mc)
+        val b = BigDecimal(s, mc)
+        a.bigDecimal shouldBe b.bigDecimal
+        a.mc shouldBe b.mc
+      }
+
+      compare(reader(ws + s).readNumber(null, mc, scaleLimit, digitsLimit), s)
+      compare(reader(s"""$ws"$s":""").readKeyAsNumber(mc, scaleLimit, digitsLimit), s)
+      compare(reader(s"""$ws"$s"""").readStringAsNumber(null, mc, scaleLimit, digitsLimit), s)
     }
 
     def check2(s: String, mc: MathContext, scaleLimit: Int, digitsLimit: Int, ws: String): Unit = {

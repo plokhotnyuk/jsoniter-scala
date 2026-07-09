@@ -567,6 +567,35 @@ final class JsonReader private[jsoniter_scala](
   }
 
   /**
+   * Reads a JSON key into a `java.lang.Number` instance with the default limit of allowed digits for mantissa,
+   * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
+   *
+   * @return a `java.lang.Numer` instance of the parsed JSON key
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key or
+   *                             exceeding of default limits
+   */
+  def readKeyAsNumber(): java.lang.Number =
+    readKeyAsBigDecimal(bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+
+  /**
+   * Reads a JSON key into a Scala `java.lang.Number` instance with the given precision, scale limit, and digits limit.
+   *
+   * @param mc the precision to use
+   * @param scaleLimit the maximum number of decimal places (scale) allowed
+   * @param digitsLimit the maximum number of decimal digits allowed
+   * @return a `java.lang.Number` instance of the parsed JSON key
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key or
+   *                             exceeding of provided limits
+   */
+  def readKeyAsNumber(mc: MathContext, scaleLimit: Int, digitsLimit: Int): java.lang.Number = {
+    nextTokenOrError('"', head)
+    val x = readNumber(isToken = false, null, mc, scaleLimit, digitsLimit)
+    nextByteOrError('"', head)
+    nextTokenOrError(':', head)
+    x
+  }
+
+  /**
     * Reads a JSON key into a [[java.util.UUID]] instance.
     *
     * @return a [[java.util.UUID]] instance of the parsed JSON key
@@ -706,6 +735,39 @@ final class JsonReader private[jsoniter_scala](
     */
   def readBigDecimal(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
     readBigDecimal(isToken = true, default, mc, scaleLimit, digitsLimit)
+
+  /**
+    * Reads a JSON number value into a `java.lang.Number` instance with the default limit of allowed digits for mantissa,
+    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `java.lang.Number` value to return if the JSON value is `null`
+    * @return a `java.lang.Number` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding of default limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
+  def readNumber(default: java.lang.Number): java.lang.Number =
+    readNumber(isToken = true, default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+
+  /**
+    * Reads a JSON number value into a `java.lang.Number` instance with the provided limit of allowed digits for mantissa,
+    * the provided limit for scale, and the provided instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `java.lang.Number` value to return if the JSON value is `null`
+    * @param mc the precision to use
+    * @param scaleLimit the maximum number of decimal places (scale) allowed
+    * @param digitsLimit the maximum number of decimal digits allowed
+    * @return a `java.lang.Number` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
+    *                             illegal format of JSON value or exceeding of provided limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
+  def readNumber(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): java.lang.Number =
+    readNumber(isToken = true, default, mc, scaleLimit, digitsLimit)
 
   /**
     * Reads a JSON string value into a `String` instance.
@@ -1143,6 +1205,43 @@ final class JsonReader private[jsoniter_scala](
   def readStringAsBigDecimal(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
     if (isNextToken('"', head)) {
       val x = readBigDecimal(isToken = false, default, mc, scaleLimit, digitsLimit)
+      nextByteOrError('"', head)
+      x
+    } else readNullOrTokenError(default, '"')
+
+  /**
+    * Reads a JSON number value into a `java.lang.Number` instance with the default limit of allowed digits for mantissa,
+    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `java.lang.Number` value to return if the JSON value is `null`
+    * @return a `java.lang.Number` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or
+    *                             illegal format of JSON value or exceeding of default limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
+  def readStringAsNumber(default: java.lang.Number): java.lang.Number =
+    readStringAsNumber(default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+
+  /**
+    * Reads a JSON number value into a `java.lang.Number` instance with the provided limit of allowed digits for mantissa,
+    * the provided limit for scale, and the provided instance of [[java.math.MathContext]] for precision.
+    * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
+    * if the provided default value is `null`.
+    *
+    * @param default the default `java.lang.Number` value to return if the JSON value is `null`
+    * @param mc the precision to use
+    * @param scaleLimit the maximum number of decimal places (scale) allowed
+    * @param digitsLimit the maximum number of decimal digits allowed
+    * @return a `java.lang.Number` instance of the parsed JSON value or the provided default value
+    * @throws JsonReaderException in cases of reaching the end of input or
+    *                             illegal format of JSON value or exceeding of provided limits or
+    *                             when both the JSON value and the provided default value are `null`
+    */
+  def readStringAsNumber(default: java.lang.Number, mc: MathContext, scaleLimit: Int, digitsLimit: Int): java.lang.Number =
+    if (isNextToken('"', head)) {
+      val x = readNumber(isToken = false, default, mc, scaleLimit, digitsLimit)
       nextByteOrError('"', head)
       x
     } else readNullOrTokenError(default, '"')
@@ -2830,11 +2929,17 @@ final class JsonReader private[jsoniter_scala](
             (buf(pos + 13) * 10 + buf(pos + 14)) * 1000 +
             (buf(pos + 15) * 10 + buf(pos + 16)) * 10 +
             buf(pos + 17) - 53333328)) // 53333328 == '0' * 1111111
-    if (s != 0) {
-      x1 = -x1
-      x2 = -x2
+    if (x < 9 || x == 9 && x2 <= 223372036854775807L) {
+      x1 = x1 * 1000000000000000000L + x2
+      if (s != 0) x1 = -x1
+      java.math.BigDecimal.valueOf(x1, scale)
+    } else {
+      if (s != 0) {
+        x1 = -x1
+        x2 = -x2
+      }
+      java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
     }
-    java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
   private[this] def toBigInteger308(buf: Array[Byte], p: Int, limit: Int, s: Int): java.math.BigInteger = {
@@ -2891,6 +2996,213 @@ final class JsonReader private[jsoniter_scala](
       i += 1
     }
     new java.math.BigInteger(s | 1, bs)
+  }
+
+  def readNumber(isToken: Boolean, default: java.lang.Number, mc: MathContext, scaleLimit: Int,
+                     digitsLimit: Int): java.lang.Number = {
+    var b =
+      if (isToken) nextToken(head)
+      else nextByte(head)
+    if (isToken && b == 'n') readNullOrNumberError(default, head)
+    else {
+      var s = 0
+      if (b == '-') {
+        b = nextByte(head)
+        s = -1
+      }
+      if (b < '0' || b > '9') numberError()
+      var pos = head
+      var buf = this.buf
+      var from = pos - 1
+      val oldMark = mark
+      val newMark =
+        if (oldMark < 0) from
+        else oldMark
+      mark = newMark
+      var digits = 1
+      if (isToken && b == '0') {
+        if ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) leadingZeroError(pos - 1)
+      } else {
+        digits -= pos
+        while ((pos < tail || {
+          digits += pos
+          pos = loadMore(pos)
+          digits -= pos
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) pos += 1
+        digits += pos
+      }
+      var fracLen, scale = 0
+      if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
+      if (b == '.') {
+        pos += 1
+        fracLen -= pos
+        while ((pos < tail || {
+          fracLen += pos
+          pos = loadMore(pos)
+          fracLen -= pos
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) pos += 1
+        fracLen += pos
+        digits += fracLen
+        if (fracLen == 0) numberError(pos)
+        if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
+      }
+      if ((b | 0x20) == 'e') {
+        b = nextByte(pos + 1)
+        var ss = 0
+        if (b == '-' || b == '+') {
+          ss = '+' - b >> 31
+          b = nextByte(head)
+        }
+        if (b < '0' || b > '9') numberError()
+        scale = '0' - b
+        pos = head
+        buf = this.buf
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) {
+          if (scale < -214748364 || {
+            scale = scale * 10 + ('0' - b)
+            scale > 0
+          }) numberError(pos)
+          pos += 1
+        }
+        scale ^= ss
+        scale -= ss
+        if (scale == -2147483648) numberError(pos - 1)
+      }
+      head = pos
+      if (mark == 0) from -= newMark
+      if (mark > oldMark) mark = oldMark
+      if (fracLen == 0 && scale == 0) {
+        val limit = from + digits
+        if (digits < 19) {
+          var x = buf(from) - '0'
+          from += 1
+          val limit1 = Math.min(from + 8, limit)
+          while (from < limit1) {
+            x = x * 10 + (buf(from) - '0')
+            from += 1
+          }
+          var x1 = x.toLong
+          while (from < limit) {
+            x1 = (x1 << 3) + (x1 << 1) + (buf(from) - '0')
+            from += 1
+          }
+          if (x1 == x1.toInt) java.lang.Integer.valueOf((x1.toInt ^ s) - s)
+          else {
+            if (s != 0) x1 = -x1
+            new java.lang.Long(x1)
+          }
+        } else if (digits <= 36) {
+          var x = buf(from) - '0'
+          from += 1
+          val limit2 = limit - 18
+          val limit1 = Math.min(from + 8, limit2)
+          while (from < limit1) {
+            x = x * 10 + (buf(from) - '0')
+            from += 1
+          }
+          var x1 = x.toLong
+          while (from < limit2) {
+            x1 = (x1 << 3) + (x1 << 1) + (buf(from) - '0')
+            from += 1
+          }
+          var x2 =
+            ((buf(from) * 10 + buf(from + 1) - 528) * 10000000 + // 528 == '0' * 11
+              ((buf(from + 2) * 10 + buf(from + 3)) * 100000 +
+                (buf(from + 4) * 10 + buf(from + 5)) * 1000 +
+                (buf(from + 6) * 10 + buf(from + 7)) * 10 +
+                buf(from + 8) - 53333328)) * 1000000000L + // 53333328 == '0' * 1111111
+              ((buf(from + 9) * 10 + buf(from + 10) - 528) * 10000000 + // 528 == '0' * 11
+                ((buf(from + 11) * 10 + buf(from + 12)) * 100000 +
+                  (buf(from + 13) * 10 + buf(from + 14)) * 1000 +
+                  (buf(from + 15) * 10 + buf(from + 16)) * 10 +
+                  buf(from + 17) - 53333328)) // 53333328 == '0' * 1111111
+          if (x < 9 || x == 9 && x2 <= 223372036854775807L) {
+            x1 = x1 * 1000000000000000000L + x2
+            if (s != 0) x1 = -x1
+            if (scale == 0) new java.lang.Long(x1)
+            else java.math.BigDecimal.valueOf(x1, scale)
+          } else {
+            if (s != 0) {
+              x1 = -x1
+              x2 = -x2
+            }
+            java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
+          }
+        } else if (digits <= 308) toBigInteger308(buf, from, limit, s)
+        else {
+          // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing huge numbers
+          // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
+          // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+          val mid = digits >> 1
+          val midPos = pos - mid
+          toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, pos, s, 0)).unscaledValue
+        }
+      } else {
+        val limit = from + digits + 1
+        val fracPos = limit - fracLen
+        val fracLimit = fracPos - 1
+        var d =
+          if (digits < 10) {
+            var x = buf(from) - '0'
+            from += 1
+            while (from < fracLimit) {
+              x = x * 10 + (buf(from) - '0')
+              from += 1
+            }
+            from += 1
+            while (from < limit) {
+              x = x * 10 + (buf(from) - '0')
+              from += 1
+            }
+            java.math.BigDecimal.valueOf(((x ^ s) - s).toLong, scale + fracLen)
+          } else if (digits < 19) {
+            var x = (buf(from) - '0').toLong
+            from += 1
+            while (from < fracLimit) {
+              x = (x << 3) + (x << 1) + (buf(from) - '0')
+              from += 1
+            }
+            from += 1
+            while (from < limit) {
+              x = (x << 3) + (x << 1) + (buf(from) - '0')
+              from += 1
+            }
+            if (s != 0) x = -x
+            java.math.BigDecimal.valueOf(x, scale + fracLen)
+          } else {
+            val bd = toBigDecimal(buf, from, fracLimit, s, scale)
+            if (fracLen == 0) bd
+            else bd.add(toBigDecimal(buf, fracPos, limit, s, scale + fracLen))
+          }
+        if (mc.getPrecision < digits) d = d.plus(mc)
+        if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
+        d
+      }
+    }
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
