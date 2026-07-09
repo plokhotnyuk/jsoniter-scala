@@ -316,34 +316,34 @@ object JsoniterScalaCodec {
     private[this] def fail(c: HCursor): Result[BigDecimal] = new Left(DecodingFailure("BigDecimal", c.history))
   }
 
-  private[this] def intValueExact(bd: java.math.BigDecimal): java.math.BigDecimal =
-    if (bd.signum != 0) {
-      var p = bd.precision
-      val s = bd.scale
-      if (p <= s || p - 10 > s) return null
-      val bd0 =
-        try bd.setScale(0, RoundingMode.UNNECESSARY)
+  private[this] def intValueExact(x: java.math.BigDecimal): java.math.BigDecimal =
+    if (x.signum != 0) {
+      val s = x.scale
+      var bd = x
+      if (s != 0) {
+        try bd = x.setScale(0, RoundingMode.UNNECESSARY)
         catch {
           case _: ArithmeticException => return null
         }
-      p = bd0.precision
-      if (p > 10 || p == 10 && (bd0.compareTo(intMin) < 0 || bd0.compareTo(intMax) > 0)) return null
-      bd0
+      }
+      val p = bd.precision
+      if (p > 10 || p == 10 && (bd.compareTo(intMin) < 0 || bd.compareTo(intMax) > 0)) return null
+      bd
     } else java.math.BigDecimal.ZERO
 
-  private[this] def longValueExact(bd: java.math.BigDecimal): java.math.BigDecimal =
-    if (bd.signum != 0) {
-      var p = bd.precision
-      val s = bd.scale
-      if (p <= s || p - 19 > s) return null
-      val bd0 =
-        try bd.setScale(0, RoundingMode.UNNECESSARY)
+  private[this] def longValueExact(x: java.math.BigDecimal): java.math.BigDecimal =
+    if (x.signum != 0) {
+      val s = x.scale
+      var bd = x
+      if (s != 0) {
+        try bd = x.setScale(0, RoundingMode.UNNECESSARY)
         catch {
           case _: ArithmeticException => return null
         }
-      p = bd0.precision
-      if (p > 19 || p == 19 && (bd0.compareTo(longMin) < 0 || bd0.compareTo(longMax) > 0)) return null
-      bd0
+      }
+      val p = bd.precision
+      if (p > 19 || p == 19 && (bd.compareTo(longMin) < 0 || bd.compareTo(longMax) > 0)) return null
+      bd
     } else java.math.BigDecimal.ZERO
 }
 
