@@ -1047,11 +1047,12 @@ object JsonCodecMaker {
                   case _ =>
                 }
               }
-              subTpe = subTpe.substituteTypes(typeParams, typeParams.map { typeParam =>
+              val resolvedTypeArgs = typeParams.map { typeParam =>
                 subTpeParamsToArgs.getOrElse(typeParam, typeParamsAndArgs.getOrElse(typeParam, fail {
                   s"Cannot resolve generic type(s) for '$subTpe'. Please provide a custom implicitly accessible codec for it."
                 }))
-              })
+              }
+              subTpe = appliedType(subTpe.typeConstructor, resolvedTypeArgs)
             }
             if (isSealedClass(subTpe)) collectRecursively(subTpe)
             else if (isValueClass(subTpe)) {
