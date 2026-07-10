@@ -1047,7 +1047,7 @@ object JsonCodecMaker {
                   case _ =>
                 }
               }
-              subTpe = subTpe.substituteTypes(typeParams, typeParams.map { typeParam =>
+              subTpe = appliedType(subTpe.typeConstructor, typeParams.map { typeParam =>
                 subTpeParamsToArgs.getOrElse(typeParam, typeParamsAndArgs.getOrElse(typeParam, fail {
                   s"Cannot resolve generic type(s) for '$subTpe'. Please provide a custom implicitly accessible codec for it."
                 }))

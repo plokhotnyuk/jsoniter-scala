@@ -1030,6 +1030,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Map[String, Property]],
         Map("a" -> DoubleProperty(4.0), "b" -> StringProperty("bar")), """{"a":4.0,"b":"bar"}""")
     }
+    "compile codecs for case classes with generic type fields" in {
+      assertCompiles {
+        """case class Foo(value: Either[Int, String])
+          |
+          |object Foo {
+          |  implicit val codec: JsonValueCodec[Foo] = JsonCodecMaker.make
+          |}
+          |""".stripMargin
+      }
+    }
     "serialize and deserialize case class fields with either" in {
       case class Foo(value: Either[Int, Int])
 
