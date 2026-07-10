@@ -1030,6 +1030,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Map[String, Property]],
         Map("a" -> DoubleProperty(4.0), "b" -> StringProperty("bar")), """{"a":4.0,"b":"bar"}""")
     }
+    "serialize and deserialize case class fields with either" in {
+      case class Foo(value: Either[Int, Int])
+
+      verifySerDeser(make[Foo], Foo(Left(1)), """{"value":{"type":"Left","value":1}}""")
+      verifySerDeser(make[Foo](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
+        Foo(Right(1)), """{"value":{"Right":{"value":1}}}""")
+    }
     "serialize and deserialize using custom value codecs for `Either` type" in {
       implicit val customCodecOfEither1: JsonValueCodec[Either[String, Int]] =
         new JsonValueCodec[Either[String, Int]] {
