@@ -3296,7 +3296,7 @@ final class JsonReader private[jsoniter_scala](
             x = x * 10 + (buf(from) - '0')
             from += 1
           }
-          new java.lang.Long((x ^ s) - s)
+          java.lang.Long.valueOf((x ^ s) - s)
         } else if (digits <= 36) {
           val firstBlockLimit = limit - 18
           var pos = from

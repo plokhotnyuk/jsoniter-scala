@@ -3111,7 +3111,7 @@ final class JsonReader private[jsoniter_scala](
             from += 1
           }
           if (s != 0) x1 = -x1
-          new java.lang.Long(x1)
+          java.lang.Long.valueOf(x1)
         } else if (digits <= 36) {
           var x = buf(from) - '0'
           from += 1
