@@ -253,7 +253,7 @@ lazy val `jsoniter-scala-next-tests` = crossProject(JVMPlatform, JSPlatform, Nat
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.9.0-RC1"),
+    crossScalaVersions := Seq("3.9.0-RC3"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq()
       case _ => Seq(
@@ -307,7 +307,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    crossScalaVersions := Seq("3.9.0-RC1", "2.13.18"),
+    crossScalaVersions := Seq("3.9.0-RC3", "2.13.18"),
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "-Wopt",
