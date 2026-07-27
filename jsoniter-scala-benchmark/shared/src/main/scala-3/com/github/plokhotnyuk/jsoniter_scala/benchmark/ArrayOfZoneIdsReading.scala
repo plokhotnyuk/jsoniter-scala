@@ -130,10 +130,9 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
 
   @Benchmark
   def zioJson(): Array[ZoneId] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Array[ZoneId]].fold(sys.error, identity)
+    jsonBytes.fromJson[Array[ZoneId]].fold(sys.error, identity)
   }
 
   @Benchmark

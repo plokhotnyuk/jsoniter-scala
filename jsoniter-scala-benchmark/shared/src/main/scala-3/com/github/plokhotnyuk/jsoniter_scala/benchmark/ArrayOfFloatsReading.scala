@@ -136,10 +136,9 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
 
   @Benchmark
   def zioJson(): Array[Float] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Float]].fold(sys.error, identity)
+    jsonBytes.fromJson[Array[Float]].fold(sys.error, identity)
   }
 
   @Benchmark

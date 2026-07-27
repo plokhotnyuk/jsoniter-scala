@@ -135,10 +135,9 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
 
   @Benchmark
   def zioJson(): Array[Char] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Char]].fold(sys.error, identity)
+    jsonBytes.fromJson[Array[Char]].fold(sys.error, identity)
   }
 
   @Benchmark

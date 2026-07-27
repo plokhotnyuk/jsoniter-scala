@@ -131,9 +131,8 @@ class BigDecimalReading extends BigDecimalBenchmark {
   @Benchmark
   def zioJson(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[BigDecimal](bigDecimalC3c.decoder).fold(sys.error, identity)
+    jsonBytes.fromJson[BigDecimal](bigDecimalC3c.decoder).fold(sys.error, identity)
   }
 }

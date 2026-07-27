@@ -130,10 +130,9 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
 
   @Benchmark
   def zioJson(): Array[LocalDateTime] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Array[LocalDateTime]].fold(sys.error, identity)
+    jsonBytes.fromJson[Array[LocalDateTime]].fold(sys.error, identity)
   }
 
   @Benchmark

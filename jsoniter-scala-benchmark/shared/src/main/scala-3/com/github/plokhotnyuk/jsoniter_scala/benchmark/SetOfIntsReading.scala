@@ -135,10 +135,9 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
   @Benchmark
   def zioJson(): Set[Int] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Set[Int]].fold(sys.error, identity)
+    jsonBytes.fromJson[Set[Int]].fold(sys.error, identity)
   }
 
   @Benchmark

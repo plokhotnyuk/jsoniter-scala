@@ -137,10 +137,9 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
 
   @Benchmark
   def zioJson(): Array[Year] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Year]].fold(sys.error, identity)
+    jsonBytes.fromJson[Array[Year]].fold(sys.error, identity)
   }
 
   @Benchmark

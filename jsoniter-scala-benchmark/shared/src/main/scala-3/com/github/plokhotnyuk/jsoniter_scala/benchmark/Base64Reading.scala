@@ -136,9 +136,8 @@ class Base64Reading extends Base64Benchmark {
   @Benchmark
   def zioJson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Byte]](base64C3c.decoder).fold(sys.error, identity)
+    jsonBytes.fromJson[Array[Byte]](base64C3c.decoder).fold(sys.error, identity)
   }
 }

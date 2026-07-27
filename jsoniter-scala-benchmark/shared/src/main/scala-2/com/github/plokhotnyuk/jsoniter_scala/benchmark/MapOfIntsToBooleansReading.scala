@@ -141,10 +141,9 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
 
   @Benchmark
   def zioJson(): Map[Int, Boolean] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Map[Int, Boolean]].fold(sys.error, identity)
+    jsonBytes.fromJson[Map[Int, Boolean]].fold(sys.error, identity)
   }
 
   @Benchmark

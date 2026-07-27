@@ -139,10 +139,9 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
 
   @Benchmark
   def zioJson(): Array[OffsetDateTime] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Array[OffsetDateTime]].fold(sys.error, identity)
+    jsonBytes.fromJson[Array[OffsetDateTime]].fold(sys.error, identity)
   }
 
   @Benchmark

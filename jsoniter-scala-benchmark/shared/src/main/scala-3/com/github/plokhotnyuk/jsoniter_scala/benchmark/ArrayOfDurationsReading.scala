@@ -130,10 +130,9 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
 
   @Benchmark
   def zioJson(): Array[Duration] = {
-    import zio.json.DecoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+    import zio.json.DecoderByteArrayOps
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Duration]].fold(sys.error, identity)
+    jsonBytes.fromJson[Array[Duration]].fold(sys.error, identity)
   }
 
   @Benchmark
