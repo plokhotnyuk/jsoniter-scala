@@ -190,7 +190,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePla
     }),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.14.0" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test
+      "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.20.0" % Test
     )
   )
 
@@ -261,7 +261,7 @@ lazy val `jsoniter-scala-next-tests` = crossProject(JVMPlatform, JSPlatform, Nat
       )
     }),
     libraryDependencies ++= Seq(
-      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test
+      "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.20.0" % Test
     )
   )
 
@@ -289,7 +289,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform, NativePl
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.16",
       "io.circe" %%% "circe-parser" % "0.14.16" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-18" % "3.2.19.0" % Test
+      "org.scalatestplus" %%% "scalacheck-1-19" % "3.2.20.0" % Test
     )
   )
 
