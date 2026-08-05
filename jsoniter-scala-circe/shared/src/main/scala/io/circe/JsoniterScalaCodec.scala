@@ -470,7 +470,8 @@ final class JsoniterScalaCodec(
       if (depthM1 < 0) out.encodeError("depth limit exceeded")
       out.writeObjectStart()
       if (sortKeys) {
-        val es = o.value.toIterable.toArray
+        val es = new Array[(String, Json)](o.value.size)
+        o.value.toIterable.copyToArray(es, 0)
         java.util.Arrays.sort(es, keyComparator)
         var i = 0
         while (i < es.length) {
