@@ -24,9 +24,11 @@ package io.circe
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.Decoder.Result
 import io.circe.Json._
+
 import java.math.RoundingMode
 import java.nio.charset.StandardCharsets
 import java.util
+import java.util.Comparator
 import scala.collection.immutable.VectorBuilder
 import scala.util.control.NonFatal
 
@@ -355,14 +357,16 @@ object JsoniterScalaCodec {
  * @param doSerialize a predicate that determines whether a value should be serialized
  * @param numberParser a function that parses JSON numbers
  * @param numberSerializer a function that serializes JSON numbers
+ * @param sortKeys a flag to sort out keys alphabetically
  * @return The JSON codec
  */
 final class JsoniterScalaCodec(
-                                maxDepth: Int,
-                                initialSize: Int,
-                                doSerialize: Json => Boolean,
-                                numberParser: JsonReader => Json,
-                                numberSerializer: (JsonWriter, JsonNumber) => Unit) extends JsonValueCodec[Json] {
+    maxDepth: Int,
+    initialSize: Int,
+    doSerialize: Json => Boolean,
+    numberParser: JsonReader => Json,
+    numberSerializer: (JsonWriter, JsonNumber) => Unit,
+    sortKeys: Boolean) extends JsonValueCodec[Json] {
 
   /**
    * An auxiliary constructor for backward binary compatibility.
@@ -373,12 +377,32 @@ final class JsoniterScalaCodec(
    * @param numberParser a function that parses JSON numbers
    */
   def this(maxDepth: Int, initialSize: Int, doSerialize: Json => Boolean, numberParser: JsonReader => Json) =
-    this(maxDepth, initialSize, doSerialize, numberParser, JsoniterScalaCodec.defaultNumberSerializer)
+    this(maxDepth, initialSize, doSerialize, numberParser, JsoniterScalaCodec.defaultNumberSerializer, false)
+
+  /**
+   * An auxiliary constructor for backward binary compatibility.
+   *
+   * @param maxDepth the maximum depth for decoding
+   * @param initialSize the initial size hint for object and array collections
+   * @param doSerialize a predicate that determines whether a value should be serialized
+   * @param numberParser a function that parses JSON numbers
+   * @param numberSerializer a function that serializes JSON numbers
+   */
+  def this(
+    maxDepth: Int,
+    initialSize: Int,
+    doSerialize: Json => Boolean,
+    numberParser: JsonReader => Json,
+    numberSerializer: (JsonWriter, JsonNumber) => Unit
+  ) = this(maxDepth, initialSize, doSerialize, numberParser, numberSerializer, false)
 
   private[this] val trueValue = True
   private[this] val falseValue = False
   private[this] val emptyArrayValue = new JArray(Vector.empty)
   private[this] val emptyObjectValue = new JObject(JsonObject.empty)
+  private[this] val keyComparator = new Comparator[(String, Json)] {
+    override def compare(o1: (String, Json), o2: (String, Json)): Int = o1._1.compareTo(o2._1)
+  }
 
   override val nullValue: Json = JNull
 
@@ -445,13 +469,26 @@ final class JsoniterScalaCodec(
       val depthM1 = depth - 1
       if (depthM1 < 0) out.encodeError("depth limit exceeded")
       out.writeObjectStart()
-      val it = o.value.toIterable.iterator
-      while (it.hasNext) {
-        val kv = it.next()
-        val v = kv._2
-        if (doSerialize(v)) {
-          out.writeKey(kv._1)
-          encode(v, out, depthM1)
+      if (sortKeys) {
+        val es = o.value.toIterable.toArray
+        java.util.Arrays.sort(es, keyComparator)
+        var i = 0
+        while (i < es.length) {
+          val kv = es(i)
+          i += 1
+          if (doSerialize(kv._2)) {
+            out.writeKey(kv._1)
+            encode(kv._2, out, depthM1)
+          }
+        }
+      } else {
+        val it = o.value.toIterable.iterator
+        while (it.hasNext) {
+          val kv = it.next()
+          if (doSerialize(kv._2)) {
+            out.writeKey(kv._1)
+            encode(kv._2, out, depthM1)
+          }
         }
       }
       out.writeObjectEnd()

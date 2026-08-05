@@ -59,10 +59,30 @@ object JsoniterScalaCodec {
    * @return The JSON codec
    */
   def jsonCodec(
+      maxDepth: Int,
+      initialSize: Int,
+      doSerialize: Json => Boolean,
+      numberParser: JsonReader => Json,
+      numberSerializer: (JsonWriter, JsonNumber) => Unit ): JsonValueCodec[Json] =
+    new io.circe.JsoniterScalaCodec(maxDepth, initialSize, doSerialize, numberParser, numberSerializer)
+
+  /**
+   * Creates a JSON value codec that parses and serialize to/from circe's JSON AST.
+   *
+   * @param maxDepth the maximum depth for decoding
+   * @param initialSize the initial size hint for object and array collections
+   * @param doSerialize a predicate that determines whether a value should be serialized
+   * @param numberParser a function that parses JSON numbers
+   * @param numberSerializer a routine that serializes JSON numbers
+   * @param sortKeys a flag to sort out keys alphabetically
+   * @return The JSON codec
+   */
+  def jsonCodec(
       maxDepth: Int = 128,
       initialSize: Int = 8,
       doSerialize: Json => Boolean = _ => true,
       numberParser: JsonReader => Json = io.circe.JsoniterScalaCodec.defaultNumberParser,
-      numberSerializer: (JsonWriter, JsonNumber) => Unit = io.circe.JsoniterScalaCodec.defaultNumberSerializer): JsonValueCodec[Json] =
-    new io.circe.JsoniterScalaCodec(maxDepth, initialSize, doSerialize, numberParser, numberSerializer)
+      numberSerializer: (JsonWriter, JsonNumber) => Unit = io.circe.JsoniterScalaCodec.defaultNumberSerializer,
+      sortKeys: Boolean = false): JsonValueCodec[Json] =
+    new io.circe.JsoniterScalaCodec(maxDepth, initialSize, doSerialize, numberParser, numberSerializer, sortKeys)
 }

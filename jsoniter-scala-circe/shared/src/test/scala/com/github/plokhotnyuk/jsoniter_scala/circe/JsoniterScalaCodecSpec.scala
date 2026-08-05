@@ -67,6 +67,12 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("3.14159265358979323846264338327950288419716939937510")))(codec) shouldBe """"3.14159265358979323846264338327950288419716939937510""""
       writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("4e+297")))(codec) shouldBe """"4E+297""""
     }
+    "allow customization for key sorting during serialization" in {
+      val codec = jsonCodec(sortKeys = true)
+      val jsonStr = """{"s":1,"n1":1.0,"n2":4503599627370497,"a":[null,"WWW",[],{}],"o":{"a":4e+297}}"""
+      val json = readFromString(jsonStr)
+      writeToString(json)(codec) shouldBe """{"a":[null,"WWW",[],{}],"n1":1.0,"n2":4503599627370497,"o":{"a":4E+297},"s":1}"""
+    }
     "not serialize invalid json" in {
       val json1 = parse("\"\ud800\"").getOrElse(null)
       assert(intercept[Throwable](writeToString(json1)).getMessage.contains("illegal char sequence of surrogate pair"))
