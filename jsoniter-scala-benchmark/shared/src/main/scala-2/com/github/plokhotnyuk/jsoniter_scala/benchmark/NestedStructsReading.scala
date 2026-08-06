@@ -32,21 +32,25 @@ class NestedStructsReading extends NestedStructsBenchmark {
 
     JsonStringInput.read[NestedStructs](new String(jsonBytes, UTF_8))
   }
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$Overflow: This JSON parser does not support more than 64 Array/Object nesting levels
-  @Benchmark
-  def borer(): NestedStructs = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-    import io.bullet.borer.Json
 
-    Json.decode(jsonBytes).to[NestedStructs].value
-  }
-*/
+  /* FIXME: Borer throws io.bullet.borer.Borer$Error$Overflow: This JSON parser does not support more than 64 Array/Object nesting levels
+    @Benchmark
+    def borer(): NestedStructs = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+      import io.bullet.borer.Json
+
+      Json.decode(jsonBytes).to[NestedStructs].value
+    }
+  */
   @Benchmark
   def circe(): NestedStructs = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[NestedStructs](jsonBytes).fold(throw _, identity)
+    decodeByteArray[NestedStructs](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -55,7 +59,10 @@ class NestedStructsReading extends NestedStructsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[NestedStructs].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[NestedStructs].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -148,7 +155,10 @@ class NestedStructsReading extends NestedStructsBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): NestedStructs = ZioBlocksCodecs.nestedStructsCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): NestedStructs = ZioBlocksCodecs.nestedStructsCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): NestedStructs = {
@@ -156,7 +166,10 @@ class NestedStructsReading extends NestedStructsBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[NestedStructs].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[NestedStructs] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -164,6 +177,9 @@ class NestedStructsReading extends NestedStructsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    nestedStructsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    nestedStructsCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

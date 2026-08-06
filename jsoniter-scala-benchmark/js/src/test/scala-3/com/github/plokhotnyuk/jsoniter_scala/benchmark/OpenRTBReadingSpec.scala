@@ -38,7 +38,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
-      benchmark.zioBlocks()  shouldBe benchmark.obj
+      benchmark.zioBlocks() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
       benchmark.zioSchemaJson() shouldBe benchmark.obj
     }

@@ -44,7 +44,10 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   def circe(): ArraySeq[Boolean] = {
     import io.circe.jawn._
 
-    decodeByteArray[ArraySeq[Boolean]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[ArraySeq[Boolean]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -53,43 +56,48 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[ArraySeq[Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[ArraySeq[Boolean]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
-/* FIXME: DSL-JSON doesn't support parsing of ArraySeq
-  @Benchmark
-  def dslJsonScala(): ArraySeq[Boolean] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonDecode[ArraySeq[Boolean]](jsonBytes)
-  }
-*/
+  /* FIXME: DSL-JSON doesn't support parsing of ArraySeq
+    @Benchmark
+    def dslJsonScala(): ArraySeq[Boolean] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+      dslJsonDecode[ArraySeq[Boolean]](jsonBytes)
+    }
+  */
   @Benchmark
   def jacksonScala(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
     jacksonMapper.readValue[ArraySeq[Boolean]](jsonBytes)
   }
-/* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
-  @Benchmark
-  def json4sJackson(): ArraySeq[Boolean] = {
-    import org.json4s._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[ArraySeq[Boolean]]
-  }
-*/
-/* FIXME: json4s.native throws org.json4s.MappingException: unknown error
-  @Benchmark
-  def json4sNative(): ArraySeq[Boolean] = {
-    import org.json4s._
-    import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
-    import java.nio.charset.StandardCharsets.UTF_8
+  /* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+    @Benchmark
+    def json4sJackson(): ArraySeq[Boolean] = {
+      import org.json4s._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    parse(new String(jsonBytes, UTF_8)).extract[ArraySeq[Boolean]]
-  }
-*/
+      mapper.readValue[JValue](jsonBytes, jValueType).extract[ArraySeq[Boolean]]
+    }
+  */
+  /* FIXME: json4s.native throws org.json4s.MappingException: unknown error
+    @Benchmark
+    def json4sNative(): ArraySeq[Boolean] = {
+      import org.json4s._
+      import org.json4s.native.JsonMethods._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
+      import java.nio.charset.StandardCharsets.UTF_8
+
+      parse(new String(jsonBytes, UTF_8)).extract[ArraySeq[Boolean]]
+    }
+  */
   @Benchmark
   def jsoniterScala(): ArraySeq[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -145,7 +153,10 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): ArraySeq[Boolean] = ZioBlocksCodecs.arraySeqOfBooleansCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): ArraySeq[Boolean] = ZioBlocksCodecs.arraySeqOfBooleansCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): ArraySeq[Boolean] = {
@@ -153,7 +164,10 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[ArraySeq[Boolean]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[ArraySeq[Boolean]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -161,6 +175,9 @@ class ArraySeqOfBooleansReading extends ArraySeqOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arraySeqOfBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arraySeqOfBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

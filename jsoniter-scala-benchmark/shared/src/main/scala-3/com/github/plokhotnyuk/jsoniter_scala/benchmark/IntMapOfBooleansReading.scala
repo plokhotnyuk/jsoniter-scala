@@ -30,7 +30,10 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[IntMap[Boolean]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[IntMap[Boolean]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -39,7 +42,10 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[IntMap[Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[IntMap[Boolean]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -48,29 +54,30 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
 
     jacksonMapper.readValue[IntMap[Boolean]](jsonBytes)
   }
-/* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
-  @Benchmark
-  @annotation.nowarn
-  def json4sJackson(): IntMap[Boolean] = {
-    import org.json4s._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    mapper.readValue[JValue](jsonBytes, jValueType).extract[IntMap[Boolean]]
-  }
-*/
-/* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
-  @Benchmark
-  @annotation.nowarn
-  def json4sNative(): IntMap[Boolean] = {
-    import org.json4s._
-    import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
-    import java.nio.charset.StandardCharsets.UTF_8
+  /* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+    @Benchmark
+    @annotation.nowarn
+    def json4sJackson(): IntMap[Boolean] = {
+      import org.json4s._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
 
-    parse(new String(jsonBytes, UTF_8)).extract[IntMap[Boolean]]
-  }
-*/
+      mapper.readValue[JValue](jsonBytes, jValueType).extract[IntMap[Boolean]]
+    }
+  */
+  /* FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
+    @Benchmark
+    @annotation.nowarn
+    def json4sNative(): IntMap[Boolean] = {
+      import org.json4s._
+      import org.json4s.native.JsonMethods._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
+      import java.nio.charset.StandardCharsets.UTF_8
+
+      parse(new String(jsonBytes, UTF_8)).extract[IntMap[Boolean]]
+    }
+  */
   @Benchmark
   def jsoniterScala(): IntMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

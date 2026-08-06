@@ -37,7 +37,10 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
   def circe(): Array[YearMonth] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[YearMonth]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[YearMonth]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -47,7 +50,10 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[YearMonth]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[YearMonth]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -126,14 +132,20 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[YearMonth] = ZioBlocksCodecs.arrayOfYearMonthsCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[YearMonth] = ZioBlocksCodecs.arrayOfYearMonthsCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[YearMonth] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[YearMonth]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[YearMonth]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -141,6 +153,9 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfYearMonthsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfYearMonthsCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

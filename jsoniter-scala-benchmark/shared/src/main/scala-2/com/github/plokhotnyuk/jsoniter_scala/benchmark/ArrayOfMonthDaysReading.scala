@@ -46,7 +46,10 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   def circe(): Array[MonthDay] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[MonthDay]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[MonthDay]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -56,7 +59,10 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[MonthDay]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[MonthDay]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -133,14 +139,20 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[MonthDay] = ZioBlocksCodecs.arrayOfMonthDaysCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[MonthDay] = ZioBlocksCodecs.arrayOfMonthDaysCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[MonthDay] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[MonthDay]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[MonthDay]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -148,6 +160,9 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfMonthDaysCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfMonthDaysCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

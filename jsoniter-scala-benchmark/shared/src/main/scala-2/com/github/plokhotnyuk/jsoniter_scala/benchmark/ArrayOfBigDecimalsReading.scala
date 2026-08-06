@@ -45,7 +45,10 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   def circe(): Array[BigDecimal] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[BigDecimal]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[BigDecimal]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -55,7 +58,10 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[BigDecimal]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[BigDecimal]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -146,13 +152,19 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[BigDecimal] = ZioBlocksCodecs.arrayOfBigDecimalsCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[BigDecimal] = ZioBlocksCodecs.arrayOfBigDecimalsCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[BigDecimal] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[BigDecimal]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[BigDecimal]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

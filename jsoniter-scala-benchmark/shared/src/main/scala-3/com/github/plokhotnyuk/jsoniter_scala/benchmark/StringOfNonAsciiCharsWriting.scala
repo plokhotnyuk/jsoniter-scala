@@ -64,16 +64,17 @@ class StringOfNonAsciiCharsWriting extends StringOfNonAsciiCharsBenchmark {
 
     mapper.writeValueAsBytes(Extraction.decompose(obj))
   }
-/* FIXME: json4s.native writes escaped codes for some characters instead of UTF-8 bytes
-  @Benchmark
-  def json4sNative(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
-    import org.json4s.native.Serialization._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    write(obj).getBytes(UTF_8)
-  }
-*/
+  /* FIXME: json4s.native writes escaped codes for some characters instead of UTF-8 bytes
+    @Benchmark
+    def json4sNative(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
+      import org.json4s.native.Serialization._
+      import java.nio.charset.StandardCharsets.UTF_8
+
+      write(obj).getBytes(UTF_8)
+    }
+  */
   @Benchmark
   def jsoniterScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._

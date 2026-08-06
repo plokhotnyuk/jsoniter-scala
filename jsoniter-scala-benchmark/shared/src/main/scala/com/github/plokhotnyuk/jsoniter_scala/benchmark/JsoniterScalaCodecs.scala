@@ -52,7 +52,7 @@ object JsoniterScalaCodecs {
     override val nullValue: Array[Byte] = new Array[Byte](0)
   }
   val bigDecimalCodec: JsonValueCodec[BigDecimal] =
-    make(CodecMakerConfig.withBigDecimalDigitsLimit(Int.MaxValue).withBigDecimalScaleLimit(Int.MaxValue).withBigDecimalPrecision(0)) /* WARNING: It is an unsafe option for open systems */
+    make(CodecMakerConfig.withBigDecimalDigitsLimit(Int.MaxValue).withBigDecimalScaleLimit(Int.MaxValue).withBigDecimalPrecision(0)) // WARNING: It is an unsafe option for open systems
   val bigIntCodec: JsonValueCodec[BigInt] =
     make(CodecMakerConfig.withBigIntDigitsLimit(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   val stringCodec: JsonValueCodec[String] = make

@@ -36,7 +36,10 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   def circe(): Map[Int, Boolean] = {
     import io.circe.jawn._
 
-    decodeByteArray[Map[Int, Boolean]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Map[Int, Boolean]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -45,7 +48,10 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Map[Int, Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Map[Int, Boolean]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -111,15 +117,16 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
 
     readFromArray[Map[Int, Boolean]](jsonBytes)
   }
-/* FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
-  @Benchmark
-  def sprayJson(): Map[Int, Boolean] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-    import spray.json._
 
-    JsonParser(jsonBytes).convertTo[Map[Int, Boolean]]
-  }
-*/
+  /* FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
+    @Benchmark
+    def sprayJson(): Map[Int, Boolean] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+      import spray.json._
+
+      JsonParser(jsonBytes).convertTo[Map[Int, Boolean]]
+    }
+  */
   @Benchmark
   def uPickle(): Map[Int, Boolean] = {
     import upickle.default._
@@ -137,14 +144,20 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
 
   @Benchmark
   def zioBlocks(): Map[Int, Boolean] =
-    ZioBlocksCodecs.mapOfIntsToBooleansCodec.decode(jsonBytes).fold(throw _, identity)
+    ZioBlocksCodecs.mapOfIntsToBooleansCodec.decode(jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
 
   @Benchmark
   def zioJson(): Map[Int, Boolean] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Map[Int, Boolean]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Map[Int, Boolean]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -152,6 +165,9 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    mapOfIntsToBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    mapOfIntsToBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

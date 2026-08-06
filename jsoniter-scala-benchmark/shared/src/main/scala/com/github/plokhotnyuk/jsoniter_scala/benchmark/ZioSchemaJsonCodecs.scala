@@ -37,14 +37,14 @@ import scala.reflect.ClassTag
 
 object ZioSchemaJsonCodecs {
   implicit def array[A: ClassTag](implicit schemaA: Schema[A]): Schema[Array[A]] =
-   Schema.Sequence[Array[A], A, String](schemaA, _.toArray, Chunk.fromArray, Chunk.empty, "Array")
+    Schema.Sequence[Array[A], A, String](schemaA, _.toArray, Chunk.fromArray, Chunk.empty, "Array")
 
   implicit def arraySeq[A: ClassTag](implicit schemaA: Schema[A]): Schema[ArraySeq[A]] =
-   Schema.Sequence[ArraySeq[A], A, String](schemaA, x => ArraySeq.unsafeWrapArray(x.toArray),
-     x => Chunk.fromArray[A](x.unsafeArray.asInstanceOf[Array[A]]), Chunk.empty, "ArraySeq")
+    Schema.Sequence[ArraySeq[A], A, String](schemaA, x => ArraySeq.unsafeWrapArray(x.toArray),
+      x => Chunk.fromArray[A](x.unsafeArray.asInstanceOf[Array[A]]), Chunk.empty, "ArraySeq")
 
   implicit def indexedSeq[A](implicit schemaA: Schema[A]): Schema[IndexedSeq[A]] =
-   Schema.Sequence[IndexedSeq[A], A, String](schemaA, _.toIndexedSeq, Chunk.fromIterable, Chunk.empty, "IndexedSeq")
+    Schema.Sequence[IndexedSeq[A], A, String](schemaA, _.toIndexedSeq, Chunk.fromIterable, Chunk.empty, "IndexedSeq")
 
   implicit def seq[A](implicit schemaA: Schema[A]): Schema[Seq[A]] =
     Schema.Sequence[Seq[A], A, String](schemaA, _.toSeq, Chunk.fromIterable, Chunk.empty, "Seq")

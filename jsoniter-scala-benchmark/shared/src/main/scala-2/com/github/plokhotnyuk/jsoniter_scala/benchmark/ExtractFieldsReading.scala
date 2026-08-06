@@ -46,7 +46,10 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[ExtractFields](jsonBytes).fold(throw _, identity)
+    decodeByteArray[ExtractFields](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -55,7 +58,10 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[ExtractFields].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[ExtractFields].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -148,7 +154,10 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): ExtractFields = ZioBlocksCodecs.extractFieldsCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): ExtractFields = ZioBlocksCodecs.extractFieldsCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): ExtractFields = {
@@ -156,7 +165,10 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[ExtractFields].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[ExtractFields] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -164,6 +176,9 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    extractFieldsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    extractFieldsCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

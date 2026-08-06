@@ -121,15 +121,16 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
 
     writeToArray(obj)
   }
-/* FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
-  @Benchmark
-  def sprayJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-    import spray.json._
 
-    obj.toJson.compactPrint.getBytes(UTF_8)
-  }
-*/
+  /* FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
+    @Benchmark
+    def sprayJson(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+      import spray.json._
+
+      obj.toJson.compactPrint.getBytes(UTF_8)
+    }
+  */
   @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
@@ -139,7 +140,7 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
 
   @Benchmark
   def weePickle(): Array[Byte] = {
-  import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
     import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 
     FromScala(obj).transform(ToJson.bytes)

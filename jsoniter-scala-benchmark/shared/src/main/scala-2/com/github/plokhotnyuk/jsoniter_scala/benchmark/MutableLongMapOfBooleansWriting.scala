@@ -50,14 +50,15 @@ class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark 
 
     writeToArray(obj.asJson)
   }
-/* FIXME: DSL-JSON doesn't support mutable.LongMap
-  @Benchmark
-  def dslJsonScala(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonEncode(obj)
-  }
-*/
+  /* FIXME: DSL-JSON doesn't support mutable.LongMap
+    @Benchmark
+    def dslJsonScala(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+      dslJsonEncode(obj)
+    }
+  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -123,13 +124,13 @@ class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark 
 
     writeToByteArray(obj)
   }
-/* FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
-  @Benchmark
-  def weePickle(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-    import com.rallyhealth.weepickle.v1.WeePickle.FromScala
+  /* FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
+    @Benchmark
+    def weePickle(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+      import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 
-    FromScala(obj).transform(ToJson.bytes)
-  }
-*/
+      FromScala(obj).transform(ToJson.bytes)
+    }
+  */
 }

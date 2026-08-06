@@ -613,13 +613,13 @@ object CirceEncodersDecoders {
         case "Polygon" => c.as[GeoJSON.Polygon]
         case "MultiPolygon" => c.as[GeoJSON.MultiPolygon]
       }), Encoder.instance {
-        case x: GeoJSON.Point => x.asJson.mapObject(_.+:("type" -> "Point".asJson))
-        case x: GeoJSON.MultiPoint => x.asJson.mapObject(_.+:("type" -> "MultiPoint".asJson))
-        case x: GeoJSON.LineString => x.asJson.mapObject(_.+:("type" -> "LineString".asJson))
-        case x: GeoJSON.MultiLineString => x.asJson.mapObject(_.+:("type" -> "MultiLineString".asJson))
-        case x: GeoJSON.Polygon => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
-        case x: GeoJSON.MultiPolygon => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
-      })
+      case x: GeoJSON.Point => x.asJson.mapObject(_.+:("type" -> "Point".asJson))
+      case x: GeoJSON.MultiPoint => x.asJson.mapObject(_.+:("type" -> "MultiPoint".asJson))
+      case x: GeoJSON.LineString => x.asJson.mapObject(_.+:("type" -> "LineString".asJson))
+      case x: GeoJSON.MultiLineString => x.asJson.mapObject(_.+:("type" -> "MultiLineString".asJson))
+      case x: GeoJSON.Polygon => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
+      case x: GeoJSON.MultiPolygon => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
+    })
     implicit val c8: Codec[GeoJSON.GeometryCollection] = deriveCodec
     implicit val c9: Codec[GeoJSON.Geometry] = Codec.from(Decoder.instance(c =>
       c.downField("type").as[String].flatMap {
@@ -631,14 +631,14 @@ object CirceEncodersDecoders {
         case "MultiPolygon" => c.as[GeoJSON.MultiPolygon]
         case "GeometryCollection" => c.as[GeoJSON.GeometryCollection]
       }), Encoder.instance {
-        case x: GeoJSON.Point => x.asJson.mapObject(_.+:("type" -> "Point".asJson))
-        case x: GeoJSON.MultiPoint => x.asJson.mapObject(_.+:("type" -> "MultiPoint".asJson))
-        case x: GeoJSON.LineString => x.asJson.mapObject(_.+:("type" -> "LineString".asJson))
-        case x: GeoJSON.MultiLineString => x.asJson.mapObject(_.+:("type" -> "MultiLineString".asJson))
-        case x: GeoJSON.Polygon => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
-        case x: GeoJSON.MultiPolygon => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
-        case x: GeoJSON.GeometryCollection => x.asJson.mapObject(_.+:("type" -> "GeometryCollection".asJson))
-      })
+      case x: GeoJSON.Point => x.asJson.mapObject(_.+:("type" -> "Point".asJson))
+      case x: GeoJSON.MultiPoint => x.asJson.mapObject(_.+:("type" -> "MultiPoint".asJson))
+      case x: GeoJSON.LineString => x.asJson.mapObject(_.+:("type" -> "LineString".asJson))
+      case x: GeoJSON.MultiLineString => x.asJson.mapObject(_.+:("type" -> "MultiLineString".asJson))
+      case x: GeoJSON.Polygon => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
+      case x: GeoJSON.MultiPolygon => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
+      case x: GeoJSON.GeometryCollection => x.asJson.mapObject(_.+:("type" -> "GeometryCollection".asJson))
+    })
     implicit val c10: Codec[GeoJSON.Feature] = deriveCodec
     implicit val c11: Codec[GeoJSON.SimpleGeoJSON] = Codec.from(Decoder.instance(c =>
       c.downField("type").as[String].flatMap {

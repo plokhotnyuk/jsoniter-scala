@@ -36,7 +36,10 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   def circe(): Array[Float] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[Float]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[Float]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -46,7 +49,10 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[Float]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[Float]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -132,14 +138,20 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[Float] = ZioBlocksCodecs.arrayOfFloatsCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[Float] = ZioBlocksCodecs.arrayOfFloatsCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[Float] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Float]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[Float]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -147,6 +159,9 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfFloatsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfFloatsCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

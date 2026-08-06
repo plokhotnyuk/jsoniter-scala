@@ -97,7 +97,7 @@ object Smithy4sJCodecs {
     }, (x: Array[Long]) => ArraySeq.unsafeWrapArray(x)))
   implicit val arrayOfOffsetDateTimesJCodec: JsonCodec[Array[JOffsetDateTime]] =
     Json.deriveJsonCodec(bijection(indexedSeq(offsetdatetime),
-      (x: IndexedSeq[OffsetDateTime]) => x.toArray.map {odt =>
+      (x: IndexedSeq[OffsetDateTime]) => x.toArray.map { odt =>
         val offsetSeconds = odt.offset.seconds
         val timestamp = odt.timestamp
         JOffsetDateTime.ofInstant(Instant.ofEpochSecond(timestamp.epochSecond - offsetSeconds, timestamp.nano),
@@ -179,7 +179,7 @@ object Smithy4sJCodecs {
         indexedSeq(indexedSeq(indexedSeq(coordinatesSchema)))
           .required[GeoJSON.MultiPolygon]("coordinates", _.coordinates),
       )(coordinates => new GeoJSON.MultiPolygon(coordinates))
-    val simpleGeometrySchema: Schema[GeoJSON.SimpleGeometry] =  {
+    val simpleGeometrySchema: Schema[GeoJSON.SimpleGeometry] = {
       union(
         pointSchema.oneOf[GeoJSON.SimpleGeometry]("Point"),
         multiPointSchema.oneOf[GeoJSON.SimpleGeometry]("MultiPoint"),
@@ -414,7 +414,7 @@ object Smithy4sJCodecs {
         int.optional[OpenRTB.Audio]("stitched", _.stitched),
         int.optional[OpenRTB.Audio]("nvol", _.nvol)
       ) { (mimes, minduration, maxduration, protocols, startdelay, sequence, battr, maxextended, minbitrate, maxbitrate,
-        delivery, companionad, api, companiontype, maxseq, feed, stitched, nvol) =>
+           delivery, companionad, api, companiontype, maxseq, feed, stitched, nvol) =>
         new OpenRTB.Audio(mimes.getOrElse(Nil), minduration, maxduration, protocols.getOrElse(Nil), startdelay, sequence,
           battr.getOrElse(Nil), maxextended, minbitrate, maxbitrate, delivery.getOrElse(Nil),
           companionad.getOrElse(Nil), api.getOrElse(Nil), companiontype.getOrElse(Nil), maxseq, feed, stitched, nvol)

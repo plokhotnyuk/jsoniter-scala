@@ -34,6 +34,7 @@ import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 
 object CirceJsoniterCodecs {
+
   import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
 
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)

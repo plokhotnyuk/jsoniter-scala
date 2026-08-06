@@ -43,7 +43,7 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
       while (i < cs.length) {
         cs(i) = {
           var ch: Char = 0
-          while ({
+          while ( {
             ch = (j * 1498724053).toChar
             j += 1
             ch < 128 || isSurrogate(ch)
@@ -54,9 +54,9 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
       }
       new String(cs)
     }
-    jsonString1 = "\"" + obj.map(ch => f"\\u$ch%04x").mkString  + "\""
-    jsonString2 = "\"" + obj.map(ch => f"\\u$ch%04X").mkString  + "\""
+    jsonString1 = "\"" + obj.map(ch => f"\\u$ch%04x").mkString + "\""
+    jsonString2 = "\"" + obj.map(ch => f"\\u$ch%04X").mkString + "\""
     jsonBytes = jsonString1.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128 /*to avoid possible out-of-bounds error*/)
   }
 }

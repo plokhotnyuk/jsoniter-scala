@@ -42,7 +42,7 @@ abstract class StringOfNonAsciiCharsBenchmark extends CommonParams {
       while (i < cs.length) {
         cs(i) = {
           var ch: Char = 0
-          while ({
+          while ( {
             ch = (j * 1498724053).toChar
             j += 1
             ch < 128 || isSurrogate(ch)
@@ -55,6 +55,6 @@ abstract class StringOfNonAsciiCharsBenchmark extends CommonParams {
     }
     jsonString = "\"" + obj + "\""
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 128/*to avoid possible out-of-bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 128 /*to avoid possible out-of-bounds error*/)
   }
 }

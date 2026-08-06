@@ -43,7 +43,10 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   def circe(): String = {
     import io.circe.jawn._
 
-    decodeByteArray[String](jsonBytes).fold(throw _, identity)
+    decodeByteArray[String](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -52,7 +55,10 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[String].decodeJson(readFromArray(jsonBytes, tooLongStringConfig)).fold(throw _, identity)
+    Decoder[String].decodeJson(readFromArray(jsonBytes, tooLongStringConfig)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -77,17 +83,18 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
 
     mapper.readValue[JValue](jsonBytes, jValueType).extract[String]
   }
-/* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
-  @Benchmark
-  def json4sNative(): String = {
-    import org.json4s._
-    import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    parse(new String(jsonBytes, UTF_8)).extract[String]
-  }
-*/
+  /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
+    @Benchmark
+    def json4sNative(): String = {
+      import org.json4s._
+      import org.json4s.native.JsonMethods._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
+      import java.nio.charset.StandardCharsets.UTF_8
+
+      parse(new String(jsonBytes, UTF_8)).extract[String]
+    }
+  */
   @Benchmark
   def jsoniterScala(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -144,14 +151,20 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): String = ZioBlocksCodecs.stringCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): String = ZioBlocksCodecs.stringCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): String = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[String].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[String] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -159,6 +172,9 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    stringCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    stringCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

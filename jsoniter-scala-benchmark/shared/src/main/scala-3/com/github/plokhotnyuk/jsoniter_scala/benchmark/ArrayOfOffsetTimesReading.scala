@@ -37,7 +37,10 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
   def circe(): Array[OffsetTime] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[OffsetTime]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[OffsetTime]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -47,7 +50,10 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[OffsetTime]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[OffsetTime]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -126,14 +132,20 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[OffsetTime] = ZioBlocksCodecs.arrayOfOffsetTimesCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[OffsetTime] = ZioBlocksCodecs.arrayOfOffsetTimesCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[OffsetTime] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[OffsetTime]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[OffsetTime]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -141,6 +153,9 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfOffsetTimesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfOffsetTimesCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

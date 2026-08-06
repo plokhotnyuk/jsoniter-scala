@@ -75,7 +75,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
     import java.nio.charset.StandardCharsets.UTF_8
 
     try {
-      mapper.readValue[JValue](jsonBytes, jValueType).extract[MissingRequiredFields].toString// toString shouldn't be called
+      mapper.readValue[JValue](jsonBytes, jValueType).extract[MissingRequiredFields].toString // toString shouldn't be called
     } catch {
       case ex: MappingException => ex.getMessage
     }
@@ -90,7 +90,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
     import java.nio.charset.StandardCharsets.UTF_8
 
     try {
-      parse(new String(jsonBytes, UTF_8)).extract[MissingRequiredFields].toString// toString shouldn't be called
+      parse(new String(jsonBytes, UTF_8)).extract[MissingRequiredFields].toString // toString shouldn't be called
     } catch {
       case ex: MappingException => ex.getMessage
     }

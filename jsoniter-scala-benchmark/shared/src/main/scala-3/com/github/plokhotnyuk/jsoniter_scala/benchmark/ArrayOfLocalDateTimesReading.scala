@@ -37,7 +37,10 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   def circe(): Array[LocalDateTime] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[LocalDateTime]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[LocalDateTime]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -47,7 +50,10 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[LocalDateTime]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[LocalDateTime]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -126,14 +132,20 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[LocalDateTime] = ZioBlocksCodecs.arrayOfLocalDateTimesCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[LocalDateTime] = ZioBlocksCodecs.arrayOfLocalDateTimesCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[LocalDateTime] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[LocalDateTime]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[LocalDateTime]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -141,6 +153,9 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfLocalDateTimesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfLocalDateTimesCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

@@ -39,7 +39,10 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[mutable.BitSet](jsonBytes).fold(throw _, identity)
+    decodeByteArray[mutable.BitSet](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -48,16 +51,20 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[mutable.BitSet].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[mutable.BitSet].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
-/* FIXME: DSL-JSON throws scala.collection.mutable.HashSet cannot be cast to scala.collection.mutable.BitSet
-  @Benchmark
-  def dslJsonScala(): mutable.BitSet = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonDecode[mutable.BitSet](jsonBytes)
-  }
-*/
+  /* FIXME: DSL-JSON throws scala.collection.mutable.HashSet cannot be cast to scala.collection.mutable.BitSet
+    @Benchmark
+    def dslJsonScala(): mutable.BitSet = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+      dslJsonDecode[mutable.BitSet](jsonBytes)
+    }
+  */
   @Benchmark
   def jacksonScala(): mutable.BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

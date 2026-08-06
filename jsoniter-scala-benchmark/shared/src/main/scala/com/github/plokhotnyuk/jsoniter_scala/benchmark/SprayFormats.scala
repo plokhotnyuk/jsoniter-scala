@@ -62,7 +62,7 @@ object SprayFormats extends DefaultJsonProtocol {
     }
   }
   val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
-    .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /* WARNING: It is an unsafe option for open systems */
+    .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) // WARNING: It is an unsafe option for open systems
   val base64JsonFormat: RootJsonFormat[Array[Byte]] = new RootJsonFormat[Array[Byte]] {
     def read(json: JsValue): Array[Byte] = json match {
       case js: JsString => Base64.getDecoder.decode(js.value)
@@ -244,6 +244,7 @@ object SprayFormats extends DefaultJsonProtocol {
           fields("description").convertTo[TwitterAPI.Url]
         )
       }
+
       override def write(x: TwitterAPI.UserEntities): JsValue = toJsObject(
         ("url", x.url.toJson),
         ("description", x.description.toJson)
@@ -1217,7 +1218,7 @@ object SprayFormats extends DefaultJsonProtocol {
     def write(obj: T): JsValue = new JsString(obj.toString)
   }
 
-  implicit def arraySeqJsonFormat[T : JsonFormat : ClassTag]: RootJsonFormat[ArraySeq[T]] =
+  implicit def arraySeqJsonFormat[T: JsonFormat : ClassTag]: RootJsonFormat[ArraySeq[T]] =
     new RootJsonFormat[ArraySeq[T]] {
       def read(json: JsValue): ArraySeq[T] = json match {
         case ja: JsArray =>

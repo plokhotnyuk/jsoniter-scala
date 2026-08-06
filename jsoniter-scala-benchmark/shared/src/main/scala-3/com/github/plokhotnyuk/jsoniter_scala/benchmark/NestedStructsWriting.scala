@@ -24,15 +24,15 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import org.openjdk.jmh.annotations.Benchmark
 
 class NestedStructsWriting extends NestedStructsBenchmark {
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
-  @Benchmark
-  def borer(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-    import io.bullet.borer.Json
+  /* FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
+    @Benchmark
+    def borer(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+      import io.bullet.borer.Json
 
-    Json.encode(obj).toByteArray
-  }
-*/
+      Json.encode(obj).toByteArray
+    }
+  */
   @Benchmark
   def circe(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._

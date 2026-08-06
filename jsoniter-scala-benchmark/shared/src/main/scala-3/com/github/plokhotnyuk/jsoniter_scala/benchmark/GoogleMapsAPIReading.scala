@@ -38,7 +38,10 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[DistanceMatrix](jsonBytes).fold(throw _, identity)
+    decodeByteArray[DistanceMatrix](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -47,7 +50,10 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[DistanceMatrix].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[DistanceMatrix].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -135,7 +141,10 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): DistanceMatrix = ZioBlocksCodecs.googleMapsAPICodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): DistanceMatrix = ZioBlocksCodecs.googleMapsAPICodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): DistanceMatrix = {
@@ -143,7 +152,10 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[DistanceMatrix].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[DistanceMatrix] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -151,6 +163,9 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    googleMapsAPICodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    googleMapsAPICodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

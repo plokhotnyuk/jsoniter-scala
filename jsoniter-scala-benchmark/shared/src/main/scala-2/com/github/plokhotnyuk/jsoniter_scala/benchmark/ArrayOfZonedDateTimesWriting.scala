@@ -59,14 +59,15 @@ class ArrayOfZonedDateTimesWriting extends ArrayOfZonedDateTimesBenchmark {
 
     writeToArray(obj.asJson)
   }
-/* FIXME: DSL-JSON does not serialize preferred timezone
-  @Benchmark
-  def dslJsonScala(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonEncode(obj)
-  }
-*/
+  /* FIXME: DSL-JSON does not serialize preferred timezone
+    @Benchmark
+    def dslJsonScala(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+      dslJsonEncode(obj)
+    }
+  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

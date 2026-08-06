@@ -50,14 +50,15 @@ class IntMapOfBooleansWriting extends IntMapOfBooleansBenchmark {
 
     writeToArray(obj.asJson)
   }
-/* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
-  @Benchmark
-  def dslJsonScala(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonEncode(obj)
-  }
-*/
+  /* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
+    @Benchmark
+    def dslJsonScala(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+      dslJsonEncode(obj)
+    }
+  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -124,13 +125,13 @@ class IntMapOfBooleansWriting extends IntMapOfBooleansBenchmark {
     writeToByteArray(obj)
   }
 
-/* FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
-  @Benchmark
-  def weePickle(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-    import com.rallyhealth.weepickle.v1.WeePickle.FromScala
+  /* FIXME: weePickle throws java.lang.ClassCastException: class scala.Tuple2 cannot be cast to class java.lang.Boolean
+    @Benchmark
+    def weePickle(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+      import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 
-    FromScala(obj).transform(ToJson.bytes)
-  }
-*/
+      FromScala(obj).transform(ToJson.bytes)
+    }
+  */
 }

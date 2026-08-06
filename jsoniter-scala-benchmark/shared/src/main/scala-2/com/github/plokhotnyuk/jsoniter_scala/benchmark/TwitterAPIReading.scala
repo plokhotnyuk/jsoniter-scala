@@ -47,7 +47,10 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[Seq[Tweet]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Seq[Tweet]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -56,7 +59,10 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Seq[Tweet]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+    Decoder[Seq[Tweet]].decodeJson(readFromArray[io.circe.Json](jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -149,7 +155,10 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Seq[Tweet] = ZioBlocksCodecs.twitterAPICodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Seq[Tweet] = ZioBlocksCodecs.twitterAPICodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Seq[Tweet] = {
@@ -157,7 +166,10 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Seq[Tweet]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Seq[Tweet]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -165,6 +177,9 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    twitterAPICodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    twitterAPICodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

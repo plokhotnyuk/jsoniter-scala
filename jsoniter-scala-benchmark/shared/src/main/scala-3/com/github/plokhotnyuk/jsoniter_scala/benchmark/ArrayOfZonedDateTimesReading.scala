@@ -37,7 +37,10 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
   def circe(): Array[ZonedDateTime] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[ZonedDateTime]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[ZonedDateTime]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -47,7 +50,10 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[ZonedDateTime]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[ZonedDateTime]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -127,14 +133,20 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
 
   @Benchmark
   def zioBlocks(): Array[ZonedDateTime] =
-    ZioBlocksCodecs.arrayOfZonedDateTimesCodec.decode(jsonBytes).fold(throw _, identity)
+    ZioBlocksCodecs.arrayOfZonedDateTimesCodec.decode(jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
 
   @Benchmark
   def zioJson(): Array[ZonedDateTime] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[ZonedDateTime]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[ZonedDateTime]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -142,6 +154,9 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfZonedDateTimesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfZonedDateTimesCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

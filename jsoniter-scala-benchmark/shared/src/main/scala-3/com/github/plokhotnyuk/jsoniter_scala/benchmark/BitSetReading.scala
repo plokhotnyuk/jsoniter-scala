@@ -30,7 +30,10 @@ class BitSetReading extends BitSetBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[BitSet](jsonBytes).fold(throw _, identity)
+    decodeByteArray[BitSet](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -39,7 +42,10 @@ class BitSetReading extends BitSetBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[BitSet].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[BitSet].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark

@@ -36,7 +36,10 @@ class Base64Reading extends Base64Benchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[Array[Byte]](jsonBytes)(base64C3c).fold(throw _, identity)
+    decodeByteArray[Array[Byte]](jsonBytes)(base64C3c) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -45,7 +48,10 @@ class Base64Reading extends Base64Benchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[Byte]](base64C3c).decodeJson(readFromArray(jsonBytes, tooLongStringConfig)).fold(throw _, identity)
+    Decoder[Array[Byte]](base64C3c).decodeJson(readFromArray(jsonBytes, tooLongStringConfig)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -64,18 +70,19 @@ class Base64Reading extends Base64Benchmark {
 
     mapper.readValue[JValue](jsonBytes, jValueType).extract[Array[Byte]]
   }
-/* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
-  @Benchmark
-  @annotation.nowarn
-  def json4sNative(): Array[Byte] = {
-    import org.json4s._
-    import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Json4sFormats._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    parse(new String(jsonBytes, UTF_8)).extract[Array[Byte]]
-  }
-*/
+  /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
+    @Benchmark
+    @annotation.nowarn
+    def json4sNative(): Array[Byte] = {
+      import org.json4s._
+      import org.json4s.native.JsonMethods._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Json4sFormats._
+      import java.nio.charset.StandardCharsets.UTF_8
+
+      parse(new String(jsonBytes, UTF_8)).extract[Array[Byte]]
+    }
+  */
   @Benchmark
   def jsoniterScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -139,6 +146,9 @@ class Base64Reading extends Base64Benchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Byte]](base64C3c.decoder).fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[Byte]](base64C3c.decoder) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

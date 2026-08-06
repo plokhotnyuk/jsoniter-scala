@@ -102,20 +102,20 @@ object DslPlatformJson {
   implicit val (googleMapsAPIEncoder: JsonWriter.WriteObject[GoogleMapsAPI.DistanceMatrix],
   googleMapsAPIDecoder: JsonReader.ReadObject[GoogleMapsAPI.DistanceMatrix]) = codec[GoogleMapsAPI.DistanceMatrix]
   implicit val (intEncoder: JsonWriter.WriteObject[Int], intDecoder: JsonReader.ReadObject[Int]) = codec[Int]
-/* FIXME: DSL-JSON doesn't support immutable.IntMap
-  implicit val (intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]],
-  intMapOfBooleansDecoder: JsonReader.ReadObject[IntMap[Boolean]]) = codec[IntMap[Boolean]]
-*/
+  /* FIXME: DSL-JSON doesn't support immutable.IntMap
+    implicit val (intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]],
+    intMapOfBooleansDecoder: JsonReader.ReadObject[IntMap[Boolean]]) = codec[IntMap[Boolean]]
+  */
   implicit val (listOfBooleansEncoder: JsonWriter.WriteObject[List[Boolean]],
   listOfBooleansDecoder: JsonReader.ReadObject[List[Boolean]]) = codec[List[Boolean]]
   implicit val (mapOfIntsToBooleansEncoder: JsonWriter.WriteObject[Map[Int, Boolean]],
   mapOfIntsToBooleansDecoder: JsonReader.ReadObject[Map[Int, Boolean]]) = codec[Map[Int, Boolean]]
   implicit val (mutableBitSetEncoder: JsonWriter.WriteObject[mutable.BitSet],
   mutableBitSetDecoder: JsonReader.ReadObject[mutable.BitSet]) = codec[mutable.BitSet]
-/* FIXME: DSL-JSON doesn't support mutable.LongMap
-  implicit val (mutableLongMapOfBooleansEncoder: JsonWriter.WriteObject[mutable.LongMap[Boolean]],
-  mutableLongMapOfBooleansDecoder: JsonReader.ReadObject[mutable.LongMap[Boolean]]) = codec[mutable.LongMap[Boolean]]
-*/
+  /* FIXME: DSL-JSON doesn't support mutable.LongMap
+    implicit val (mutableLongMapOfBooleansEncoder: JsonWriter.WriteObject[mutable.LongMap[Boolean]],
+    mutableLongMapOfBooleansDecoder: JsonReader.ReadObject[mutable.LongMap[Boolean]]) = codec[mutable.LongMap[Boolean]]
+  */
   implicit val (mutableMapOfIntsToBooleansEncoder: JsonWriter.WriteObject[mutable.Map[Int, Boolean]],
   mutableMapOfIntsToBooleansDecoder: JsonReader.ReadObject[mutable.Map[Int, Boolean]]) = codec[mutable.Map[Int, Boolean]]
   implicit val (mutableSetOfIntsEncoder: JsonWriter.WriteObject[mutable.Set[Int]],

@@ -90,15 +90,16 @@ class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
 
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)
   }
-/* FIXME: Play-JSON uses BigDecimal with engineering decimal representation to serialize numbers
-  @Benchmark
-  def playJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-    import play.api.libs.json.Json
 
-    Json.toBytes(Json.toJson(obj))
-  }
-*/
+  /* FIXME: Play-JSON uses BigDecimal with engineering decimal representation to serialize numbers
+    @Benchmark
+    def playJson(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+      import play.api.libs.json.Json
+
+      Json.toBytes(Json.toJson(obj))
+    }
+  */
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
@@ -131,15 +132,16 @@ class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
 
     writeToByteArray(obj)
   }
-/* FIXME: weePickle writes BigDecimal as JSON strings by default
-  @Benchmark
-  def weePickle(): Array[Byte] = {
-    import com.rallyhealth.weejson.v1.jackson.ToJson
-    import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 
-    FromScala(obj).transform(ToJson.bytes)
-  }
-*/
+  /* FIXME: weePickle writes BigDecimal as JSON strings by default
+    @Benchmark
+    def weePickle(): Array[Byte] = {
+      import com.rallyhealth.weejson.v1.jackson.ToJson
+      import com.rallyhealth.weepickle.v1.WeePickle.FromScala
+
+      FromScala(obj).transform(ToJson.bytes)
+    }
+  */
   @Benchmark
   def zioBlocks(): Array[Byte] = ZioBlocksCodecs.arrayOfBigIntsCodec.encode(obj)
 

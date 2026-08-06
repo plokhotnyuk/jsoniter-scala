@@ -47,6 +47,6 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
   private[this] def check(actual: String, expected: String): Unit =
     actual.substring(1, actual.length - 1).split(',')
       .zip(expected.substring(1, expected.length - 1).split(',')).foreach { case (a, e) =>
-      require(a.toFloat == e.toFloat, s"expected: $e, but got: $a when parsed back to float")
-    }
+        require(a.toFloat == e.toFloat, s"expected: $e, but got: $a when parsed back to float")
+      }
 }

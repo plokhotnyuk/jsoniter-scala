@@ -38,7 +38,10 @@ class GeoJSONReading extends GeoJSONBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[GeoJSON](jsonBytes).fold(throw _, identity)
+    decodeByteArray[GeoJSON](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -47,7 +50,10 @@ class GeoJSONReading extends GeoJSONBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[GeoJSON].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[GeoJSON].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -134,7 +140,10 @@ class GeoJSONReading extends GeoJSONBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): GeoJSON = ZioBlocksCodecs.geoJsonCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): GeoJSON = ZioBlocksCodecs.geoJsonCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): GeoJSON = {
@@ -142,15 +151,21 @@ class GeoJSONReading extends GeoJSONBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[GeoJSON].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[GeoJSON] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
-/* FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
-  @Benchmark
-  def zioSchemaJson(): GeoJSON = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
-    import java.nio.charset.StandardCharsets.UTF_8
+  /* FIXME: zio-schema-json throws java.lang.RuntimeException: .type.FeatureCollection.features[0].type.Feature.geometry.type.Polygon(unrecognized subtype)
+    @Benchmark
+    def zioSchemaJson(): GeoJSON = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+      import java.nio.charset.StandardCharsets.UTF_8
 
-    geoJsonCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
-  }
-*/
+      geoJsonCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+        case Right(x) => x
+        case Left(e) => sys.error(e)
+      }
+    }
+  */
 }

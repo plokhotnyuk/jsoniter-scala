@@ -32,15 +32,16 @@ class NestedStructsWriting extends NestedStructsBenchmark {
 
     JsonStringOutput.write(obj).getBytes(UTF_8)
   }
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
-  @Benchmark
-  def borer(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-    import io.bullet.borer.Json
 
-    Json.encode(obj).toByteArray
-  }
-*/
+  /* FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
+    @Benchmark
+    def borer(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+      import io.bullet.borer.Json
+
+      Json.encode(obj).toByteArray
+    }
+  */
   @Benchmark
   def circe(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -58,14 +59,15 @@ class NestedStructsWriting extends NestedStructsBenchmark {
 
     writeToArray(obj.asJson)
   }
-/* FIXME: DSL-JSON serializes null value for Option.None
-  @Benchmark
-  def dslJsonScala(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonEncode(obj)
-  }
-*/
+  /* FIXME: DSL-JSON serializes null value for Option.None
+    @Benchmark
+    def dslJsonScala(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+      dslJsonEncode(obj)
+    }
+  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

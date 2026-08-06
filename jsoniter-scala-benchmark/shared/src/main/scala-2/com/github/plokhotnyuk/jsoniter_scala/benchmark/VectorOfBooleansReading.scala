@@ -43,7 +43,10 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   def circe(): Vector[Boolean] = {
     import io.circe.jawn._
 
-    decodeByteArray[Vector[Boolean]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Vector[Boolean]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -52,7 +55,10 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Vector[Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Vector[Boolean]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -143,14 +149,20 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Vector[Boolean] = ZioBlocksCodecs.vectorOfBooleansCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Vector[Boolean] = ZioBlocksCodecs.vectorOfBooleansCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Vector[Boolean] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Vector[Boolean]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Vector[Boolean]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -158,6 +170,9 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    vectorOfBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    vectorOfBooleansCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

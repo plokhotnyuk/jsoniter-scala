@@ -46,7 +46,10 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
   def circe(): Array[LocalDate] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[LocalDate]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[LocalDate]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -56,7 +59,10 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[LocalDate]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[LocalDate]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -148,14 +154,20 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[LocalDate] = ZioBlocksCodecs.arrayOfLocalDatesCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[LocalDate] = ZioBlocksCodecs.arrayOfLocalDatesCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[LocalDate] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[LocalDate]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[LocalDate]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -163,6 +175,9 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfLocalDatesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfLocalDatesCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

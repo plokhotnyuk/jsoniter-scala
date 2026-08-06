@@ -35,7 +35,10 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   def circe(): Array[Short] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[Short]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[Short]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -45,7 +48,10 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[Short]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[Short]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -131,14 +137,20 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[Short] = ZioBlocksCodecs.arrayOfShortsCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[Short] = ZioBlocksCodecs.arrayOfShortsCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[Short] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Short]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[Short]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -146,6 +158,9 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfShortsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfShortsCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

@@ -31,32 +31,40 @@ class BigIntReading extends BigIntBenchmark {
 
     JsonStringInput.read[BigInt](new String(jsonBytes, UTF_8))
   }
-/* FIXME: borer parses up to 200 digits only
-  @Benchmark
-  def borer(): BigInt = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
-    import io.bullet.borer.Json
 
-    Json.decode(jsonBytes).withConfig(decodingConfig).to[BigInt].value
-  }
-*/
+  /* FIXME: borer parses up to 200 digits only
+    @Benchmark
+    def borer(): BigInt = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+      import io.bullet.borer.Json
+
+      Json.decode(jsonBytes).withConfig(decodingConfig).to[BigInt].value
+    }
+  */
   @Benchmark
   def circe(): BigInt = {
     import io.circe.jawn._
 
-    decodeByteArray[BigInt](jsonBytes).fold(throw _, identity)
+    decodeByteArray[BigInt](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
-/* FIXME: circe-jsoniter parses up to 308 digits only
-  @Benchmark
-  def circeJsoniter(): BigInt = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.core._
-    import io.circe.Decoder
 
-    Decoder[BigInt].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
-  }
-*/
+  /* FIXME: circe-jsoniter parses up to 308 digits only
+    @Benchmark
+    def circeJsoniter(): BigInt = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+      import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
+      import com.github.plokhotnyuk.jsoniter_scala.core._
+      import io.circe.Decoder
+
+      Decoder[BigInt].decodeJson(readFromArray(jsonBytes)) match {
+        case Right(x) => x
+        case Left(e) => throw e
+      }
+    }
+  */
   @Benchmark
   def dslJsonScala(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
@@ -79,17 +87,18 @@ class BigIntReading extends BigIntBenchmark {
 
     bigNumberMapper.readValue[JValue](jsonBytes, jValueType).extract[BigInt]
   }
-/* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
-  @Benchmark
-  def json4sNative(): BigInt = {
-    import org.json4s._
-    import org.json4s.native.JsonMethods._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
-    import java.nio.charset.StandardCharsets.UTF_8
 
-    parse(new String(jsonBytes, UTF_8)).extract[BigInt]
-  }
-*/
+  /* FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
+    @Benchmark
+    def json4sNative(): BigInt = {
+      import org.json4s._
+      import org.json4s.native.JsonMethods._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
+      import java.nio.charset.StandardCharsets.UTF_8
+
+      parse(new String(jsonBytes, UTF_8)).extract[BigInt]
+    }
+  */
   @Benchmark
   def jsoniterScala(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -97,23 +106,24 @@ class BigIntReading extends BigIntBenchmark {
 
     readFromArray[BigInt](jsonBytes)(bigIntCodec)
   }
-/* FIXME: Play-JSON looses significant digits in BigInt values
-  @Benchmark
-  def playJson(): BigInt = {
-    import play.api.libs.json.Json
 
-    Json.parse(jsonBytes).as[BigInt]
-  }
-*/
-/* FIXME: smithy4sJson parses up to 308 digits only
-  @Benchmark
-  def smithy4sJson(): BigInt = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
-    import com.github.plokhotnyuk.jsoniter_scala.core._
+  /* FIXME: Play-JSON looses significant digits in BigInt values
+    @Benchmark
+    def playJson(): BigInt = {
+      import play.api.libs.json.Json
 
-    readFromArray[BigInt](jsonBytes)(bigIntJCodec)
-  }
-*/
+      Json.parse(jsonBytes).as[BigInt]
+    }
+  */
+  /* FIXME: smithy4sJson parses up to 308 digits only
+    @Benchmark
+    def smithy4sJson(): BigInt = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.Smithy4sJCodecs._
+      import com.github.plokhotnyuk.jsoniter_scala.core._
+
+      readFromArray[BigInt](jsonBytes)(bigIntJCodec)
+    }
+  */
   @Benchmark
   def sprayJson(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -138,7 +148,10 @@ class BigIntReading extends BigIntBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): BigInt = ZioBlocksCodecs.bigIntCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): BigInt = ZioBlocksCodecs.bigIntCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): BigInt = {
@@ -146,6 +159,9 @@ class BigIntReading extends BigIntBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[BigInt](bigIntC3c.decoder).fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[BigInt](bigIntC3c.decoder) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

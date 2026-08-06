@@ -37,7 +37,10 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
   def circe(): mutable.Map[Int, Boolean] = {
     import io.circe.jawn._
 
-    decodeByteArray[mutable.Map[Int, Boolean]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[mutable.Map[Int, Boolean]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -46,7 +49,10 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[mutable.Map[Int, Boolean]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[mutable.Map[Int, Boolean]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark

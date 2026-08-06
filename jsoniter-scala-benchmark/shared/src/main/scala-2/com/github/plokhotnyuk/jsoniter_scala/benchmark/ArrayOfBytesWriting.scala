@@ -58,14 +58,15 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
 
     writeToArray(obj.asJson)
   }
-/* FIXME: DSL-JSON serializes a byte array to the base64 string
-  @Benchmark
-  def dslJsonScala(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonEncode(obj)
-  }
-*/
+  /* FIXME: DSL-JSON serializes a byte array to the base64 string
+    @Benchmark
+    def dslJsonScala(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+      dslJsonEncode(obj)
+    }
+  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

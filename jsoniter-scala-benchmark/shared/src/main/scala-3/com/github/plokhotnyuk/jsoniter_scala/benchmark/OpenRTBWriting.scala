@@ -31,6 +31,7 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
     Json.encode(obj).toByteArray
   }
+
   @Benchmark
   def circe(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -48,34 +49,35 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
     writeToArray(obj.asJson)
   }
-/* FIXME: Jackson serializes fields with default values
-  @Benchmark
-  def jacksonScala(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    jacksonMapper.writeValueAsBytes(obj)
-  }
-*/
-/* FIXME: json4s.jackson serializes fields with default values
-  @Benchmark
-  def json4sJackson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
-    import org.json4s._
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
+  /* FIXME: Jackson serializes fields with default values
+    @Benchmark
+    def jacksonScala(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 
-    mapper.writeValueAsBytes(Extraction.decompose(obj))
-  }
-*/
-/* FIXME: json4s.native serializes fields with default values
-  @Benchmark
-  def json4sNative(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
-    import org.json4s.native.Serialization._
-    import java.nio.charset.StandardCharsets.UTF_8
+      jacksonMapper.writeValueAsBytes(obj)
+    }
+  */
+  /* FIXME: json4s.jackson serializes fields with default values
+    @Benchmark
+    def json4sJackson(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
+      import org.json4s._
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.Json4sJacksonMappers._
 
-    write(obj).getBytes(UTF_8)
-  }
-*/
+      mapper.writeValueAsBytes(Extraction.decompose(obj))
+    }
+  */
+  /* FIXME: json4s.native serializes fields with default values
+    @Benchmark
+    def json4sNative(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
+      import org.json4s.native.Serialization._
+      import java.nio.charset.StandardCharsets.UTF_8
+
+      write(obj).getBytes(UTF_8)
+    }
+  */
   @Benchmark
   def jsoniterScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -144,23 +146,23 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
   @Benchmark
   def zioBlocks(): Array[Byte] = ZioBlocksCodecs.openRTBBidRequestCodec.encode(obj)
-/* FIXME: zio-json serializes default values
-  @Benchmark
-  def zioJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
-    import zio.json.EncoderOps
-    import java.nio.charset.StandardCharsets.UTF_8
+  /* FIXME: zio-json serializes default values
+    @Benchmark
+    def zioJson(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJsonCodecs._
+      import zio.json.EncoderOps
+      import java.nio.charset.StandardCharsets.UTF_8
 
-    obj.toJson.getBytes(UTF_8)
-  }
-*/
-/* FIXME: zio-schema-json serializes default values
-  @Benchmark
-  def zioSchemaJson(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
-    import java.nio.charset.StandardCharsets.UTF_8
+      obj.toJson.getBytes(UTF_8)
+    }
+  */
+  /* FIXME: zio-schema-json serializes default values
+    @Benchmark
+    def zioSchemaJson(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
+      import java.nio.charset.StandardCharsets.UTF_8
 
-    openRTBBidRequestCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
-  }
-*/
+      openRTBBidRequestCodec.encodeJson(obj, None).toString.getBytes(UTF_8)
+    }
+  */
 }

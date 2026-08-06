@@ -44,7 +44,10 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   def circe(): Array[Byte] = {
     import io.circe.jawn._
 
-    decodeByteArray[Array[Byte]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[Byte]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -54,16 +57,20 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[Byte]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[Byte]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
-/* FIXME: DSL-JSON expects a base64 string for the byte array
-  @Benchmark
-  def dslJsonScala(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-    dslJsonDecode[Array[Byte]](jsonBytes)
-  }
-*/
+  /* FIXME: DSL-JSON expects a base64 string for the byte array
+    @Benchmark
+    def dslJsonScala(): Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+
+      dslJsonDecode[Array[Byte]](jsonBytes)
+    }
+  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -145,14 +152,20 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.arrayOfBytesCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[Byte] = ZioBlocksCodecs.arrayOfBytesCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[Byte] = {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[Byte]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[Byte]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -160,6 +173,9 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfBytesCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfBytesCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

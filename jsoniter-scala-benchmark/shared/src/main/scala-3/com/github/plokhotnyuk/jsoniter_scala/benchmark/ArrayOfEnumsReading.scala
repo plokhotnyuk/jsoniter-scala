@@ -38,7 +38,10 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[Array[SuitEnum]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[SuitEnum]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -47,7 +50,10 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[SuitEnum]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[SuitEnum]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -132,6 +138,9 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[SuitEnum]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[SuitEnum]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

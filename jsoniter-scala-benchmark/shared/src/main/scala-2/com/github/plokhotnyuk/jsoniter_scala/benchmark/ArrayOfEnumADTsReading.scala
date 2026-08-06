@@ -46,7 +46,10 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[Array[SuitADT]](jsonBytes).fold(throw _, identity)
+    decodeByteArray[Array[SuitADT]](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -55,7 +58,10 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[Array[SuitADT]].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[Array[SuitADT]].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -140,7 +146,10 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): Array[SuitADT] = ZioBlocksCodecs.arrayOfEnumADTsCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): Array[SuitADT] = ZioBlocksCodecs.arrayOfEnumADTsCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): Array[SuitADT] = {
@@ -148,7 +157,10 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[Array[SuitADT]].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[Array[SuitADT]] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -156,6 +168,9 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    arrayOfEnumADTsCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    arrayOfEnumADTsCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

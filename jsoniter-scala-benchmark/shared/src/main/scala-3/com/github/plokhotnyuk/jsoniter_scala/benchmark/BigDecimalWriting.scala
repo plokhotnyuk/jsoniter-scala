@@ -130,15 +130,16 @@ class BigDecimalWriting extends BigDecimalBenchmark {
 
     writeToByteArray(obj)
   }
-/* FIXME: weePickle serializes BigDecimal values as JSON strings
-  @Benchmark
-  def weePickle(): Array[Byte] = {
-    import com.rallyhealth.weejson.v1.jackson.ToJson
-    import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 
-    FromScala(obj).transform(ToJson.bytes)
-  }
-*/
+  /* FIXME: weePickle serializes BigDecimal values as JSON strings
+    @Benchmark
+    def weePickle(): Array[Byte] = {
+      import com.rallyhealth.weejson.v1.jackson.ToJson
+      import com.rallyhealth.weepickle.v1.WeePickle.FromScala
+
+      FromScala(obj).transform(ToJson.bytes)
+    }
+  */
   @Benchmark
   def zioBlocks(): Array[Byte] = ZioBlocksCodecs.bigDecimalCodec.encode(obj)
 

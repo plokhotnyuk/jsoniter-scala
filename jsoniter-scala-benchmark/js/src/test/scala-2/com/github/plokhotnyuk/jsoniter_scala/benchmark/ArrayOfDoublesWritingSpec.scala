@@ -61,5 +61,5 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
             case ex if NonFatal(ex) => Double.NaN
           }
         assert(d1 == d2, s"expected: $e, but got: $a when parsed back to double")
-    }
+      }
 }

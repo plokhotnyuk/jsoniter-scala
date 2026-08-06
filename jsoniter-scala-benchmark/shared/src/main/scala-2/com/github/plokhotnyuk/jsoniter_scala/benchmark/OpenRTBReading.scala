@@ -47,7 +47,10 @@ class OpenRTBReading extends OpenRTBBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[BidRequest](jsonBytes).fold(throw _, identity)
+    decodeByteArray[BidRequest](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -56,7 +59,10 @@ class OpenRTBReading extends OpenRTBBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[BidRequest].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[BidRequest].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -142,7 +148,10 @@ class OpenRTBReading extends OpenRTBBenchmark {
   }
 
   @Benchmark
-  def zioBlocks(): BidRequest = ZioBlocksCodecs.openRTBBidRequestCodec.decode(jsonBytes).fold(throw _, identity)
+  def zioBlocks(): BidRequest = ZioBlocksCodecs.openRTBBidRequestCodec.decode(jsonBytes) match {
+    case Right(x) => x
+    case Left(e) => throw e
+  }
 
   @Benchmark
   def zioJson(): BidRequest = {
@@ -150,7 +159,10 @@ class OpenRTBReading extends OpenRTBBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[BidRequest].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[BidRequest] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -158,6 +170,9 @@ class OpenRTBReading extends OpenRTBBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    openRTBBidRequestCodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    openRTBBidRequestCodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }

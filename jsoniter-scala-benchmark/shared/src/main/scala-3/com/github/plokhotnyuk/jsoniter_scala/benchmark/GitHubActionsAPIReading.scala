@@ -37,7 +37,10 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.jawn._
 
-    decodeByteArray[GitHubActionsAPI.Response](jsonBytes).fold(throw _, identity)
+    decodeByteArray[GitHubActionsAPI.Response](jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -46,7 +49,10 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.core._
     import io.circe.Decoder
 
-    Decoder[GitHubActionsAPI.Response].decodeJson(readFromArray(jsonBytes)).fold(throw _, identity)
+    Decoder[GitHubActionsAPI.Response].decodeJson(readFromArray(jsonBytes)) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
   }
 
   @Benchmark
@@ -135,7 +141,10 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
 
   @Benchmark
   def zioBlocks(): GitHubActionsAPI.Response =
-    ZioBlocksCodecs.gitHubActionsAPICodec.decode(jsonBytes).fold(throw _, identity)
+    ZioBlocksCodecs.gitHubActionsAPICodec.decode(jsonBytes) match {
+      case Right(x) => x
+      case Left(e) => throw e
+    }
 
   @Benchmark
   def zioJson(): GitHubActionsAPI.Response = {
@@ -143,7 +152,10 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     import zio.json.DecoderOps
     import java.nio.charset.StandardCharsets.UTF_8
 
-    new String(jsonBytes, UTF_8).fromJson[GitHubActionsAPI.Response].fold(sys.error, identity)
+    new String(jsonBytes, UTF_8).fromJson[GitHubActionsAPI.Response] match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 
   @Benchmark
@@ -151,6 +163,9 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioSchemaJsonCodecs._
     import java.nio.charset.StandardCharsets.UTF_8
 
-    gitHubActionsAPICodec.decodeJson(new String(jsonBytes, UTF_8)).fold(sys.error, identity)
+    gitHubActionsAPICodec.decodeJson(new String(jsonBytes, UTF_8)) match {
+      case Right(x) => x
+      case Left(e) => sys.error(e)
+    }
   }
 }
