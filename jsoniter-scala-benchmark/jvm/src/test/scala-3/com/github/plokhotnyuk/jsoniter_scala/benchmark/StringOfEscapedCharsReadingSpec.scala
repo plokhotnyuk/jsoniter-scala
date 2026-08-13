@@ -33,6 +33,7 @@ class StringOfEscapedCharsReadingSpec extends BenchmarkSpecBase {
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
+      benchmark.fory() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.json4sJackson() shouldBe benchmark.obj
       // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
@@ -54,6 +55,7 @@ class StringOfEscapedCharsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.fory())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array

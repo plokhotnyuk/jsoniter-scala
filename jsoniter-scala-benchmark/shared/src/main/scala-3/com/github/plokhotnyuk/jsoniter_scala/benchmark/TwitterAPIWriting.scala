@@ -50,7 +50,14 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
     writeToArray(obj.asJson)(jsonCodec2)
   }
+/* FIXME: throws org.apache.fory.json.ForyJsonException: Unsupported JSON object type class scala.collection.immutable.List
+  @Benchmark
+  def fory(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
+    Fory.foryJson.toJsonBytes(obj)
+  }
+*/
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

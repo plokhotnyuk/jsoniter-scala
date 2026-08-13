@@ -55,7 +55,14 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
       case Left(e) => throw e
     }
   }
+/* FIXME: throws org.apache.fory.json.ForyJsonException: Unsupported JSON object type interface scala.collection.immutable.Seq
+  @Benchmark
+  def fory(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
+    Fory.foryJson.fromJson(jsonBytes, classOf[Seq[Tweet]])
+  }
+*/
   @Benchmark
   def jacksonScala(): Seq[Tweet] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

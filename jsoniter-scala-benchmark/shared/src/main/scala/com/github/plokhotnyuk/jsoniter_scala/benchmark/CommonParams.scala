@@ -47,7 +47,7 @@ import org.openjdk.jmh.annotations._
   "-XX:MaxInlineLevel=20",
   "-XX:InlineSmallCode=2500", // Use defaults from Open JDK 17+
   "-XX:+AlwaysPreTouch",
-  "-XX:+UseTransparentHugePages",
+  //"-XX:+UseTransparentHugePages", For Linux only?
   "-XX:-UseDynamicNumberOfGCThreads",
   "-XX:+UseNUMA",
   "-XX:-UseAdaptiveNUMAChunkSizing",

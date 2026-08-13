@@ -32,6 +32,8 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.borer()) shouldBe b.compactJsonString1
       toString(b.circe()) shouldBe b.compactJsonString1
       toString(b.circeJsoniter()) shouldBe b.compactJsonString1
+      // FIXME: throws org.apache.fory.json.ForyJsonException: Unsupported JSON object type class scala.collection.immutable.List
+      //toString(b.fory()) shouldBe b.compactJsonString1
       toString(b.jacksonScala()) shouldBe b.compactJsonString1
       // FIXME: json4s.jackson serializes empty collections
       //toString(b.json4sJackson()) shouldBe b.compactJsonString1
