@@ -71,6 +71,13 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
   }
 
   @Benchmark
+  def fory(): Array[Suit] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[Array[Suit]])
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Suit] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

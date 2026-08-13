@@ -33,6 +33,8 @@ class ExtractFieldsReadingSpec extends BenchmarkSpecBase {
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
+      // FIXME: returns `ExtractFields(null, 0)` instance instead of throwing an error
+      //benchmark.fory() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
@@ -53,6 +55,8 @@ class ExtractFieldsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
+      // FIXME: returns `ExtractFields(null, 0)` instance instead of throwing an error
+      //intercept[Throwable](b.fory())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())
