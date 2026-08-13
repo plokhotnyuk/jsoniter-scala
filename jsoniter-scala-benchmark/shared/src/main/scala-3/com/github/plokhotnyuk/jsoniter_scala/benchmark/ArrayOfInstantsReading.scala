@@ -56,6 +56,12 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
     }
   }
 
+  def fory(): Array[Instant] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[Array[Instant]])
+  }
+
   @Benchmark
   def jacksonScala(): Array[Instant] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

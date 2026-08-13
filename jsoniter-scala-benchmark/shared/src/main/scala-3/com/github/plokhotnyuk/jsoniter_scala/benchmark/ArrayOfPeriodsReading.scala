@@ -56,6 +56,12 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
     }
   }
 
+  def fory(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[Array[Period]])
+  }
+
   @Benchmark
   def jacksonScala(): Array[Period] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

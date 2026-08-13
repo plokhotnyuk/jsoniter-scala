@@ -56,6 +56,12 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
     }
   }
 
+  def fory(): Array[Year] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[Array[Year]])
+  }
+
   @Benchmark
   def jacksonScala(): Array[Year] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

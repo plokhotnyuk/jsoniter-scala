@@ -56,6 +56,12 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
     }
   }
 
+  def fory(): Array[YearMonth] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[Array[YearMonth]])
+  }
+
   @Benchmark
   def jacksonScala(): Array[YearMonth] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

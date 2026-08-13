@@ -65,6 +65,12 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
     }
   }
 
+  def fory(): Array[Duration] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[Array[Duration]])
+  }
+
   @Benchmark
   def jacksonScala(): Array[Duration] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
