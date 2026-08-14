@@ -322,14 +322,13 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
         "-preview"
       )
     }),
-    evictionErrorLevel := Level.Warn,
     libraryDependencies ++= Seq(
       "com.disneystreaming.smithy4s" %%% "smithy4s-json" % "0.19.11",
       "com.evolutiongaming" %%% "play-json-jsoniter" % "0.10.3" intransitive(),
       "org.playframework" %%% "play-json" % "3.0.6",
       "dev.zio" %%% "zio-blocks-schema" % "0.0.51",
       "dev.zio" %%% "zio-json" % "0.10.0",
-      "dev.zio" %%% "zio-schema-json" % "1.8.5",
+      "dev.zio" %%% "zio-schema-json" % "1.8.6",
       "io.circe" %%% "circe-generic" % "0.14.16",
       "io.circe" %%% "circe-jawn" % "0.14.16",
       "com.lihaoyi" %%% "upickle" % "4.4.3",
