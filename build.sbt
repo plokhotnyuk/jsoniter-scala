@@ -49,6 +49,7 @@ lazy val commonSettings = Seq(
     }
   }),
   compileOrder := CompileOrder.JavaThenScala,
+  usePipelining := true,
   libraryDependencies ++= Seq(
     "org.scalatest" %%% "scalatest" % "3.2.20" % Test
   ),
