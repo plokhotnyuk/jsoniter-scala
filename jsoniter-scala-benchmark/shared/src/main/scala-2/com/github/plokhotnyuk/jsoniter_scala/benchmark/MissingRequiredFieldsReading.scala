@@ -21,7 +21,10 @@
 
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
 import org.openjdk.jmh.annotations.Benchmark
+
+import java.io.IOException
 
 class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   @Benchmark
@@ -77,6 +80,17 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
       dslJsonDecode[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
     } catch {
       case ex: IOException => ex.getMessage
+    }
+  }
+
+  @Benchmark
+  def fory(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    try {
+      Fory.foryJson.fromJson(jsonBytes, classOf[MissingRequiredFields]).toString // toString shouldn't be called
+    } catch {
+      case ex: Exception => ex.getMessage
     }
   }
 

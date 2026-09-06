@@ -57,6 +57,13 @@ class NestedStructsReading extends NestedStructsBenchmark {
   }
 
   @Benchmark
+  def fory(): NestedStructs = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[NestedStructs])
+  }
+
+  @Benchmark
   def jacksonScala(): NestedStructs = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

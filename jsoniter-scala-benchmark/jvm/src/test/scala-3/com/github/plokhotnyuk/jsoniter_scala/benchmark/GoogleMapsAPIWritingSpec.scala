@@ -32,6 +32,7 @@ class GoogleMapsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.borer()) shouldBe b.compactJsonString1
       toString(b.circe()) shouldBe b.compactJsonString1
       toString(b.circeJsoniter()) shouldBe b.compactJsonString1
+      toString(b.fory()) shouldBe b.compactJsonString1
       toString(b.jacksonScala()) shouldBe b.compactJsonString1
       toString(b.json4sJackson()) shouldBe b.compactJsonString1
       toString(b.json4sNative()) shouldBe b.compactJsonString1

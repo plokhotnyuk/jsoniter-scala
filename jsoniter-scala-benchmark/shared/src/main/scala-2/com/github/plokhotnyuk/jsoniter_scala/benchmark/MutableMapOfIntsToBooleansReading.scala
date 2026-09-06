@@ -63,6 +63,13 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
   }
 
   @Benchmark
+  def fory(): mutable.Map[Int, Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, Fory.mutableMapOfIntsToBooleansType)
+  }
+
+  @Benchmark
   def jacksonScala(): mutable.Map[Int, Boolean] = {
     import tools.jackson.module.scala.JavaTypeable.gen2JavaTypeable
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

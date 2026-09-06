@@ -21,8 +21,27 @@
 
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI.Tweet
 import org.apache.fory.json.ForyJson
+import org.apache.fory.json.scala.{ForyJsonScala, ScalaTypeRef}
+import org.apache.fory.reflect.TypeRef
+import scala.collection.immutable.{ArraySeq, IntMap}
+import scala.collection.mutable
 
 object Fory {
-  val foryJson: ForyJson = ForyJson.builder().build()
+  val foryJson: ForyJson =
+    ForyJsonScala.builder()
+      .maxDepth(Int.MaxValue) // WARNING: It is an unsafe option for open systems
+      .writeNullFields(false)
+      .build()
+  val arraySeqOfBooleansType: TypeRef[ArraySeq[Boolean]] = ScalaTypeRef[ArraySeq[Boolean]]
+  val intMapOfBooleansType: TypeRef[IntMap[Boolean]] = ScalaTypeRef[IntMap[Boolean]]
+  val listOfBooleansType: TypeRef[List[Boolean]] = ScalaTypeRef[List[Boolean]]
+  val mapOfIntsToBooleansType: TypeRef[Map[Int, Boolean]] = ScalaTypeRef[Map[Int, Boolean]]
+  val mutableLongMapOfBooleansType: TypeRef[mutable.LongMap[Boolean]] = ScalaTypeRef[mutable.LongMap[Boolean]]
+  val mutableMapOfIntsToBooleansType: TypeRef[mutable.Map[Int, Boolean]] = ScalaTypeRef[mutable.Map[Int, Boolean]]
+  val mutableSetOfIntsType: TypeRef[mutable.Set[Int]] = ScalaTypeRef[mutable.Set[Int]]
+  val setOfIntsType: TypeRef[Set[Int]] = ScalaTypeRef[Set[Int]]
+  val seqOfTweetsType: TypeRef[Seq[Tweet]] = ScalaTypeRef[Seq[Tweet]]
+  val vectorOfBooleansType: TypeRef[Vector[Boolean]] = ScalaTypeRef[Vector[Boolean]]
 }

@@ -67,7 +67,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
     dslJsonEncode(obj)
   }
 */
-/* FIXME: throws org.apache.fory.json.ForyJsonException: Unsupported JSON object type class scala.collection.immutable.List
+/* FIXME: Fory writes None as JSON null
   @Benchmark
   def fory(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory

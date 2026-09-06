@@ -66,6 +66,13 @@ class OpenRTBReading extends OpenRTBBenchmark {
   }
 
   @Benchmark
+  def fory(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[BidRequest])
+  }
+
+  @Benchmark
   def jacksonScala(): BidRequest = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

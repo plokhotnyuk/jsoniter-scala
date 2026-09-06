@@ -35,6 +35,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
         "Cannot decode `MissingRequiredFields` instance due to missing map keys \"s\" and \"i\" (input position 1)"
       b.circe() shouldBe "DecodingFailure at .s: Missing required field"
       b.circeJsoniter() shouldBe "DecodingFailure at .s: Missing required field"
+      b.fory() shouldBe "Missing required JSON constructor property s for com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields"
       b.jacksonScala() shouldBe
         """Null value for creator property 's' (index 0); `DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES` enabled
           | at [Source: (byte[])"{}"; line: 1, column: 2] (through reference chain: com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields["s"])""".stripMargin
@@ -75,6 +76,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.borer() shouldBe "MissingRequiredFields(VVV,1)"
       b.circe() shouldBe "MissingRequiredFields(VVV,1)"
       b.circeJsoniter() shouldBe "MissingRequiredFields(VVV,1)"
+      b.fory() shouldBe "MissingRequiredFields(VVV,1)"
       b.jacksonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.json4sJackson() shouldBe "MissingRequiredFields(VVV,1)"
       b.json4sNative() shouldBe "MissingRequiredFields(VVV,1)"

@@ -65,6 +65,7 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
     }
   }
 
+  @Benchmark
   def fory(): Array[Instant] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 

@@ -56,6 +56,7 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
     }
   }
 
+  @Benchmark
   def fory(): Array[YearMonth] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 

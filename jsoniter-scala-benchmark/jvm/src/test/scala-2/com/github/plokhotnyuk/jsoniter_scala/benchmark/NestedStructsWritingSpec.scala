@@ -31,11 +31,13 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       val b = benchmark
       toString(b.avSystemGenCodec()) shouldBe b.jsonString
       // FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
-      //toString(b.borer()) shouldBe b.jsonString
+      // toString(b.borer()) shouldBe b.jsonString
       toString(b.circe()) shouldBe b.jsonString
       toString(b.circeJsoniter()) shouldBe b.jsonString
       // FIXME: DSL-JSON serializes null value for Option.None
-      //toString(b.dslJsonScala()) shouldBe b.jsonString
+      // toString(b.dslJsonScala()) shouldBe b.jsonString
+      // FIXME: Fory writes None as JSON null
+      // toString(b.fory()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.json4sJackson()) shouldBe b.jsonString
       toString(b.json4sNative()) shouldBe b.jsonString

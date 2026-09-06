@@ -35,6 +35,7 @@ class ArrayOfBigIntsReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
+      benchmark.fory() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
@@ -58,6 +59,7 @@ class ArrayOfBigIntsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
+      intercept[Throwable](b.fory())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())

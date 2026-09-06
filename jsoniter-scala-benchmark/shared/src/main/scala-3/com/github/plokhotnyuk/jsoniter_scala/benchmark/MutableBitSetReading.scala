@@ -49,6 +49,13 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
   }
 
   @Benchmark
+  def fory(): mutable.BitSet = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[mutable.BitSet])
+  }
+
+  @Benchmark
   def jacksonScala(): mutable.BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

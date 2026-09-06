@@ -32,6 +32,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
+      benchmark.fory() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
@@ -46,6 +47,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       b.jsonBytes = "-".getBytes(UTF_8)
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.fory())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())

@@ -54,6 +54,13 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   }
 
   @Benchmark
+  def fory(): Vector[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, Fory.vectorOfBooleansType)
+  }
+
+  @Benchmark
   def jacksonScala(): Vector[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

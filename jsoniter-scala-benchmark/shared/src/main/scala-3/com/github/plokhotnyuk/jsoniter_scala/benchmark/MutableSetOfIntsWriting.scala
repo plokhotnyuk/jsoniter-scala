@@ -50,6 +50,13 @@ class MutableSetOfIntsWriting extends MutableSetOfIntsBenchmark {
   }
 
   @Benchmark
+  def fory(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.toJsonBytes(obj)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

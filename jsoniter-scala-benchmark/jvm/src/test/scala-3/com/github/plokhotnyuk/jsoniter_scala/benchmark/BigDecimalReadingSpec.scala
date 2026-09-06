@@ -35,6 +35,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.sourceObj
       // FIXME: circe-jsoniter parses up to 308 digits only
       // benchmark.circeJsoniter() shouldBe benchmark.sourceObj
+      benchmark.fory() shouldBe benchmark.sourceObj
       benchmark.jacksonScala() shouldBe benchmark.sourceObj
       benchmark.json4sJackson() shouldBe benchmark.obj
       // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
@@ -58,6 +59,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       // FIXME: circe-jsoniter parses up to 308 digits only
       // intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.fory())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array

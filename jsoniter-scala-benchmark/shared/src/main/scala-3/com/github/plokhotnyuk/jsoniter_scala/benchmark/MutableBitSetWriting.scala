@@ -43,6 +43,13 @@ class MutableBitSetWriting extends MutableBitSetBenchmark {
   }
 
   @Benchmark
+  def fory(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.toJsonBytes(obj)
+  }
+
+  @Benchmark
   def json4sJackson(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CommonJson4sFormats._
     import org.json4s._

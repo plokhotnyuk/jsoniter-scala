@@ -55,6 +55,13 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   }
 
   @Benchmark
+  def fory(): mutable.Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, Fory.mutableSetOfIntsType)
+  }
+
+  @Benchmark
   def jacksonScala(): mutable.Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

@@ -47,6 +47,13 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   }
 
   @Benchmark
+  def fory(): Map[Int, Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, Fory.mapOfIntsToBooleansType)
+  }
+
+  @Benchmark
   def jacksonScala(): Map[Int, Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

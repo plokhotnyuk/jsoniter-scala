@@ -66,6 +66,13 @@ class BitSetReading extends BitSetBenchmark {
     }
   */
   @Benchmark
+  def fory(): BitSet = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[BitSet])
+  }
+
+  @Benchmark
   def jacksonScala(): BitSet = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

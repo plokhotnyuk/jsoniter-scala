@@ -32,6 +32,8 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       toString(b.borer()) shouldBe b.jsonString1
       toString(b.circe()) shouldBe b.jsonString1
       toString(b.circeJsoniter()) shouldBe b.jsonString1
+      // FIXME: Fory writes None as JSON null
+      // toString(b.fory()) shouldBe b.jsonString1
       // FIXME: Jackson serializes fields with default values
       //toString(b.jacksonScala()) shouldBe b.jsonString1
       // FIXME: json4s.jackson serializes fields with default values

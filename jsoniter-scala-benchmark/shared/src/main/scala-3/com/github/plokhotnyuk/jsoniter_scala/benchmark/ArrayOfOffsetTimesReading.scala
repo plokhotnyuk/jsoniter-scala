@@ -56,6 +56,7 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
     }
   }
 
+  @Benchmark
   def fory(): Array[OffsetTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 

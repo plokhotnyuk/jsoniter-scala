@@ -57,6 +57,13 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
+  def fory(): DistanceMatrix = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
+
+    Fory.foryJson.fromJson(jsonBytes, classOf[DistanceMatrix])
+  }
+
+  @Benchmark
   def jacksonScala(): DistanceMatrix = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 

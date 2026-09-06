@@ -69,14 +69,14 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
 
     dslJsonDecode[ExtractFields](jsonBytes)
   }
-/* FIXME: returns `ExtractFields(null, 0)` instance instead of throwing an error
+
   @Benchmark
   def fory(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[ExtractFields])
   }
-*/
+
   @Benchmark
   def jacksonScala(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

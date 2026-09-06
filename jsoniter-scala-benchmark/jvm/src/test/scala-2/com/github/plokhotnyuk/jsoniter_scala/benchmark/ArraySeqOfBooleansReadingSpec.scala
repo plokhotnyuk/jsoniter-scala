@@ -36,6 +36,7 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       // FIXME: DSL-JSON doesn't support parsing of ArraySeq
       // benchmark.dslJsonScala() shouldBe benchmark.obj
+      benchmark.fory() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       // FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
       // benchmark.json4sJackson() shouldBe benchmark.obj
@@ -61,6 +62,7 @@ class ArraySeqOfBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       // FIXME: DSL-JSON doesn't support parsing of ArraySeq
       // intercept[Throwable](b.dslJsonScala())
+      intercept[Throwable](b.fory())
       intercept[Throwable](b.jacksonScala())
       // FIXME: json4s.jackson throws org.json4s.MappingException: unknown error
       // intercept[Throwable](b.json4sJackson())

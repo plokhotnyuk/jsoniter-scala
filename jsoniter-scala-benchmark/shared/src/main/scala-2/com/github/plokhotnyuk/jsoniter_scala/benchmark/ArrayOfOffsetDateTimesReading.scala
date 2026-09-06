@@ -72,6 +72,7 @@ class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
     dslJsonDecode[Array[OffsetDateTime]](jsonBytes)
   }
 
+  @Benchmark
   def fory(): Array[OffsetDateTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
