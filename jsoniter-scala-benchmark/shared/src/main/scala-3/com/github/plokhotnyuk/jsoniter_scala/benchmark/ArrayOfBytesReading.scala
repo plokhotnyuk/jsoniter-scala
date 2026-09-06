@@ -54,14 +54,14 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
       case Left(e) => throw e
     }
   }
-
+  /* FIXME: Fory expects a base64 string for the byte array without an option to register another codec for Array[Byte]
   @Benchmark
   def fory(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[Byte]])
   }
-
+  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
