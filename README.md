@@ -11,6 +11,7 @@ Scala macros for compile-time generation of safe and ultra-fast JSON codecs.
 serialization performance of jsoniter-scala with: [borer](https://github.com/sirthias/borer), 
 [circe](https://github.com/circe/circe), 
 [circe with jsoniter-scala booster](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe),
+[fory-json-scala](https://fory.apache.org/docs/next/json/scala),
 [jackson-module-scala](https://github.com/FasterXML/jackson-module-scala),
 [json4s-jackson](https://github.com/json4s/json4s/tree/master/jackson),
 [json4s-native](https://github.com/json4s/json4s/tree/master/native),
