@@ -32,7 +32,7 @@ object Main {
   private val packageName = "com.github.plokhotnyuk.jsoniter_scala.benchmark"
 
   def main(args: Array[String]): Unit = BG.renderMenu(document.getElementById("body"), engineOptions = EO.default.copy(
-    warmupIterations = 5, iterations = 5, iterationTime = 1.seconds,
+    warmupIterations = 7, iterations = 5, iterationTime = 1.seconds,
   ), guiOptions = GO.default.copy(
     batchModeFormats = Map(JmhJson -> On, JmhText -> Off, CSV(8) -> Off),
     bmResultFormats = ctx => Vector(BRF.OpsPerSec, BRF.chooseTimePerOp(ctx))
