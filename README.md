@@ -84,6 +84,8 @@ Big kudos to all contributors:
 
 [![GitHub contributors](https://contrib.rocks/image?repo=plokhotnyuk/jsoniter-scala)](https://github.com/plokhotnyuk/jsoniter-scala/graphs/contributors)
 
+A huge thank you to my [GitHub Sponsors](https://github.com/sponsors/plokhotnyuk) for their support, 
+and to JetBrains for providing [excellent tooling](https://jb.gg/OpenSource) that powers this open-source work!
 
 ## Goals
 
