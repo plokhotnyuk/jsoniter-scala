@@ -71,7 +71,7 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[BigInt] = {
+  def foryJsonScala(): Array[BigInt] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[BigInt]])

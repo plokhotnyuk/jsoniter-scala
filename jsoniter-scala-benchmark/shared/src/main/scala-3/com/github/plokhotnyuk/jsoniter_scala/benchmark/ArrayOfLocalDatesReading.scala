@@ -57,7 +57,7 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[LocalDate] = {
+  def foryJsonScala(): Array[LocalDate] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[LocalDate]])

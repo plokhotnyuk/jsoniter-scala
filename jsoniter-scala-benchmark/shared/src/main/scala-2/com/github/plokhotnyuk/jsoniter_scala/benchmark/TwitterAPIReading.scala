@@ -73,7 +73,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   }
 
   @Benchmark
-  def fory(): Seq[Tweet] = {
+  def foryJsonScala(): Seq[Tweet] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, Fory.seqOfTweetsType)

@@ -35,7 +35,7 @@ class BitSetReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       // FIXME: DSL-JSON throws scala.collection.immutable.HashSet$HashTrieSet cannot be cast to scala.collection.immutable.BitSet
       // benchmark.dslJsonScala() shouldBe benchmark.obj
-      benchmark.fory() shouldBe benchmark.obj
+      benchmark.foryJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
@@ -51,7 +51,7 @@ class BitSetReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       // FIXME: DSL-JSON throws scala.collection.immutable.HashSet$HashTrieSet cannot be cast to scala.collection.immutable.BitSet
       //intercept[Throwable](b.dslJsonScala())
-      intercept[Throwable](b.fory())
+      intercept[Throwable](b.foryJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())

@@ -33,7 +33,7 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.circe()) shouldBe b.compactJsonString1
       toString(b.circeJsoniter()) shouldBe b.compactJsonString1
       // FIXME: Fory writes None as JSON null
-      // toString(b.fory()) shouldBe b.compactJsonString1
+      // toString(b.foryJsonScala()) shouldBe b.compactJsonString1
       toString(b.jacksonScala()) shouldBe b.compactJsonString1
       // FIXME: json4s.jackson serializes empty collections
       //toString(b.json4sJackson()) shouldBe b.compactJsonString1

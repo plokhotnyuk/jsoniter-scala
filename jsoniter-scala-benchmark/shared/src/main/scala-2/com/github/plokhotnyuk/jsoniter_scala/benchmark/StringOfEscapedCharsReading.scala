@@ -69,7 +69,7 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   }
 
   @Benchmark
-  def fory(): String = {
+  def foryJsonScala(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[String])

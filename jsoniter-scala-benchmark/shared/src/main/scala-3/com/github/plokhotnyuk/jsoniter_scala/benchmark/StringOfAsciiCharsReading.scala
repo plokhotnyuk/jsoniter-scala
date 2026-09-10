@@ -54,7 +54,7 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   }
 
   @Benchmark
-  def fory(): String = {
+  def foryJsonScala(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[String])

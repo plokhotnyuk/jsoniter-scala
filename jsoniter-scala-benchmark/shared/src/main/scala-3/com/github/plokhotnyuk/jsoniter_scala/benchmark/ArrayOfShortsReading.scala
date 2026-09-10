@@ -55,7 +55,7 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[Short] = {
+  def foryJsonScala(): Array[Short] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[Short]])

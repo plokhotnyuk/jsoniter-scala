@@ -54,7 +54,7 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[Boolean] = {
+  def foryJsonScala(): Array[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[Boolean]])

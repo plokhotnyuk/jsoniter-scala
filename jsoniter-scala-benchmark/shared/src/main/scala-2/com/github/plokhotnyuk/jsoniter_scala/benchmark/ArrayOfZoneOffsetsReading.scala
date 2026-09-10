@@ -65,7 +65,7 @@ class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[ZoneOffset] = {
+  def foryJsonScala(): Array[ZoneOffset] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[ZoneOffset]])

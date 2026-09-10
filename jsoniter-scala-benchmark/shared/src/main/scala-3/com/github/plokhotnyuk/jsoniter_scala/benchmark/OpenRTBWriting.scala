@@ -51,7 +51,7 @@ class OpenRTBWriting extends OpenRTBBenchmark {
   }
   /* FIXME: Fory writes None as JSON null
   @Benchmark
-  def fory(): Array[Byte] = {
+  def foryJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.toJsonBytes(obj)

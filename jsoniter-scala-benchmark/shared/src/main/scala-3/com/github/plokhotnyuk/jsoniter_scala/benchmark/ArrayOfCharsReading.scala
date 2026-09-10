@@ -55,7 +55,7 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[Char] = {
+  def foryJsonScala(): Array[Char] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[Char]])

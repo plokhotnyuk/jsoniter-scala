@@ -66,7 +66,7 @@ class ArrayOfBigDecimalsWriting extends ArrayOfBigDecimalsBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[Byte] = {
+  def foryJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.toJsonBytes(obj)

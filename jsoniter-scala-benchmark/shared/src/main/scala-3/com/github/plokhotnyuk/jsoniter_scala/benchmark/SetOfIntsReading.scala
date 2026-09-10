@@ -55,7 +55,7 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
   }
 
   @Benchmark
-  def fory(): Set[Int] = {
+  def foryJsonScala(): Set[Int] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, Fory.setOfIntsType)

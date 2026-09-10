@@ -70,7 +70,7 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[Double] = {
+  def foryJsonScala(): Array[Double] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[Double]])

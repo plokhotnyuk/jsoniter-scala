@@ -34,7 +34,7 @@ class MutableLongMapOfBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.circeJsoniter()) shouldBe b.jsonString
       // FIXME: DSL-JSON doesn't support mutable.LongMap
       //toString(b.dslJsonScala()) shouldBe b.jsonString
-      toString(b.fory()) shouldBe b.jsonString
+      toString(b.foryJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.json4sJackson()) shouldBe b.jsonString
       toString(b.json4sNative()) shouldBe b.jsonString

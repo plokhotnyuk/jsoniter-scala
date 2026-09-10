@@ -58,7 +58,7 @@ class ArrayOfLocalTimesReading extends ArrayOfLocalTimesBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[LocalTime] = {
+  def foryJsonScala(): Array[LocalTime] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[LocalTime]])

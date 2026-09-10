@@ -37,7 +37,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
         "Cannot decode `MissingRequiredFields` instance due to missing map keys \"s\" and \"i\" (input position 1)"
       b.circe() shouldBe "DecodingFailure at .s: Missing required field"
       b.circeJsoniter() shouldBe "DecodingFailure at .s: Missing required field"
-      b.fory() shouldBe "Missing required JSON constructor property s for com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields"
+      b.foryJsonScala() shouldBe "Missing required JSON constructor property s for com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields"
       b.dslJsonScala() shouldBe
         "Mandatory properties (s, i) not found at position: 1, following: `{`, before: `}`"
       b.jacksonScala() shouldBe
@@ -82,7 +82,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.circe() shouldBe "MissingRequiredFields(VVV,1)"
       b.circeJsoniter() shouldBe "MissingRequiredFields(VVV,1)"
       b.dslJsonScala() shouldBe "MissingRequiredFields(VVV,1)"
-      b.fory() shouldBe "MissingRequiredFields(VVV,1)"
+      b.foryJsonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.jacksonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.json4sJackson() shouldBe "MissingRequiredFields(VVV,1)"
       b.json4sNative() shouldBe "MissingRequiredFields(VVV,1)"

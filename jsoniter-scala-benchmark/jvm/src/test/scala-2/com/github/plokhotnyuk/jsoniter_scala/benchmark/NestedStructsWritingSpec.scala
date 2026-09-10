@@ -37,7 +37,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       // FIXME: DSL-JSON serializes null value for Option.None
       // toString(b.dslJsonScala()) shouldBe b.jsonString
       // FIXME: Fory writes None as JSON null
-      // toString(b.fory()) shouldBe b.jsonString
+      // toString(b.foryJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.json4sJackson()) shouldBe b.jsonString
       toString(b.json4sNative()) shouldBe b.jsonString

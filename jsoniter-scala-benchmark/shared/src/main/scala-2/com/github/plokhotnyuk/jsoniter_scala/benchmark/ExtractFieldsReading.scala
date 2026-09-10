@@ -71,7 +71,7 @@ class ExtractFieldsReading extends ExtractFieldsBenchmark {
   }
 
   @Benchmark
-  def fory(): ExtractFields = {
+  def foryJsonScala(): ExtractFields = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[ExtractFields])

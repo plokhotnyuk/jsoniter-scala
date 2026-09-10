@@ -72,7 +72,7 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   }
 
   @Benchmark
-  def fory(): Array[UUID] = {
+  def foryJsonScala(): Array[UUID] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[UUID]])

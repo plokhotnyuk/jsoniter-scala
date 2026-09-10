@@ -34,7 +34,7 @@ class ArrayOfBytesWritingSpec extends BenchmarkSpecBase {
       toString(b.circe()) shouldBe b.jsonString
       toString(b.circeJsoniter()) shouldBe b.jsonString
       // FIXME: Fory serializes a byte array to the base64 string without an option to register another codec for Array[Byte]
-      // toString(b.fory()) shouldBe b.jsonString
+      // toString(b.foryJsonScala()) shouldBe b.jsonString
       // FIXME: DSL-JSON serializes a byte array to the base64 string
       //toString(b.dslJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString

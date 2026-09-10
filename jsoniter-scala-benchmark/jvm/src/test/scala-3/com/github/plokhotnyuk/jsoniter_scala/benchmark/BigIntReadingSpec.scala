@@ -35,7 +35,7 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       // FIXME: circe-jsoniter parses up to 308 digits only
       // benchmark.circeJsoniter() shouldBe benchmark.obj
-      benchmark.fory() shouldBe benchmark.obj
+      benchmark.foryJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.json4sJackson() shouldBe benchmark.obj
       // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
@@ -59,7 +59,7 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       // FIXME: circe-jsoniter parses up to 308 digits only
       // intercept[Throwable](b.circeJsoniter())
-      intercept[Throwable](b.fory())
+      intercept[Throwable](b.foryJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array

@@ -55,7 +55,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
   }
 
   @Benchmark
-  def fory(): String = {
+  def foryJsonScala(): String = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     try {

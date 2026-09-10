@@ -73,7 +73,7 @@ class BigIntReading extends BigIntBenchmark {
   }
 
   @Benchmark
-  def fory(): BigInt = {
+  def foryJsonScala(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[BigInt])

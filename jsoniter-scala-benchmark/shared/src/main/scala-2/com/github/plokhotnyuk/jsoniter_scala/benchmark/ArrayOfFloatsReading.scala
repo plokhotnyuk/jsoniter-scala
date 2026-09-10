@@ -72,7 +72,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
     }
   */
   @Benchmark
-  def fory(): Array[Float] = {
+  def foryJsonScala(): Array[Float] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[Array[Float]])

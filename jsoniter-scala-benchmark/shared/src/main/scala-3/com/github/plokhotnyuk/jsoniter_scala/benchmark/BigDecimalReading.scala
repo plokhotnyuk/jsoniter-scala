@@ -58,7 +58,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
     }
   */
   @Benchmark
-  def fory(): BigDecimal = {
+  def foryJsonScala(): BigDecimal = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, classOf[BigDecimal])

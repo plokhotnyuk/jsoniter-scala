@@ -66,7 +66,7 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
     }
   */
   @Benchmark
-  def fory(): mutable.LongMap[Boolean] = {
+  def foryJsonScala(): mutable.LongMap[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, Fory.mutableLongMapOfBooleansType)

@@ -69,7 +69,7 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   }
 
   @Benchmark
-  def fory(): Vector[Boolean] = {
+  def foryJsonScala(): Vector[Boolean] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     Fory.foryJson.fromJson(jsonBytes, Fory.vectorOfBooleansType)

@@ -36,7 +36,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
-      benchmark.fory() shouldBe benchmark.obj
+      benchmark.foryJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
