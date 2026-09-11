@@ -67,7 +67,8 @@ lazy val commonSettings = Seq(
       url("https://github.com/plokhotnyuk/jsoniter-scala"),
       "scm:git@github.com:plokhotnyuk/jsoniter-scala.git"
     )
-  )
+  ),
+  resolvers += "Apache Snapshots" at "https://repository.apache.org/snapshots/"
 )
 
 lazy val jsSettings = Seq(
@@ -339,7 +340,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "io.github.json4s" %% "json4s-jackson" % "4.1.1",
       "io.github.json4s" %% "json4s-native" % "4.1.1",
       "tools.jackson.module" %% "jackson-module-scala" % "3.2.2",
-      "org.apache.fory" %% "fory-json-scala" % "1.7.1",
+      "org.apache.fory" %% "fory-json-scala" % "1.8.0-SNAPSHOT",
       "org.openjdk.jmh" % "jmh-core" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
