@@ -344,6 +344,7 @@ Usages of jsoniter-scala in OSS libraries:
 - [geo-scala](https://github.com/gnieh/geo-scala) - a core AST and utilities for GeoJSON (RFC 7946) and more
 - [iron](https://github.com/Iltotore/iron) - a lightweight library for refined types in Scala 3
 - [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala) - implicitly converts typeclass encoders to kafka Serializer, Deserializer, Serde
+- [kindlings](https://github.com/kubuszok/kindlings) - hearth fire starter - incubator/dogfooding for Hearth-based macro libraries
 - [linkml-scala](https://github.com/NeverBlink-OSS/linkml-scala) - a fast, portable (JS/JVM/native), and robust implementation of LinkML for cross-language data modeling
 - [logging4s](https://github.com/logging4s/logging4s) - structured logging for Scala 3
 - [neotype](https://github.com/kitlangton/neotype) - a friendly newtype library for Scala 3
