@@ -323,13 +323,6 @@ samples:
 - [json2classes](https://chadselph.github.io/json2classes/)
 - [quicktype](https://app.quicktype.io/)
 
-Also, if you have JSON Schema the following on-line service can generate corresponding data structures for you:
-- [json-schema-to-case-class](https://cchandurkar.github.io/json-schema-to-case-class/)
-- [quicktype](https://app.quicktype.io/)
-
-And the following library can generate JSON Schema for your existing data structures:
-- [scala-jsonschema](https://github.com/andyglow/scala-jsonschema)
-
 Samples for its integration with different web frameworks and HTTP servers:
 - [akka-http](https://github.com/hseeberger/akka-http-json/blob/master/akka-http-jsoniter-scala/src/test/scala/de/heikoseeberger/akkahttpjsoniterscala/ExampleApp.scala)
 - [blaze](https://github.com/TechEmpower/FrameworkBenchmarks/blob/b3a39dcd95b207cd2509d7bbf873a0dfb91097f5/frameworks/Scala/blaze/src/main/scala/Main.scala)
@@ -346,12 +339,12 @@ Usages of jsoniter-scala in OSS libraries:
   without the need to write login, user registration etc.
 - [caliban](https://github.com/ghostdogpr/caliban) - a purely functional library for building GraphQL servers and 
   clients in Scala
+- [cats-eo](https://github.com/constructive-programming/eo) - existential optics library for Scala3 based on cats
 - [dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
 - [geo-scala](https://github.com/gnieh/geo-scala) - a core AST and utilities for GeoJSON (RFC 7946) and more
 - [iron](https://github.com/Iltotore/iron) - a lightweight library for refined types in Scala 3
-- [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe 
-  booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types
 - [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala) - implicitly converts typeclass encoders to kafka Serializer, Deserializer, Serde
+- [linkml-scala](https://github.com/NeverBlink-OSS/linkml-scala) - a fast, portable (JS/JVM/native), and robust implementation of LinkML for cross-language data modeling
 - [logging4s](https://github.com/logging4s/logging4s) - structured logging for Scala 3
 - [neotype](https://github.com/kitlangton/neotype) - a friendly newtype library for Scala 3
 - [openapi-generator](https://github.com/OpenAPITools/openapi-generator) - a generator for Scala3 + sttp4 + jsoniter-scala
@@ -359,13 +352,16 @@ Usages of jsoniter-scala in OSS libraries:
 - [pekko-http-json](https://github.com/pjfanning/pekko-http-json) - integrates some of the best JSON libs in Scala with Pekko HTTP 
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
   instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
+- [scalapb-jsoniter](https://github.com/hoangmaihuy/scalapb-jsoniter) - JSON/Protobuf convertors for ScalaPB use jsoniter-scala  
 - [scalatest-json](https://github.com/stephennancekivell/scalatest-json) - Scalatest matchers with appropriate equality 
   and descriptive error messages
 - [smithy4s-json](https://github.com/disneystreaming/smithy4s) - JSON protocol of [Smithy](https://awslabs.github.io/smithy/)
   tooling for Scala
 - [sttp](https://github.com/softwaremill/sttp) - the Scala HTTP client you always wanted! 
 - [sttp-oauth2](https://github.com/polyvariant/sttp-oauth2) - OAuth2 client library implemented in Scala using sttp 
-- [tapir](https://tapir.softwaremill.com/en/latest/endpoint/json.html#jsoniter-scala) - Typed API descRiptions
+- [tapir](https://tapir.softwaremill.com/en/latest/endpoint/json.html#jsoniter-scala) - typed API descRiptions
+- [zio-gcp](https://github.com/AnyMindGroup/zio-gcp) - collection of generated Google Cloud clients for ZIO with authentication
+- [zio-schema-jsoniter](https://github.com/jirihausner/zio-schema-jsoniter) - soniter-scala codecs for zio-schema
 
 Also, for usages in other OSS projects see the `Dependents` section of [peoject's Scala Index page](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala)
 
