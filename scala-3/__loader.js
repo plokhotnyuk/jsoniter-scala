@@ -1,0 +1,169 @@
+
+// This implementation follows no particular specification, but is the same as the JS backend.
+// It happens to coincide with java.lang.Long.hashCode() for common values.
+function bigintHashCode(x) {
+  var res = 0;
+  if (x < 0n)
+    x = ~x;
+  while (x !== 0n) {
+    res ^= Number(BigInt.asIntN(32, x));
+    x >>= 32n;
+  }
+  return res;
+}
+
+// JSSuperSelect support -- directly copied from the output of the JS backend
+function resolveSuperRef(superClass, propName) {
+  var getPrototypeOf = Object.getPrototyeOf;
+  var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+  var superProto = superClass.prototype;
+  while (superProto !== null) {
+    var desc = getOwnPropertyDescriptor(superProto, propName);
+    if (desc !== (void 0)) {
+      return desc;
+    }
+    superProto = getPrototypeOf(superProto);
+  }
+}
+function superSelect(superClass, self, propName) {
+  var desc = resolveSuperRef(superClass, propName);
+  if (desc !== (void 0)) {
+    var getter = desc.get;
+    return getter !== (void 0) ? getter.call(self) : getter.value;
+  }
+}
+function superSelectSet(superClass, self, propName, value) {
+  var desc = resolveSuperRef(superClass, propName);
+  if (desc !== (void 0)) {
+    var setter = desc.set;
+    if (setter !== (void 0)) {
+      setter.call(self, value);
+      return;
+    }
+  }
+  throw new TypeError("super has no setter '" + propName + "'.");
+}
+
+const scalaJSHelpers = {
+  // JSTag
+  JSTag: WebAssembly.JSTag,
+
+  // BinaryOp.===
+  is: Object.is,
+
+  // undefined
+  undef: void 0,
+  isUndef: (x) => x === (void 0),
+
+  // Constant boxes
+  bFalse: false,
+  bTrue: true,
+
+  // Boxes (upcast) -- most are identity at the JS level but with different types in Wasm
+  bIFallback: (x) => x,
+  bF: (x) => x,
+  bD: (x) => x,
+
+  // Unboxes (downcast, null is converted to the zero of the type as part of ToWebAssemblyValue)
+  uZ: (x) => x, // ToInt32 turns false into 0 and true into 1, so this is also an identity
+  uIFallback: (x) => x,
+  uF: (x) => x,
+  uD: (x) => x,
+
+  // Type tests
+  tZ: (x) => typeof x === 'boolean',
+  tI: (x) => typeof x === 'number' && Object.is(x | 0, x),
+  tF: (x) => typeof x === 'number' && (Math.fround(x) === x || x !== x),
+  tD: (x) => typeof x === 'number',
+
+  // Strings
+  jsValueToString: (x) => (x === void 0) ? "undefined" : x.toString(),
+  jsValueToStringForConcat: (x) => "" + x,
+  booleanToString: (b) => b ? "true" : "false",
+  intToString: (i) => "" + i,
+  longToString: (l) => "" + l, // l must be a bigint here
+  doubleToString: (d) => "" + d,
+
+  // Get the type of JS value of `x` in a single JS helper call, for the purpose of dispatch.
+  jsValueType: (x) => {
+    if (typeof x === 'number')
+      return 3;
+    if (typeof x === 'string')
+      return 2;
+    if (typeof x === 'boolean')
+      return x | 0; // JSValueTypeFalse or JSValueTypeTrue
+    if (typeof x === 'undefined')
+      return 4;
+    if (typeof x === 'bigint')
+      return 5;
+    if (typeof x === 'symbol')
+      return 6;
+    return 7;
+  },
+
+  // JS side of the `valueDescription` helper
+  // TODO: only emit this when required by checked behaviors
+  jsValueDescription: ((x) =>
+    (typeof x === 'number')
+      ? (Object.is(x, -0) ? "number(-0)" : ("number(" + x + ")"))
+      : (typeof x)
+  ),
+
+  // Identity hash code
+  bigintHashCode,
+  symbolDescription: (x) => {
+    var desc = x.description;
+    return (desc === void 0) ? null : desc;
+  },
+  idHashCodeGet: (map, obj) => map.get(obj) | 0, // undefined becomes 0
+  idHashCodeSet: (map, obj, value) => map.set(obj, value),
+
+  // Some support functions for CoreWasmLib
+  makeTypeError: (msg) => new TypeError(msg),
+
+  // JS interop
+  jsNewArray: () => [],
+  jsNewObject: () => ({}),
+  jsNewNoArg: (constr) => new constr(),
+  jsImportMeta: () => import.meta,
+  
+  jsDelete: (o, p) => { delete o[p]; },
+  jsForInStart: function*(o) { for (var k in o) yield k; },
+  jsForInNext: (g) => { var r = g.next(); return [r.value, r.done]; },
+  jsIsTruthy: (x) => !!x,
+
+  // Non-native JS class support
+  jsSuperSelect: superSelect,
+  jsSuperSelectSet: superSelectSet,
+}
+
+export async function load(wasmFileURL, exportSetters, privateJSFieldGetters,
+    privateJSFieldSetters, customJSHelpers, wtf16Strings) {
+  const myScalaJSHelpers = {
+    ...scalaJSHelpers,
+    idHashCodeMap: new WeakMap()
+  };
+  const importsObj = {
+    "__scalaJSHelpers": myScalaJSHelpers,
+    "__scalaJSExportSetters": exportSetters,
+    "privateJSFieldGetters": privateJSFieldGetters,
+    "privateJSFieldSetters": privateJSFieldSetters,
+    "__scalaJSCustomHelpers": customJSHelpers,
+    "wtf16Strings": wtf16Strings,
+  };
+  const options = {
+    builtins: ["js-string"],
+    importedStringConstants: "",
+  };
+  const resolvedURL = new URL(wasmFileURL, import.meta.url);
+  if (resolvedURL.protocol === 'file:') {
+    const { fileURLToPath } = await import("node:url");
+    const { readFile } = await import("node:fs/promises");
+    const wasmPath = fileURLToPath(resolvedURL);
+    const body = await readFile(wasmPath);
+    return WebAssembly.instantiate(body, importsObj, options);
+  } else {
+    return await WebAssembly.instantiateStreaming(fetch(resolvedURL), importsObj, options);
+  }
+}
+    
