@@ -823,7 +823,7 @@ Use the following command for merging unpacked results from browsers: `jq -s '[.
 
 The released versions of Scala.js benchmarks is available: 
 - [JS only](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fullopt.html)
-- [WASM + JS (dependency)](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fullopt.html)  
+- [WASM + JS (dependency)](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fulllink.html)  
 
 ### Run compilation time benchmarks
 
