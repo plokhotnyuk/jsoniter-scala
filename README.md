@@ -810,11 +810,7 @@ Use JDK 17+ for building of `jsoniter-scala-benchmarkJS` module with JS only pac
 sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-17 ++3.9.0 jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
-Then open the list of benchmarks in a browser:
-```sh
-cd jsoniter-scala-benchmark/js
-open scala-3-fullopt.html
-```
+Then deploy it to GitHub pages and open in a browser.
 
 Then select the batch mode with storing results in a `.zip` file.
 
@@ -825,11 +821,12 @@ The similar steps are accepted for WASM + JS (dependencies) packaging:
 sbt -DassemblyWASMBenchmarks -java-home /usr/lib/jvm/jdk-17 ++3.9.0 jsoniter-scala-benchmarkJS/fullLinkJS
 ```
 
-Then open the list of benchmarks in a browser:
-```sh
-cd jsoniter-scala-benchmark/js
-open scala-3-fulllink.html
+Then use [WASM optimizer](https://github.com/WebAssembly/binaryen):
 ```
+wasm-opt --all-features --disable-custom-descriptors --disable-compact-imports -O3 main.wasm -o main-o3.wasm
+```
+
+Then deploy it to GitHub pages and open in a browser.
 
 Then select the batch mode with storing results in a `.zip` file.
 
