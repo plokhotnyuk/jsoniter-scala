@@ -805,25 +805,39 @@ Other benchmarks with results for jsoniter-scala:
 
 ### Run Scala.js benchmarks
 
-Use JDK 17+ for building of `jsoniter-scala-benchmarkJS` module for Scala 2.13 and Scala 3:
+Use JDK 17+ for building of `jsoniter-scala-benchmarkJS` module with JS only packaging:
 ```sh
-sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-17 +jsoniter-scala-benchmarkJS/fullOptJS
+sbt -DassemblyJSBenchmarks -java-home /usr/lib/jvm/jdk-17 ++3.9.0 jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
 ```sh
 cd jsoniter-scala-benchmark/js
 open scala-3-fullopt.html
-open scala-2.13-fullopt.html
 ```
 
 Then select the batch mode with storing results in a `.zip` file.
 
-Use the following command for merging unpacked results from browsers: `jq -s '[.[][]]' firefox/*.json >firefox.json` 
+Use the following command for merging unpacked results from browsers: `jq -s '[.[][]]' firefox/*.json >firefox.json`
+
+The similar steps are accepted for WASM + JS (dependencies) packaging:
+```sh
+sbt -DassemblyWASMBenchmarks -java-home /usr/lib/jvm/jdk-17 ++3.9.0 jsoniter-scala-benchmarkJS/fullLinkJS
+```
+
+Then open the list of benchmarks in a browser:
+```sh
+cd jsoniter-scala-benchmark/js
+open scala-3-fulllink.html
+```
+
+Then select the batch mode with storing results in a `.zip` file.
+
+Use the following command for merging unpacked results from browsers: `jq -s '[.[][]]' firefox/*.json >firefox-wasm.json`
 
 The released versions of Scala.js benchmarks is available: 
 - [JS only](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fullopt.html)
-- [WASM + JS (dependency)](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fulllink.html)  
+- [WASM + JS (dependencies)](https://plokhotnyuk.github.io/jsoniter-scala/scala-3-fulllink.html)  
 
 ### Run compilation time benchmarks
 

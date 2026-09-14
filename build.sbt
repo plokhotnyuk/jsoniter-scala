@@ -373,10 +373,11 @@ lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
   )
 
 lazy val assemblyJSBenchmarks = sys.props.get("assemblyJSBenchmarks").isDefined
+lazy val assemblyWASMBenchmarks = sys.props.get("assemblyWASMBenchmarks").isDefined
 
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins({
-    if (assemblyJSBenchmarks) {
+    if (assemblyJSBenchmarks || assemblyWASMBenchmarks) {
       Seq(
         JSDependenciesPlugin
       )
@@ -398,6 +399,14 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
       Seq(
         scalaJSLinkerConfig ~= {
           _.withModuleKind(ModuleKind.NoModule)
+        },
+        Test / test := {}
+      )
+    } else if (assemblyWASMBenchmarks) {
+      Seq(
+        scalaJSLinkerConfig ~= {
+          _.withModuleKind(ModuleKind.ESModule)
+            .withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
         },
         Test / test := {}
       )
