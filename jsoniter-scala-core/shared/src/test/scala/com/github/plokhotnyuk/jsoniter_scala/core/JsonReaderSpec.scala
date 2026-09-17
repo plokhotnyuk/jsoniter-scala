@@ -819,6 +819,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBytesAsDuration())
+        .getMessage.startsWith("""expected 'P' or '-', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readDuration(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsDuration())
@@ -831,6 +833,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse Duration from a string representation according to JDK format that is based on ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = Duration.parse(s)
+        reader(s).readBytesAsDuration() shouldBe x
         reader(s"""$ws"$s"""").readDuration(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsDuration() shouldBe x
         reader(s"""$ws"-$s"""").readDuration(null) shouldBe x.negated()
@@ -850,6 +853,51 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         reader(s"""$ws"$s"""").readDuration(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsDuration() shouldBe x
       }
+    }
+    "throw parsing exception for empty input and illegal or broken Duration bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsDuration()).getMessage.startsWith(error))
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError(" ", "expected 'P' or '-', offset: 0x00000000")
+      checkError("-X", "expected 'P', offset: 0x00000001")
+      checkError("PXD", "expected '-' or digit, offset: 0x00000001")
+      checkError("P-XD", "expected digit, offset: 0x00000002")
+      checkError("P1XD", "expected 'D' or digit, offset: 0x00000002")
+      checkError("P106751991167301D", "illegal duration, offset: 0x00000010")
+      checkError("P1067519911673000D", "illegal duration, offset: 0x00000011")
+      checkError("P-106751991167301D", "illegal duration, offset: 0x00000011")
+      checkError("P1DX1H", "expected 'T', offset: 0x00000003")
+      checkError("P1DTXH", "expected '-' or digit, offset: 0x00000004")
+      checkError("P1DT-XH", "expected digit, offset: 0x00000005")
+      checkError("P1DT1XH", "expected 'H' or 'M' or 'S' or '.' or digit, offset: 0x00000005")
+      checkError("P0DT2562047788015216H", "illegal duration, offset: 0x00000014")
+      checkError("P0DT-2562047788015216H", "illegal duration, offset: 0x00000015")
+      checkError("P0DT153722867280912931M", "illegal duration, offset: 0x00000016")
+      checkError("P0DT-153722867280912931M", "illegal duration, offset: 0x00000017")
+      checkError("P0DT9223372036854775808S", "illegal duration, offset: 0x00000017")
+      checkError("P0DT92233720368547758000S", "illegal duration, offset: 0x00000017")
+      checkError("P0DT-9223372036854775809S", "illegal duration, offset: 0x00000017")
+      checkError("P1DT1HXM", "expected '-' or digit, offset: 0x00000006")
+      checkError("P1DT1H-XM", "expected digit, offset: 0x00000007")
+      checkError("P1DT1H1XM", "expected 'M' or 'S' or '.' or digit, offset: 0x00000007")
+      checkError("P0DT0H153722867280912931M", "illegal duration, offset: 0x00000018")
+      checkError("P0DT0H-153722867280912931M", "illegal duration, offset: 0x00000019")
+      checkError("P0DT0H9223372036854775808S", "illegal duration, offset: 0x00000019")
+      checkError("P0DT0H92233720368547758000S", "illegal duration, offset: 0x00000019")
+      checkError("P0DT0H-9223372036854775809S", "illegal duration, offset: 0x00000019")
+      checkError("P1DT1H1MXS", "expected '-' or digit, offset: 0x00000008")
+      checkError("P1DT1H1M-XS", "expected digit, offset: 0x00000009")
+      checkError("P1DT1H1M0XS", "expected 'S' or '.' or digit, offset: 0x00000009")
+      checkError("P1DT1H1M0.XS", "expected 'S' or digit, offset: 0x0000000a")
+      checkError("P1DT1H1M0.012345678XS", "expected 'S', offset: 0x00000013")
+      checkError("P1DT1H1M0.0123456789S", "expected 'S', offset: 0x00000013")
+      checkError("P0DT0H0M9223372036854775808S", "illegal duration, offset: 0x0000001b")
+      checkError("P0DT0H0M92233720368547758080S", "illegal duration, offset: 0x0000001b")
+      checkError("P0DT0H0M-9223372036854775809S", "illegal duration, offset: 0x0000001b")
+      checkError("P106751991167300DT24H", "illegal duration, offset: 0x00000014")
+      checkError("P0DT2562047788015215H60M", "illegal duration, offset: 0x00000017")
+      checkError("P0DT0H153722867280912930M60S", "illegal duration, offset: 0x0000001b")
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(json: String, error: String): Unit = {
@@ -902,6 +950,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null ").readBytesAsInstant())
+        .getMessage.startsWith("""expected '-' or '+' or digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readInstant(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsInstant())
@@ -918,6 +968,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         } catch {
           case _: DateTimeParseException => OffsetDateTime.parse(s).toInstant
         }
+        reader(s).readBytesAsInstant() shouldBe x
         reader(s"""$ws"$s"""").readInstant(null) shouldBe x
         reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe x
       }
@@ -935,6 +986,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genInstant, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
+        reader(s).readBytesAsInstant() shouldBe x
         reader(s"""$ws"$s"""").readInstant(null) shouldBe x
         reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe x
       }
@@ -942,8 +994,102 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val xx = if (x.getSecond == 0) x.plusSeconds(1) else x
         val s = xx.toString
         val y = xx.toInstant
+        reader(s).readBytesAsInstant() shouldBe y
         reader(s"""$ws"$s"""").readInstant(null) shouldBe y
         reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe y
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken Instant bytes" in {
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonReaderException](reader(json).readBytesAsInstant()).getMessage.startsWith(error))
+      }
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("2008-01-20T07:24:33", "unexpected end of input, offset: 0x00000013")
+      checkError("+1000000000=01-20T07:24:33Z", "expected '-', offset: 0x0000000b")
+      checkError("-0000-01-20T07:24:33Z", "illegal year, offset: 0x00000004")
+      checkError("+1000000001-01-20T07:24:33Z", "illegal year, offset: 0x0000000a")
+      checkError("+4000000000-01-20T07:24:33Z", "illegal year, offset: 0x0000000a")
+      checkError("+9999999999-01-20T07:24:33Z", "illegal year, offset: 0x0000000a")
+      checkError("-1000000001-01-20T07:24:33Z", "illegal year, offset: 0x0000000a")
+      checkError("-4000000000-01-20T07:24:33Z", "illegal year, offset: 0x0000000a")
+      checkError("-9999999999-01-20T07:24:33Z", "illegal year, offset: 0x0000000a")
+      checkError("2008-00-20T07:24:33Z", "illegal month, offset: 0x00000006")
+      checkError("2008-13-20T07:24:33Z", "illegal month, offset: 0x00000006")
+      checkError("2008-01-00T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-01-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2007-02-29T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-02-30T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-03-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-04-31T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-05-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-06-31T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-07-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-08-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-09-31T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-10-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-11-31T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-12-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-01-20T24:24:33Z", "illegal hour, offset: 0x0000000c")
+      checkError("2008-01-20T07:60:33Z", "illegal minute, offset: 0x0000000f")
+      checkError("2008-01-20T07:24:60Z", "illegal second, offset: 0x00000012")
+      checkError("2008-01-20T07:24:33.+20:10", "illegal timezone offset hour, offset: 0x00000016")
+      checkError("2008-01-20T07:24:33.+10:60", "illegal timezone offset minute, offset: 0x00000019")
+      checkError("2008-01-20T07:24:33.+10:10:60", "illegal timezone offset second, offset: 0x0000001c")
+      checkError("2008-01-20T07:24:33.+18:00:01", "illegal timezone offset, offset: 0x0000001c")
+      checkError("2008-01-20T07:24:33.-18:00:01", "illegal timezone offset, offset: 0x0000001c")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonDigitOrSignOrZ= if (ch >= '0' && ch <= '9' || ch == '+' || ch == '-' || ch == 'Z') 'X' else ch
+        val nonDigitOrDash= if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
+        val nonDash = if (ch == '-') 'X' else ch
+        val nonT = if (ch == 'T') 'X' else ch
+        val nonColon = if (ch == ':') 'X' else ch
+        val nonDotOrSignOrZ = if (ch == '.' || ch == '+' || ch == '-' || ch == 'Z') 'X' else ch
+        val nonSignOrZ = if (ch == '+' || ch == '-' || ch == 'Z') 'X' else ch
+        checkError(s"${nonNumber}008-01-20T07:24:33Z", "expected '-' or '+' or digit, offset: 0x00000000")
+        checkError(s"2${nonDigit}08-01-20T07:24:33Z", "expected digit, offset: 0x00000001")
+        checkError(s"20${nonDigit}8-01-20T07:24:33Z", "expected digit, offset: 0x00000002")
+        checkError(s"200${nonDigit}-01-20T07:24:33Z", "expected digit, offset: 0x00000003")
+        checkError(s"2008${nonDash}01-20T07:24:33Z", "expected '-', offset: 0x00000004")
+        checkError(s"2008-${nonDigit}0-20T07:24:33Z", "expected digit, offset: 0x00000005")
+        checkError(s"2008-0${nonDigit}-20T07:24:33Z", "expected digit, offset: 0x00000006")
+        checkError(s"2008-01${nonDash}20T07:24:33Z", "expected '-', offset: 0x00000007")
+        checkError(s"2008-01-${nonDigit}0T07:24:33Z", "expected digit, offset: 0x00000008")
+        checkError(s"2008-01-2${nonDigit}T07:24:33Z", "expected digit, offset: 0x00000009")
+        checkError(s"2008-01-20${nonT}07:24:33Z", "expected 'T', offset: 0x0000000a")
+        checkError(s"2008-01-20T${nonDigit}7:24:33Z", "expected digit, offset: 0x0000000b")
+        checkError(s"2008-01-20T0${nonDigit}:24:33Z", "expected digit, offset: 0x0000000c")
+        checkError(s"2008-01-20T07${nonColon}24:33Z", "expected ':', offset: 0x0000000d")
+        checkError(s"2008-01-20T07:${nonDigit}4:33Z", "expected digit, offset: 0x0000000e")
+        checkError(s"2008-01-20T07:2${nonDigit}:33Z", "expected digit, offset: 0x0000000f")
+        checkError(s"2008-01-20T07:24${nonColon}33Z", "expected ':', offset: 0x00000010")
+        checkError(s"2008-01-20T07:24:${nonDigit}3Z", "expected digit, offset: 0x00000011")
+        checkError(s"2008-01-20T07:24:3${nonDigit}Z", "expected digit, offset: 0x00000012")
+        checkError(s"2008-01-20T07:24:33${nonDotOrSignOrZ}", "expected '.' or '+' or '-' or 'Z', offset: 0x00000013")
+        checkError(s"2008-01-20T07:24:33.${nonDigitOrSignOrZ}", "expected '+' or '-' or 'Z' or digit, offset: 0x00000014")
+        checkError(s"2008-01-20T07:24:33.000${nonDigitOrSignOrZ}", "expected '+' or '-' or 'Z' or digit, offset: 0x00000017")
+        checkError(s"2008-01-20T07:24:33.123456789${nonSignOrZ}", "expected '+' or '-' or 'Z', offset: 0x0000001d")
+        checkError(s"2008-01-20T07:24:33+${nonDigit}0", "expected digit, offset: 0x00000014")
+        checkError(s"2008-01-20T07:24:33-${nonDigit}0", "expected digit, offset: 0x00000014")
+        checkError(s"2008-01-20T07:24:33.+${nonDigit}0", "expected digit, offset: 0x00000015")
+        checkError(s"2008-01-20T07:24:33.+1${nonDigit}", "expected digit, offset: 0x00000016")
+        checkError(s"2008-01-20T07:24:33.+10:${nonDigit}0", "expected digit, offset: 0x00000018")
+        checkError(s"2008-01-20T07:24:33.+10:1${nonDigit}", "expected digit, offset: 0x00000019")
+        checkError(s"2008-01-20T07:24:33.+10:10:${nonDigit}0", "expected digit, offset: 0x0000001b")
+        checkError(s"2008-01-20T07:24:33.+10:10:1${nonDigit}", "expected digit, offset: 0x0000001c")
+        checkError(s"+${nonDigit}0000-01-20T07:24:33Z", "expected digit, offset: 0x00000001")
+        checkError(s"+1${nonDigit}000-01-20T07:24:33Z", "expected digit, offset: 0x00000002")
+        checkError(s"+10${nonDigit}00-01-20T07:24:33Z", "expected digit, offset: 0x00000003")
+        checkError(s"+100${nonDigit}0-01-20T07:24:33Z", "expected digit, offset: 0x00000004")
+        checkError(s"+1000${nonDigit}-01-20T07:24:33Z", "expected digit, offset: 0x00000005")
+        checkError(s"-1000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000005")
+        checkError(s"+10000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000006")
+        checkError(s"+100000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000007")
+        checkError(s"+1000000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000008")
+        checkError(s"+10000000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000009")
+        checkError(s"+100000000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x0000000a")
       }
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
@@ -1048,6 +1194,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readLocalDate and JsonReader.readKeyAsLocalDate" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null ").readBytesAsLocalDate())
+        .getMessage.startsWith("""expected '-' or '+' or digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readLocalDate(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsLocalDate())
@@ -1060,6 +1208,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse LocalDate from a string representation according to ISO-8601 format" in {
       def check(x: LocalDate, ws: String): Unit = {
         val s = x.toString
+        reader(s).readBytesAsLocalDate() shouldBe x
         reader(s"""$ws"$s"""").readLocalDate(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsLocalDate() shouldBe x
       }
@@ -1070,6 +1219,59 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check(LocalDate.of(2008, 1, 2), ws)
       }
       forAll(genLocalDate, genWhitespaces, minSuccessful(10000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDate bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsLocalDate()).getMessage.startsWith(error))
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("2008-01-2", "unexpected end of input, offset: 0x00000009")
+      checkError("+1000000000-01-20", "expected '-', offset: 0x0000000a")
+      checkError("-1000000000-01-20", "expected '-', offset: 0x0000000a")
+      checkError("-0000-01-20", "illegal year, offset: 0x00000004")
+      checkError("2008-00-20", "illegal month, offset: 0x00000006")
+      checkError("2008-13-20", "illegal month, offset: 0x00000006")
+      checkError("2008-01-00", "illegal day, offset: 0x00000009")
+      checkError("2008-01-32", "illegal day, offset: 0x00000009")
+      checkError("2007-02-29", "illegal day, offset: 0x00000009")
+      checkError("2008-02-30", "illegal day, offset: 0x00000009")
+      checkError("2008-03-32", "illegal day, offset: 0x00000009")
+      checkError("2008-04-31", "illegal day, offset: 0x00000009")
+      checkError("2008-05-32", "illegal day, offset: 0x00000009")
+      checkError("2008-06-31", "illegal day, offset: 0x00000009")
+      checkError("2008-07-32", "illegal day, offset: 0x00000009")
+      checkError("2008-08-32", "illegal day, offset: 0x00000009")
+      checkError("2008-09-31", "illegal day, offset: 0x00000009")
+      checkError("2008-10-32", "illegal day, offset: 0x00000009")
+      checkError("2008-11-31", "illegal day, offset: 0x00000009")
+      checkError("2008-12-32", "illegal day, offset: 0x00000009")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
+        val nonDash = if (ch == '-') 'X' else ch
+        checkError(s"${nonNumber}008-01-20", "expected '-' or '+' or digit, offset: 0x00000000")
+        checkError(s"2${nonDigit}08-01-20", "expected digit, offset: 0x00000001")
+        checkError(s"20${nonDigit}8-01-20", "expected digit, offset: 0x00000002")
+        checkError(s"200${nonDigit}-01-20", "expected digit, offset: 0x00000003")
+        checkError(s"2008${nonDash}01-20", "expected '-', offset: 0x00000004")
+        checkError(s"+${nonDigit}0000-01-20", "expected digit, offset: 0x00000001")
+        checkError(s"+1${nonDigit}000-01-20", "expected digit, offset: 0x00000002")
+        checkError(s"+10${nonDigit}00-01-20", "expected digit, offset: 0x00000003")
+        checkError(s"+100${nonDigit}0-01-20", "expected digit, offset: 0x00000004")
+        checkError(s"+1000${nonDigit}-01-20", "expected digit, offset: 0x00000005")
+        checkError(s"-1000${nonDigitOrDash}-01-20", "expected '-' or digit, offset: 0x00000005")
+        checkError(s"+10000${nonDigitOrDash}-01-20", "expected '-' or digit, offset: 0x00000006")
+        checkError(s"+100000${nonDigitOrDash}-01-20", "expected '-' or digit, offset: 0x00000007")
+        checkError(s"+1000000${nonDigitOrDash}-01-20", "expected '-' or digit, offset: 0x00000008")
+        checkError(s"+10000000${nonDigitOrDash}-01-20", "expected '-' or digit, offset: 0x00000009")
+        checkError(s"+999999999${nonDash}01-20", "expected '-', offset: 0x0000000a")
+        checkError(s"2008-${nonDigit}1-20", "expected digit, offset: 0x00000005")
+        checkError(s"2008-0${nonDigit}-20", "expected digit, offset: 0x00000006")
+        checkError(s"2008-01${nonDash}20", "expected '-', offset: 0x00000007")
+        checkError(s"2008-01-${nonDigit}0", "expected digit, offset: 0x00000008")
+        checkError(s"2008-01-2${nonDigit}", "expected digit, offset: 0x00000009")
+      }
     }
     "throw parsing exception for empty input and illegal or broken LocalDate string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1131,6 +1333,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readLocalDateTime and JsonReader.readKeyAsLocalDateTime" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null ").readBytesAsLocalDateTime())
+        .getMessage.startsWith("""expected '-' or '+' or digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readLocalDateTime(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsLocalDateTime())
@@ -1143,6 +1347,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse LocalDateTime from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = LocalDateTime.parse(s)
+        reader(s).readBytesAsLocalDateTime() shouldBe x
         reader(s"""$ws"$s"""").readLocalDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsLocalDateTime() shouldBe x
       }
@@ -1158,8 +1363,76 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genLocalDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
+        reader(s).readBytesAsLocalDateTime() shouldBe x
         reader(s"""$ws"$s"""").readLocalDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsLocalDateTime() shouldBe x
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDateTime bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsLocalDateTime()).getMessage.startsWith(error))
+
+      checkError("2008-01-20T24:24", "illegal hour, offset: 0x0000000c")
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("2008-01-20T07:24:3", "unexpected end of input, offset: 0x00000012")
+      checkError("+1000000000-01-20T07:24:33", "expected '-', offset: 0x0000000a")
+      checkError("-1000000000-01-20T07:24:33", "expected '-', offset: 0x0000000a")
+      checkError("-0000-01-20T07:24:33", "illegal year, offset: 0x00000004")
+      checkError("2008-00-20T07:24:33", "illegal month, offset: 0x00000006")
+      checkError("2008-13-20T07:24:33", "illegal month, offset: 0x00000006")
+      checkError("2008-01-00T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-01-32T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2007-02-29T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-02-30T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-03-32T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-04-31T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-05-32T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-06-31T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-07-32T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-08-32T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-09-31T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-10-32T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-11-31T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-12-32T07:24:33", "illegal day, offset: 0x00000009")
+      checkError("2008-01-20T24:24:33", "illegal hour, offset: 0x0000000c")
+      checkError("2008-01-20T07:60:33", "illegal minute, offset: 0x0000000f")
+      checkError("2008-01-20T07:24:60", "illegal second, offset: 0x00000012")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
+        val nonDash = if (ch == '-') 'X' else ch
+        val nonT = if (ch == 'T') 'X' else ch
+        val nonColon = if (ch == ':') 'X' else ch
+        checkError(s"${nonNumber}008-01-20T07:24:33", "expected '-' or '+' or digit, offset: 0x00000000")
+        checkError(s"2${nonDigit}08-01-20T07:24:33", "expected digit, offset: 0x00000001")
+        checkError(s"20${nonDigit}8-01-20T07:24:33", "expected digit, offset: 0x00000002")
+        checkError(s"200${nonDigit}-01-20T07:24:33", "expected digit, offset: 0x00000003")
+        checkError(s"2008${nonDash}01-20T07:24:33", "expected '-', offset: 0x00000004")
+        checkError(s"+${nonDigit}0000-01-20T07:24:33", "expected digit, offset: 0x00000001")
+        checkError(s"+1${nonDigit}000-01-20T07:24:33", "expected digit, offset: 0x00000002")
+        checkError(s"+10${nonDigit}00-01-20T07:24:33", "expected digit, offset: 0x00000003")
+        checkError(s"+100${nonDigit}0-01-20T07:24:33", "expected digit, offset: 0x00000004")
+        checkError(s"+1000${nonDigit}-01-20T07:24:33", "expected digit, offset: 0x00000005")
+        checkError(s"-1000${nonDigitOrDash}-01-20T07:24:33", "expected '-' or digit, offset: 0x00000005")
+        checkError(s"+10000${nonDigitOrDash}-01-20T07:24:33", "expected '-' or digit, offset: 0x00000006")
+        checkError(s"+100000${nonDigitOrDash}-01-20T07:24:33", "expected '-' or digit, offset: 0x00000007")
+        checkError(s"+1000000${nonDigitOrDash}-01-20T07:24:33", "expected '-' or digit, offset: 0x00000008")
+        checkError(s"+10000000${nonDigitOrDash}-01-20T07:24:33", "expected '-' or digit, offset: 0x00000009")
+        checkError(s"+999999999${nonDash}01-20T07:24:33", "expected '-', offset: 0x0000000a")
+        checkError(s"2008-${nonDigit}1-20T07:24:33", "expected digit, offset: 0x00000005")
+        checkError(s"2008-0${nonDigit}-20T07:24:33", "expected digit, offset: 0x00000006")
+        checkError(s"2008-01${nonDash}20T07:24:33", "expected '-', offset: 0x00000007")
+        checkError(s"2008-01-${nonDigit}0T07:24:33", "expected digit, offset: 0x00000008")
+        checkError(s"2008-01-2${nonDigit}T07:24:33", "expected digit, offset: 0x00000009")
+        checkError(s"2008-01-20${nonT}07:24:33", "expected 'T', offset: 0x0000000a")
+        checkError(s"2008-01-20T${nonDigit}7:24:33", "expected digit, offset: 0x0000000b")
+        checkError(s"2008-01-20T0${nonDigit}:24:33", "expected digit, offset: 0x0000000c")
+        checkError(s"2008-01-20T07${nonColon}24:33", "expected ':', offset: 0x0000000d")
+        checkError(s"2008-01-20T07:${nonDigit}4:33", "expected digit, offset: 0x0000000e")
+        checkError(s"2008-01-20T07:2${nonDigit}:33", "expected digit, offset: 0x0000000f")
+        checkError(s"2008-01-20T07:24:${nonDigit}3", "expected digit, offset: 0x00000011")
+        checkError(s"2008-01-20T07:24:3${nonDigit}", "expected digit, offset: 0x00000012")
       }
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
@@ -1242,6 +1515,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readLocalTime and JsonReader.readKeyAsLocalTime" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBytesAsLocalTime())
+        .getMessage.startsWith("""expected digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readLocalTime(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsLocalTime())
@@ -1254,6 +1529,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse LocalTime from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = LocalTime.parse(s)
+        reader(s).readBytesAsLocalTime() shouldBe x
         reader(s"""$ws"$s"""").readLocalTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsLocalTime() shouldBe x
       }
@@ -1269,8 +1545,31 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genLocalTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
+        reader(s).readBytesAsLocalTime() shouldBe x
         reader(s"""$ws"$s"""").readLocalTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsLocalTime() shouldBe x
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalTime bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsLocalTime()).getMessage.startsWith(error))
+
+      checkError("24:24", "illegal hour, offset: 0x00000001")
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("07:24:3", "unexpected end of input, offset: 0x00000007")
+      checkError("24:24:33", "illegal hour, offset: 0x00000001")
+      checkError("07:60:33", "illegal minute, offset: 0x00000004")
+      checkError("07:24:60", "illegal second, offset: 0x00000007")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonColon = if (ch == ':') 'X' else ch
+        checkError(s"${nonDigit}7:24:33", "expected digit, offset: 0x00000000")
+        checkError(s"0${nonDigit}:24:33", "expected digit, offset: 0x00000001")
+        checkError(s"07${nonColon}24:33", "expected ':', offset: 0x00000002")
+        checkError(s"07:${nonDigit}4:33", "expected digit, offset: 0x00000003")
+        checkError(s"07:2${nonDigit}:33", "expected digit, offset: 0x00000004")
+        checkError(s"07:24:${nonDigit}3", "expected digit, offset: 0x00000006")
+        checkError(s"07:24:3${nonDigit}", "expected digit, offset: 0x00000007")
       }
     }
     "throw parsing exception for empty input and illegal or broken LocalTime string" in {
@@ -1308,6 +1607,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readMonthDay and JsonReader.readKeyAsMonthDay" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null   ").readBytesAsMonthDay())
+        .getMessage.startsWith("""expected '-', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readMonthDay(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsMonthDay())
@@ -1320,6 +1621,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse MonthDay from a string representation according to ISO-8601 format" in {
       def check(x: MonthDay, ws: String): Unit = {
         val s = x.toString
+        reader(s).readBytesAsMonthDay() shouldBe x
         reader(s"""$ws"$s"""").readMonthDay(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsMonthDay() shouldBe x
       }
@@ -1329,6 +1631,38 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check(MonthDay.of(1, 1), ws)
       }
       forAll(genMonthDay, genWhitespaces, minSuccessful(10000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDateTime bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsMonthDay()).getMessage.startsWith(error))
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("=-01-20", "expected '-', offset: 0x00000000")
+      checkError("-=01-20", "expected '-', offset: 0x00000001")
+      checkError("--00-20", "illegal month, offset: 0x00000003")
+      checkError("--13-20", "illegal month, offset: 0x00000003")
+      checkError("--01-00", "illegal day, offset: 0x00000006")
+      checkError("--01-32", "illegal day, offset: 0x00000006")
+      checkError("--02-30", "illegal day, offset: 0x00000006")
+      checkError("--03-32", "illegal day, offset: 0x00000006")
+      checkError("--04-31", "illegal day, offset: 0x00000006")
+      checkError("--05-32", "illegal day, offset: 0x00000006")
+      checkError("--06-31", "illegal day, offset: 0x00000006")
+      checkError("--07-32", "illegal day, offset: 0x00000006")
+      checkError("--08-32", "illegal day, offset: 0x00000006")
+      checkError("--09-31", "illegal day, offset: 0x00000006")
+      checkError("--10-32", "illegal day, offset: 0x00000006")
+      checkError("--11-31", "illegal day, offset: 0x00000006")
+      checkError("--12-32", "illegal day, offset: 0x00000006")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonDash = if (ch == '-') 'X' else ch
+        checkError(s"--${nonDigit}1-20", "expected digit, offset: 0x00000002")
+        checkError(s"--0${nonDigit}-20", "expected digit, offset: 0x00000003")
+        checkError(s"--01${nonDash}20", "expected '-', offset: 0x00000004")
+        checkError(s"--01-${nonDigit}0", "expected digit, offset: 0x00000005")
+        checkError(s"--01-2${nonDigit}", "expected digit, offset: 0x00000006")
+      }
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1369,6 +1703,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readOffsetDateTime and JsonReader.readKeyAsOffsetDateTime" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null ").readBytesAsOffsetDateTime())
+        .getMessage.startsWith("""expected '-' or '+' or digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readOffsetDateTime(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsOffsetDateTime())
@@ -1381,6 +1717,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse OffsetDateTime from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = OffsetDateTime.parse(s)
+        reader(s).readBytesAsOffsetDateTime() shouldBe x
         reader(s"""$ws"$s"""").readOffsetDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsOffsetDateTime() shouldBe x
       }
@@ -1396,8 +1733,99 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genOffsetDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
+        reader(s).readBytesAsOffsetDateTime() shouldBe x
         reader(s"""$ws"$s"""").readOffsetDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsOffsetDateTime() shouldBe x
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken OffsetDateTime bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsOffsetDateTime()).getMessage.startsWith(error))
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("2008-01-20T07:24:3", "unexpected end of input, offset: 0x00000012")
+      checkError("+1000000000-01-20T07:24:33Z", "expected '-', offset: 0x0000000a")
+      checkError("-1000000000-01-20T07:24:33Z", "expected '-', offset: 0x0000000a")
+      checkError("-0000-01-20T07:24:33Z", "illegal year, offset: 0x00000004")
+      checkError("2008-00-20T07:24:33Z", "illegal month, offset: 0x00000006")
+      checkError("2008-13-20T07:24:33Z", "illegal month, offset: 0x00000006")
+      checkError("2008-01-00T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-01-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2007-02-29T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-02-30T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-03-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-04-31T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-05-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-06-31T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-07-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-08-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-09-31T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-10-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-11-31T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-12-32T07:24:33Z", "illegal day, offset: 0x00000009")
+      checkError("2008-01-20T24:24:33Z", "illegal hour, offset: 0x0000000c")
+      checkError("2008-01-20T07:60:33Z", "illegal minute, offset: 0x0000000f")
+      checkError("2008-01-20T07:24:60Z", "illegal second, offset: 0x00000012")
+      checkError("2008-01-20T07:24:33.+20:10", "illegal timezone offset hour, offset: 0x00000016")
+      checkError("2008-01-20T07:24:33.+10:60", "illegal timezone offset minute, offset: 0x00000019")
+      checkError("2008-01-20T07:24:33.+10:10:60", "illegal timezone offset second, offset: 0x0000001c")
+      checkError("2008-01-20T07:24:33.+18:00:01", "illegal timezone offset, offset: 0x0000001c")
+      checkError("2008-01-20T07:24:33.-18:00:01", "illegal timezone offset, offset: 0x0000001c")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
+        val nonNumberOrZ = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
+        val nonDash = if (ch == '-') 'X' else ch
+        val nonT = if (ch == 'T') 'X' else ch
+        val nonColon = if (ch == ':') 'X' else ch
+        val nonColonOrSignOrZ = if (ch == ':' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        val nonDotOrSignOrZ = if (ch == '.' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        val nonSignOrZ = if (ch == '.' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        checkError(s"${nonNumber}008-01-20T07:24:33Z", "expected '-' or '+' or digit, offset: 0x00000000")
+        checkError(s"2${nonDigit}08-01-20T07:24:33Z", "expected digit, offset: 0x00000001")
+        checkError(s"20${nonDigit}8-01-20T07:24:33Z", "expected digit, offset: 0x00000002")
+        checkError(s"200${nonDigit}-01-20T07:24:33Z", "expected digit, offset: 0x00000003")
+        checkError(s"2008${nonDash}01-20T07:24:33Z", "expected '-', offset: 0x00000004")
+        checkError(s"+${nonDigit}0000-01-20T07:24:33Z", "expected digit, offset: 0x00000001")
+        checkError(s"+1${nonDigit}000-01-20T07:24:33Z", "expected digit, offset: 0x00000002")
+        checkError(s"+10${nonDigit}00-01-20T07:24:33Z", "expected digit, offset: 0x00000003")
+        checkError(s"+100${nonDigit}0-01-20T07:24:33Z", "expected digit, offset: 0x00000004")
+        checkError(s"+1000${nonDigit}-01-20T07:24:33Z", "expected digit, offset: 0x00000005")
+        checkError(s"-1000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000005")
+        checkError(s"+10000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000006")
+        checkError(s"+100000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000007")
+        checkError(s"+1000000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000008")
+        checkError(s"+10000000${nonDigitOrDash}-01-20T07:24:33Z", "expected '-' or digit, offset: 0x00000009")
+        checkError(s"+999999999${nonDash}01-20T07:24:33Z", "expected '-', offset: 0x0000000a")
+        checkError(s"2008-${nonDigit}1-20T07:24:33Z", "expected digit, offset: 0x00000005")
+        checkError(s"2008-0${nonDigit}-20T07:24:33Z", "expected digit, offset: 0x00000006")
+        checkError(s"2008-01${nonDash}20T07:24:33Z", "expected '-', offset: 0x00000007")
+        checkError(s"2008-01-${nonDigit}0T07:24:33Z", "expected digit, offset: 0x00000008")
+        checkError(s"2008-01-2${nonDigit}T07:24:33Z", "expected digit, offset: 0x00000009")
+        checkError(s"2008-01-20${nonT}07:24:33Z", "expected 'T', offset: 0x0000000a")
+        checkError(s"2008-01-20T${nonDigit}7:24:33Z", "expected digit, offset: 0x0000000b")
+        checkError(s"2008-01-20T0${nonDigit}:24:33Z", "expected digit, offset: 0x0000000c")
+        checkError(s"2008-01-20T07${nonColon}24:33Z", "expected ':', offset: 0x0000000d")
+        checkError(s"2008-01-20T07:${nonDigit}4:33Z", "expected digit, offset: 0x0000000e")
+        checkError(s"2008-01-20T07:2${nonDigit}:33Z", "expected digit, offset: 0x0000000f")
+        checkError(s"2008-01-20T07:24${nonColonOrSignOrZ}33Z", "expected ':' or '+' or '-' or 'Z', offset: 0x00000010")
+        checkError(s"2008-01-20T07:24:${nonDigit}3Z", "expected digit, offset: 0x00000011")
+        checkError(s"2008-01-20T07:24:3${nonDigit}Z", "expected digit, offset: 0x00000012")
+        checkError(s"2008-01-20T07:24:33${nonDotOrSignOrZ}", "expected '.' or '+' or '-' or 'Z', offset: 0x00000013")
+        checkError(s"2008-01-20T07:24:33.${nonNumberOrZ}", "expected '+' or '-' or 'Z' or digit, offset: 0x00000014")
+        checkError(s"2008-01-20T07:24:33.000${nonNumberOrZ}", "expected '+' or '-' or 'Z' or digit, offset: 0x00000017")
+        checkError(s"2008-01-20T07:24:33.123456789${nonSignOrZ}", "expected '+' or '-' or 'Z', offset: 0x0000001d")
+        checkError(s"2008-01-20T07:24+${nonDigit}0", "expected digit, offset: 0x00000011")
+        checkError(s"2008-01-20T07:24+1${nonDigit}", "expected digit, offset: 0x00000012")
+        checkError(s"2008-01-20T07:24:33+${nonDigit}0", "expected digit, offset: 0x00000014")
+        checkError(s"2008-01-20T07:24:33-${nonDigit}0", "expected digit, offset: 0x00000014")
+        checkError(s"2008-01-20T07:24:33.+${nonDigit}0", "expected digit, offset: 0x00000015")
+        checkError(s"2008-01-20T07:24:33.+1${nonDigit}", "expected digit, offset: 0x00000016")
+        checkError(s"2008-01-20T07:24:33.+10:${nonDigit}0", "expected digit, offset: 0x00000018")
+        checkError(s"2008-01-20T07:24:33.+10:1${nonDigit}", "expected digit, offset: 0x00000019")
+        checkError(s"2008-01-20T07:24:33.+10:10:${nonDigit}0", "expected digit, offset: 0x0000001b")
+        checkError(s"2008-01-20T07:24:33.+10:10:1${nonDigit}", "expected digit, offset: 0x0000001c")
       }
     }
     "throw parsing exception for empty input and illegal or broken OffsetDateTime string" in {
@@ -1500,6 +1928,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readOffsetTime and JsonReader.readKeyAsOffsetTime" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBytesAsOffsetTime())
+        .getMessage.startsWith("""expected digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readOffsetTime(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsOffsetTime())
@@ -1512,6 +1942,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse OffsetTime from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = OffsetTime.parse(s)
+        reader(s).readBytesAsOffsetTime() shouldBe x
         reader(s"""$ws"$s"""").readOffsetTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsOffsetTime() shouldBe x
       }
@@ -1527,8 +1958,48 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genOffsetTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
+        reader(s).readBytesAsOffsetTime() shouldBe x
         reader(s"""$ws"$s"""").readOffsetTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsOffsetTime() shouldBe x
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken OffsetTime bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsOffsetTime()).getMessage.startsWith(error))
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("07:24:3", "unexpected end of input, offset: 0x00000007")
+      checkError("24:24:33Z", "illegal hour, offset: 0x00000001")
+      checkError("07:60:33Z", "illegal minute, offset: 0x00000004")
+      checkError("07:24:60Z", "illegal second, offset: 0x00000007")
+      checkError("07:24:33.+19:10", "illegal timezone offset hour, offset: 0x0000000b")
+      checkError("07:24:33.+10:60", "illegal timezone offset minute, offset: 0x0000000e")
+      checkError("07:24:33.+10:10:60", "illegal timezone offset second, offset: 0x00000011")
+      checkError("07:24:33.+18:00:01", "illegal timezone offset, offset: 0x00000011")
+      checkError("07:24:33.-18:00:01", "illegal timezone offset, offset: 0x00000011")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonNumberOrZ = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        val nonSignOrZ = if (ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonColon = if (ch == ':') 'X' else ch
+        val nonColonOrDoubleQuotes = if (ch == ':' || ch == '"') 'X' else ch
+        val nonDotOrSignOrZ = if (ch == '.' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        val nonColonOrSignOrZ = if (ch == ':' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        checkError(s"${nonDigit}7:24:33Z", "expected digit, offset: 0x00000000")
+        checkError(s"0${nonDigit}:24:33Z", "expected digit, offset: 0x00000001")
+        checkError(s"07${nonColon}24:33Z", "expected ':', offset: 0x00000002")
+        checkError(s"07:${nonDigit}4:33Z", "expected digit, offset: 0x00000003")
+        checkError(s"07:2${nonDigit}:33Z", "expected digit, offset: 0x00000004")
+        checkError(s"07:24${nonColonOrSignOrZ}33Z", "expected ':' or '+' or '-' or 'Z', offset: 0x00000005")
+        checkError(s"07:24:${nonDigit}3Z", "expected digit, offset: 0x00000006")
+        checkError(s"07:24:3${nonDigit}Z", "expected digit, offset: 0x00000007")
+        checkError(s"07:24:33${nonDotOrSignOrZ}", "expected '.' or '+' or '-' or 'Z', offset: 0x00000008")
+        checkError(s"07:24:33.${nonNumberOrZ}", "expected '+' or '-' or 'Z' or digit, offset: 0x00000009")
+        checkError(s"07:24:33.123456789${nonSignOrZ}", "expected '+' or '-' or 'Z', offset: 0x00000012")
+        checkError(s"07:24:33.+10:${nonDigit}0", "expected digit, offset: 0x0000000d")
+        checkError(s"07:24:33.+10:1${nonDigit}", "expected digit, offset: 0x0000000e")
+        checkError(s"07:24:33.+10:10:${nonDigit}0", "expected digit, offset: 0x00000010")
+        checkError(s"07:24:33.+10:10:1${nonDigit}", "expected digit, offset: 0x00000011")
       }
     }
     "throw parsing exception for empty input and illegal or broken OffsetTime string" in {
@@ -1579,6 +2050,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readPeriod and JsonReader.readKeyAsPeriod" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBytesAsPeriod())
+        .getMessage.startsWith("""expected 'P' or '-', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readPeriod(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsPeriod())
@@ -1591,9 +2064,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse Period from a string representation according to JDK format that is based on ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = Period.parse(s)
+        reader(s).readBytesAsPeriod() shouldBe x
         reader(s"""$ws"$s"""").readPeriod(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsPeriod() shouldBe x
         if (x.getYears != Int.MinValue && x.getMonths != Int.MinValue && x.getDays != Int.MinValue) {
+          reader(s"-$s").readBytesAsPeriod() shouldBe x.negated()
           reader(s"""$ws"-$s"""").readPeriod(null) shouldBe x.negated()
           reader(s"""$ws"-$s":""").readKeyAsPeriod() shouldBe x.negated()
         }
@@ -1619,9 +2094,64 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genPeriod, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
+        reader(s).readBytesAsPeriod() shouldBe x
         reader(s"""$ws"$s"""").readPeriod(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsPeriod() shouldBe x
       }
+    }
+    "throw parsing exception for empty input and illegal or broken Period bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsPeriod()).getMessage.startsWith(error))
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("X", "expected 'P' or '-', offset: 0x00000000")
+      checkError("-", "unexpected end of input, offset: 0x00000001")
+      checkError("PXY", "expected '-' or digit, offset: 0x00000001")
+      checkError("P-XY", "expected digit, offset: 0x00000002")
+      checkError("P1XY", "expected 'Y' or 'M' or 'W' or 'D' or digit, offset: 0x00000002")
+      checkError("P2147483648Y", "illegal period, offset: 0x0000000b")
+      checkError("P21474836470Y", "illegal period, offset: 0x0000000b")
+      checkError("P-2147483649Y", "illegal period, offset: 0x0000000b")
+      checkError("P2147483648M", "illegal period, offset: 0x0000000b")
+      checkError("P21474836470M", "illegal period, offset: 0x0000000b")
+      checkError("P-2147483649M", "illegal period, offset: 0x0000000b")
+      checkError("P2147483648W", "illegal period, offset: 0x0000000b")
+      checkError("P21474836470W", "illegal period, offset: 0x0000000b")
+      checkError("P-2147483649W", "illegal period, offset: 0x0000000b")
+      checkError("P2147483648D", "illegal period, offset: 0x0000000b")
+      checkError("P21474836470D", "illegal period, offset: 0x0000000b")
+      checkError("P-2147483649D", "illegal period, offset: 0x0000000b")
+      checkError("P1YXM", """expected '-' or digit, offset: 0x00000003""")
+      checkError("P1Y-XM", "expected digit, offset: 0x00000004")
+      checkError("P1Y1XM", "expected 'M' or 'W' or 'D' or digit, offset: 0x00000004")
+      checkError("P1Y2147483648M", "illegal period, offset: 0x0000000d")
+      checkError("P1Y21474836470M", "illegal period, offset: 0x0000000d")
+      checkError("P1Y-2147483649M", "illegal period, offset: 0x0000000d")
+      checkError("P1Y2147483648W", "illegal period, offset: 0x0000000d")
+      checkError("P1Y21474836470W", "illegal period, offset: 0x0000000d")
+      checkError("P1Y-2147483649W", "illegal period, offset: 0x0000000d")
+      checkError("P1Y2147483648D", "illegal period, offset: 0x0000000d")
+      checkError("P1Y21474836470D", "illegal period, offset: 0x0000000d")
+      checkError("P1Y-2147483649D", "illegal period, offset: 0x0000000d")
+      checkError("P1Y1MXW", """expected '-' or digit, offset: 0x00000005""")
+      checkError("P1Y1M-XW", "expected digit, offset: 0x00000006")
+      checkError("P1Y1M1XW", "expected 'W' or 'D' or digit, offset: 0x00000006")
+      checkError("P1Y1M306783379W", "illegal period, offset: 0x0000000e")
+      checkError("P1Y1M3067833790W", "illegal period, offset: 0x0000000e")
+      checkError("P1Y1M-306783379W", "illegal period, offset: 0x0000000f")
+      checkError("P1Y1M2147483648D", "illegal period, offset: 0x0000000f")
+      checkError("P1Y1M21474836470D", "illegal period, offset: 0x0000000f")
+      checkError("P1Y1M-2147483649D", "illegal period, offset: 0x0000000f")
+      checkError("P1Y1M1WXD", """expected '-' or digit, offset: 0x00000007""")
+      checkError("P1Y1M1W-XD", "expected digit, offset: 0x00000008")
+      checkError("P1Y1M1W1XD", "expected 'D' or digit, offset: 0x00000008")
+      checkError("P1Y1M306783378W8D", "illegal period, offset: 0x00000010")
+      checkError("P1Y1M-306783378W-8D", "illegal period, offset: 0x00000012")
+      checkError("P1Y1M1W2147483647D", "illegal period, offset: 0x00000011")
+      checkError("P1Y1M-1W-2147483648D", "illegal period, offset: 0x00000013")
+      checkError("P1Y1M0W2147483648D", "illegal period, offset: 0x00000011")
+      checkError("P1Y1M0W21474836470D", "illegal period, offset: 0x00000011")
+      checkError("P1Y1M0W-2147483649D", "illegal period, offset: 0x00000011")
     }
     "throw parsing exception for empty input and illegal or broken Period string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1683,6 +2213,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readYear and JsonReader.readKeyAsYear" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBytesAsYear())
+        .getMessage.startsWith("""expected '-' or '+' or digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readYear(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsYear())
@@ -1695,6 +2227,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse Year from a string representation according to ISO-8601 format" in {
       def check(x: Year, ws: String): Unit = {
         val s = toISO8601(x)
+        reader(s).readBytesAsYear() shouldBe x
         reader(s"""$ws"$s"""").readYear(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsYear() shouldBe x
       }
@@ -1705,6 +2238,28 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check(Year.of(2008), ws)
       }
       forAll(genYear, genWhitespaces, minSuccessful(10000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken Year bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsYear()).getMessage.startsWith(error))
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("200", "unexpected end of input, offset: 0x00000003")
+      checkError("+2008", "expected digit, offset: 0x00000005")
+      checkError("-0000", "illegal year, offset: 0x00000004")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        checkError(s"${nonNumber}008", "expected '-' or '+' or digit, offset: 0x00000000")
+        checkError(s"2${nonDigit}08", "expected digit, offset: 0x00000001")
+        checkError(s"20${nonDigit}8", "expected digit, offset: 0x00000002")
+        checkError(s"200${nonDigit}", "expected digit, offset: 0x00000003")
+        checkError(s"+${nonDigit}0000", "expected digit, offset: 0x00000001")
+        checkError(s"+1${nonDigit}000", "expected digit, offset: 0x00000002")
+        checkError(s"+10${nonDigit}00", "expected digit, offset: 0x00000003")
+        checkError(s"+100${nonDigit}0", "expected digit, offset: 0x00000004")
+        checkError(s"+1000${nonDigit}", "expected digit, offset: 0x00000005")
+      }
     }
     "throw parsing exception for empty input and illegal or broken Year string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1741,6 +2296,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readYearMonth and JsonReader.readKeyAsYearMonth" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null ").readBytesAsYearMonth())
+        .getMessage.startsWith("""expected '-' or '+' or digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readYearMonth(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsYearMonth())
@@ -1753,6 +2310,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse YearMonth from a string representation according to ISO-8601 format" in {
       def check(x: YearMonth, ws: String): Unit = {
         val s = toISO8601(x)
+        reader(s).readBytesAsYearMonth() shouldBe x
         reader(s"""$ws"$s"""").readYearMonth(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsYearMonth() shouldBe x
       }
@@ -1763,6 +2321,42 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check(YearMonth.of(2008, 1), ws)
       }
       forAll(genYearMonth, genWhitespaces, minSuccessful(10000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken YearMonth bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsYearMonth()).getMessage.startsWith(error))
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("2008-0", "unexpected end of input, offset: 0x00000006")
+      checkError("+1000000000-01", "expected '-', offset: 0x0000000a")
+      checkError("-1000000000-01", "expected '-', offset: 0x0000000a")
+      checkError("-0000-01", "illegal year, offset: 0x00000004")
+      checkError("2008-00", "illegal month, offset: 0x00000006")
+      checkError("2008-13", "illegal month, offset: 0x00000006")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
+        val nonDash = if (ch == '-') 'X' else ch
+        checkError(s"${nonNumber}008-01", "expected '-' or '+' or digit, offset: 0x00000000")
+        checkError(s"2${nonDigit}08-01", "expected digit, offset: 0x00000001")
+        checkError(s"20${nonDigit}8-01", "expected digit, offset: 0x00000002")
+        checkError(s"200${nonDigit}-01", "expected digit, offset: 0x00000003")
+        checkError(s"2008${nonDash}01", "expected '-', offset: 0x00000004")
+        checkError(s"+${nonDigit}0000-01", "expected digit, offset: 0x00000001")
+        checkError(s"+1${nonDigit}000-01", "expected digit, offset: 0x00000002")
+        checkError(s"+10${nonDigit}00-01", "expected digit, offset: 0x00000003")
+        checkError(s"+100${nonDigit}0-01", "expected digit, offset: 0x00000004")
+        checkError(s"+1000${nonDigitOrDash}-01", "expected digit, offset: 0x00000005")
+        checkError(s"-1000${nonDigitOrDash}-01", "expected '-' or digit, offset: 0x00000005")
+        checkError(s"+10000${nonDigitOrDash}-01", "expected '-' or digit, offset: 0x00000006")
+        checkError(s"+100000${nonDigitOrDash}-01", "expected '-' or digit, offset: 0x00000007")
+        checkError(s"+1000000${nonDigitOrDash}-01", "expected '-' or digit, offset: 0x00000008")
+        checkError(s"+10000000${nonDigitOrDash}-01", "expected '-' or digit, offset: 0x00000009")
+        checkError(s"+999999999${nonDash}01", "expected '-', offset: 0x0000000a")
+        checkError(s"2008-${nonDigit}1", "expected digit, offset: 0x00000005")
+        checkError(s"2008-0${nonDigit}", "expected digit, offset: 0x00000006")
+      }
     }
     "throw parsing exception for empty input and illegal or broken YearMonth string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1807,6 +2401,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readZonedDateTime and JsonReader.readKeyAsZonedDateTime" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null ").readBytesAsZonedDateTime())
+        .getMessage.startsWith("""expected '-' or '+' or digit, offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readZonedDateTime(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsZonedDateTime())
@@ -1819,6 +2415,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK format" in {
       def check(s: String, ws: String): Unit = {
         val x = ZonedDateTime.parse(s)
+        reader(s).readBytesAsZonedDateTime() shouldBe x
         reader(s"""$ws"$s"""").readZonedDateTime(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZonedDateTime() shouldBe x
       }
@@ -1849,9 +2446,102 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genZonedDateTime, genWhitespaces, minSuccessful(100))((x, ws) => {
         val s = x.toString
+        reader(s).readBytesAsZonedDateTime() shouldBe x
         reader(s"""$ws"$s"""").readZonedDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsZonedDateTime() shouldBe x
       })
+    }
+    "throw parsing exception for empty input and illegal or broken ZonedDateTime bytes" in {
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonReaderException](reader(json).readBytesAsZonedDateTime()).getMessage.startsWith(error))
+      }
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("2008-01-20T07:24:33Z[UTC", "unexpected end of input, offset: 0x00000018")
+      checkError("+1000000000-01-20T07:24:33Z[UTC]", "expected '-', offset: 0x0000000a")
+      checkError("-1000000000-01-20T07:24:33Z[UTC]", "expected '-', offset: 0x0000000a")
+      checkError("2008-01-20T07:24:33X[UTC]", "expected '.' or '+' or '-' or 'Z', offset: 0x00000013")
+      checkError("2008-01-20T07:24:33.[UTC]", "expected '+' or '-' or 'Z' or digit, offset: 0x00000014")
+      checkError("2008-01-20T07:24:33.000[UTC]", "expected '+' or '-' or 'Z' or digit, offset: 0x00000017")
+      checkError("2008-01-20T07:24:33.123456789X[UTC]", "expected '+' or '-' or 'Z', offset: 0x0000001d")
+      checkError("2008-01-20T07:24:33.1234567890[UTC]", "expected '+' or '-' or 'Z', offset: 0x0000001d")
+      checkError("-0000-01-20T07:24:33Z[UTC]", "illegal year, offset: 0x00000004")
+      checkError("2008-00-20T07:24:33Z[UTC]", "illegal month, offset: 0x00000006")
+      checkError("2008-13-20T07:24:33Z[UTC]", "illegal month, offset: 0x00000006")
+      checkError("2008-01-00T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-01-32T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2007-02-29T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-02-30T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-03-32T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-04-31T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-05-32T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-06-31T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-07-32T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-08-32T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-09-31T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-10-32T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-11-31T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-12-32T07:24:33Z[UTC]", "illegal day, offset: 0x00000009")
+      checkError("2008-01-20T24:24:33Z[UTC]", "illegal hour, offset: 0x0000000c")
+      checkError("2008-01-20T07:60:33Z[UTC]", "illegal minute, offset: 0x0000000f")
+      checkError("2008-01-20T07:24:60Z[UTC]", "illegal second, offset: 0x00000012")
+      checkError("2008-01-20T07:24:33+[UTC]", "expected digit, offset: 0x00000014")
+      checkError("2008-01-20T07:24:33-[UTC]", "expected digit, offset: 0x00000014")
+      checkError("2008-01-20T07:24:33.+[UTC]", "expected digit, offset: 0x00000015")
+      checkError("2008-01-20T07:24:33.+1[UTC]", "expected digit, offset: 0x00000016")
+      checkError("2008-01-20T07:24:33.+10:[UTC]", "expected digit, offset: 0x00000018")
+      checkError("2008-01-20T07:24:33.+10:1[UTC]", "expected digit, offset: 0x00000019")
+      checkError("2008-01-20T07:24:33.+10:10[]", "illegal timezone, offset: 0x0000001b")
+      checkError("2008-01-20T07:24:33.+10:10:X0[UTC]", "expected digit, offset: 0x0000001b")
+      checkError("2008-01-20T07:24:33.+10:10:1,[UTC]", "expected digit, offset: 0x0000001c")
+      checkError("2008-01-20T07:24:33.+18:01[UTC]", "illegal timezone offset, offset: 0x0000001a")
+      checkError("2008-01-20T07:24:33.-18:01[UTC]", "illegal timezone offset, offset: 0x0000001a")
+      checkError("2008-01-20T07:24:33.+20:10[UTC]", "illegal timezone offset hour, offset: 0x00000016")
+      checkError("2008-01-20T07:24:33.+10:60[UTC]", "illegal timezone offset minute, offset: 0x00000019")
+      checkError("2008-01-20T07:24:33.+10:10:60[UTC]", "illegal timezone offset second, offset: 0x0000001c")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonDigitOrDash = if (ch >= '0' && ch <= '9' || ch == '-') 'X' else ch
+        val nonDash = if (ch == '-') 'X' else ch
+        val nonT = if (ch == 'T') 'X' else ch
+        val nonColon = if (ch == ':') 'X' else ch
+        val nonColonOrSignOrZ = if (ch == ':' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
+        checkError(s"${nonNumber}008-01-20T07:24:33Z[UTC]", "expected '-' or '+' or digit, offset: 0x00000000")
+        checkError(s"2${nonDigit}08-01-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000001")
+        checkError(s"20${nonDigit}8-01-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000002")
+        checkError(s"200${nonDigit}-01-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000003")
+        checkError(s"2008${nonDash}01-20T07:24:33Z[UTC]", "expected '-', offset: 0x00000004")
+        checkError(s"+${nonDigit}0000-01-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000001")
+        checkError(s"+1${nonDigit}000-01-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000002")
+        checkError(s"+10${nonDigit}00-01-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000003")
+        checkError(s"+100${nonDigit}0-01-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000004")
+        checkError(s"+1000${nonDigit}-01-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000005")
+        checkError(s"-1000${nonDigitOrDash}-01-20T07:24:33Z[UTC]", "expected '-' or digit, offset: 0x00000005")
+        checkError(s"+10000${nonDigitOrDash}-01-20T07:24:33Z[UTC]", "expected '-' or digit, offset: 0x00000006")
+        checkError(s"+100000${nonDigitOrDash}-01-20T07:24:33Z[UTC]", "expected '-' or digit, offset: 0x00000007")
+        checkError(s"+1000000${nonDigitOrDash}-01-20T07:24:33Z[UTC]", "expected '-' or digit, offset: 0x00000008")
+        checkError(s"+10000000${nonDigitOrDash}-01-20T07:24:33Z[UTC]", "expected '-' or digit, offset: 0x00000009")
+        checkError(s"+999999999${nonDash}01-20T07:24:33Z[UTC]", "expected '-', offset: 0x0000000a")
+        checkError(s"2008-${nonDigit}1-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000005")
+        checkError(s"2008-0${nonDigit}-20T07:24:33Z[UTC]", "expected digit, offset: 0x00000006")
+        checkError(s"2008-01${nonDash}20T07:24:33Z[UTC]", "expected '-', offset: 0x00000007")
+        checkError(s"2008-01-${nonDigit}0T07:24:33Z[UTC]", "expected digit, offset: 0x00000008")
+        checkError(s"2008-01-2${nonDigit}T07:24:33Z[UTC]", "expected digit, offset: 0x00000009")
+        checkError(s"2008-01-20${nonT}07:24:33Z[UTC]", "expected 'T', offset: 0x0000000a")
+        checkError(s"2008-01-20T${nonDigit}7:24:33Z[UTC]", "expected digit, offset: 0x0000000b")
+        checkError(s"2008-01-20T0${nonDigit}:24:33Z[UTC]", "expected digit, offset: 0x0000000c")
+        checkError(s"2008-01-20T07${nonColon}24:33Z[UTC]", "expected ':', offset: 0x0000000d")
+        checkError(s"2008-01-20T07:${nonDigit}4:33Z[UTC]", "expected digit, offset: 0x0000000e")
+        checkError(s"2008-01-20T07:2${nonDigit}:33Z[UTC]", "expected digit, offset: 0x0000000f")
+        checkError(s"2008-01-20T07:24${nonColonOrSignOrZ}33Z[UTC]", "expected ':' or '+' or '-' or 'Z', offset: 0x00000010")
+        checkError(s"2008-01-20T07:24:${nonDigit}3Z[UTC]", "expected digit, offset: 0x00000011")
+        checkError(s"2008-01-20T07:24:3${nonDigit}Z[UTC]", "expected digit, offset: 0x00000012")
+        checkError(s"2008-01-20T07:24:33.+${nonDigit}0:10[UTC]", "expected digit, offset: 0x00000015")
+        checkError(s"2008-01-20T07:24:33.+1${nonDigit}:10[UTC]", "expected digit, offset: 0x00000016")
+        checkError(s"2008-01-20T07:24:33.+10:${nonDigit}0[UTC]", "expected digit, offset: 0x00000018")
+        checkError(s"2008-01-20T07:24:33.+10:1${nonDigit}[UTC]", "expected digit, offset: 0x00000019")
+      }
     }
     "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1953,6 +2643,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readZoneId and JsonReader.readKeyAsZoneId" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBytesAsZoneId())
+        .getMessage.startsWith("""illegal timezone, offset: 0x00000004"""))
       assert(intercept[JsonReaderException](reader("null").readZoneId(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsZoneId())
@@ -1965,9 +2657,55 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse ZoneId from a string representation according to ISO-8601 format for timezone offset or JDK format for IANA timezone identifier" in {
       forAll(genZoneId, genWhitespaces, minSuccessful(1000)) { (x, ws) =>
         val s = x.toString
+        reader(s).readBytesAsZoneId() shouldBe x
         reader(s"""$ws"$s"""").readZoneId(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneId() shouldBe x
       }
+    }
+    "throw parsing exception for empty input and illegal or broken ZoneId bytes" in {
+      def checkError(json: String, error: String): Unit =
+        assert(intercept[JsonReaderException](reader(json).readBytesAsZoneId()).getMessage.startsWith(error))
+
+      checkError("", "illegal timezone, offset: 0x00000000")
+      checkError("X", "illegal timezone, offset: 0x00000001")
+      checkError("+", "illegal timezone, offset: 0x00000001")
+      checkError("+1X", "illegal timezone, offset: 0x00000003")
+      checkError("XXX", "illegal timezone, offset: 0x00000003")
+      checkError("+10=", "illegal timezone, offset: 0x00000004")
+      checkError("+10:", "illegal timezone, offset: 0x00000004")
+      checkError("+10:1", "illegal timezone, offset: 0x00000005")
+      checkError("+19:10", "illegal timezone, offset: 0x00000006")
+      checkError("+10:60", "illegal timezone, offset: 0x00000006")
+      checkError("+10:10:60", "illegal timezone, offset: 0x00000009")
+      checkError("+18:00:01", "illegal timezone, offset: 0x00000009")
+      checkError("-18:00:01", "illegal timezone, offset: 0x00000009")
+      checkError("UT+", "illegal timezone, offset: 0x00000003")
+      checkError("UT+10=", "illegal timezone, offset: 0x00000006")
+      checkError("UT+10:", "illegal timezone, offset: 0x00000006")
+      checkError("UT+10:1", "illegal timezone, offset: 0x00000007")
+      checkError("UT+19:10", "illegal timezone, offset: 0x00000008")
+      checkError("UT+10:60", "illegal timezone, offset: 0x00000008")
+      checkError("UT+10:10:60", "illegal timezone, offset: 0x0000000b")
+      checkError("UT+18:00:01", "illegal timezone, offset: 0x0000000b")
+      checkError("UT-18:00:01", "illegal timezone, offset: 0x0000000b")
+      checkError("UTC+", "illegal timezone, offset: 0x00000004")
+      checkError("UTC+10=", "illegal timezone, offset: 0x00000007")
+      checkError("UTC+10:", "illegal timezone, offset: 0x00000007")
+      checkError("UTC+10:1", "illegal timezone, offset: 0x00000008")
+      checkError("UTC+19:10", "illegal timezone, offset: 0x00000009")
+      checkError("UTC+10:60", "illegal timezone, offset: 0x00000009")
+      checkError("UTC+10:10:60", "illegal timezone, offset: 0x0000000c")
+      checkError("UTC+18:00:01", "illegal timezone, offset: 0x0000000c")
+      checkError("UTC-18:00:01", "illegal timezone, offset: 0x0000000c")
+      checkError("GMT+", "illegal timezone, offset: 0x00000004")
+      checkError("GMT+10=", "illegal timezone, offset: 0x00000007")
+      checkError("GMT+10:", "illegal timezone, offset: 0x00000007")
+      checkError("GMT+10:1", "illegal timezone, offset: 0x00000008")
+      checkError("GMT+19:10", "illegal timezone, offset: 0x00000009")
+      checkError("GMT+10:60", "illegal timezone, offset: 0x00000009")
+      checkError("GMT+10:10:60", "illegal timezone, offset: 0x0000000c")
+      checkError("GMT+18:00:01", "illegal timezone, offset: 0x0000000c")
+      checkError("GMT-18:00:01", "illegal timezone, offset: 0x0000000c")
     }
     "throw parsing exception for empty input and illegal or broken ZoneId string" in {
       def checkError(json: String, error: String): Unit = {
@@ -2019,6 +2757,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.readZoneOffset and JsonReader.readKeyAsZoneOffset" should {
     "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBytesAsZoneOffset())
+        .getMessage.startsWith("""expected '+' or '-' or 'Z', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readZoneOffset(null))
         .getMessage.startsWith("""expected '"', offset: 0x00000000"""))
       assert(intercept[JsonReaderException](reader("null").readKeyAsZoneOffset())
@@ -2031,6 +2771,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse ZoneOffset from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = ZoneOffset.of(s)
+        reader(s).readBytesAsZoneOffset() shouldBe x
         reader(s"""$ws"$s"""").readZoneOffset(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneOffset() shouldBe x
       }
@@ -2048,8 +2789,32 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genZoneOffset, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
+        reader(s).readBytesAsZoneOffset() shouldBe x
         reader(s"""$ws"$s"""").readZoneOffset(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneOffset() shouldBe x
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken ZoneOffset bytes" in {
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonReaderException](reader(json).readBytesAsZoneOffset()).getMessage.startsWith(error))
+      }
+
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("X", "expected '+' or '-' or 'Z', offset: 0x00000000")
+      checkError("+19:10", "illegal timezone offset hour, offset: 0x00000002")
+      checkError("+10:60", "illegal timezone offset minute, offset: 0x00000005")
+      checkError("+10:10:60", "illegal timezone offset second, offset: 0x00000008")
+      checkError("+18:00:01", "illegal timezone offset, offset: 0x00000008")
+      checkError("-18:00:01", "illegal timezone offset, offset: 0x00000008")
+      forAll(genISO8859Char, minSuccessful(100)) { ch =>
+        val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
+        val nonColonOrDoubleQuotes = if (ch == ':' || ch == '"') 'X' else ch
+        checkError(s"+${nonDigit}0:10:10", "expected digit, offset: 0x00000001")
+        checkError(s"+1${nonDigit}:10:10", "expected digit, offset: 0x00000002")
+        checkError(s"+10:${nonDigit}0:10", "expected digit, offset: 0x00000004")
+        checkError(s"+10:1${nonDigit}:10", "expected digit, offset: 0x00000005")
+        checkError(s"+10:10:${nonDigit}0", "expected digit, offset: 0x00000007")
+        checkError(s"+10:10:1${nonDigit}", "expected digit, offset: 0x00000008")
       }
     }
     "throw parsing exception for empty input and illegal or broken ZoneOffset string" in {
