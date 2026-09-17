@@ -61,7 +61,7 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeKey(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeBoolean(x)
     writeParenthesesWithColon()
   }
@@ -73,7 +73,7 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeKey(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeByte(x)
     writeParenthesesWithColon()
   }
@@ -97,7 +97,7 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeKey(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeShort(x)
     writeParenthesesWithColon()
   }
@@ -109,7 +109,7 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeKey(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeInt(x)
     writeParenthesesWithColon()
   }
@@ -121,7 +121,7 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeKey(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeLong(x)
     writeParenthesesWithColon()
   }
@@ -134,7 +134,7 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeKey(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeFloat(x)
     writeParenthesesWithColon()
   }
@@ -147,7 +147,7 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeKey(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeDouble(x)
     writeParenthesesWithColon()
   }
@@ -162,7 +162,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeTimestampKey(epochSecond: Long, nano: Int): Unit = {
     if (nano < 0 || nano > 999999999) encodeError("illegal nanoseconds value: " + nano)
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     var pos = ensureBufCapacity(30)
     val buf = this.buf
     var es = epochSecond
@@ -193,7 +193,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: BigInt): Unit = {
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     if (x.isValidLong) writeLong(x.longValue)
     else writeBigInteger(x.bigInteger, null)
     writeParenthesesWithColon()
@@ -207,7 +207,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: BigDecimal): Unit = {
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeBigDecimal(x.bigDecimal)
     writeParenthesesWithColon()
   }
@@ -840,9 +840,9 @@ final class JsonWriter private[jsoniter_scala](
   def writeValAsString(x: BigDecimal): Unit = {
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeBigDecimal(x.bigDecimal)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -853,10 +853,10 @@ final class JsonWriter private[jsoniter_scala](
   def writeValAsString(x: BigInt): Unit = {
     if (x eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     if (x.isValidLong) writeLong(x.longValue)
     else writeBigInteger(x.bigInteger, null)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -866,9 +866,9 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeValAsString(x: Boolean): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeBoolean(x)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -878,9 +878,9 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeValAsString(x: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeByte(x)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -890,9 +890,9 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeValAsString(x: Short): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeShort(x)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -902,9 +902,9 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeValAsString(x: Int): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeInt(x)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -914,9 +914,9 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeValAsString(x: Long): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeLong(x)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -927,9 +927,9 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeValAsString(x: Float): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeFloat(x)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -940,9 +940,9 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeValAsString(x: Double): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     writeDouble(x)
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   /**
@@ -1028,6 +1028,426 @@ final class JsonWriter private[jsoniter_scala](
     if (bs eq null) throw new NullPointerException
     writeOptionalCommaAndIndentionBeforeValue()
     writeRawBytes(bs)
+  }
+
+  /**
+   * Writes a [[java.time.Duration]] value as bytes.
+   *
+   * @param x
+   *   the [[java.time.Duration]] value to write
+   */
+  def writeBytes(x: Duration): Unit = {
+    if (x eq null) throw new NullPointerException
+    var pos = ensureBufCapacity(38) // 38 == "PT-1111111111111111H-11M-11.111111111S".length
+    val buf = this.buf
+    var totalSecs = x.getSeconds
+    var nano = x.getNano
+    buf(pos) = 'P'
+    buf(pos + 1) = 'T'
+    pos += 2
+    if (totalSecs == 0 && nano == 0) {
+      buf(pos) = '0'
+      buf(pos + 1) = 'S'
+      pos += 2
+    } else {
+      val isNeg = totalSecs < 0
+      if (isNeg) totalSecs = (-nano >> 31) - totalSecs
+      var hours = 0L
+      var secsOfHour = totalSecs.toInt
+      if (totalSecs >= 3600) {
+        hours = java.lang.Long.divideUnsigned(totalSecs, 3600L)
+        secsOfHour = (totalSecs - (hours << 12) + (hours << 9) - (hours << 4)).toInt // (totalSecs - hours * 3600).toInt
+      }
+      val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
+      val seconds = secsOfHour - minutes * 60
+      val ds = digits
+      if (hours != 0) {
+        if (isNeg) {
+          buf(pos) = '-'
+          pos += 1
+        }
+        var lastPos = pos
+        var q = 0
+        if ((hours & 0xFFFFFFFF80000000L) == 0L) {
+          q = hours.toInt
+          lastPos += digitCount(q)
+          pos = lastPos
+        } else {
+          q = (hours * 1.0000000000000005e-8).toInt // divide a small positive long by 100000000
+          lastPos += digitCount(q)
+          pos = write8Digits((hours - q * 100000000L).toInt, lastPos, buf, ds)
+        }
+        writePositiveIntDigits(q, lastPos, buf, ds)
+        buf(pos) = 'H'
+        pos += 1
+      }
+      if (minutes != 0) {
+        if (isNeg) {
+          buf(pos) = '-'
+          pos += 1
+        }
+        if (minutes < 10) {
+          buf(pos) = (minutes | '0').toByte
+          pos += 1
+        } else {
+          val d = ds(minutes)
+          buf(pos) = d.toByte
+          buf(pos + 1) = (d >> 8).toByte
+          pos += 2
+        }
+        buf(pos) = 'M'
+        pos += 1
+      }
+      if ((seconds | nano) != 0) {
+        if (isNeg) {
+          buf(pos) = '-'
+          pos += 1
+        }
+        if (seconds < 10) {
+          buf(pos) = (seconds | '0').toByte
+          pos += 1
+        } else {
+          val d = ds(seconds)
+          buf(pos) = d.toByte
+          buf(pos + 1) = (d >> 8).toByte
+          pos += 2
+        }
+        if (nano != 0) {
+          if (isNeg) nano = 1000000000 - nano
+          val dotPos = pos
+          pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, ds)
+          buf(dotPos) = '.'
+        }
+        buf(pos) = 'S'
+        pos += 1
+      }
+    }
+    count = pos
+  }
+
+  /**
+   * Writes a [[java.time.Instant]] value as bytes.
+   *
+   * @param x the [[java.time.Instant]] value to write
+   */
+  def writeBytes(x: Instant): Unit = {
+    if (x eq null) throw new NullPointerException
+    val epochSecond = x.getEpochSecond
+    var year, adjust400YearCycles, marchDayOfYear, secsOfDay = 0
+    if (epochSecond > -316224000000L && epochSecond < 316224000000L) { // the fast path from -10000 to 10000 years
+      val epochDay =
+        ((if (epochSecond >= 0) epochSecond
+        else epochSecond - 86399) * 1.1574074074074073E-5).toInt
+      var marchZeroDay = epochDay + 719468  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
+      if (marchZeroDay < 0) {
+        adjust400YearCycles = ((marchZeroDay + 1) * 6.844767517471269E-6).toInt - 1
+        marchZeroDay -= adjust400YearCycles * 146097
+      }
+      year = ((marchZeroDay * 400 + 591) * 6.844767517471269E-6).toInt
+      var days = year * 365
+      var century = year / 100
+      marchDayOfYear = marchZeroDay - days - (year >> 2) + century - (century >> 2)
+      if (marchDayOfYear < 0) {
+        days -= 365
+        year -= 1
+        century = year / 100
+        marchDayOfYear = marchZeroDay - days - (year >> 2) + century - (century >> 2)
+      }
+      secsOfDay = (epochSecond - epochDay * 86400).toInt
+    } else {
+      val epochDay =
+        (if (epochSecond >= 0) epochSecond
+        else epochSecond - 86399L) / 86400L
+      var marchZeroDay = epochDay + 719468L  // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
+      if (marchZeroDay < 0) {
+        adjust400YearCycles = ((marchZeroDay + 1L) / 146097L).toInt - 1
+        marchZeroDay -= adjust400YearCycles * 146097L
+      }
+      year = ((marchZeroDay * 400L + 591L) / 146097L).toInt
+      var days = year * 365L
+      var century = year / 100
+      marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
+      if (marchDayOfYear < 0) {
+        days -= 365L
+        year -= 1
+        century = year / 100
+        marchDayOfYear = (marchZeroDay - days).toInt - (year >> 2) + century - (century >> 2)
+      }
+      secsOfDay = (epochSecond - epochDay * 86400L).toInt
+    }
+    val marchMonth = marchDayOfYear * 17135 + 6854 >> 19 // (marchDayOfYear * 5 + 2) / 153
+    val day = marchDayOfYear - (marchMonth * 1002762 - 16383 >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val m = 9 - marchMonth >> 4
+    val month = (m & -9 | 3) + marchMonth
+    year += adjust400YearCycles * 400 - m
+    val nano = x.getNano
+    var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
+    val buf = this.buf
+    val ds = digits
+    pos = writeYear(year, pos, buf, ds)
+    buf(pos) = '-'
+    val d1 = ds(month)
+    buf(pos + 1) = d1.toByte
+    buf(pos + 2) = (d1 >> 8).toByte
+    buf(pos + 3) = '-'
+    val d2 = ds(day)
+    buf(pos + 4) = d2.toByte
+    buf(pos + 5) = (d2 >> 8).toByte
+    buf(pos + 6) = 'T'
+    var y = secsOfDay * 37283 // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val d3 = ds(y >>> 27)
+    buf(pos + 7) = d3.toByte
+    buf(pos + 8) = (d3 >> 8).toByte
+    buf(pos + 9) = ':'
+    y &= 0x7FFFFFF
+    y *= 15
+    val d4 = ds(y >> 25)
+    buf(pos + 10) = d4.toByte
+    buf(pos + 11) = (d4 >> 8).toByte
+    buf(pos + 12) = ':'
+    val d5 = ds((y & 0x1FFFFFF) * 15 >> 23)
+    buf(pos + 13) = d5.toByte
+    buf(pos + 14) = (d5 >> 8).toByte
+    pos += 15
+    if (nano != 0) pos = writeNanos(nano, pos, buf, ds)
+    buf(pos) = 'Z'
+    count = pos + 1
+  }
+
+  /**
+   * Writes a [[java.time.LocalDate]] value as bytes.
+   *
+   * @param x the [[java.time.LocalDate]] value to write
+   */
+  def writeBytes(x: LocalDate): Unit = {
+    if (x eq null) throw new NullPointerException
+    val pos = ensureBufCapacity(16) // 16 == LocalDate.MAX.toString.length
+    count = writeLocalDate(x, pos, buf, digits)
+  }
+
+  /**
+   * Writes a [[java.time.LocalDateTime]] value as bytes.
+   *
+   * @param x the [[java.time.LocalDateTime]] value to write
+   */
+  def writeBytes(x: LocalDateTime): Unit = {
+    if (x eq null) throw new NullPointerException
+    var pos = ensureBufCapacity(35) // 35 == LocalDateTime.MAX.toString.length
+    val buf = this.buf
+    val ds = digits
+    pos = writeLocalDate(x.toLocalDate, pos, buf, ds)
+    buf(pos) = 'T'
+    count = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
+  }
+
+  /**
+   * Writes a [[java.time.LocalTime]] value as bytes.
+   *
+   * @param x the [[java.time.LocalTime]] value to write
+   */
+  def writeBytes(x: LocalTime): Unit = {
+    if (x eq null) throw new NullPointerException
+    val pos = ensureBufCapacity(18) // 20 == LocalTime.MAX.toString.length
+    count = writeLocalTime(x, pos, buf, digits)
+  }
+
+  /**
+   * Writes a [[java.time.MonthDay]] value as bytes.
+   *
+   * @param x the [[java.time.MonthDay]] value to write
+   */
+  def writeBytes(x: MonthDay): Unit = {
+    if (x eq null) throw new NullPointerException
+    val pos = ensureBufCapacity(7) // 7 == "--01-01".length
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '-'
+    buf(pos + 1) = '-'
+    val d1 = ds(x.getMonthValue)
+    buf(pos + 2) = d1.toByte
+    buf(pos + 3) = (d1 >> 8).toByte
+    buf(pos + 4) = '-'
+    val d2 = ds(x.getDayOfMonth)
+    buf(pos + 5) = d2.toByte
+    buf(pos + 6) = (d2 >> 8).toByte
+    count = pos + 7
+  }
+
+  /**
+   * Writes a [[java.time.OffsetDateTime]] value as bytes.
+   *
+   * @param x the [[java.time.OffsetDateTime]] value to write
+   */
+  def writeBytes(x: OffsetDateTime): Unit = {
+    if (x eq null) throw new NullPointerException
+    var pos = ensureBufCapacity(44) // 44 == "+999999999-12-31T23:59:59.999999999+00:00:01".length
+    val buf = this.buf
+    val ds = digits
+    pos = writeLocalDate(x.toLocalDate, pos, buf, ds)
+    buf(pos) = 'T'
+    count = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
+  }
+
+  /**
+   * Writes a [[java.time.OffsetTime]] value as bytes.
+   *
+   * @param x the [[java.time.OffsetTime]] value to write
+   */
+  def writeBytes(x: OffsetTime): Unit = {
+    if (x eq null) throw new NullPointerException
+    val pos = ensureBufCapacity(29) // 29 == "00:00:07.999999998+00:00:08".length + 2
+    val buf = this.buf
+    val ds = digits
+    count = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos, buf, ds), buf, ds)
+  }
+
+  /**
+   * Writes a [[java.time.Period]] value as bytes.
+   *
+   * @param x the [[java.time.Period]] value to write
+   */
+  def writeBytes(x: Period): Unit = {
+    if (x eq null) throw new NullPointerException
+    var pos = ensureBufCapacity(37) // 37 == "P-2147483648Y-2147483648M-2147483648D".length
+    val buf = this.buf
+    val years = x.getYears
+    val months = x.getMonths
+    val days = x.getDays
+    buf(pos) = 'P'
+    pos += 1
+    if ((years | months | days) == 0) {
+      buf(pos) = '0'
+      buf(pos + 1) = 'D'
+      count = pos + 2
+    } else {
+      val ds = digits
+      var q0 = years
+      var b: Byte = 'Y'
+      while (true) {
+        if (q0 != 0) {
+          if (q0 < 0) {
+            q0 = -q0
+            buf(pos) = '-'
+            pos += 1
+            if (q0 == -2147483648) {
+              q0 = 147483648
+              buf(pos) = '2'
+              pos += 1
+            }
+          }
+          pos += digitCount(q0)
+          writePositiveIntDigits(q0, pos, buf, ds)
+          buf(pos) = b
+          pos += 1
+        }
+        if (b == 'Y') {
+          q0 = months
+          b = 'M'
+        } else if (b == 'M') {
+          q0 = days
+          b = 'D'
+        } else {
+          count = pos
+          return
+        }
+      }
+    }
+  }
+
+  /**
+   * Writes a [[java.time.Year]] value as bytes.
+   *
+   * @param x the [[java.time.Year]] value to write
+   */
+  def writeBytes(x: Year): Unit = {
+    if (x eq null) throw new NullPointerException
+    val pos = ensureBufCapacity(10) // 10 == "+999999999".length
+    count = writeYear(x.getValue, pos, buf, digits)
+  }
+
+  /**
+   * Writes a [[java.time.YearMonth]] value as bytes.
+   *
+   * @param x the [[java.time.YearMonth]] value to write
+   */
+  def writeBytes(x: YearMonth): Unit = {
+    if (x eq null) throw new NullPointerException
+    var pos = ensureBufCapacity(15) // 15 == "+999999999-12".length + 2
+    val buf = this.buf
+    val ds = digits
+    pos = writeYear(x.getYear, pos, buf, ds)
+    buf(pos) = '-'
+    val d = ds(x.getMonthValue)
+    buf(pos + 1) = d.toByte
+    buf(pos + 2) = (d >> 8).toByte
+    count = pos + 3
+  }
+
+  /**
+   * Writes a [[java.time.ZonedDateTime]] value as bytes.
+   *
+   * @param x the [[java.time.ZonedDateTime]] value to write
+   */
+  def writeBytes(x: ZonedDateTime): Unit = {
+    if (x eq null) throw new NullPointerException
+    var pos = ensureBufCapacity(44) // 44 == "+999999999-12-31T23:59:59.999999999+00:00:01".length
+    var buf = this.buf
+    val ds = digits
+    pos = writeLocalDate(x.toLocalDate, pos, buf, ds)
+    buf(pos) = 'T'
+    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
+    val zone = x.getZone
+    if (!zone.isInstanceOf[ZoneOffset]) {
+      val zoneId = zone.getId
+      val len = zoneId.length
+      val required = len + 2
+      if (pos + required > limit) {
+        pos = flushAndGrowBuf(required, pos)
+        buf = this.buf
+      }
+      buf(pos) = '['
+      pos += 1
+      var i = 0
+      while (i < len) {
+        buf(pos) = zoneId.charAt(i).toByte
+        pos += 1
+        i += 1
+      }
+      buf(pos) = ']'
+      pos += 1
+    }
+    count = pos
+  }
+
+  /**
+   * Writes a [[java.time.ZoneId]] value as bytes.
+   *
+   * @param x the [[java.time.ZoneId]] value to write
+   */
+  def writeBytes(x: ZoneId): Unit = {
+    if (x eq null) throw new NullPointerException
+    val s = x.getId
+    val len = s.length
+    var pos = ensureBufCapacity(len + 2)
+    val buf = this.buf
+    var i = 0
+    while (i < len) {
+      buf(pos) = s.charAt(i).toByte
+      pos += 1
+      i += 1
+    }
+    count = pos
+  }
+
+  /**
+   * Writes a [[java.time.ZoneOffset]] value as bytes.
+   *
+   * @param x the [[java.time.ZoneOffset]] value to write
+   */
+  def writeBytes(x: ZoneOffset): Unit = {
+    if (x eq null) throw new NullPointerException
+    val pos = ensureBufCapacity(10) // 10 == "+10:10:10".length
+    count = writeOffset(x, pos, buf, digits)
   }
 
   /**
@@ -1245,14 +1665,14 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeOptionalCommaAndIndentionBeforeValue(): Unit =
     if (comma) {
-      writeBytes(',')
+      writeBytes(0x2c: Byte)
       if (indention != 0) writeIndention()
     } else comma = true
 
   private[this] def writeOptionalCommaAndIndentionBeforeKey(): Unit =
     if (comma) {
       comma = false
-      writeBytes(',')
+      writeBytes(0x2c: Byte)
       if (indention != 0) writeIndention()
     }
 
@@ -1421,7 +1841,7 @@ final class JsonWriter private[jsoniter_scala](
   @noinline
   private[this] def writeLongNonEscapedAsciiKey(x: String): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     var pos = count
     var step = Math.max(config.preferredBufSize, limit - pos)
     var remaining = x.length
@@ -1444,7 +1864,7 @@ final class JsonWriter private[jsoniter_scala](
   @noinline
   private[this] def writeLongNonEscapedAsciiVal(x: String): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('"')
+    writeBytes(0x22: Byte)
     var pos = count
     var step = Math.max(config.preferredBufSize, limit - pos)
     var remaining = x.length
@@ -1461,7 +1881,7 @@ final class JsonWriter private[jsoniter_scala](
       remaining -= step
     }
     count = pos
-    writeBytes('"')
+    writeBytes(0x22: Byte)
   }
 
   private[this] def writeZoneId(x: ZoneId): Unit = {
@@ -1960,7 +2380,8 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     buf(pos) = '"'
-    count = pos + 1
+    pos += 1
+    count = pos
   }
 
   private[this] def writeInstant(x: Instant): Unit = {
@@ -2012,11 +2433,7 @@ final class JsonWriter private[jsoniter_scala](
     val m = 9 - marchMonth >> 4
     val month = (m & -9 | 3) + marchMonth
     year += adjust400YearCycles * 400 - m
-    writeInstant(year, month, day, secsOfDay, x.getNano)
-  }
-
-  @inline
-  private[this] def writeInstant(year: Int, month: Int, day: Int, secsOfDay: Int, nano: Int): Unit = {
+    val nano = x.getNano
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
@@ -2206,8 +2623,6 @@ final class JsonWriter private[jsoniter_scala](
     pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
     val zone = x.getZone
     if (!zone.isInstanceOf[ZoneOffset]) {
-      buf(pos) = '['
-      pos += 1
       val zoneId = zone.getId
       val len = zoneId.length
       val required = len + 3
@@ -2215,6 +2630,8 @@ final class JsonWriter private[jsoniter_scala](
         pos = flushAndGrowBuf(required, pos)
         buf = this.buf
       }
+      buf(pos) = '['
+      pos += 1
       var i = 0
       while (i < len) {
         buf(pos) = zoneId.charAt(i).toByte

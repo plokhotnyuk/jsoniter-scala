@@ -1282,6 +1282,570 @@ final class JsonReader private[jsoniter_scala](
   }
 
   /**
+   * Reads bytes into a [[java.time.Duration]] instance.
+   *
+   * @return a [[java.time.Duration]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsDuration(): Duration = {
+    var b = nextByte(head)
+    var s = 0
+    if (b == '-') {
+      b = nextByte(head)
+      s = -1
+    }
+    if (b != 'P') durationOrPeriodStartError(s)
+    b = nextByte(head)
+    var state = -1
+    if (b == 'T') {
+      b = nextByte(head)
+      state = 0
+    }
+    var seconds = 0L
+    var nano = 0
+    while ({
+      var sx = s
+      if (b == '-') {
+        b = nextByte(head)
+        sx = ~sx
+      }
+      if (b < '0' || b > '9') durationOrPeriodDigitError2(s, sx, state)
+      var x1 = '0' - b
+      var pos = head
+      var buf = this.buf
+      while (x1 > -214748364 && (pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        x1 = x1 * 10 + ('0' - b)
+        pos += 1
+      }
+      var x = x1.toLong
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (x < -922337203685477580L || {
+          x = (x << 3) + (x << 1) + ('0' - b)
+          x > 0
+        }) durationError(pos)
+        pos += 1
+      }
+      if (sx == 0) {
+        if (x == -9223372036854775808L) durationError(pos)
+        x = -x
+      }
+      if (b == 'D' && state < 0) {
+        if (x < -106751991167300L || x > 106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
+        seconds = x * 86400
+        state = 0
+      } else if (b == 'H' && state <= 0) {
+        if (x < -2562047788015215L || x > 2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
+        seconds = sumSeconds((x << 12) - (x << 9) + (x << 4), seconds, pos)
+        state = 1
+      } else if (b == 'M' && state <= 1) {
+        if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
+        seconds = sumSeconds(((x << 4) - x) << 2, seconds, pos)
+        state = 2
+      } else if (b == 'S' || b == '.') {
+        seconds = sumSeconds(x, seconds, pos)
+        state = 3
+        if (b == '.') {
+          pos += 1
+          var nanoDigitWeight = 100000000
+          while ({
+            if (pos >= tail) {
+              pos = loadMoreOrError(pos)
+              buf = this.buf
+            }
+            b = buf(pos)
+            (b >= '0' && b <= '9') && nanoDigitWeight != 0
+          }) {
+            nano += (b - '0') * nanoDigitWeight
+            nanoDigitWeight /= 10
+            pos += 1
+          }
+          if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
+          nano = (nano ^ sx) - sx
+        }
+      } else durationError(state, pos)
+      head = pos + 1
+      hasRemaining() && {
+        b = nextByte(head)
+        true
+      }
+    }) {
+      if (state == 0) {
+        if (b != 'T') tokenError('T')
+        b = nextByte(head)
+      }
+    }
+    if (nano == 0) Duration.ofSeconds(seconds)
+    else Duration.ofSeconds(seconds, nano.toLong)
+  }
+  /**
+   * Reads bytes into a [[java.time.Instant]] instance.
+   *
+   * @return a [[java.time.Instant]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsInstant(): Instant = {
+    val year = parseYearWithByte('-', 10, head)
+    val month = parseMonthWithByte('-', head)
+    val day = parseDayWithByte(year, month, 'T', head)
+    var epochSecond = epochDay(year, month, day) * 86400 + parseSecondOfDay(head) // 86400 == seconds per day
+    var b = nextByte(head)
+    var nano = 0
+    var nanoDigitWeight = -2
+    if (b == '.') {
+      nanoDigitWeight = 100000000
+      var pos = head
+      var buf = this.buf
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        pos += 1
+        (b >= '0' && b <= '9') && nanoDigitWeight != 0
+      }) {
+        nano += (b - '0') * nanoDigitWeight
+        nanoDigitWeight /= 10
+      }
+      head = pos
+    }
+    if (b != 'Z') {
+      if (b == '-') epochSecond += parseOffsetTotal(head)
+      else if (b == '+') epochSecond -= parseOffsetTotal(head)
+      else timeError(nanoDigitWeight)
+    }
+    if (nano == 0) Instant.ofEpochSecond(epochSecond)
+    else Instant.ofEpochSecond(epochSecond, nano.toLong)
+  }
+
+  /**
+   * Reads bytes into a [[java.time.LocalDateTime]] instance.
+   *
+   * @return a [[java.time.LocalDateTime]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsLocalDateTime(): LocalDateTime = {
+    val year = parseYearWithByte('-', 9, head)
+    val month = parseMonthWithByte('-', head)
+    val day = parseDayWithByte(year, month, 'T', head)
+    val hour = parseHourWithColon(head)
+    val minute = parseMinute(head)
+    var second, nano = 0
+    if (hasRemaining()) {
+      val b = nextByte(head)
+      if (b == ':') {
+        second = parseSecond(head)
+        nano = parseOptionalNano()
+      }
+    }
+    LocalDateTime.of(year, month, day, hour, minute, second, nano)
+  }
+
+  /**
+   * Reads bytes into a [[java.time.LocalDate]] instance.
+   *
+   * @return a [[java.time.LocalDate]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsLocalDate(): LocalDate = {
+    val year = parseYearWithByte('-', 9, head)
+    val month = parseMonthWithByte('-', head)
+    val day = parseDay(year, month, head)
+    LocalDate.of(year, month, day)
+  }
+
+  /**
+   * Reads bytes into a [[java.time.LocalTime]] instance.
+   *
+   * @return a [[java.time.LocalTime]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsLocalTime(): LocalTime = {
+    val hour = parseHourWithColon(head)
+    val minute = parseMinute(head)
+    var second, nano = 0
+    if (hasRemaining()) {
+      val b = nextByte(head)
+      if (b == ':') {
+        second = parseSecond(head)
+        nano = parseOptionalNano()
+      }
+    }
+    LocalTime.of(hour, minute, second, nano)
+  }
+
+  /**
+   * Reads bytes into a [[java.time.MonthDay]] instance.
+   *
+   * @return a [[java.time.MonthDay]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  @tailrec
+  def readBytesAsMonthDay(): MonthDay = {
+    val pos = head
+    if (pos + 6 < tail) {
+      val buf = this.buf
+      if (buf(pos) != '-') tokenError('-', pos)
+      if (buf(pos + 1) != '-') tokenError('-', pos + 1)
+      val b3 = buf(pos + 2)
+      val b4 = buf(pos + 3)
+      val month = b3 * 10 + b4 - 528 // 528 == '0' * 11
+      if (b3 < '0' || b3 > '9') digitError(pos + 2)
+      if (b4 < '0' || b4 > '9') digitError(pos + 3)
+      if (month < 1 || month > 12) monthError(pos + 3)
+      if (buf(pos + 4) != '-') tokenError('-', pos + 4)
+      val b6 = buf(pos + 5)
+      val b7 = buf(pos + 6)
+      val day = b6 * 10 + b7 - 528 // 528 == '0' * 11
+      if (b6 < '0' || b6 > '9') digitError(pos + 5)
+      if (b7 < '0' || b7 > '9') digitError(pos + 6)
+      if (day == 0 || (day > 28 && day > maxDayForMonth(month))) dayError(pos + 6)
+      head = pos + 7
+      MonthDay.of(month, day)
+    } else {
+      loadMoreOrError(pos)
+      readBytesAsMonthDay()
+    }
+  }
+
+  /**
+   * Reads bytes into a [[java.time.OffsetDateTime]] instance.
+   *
+   * @return a [[java.time.OffsetDateTime]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsOffsetDateTime(): OffsetDateTime = {
+    val year = parseYearWithByte('-', 9, head)
+    val month = parseMonthWithByte('-', head)
+    val day = parseDayWithByte(year, month, 'T', head)
+    val hour = parseHourWithColon(head)
+    val minute = parseMinute(head)
+    var b = nextByte(head)
+    var second, nano = 0
+    var nanoDigitWeight = -1
+    if (b == ':') {
+      nanoDigitWeight = -2
+      second = parseSecond(head)
+      b = nextByte(head)
+      if (b == '.') {
+        nanoDigitWeight = 100000000
+        var pos = head
+        var buf = this.buf
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight /= 10
+        }
+        head = pos
+      }
+    }
+    val zoneOffset =
+      if (b == 'Z') ZoneOffset.UTC
+      else if (b == '-' || b == '+') toZoneOffset(b, parseOffsetTotal(head))
+      else timeError(nanoDigitWeight)
+    OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
+  }
+
+  /**
+   * Reads bytes into a [[java.time.OffsetTime]] instance.
+   *
+   * @return a [[java.time.OffsetTime]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsOffsetTime(): OffsetTime = {
+    val hour = parseHourWithColon(head)
+    val minute = parseMinute(head)
+    var b = nextByte(head)
+    var second, nano = 0
+    var nanoDigitWeight = -1
+    if (b == ':') {
+      nanoDigitWeight = -2
+      second = parseSecond(head)
+      b = nextByte(head)
+      if (b == '.') {
+        nanoDigitWeight = 100000000
+        var pos = head
+        var buf = this.buf
+        while ({
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight /= 10
+        }
+        head = pos
+      }
+    }
+    val zoneOffset =
+      if (b == 'Z') ZoneOffset.UTC
+      else if (b == '-' || b == '+') toZoneOffset(b, parseOffsetTotal(head))
+      else timeError(nanoDigitWeight)
+    OffsetTime.of(hour, minute, second, nano, zoneOffset)
+  }
+
+  /**
+   * Reads bytes into a [[java.time.Period]] instance.
+   *
+   * @return a [[java.time.Period]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsPeriod(): Period = {
+    var b = nextByte(head)
+    var s = 0
+    if (b == '-') {
+      b = nextByte(head)
+      s = -1
+    }
+    if (b != 'P') durationOrPeriodStartError(s)
+    b = nextByte(head)
+    var years, months, days, state = 0
+    while ({
+      var sx = s
+      if (b == '-') {
+        b = nextByte(head)
+        sx = ~sx
+      }
+      if (b < '0' || b > '9') durationOrPeriodDigitError2(s, sx, state)
+      var x = '0' - b
+      var pos = head
+      var buf = this.buf
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (x < -214748364 || {
+          x = x * 10 + ('0' - b)
+          x > 0
+        }) periodError(pos)
+        pos += 1
+      }
+      x = sx - (x ^ sx)
+      if ((sx | x) == -2147483648) periodError(pos)
+      if (b == 'Y' && state <= 0) {
+        years = x
+        state = 1
+      } else if (b == 'M' && state <= 1) {
+        months = x
+        state = 2
+      } else if (b == 'W' && state <= 2) {
+        if (x < -306783378 || x > 306783378) periodError(pos)
+        days = x * 7
+        state = 3
+      } else if (b == 'D') {
+        val d = days
+        days += x
+        state = 4
+        if (((x ^ days) & (d ^ days)) < 0) periodError(pos)
+      } else periodError(state, pos)
+      head = pos + 1
+      hasRemaining() && {
+        b = nextByte(head)
+        true
+      }
+    }) ()
+    Period.of(years, months, days)
+  }
+  /**
+   * Reads bytes into a [[java.time.Year]] instance.
+   *
+   * @return a [[java.time.Year]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsYear(): Year = Year.of(parseYear(head))
+
+  /**
+   * Reads bytes into a [[java.time.YearMonth]] instance.
+   *
+   * @return a [[java.time.YearMonth]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsYearMonth(): YearMonth = YearMonth.of(parseYearWithByte('-', 9, head), parseMonth(head))
+
+  /**
+   * Reads bytes into a [[java.time.ZoneId]] instance.
+   *
+   * @return a [[java.time.ZoneId]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsZoneId(): ZoneId = {
+    var pos = head
+    var buf = this.buf
+    var from = pos
+    val oldMark = mark
+    val newMark =
+      if (oldMark < 0) from
+      else oldMark
+    mark = newMark
+    var hash = 0
+    var b: Byte = 0
+    while (pos < tail || {
+      pos = loadMore(pos)
+      buf = this.buf
+      pos < tail
+    }) {
+      b = buf(pos)
+      pos += 1
+      hash = (hash << 5) - hash + b
+    }
+    if (mark == 0) from -= newMark
+    if (mark > oldMark) mark = oldMark
+    var k = zoneIdKey
+    if (k eq null) {
+      k = new Key
+      zoneIdKey = k
+    }
+    k.set(hash, buf, from, pos)
+    var zoneId = zoneIds.get(k)
+    if (zoneId eq null) zoneId = toZoneId(k, pos + 1)
+    head = pos
+    zoneId
+  }
+
+  /**
+   * Reads bytes into a [[java.time.ZoneOffset]] instance.
+   *
+   * @return a [[java.time.ZoneOffset]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsZoneOffset(): ZoneOffset = {
+    val b = nextByte(head)
+    if (b == 'Z') ZoneOffset.UTC
+    else if (b == '-' || b == '+') toZoneOffset(b, parseOffsetTotal(head))
+    else decodeError("expected '+' or '-' or 'Z'")
+  }
+
+  /**
+   * Reads bytes into a [[java.time.ZonedDateTime]] instance.
+   *
+   * @return a [[java.time.ZonedDateTime]] instance of the parsed bytes
+   * @throws JsonReaderException in cases of reaching the end of input or illegal format of value to parse
+   */
+  def readBytesAsZonedDateTime(): ZonedDateTime = {
+    val year = parseYearWithByte('-', 9, head)
+    val month = parseMonthWithByte('-', head)
+    val day = parseDayWithByte(year, month, 'T', head)
+    val hour = parseHourWithColon(head)
+    val minute = parseMinute(head)
+    var b = 0: Byte
+    if (hasRemaining()) b = nextByte(head)
+    var second, nano = 0
+    var nanoDigitWeight = -1
+    if (b == ':') {
+      nanoDigitWeight = -2
+      second = parseSecond(head)
+      if (hasRemaining() && {
+        b = nextByte(head)
+        b == '.'
+      }) {
+        nanoDigitWeight = 100000000
+        var pos = head
+        var buf = this.buf
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          pos += 1
+          (b >= '0' && b <= '9') && nanoDigitWeight != 0
+        }) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight /= 10
+        }
+        head = pos
+      }
+    }
+    val localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, nano)
+    val zoneOffset =
+      if (b == 'Z') {
+        if (hasRemaining()) b = nextByte(head)
+        ZoneOffset.UTC
+      } else if (b == '-' || b == '+') {
+        val sb = b
+        nanoDigitWeight = -3
+        var offsetTotal = parseOffsetHour(head) * 3600
+        if (hasRemaining()) {
+          b = nextByte(head)
+          if (b == ':') {
+            offsetTotal += parseOffsetMinute(head) * 60
+            if (hasRemaining()) {
+              b = nextByte(head)
+              if (b == ':') {
+                nanoDigitWeight = -4
+                offsetTotal += parseOffsetSecond(head)
+                if (hasRemaining()) b = nextByte(head)
+              }
+            }
+          }
+        }
+        if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
+        toZoneOffset(sb, offsetTotal)
+      } else timeError(nanoDigitWeight)
+    if (b == '[') {
+      var pos = head
+      var buf = this.buf
+      var from = pos
+      val oldMark = mark
+      val newMark =
+        if (oldMark < 0) from
+        else oldMark
+      mark = newMark
+      var hash = 0
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        pos += 1
+        b != ']'
+      }) hash = (hash << 5) - hash + b
+      if (mark == 0) from -= newMark
+      if (mark > oldMark) mark = oldMark
+      var k = zoneIdKey
+      if (k eq null) {
+        k = new Key
+        zoneIdKey = k
+      }
+      k.set(hash, buf, from, pos - 1)
+      var zoneId = zoneIds.get(k)
+      if (zoneId eq null) zoneId = toZoneId(k, pos)
+      head = pos
+      ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
+    } else ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
+  }
+
+  /**
     * Finishes reading the `null` JSON value and returns the provided default value or throws [[JsonReaderException]].
     * Before calling it the `n` token should be parsed already.
     *
@@ -1847,6 +2411,23 @@ final class JsonReader private[jsoniter_scala](
       } else parseNon4DigitYearWithByte(t, maxDigits, b1, pos)
     } else parseYearWithByte(t, maxDigits, loadMoreOrError(pos))
 
+  @tailrec
+  private[this] def parseYear(pos: Int): Int =
+    if (pos + 3 < tail) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      if (b1 >= '0' && b1 <= '9') {
+        val b2 = buf(pos + 1)
+        val b3 = buf(pos + 2)
+        val b4 = buf(pos + 3)
+        head = pos + 4
+        if (b2 < '0' || b2 > '9') digitError(pos + 1)
+        if (b3 < '0' || b3 > '9') digitError(pos + 2)
+        if (b4 < '0' || b4 > '9') digitError(pos + 3)
+        b1 * 1000 + b2 * 100 + b3 * 10 + b4 - 53328 // 53328 == '0' * 1111
+      } else parseNon4DigitYear(b1, pos)
+    } else parseYear(loadMoreOrError(pos))
+
   private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, b1: Byte, p: Int): Int = {
     var pos = p
     var buf = this.buf
@@ -1885,6 +2466,43 @@ final class JsonReader private[jsoniter_scala](
     year
   }
 
+  private[this] def parseNon4DigitYear(b1: Byte, p: Int): Int = {
+    var pos = p
+    var buf = this.buf
+    val b2 = buf(pos + 1)
+    val b3 = buf(pos + 2)
+    val b4 = buf(pos + 3)
+    val b5 = buf(pos + 4)
+    if (b1 != '-' && b1 != '+') decodeError("expected '-' or '+' or digit", pos)
+    if (b2 < '0' || b2 > '9') digitError(pos + 1)
+    if (b3 < '0' || b3 > '9') digitError(pos + 2)
+    if (b4 < '0' || b4 > '9') digitError(pos + 3)
+    if (b5 < '0' || b5 > '9') digitError(pos + 4)
+    var year = b2 * 1000 + b3 * 100 + b4 * 10 + b5 - 53328 // 53328 == '0' * 1111
+    var yearDigits = 4
+    var b: Byte = 0
+    pos += 5
+    while ((pos < tail || {
+      pos = loadMore(pos)
+      buf = this.buf
+      pos < tail
+    }) && {
+      b = buf(pos)
+      b >= '0' && b <= '9' && yearDigits < 9
+    }) {
+      year =
+        if (year > 100000000) 2147483647
+        else year * 10 + (b - '0')
+      yearDigits += 1
+      pos += 1
+    }
+    head = pos + 1
+    if (b1 == '-' && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+    if (b1 == '-') year = -year
+    if (year >= 0 && year < 10000) digitError(pos)
+    year
+  }
+
   @tailrec
   private[this] def parseMonthWithByte(t: Byte, pos: Int): Int =
     if (pos + 2 < tail) {
@@ -1902,6 +2520,20 @@ final class JsonReader private[jsoniter_scala](
     } else parseMonthWithByte(t, loadMoreOrError(pos))
 
   @tailrec
+  private[this] def parseMonth(pos: Int): Int =
+    if (pos + 1 < tail) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val month = b1 * 10 + b2 - 528 // 528 == '0' * 11
+      head = pos + 3
+      if (b1 < '0' || b1 > '9') digitError(pos)
+      if (b2 < '0' || b2 > '9') digitError(pos + 1)
+      if (month < 1 || month > 12) monthError(pos + 1)
+      month
+    } else parseMonth(loadMoreOrError(pos))
+
+  @tailrec
   private[this] def parseDayWithByte(year: Int, month: Int, t: Byte, pos: Int): Int =
     if (pos + 2 < tail) {
       val buf = this.buf
@@ -1916,6 +2548,20 @@ final class JsonReader private[jsoniter_scala](
       if (b3 != t) tokenError(t, pos + 2)
       day
     } else parseDayWithByte(year, month, t, loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def parseDay(year: Int, month: Int, pos: Int): Int =
+    if (pos + 1 < tail) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val day = b1 * 10 + b2 - 528 // 528 == '0' * 11
+      head = pos + 2
+      if (b1 < '0' || b1 > '9') digitError(pos)
+      if (b2 < '0' || b2 > '9') digitError(pos + 1)
+      if (day == 0 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError(pos + 1)
+      day
+    } else parseDay(year, month, loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseHourWithColon(pos: Int): Int =
@@ -1996,6 +2642,34 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       if (b != '"') nanoError(nanoDigitWeight, '"', pos - 1)
     } else if (b != '"') tokensError('.', '"')
+    nano
+  }
+
+  private[this] def parseOptionalNano(): Int = {
+    var nano = 0
+    if (hasRemaining()) {
+      var b = nextByte(head)
+      if (b == '.') {
+        var pos = head
+        var buf = this.buf
+        var nanoDigitWeight = 100000000
+        while (
+          (pos < tail || {
+            pos = loadMore(pos)
+            buf = this.buf
+            pos < tail
+          }) && {
+            b = buf(pos)
+            pos += 1
+            (b >= '0' && b <= '9') && nanoDigitWeight != 0
+          }
+        ) {
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight /= 10
+        }
+        head = pos
+      } else tokenError('.')
+    }
     nano
   }
 
@@ -3708,6 +4382,25 @@ final class JsonReader private[jsoniter_scala](
     offsetTotal
   }
 
+  @noinline
+  private[this] def parseOffsetTotal(pos: Int): Int = {
+    var offsetTotal = parseOffsetHour(pos) * 3600
+    if (hasRemaining()) {
+      var b = nextByte(head)
+      if (b != ':') rollbackToken()
+      else {
+        offsetTotal += parseOffsetMinute(head) * 60
+        if (hasRemaining()) {
+          b = nextByte(head)
+          if (b != ':') rollbackToken()
+          else offsetTotal += parseOffsetSecond(head)
+        }
+      }
+    }
+    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
+    offsetTotal
+  }
+
   private[this] def toZoneOffset(sb: Byte, offsetTotal: Int): ZoneOffset = {
     var qp = offsetTotal * 37283
     if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
@@ -3772,6 +4465,12 @@ final class JsonReader private[jsoniter_scala](
     if ((s ^ sx) < 0) "expected digit"
     else if (state <= 0) "expected '-' or digit"
     else "expected '\"' or '-' or digit"
+  }
+
+  @noinline
+  private[this] def durationOrPeriodDigitError2(s: Int, sx: Int, state: Int): Nothing = decodeError {
+    if ((s ^ sx) < 0) "expected digit"
+    else "expected '-' or digit"
   }
 
   @noinline
