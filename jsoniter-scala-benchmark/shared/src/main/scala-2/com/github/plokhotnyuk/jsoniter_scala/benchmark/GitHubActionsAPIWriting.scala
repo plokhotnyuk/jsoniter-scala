@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   @Benchmark
+  def fory(): Array[Byte] = Fory.foryJson.toJsonBytes(obj, classOf[GitHubActionsAPI.Response])
+
+  @Benchmark
   def avSystemGenCodec(): Array[Byte] = {
     import com.avsystem.commons.serialization.json.JsonStringOutput
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._

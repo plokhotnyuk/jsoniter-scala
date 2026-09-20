@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class ArrayOfEnumsWriting extends ArrayOfEnumsBenchmark {
   @Benchmark
+  def fory(): Array[Byte] = Fory.foryJson.toJsonBytes(obj, Fory.arrayOfEnumsType)
+
+  @Benchmark
   def avSystemGenCodec(): Array[Byte] = {
     import com.avsystem.commons.serialization.json._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._

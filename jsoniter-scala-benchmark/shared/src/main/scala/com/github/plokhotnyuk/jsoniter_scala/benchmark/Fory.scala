@@ -23,18 +23,28 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI.Tweet
 import org.apache.fory.json.ForyJson
-import org.apache.fory.json.scala.{ForyJsonScala, ScalaTypeRef}
+import org.apache.fory.json.annotation.{JsonFormat, JsonMixin}
+import org.apache.fory.json.scala.{ForyJsonScala, ScalaJsonCodec, ScalaTypeRef}
 import org.apache.fory.reflect.TypeRef
 import scala.collection.immutable.{ArraySeq, IntMap}
 import scala.collection.mutable
 
 object Fory {
+  @JsonMixin(target = classOf[GitHubActionsAPI.Artifact])
+  abstract class ArtifactMixin {
+    @JsonFormat(shape = JsonFormat.Shape.STRING) var expired: Boolean = false
+  }
+
   val foryJson: ForyJson =
     ForyJsonScala.builder()
+      .registerCodec(classOf[SuitADT], ScalaJsonCodec.stringEnum[SuitADT])
+      .registerMixin(classOf[ArtifactMixin])
       .maxDepth(Int.MaxValue) // WARNING: It is an unsafe option for open systems
       .writeNullFields(false)
       .build()
   val arraySeqOfBooleansType: TypeRef[ArraySeq[Boolean]] = ScalaTypeRef[ArraySeq[Boolean]]
+  val arrayOfEnumsType: TypeRef[Array[SuitEnum.Value]] = ScalaTypeRef[Array[SuitEnum.Value]]
+  val arrayOfEnumADTsType: TypeRef[Array[SuitADT]] = ScalaTypeRef[Array[SuitADT]]
   val intMapOfBooleansType: TypeRef[IntMap[Boolean]] = ScalaTypeRef[IntMap[Boolean]]
   val listOfBooleansType: TypeRef[List[Boolean]] = ScalaTypeRef[List[Boolean]]
   val mapOfIntsToBooleansType: TypeRef[Map[Int, Boolean]] = ScalaTypeRef[Map[Int, Boolean]]

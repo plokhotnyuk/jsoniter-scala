@@ -26,6 +26,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
   @Benchmark
+  def fory(): Array[SuitEnum] = Fory.foryJson.fromJson(jsonBytes, Fory.arrayOfEnumsType)
+
+  @Benchmark
   def borer(): Array[SuitEnum] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
     import io.bullet.borer.Json

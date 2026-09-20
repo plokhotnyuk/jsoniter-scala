@@ -30,6 +30,7 @@ class ArrayOfEnumsReadingSpec extends BenchmarkSpecBase {
 
   "ArrayOfEnumsReading" should {
     "read properly" in {
+      benchmark.fory() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
@@ -47,6 +48,7 @@ class ArrayOfEnumsReadingSpec extends BenchmarkSpecBase {
     "fail on invalid input" in {
       val b = benchmark
       b.jsonBytes = "{}".getBytes(UTF_8)
+      intercept[Throwable](b.fory())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())

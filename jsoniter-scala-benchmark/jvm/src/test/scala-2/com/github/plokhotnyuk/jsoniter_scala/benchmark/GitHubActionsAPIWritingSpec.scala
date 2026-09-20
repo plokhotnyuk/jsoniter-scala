@@ -29,6 +29,7 @@ class GitHubActionsAPIWritingSpec extends BenchmarkSpecBase {
   "GoogleMapsAPIWriting" should {
     "write properly" in {
       val b = benchmark
+      toString(b.fory()) shouldBe b.compactJsonString1
       toString(b.avSystemGenCodec()) shouldBe b.compactJsonString1
       toString(b.borer()) shouldBe b.compactJsonString1
       toString(b.circe()) shouldBe b.compactJsonString1
