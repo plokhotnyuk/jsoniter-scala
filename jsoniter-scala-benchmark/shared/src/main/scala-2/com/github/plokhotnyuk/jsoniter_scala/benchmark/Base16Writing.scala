@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class Base16Writing extends Base16Benchmark {
   @Benchmark
+  def fory(): Array[Byte] = Fory.base16Json.toJsonBytes(obj)
+
+  @Benchmark
   def avSystemGenCodec(): Array[Byte] = {
     import com.avsystem.commons.serialization.json._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._

@@ -67,14 +67,12 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
       dslJsonEncode(obj)
     }
   */
-  /* FIXME: Fory serializes a byte array to the base64 string without an option to register another codec for Array[Byte]
   @Benchmark
   def foryJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
-    Fory.foryJson.toJsonBytes(obj)
+    Fory.arrayBytesJson.toJsonBytes(obj)
   }
-  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

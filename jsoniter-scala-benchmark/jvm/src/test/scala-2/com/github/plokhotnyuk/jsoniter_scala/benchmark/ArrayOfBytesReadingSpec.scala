@@ -34,8 +34,7 @@ class ArrayOfBytesReadingSpec extends BenchmarkSpecBase {
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.circeJsoniter() shouldBe benchmark.obj
-      // FIXME: Fory expects a base64 string for the byte array without an option to register another codec for Array[Byte]
-      // benchmark.foryJsonScala() shouldBe benchmark.obj
+      benchmark.foryJsonScala() shouldBe benchmark.obj
       // FIXME: DSL-JSON expects a base64 string for the byte array
       // benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
@@ -59,8 +58,7 @@ class ArrayOfBytesReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
       intercept[Throwable](b.circeJsoniter())
-      // FIXME: Fory expects a base64 string for the byte array without an option to register another codec for Array[Byte]
-      // intercept[Throwable](b.foryJsonScala())
+      intercept[Throwable](b.foryJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())

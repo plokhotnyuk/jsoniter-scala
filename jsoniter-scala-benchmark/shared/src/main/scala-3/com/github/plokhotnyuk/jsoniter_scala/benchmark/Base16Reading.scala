@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class Base16Reading extends Base16Benchmark {
   @Benchmark
+  def fory(): Array[Byte] = Fory.base16Json.fromJson(jsonBytes, classOf[Array[Byte]])
+
+  @Benchmark
   def borer(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
     import io.bullet.borer.Json

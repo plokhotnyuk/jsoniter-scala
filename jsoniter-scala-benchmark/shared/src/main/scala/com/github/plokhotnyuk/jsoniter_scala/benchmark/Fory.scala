@@ -23,13 +23,18 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI.Tweet
 import org.apache.fory.json.ForyJson
-import org.apache.fory.json.annotation.{JsonFormat, JsonMixin}
+import org.apache.fory.json.annotation.{JsonByteArray, JsonFormat, JsonMixin}
 import org.apache.fory.json.scala.{ForyJsonScala, ScalaJsonCodec, ScalaTypeRef}
 import org.apache.fory.reflect.TypeRef
 import scala.collection.immutable.{ArraySeq, IntMap}
 import scala.collection.mutable
 
 object Fory {
+  val arrayBytesJson: ForyJson = ForyJsonScala.builder()
+    .byteArrayFormat(JsonByteArray.Format.ARRAY).build()
+  val base16Json: ForyJson = ForyJsonScala.builder()
+    .byteArrayFormat(JsonByteArray.Format.BASE16).build()
+
   @JsonMixin(target = classOf[GitHubActionsAPI.Artifact])
   abstract class ArtifactMixin {
     @JsonFormat(shape = JsonFormat.Shape.STRING) var expired: Boolean = false
