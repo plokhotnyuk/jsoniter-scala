@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   @Benchmark
+  def fory(): Array[Byte] = Fory.foryJson.toPrettyJsonBytes(obj)
+
+  @Benchmark
   def avSystemGenCodec(): Array[Byte] = {
     import com.avsystem.commons.serialization.json._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
