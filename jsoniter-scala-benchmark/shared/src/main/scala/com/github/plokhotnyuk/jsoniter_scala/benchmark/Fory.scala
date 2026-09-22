@@ -23,7 +23,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI.Tweet
 import org.apache.fory.json.ForyJson
-import org.apache.fory.json.annotation.{JsonByteArray, JsonFormat, JsonMixin, JsonProperty, JsonSubTypes}
+import org.apache.fory.json.annotation.{JsonByteArray, JsonFormat, JsonInclude, JsonMixin, JsonSubTypes}
 import org.apache.fory.json.annotation.JsonProperty.Include
 import org.apache.fory.json.scala.{ForyJsonScala, ScalaJsonCodec, ScalaTypeRef}
 import org.apache.fory.reflect.TypeRef
@@ -43,37 +43,24 @@ object Fory {
   }
 
   @JsonMixin(target = classOf[OpenRTB.BidRequest])
-  abstract class BidRequestMixin {
-    @JsonProperty(include = Include.NON_DEFAULT) var test: Int = _
-    @JsonProperty(include = Include.NON_DEFAULT) var at: Int = _
-    @JsonProperty(include = Include.NON_DEFAULT) var allimps: Int = _
-  }
+  @JsonInclude(Include.NON_DEFAULT)
+  abstract class BidRequestMixin
 
   @JsonMixin(target = classOf[OpenRTB.Imp])
-  abstract class ImpMixin {
-    @JsonProperty(include = Include.NON_DEFAULT) var instl: Int = _
-    @JsonProperty(include = Include.NON_DEFAULT) var bidfloor: Double = _
-    @JsonProperty(include = Include.NON_DEFAULT) var bidfloorcur: String = _
-    @JsonProperty(include = Include.NON_DEFAULT) var secure: Int = _
-  }
+  @JsonInclude(Include.NON_DEFAULT)
+  abstract class ImpMixin
 
   @JsonMixin(target = classOf[OpenRTB.Video])
-  abstract class VideoMixin {
-    @JsonProperty(include = Include.NON_DEFAULT) var skipmin: Int = _
-    @JsonProperty(include = Include.NON_DEFAULT) var skipafter: Int = _
-    @JsonProperty(include = Include.NON_DEFAULT) var boxingallowed: Int = _
-  }
+  @JsonInclude(Include.NON_DEFAULT)
+  abstract class VideoMixin
 
   @JsonMixin(target = classOf[OpenRTB.Pmp])
-  abstract class PmpMixin {
-    @JsonProperty(include = Include.NON_DEFAULT) var private_auction: Int = _
-  }
+  @JsonInclude(Include.NON_DEFAULT)
+  abstract class PmpMixin
 
   @JsonMixin(target = classOf[OpenRTB.Deal])
-  abstract class DealMixin {
-    @JsonProperty(include = Include.NON_DEFAULT) var bidfloor: Double = _
-    @JsonProperty(include = Include.NON_DEFAULT) var bidfloorcur: String = _
-  }
+  @JsonInclude(Include.NON_DEFAULT)
+  abstract class DealMixin
 
   @JsonMixin(target = classOf[GeoJSON.GeoJSON])
   @JsonSubTypes(property = "type", value = Array(
