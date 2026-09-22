@@ -33,8 +33,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       // toString(b.borer()) shouldBe b.jsonString
       toString(b.circe()) shouldBe b.jsonString
       toString(b.circeJsoniter()) shouldBe b.jsonString
-      // FIXME: Fory writes None as JSON null
-      // toString(b.foryJsonScala()) shouldBe b.jsonString
+      toString(b.foryJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.json4sJackson()) shouldBe b.jsonString
       toString(b.json4sNative()) shouldBe b.jsonString

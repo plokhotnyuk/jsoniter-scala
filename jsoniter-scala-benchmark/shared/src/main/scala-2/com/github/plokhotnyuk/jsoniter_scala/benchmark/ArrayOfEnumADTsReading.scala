@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   @Benchmark
-  def fory(): Array[SuitADT] = Fory.foryJson.fromJson(jsonBytes, Fory.arrayOfEnumADTsType)
+  def foryJsonScala(): Array[SuitADT] = Fory.foryJson.fromJson(jsonBytes, Fory.arrayOfEnumADTsType)
 
   @Benchmark
   def avSystemGenCodec(): Array[SuitADT] = {

@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class Base16Writing extends Base16Benchmark {
   @Benchmark
-  def fory(): Array[Byte] = Fory.base16Json.toJsonBytes(obj)
+  def foryJsonScala(): Array[Byte] = Fory.base16Json.toJsonBytes(obj)
 
   @Benchmark
   def borer(): Array[Byte] = {

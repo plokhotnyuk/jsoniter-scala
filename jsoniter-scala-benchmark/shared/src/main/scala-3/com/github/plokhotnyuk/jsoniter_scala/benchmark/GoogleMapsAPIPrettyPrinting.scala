@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   @Benchmark
-  def fory(): Array[Byte] = Fory.foryJson.toPrettyJsonBytes(obj)
+  def foryJsonScala(): Array[Byte] = Fory.foryJson.toPrettyJsonBytes(obj)
 
   @Benchmark
   def borer(): Array[Byte] = {

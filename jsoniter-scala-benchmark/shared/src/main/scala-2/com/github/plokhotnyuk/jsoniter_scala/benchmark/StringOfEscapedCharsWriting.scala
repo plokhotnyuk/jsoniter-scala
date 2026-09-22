@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   @Benchmark
+  def foryJsonScala(): Array[Byte] = Fory.escapingJson.toJsonBytes(obj)
+
+  @Benchmark
   def avSystemGenCodec(): Array[Byte] = {
     import com.avsystem.commons.serialization.json._
     import java.nio.charset.StandardCharsets.UTF_8

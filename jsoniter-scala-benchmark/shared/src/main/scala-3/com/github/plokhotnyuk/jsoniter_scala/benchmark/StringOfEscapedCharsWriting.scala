@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   @Benchmark
+  def foryJsonScala(): Array[Byte] = Fory.escapingJson.toJsonBytes(obj)
+
+  @Benchmark
   def circe(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
     import io.circe.syntax._

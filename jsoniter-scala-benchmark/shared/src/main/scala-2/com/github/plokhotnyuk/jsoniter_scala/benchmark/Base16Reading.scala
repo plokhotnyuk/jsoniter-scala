@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class Base16Reading extends Base16Benchmark {
   @Benchmark
-  def fory(): Array[Byte] = Fory.base16Json.fromJson(jsonBytes, classOf[Array[Byte]])
+  def foryJsonScala(): Array[Byte] = Fory.base16Json.fromJson(jsonBytes, classOf[Array[Byte]])
 
   @Benchmark
   def avSystemGenCodec(): Array[Byte] = {

@@ -50,14 +50,12 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
     writeToArray(obj.asJson)(jsonCodec2)
   }
-  /* FIXME: Fory writes None as JSON null
   @Benchmark
   def foryJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
-    Fory.foryJson.toJsonBytes(obj)
+    Fory.omittingJson.toJsonBytes(obj, Fory.seqOfTweetsType)
   }
-  */
   @Benchmark
   def jacksonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._

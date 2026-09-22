@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   @Benchmark
-  def fory(): Array[Byte] = Fory.foryJson.toJsonBytes(obj, classOf[GitHubActionsAPI.Response])
+  def foryJsonScala(): Array[Byte] = Fory.foryJson.toJsonBytes(obj, classOf[GitHubActionsAPI.Response])
 
   @Benchmark
   def borer(): Array[Byte] = {

@@ -29,7 +29,7 @@ class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
   "GoogleMapsAPIPrettyPrinting" should {
     "pretty print properly" in {
       val b = benchmark
-      toString(b.fory()) shouldBe toString(b.jacksonScala())
+      toString(b.foryJsonScala()) shouldBe b.jsonString1
       toString(b.avSystemGenCodec()) shouldBe b.jsonString2
       toString(b.circe()) shouldBe b.jsonString1
       toString(b.circeJsoniter()) shouldBe b.jsonString2

@@ -23,13 +23,15 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI.Tweet
 import org.apache.fory.json.ForyJson
-import org.apache.fory.json.annotation.{JsonByteArray, JsonFormat, JsonMixin}
+import org.apache.fory.json.annotation.{JsonByteArray, JsonFormat, JsonMixin, JsonProperty, JsonSubTypes}
+import org.apache.fory.json.annotation.JsonProperty.Include
 import org.apache.fory.json.scala.{ForyJsonScala, ScalaJsonCodec, ScalaTypeRef}
 import org.apache.fory.reflect.TypeRef
 import scala.collection.immutable.{ArraySeq, IntMap}
 import scala.collection.mutable
 
 object Fory {
+  val escapingJson: ForyJson = ForyJsonScala.builder().escapeNonAscii(true).build()
   val arrayBytesJson: ForyJson = ForyJsonScala.builder()
     .byteArrayFormat(JsonByteArray.Format.ARRAY).build()
   val base16Json: ForyJson = ForyJsonScala.builder()
@@ -39,6 +41,86 @@ object Fory {
   abstract class ArtifactMixin {
     @JsonFormat(shape = JsonFormat.Shape.STRING) var expired: Boolean = false
   }
+
+  @JsonMixin(target = classOf[OpenRTB.BidRequest])
+  abstract class BidRequestMixin {
+    @JsonProperty(include = Include.NON_DEFAULT) var test: Int = _
+    @JsonProperty(include = Include.NON_DEFAULT) var at: Int = _
+    @JsonProperty(include = Include.NON_DEFAULT) var allimps: Int = _
+  }
+
+  @JsonMixin(target = classOf[OpenRTB.Imp])
+  abstract class ImpMixin {
+    @JsonProperty(include = Include.NON_DEFAULT) var instl: Int = _
+    @JsonProperty(include = Include.NON_DEFAULT) var bidfloor: Double = _
+    @JsonProperty(include = Include.NON_DEFAULT) var bidfloorcur: String = _
+    @JsonProperty(include = Include.NON_DEFAULT) var secure: Int = _
+  }
+
+  @JsonMixin(target = classOf[OpenRTB.Video])
+  abstract class VideoMixin {
+    @JsonProperty(include = Include.NON_DEFAULT) var skipmin: Int = _
+    @JsonProperty(include = Include.NON_DEFAULT) var skipafter: Int = _
+    @JsonProperty(include = Include.NON_DEFAULT) var boxingallowed: Int = _
+  }
+
+  @JsonMixin(target = classOf[OpenRTB.Pmp])
+  abstract class PmpMixin {
+    @JsonProperty(include = Include.NON_DEFAULT) var private_auction: Int = _
+  }
+
+  @JsonMixin(target = classOf[OpenRTB.Deal])
+  abstract class DealMixin {
+    @JsonProperty(include = Include.NON_DEFAULT) var bidfloor: Double = _
+    @JsonProperty(include = Include.NON_DEFAULT) var bidfloorcur: String = _
+  }
+
+  @JsonMixin(target = classOf[GeoJSON.GeoJSON])
+  @JsonSubTypes(property = "type", value = Array(
+    new JsonSubTypes.Type(value = classOf[GeoJSON.Feature], name = "Feature"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.FeatureCollection], name = "FeatureCollection")))
+  abstract class GeoJSONMixin
+
+  @JsonMixin(target = classOf[GeoJSON.SimpleGeoJSON])
+  @JsonSubTypes(property = "type", value = Array(
+    new JsonSubTypes.Type(value = classOf[GeoJSON.Feature], name = "Feature")))
+  abstract class SimpleGeoJSONMixin
+
+  @JsonMixin(target = classOf[GeoJSON.Geometry])
+  @JsonSubTypes(property = "type", value = Array(
+    new JsonSubTypes.Type(value = classOf[GeoJSON.Point], name = "Point"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.MultiPoint], name = "MultiPoint"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.LineString], name = "LineString"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.MultiLineString], name = "MultiLineString"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.Polygon], name = "Polygon"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.MultiPolygon], name = "MultiPolygon"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.GeometryCollection], name = "GeometryCollection")))
+  abstract class GeometryMixin
+
+  @JsonMixin(target = classOf[GeoJSON.SimpleGeometry])
+  @JsonSubTypes(property = "type", value = Array(
+    new JsonSubTypes.Type(value = classOf[GeoJSON.Point], name = "Point"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.MultiPoint], name = "MultiPoint"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.LineString], name = "LineString"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.MultiLineString], name = "MultiLineString"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.Polygon], name = "Polygon"),
+    new JsonSubTypes.Type(value = classOf[GeoJSON.MultiPolygon], name = "MultiPolygon")))
+  abstract class SimpleGeometryMixin
+
+  val omittingJson: ForyJson = ForyJsonScala.builder()
+    .maxDepth(Int.MaxValue) // WARNING: It is an unsafe option for open systems
+    .defaultPropertyInclusion(Include.NON_EMPTY)
+    // These model defaults are stable constants; authorize their evaluation for omission.
+    .registerMixin(classOf[BidRequestMixin])
+    .registerMixin(classOf[ImpMixin])
+    .registerMixin(classOf[VideoMixin])
+    .registerMixin(classOf[PmpMixin])
+    .registerMixin(classOf[DealMixin])
+    .registerMixin(classOf[GeoJSONMixin])
+    .registerMixin(classOf[SimpleGeoJSONMixin])
+    .registerMixin(classOf[GeometryMixin])
+    .registerMixin(classOf[SimpleGeometryMixin])
+    .build()
 
   val foryJson: ForyJson =
     ForyJsonScala.builder()
