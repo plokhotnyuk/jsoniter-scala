@@ -72,7 +72,7 @@ class NestedStructsWriting extends NestedStructsBenchmark {
   def foryJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
-    Fory.omittingJson.toJsonBytes(obj)
+    Fory.foryJson.toJsonBytes(obj)
   }
   @Benchmark
   def jacksonScala(): Array[Byte] = {

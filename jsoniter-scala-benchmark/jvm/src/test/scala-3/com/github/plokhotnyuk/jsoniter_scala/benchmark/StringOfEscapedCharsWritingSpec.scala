@@ -32,6 +32,7 @@ class StringOfEscapedCharsWritingSpec extends BenchmarkSpecBase {
       toString(b.foryJsonScala()) shouldBe b.jsonString1
       toString(b.circe()) shouldBe b.jsonString1
       toString(b.circeJsoniter()) shouldBe b.jsonString1
+      toString(b.foryJsonScala()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString2
       toString(b.json4sJackson()) shouldBe b.jsonString2
       toString(b.json4sNative()) shouldBe b.jsonString2

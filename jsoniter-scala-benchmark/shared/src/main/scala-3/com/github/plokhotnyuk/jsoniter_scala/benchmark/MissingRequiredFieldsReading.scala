@@ -59,7 +59,7 @@ class MissingRequiredFieldsReading extends MissingRequiredFieldsBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
     try {
-      Fory.requiredFieldsJson.fromJson(jsonBytes, classOf[MissingRequiredFields]).toString // toString shouldn't be called
+      Fory.foryJson.fromJson(jsonBytes, classOf[MissingRequiredFields]).toString // toString shouldn't be called
     } catch {
       case ex: Exception => ex.getMessage
     }

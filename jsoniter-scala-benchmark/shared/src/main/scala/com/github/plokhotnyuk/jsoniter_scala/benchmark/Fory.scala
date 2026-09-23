@@ -31,14 +31,6 @@ import scala.collection.immutable.{ArraySeq, IntMap}
 import scala.collection.mutable
 
 object Fory {
-  val requiredFieldsJson: ForyJson = ForyJsonScala.builder()
-    .failOnMissingRequiredProperties(true).build()
-  val escapingJson: ForyJson = ForyJsonScala.builder().escapeNonAscii(true).build()
-  val arrayBytesJson: ForyJson = ForyJsonScala.builder()
-    .byteArrayFormat(JsonByteArray.Format.ARRAY).build()
-  val base16Json: ForyJson = ForyJsonScala.builder()
-    .byteArrayFormat(JsonByteArray.Format.BASE16).build()
-
   @JsonMixin(target = classOf[GitHubActionsAPI.Artifact])
   abstract class ArtifactMixin {
     @JsonFormat(shape = JsonFormat.Shape.STRING) var expired: Boolean = false
@@ -96,10 +88,14 @@ object Fory {
     new JsonSubTypes.Type(value = classOf[GeoJSON.MultiPolygon], name = "MultiPolygon")))
   abstract class SimpleGeometryMixin
 
-  val omittingJson: ForyJson = ForyJsonScala.builder()
+  val foryJson: ForyJson = ForyJsonScala.builder()
     .maxDepth(Int.MaxValue) // WARNING: It is an unsafe option for open systems
+    .writeNullFields(false)
+    .failOnMissingRequiredProperties(true)
     .defaultPropertyInclusion(Include.NON_EMPTY)
+    .registerCodec(classOf[SuitADT], ScalaJsonCodec.stringEnum[SuitADT])
     // These model defaults are stable constants; authorize their evaluation for omission.
+    .registerMixin(classOf[ArtifactMixin])
     .registerMixin(classOf[BidRequestMixin])
     .registerMixin(classOf[ImpMixin])
     .registerMixin(classOf[VideoMixin])
@@ -110,14 +106,12 @@ object Fory {
     .registerMixin(classOf[GeometryMixin])
     .registerMixin(classOf[SimpleGeometryMixin])
     .build()
-
-  val foryJson: ForyJson =
-    ForyJsonScala.builder()
-      .registerCodec(classOf[SuitADT], ScalaJsonCodec.stringEnum[SuitADT])
-      .registerMixin(classOf[ArtifactMixin])
-      .maxDepth(Int.MaxValue) // WARNING: It is an unsafe option for open systems
-      .writeNullFields(false)
-      .build()
+  val escapingJson: ForyJson = ForyJsonScala.builder()
+    .escapeNonAscii(true).build()
+  val arrayBytesJson: ForyJson = ForyJsonScala.builder()
+    .byteArrayFormat(JsonByteArray.Format.ARRAY).build()
+  val base16Json: ForyJson = ForyJsonScala.builder()
+    .byteArrayFormat(JsonByteArray.Format.BASE16).build()
   val arraySeqOfBooleansType: TypeRef[ArraySeq[Boolean]] = ScalaTypeRef[ArraySeq[Boolean]]
   val arrayOfEnumsType: TypeRef[Array[SuitEnum.Value]] = ScalaTypeRef[Array[SuitEnum.Value]]
   val arrayOfEnumADTsType: TypeRef[Array[SuitADT]] = ScalaTypeRef[Array[SuitADT]]

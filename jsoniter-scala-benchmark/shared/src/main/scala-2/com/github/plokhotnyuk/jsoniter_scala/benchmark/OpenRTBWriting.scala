@@ -62,7 +62,7 @@ class OpenRTBWriting extends OpenRTBBenchmark {
   def foryJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
-    Fory.omittingJson.toJsonBytes(obj)
+    Fory.foryJson.toJsonBytes(obj)
   }
   /* FIXME: Jackson serializes fields with default values
     @Benchmark

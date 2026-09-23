@@ -35,6 +35,7 @@ class ArrayOfEnumADTsWritingSpec extends BenchmarkSpecBase {
       toString(b.circe()) shouldBe b.jsonString
       toString(b.circeJsoniter()) shouldBe b.jsonString
       toString(b.dslJsonScala()) shouldBe b.jsonString
+      toString(b.foryJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.json4sJackson()) shouldBe b.jsonString
       toString(b.json4sNative()) shouldBe b.jsonString

@@ -27,7 +27,7 @@ import org.openjdk.jmh.annotations.Benchmark
 class GeoJSONReading extends GeoJSONBenchmark {
   @Benchmark
   def foryJsonScala(): GeoJSON.GeoJSON =
-    Fory.omittingJson.fromJson(jsonBytes, classOf[GeoJSON.GeoJSON])
+    Fory.foryJson.fromJson(jsonBytes, classOf[GeoJSON.GeoJSON])
 
   @Benchmark
   def avSystemGenCodec(): GeoJSON = {

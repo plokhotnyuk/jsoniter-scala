@@ -71,7 +71,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   def foryJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
 
-    Fory.omittingJson.toJsonBytes(obj, Fory.seqOfTweetsType)
+    Fory.foryJson.toJsonBytes(obj, Fory.seqOfTweetsType)
   }
   @Benchmark
   def jacksonScala(): Array[Byte] = {
