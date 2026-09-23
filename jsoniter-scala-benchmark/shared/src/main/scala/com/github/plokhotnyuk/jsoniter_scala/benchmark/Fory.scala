@@ -31,6 +31,8 @@ import scala.collection.immutable.{ArraySeq, IntMap}
 import scala.collection.mutable
 
 object Fory {
+  val requiredFieldsJson: ForyJson = ForyJsonScala.builder()
+    .failOnMissingRequiredProperties(true).build()
   val escapingJson: ForyJson = ForyJsonScala.builder().escapeNonAscii(true).build()
   val arrayBytesJson: ForyJson = ForyJsonScala.builder()
     .byteArrayFormat(JsonByteArray.Format.ARRAY).build()
