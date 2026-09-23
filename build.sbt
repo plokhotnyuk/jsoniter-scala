@@ -339,7 +339,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "io.github.json4s" %% "json4s-ext" % "4.1.1",
       "io.github.json4s" %% "json4s-jackson" % "4.1.1",
       "io.github.json4s" %% "json4s-native" % "4.1.1",
-      "tools.jackson.module" %% "jackson-module-scala" % "3.2.2",
+      "tools.jackson.module" %% "jackson-module-scala" % "3.2.3",
       "org.apache.fory" %% "fory-json-scala" % "1.8.0-SNAPSHOT",
       "org.openjdk.jmh" % "jmh-core" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
