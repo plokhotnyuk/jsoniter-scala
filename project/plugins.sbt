@@ -17,7 +17,7 @@ addSbtPlugin("com.github.sbt" % "sbt-git" % "2.2.0")
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.5.0")
 addSbtPlugin("com.github.sbt" % "sbt-header" % "5.11.0")
 addSbtPlugin("com.eed3si9n" % "sbt-salad-days" % "0.2.0")
-addSbtPlugin("net.nmoncho" % "sbt-osv" % "0.3.0")
+addSbtPlugin("net.nmoncho" % "sbt-osv" % "1.0.0")
 
 libraryDependencySchemes += "com.lihaoyi" %% "upickle" % VersionScheme.Always
 
