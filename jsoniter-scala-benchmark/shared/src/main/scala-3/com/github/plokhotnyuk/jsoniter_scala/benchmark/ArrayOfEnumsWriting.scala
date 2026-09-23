@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class ArrayOfEnumsWriting extends ArrayOfEnumsBenchmark {
   @Benchmark
+  def foryJsonScala(): Array[Byte] = Fory.foryJson.toJsonBytes(obj, Fory.arrayOfEnumsType)
+
+  @Benchmark
   def borer(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
     import io.bullet.borer.Json

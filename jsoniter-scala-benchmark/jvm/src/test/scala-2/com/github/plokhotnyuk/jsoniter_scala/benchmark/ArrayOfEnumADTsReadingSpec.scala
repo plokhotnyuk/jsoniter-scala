@@ -30,6 +30,7 @@ class ArrayOfEnumADTsReadingSpec extends BenchmarkSpecBase {
 
   "ArrayOfEnumADTsReading" should {
     "read properly" in {
+      benchmark.foryJsonScala() shouldBe benchmark.obj
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
@@ -51,6 +52,7 @@ class ArrayOfEnumADTsReadingSpec extends BenchmarkSpecBase {
     "fail on invalid input" in {
       val b = benchmark
       b.jsonBytes = "{}".getBytes(UTF_8)
+      intercept[Throwable](b.foryJsonScala())
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

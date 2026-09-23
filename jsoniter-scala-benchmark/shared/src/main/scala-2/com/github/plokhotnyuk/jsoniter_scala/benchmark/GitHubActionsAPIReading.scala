@@ -25,6 +25,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   @Benchmark
+  def foryJsonScala(): GitHubActionsAPI.Response = Fory.foryJson.fromJson(jsonBytes, classOf[GitHubActionsAPI.Response])
+
+  @Benchmark
   def avSystemGenCodec(): GitHubActionsAPI.Response = {
     import com.avsystem.commons.serialization.json._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._

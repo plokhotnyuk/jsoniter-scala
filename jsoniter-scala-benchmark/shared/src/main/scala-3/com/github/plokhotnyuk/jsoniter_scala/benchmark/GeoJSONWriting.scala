@@ -25,6 +25,10 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GeoJSONWriting extends GeoJSONBenchmark {
   @Benchmark
+  def foryJsonScala(): Array[Byte] =
+    Fory.omittingJson.toJsonBytes(obj, classOf[GeoJSON.GeoJSON])
+
+  @Benchmark
   def borer(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
     import io.bullet.borer.Json

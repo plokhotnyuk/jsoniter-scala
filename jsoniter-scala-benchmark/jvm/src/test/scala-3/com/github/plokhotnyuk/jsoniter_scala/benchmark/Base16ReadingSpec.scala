@@ -30,12 +30,14 @@ class Base16ReadingSpec extends BenchmarkSpecBase {
 
   "Base16Reading" should {
     "read properly" in {
+      benchmark.foryJsonScala() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
       b.jsonBytes = "{}".getBytes(UTF_8)
+      intercept[Throwable](b.foryJsonScala())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.jsoniterScala())
     }

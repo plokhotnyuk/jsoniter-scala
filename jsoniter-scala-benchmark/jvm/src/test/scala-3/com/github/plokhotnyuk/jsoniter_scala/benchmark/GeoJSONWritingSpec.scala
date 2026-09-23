@@ -29,6 +29,7 @@ class GeoJSONWritingSpec extends BenchmarkSpecBase {
   "GeoJSONWriting" should {
     "write properly" in {
       val b = benchmark
+      toString(b.foryJsonScala()) shouldBe b.jsonString1
       toString(b.borer()) shouldBe b.jsonString1
       toString(b.circe()) shouldBe b.jsonString1
       toString(b.circeJsoniter()) shouldBe b.jsonString1

@@ -25,6 +25,10 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GeoJSONWriting extends GeoJSONBenchmark {
   @Benchmark
+  def foryJsonScala(): Array[Byte] =
+    Fory.omittingJson.toJsonBytes(obj, classOf[GeoJSON.GeoJSON])
+
+  @Benchmark
   def avSystemGenCodec(): Array[Byte] = {
     import com.avsystem.commons.serialization.json._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
