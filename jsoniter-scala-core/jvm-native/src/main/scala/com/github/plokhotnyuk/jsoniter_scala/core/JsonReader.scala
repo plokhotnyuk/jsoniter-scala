@@ -57,6 +57,8 @@ final class JsonReader private[jsoniter_scala](
     private[this] var config: ReaderConfig = null) {
   private[this] var magnitude: Array[Byte] = _
   private[this] var zoneIdKey: Key = _
+  private[this] var maxPreferredBufSize: Int = 0
+  private[this] var maxPreferredCharBufSize: Int = 0
 
   /**
     * Throws a [[JsonReaderException]] indicating that a required field with the given name is missing.
@@ -2497,6 +2499,9 @@ final class JsonReader private[jsoniter_scala](
     try {
       this.buf = buf
       this.config = config
+      val preferredCharBufSize = config.preferredCharBufSize
+      if (maxPreferredCharBufSize < preferredCharBufSize) maxPreferredCharBufSize = preferredCharBufSize
+      if (charBuf.length > config.maxCharBufSize) reallocateCharBuf(preferredCharBufSize)
       head = from
       tail = to
       totalRead = 0
@@ -2506,7 +2511,8 @@ final class JsonReader private[jsoniter_scala](
       x
     } finally {
       this.buf = currBuf
-      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
+      val charBufSize = Math.min(maxPreferredCharBufSize, config.maxCharBufSize)
+      if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
     }
   }
 
@@ -2530,14 +2536,22 @@ final class JsonReader private[jsoniter_scala](
       tail = 0
       totalRead = 0
       mark = -1
-      if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
+      val preferredBufSize = config.preferredBufSize
+      if (maxPreferredBufSize < preferredBufSize) maxPreferredBufSize = preferredBufSize
+      val bufLen = buf.length
+      if (bufLen < preferredBufSize || bufLen > config.maxBufSize) reallocateBuf(preferredBufSize)
+      val preferredCharBufSize = config.preferredCharBufSize
+      if (maxPreferredCharBufSize < preferredCharBufSize) maxPreferredCharBufSize = preferredCharBufSize
+      if (charBuf.length > config.maxCharBufSize) reallocateCharBuf(preferredCharBufSize)
       val x = codec.decodeValue(this, codec.nullValue)
       if (config.checkForEndOfInput) endOfInputOrError()
       x
     } finally {
       this.in = null
-      if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
-      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
+      val bufSize = Math.min(maxPreferredBufSize, config.maxBufSize)
+      if (buf.length > bufSize) reallocateBuf(bufSize)
+      val charBufSize = Math.min(maxPreferredCharBufSize, config.maxCharBufSize)
+      if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
     }
 
   /**
@@ -2560,6 +2574,9 @@ final class JsonReader private[jsoniter_scala](
       try {
         this.buf = bbuf.array
         this.config = config
+        val preferredCharBufSize = config.preferredCharBufSize
+        if (maxPreferredCharBufSize < preferredCharBufSize) maxPreferredCharBufSize = preferredCharBufSize
+        if (charBuf.length > config.maxCharBufSize) reallocateCharBuf(preferredCharBufSize)
         head = offset + bbuf.position()
         tail = to
         totalRead = 0
@@ -2569,7 +2586,8 @@ final class JsonReader private[jsoniter_scala](
         x
       } finally {
         this.buf = currBuf
-        if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
+        val charBufSize = Math.min(maxPreferredCharBufSize, config.maxCharBufSize)
+      if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
         bbuf.position(head - offset)
       }
     } else {
@@ -2581,14 +2599,22 @@ final class JsonReader private[jsoniter_scala](
         tail = 0
         totalRead = 0
         mark = -1
-        if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
+        val preferredBufSize = config.preferredBufSize
+        if (maxPreferredBufSize < preferredBufSize) maxPreferredBufSize = preferredBufSize
+        val bufLen = buf.length
+        if (bufLen < preferredBufSize || bufLen > config.maxBufSize) reallocateBuf(preferredBufSize)
+        val preferredCharBufSize = config.preferredCharBufSize
+        if (maxPreferredCharBufSize < preferredCharBufSize) maxPreferredCharBufSize = preferredCharBufSize
+        if (charBuf.length > config.maxCharBufSize) reallocateCharBuf(preferredCharBufSize)
         val x = codec.decodeValue(this, codec.nullValue)
         if (config.checkForEndOfInput) endOfInputOrError()
         x
       } finally {
         this.bbuf = null
-        if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
-        if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
+        val bufSize = Math.min(maxPreferredBufSize, config.maxBufSize)
+        if (buf.length > bufSize) reallocateBuf(bufSize)
+        val charBufSize = Math.min(maxPreferredCharBufSize, config.maxCharBufSize)
+        if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
         bbuf.position(totalRead.toInt - tail + head + position)
       }
     }
@@ -2610,6 +2636,9 @@ final class JsonReader private[jsoniter_scala](
     try {
       this.buf = s.getBytes(UTF_8)
       this.config = config
+      val preferredCharBufSize = config.preferredCharBufSize
+      if (maxPreferredCharBufSize < preferredCharBufSize) maxPreferredCharBufSize = preferredCharBufSize
+      if (charBuf.length > config.maxCharBufSize) reallocateCharBuf(preferredCharBufSize)
       head = 0
       val to = buf.length
       tail = to
@@ -2620,7 +2649,8 @@ final class JsonReader private[jsoniter_scala](
       x
     } finally {
       this.buf = currBuf
-      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
+      val charBufSize = Math.min(maxPreferredCharBufSize, config.maxCharBufSize)
+      if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
     }
   }
 
@@ -2643,12 +2673,20 @@ final class JsonReader private[jsoniter_scala](
       tail = 0
       totalRead = 0
       mark = -1
-      if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
+      val preferredBufSize = config.preferredBufSize
+      if (maxPreferredBufSize < preferredBufSize) maxPreferredBufSize = preferredBufSize
+      val bufLen = buf.length
+      if (bufLen < preferredBufSize || bufLen > config.maxBufSize) reallocateBuf(preferredBufSize)
+      val preferredCharBufSize = config.preferredCharBufSize
+      if (maxPreferredCharBufSize < preferredCharBufSize) maxPreferredCharBufSize = preferredCharBufSize
+      if (charBuf.length > config.maxCharBufSize) reallocateCharBuf(preferredCharBufSize)
       while (f(codec.decodeValue(this, codec.nullValue)) && skipWhitespaces()) ()
     } finally {
       this.in = null
-      if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
-      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
+      val bufSize = Math.min(maxPreferredBufSize, config.maxBufSize)
+      if (buf.length > bufSize) reallocateBuf(bufSize)
+      val charBufSize = Math.min(maxPreferredCharBufSize, config.maxCharBufSize)
+      if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
     }
 
   /**
@@ -2671,7 +2709,13 @@ final class JsonReader private[jsoniter_scala](
       tail = 0
       totalRead = 0
       mark = -1
-      if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
+      val preferredBufSize = config.preferredBufSize
+      if (maxPreferredBufSize < preferredBufSize) maxPreferredBufSize = preferredBufSize
+      val bufLen = buf.length
+      if (bufLen < preferredBufSize || bufLen > config.maxBufSize) reallocateBuf(preferredBufSize)
+      val preferredCharBufSize = config.preferredCharBufSize
+      if (maxPreferredCharBufSize < preferredCharBufSize) maxPreferredCharBufSize = preferredCharBufSize
+      if (charBuf.length > config.maxCharBufSize) reallocateCharBuf(preferredCharBufSize)
       var t: Byte = 0
       if (isNextToken('[', head)) {
         if (!isNextToken(']', head)) {
@@ -2687,8 +2731,10 @@ final class JsonReader private[jsoniter_scala](
       if (config.checkForEndOfInput) endOfInputOrError()
     } finally {
       this.in = null
-      if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
-      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
+      val bufSize = Math.min(maxPreferredBufSize, config.maxBufSize)
+      if (buf.length > bufSize) reallocateBuf(bufSize)
+      val charBufSize = Math.min(maxPreferredCharBufSize, config.maxCharBufSize)
+      if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
     }
 
   /**
@@ -6231,10 +6277,10 @@ final class JsonReader private[jsoniter_scala](
   private[this] def endOfInputError(): Nothing = decodeError("unexpected end of input", tail)
 
   @noinline
-  private[this] def reallocateBufToPreferredSize(): Unit = buf = new Array[Byte](config.preferredBufSize)
+  private[this] def reallocateBuf(length: Int): Unit = buf = new Array[Byte](length)
 
   @noinline
-  private[this] def reallocateCharBufToPreferredSize(): Unit = charBuf = new Array[Char](config.preferredCharBufSize)
+  private[this] def reallocateCharBuf(length: Int): Unit = charBuf = new Array[Char](length)
 }
 
 object JsonReader {

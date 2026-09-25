@@ -54,6 +54,8 @@ final class JsonWriter private[jsoniter_scala](
     private[this] var bbuf: ByteBuffer = null,
     private[this] var out: OutputStream = null,
     private[this] var config: WriterConfig = null) {
+  private[this] var maxPreferredBufSize: Int = 0
+
   /**
    * Writes a `Boolean` value as a JSON key.
    *
@@ -1498,12 +1500,14 @@ final class JsonWriter private[jsoniter_scala](
       indention = 0
       comma = false
       disableBufGrowing = false
-      if (limit < config.preferredBufSize) reallocateBufToPreferredSize()
+      val preferredBufSize = config.preferredBufSize
+      if (maxPreferredBufSize < preferredBufSize) maxPreferredBufSize = preferredBufSize
+      if (limit < preferredBufSize) reallocateBuf(preferredBufSize)
       codec.encodeValue(x, this)
       out.write(buf, 0, count)
     } finally {
       this.out = null // don't close output stream
-      if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
+      if (limit > maxPreferredBufSize) reallocateBuf(maxPreferredBufSize)
     }
 
   /**
@@ -1517,6 +1521,8 @@ final class JsonWriter private[jsoniter_scala](
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): Array[Byte] =
     try {
       this.config = config
+      val preferredBufSize = config.preferredBufSize
+      if (maxPreferredBufSize < preferredBufSize) maxPreferredBufSize = preferredBufSize
       count = 0
       indention = 0
       comma = false
@@ -1524,7 +1530,7 @@ final class JsonWriter private[jsoniter_scala](
       codec.encodeValue(x, this)
       java.util.Arrays.copyOf(buf, count)
     } finally {
-      if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
+      if (limit > maxPreferredBufSize) reallocateBuf(maxPreferredBufSize)
     }
 
   /**
@@ -1538,6 +1544,8 @@ final class JsonWriter private[jsoniter_scala](
   private[jsoniter_scala] def writeToString[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String =
     try {
       this.config = config
+      val preferredBufSize = config.preferredBufSize
+      if (maxPreferredBufSize < preferredBufSize) maxPreferredBufSize = preferredBufSize
       count = 0
       indention = 0
       comma = false
@@ -1545,7 +1553,7 @@ final class JsonWriter private[jsoniter_scala](
       codec.encodeValue(x, this)
       new String(buf, 0, count, StandardCharsets.UTF_8)
     } finally {
-      if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
+      if (limit > maxPreferredBufSize) reallocateBuf(maxPreferredBufSize)
     }
 
   /**
@@ -1631,12 +1639,14 @@ final class JsonWriter private[jsoniter_scala](
         indention = 0
         comma = false
         disableBufGrowing = false
-        if (limit < config.preferredBufSize) reallocateBufToPreferredSize()
+        val preferredBufSize = config.preferredBufSize
+        if (maxPreferredBufSize < preferredBufSize) maxPreferredBufSize = preferredBufSize
+        if (limit < preferredBufSize) reallocateBuf(preferredBufSize)
         codec.encodeValue(x, this)
         bbuf.put(buf, 0, count)
       } finally {
         this.bbuf = null
-        if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
+        if (limit > maxPreferredBufSize) reallocateBuf(maxPreferredBufSize)
       }
     }
 
@@ -3311,7 +3321,7 @@ final class JsonWriter private[jsoniter_scala](
     setBuf(java.util.Arrays.copyOf(buf, (-1 >>> Integer.numberOfLeadingZeros(limit | required)) + 1))
 
   @noinline
-  private[this] def reallocateBufToPreferredSize(): Unit = setBuf(new Array[Byte](config.preferredBufSize))
+  private[this] def reallocateBuf(length: Int): Unit = setBuf(new Array[Byte](length))
 
   @inline
   private[this] def setBuf(buf: Array[Byte]): Unit = {

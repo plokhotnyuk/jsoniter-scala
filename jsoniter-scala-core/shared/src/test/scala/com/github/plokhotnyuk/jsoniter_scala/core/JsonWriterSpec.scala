@@ -21,6 +21,8 @@
 
 package com.github.plokhotnyuk.jsoniter_scala.core
 
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Base64, UUID}
@@ -985,6 +987,78 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           |  "true": "WWW",
           |  "2": 3
           |}""".stripMargin
+    }
+  }
+
+  "JsonWriter.write and JsonWriter.writeToString" should {
+    val stringCodec: JsonValueCodec[String] = new JsonValueCodec[String] {
+      override def decodeValue(in: JsonReader, default: String): String = in.readString(default)
+
+      override def encodeValue(x: String, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: String = null
+    }
+
+    def writeToDirectByteBuffer(w: JsonWriter, x: String, config: WriterConfig): String = {
+      val bbuf = ByteBuffer.allocateDirect(1000)
+      w.write(stringCodec, x, bbuf, config)
+      bbuf.flip()
+      val bs = new Array[Byte](bbuf.remaining)
+      bbuf.get(bs)
+      new String(bs, UTF_8)
+    }
+
+    def writeToStream(w: JsonWriter, x: String, config: WriterConfig): String = {
+      val out = new ByteArrayOutputStream
+      w.write(stringCodec, x, out, config)
+      new String(out.toByteArray, UTF_8)
+    }
+
+    val writes: Seq[(String, (JsonWriter, String, WriterConfig) => String)] = Seq(
+      ("writing to an output stream", writeToStream _),
+      ("writing to a byte array", (w: JsonWriter, x: String, config: WriterConfig) =>
+        new String(w.write(stringCodec, x, config), UTF_8)),
+      ("writing to a string", (w: JsonWriter, x: String, config: WriterConfig) => w.writeToString(stringCodec, x, config))) ++ {
+      // Direct byte buffers have backing arrays on Scala Native, so they are written like heap byte buffers there
+      if (ByteBuffer.allocateDirect(1).hasArray) Nil
+      else Seq(("writing to a direct byte buffer", writeToDirectByteBuffer _))
+    }
+
+    def json(s: String): String = "\"" + s + "\""
+
+    def contains(buf: Array[Byte], s: String): Boolean = new String(buf, UTF_8).contains(s)
+
+    writes.foreach { case (name, write) =>
+      s"keep the buffer after writing with a config that has a bigger preferred size when $name" in {
+        val buf = new Array[Byte](65536)
+        val w = new JsonWriter(buf = buf, limit = buf.length)
+        write(w, "a" * 100, WriterConfig.withPreferredBufSize(65536))
+        write(w, "b" * 100, WriterConfig)
+        write(w, "c" * 100, WriterConfig) shouldBe json("c" * 100)
+        contains(buf, json("c" * 100)) shouldBe true
+      }
+      s"reduce the buffer to the preferred size after writing with the same config when $name" in {
+        val buf = new Array[Byte](65536)
+        val w = new JsonWriter(buf = buf, limit = buf.length)
+        write(w, "b" * 100, WriterConfig)
+        write(w, "c" * 100, WriterConfig) shouldBe json("c" * 100)
+        contains(buf, json("b" * 100)) shouldBe true
+        contains(buf, json("c" * 100)) shouldBe false
+      }
+    }
+    "keep the internal buffer after writing to a heap byte buffer or a byte array slice" in {
+      val buf = new Array[Byte](65536)
+      val w = new JsonWriter(buf = buf, limit = buf.length)
+      val bbuf = ByteBuffer.wrap(new Array[Byte](1000))
+      w.write(stringCodec, "a" * 100, bbuf, WriterConfig)
+      new String(bbuf.array, 0, bbuf.position(), UTF_8) shouldBe json("a" * 100)
+      val slice = new Array[Byte](1000)
+      val len = w.write(stringCodec, "b" * 100, slice, 10, 1000, WriterConfig)
+      new String(slice, 10, len - 10, UTF_8) shouldBe json("b" * 100)
+      contains(buf, "a") shouldBe false
+      contains(buf, "b") shouldBe false
+      w.writeToString(stringCodec, "c" * 100, WriterConfig) shouldBe json("c" * 100)
+      contains(buf, json("c" * 100)) shouldBe true
     }
   }
 

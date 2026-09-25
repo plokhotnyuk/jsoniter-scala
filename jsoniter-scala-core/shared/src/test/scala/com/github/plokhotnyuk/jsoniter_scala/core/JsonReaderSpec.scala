@@ -23,6 +23,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayInputStream, InputStream}
 import java.math.MathContext
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Base64, UUID}
@@ -4321,6 +4322,130 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 6e 75 6c 6c                                     | null             |
           |+----------+-------------------------------------------------+------------------+""".stripMargin))
+    }
+  }
+
+  "JsonReader.read, JsonReader.scanValueStream and JsonReader.scanArray" should {
+    val stringCodec: JsonValueCodec[String] = new JsonValueCodec[String] {
+      override def decodeValue(in: JsonReader, default: String): String = in.readString(default)
+
+      override def encodeValue(x: String, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: String = null
+    }
+    val bigDecimalCodec: JsonValueCodec[BigDecimal] = new JsonValueCodec[BigDecimal] {
+      override def decodeValue(in: JsonReader, default: BigDecimal): BigDecimal =
+        in.readBigDecimal(default, MathContext.UNLIMITED, 10000, 10000)
+
+      override def encodeValue(x: BigDecimal, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: BigDecimal = null
+    }
+
+    def directByteBuffer(bs: Array[Byte]): ByteBuffer = {
+      val bbuf = ByteBuffer.allocateDirect(bs.length)
+      bbuf.put(bs)
+      bbuf.position(0)
+      bbuf
+    }
+
+    def scanValues[A](r: JsonReader, codec: JsonValueCodec[A], bs: Array[Byte], config: ReaderConfig): A = {
+      var x = codec.nullValue
+      r.scanValueStream(codec, new ByteArrayInputStream(bs), config) { y =>
+        x = y
+        true
+      }
+      x
+    }
+
+    def scanArray[A](r: JsonReader, codec: JsonValueCodec[A], bs: Array[Byte], config: ReaderConfig): A = {
+      var x = codec.nullValue
+      r.scanArray(codec, new ByteArrayInputStream(("[" + new String(bs, UTF_8) + "]").getBytes(UTF_8)), config) { y =>
+        x = y
+        true
+      }
+      x
+    }
+
+    type Read[A] = (JsonReader, JsonValueCodec[A], Array[Byte], ReaderConfig) => A
+
+    def streamReads[A]: Seq[(String, Read[A])] = Seq(
+      ("reading from an input stream", (r: JsonReader, c: JsonValueCodec[A], bs: Array[Byte], cfg: ReaderConfig) =>
+        r.read(c, new ByteArrayInputStream(bs), cfg)),
+      ("scanning values from an input stream", (r: JsonReader, c: JsonValueCodec[A], bs: Array[Byte], cfg: ReaderConfig) =>
+        scanValues(r, c, bs, cfg)),
+      ("scanning an array from an input stream", (r: JsonReader, c: JsonValueCodec[A], bs: Array[Byte], cfg: ReaderConfig) =>
+        scanArray(r, c, bs, cfg))) ++ {
+      // Direct byte buffers have backing arrays on Scala Native, so they are read like heap byte buffers there
+      if (ByteBuffer.allocateDirect(1).hasArray) Nil
+      else Seq(("reading from a direct byte buffer", (r: JsonReader, c: JsonValueCodec[A], bs: Array[Byte], cfg: ReaderConfig) =>
+        r.read(c, directByteBuffer(bs), cfg)))
+    }
+
+    def allReads[A]: Seq[(String, Read[A])] = Seq(
+      ("reading from a byte array", (r: JsonReader, c: JsonValueCodec[A], bs: Array[Byte], cfg: ReaderConfig) =>
+        r.read(c, bs, 0, bs.length, cfg)),
+      ("reading from a heap byte buffer", (r: JsonReader, c: JsonValueCodec[A], bs: Array[Byte], cfg: ReaderConfig) =>
+        r.read(c, ByteBuffer.wrap(bs), cfg)),
+      ("reading from a string", (r: JsonReader, c: JsonValueCodec[A], bs: Array[Byte], cfg: ReaderConfig) =>
+        r.read(c, new String(bs, UTF_8), cfg))) ++ streamReads[A]
+
+    def json(s: String): Array[Byte] = ("\"" + s + "\"").getBytes(UTF_8)
+
+    def contains(buf: Array[Byte], s: String): Boolean = new String(buf, UTF_8).contains(s)
+
+    allReads[String].foreach { case (name, read) =>
+      s"keep the char buffer after reading with a config that has a bigger preferred size when $name" in {
+        val charBuf = new Array[Char](65536)
+        val r = new JsonReader(charBuf = charBuf)
+        read(r, stringCodec, json("a" * 100), ReaderConfig.withPreferredCharBufSize(65536))
+        read(r, stringCodec, json("b" * 5000), ReaderConfig)
+        read(r, stringCodec, json("c" * 5000), ReaderConfig) shouldBe "c" * 5000
+        new String(charBuf, 0, 5000) shouldBe "c" * 5000
+      }
+      s"reduce the char buffer to the preferred size after reading with the same config when $name" in {
+        val charBuf = new Array[Char](65536)
+        val r = new JsonReader(charBuf = charBuf)
+        read(r, stringCodec, json("b" * 5000), ReaderConfig)
+        read(r, stringCodec, json("c" * 5000), ReaderConfig) shouldBe "c" * 5000
+        new String(charBuf, 0, 5000) shouldBe "b" * 5000
+      }
+      s"don't use the char buffer that is greater than the max size of the current config when $name" in {
+        val charBuf = new Array[Char](65536)
+        val r = new JsonReader(charBuf = charBuf)
+        val config = ReaderConfig.withPreferredCharBufSize(1024).withMaxCharBufSize(1024)
+        assert(intercept[JsonReaderException](read(r, stringCodec, json("d" * 2000), config))
+          .getMessage.startsWith("too long string exceeded 'maxCharBufSize'"))
+        charBuf.forall(_ == 0) shouldBe true
+      }
+    }
+    streamReads[String].foreach { case (name, read) =>
+      s"keep the byte buffer after reading with a config that has a bigger preferred size when $name" in {
+        val buf = new Array[Byte](1 << 20)
+        val r = new JsonReader(buf = buf)
+        read(r, stringCodec, json("a" * 100), ReaderConfig.withPreferredBufSize(1 << 20))
+        read(r, stringCodec, json("b" * 100), ReaderConfig)
+        read(r, stringCodec, json("c" * 100), ReaderConfig) shouldBe "c" * 100
+        contains(buf, "c" * 100) shouldBe true
+      }
+      s"reduce the byte buffer to the preferred size after reading with the same config when $name" in {
+        val buf = new Array[Byte](1 << 20)
+        val r = new JsonReader(buf = buf)
+        read(r, stringCodec, json("b" * 100), ReaderConfig)
+        read(r, stringCodec, json("c" * 100), ReaderConfig) shouldBe "c" * 100
+        contains(buf, "b" * 100) shouldBe true
+        contains(buf, "c" * 100) shouldBe false
+      }
+    }
+    streamReads[BigDecimal].foreach { case (name, read) =>
+      s"don't use the byte buffer that is greater than the max size of the current config when $name" in {
+        val buf = new Array[Byte](65536)
+        val r = new JsonReader(buf = buf)
+        val config = ReaderConfig.withPreferredBufSize(12).withMaxBufSize(1024)
+        assert(intercept[JsonReaderException](read(r, bigDecimalCodec, fill('1', 5000).getBytes(UTF_8), config))
+          .getMessage.startsWith("too long part of input exceeded 'maxBufSize'"))
+        buf.forall(_ == 0) shouldBe true
+      }
     }
   }
 
