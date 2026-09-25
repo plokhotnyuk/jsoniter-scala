@@ -833,7 +833,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse Duration from a string representation according to JDK format that is based on ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = Duration.parse(s)
-        reader(s).readBytesAsDuration() shouldBe x
+        readBytesFully(s)(_.readBytesAsDuration()) shouldBe x
         reader(s"""$ws"$s"""").readDuration(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsDuration() shouldBe x
         reader(s"""$ws"-$s"""").readDuration(null) shouldBe x.negated()
@@ -968,7 +968,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         } catch {
           case _: DateTimeParseException => OffsetDateTime.parse(s).toInstant
         }
-        reader(s).readBytesAsInstant() shouldBe x
+        readBytesFully(s)(_.readBytesAsInstant()) shouldBe x
         reader(s"""$ws"$s"""").readInstant(null) shouldBe x
         reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe x
       }
@@ -986,7 +986,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genInstant, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
-        reader(s).readBytesAsInstant() shouldBe x
+        readBytesFully(s)(_.readBytesAsInstant()) shouldBe x
         reader(s"""$ws"$s"""").readInstant(null) shouldBe x
         reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe x
       }
@@ -994,7 +994,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val xx = if (x.getSecond == 0) x.plusSeconds(1) else x
         val s = xx.toString
         val y = xx.toInstant
-        reader(s).readBytesAsInstant() shouldBe y
+        readBytesFully(s)(_.readBytesAsInstant()) shouldBe y
         reader(s"""$ws"$s"""").readInstant(null) shouldBe y
         reader(s"""$ws"$s": """).readKeyAsInstant() shouldBe y
       }
@@ -1208,7 +1208,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse LocalDate from a string representation according to ISO-8601 format" in {
       def check(x: LocalDate, ws: String): Unit = {
         val s = x.toString
-        reader(s).readBytesAsLocalDate() shouldBe x
+        readBytesFully(s)(_.readBytesAsLocalDate()) shouldBe x
         reader(s"""$ws"$s"""").readLocalDate(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsLocalDate() shouldBe x
       }
@@ -1347,7 +1347,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse LocalDateTime from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = LocalDateTime.parse(s)
-        reader(s).readBytesAsLocalDateTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsLocalDateTime()) shouldBe x
         reader(s"""$ws"$s"""").readLocalDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsLocalDateTime() shouldBe x
       }
@@ -1363,7 +1363,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genLocalDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
-        reader(s).readBytesAsLocalDateTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsLocalDateTime()) shouldBe x
         reader(s"""$ws"$s"""").readLocalDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsLocalDateTime() shouldBe x
       }
@@ -1529,7 +1529,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse LocalTime from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = LocalTime.parse(s)
-        reader(s).readBytesAsLocalTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsLocalTime()) shouldBe x
         reader(s"""$ws"$s"""").readLocalTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsLocalTime() shouldBe x
       }
@@ -1545,7 +1545,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genLocalTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
-        reader(s).readBytesAsLocalTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsLocalTime()) shouldBe x
         reader(s"""$ws"$s"""").readLocalTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsLocalTime() shouldBe x
       }
@@ -1621,7 +1621,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse MonthDay from a string representation according to ISO-8601 format" in {
       def check(x: MonthDay, ws: String): Unit = {
         val s = x.toString
-        reader(s).readBytesAsMonthDay() shouldBe x
+        readBytesFully(s)(_.readBytesAsMonthDay()) shouldBe x
         reader(s"""$ws"$s"""").readMonthDay(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsMonthDay() shouldBe x
       }
@@ -1717,7 +1717,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse OffsetDateTime from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = OffsetDateTime.parse(s)
-        reader(s).readBytesAsOffsetDateTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsOffsetDateTime()) shouldBe x
         reader(s"""$ws"$s"""").readOffsetDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsOffsetDateTime() shouldBe x
       }
@@ -1733,7 +1733,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genOffsetDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
-        reader(s).readBytesAsOffsetDateTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsOffsetDateTime()) shouldBe x
         reader(s"""$ws"$s"""").readOffsetDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsOffsetDateTime() shouldBe x
       }
@@ -1942,7 +1942,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse OffsetTime from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = OffsetTime.parse(s)
-        reader(s).readBytesAsOffsetTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsOffsetTime()) shouldBe x
         reader(s"""$ws"$s"""").readOffsetTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsOffsetTime() shouldBe x
       }
@@ -1958,7 +1958,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genOffsetTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
-        reader(s).readBytesAsOffsetTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsOffsetTime()) shouldBe x
         reader(s"""$ws"$s"""").readOffsetTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsOffsetTime() shouldBe x
       }
@@ -2064,11 +2064,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse Period from a string representation according to JDK format that is based on ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = Period.parse(s)
-        reader(s).readBytesAsPeriod() shouldBe x
+        readBytesFully(s)(_.readBytesAsPeriod()) shouldBe x
         reader(s"""$ws"$s"""").readPeriod(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsPeriod() shouldBe x
         if (x.getYears != Int.MinValue && x.getMonths != Int.MinValue && x.getDays != Int.MinValue) {
-          reader(s"-$s").readBytesAsPeriod() shouldBe x.negated()
+          readBytesFully(s"-$s")(_.readBytesAsPeriod()) shouldBe x.negated()
           reader(s"""$ws"-$s"""").readPeriod(null) shouldBe x.negated()
           reader(s"""$ws"-$s":""").readKeyAsPeriod() shouldBe x.negated()
         }
@@ -2094,7 +2094,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genPeriod, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
-        reader(s).readBytesAsPeriod() shouldBe x
+        readBytesFully(s)(_.readBytesAsPeriod()) shouldBe x
         reader(s"""$ws"$s"""").readPeriod(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsPeriod() shouldBe x
       }
@@ -2227,7 +2227,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse Year from a string representation according to ISO-8601 format" in {
       def check(x: Year, ws: String): Unit = {
         val s = toISO8601(x)
-        reader(s).readBytesAsYear() shouldBe x
+        readBytesFully(s)(_.readBytesAsYear()) shouldBe x
         reader(s"""$ws"$s"""").readYear(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsYear() shouldBe x
       }
@@ -2310,7 +2310,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse YearMonth from a string representation according to ISO-8601 format" in {
       def check(x: YearMonth, ws: String): Unit = {
         val s = toISO8601(x)
-        reader(s).readBytesAsYearMonth() shouldBe x
+        readBytesFully(s)(_.readBytesAsYearMonth()) shouldBe x
         reader(s"""$ws"$s"""").readYearMonth(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsYearMonth() shouldBe x
       }
@@ -2415,7 +2415,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK format" in {
       def check(s: String, ws: String): Unit = {
         val x = ZonedDateTime.parse(s)
-        reader(s).readBytesAsZonedDateTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsZonedDateTime()) shouldBe x
         reader(s"""$ws"$s"""").readZonedDateTime(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZonedDateTime() shouldBe x
       }
@@ -2446,7 +2446,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genZonedDateTime, genWhitespaces, minSuccessful(100))((x, ws) => {
         val s = x.toString
-        reader(s).readBytesAsZonedDateTime() shouldBe x
+        readBytesFully(s)(_.readBytesAsZonedDateTime()) shouldBe x
         reader(s"""$ws"$s"""").readZonedDateTime(null) shouldBe x
         reader(s"""$ws"$s":$ws""").readKeyAsZonedDateTime() shouldBe x
       })
@@ -2494,8 +2494,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("2008-01-20T07:24:33.+10:10[]", "illegal timezone, offset: 0x0000001b")
       checkError("2008-01-20T07:24:33.+10:10:X0[UTC]", "expected digit, offset: 0x0000001b")
       checkError("2008-01-20T07:24:33.+10:10:1,[UTC]", "expected digit, offset: 0x0000001c")
-      checkError("2008-01-20T07:24:33.+18:01[UTC]", "illegal timezone offset, offset: 0x0000001a")
-      checkError("2008-01-20T07:24:33.-18:01[UTC]", "illegal timezone offset, offset: 0x0000001a")
+      checkError("2008-01-20T07:24:33.+18:01[UTC]", "illegal timezone offset, offset: 0x00000019")
+      checkError("2008-01-20T07:24:33.-18:01[UTC]", "illegal timezone offset, offset: 0x00000019")
       checkError("2008-01-20T07:24:33.+20:10[UTC]", "illegal timezone offset hour, offset: 0x00000016")
       checkError("2008-01-20T07:24:33.+10:60[UTC]", "illegal timezone offset minute, offset: 0x00000019")
       checkError("2008-01-20T07:24:33.+10:10:60[UTC]", "illegal timezone offset second, offset: 0x0000001c")
@@ -2657,7 +2657,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse ZoneId from a string representation according to ISO-8601 format for timezone offset or JDK format for IANA timezone identifier" in {
       forAll(genZoneId, genWhitespaces, minSuccessful(1000)) { (x, ws) =>
         val s = x.toString
-        reader(s).readBytesAsZoneId() shouldBe x
+        readBytesFully(s)(_.readBytesAsZoneId()) shouldBe x
         reader(s"""$ws"$s"""").readZoneId(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneId() shouldBe x
       }
@@ -2771,7 +2771,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse ZoneOffset from a string representation according to ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = ZoneOffset.of(s)
-        reader(s).readBytesAsZoneOffset() shouldBe x
+        readBytesFully(s)(_.readBytesAsZoneOffset()) shouldBe x
         reader(s"""$ws"$s"""").readZoneOffset(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneOffset() shouldBe x
       }
@@ -2789,7 +2789,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genZoneOffset, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
-        reader(s).readBytesAsZoneOffset() shouldBe x
+        readBytesFully(s)(_.readBytesAsZoneOffset()) shouldBe x
         reader(s"""$ws"$s"""").readZoneOffset(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsZoneOffset() shouldBe x
       }
@@ -4322,6 +4322,22 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           || 00000000 | 6e 75 6c 6c                                     | null             |
           |+----------+-------------------------------------------------+------------------+""".stripMargin))
     }
+  }
+
+  def readBytesFully[A](s: String)(f: JsonReader => A): A = {
+    val r1 = reader(s)
+    val x = f(r1)
+    r1.hasRemaining() shouldBe false
+    val r2 = reader(s.concat("|"))
+    if ({
+      try {
+        f(r2) shouldBe x
+        true
+      } catch {
+        case _: JsonReaderException => false // some values, like durations or zone ids, cannot be followed by other bytes
+      }
+    }) r2.nextToken() shouldBe '|'
+    x
   }
 
   def reader(json: String, totalRead: Long = 0): JsonReader = reader2(json.getBytes(UTF_8), totalRead)
