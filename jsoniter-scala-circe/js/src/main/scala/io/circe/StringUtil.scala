@@ -24,10 +24,9 @@ package io.circe
 private[circe] object StringUtil {
   @inline
   def toString(buf: Array[Byte], len: Int): String = {
-    val end = len - 1
-    val s = new java.lang.StringBuilder(end)
-    var i = 1
-    while (i < end) {
+    val s = new java.lang.StringBuilder(len)
+    var i = 0
+    while (i < len) {
       s.append(buf(i).toChar)
       i += 1
     }

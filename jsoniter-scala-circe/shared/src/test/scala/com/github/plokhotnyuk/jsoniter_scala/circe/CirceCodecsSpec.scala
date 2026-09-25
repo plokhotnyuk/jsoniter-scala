@@ -310,6 +310,8 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
 
   def verifyDecoding[A: Decoder](name: String, x: A): Unit = {
     Decoder[A].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
+    Decoder[A].decodeJson(Json.fromString(" " + x.toString)).left.getOrElse(null) shouldBe DecodingFailure(name, Nil)
+    Decoder[A].decodeJson(Json.fromString(x.toString + " ")).left.getOrElse(null) shouldBe DecodingFailure(name, Nil)
     Decoder[A].decodeJson(Json.Null).left.getOrElse(null) shouldBe DecodingFailure(name, Nil)
     Decoder[A].decodeJson(Json.fromString("X")).left.getOrElse(null) shouldBe DecodingFailure(name, Nil)
     Decoder[A].decodeJson(Json.fromString("X" * 200)).left.getOrElse(null) shouldBe DecodingFailure(name, Nil)

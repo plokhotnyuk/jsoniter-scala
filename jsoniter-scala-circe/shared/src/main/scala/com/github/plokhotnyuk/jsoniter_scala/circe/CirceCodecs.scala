@@ -41,7 +41,7 @@ object CirceCodecs {
     .withPreferredBufSize(512).withMaxBufSize(512).withPreferredCharBufSize(512).withMaxCharBufSize(512)
   private[this] val writeConfig = WriterConfig.withPreferredBufSize(512)
 
-  private[this] class ShortAsciiStringCodec[A](codec: JsonValueCodec[A], name: String) extends Codec[A] {
+  private[this] def stringCodec[A](codec: JsonValueCodec[A], name: String): Codec[A] = new Codec[A] {
     override def apply(x: A): Json = {
       val tlb = pool.get
       val buf = tlb._2
@@ -55,26 +55,26 @@ object CirceCodecs {
       var len = 0
       if ((s ne null) && {
         len = s.length
-        len <= 510
+        len <= 512
       } && {
-        buf(0) = '"'
         var bits, i = 0
         while (i < len) {
           val ch = s.charAt(i)
-          buf(i + 1) = ch.toByte
+          buf(i) = ch.toByte
           bits |= ch
           i += 1
         }
-        buf(i + 1) = '"'
         bits < 0x80
       }) {
-        try return new scala.util.Right(tlb._1.read(codec, buf, 0, len + 2, readerConfig))
-        catch { case _: JsonReaderException => }
+        try return new Right(tlb._1.read(codec, buf, 0, len, readerConfig))
+        catch {
+          case _: JsonReaderException =>
+        }
       }
       error(c)
     }
 
-    private[this] def error(c: HCursor): Decoder.Result[A] = new scala.util.Left(DecodingFailure(name, c.history))
+    private[this] def error(c: HCursor): Decoder.Result[A] = new Left(DecodingFailure(name, c.history))
   }
 
   // codecs for numeric types
@@ -83,7 +83,7 @@ object CirceCodecs {
       @inline
       override def decodeValue(in: JsonReader, default: Byte): Byte = {
         val x = in.readByte(isToken = false)
-        if (in.hasRemaining()) in.decodeError("expected '\"'")
+        if (in.hasRemaining()) in.decodeError("expected end of input")
         x
       }
 
@@ -101,7 +101,7 @@ object CirceCodecs {
       @inline
       override def decodeValue(in: JsonReader, default: Short): Short = {
         val x = in.readShort(isToken = false)
-        if (in.hasRemaining()) in.decodeError("expected '\"'")
+        if (in.hasRemaining()) in.decodeError("expected end of input")
         x
       }
 
@@ -119,7 +119,7 @@ object CirceCodecs {
       @inline
       override def decodeValue(in: JsonReader, default: Int): Int = {
         val x = in.readInt(isToken = false)
-        if (in.hasRemaining()) in.decodeError("expected '\"'")
+        if (in.hasRemaining()) in.decodeError("expected end of input")
         x
       }
 
@@ -137,7 +137,7 @@ object CirceCodecs {
       @inline
       override def decodeValue(in: JsonReader, default: Long): Long = {
         val x = in.readLong(isToken = false)
-        if (in.hasRemaining()) in.decodeError("expected '\"'")
+        if (in.hasRemaining()) in.decodeError("expected end of input")
         x
       }
 
@@ -155,7 +155,7 @@ object CirceCodecs {
       @inline
       override def decodeValue(in: JsonReader, default: Float): Float = {
         val x = in.readFloat(isToken = false)
-        if (in.hasRemaining()) in.decodeError("expected '\"'")
+        if (in.hasRemaining()) in.decodeError("expected end of input")
         x
       }
 
@@ -173,7 +173,7 @@ object CirceCodecs {
       @inline
       override def decodeValue(in: JsonReader, default: Double): Double = {
         val x = in.readDouble(isToken = false)
-        if (in.hasRemaining()) in.decodeError("expected '\"'")
+        if (in.hasRemaining()) in.decodeError("expected end of input")
         x
       }
 
@@ -191,7 +191,7 @@ object CirceCodecs {
       @inline
       override def decodeValue(in: JsonReader, default: BigInt): BigInt = {
         val x = in.readBigInt(isToken = false, default, JsonReader.bigIntDigitsLimit)
-        if (in.hasRemaining()) in.decodeError("expected '\"'")
+        if (in.hasRemaining()) in.decodeError("expected end of input")
         x
       }
 
@@ -210,7 +210,7 @@ object CirceCodecs {
       override def decodeValue(in: JsonReader, default: BigDecimal): BigDecimal = {
         val x = in.readBigDecimal(isToken = false, default, JsonReader.bigDecimalMathContext,
           JsonReader.bigDecimalScaleLimit, JsonReader.bigDecimalDigitsLimit)
-        if (in.hasRemaining()) in.decodeError("expected '\"'")
+        if (in.hasRemaining()) in.decodeError("expected end of input")
         x
       }
 
@@ -224,122 +224,170 @@ object CirceCodecs {
       pool.get._1.read(codec, s, readerConfig)
   }
   // codecs for java.time.* types
-  implicit val durationC3C: Codec[Duration] = new ShortAsciiStringCodec(new JsonValueCodec[Duration] {
+  implicit val durationC3C: Codec[Duration] = stringCodec(new JsonValueCodec[Duration] {
     @inline
-    override def decodeValue(in: JsonReader, default: Duration): Duration = in.readDuration(default)
+    override def decodeValue(in: JsonReader, default: Duration): Duration = {
+      val x = in.readBytesAsDuration()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: Duration, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: Duration, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: Duration = null
   }, "Duration")
-  implicit val instantC3C: Codec[Instant] = new ShortAsciiStringCodec(new JsonValueCodec[Instant] {
+  implicit val instantC3C: Codec[Instant] = stringCodec(new JsonValueCodec[Instant] {
     @inline
-    override def decodeValue(in: JsonReader, default: Instant): Instant = in.readInstant(default)
+    override def decodeValue(in: JsonReader, default: Instant): Instant = {
+      val x = in.readBytesAsInstant()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: Instant, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: Instant, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: Instant = null
   }, "Instant")
-  implicit val localDateC3C: Codec[LocalDate] = new ShortAsciiStringCodec(new JsonValueCodec[LocalDate] {
+  implicit val localDateC3C: Codec[LocalDate] = stringCodec(new JsonValueCodec[LocalDate] {
     @inline
-    override def decodeValue(in: JsonReader, default: LocalDate): LocalDate = in.readLocalDate(default)
+    override def decodeValue(in: JsonReader, default: LocalDate): LocalDate = {
+      val x = in.readBytesAsLocalDate()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: LocalDate, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: LocalDate, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: LocalDate = null
   }, "LocalDate")
-  implicit val localDateTimeC3C: Codec[LocalDateTime] = new ShortAsciiStringCodec(new JsonValueCodec[LocalDateTime] {
+  implicit val localDateTimeC3C: Codec[LocalDateTime] = stringCodec(new JsonValueCodec[LocalDateTime] {
     @inline
-    override def decodeValue(in: JsonReader, default: LocalDateTime): LocalDateTime = in.readLocalDateTime(default)
+    override def decodeValue(in: JsonReader, default: LocalDateTime): LocalDateTime = {
+      val x = in.readBytesAsLocalDateTime()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: LocalDateTime, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: LocalDateTime, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: LocalDateTime = null
   }, "LocalDateTime")
-  implicit val localTimeC3C: Codec[LocalTime] = new ShortAsciiStringCodec(new JsonValueCodec[LocalTime] {
+  implicit val localTimeC3C: Codec[LocalTime] = stringCodec(new JsonValueCodec[LocalTime] {
     @inline
-    override def decodeValue(in: JsonReader, default: LocalTime): LocalTime = in.readLocalTime(default)
+    override def decodeValue(in: JsonReader, default: LocalTime): LocalTime = {
+      val x = in.readBytesAsLocalTime()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: LocalTime, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: LocalTime, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: LocalTime = null
   }, "LocalTime")
-  implicit val monthDayC3C: Codec[MonthDay] = new ShortAsciiStringCodec(new JsonValueCodec[MonthDay] {
+  implicit val monthDayC3C: Codec[MonthDay] = stringCodec(new JsonValueCodec[MonthDay] {
     @inline
-    override def decodeValue(in: JsonReader, default: MonthDay): MonthDay = in.readMonthDay(default)
+    override def decodeValue(in: JsonReader, default: MonthDay): MonthDay = {
+      val x = in.readBytesAsMonthDay()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: MonthDay, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: MonthDay, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: MonthDay = null
   }, "MonthDay")
-  implicit val offsetDateTimeC3C: Codec[OffsetDateTime] = new ShortAsciiStringCodec(new JsonValueCodec[OffsetDateTime] {
+  implicit val offsetDateTimeC3C: Codec[OffsetDateTime] = stringCodec(new JsonValueCodec[OffsetDateTime] {
     @inline
-    override def decodeValue(in: JsonReader, default: OffsetDateTime): OffsetDateTime = in.readOffsetDateTime(default)
+    override def decodeValue(in: JsonReader, default: OffsetDateTime): OffsetDateTime = {
+      val x = in.readBytesAsOffsetDateTime()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: OffsetDateTime, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: OffsetDateTime, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: OffsetDateTime = null
   }, "OffsetDateTime")
-  implicit val offsetTimeC3C: Codec[OffsetTime] = new ShortAsciiStringCodec(new JsonValueCodec[OffsetTime] {
+  implicit val offsetTimeC3C: Codec[OffsetTime] = stringCodec(new JsonValueCodec[OffsetTime] {
     @inline
-    override def decodeValue(in: JsonReader, default: OffsetTime): OffsetTime = in.readOffsetTime(default)
+    override def decodeValue(in: JsonReader, default: OffsetTime): OffsetTime = {
+      val x = in.readBytesAsOffsetTime()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: OffsetTime, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: OffsetTime, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: OffsetTime = null
   }, "OffsetTime")
-  implicit val periodC3C: Codec[Period] = new ShortAsciiStringCodec(new JsonValueCodec[Period] {
+  implicit val periodC3C: Codec[Period] = stringCodec(new JsonValueCodec[Period] {
     @inline
-    override def decodeValue(in: JsonReader, default: Period): Period = in.readPeriod(default)
+    override def decodeValue(in: JsonReader, default: Period): Period = {
+      val x = in.readBytesAsPeriod()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: Period, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: Period, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: Period = null
   }, "Period")
-  implicit val yearMonthC3C: Codec[YearMonth] = new ShortAsciiStringCodec(new JsonValueCodec[YearMonth] {
+  implicit val yearMonthC3C: Codec[YearMonth] = stringCodec(new JsonValueCodec[YearMonth] {
     @inline
-    override def decodeValue(in: JsonReader, default: YearMonth): YearMonth = in.readYearMonth(default)
+    override def decodeValue(in: JsonReader, default: YearMonth): YearMonth = {
+      val x = in.readBytesAsYearMonth()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: YearMonth, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: YearMonth, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: YearMonth = null
   }, "YearMonth")
-  implicit val yearC3C: Codec[Year] = new ShortAsciiStringCodec(new JsonValueCodec[Year] {
+  implicit val yearC3C: Codec[Year] = stringCodec(new JsonValueCodec[Year] {
     @inline
-    override def decodeValue(in: JsonReader, default: Year): Year = in.readYear(default)
+    override def decodeValue(in: JsonReader, default: Year): Year = {
+      val x = in.readBytesAsYear()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: Year, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: Year, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: Year = null
   }, "Year")
-  implicit val zonedDateTimeC3C: Codec[ZonedDateTime] = new ShortAsciiStringCodec(new JsonValueCodec[ZonedDateTime] {
+  implicit val zonedDateTimeC3C: Codec[ZonedDateTime] = stringCodec(new JsonValueCodec[ZonedDateTime] {
     @inline
-    override def decodeValue(in: JsonReader, default: ZonedDateTime): ZonedDateTime = in.readZonedDateTime(default)
+    override def decodeValue(in: JsonReader, default: ZonedDateTime): ZonedDateTime = {
+      val x = in.readBytesAsZonedDateTime()
+      if (in.hasRemaining()) in.decodeError("expected end of input")
+      x
+    }
 
     @inline
-    override def encodeValue(x: ZonedDateTime, out: JsonWriter): Unit = out.writeVal(x)
+    override def encodeValue(x: ZonedDateTime, out: JsonWriter): Unit = out.writeBytes(x)
 
     @inline
     override def nullValue: ZonedDateTime = null
