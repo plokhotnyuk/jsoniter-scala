@@ -1585,13 +1585,13 @@ final class JsonReader private[jsoniter_scala](
     val pos = head
     if (pos + 7 < tail && {
       val bs = ByteArrayAccess.getLong(buf, pos)
-      (bs + 0x60C00060EL & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && (bs & 0xFFF0F0FFF0F0L) == 0x2230302D3030L && { // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
+      (bs + 0x60C00060EL & 0xF0F0FFF0F0L) == 0x30302D3030L && (bs & 0xF0F0FFF0F0L) == 0x30302D3030L && { // Based on the fast checking of string for digits by 8-byte words: https://github.com/simdjson/simdjson/blob/7e1893db428936e13457ba0e9a5aac0cdfb7bc15/include/simdjson/generic/numberparsing.h#L344
         val monthDay = ((bs & 0xF03000F01L) * 2561 >> 8).toInt
         month = monthDay.toByte.toInt
         day = monthDay >> 24
         (month >= 1 && month <= 12) && day != 0 && (day <= 28 || day <= maxDayForYearMonth(year, month))
       }
-    }) head = pos + 6
+    }) head = pos + 5
     else {
       month = parseMonthWithByte('-', pos)
       day = parseDay(year, month, head)

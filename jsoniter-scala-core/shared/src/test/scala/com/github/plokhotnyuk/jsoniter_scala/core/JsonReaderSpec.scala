@@ -1219,6 +1219,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check(LocalDate.of(-999999999, 1, 1), ws)
         check(LocalDate.of(2008, 1, 2), ws)
       }
+      val r = reader("2008-01-02\"xx") // a double quote after bytes is not consumed
+      r.readBytesAsLocalDate() shouldBe LocalDate.of(2008, 1, 2)
+      r.nextByte() shouldBe '"'
       forAll(genLocalDate, genWhitespaces, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDate bytes" in {
