@@ -1633,7 +1633,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genMonthDay, genWhitespaces, minSuccessful(10000))(check)
     }
-    "throw parsing exception for empty input and illegal or broken LocalDateTime bytes" in {
+    "throw parsing exception for empty input and illegal or broken MonthDay bytes" in {
       def checkError(json: String, error: String): Unit =
         assert(intercept[JsonReaderException](reader(json).readBytesAsMonthDay()).getMessage.startsWith(error))
 
@@ -1665,7 +1665,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkError(s"--01-2${nonDigit}", "expected digit, offset: 0x00000006")
       }
     }
-    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+    "throw parsing exception for empty input and illegal or broken MonthDay string" in {
       def checkError(json: String, error: String): Unit = {
         assert(intercept[JsonReaderException](reader(json).readMonthDay(null)).getMessage.startsWith(error))
         assert(intercept[JsonReaderException](reader(json).readKeyAsMonthDay()).getMessage.startsWith(error))
