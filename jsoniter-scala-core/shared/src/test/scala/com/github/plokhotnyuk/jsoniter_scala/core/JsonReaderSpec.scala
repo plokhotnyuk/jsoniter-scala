@@ -849,6 +849,13 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("P-1D", ws)
         check("PT-1S", ws)
       }
+      val minDuration = Duration.ofSeconds(Long.MinValue)
+      readBytesFully("PT-2562047788015215H-30M-8S")(_.readBytesAsDuration()) shouldBe minDuration
+      reader(""""PT-2562047788015215H-30M-8S"""").readDuration(null) shouldBe minDuration
+      reader(""""PT-2562047788015215H-30M-8S":""").readKeyAsDuration() shouldBe minDuration
+      val r = reader("PT1.5S2S") // reading of bytes stops after the seconds part
+      r.readBytesAsDuration() shouldBe Duration.ofMillis(1500)
+      r.nextByte() shouldBe '2'
       forAll(genDuration, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
         reader(s"""$ws"$s"""").readDuration(null) shouldBe x
@@ -2102,6 +2109,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         reader(s"""$ws"$s"""").readPeriod(null) shouldBe x
         reader(s"""$ws"$s":""").readKeyAsPeriod() shouldBe x
       }
+      val r = reader("P1D2D") // reading of bytes stops after the days part
+      r.readBytesAsPeriod() shouldBe Period.ofDays(1)
+      r.nextByte() shouldBe '2'
     }
     "throw parsing exception for empty input and illegal or broken Period bytes" in {
       def checkError(json: String, error: String): Unit =

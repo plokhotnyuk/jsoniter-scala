@@ -1388,7 +1388,7 @@ final class JsonReader private[jsoniter_scala](
         }
       } else durationError(state, pos)
       head = pos + 1
-      hasRemaining() && {
+      state != 3 && hasRemaining() && { // stop after seconds, so the next bytes are left for the caller
         b = nextByte(head)
         true
       }
@@ -1982,7 +1982,7 @@ final class JsonReader private[jsoniter_scala](
         if (ds != days) periodError(pos)
       } else periodError(state, pos)
       head = pos + 1
-      hasRemaining() && {
+      state != 4 && hasRemaining() && { // stop after days, so the next bytes are left for the caller
         b = nextByte(head)
         true
       }
