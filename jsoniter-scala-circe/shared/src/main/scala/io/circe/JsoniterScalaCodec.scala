@@ -300,7 +300,9 @@ object JsoniterScalaCodec {
     final def apply(c: HCursor): Result[BigDecimal] = c.value match {
       case n: JNumber => n.value match {
         case jl: JsonLong => new Right(new BigDecimal(new java.math.BigDecimal(jl.value)))
-        case jbd: JsonBigDecimal => new Right(new BigDecimal(jbd.value, JsonReader.bigDecimalMathContext))
+        case jbd: JsonBigDecimal =>
+          val mc = JsonReader.bigDecimalMathContext
+          new Right(new BigDecimal(jbd.value.round(mc), mc))
         case x => x.toBigDecimal match {
           case Some(v) => new Right(v.apply(JsonReader.bigDecimalMathContext))
           case _ => fail(c)

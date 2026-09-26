@@ -241,6 +241,8 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[BigDecimal].decodeJson(Json.fromFloatOrNull(12345678.0f)).getOrElse(null) shouldBe BigDecimal(12345678)
       Decoder[BigDecimal].decodeJson(Json.fromDoubleOrNull(1234567890123456.0)).getOrElse(null) shouldBe BigDecimal(1234567890123456L)
       Decoder[BigDecimal].decodeJson(Json.fromBigInt(BigInt("12345678901234567890"))).getOrElse(null) shouldBe BigDecimal("12345678901234567890")
+      Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(BigDecimal("1234567890123456789012345678901234567890"))).getOrElse(null) shouldBe
+        BigDecimal("1234567890123456789012345678901235E+6")
       Decoder[BigDecimal].decodeJson(Json.fromString("001.0")).getOrElse(null) shouldBe BigDecimal(1.0)
       Decoder[BigDecimal].decodeJson(Json.fromString("12345678901234567890")).getOrElse(null) shouldBe BigDecimal("12345678901234567890")
       Decoder[BigDecimal].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("BigDecimal", Nil))
@@ -252,7 +254,8 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
         Decoder[BigDecimal].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe y
       }
       forAll(arbitrary[BigDecimal], minSuccessful(10000)) { x =>
-        Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(x)).getOrElse(null) shouldBe x
+        val y = x.apply(JsonReader.bigDecimalMathContext)
+        Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(x)).getOrElse(null) shouldBe y
       }
       forAll(arbitrary[BigDecimal], minSuccessful(10000)) { x =>
         Encoder[BigDecimal].apply(x) shouldBe Json.fromBigDecimal(x)
