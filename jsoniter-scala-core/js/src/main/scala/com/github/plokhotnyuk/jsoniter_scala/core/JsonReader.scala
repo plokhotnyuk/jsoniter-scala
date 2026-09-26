@@ -3150,7 +3150,7 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        if (exp < 214748364) exp = exp * 10 + (b - '0')
+        if (exp < 100000000) exp = exp * 10 + (b - '0') // saturate to avoid int overflow when adding to e10
         pos += 1
       }
       if (sb == '-') exp = -exp
@@ -3300,7 +3300,7 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        if (exp < 214748364) exp = exp * 10 + (b - '0')
+        if (exp < 100000000) exp = exp * 10 + (b - '0') // saturate to avoid int overflow when adding to e10
         pos += 1
       }
       if (sb == '-') exp = -exp

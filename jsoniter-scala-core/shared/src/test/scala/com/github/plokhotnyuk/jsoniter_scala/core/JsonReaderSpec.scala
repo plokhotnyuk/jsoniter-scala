@@ -3547,6 +3547,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-123456789012345678901234567890e9223372036854775799", Float.NegativeInfinity, ws)
         check("12345678901234567890e12345678901234567890", Float.PositiveInfinity, ws)
         check("-12345678901234567890e12345678901234567890", Float.NegativeInfinity, ws)
+        check("10000000000000000000000000000e2147483639", Float.PositiveInfinity, ws)
       }
       reader("12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.PositiveInfinity
       reader("-12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.NegativeInfinity
@@ -3559,6 +3560,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-0.12345678901234567890e-9223372036854775799", -0.0f, ws)
         check("12345678901234567890e-12345678901234567890", 0.0f, ws)
         check("-12345678901234567890e-12345678901234567890", -0.0f, ws)
+        check("1.2345678901e-2147483639", 0.0f, ws)
       }
     }
     "parse keys and strigified values with leading zeros in mantissas and exponents" in {
@@ -3685,6 +3687,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-123456789012345678901234567890e9223372036854775799", Double.NegativeInfinity, ws)
         check("12345678901234567890e12345678901234567890", Double.PositiveInfinity, ws)
         check("-12345678901234567890e12345678901234567890", Double.NegativeInfinity, ws)
+        check("10000000000000000000000000000e2147483639", Double.PositiveInfinity, ws)
       }
       reader("12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.PositiveInfinity
       reader("-12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.NegativeInfinity
@@ -3697,6 +3700,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-0.12345678901234567890e-9223372036854775799", -0.0, ws)
         check("12345678901234567890e-12345678901234567890", 0.0, ws)
         check("-1234567890123456789e-12345678901234567890", -0.0, ws)
+        check("1.2345678901e-2147483639", 0.0, ws)
       }
     }
     "parse keys and strigified values with leading zeros in mantissas and exponents" in {
