@@ -581,6 +581,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       intercept[NullPointerException](writeToArray[User](null)(codec))
       intercept[NullPointerException](writeToArrayReentrant[User](null)(codec))
       intercept[NullPointerException](writeToArray(user)(null))
+      intercept[NullPointerException](writeToArrayReentrant(user)(null))
       intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
       intercept[NullPointerException](writeToArrayReentrant(user, null.asInstanceOf[WriterConfig])(codec))
     }
