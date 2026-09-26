@@ -45,7 +45,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
@@ -68,7 +68,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
@@ -94,7 +94,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
@@ -121,7 +121,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
@@ -146,7 +146,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
@@ -173,7 +173,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
@@ -195,7 +195,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `buf` or `config` is null
     */
@@ -215,7 +215,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `buf` or `config` is null
     */
@@ -235,7 +235,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `buf` or `config` is null
     * @throws java.lang.ArrayIndexOutOfBoundsException if the `to` is greater than `buf` length or negative,
@@ -264,7 +264,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `buf` or `config` is null
     * @throws java.lang.ArrayIndexOutOfBoundsException if the `to` is greater than `buf` length or negative,
@@ -293,7 +293,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for the result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `bbuf` or `config` is null
     */
@@ -317,7 +317,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                             the input JSON structure does not match structure that expected for the result type,
+    *                             the input JSON structure does not match the structure expected for the result type,
     *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if any of `codec`, `bbuf` or `config` is null
     */
@@ -335,7 +335,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains invalid JSON content or the input JSON structure does not
-    *                             match structure that expected for the result type, also in case if end of input is
+    *                             match the structure expected for the result type, also in case if end of input is
     *                             detected while some input characters are expected
     * @throws java.lang.NullPointerException if any of `codec`, `s` or `config` is null
     */
@@ -354,7 +354,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonReaderException if underlying input contains invalid JSON content or the input JSON structure does not
-    *                             match structure that expected for the result type, also in case if end of input is
+    *                             match the structure expected for the result type, also in case if end of input is
     *                             detected while some input characters are expected
     * @throws java.lang.NullPointerException if any of `codec`, `s` or `config` is null
     */
@@ -411,12 +411,12 @@ package object core {
   }
 
   /**
-    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format.
+    * Serialize the `x` argument to a newly allocated instance of byte array in UTF-8 encoding of JSON format.
     *
     * BEWARE: It is a non-reentrant routine and should not be used in a nested way in the same thread.
     *
     * If size of serialized values is greater than 32K bytes then specify their preferred sizes in the
-    * `preferredBufSize` option of the  `config` parameter to avoid redundant re-allocations of internal buffers.
+    * `preferredBufSize` option of the `config` parameter to avoid redundant re-allocations of internal buffers.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -432,7 +432,7 @@ package object core {
     writerPool.get.write(codec, x, config)
 
   /**
-    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format.
+    * Serialize the `x` argument to a newly allocated instance of byte array in UTF-8 encoding of JSON format.
     *
     * While it is less efficient than serialization to a byte array using pooled writers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
@@ -453,7 +453,7 @@ package object core {
   /**
     * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format.
     *
-    * BEWARE: It is non-reentrant routine and should not be used in a nested way in the same thread.
+    * BEWARE: It is a non-reentrant routine and should not be used in a nested way in the same thread.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -466,7 +466,7 @@ package object core {
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
     * @throws java.lang.NullPointerException if any of `x`, `codec`, `buf` or `config` is null
-    * @throws java.lang.ArrayIndexOutOfBoundsException if the `from` is greater than `to` or negative, if 'to' is greater
+    * @throws java.lang.ArrayIndexOutOfBoundsException if the `from` is greater than `to` or negative, if `to` is greater
     *                                                  than `buf` length or `to` limit was exceeded during serialization
     */
   def writeToSubArray[@sp A](x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig = WriterConfig)
@@ -495,7 +495,7 @@ package object core {
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
     * @throws java.lang.NullPointerException if any of `x`, `codec`, `buf` or `config` is null
-    * @throws java.lang.ArrayIndexOutOfBoundsException if the `from` is greater than `to` or negative, if 'to' is greater
+    * @throws java.lang.ArrayIndexOutOfBoundsException if the `from` is greater than `to` or negative, if `to` is greater
     *                                                  than `buf` length or `to` limit was exceeded during serialization
     */
   def writeToSubArrayReentrant[@sp A](x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig = WriterConfig)
@@ -517,7 +517,7 @@ package object core {
     *
     * When [[java.nio.DirectByteBuffer]] is passed as a parameter then internal buffers will be used.
     * So, if size of serialized values is greater than 32K bytes then specify their preferred sizes
-    * in the `preferredBufSize` option of the  `config` parameter to avoid redundant re-allocations of internal buffers.
+    * in the `preferredBufSize` option of the `config` parameter to avoid redundant re-allocations of internal buffers.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -526,7 +526,7 @@ package object core {
     * @param codec a codec for the given value
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
-    * @throws java.lang.NullPointerException    if any of `x`, `codec`, `bbuf` or `config` is null
+    * @throws java.lang.NullPointerException if any of `x`, `codec`, `bbuf` or `config` is null
     * @throws java.nio.ReadOnlyBufferException if the `bbuf` is read-only
     * @throws java.nio.BufferOverflowException if the `bbuf` limit was exceeded during serialization
     */
@@ -540,7 +540,7 @@ package object core {
     * Serialization will start from the current position up to the provided byte buffer limit.
     * On return the byte buffer will have position set to the next position after the last written byte.
     *
-    * While it is less efficient than serialization to a byte buffer pooled writers, but it can be safely used
+    * While it is less efficient than serialization to a byte buffer using pooled writers, but it can be safely used
     * when a non-reentrant call is used in the same thread stack.
     *
     * @tparam A type of value to serialize
@@ -550,7 +550,7 @@ package object core {
     * @param codec a codec for the given value
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
-    * @throws java.lang.NullPointerException    if any of `x`, `codec`, `bbuf` or `config` is null
+    * @throws java.lang.NullPointerException if any of `x`, `codec`, `bbuf` or `config` is null
     * @throws java.nio.ReadOnlyBufferException if the `bbuf` is read-only
     * @throws java.nio.BufferOverflowException if the `bbuf` limit was exceeded during serialization
     */
@@ -564,7 +564,7 @@ package object core {
     * BEWARE: It is a non-reentrant routine and should not be used in a nested way in the same thread.
     *
     * If size of serialized values is greater than 32K bytes then specify their preferred sizes in the
-    * `preferredBufSize` option of the  `config` parameter to avoid redundant re-allocations of internal buffers.
+    * `preferredBufSize` option of the `config` parameter to avoid redundant re-allocations of internal buffers.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize

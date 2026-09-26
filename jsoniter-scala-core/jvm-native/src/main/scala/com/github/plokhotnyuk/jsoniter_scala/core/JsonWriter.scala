@@ -106,7 +106,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a `Int` value as a JSON key.
+   * Writes an `Int` value as a JSON key.
    *
    * @param x the `Int` value to write
    */
@@ -252,7 +252,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a `String` value that doesn't require encoding or escaping as a JSON key.
    *
-   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligable for writing by this method.
+   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligible for writing by this method.
    *
    * @param x the `String` value to write
    */
@@ -503,7 +503,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a `String` value that doesn't require encoding or escaping as a JSON value.
    *
-   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligable for writing by this method.
+   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligible for writing by this method.
    *
    * @param x the `String` value to write
    */
@@ -714,7 +714,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a `Int` value as a JSON value.
+   * Writes an `Int` value as a JSON value.
    *
    * @param x the `Int` value to write
    */
@@ -848,7 +848,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a `Int` value as a JSON string value.
+   * Writes an `Int` value as a JSON string value.
    *
    * @param x the `Int` value to write
    */
@@ -1222,7 +1222,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.ZonedDateTime]] value as a bytes.
+   * Writes a [[java.time.ZonedDateTime]] value as bytes.
    *
    * @param x the [[java.time.ZonedDateTime]] value to write
    */

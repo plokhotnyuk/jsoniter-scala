@@ -156,7 +156,7 @@ final class JsonReader private[jsoniter_scala](
   def setMark(): Unit = mark = head
 
   /**
-    * Skips tokens with in the current JSON object until a key with the given name is encountered.
+    * Skips tokens within the current JSON object until a key with the given name is encountered.
     *
     * @param key the name of the JSON key to skip to
     * @return `true` if the key was found, `false` otherwise
@@ -173,7 +173,7 @@ final class JsonReader private[jsoniter_scala](
   /**
     * Rolls back the read head position to the previously set mark.
     *
-    * @throws java.lang.IllegalStateException in case of calling without preceding call of 'setMark()'
+    * @throws java.lang.IllegalStateException in case of calling without preceding call of `setMark()`
     */
   def rollbackToMark(): Unit = {
     if (mark < 0) missingSetMarkOperation()
@@ -184,7 +184,7 @@ final class JsonReader private[jsoniter_scala](
   /**
    * Reset mark without changing of the read head position.
    *
-   * @throws java.lang.IllegalStateException in case of calling without preceding call of 'setMark()'
+   * @throws java.lang.IllegalStateException in case of calling without preceding call of `setMark()`
    */
   def resetMark(): Unit = {
     if (mark < 0) missingSetMarkOperation()
@@ -459,9 +459,9 @@ final class JsonReader private[jsoniter_scala](
   }
 
   /**
-    * Reads a JSON key into a `Int` value.
+    * Reads a JSON key into an `Int` value.
     *
-    * @return a `Int` value of the parsed JSON key
+    * @return an `Int` value of the parsed JSON key
     * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key
     */
   def readKeyAsInt(): Int = {
@@ -572,7 +572,7 @@ final class JsonReader private[jsoniter_scala](
    * Reads a JSON key into a `java.lang.Number` instance with the default limit of allowed digits for mantissa,
    * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
    *
-   * @return a `java.lang.Numer` instance of the parsed JSON key
+   * @return a `java.lang.Number` instance of the parsed JSON key
    * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON key or
    *                             exceeding of default limits
    */
@@ -580,7 +580,7 @@ final class JsonReader private[jsoniter_scala](
     readKeyAsBigDecimal(bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
   /**
-   * Reads a JSON key into a Scala `java.lang.Number` instance with the given precision, scale limit, and digits limit.
+   * Reads a JSON key into a `java.lang.Number` instance with the given precision, scale limit, and digits limit.
    *
    * @param mc the precision to use
    * @param scaleLimit the maximum number of decimal places (scale) allowed
@@ -643,9 +643,9 @@ final class JsonReader private[jsoniter_scala](
   def readShort(): Short = readShort(isToken = true)
 
   /**
-    * Reads a JSON value into a `Int` value.
+    * Reads a JSON number value into an `Int` value.
     *
-    * @return a `Int` value of the parsed JSON value
+    * @return an `Int` value of the parsed JSON value
     * @throws JsonReaderException in cases of reaching the end of input or detection of leading zero or
     *                             illegal format of JSON value or exceeding capacity of `Int`
     */
@@ -999,12 +999,12 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   /**
-    * Reads a JSON string value encoded with the base-16 format into a `Array[Byte]` instance.
+    * Reads a JSON string value encoded with the base-16 format into an `Array[Byte]` instance.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
     *
     * @param default the default `Array[Byte]` value to return if the JSON value is `null`
-    * @return a `Array[Byte]` instance of the parsed JSON  value or the default value if the JSON value is `null`
+    * @return an `Array[Byte]` instance of the parsed JSON value or the default value if the JSON value is `null`
     * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
     *                             when both the JSON value and the provided default value are `null`
     */
@@ -1013,12 +1013,12 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   /**
-    * Reads a JSON string value encoded with the base-64 format into a `Array[Byte]` instance.
+    * Reads a JSON string value encoded with the base-64 format into an `Array[Byte]` instance.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
     *
     * @param default the default `Array[Byte]` value to return if the JSON value is `null`
-    * @return a `Array[Byte]` instance of the parsed JSON  value or the default value if the JSON value is `null`
+    * @return an `Array[Byte]` instance of the parsed JSON value or the default value if the JSON value is `null`
     * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
     *                             when both the JSON value and the provided default value are `null`
     */
@@ -1027,12 +1027,12 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   /**
-    * Reads a JSON string value encoded with the base-64 format for URLs into a `Array[Byte]` instance.
+    * Reads a JSON string value encoded with the base-64 format for URLs into an `Array[Byte]` instance.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
     *
     * @param default the default `Array[Byte]` value to return if the JSON value is `null`
-    * @return a `Array[Byte]` instance of the parsed JSON  value or the default value if the JSON value is `null`
+    * @return an `Array[Byte]` instance of the parsed JSON value or the default value if the JSON value is `null`
     * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
     *                             when both the JSON value and the provided default value are `null`
     */
@@ -1089,9 +1089,9 @@ final class JsonReader private[jsoniter_scala](
   }
 
   /**
-    * Reads a JSON string value into a `Int` value.
+    * Reads a JSON string value into an `Int` value.
     *
-    * @return a `Int` value of the parsed JSON value.
+    * @return an `Int` value of the parsed JSON value.
     * @throws JsonReaderException in cases of reaching the end of input or illegal format of JSON value or
     *                             exceeding capacity of `Int`
     */
@@ -1175,7 +1175,7 @@ final class JsonReader private[jsoniter_scala](
     } else readNullOrTokenError(default, '"')
 
   /**
-    * Reads a JSON number value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
+    * Reads a JSON string value into a `BigDecimal` instance with the default limit of allowed digits for mantissa,
     * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
@@ -1190,7 +1190,7 @@ final class JsonReader private[jsoniter_scala](
     readStringAsBigDecimal(default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
   /**
-    * Reads a JSON number value into a `BigDecimal` instance with the provided limit of allowed digits for mantissa,
+    * Reads a JSON string value into a `BigDecimal` instance with the provided limit of allowed digits for mantissa,
     * the provided limit for scale, and the provided instance of [[java.math.MathContext]] for precision.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
@@ -1212,7 +1212,7 @@ final class JsonReader private[jsoniter_scala](
     } else readNullOrTokenError(default, '"')
 
   /**
-    * Reads a JSON number value into a `java.lang.Number` instance with the default limit of allowed digits for mantissa,
+    * Reads a JSON string value into a `java.lang.Number` instance with the default limit of allowed digits for mantissa,
     * the default limit for scale, and the default instance of [[java.math.MathContext]] for precision.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
@@ -1227,7 +1227,7 @@ final class JsonReader private[jsoniter_scala](
     readStringAsNumber(default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
   /**
-    * Reads a JSON number value into a `java.lang.Number` instance with the provided limit of allowed digits for mantissa,
+    * Reads a JSON string value into a `java.lang.Number` instance with the provided limit of allowed digits for mantissa,
     * the provided limit for scale, and the provided instance of [[java.math.MathContext]] for precision.
     * In case of `null` JSON value returns the provided default value or throws a [[JsonReaderException]]
     * if the provided default value is `null`.
@@ -1262,9 +1262,9 @@ final class JsonReader private[jsoniter_scala](
   }
 
   /**
-    * Reads a raw JSON value into a `Array[Byte]` instance without parsing.
+    * Reads a raw JSON value into an `Array[Byte]` instance without parsing.
     *
-    * @return a `Array[Byte]` instance containing the raw bytes of the JSON value.
+    * @return an `Array[Byte]` instance containing the raw bytes of the JSON value.
     * @throws JsonReaderException in cases of reaching the end of input or invalid type of JSON value
     */
   def readRawValAsBytes(): Array[Byte] = {
@@ -2346,7 +2346,7 @@ final class JsonReader private[jsoniter_scala](
     *
     * @param t the token to match
     * @return `true` if the current token matches `t`, `false` otherwise.
-    * @throws java.lang.IllegalStateException if no any token was parsed yet
+    * @throws java.lang.IllegalStateException if no token was parsed yet
     */
   def isCurrentToken(t: Byte): Boolean = {
     val pos = head
@@ -2364,7 +2364,7 @@ final class JsonReader private[jsoniter_scala](
   /**
     * Rolls back the current reading position by one.
     *
-    * @throws java.lang.IllegalStateException if no any token was parsed yet
+    * @throws java.lang.IllegalStateException if no token was parsed yet
     */
   def rollbackToken(): Unit = {
     val pos = head
@@ -2626,7 +2626,7 @@ final class JsonReader private[jsoniter_scala](
     *
     * @param codec the JSON value codec
     * @param s the string with the JSON input
-    * @param config The reader configuration.
+    * @param config the reader configuration
     * @tparam A the type of the value to read
     * @return an instance of type `A` containing the decoded JSON value.
     * @throws JsonReaderException in cases of reaching the end of input during parsing of JSON value or
@@ -6632,7 +6632,7 @@ object JsonReader {
   final val bigIntDigitsLimit: Int = 308
 
   /**
-    * Calculates hash code value string represented by sequence of characters from beginning of the provided char array
+    * Calculates a hash code value of the string represented by sequence of characters from beginning of the provided char array
     * up to limit position.
     *
     * @param cs a char array

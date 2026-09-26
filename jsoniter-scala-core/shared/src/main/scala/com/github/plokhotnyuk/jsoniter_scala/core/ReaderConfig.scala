@@ -38,21 +38,21 @@ package com.github.plokhotnyuk.jsoniter_scala.core
   * (>16Kb) numbers (including stringified), raw values, or ADT instances with the discriminator field doesn't
   * appear in the beginning of the JSON object</li>
   * <li>increase preferred size of an internal char buffer to reduce allocation rate of grown and then reduced
-  * buffers when large (>4Kb) string instances need to be parsed including those one which use Base16 or Base64
+  * buffers when large (>4Kb) string instances need to be parsed including those that use Base16 or Base64
   * encodings</li>
   * </ul>
-  * @param throwReaderExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
+  * @param throwReaderExceptionWithStackTrace a flag that allows to turn on stack traces for debugging purposes in
   *                                           development
   * @param appendHexDumpToParseException a flag that allows to turn off hex dumping of affected by error part of
   *                                      an internal byte buffer
   * @param maxBufSize a max size (in bytes) of an internal byte buffer when parsing from [[java.io.InputStream]] or
   *                   [[java.nio.DirectByteBuffer]]
   * @param maxCharBufSize a max size (in chars) of an internal char buffer for parsing of string values including
-  *                       those one which use Base16 or Base64 encodings
+  *                       those that use Base16 or Base64 encodings
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when parsing from
   *                         [[java.io.InputStream]] or [[java.nio.DirectByteBuffer]]
   * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
-  * @param checkForEndOfInput a flag to check and raise an error if some non whitespace bytes will be detected after
+  * @param checkForEndOfInput a flag to check and raise an error if some non-whitespace bytes will be detected after
   *                           successful parsing of the value
   * @param hexDumpSize a size of the hex dump in 16-byte lines before and after the 16-byte line where an error occurs
   */

@@ -34,7 +34,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
   * <li>increase preferred size of an internal byte buffer to reduce allocation rate of grown and then reduced
   * internal buffers when serialized output size is greater than 32Kb</li>
   * </ul>
-  * @param throwWriterExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
+  * @param throwWriterExceptionWithStackTrace a flag that allows to turn on stack traces for debugging purposes in
   *                                           development
   * @param indentionStep a size of indention for pretty-printed formatting or 0 for compact output
   * @param escapeUnicode a flag to turn on hexadecimal escaping of all non-ASCII chars

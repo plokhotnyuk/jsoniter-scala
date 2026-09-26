@@ -47,7 +47,7 @@ trait JsonValueCodec[@sp A] extends Serializable {
     * Attempts to decode a value of type `A` from the specified `JsonReader`, but may fail with `JsonReaderException`
     * error if the JSON input does not encode a value of this type.
     *
-    * @param in an instance of `JsonReader` which provide an access to the JSON input to parse a JSON value to value of
+    * @param in an instance of `JsonReader` which provides access to the JSON input to parse a JSON value to value of
     *           type `A`
     * @param default the placeholder value provided to initialize some possible local variables
     */
@@ -82,7 +82,7 @@ trait JsonKeyCodec[@sp A] extends Serializable {
     * Attempts to decode a value of type `A` from the specified `JsonReader`, but may fail with `JsonReaderException`
     * error if the JSON input is not a key or does not encode a value of this type.
     *
-    * @param in an instance of `JsonReader` which provide an access to the JSON input to parse a JSON key to value of
+    * @param in an instance of `JsonReader` which provides access to the JSON input to parse a JSON key to value of
     *           type `A`
     */
   def decodeKey(in: JsonReader): A
