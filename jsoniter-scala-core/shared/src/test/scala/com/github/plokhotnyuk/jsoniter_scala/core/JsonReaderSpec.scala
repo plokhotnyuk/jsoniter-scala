@@ -4468,7 +4468,18 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   def reader(json: String, totalRead: Long = 0): JsonReader = reader2(json.getBytes(UTF_8), totalRead)
 
   def reader2(jsonBytes: Array[Byte], totalRead: Long = 0): JsonReader =
-    new JsonReader(new Array[Byte](Random.nextInt(20) + 12), // 12 is a minimal allowed length to test resizing of the buffer
+    if (totalRead == 0 && jsonBytes.length < ReaderConfig.maxBufSize && Random.nextBoolean()) {
+      // reading from a byte array that has junk bytes after the end of input, `maxBufSize` limits only reading from streams
+      val len = jsonBytes.length
+      val buf = java.util.Arrays.copyOf(jsonBytes, len + Random.nextInt(32))
+      val junk = "0123456789:.-+TZ\"}]"
+      var i = len
+      while (i < buf.length) {
+        buf(i) = junk.charAt(Random.nextInt(junk.length)).toByte
+        i += 1
+      }
+      new JsonReader(buf, 0, len, -1, new Array[Char](Random.nextInt(32)), null, null, 0, readerConfig)
+    } else new JsonReader(new Array[Byte](Random.nextInt(20) + 12), // 12 is a minimal allowed length to test resizing of the buffer
       0, 0, -1, new Array[Char](Random.nextInt(32)), null, new ByteArrayInputStream(jsonBytes), totalRead, readerConfig)
 
   def readerConfig: ReaderConfig = ReaderConfig
