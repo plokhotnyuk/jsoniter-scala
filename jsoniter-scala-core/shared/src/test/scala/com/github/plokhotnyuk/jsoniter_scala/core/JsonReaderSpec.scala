@@ -4011,25 +4011,26 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     def check2(s: String, mc: MathContext, scaleLimit: Int, digitsLimit: Int, ws: String): Unit = {
-      def compare(a: BigDecimal, b: BigDecimal): Unit = {
+      def compare(n: java.lang.Number, s: String): Unit = {
+        val a = BigDecimal(n.toString, mc)
+        val b = BigDecimal(s, mc)
         a.bigDecimal shouldBe b.bigDecimal
         a.mc shouldBe b.mc
       }
 
-      val n = BigDecimal(s, mc)
-      compare(reader(s"""$ws"$s":""").readKeyAsBigDecimal(mc, scaleLimit, digitsLimit), n)
-      compare(reader(s"""$ws"$s"""").readStringAsBigDecimal(null, mc, scaleLimit, digitsLimit), n)
+      compare(reader(s"""$ws"$s":""").readKeyAsNumber(mc, scaleLimit, digitsLimit), s)
+      compare(reader(s"""$ws"$s"""").readStringAsNumber(null, mc, scaleLimit, digitsLimit), s)
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonReaderException](reader(s).readBigDecimal(null)).getMessage.startsWith(error1))
-      assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsBigDecimal()).getMessage.startsWith(error2))
-      assert(intercept[JsonReaderException](reader(s""""$s"""").readStringAsBigDecimal(null))
+      assert(intercept[JsonReaderException](reader(s).readNumber(null)).getMessage.startsWith(error1))
+      assert(intercept[JsonReaderException](reader(s""""$s":""").readKeyAsNumber()).getMessage.startsWith(error2))
+      assert(intercept[JsonReaderException](reader(s""""$s"""").readStringAsNumber(null))
         .getMessage.startsWith(error2))
     }
 
     def checkError2(s: String, error: String): Unit =
-      assert(intercept[JsonReaderException](reader(s).readBigDecimal(BigDecimal(0))).getMessage.startsWith(error))
+      assert(intercept[JsonReaderException](reader(s).readNumber(java.lang.Long.valueOf(0))).getMessage.startsWith(error))
 
     "parse valid number values with scale less than specified maximum" in {
       forAll(genBigDecimal, genWhitespaces, minSuccessful(10000)) { (n, ws) =>
