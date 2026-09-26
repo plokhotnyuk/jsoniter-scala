@@ -1088,13 +1088,18 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   def withWriter(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val len = cfg.preferredBufSize
     val writer = new JsonWriter(new Array[Byte](len), 0, len, 0, false, false, null, null, cfg)
-    new String(writer.write(new JsonValueCodec[String] {
+    val codec = new JsonValueCodec[String] {
       override def decodeValue(in: JsonReader, default: String): String = ""
 
-      override def encodeValue(x: String, out: JsonWriter): Unit = f(writer)
+      override def encodeValue(x: String, out: JsonWriter): Unit = f(out)
 
       override val nullValue: String = ""
-    }, "", cfg), "UTF-8")
+    }
+    val s = new String(writer.write(codec, "", cfg), UTF_8)
+    val out = new ByteArrayOutputStream
+    writer.write(codec, "", out, cfg) // flushes the internal buffer to the output stream when it is full
+    new String(out.toByteArray, UTF_8) shouldBe s
+    s
   }
 
   def writerConfig: WriterConfig =
