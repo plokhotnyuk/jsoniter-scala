@@ -22,6 +22,16 @@
 package io.circe
 
 private[circe] object StringUtil {
+  /**
+   * Creates a string from the first `len` bytes of the provided buffer.
+   *
+   * @note Works only for ASCII bytes, because the used deprecated constructor converts bytes to chars without decoding
+   *       of UTF-8 byte sequences.
+   *
+   * @param buf the buffer with ASCII bytes
+   * @param len the number of bytes to convert
+   * @return a string with chars of the provided bytes
+   */
   @inline
   def toString(buf: Array[Byte], len: Int): String = new String(buf, 0, 0, len)
 }
