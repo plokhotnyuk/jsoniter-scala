@@ -295,9 +295,9 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.Duration]] value as a JSON key.
+   * Writes a [[java.time.Instant]] value as a JSON key.
    *
-   * @param x the [[java.time.Duration]] value to write
+   * @param x the [[java.time.Instant]] value to write
    */
   def writeKey(x: Instant): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
@@ -703,7 +703,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a `Char` value as a JSON key.
+   * Writes a `Char` value as a JSON value.
    *
    * @param x the `Char` value to write
    * @throws JsonWriterException in case of `Char` value is a part of surrogate pair
@@ -1319,12 +1319,12 @@ final class JsonWriter private[jsoniter_scala](
   def writeArrayEnd(): Unit = writeNestedEnd(']')
 
   /**
-   * Writes a JSON array start marker (`{`).
+   * Writes a JSON object start marker (`{`).
    */
   def writeObjectStart(): Unit = writeNestedStart('{')
 
   /**
-   * Writes a JSON array end marker (`}`).
+   * Writes a JSON object end marker (`}`).
    */
   def writeObjectEnd(): Unit = writeNestedEnd('}')
 
