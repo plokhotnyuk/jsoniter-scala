@@ -3859,14 +3859,13 @@ final class JsonReader private[jsoniter_scala](
           if (x1 < 9 || x1 == 9 && x2 <= 223372036854775807L) {
             x1 = x1 * 1000000000000000000L + x2
             if (s != 0) x1 = -x1
-            if (scale == 0) new java.lang.Long(x1)
-            else java.math.BigDecimal.valueOf(x1, scale)
+            new java.lang.Long(x1)
           } else {
             if (s != 0) {
               x1 = -x1
               x2 = -x2
             }
-            java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale)).toBigInteger
+            java.math.BigDecimal.valueOf(x1, -18).add(java.math.BigDecimal.valueOf(x2)).unscaledValue
           }
         } else if (digits <= 308) toBigInteger308(buf, from, limit, s)
         else {
