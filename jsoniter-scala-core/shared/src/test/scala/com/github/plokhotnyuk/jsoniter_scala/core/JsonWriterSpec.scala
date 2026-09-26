@@ -109,6 +109,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "write Duration as a string representation according to ISO-8601 format" in {
       def check(x: Duration, s: String): Unit = {
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -130,6 +131,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: Instant): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -153,6 +155,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: LocalDate): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -172,6 +175,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: LocalDateTime): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -191,6 +195,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: LocalTime): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -210,6 +215,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: MonthDay): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -229,6 +235,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: OffsetDateTime): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -248,6 +255,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: OffsetTime): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -267,6 +275,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: Period): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -285,6 +294,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: Year): Unit = {
         val s = toISO8601(x)
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -304,6 +314,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: YearMonth): Unit = {
         val s = toISO8601(x)
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -323,6 +334,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: ZonedDateTime): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -342,6 +354,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: ZoneOffset): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
@@ -361,6 +374,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(x: ZoneId): Unit = {
         val s = x.toString
         withWriter(_.writeBytes(x)) shouldBe s
+        withWriter { w => w.writeBytes(x); w.writeBytes(x) } shouldBe s + s
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }

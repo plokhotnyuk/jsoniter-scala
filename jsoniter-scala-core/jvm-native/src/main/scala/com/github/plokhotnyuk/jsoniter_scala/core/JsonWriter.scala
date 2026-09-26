@@ -1295,7 +1295,7 @@ final class JsonWriter private[jsoniter_scala](
     val len = s.length
     val pos = ensureBufCapacity(len)
     s.getBytes(0, len, buf, pos)
-    count += len
+    count = pos + len
   }
 
   /**
