@@ -1372,6 +1372,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("2008-01-01T07:24:33.000000", ws)
         check("2008-01-01T07:24:33.000000000", ws)
       }
+      val r = reader("2008-01-01T07:24:33Z") // a byte after seconds is not consumed
+      r.readBytesAsLocalDateTime() shouldBe LocalDateTime.of(2008, 1, 1, 7, 24, 33)
+      r.nextByte() shouldBe 'Z'
       forAll(genLocalDateTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
         readBytesFully(s)(_.readBytesAsLocalDateTime()) shouldBe x
@@ -1554,6 +1557,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("07:24:33.000000", ws)
         check("07:24:33.000000000", ws)
       }
+      val r = reader("07:24:33Z") // a byte after seconds is not consumed
+      r.readBytesAsLocalTime() shouldBe LocalTime.of(7, 24, 33)
+      r.nextByte() shouldBe 'Z'
       forAll(genLocalTime, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
         val s = x.toString
         readBytesFully(s)(_.readBytesAsLocalTime()) shouldBe x

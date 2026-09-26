@@ -2696,7 +2696,7 @@ final class JsonReader private[jsoniter_scala](
           pos += 1
         }
         head = pos
-      } else tokenError('.')
+      } else rollbackToken()
     }
     nano
   }
