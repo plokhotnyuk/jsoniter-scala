@@ -1248,7 +1248,7 @@ final class JsonWriter private[jsoniter_scala](
    */
   def writeBytes(x: LocalTime): Unit = {
     if (x eq null) throw new NullPointerException
-    val pos = ensureBufCapacity(18) // 20 == LocalTime.MAX.toString.length
+    val pos = ensureBufCapacity(18) // 18 == LocalTime.MAX.toString.length
     count = writeLocalTime(x, pos, buf, digits)
   }
 

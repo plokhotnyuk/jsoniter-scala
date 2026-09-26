@@ -5462,7 +5462,7 @@ final class JsonReader private[jsoniter_scala](
     }.toInt + (month * 1002277 - 988622 >> 15) + // (month * 367 - 362) / 12
       (if (month <= 2) -719529
       else if (isLeap(year)) -719530
-      else -719531) + day) // 719528 == days 0000 to 1970)
+      else -719531) + day) // 719528 == days from 0000-01-01 to 1970-01-01, plus 1..3 days to correct the month formula and the 1-based day
 
   @noinline
   private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
