@@ -1490,6 +1490,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == '-') epochSecond += offsetTotal
       else epochSecond -= offsetTotal
     } else timeError(nanoDigitWeight, pos - 1)
+    if (epochSecond < -31557014167219200L || epochSecond > 31556889864403199L) timezoneOffsetError() // out of the range from Instant.MIN to Instant.MAX because of the offset
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
     else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
@@ -4710,6 +4711,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == '-') epochSecond += offsetTotal
       else epochSecond -= offsetTotal
     } else timeError(nanoDigitWeight, pos - 1)
+    if (epochSecond < -31557014167219200L || epochSecond > 31556889864403199L) timezoneOffsetError() // out of the range from Instant.MIN to Instant.MAX because of the offset
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
     else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
