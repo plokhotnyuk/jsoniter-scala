@@ -1075,7 +1075,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos += digitCount(q)
           pos = lastPos
         } else {
-          q = (hours * 1.0000000000000005e-8).toInt // divide a small positive long by 100000000
+          q = (hours / 100000000L).toInt // exact division, a double multiplication rounds up for some hours >= 1677721600000000
           lastPos += digitCount(q)
           pos = write8Digits((hours - q * 100000000L).toInt, lastPos, buf, ds)
         }
@@ -2338,7 +2338,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos += digitCount(q)
           pos = lastPos
         } else {
-          q = (hours * 1.0000000000000005e-8).toInt // divide a small positive long by 100000000
+          q = (hours / 100000000L).toInt // exact division, a double multiplication rounds up for some hours >= 1677721600000000
           lastPos += digitCount(q)
           pos = write8Digits((hours - q * 100000000L).toInt, lastPos, buf, ds)
         }

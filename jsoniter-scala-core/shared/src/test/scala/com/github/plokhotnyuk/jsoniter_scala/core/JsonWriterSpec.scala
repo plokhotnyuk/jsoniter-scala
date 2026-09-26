@@ -121,6 +121,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(Duration.ofSeconds(Long.MinValue), "PT-2562047788015215H-30M-8S")
       check(Duration.ofSeconds(Long.MinValue, 1), "PT-2562047788015215H-30M-7.999999999S")
       check(Duration.ofSeconds(Long.MaxValue, 999999999), "PT2562047788015215H30M7.999999999S")
+      check(Duration.ofHours(1677721699999999L), "PT1677721699999999H")
+      check(Duration.ofHours(-1677721699999999L), "PT-1677721699999999H")
       forAll(genDuration, minSuccessful(10000))(x => check(x, x.toString))
     }
   }
