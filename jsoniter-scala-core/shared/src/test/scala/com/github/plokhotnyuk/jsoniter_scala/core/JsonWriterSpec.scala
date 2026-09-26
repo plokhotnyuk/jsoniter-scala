@@ -73,8 +73,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeNonEscapedAsciiVal and JsonWriter.writeNonEscapedAsciiKey" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeNonEscapedAsciiVal(null.asInstanceOf[String])))
-      intercept[NullPointerException](withWriter(_.writeNonEscapedAsciiKey(null.asInstanceOf[String])))
+      checkNullValue(_.writeNonEscapedAsciiVal(null.asInstanceOf[String]))
+      checkNullKey(_.writeNonEscapedAsciiKey(null.asInstanceOf[String]))
     }
     "write string of Ascii chars which should not be escaped" in {
       def check(s: String): Unit = {
@@ -87,8 +87,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for UUID" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[UUID])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[UUID])))
+      checkNullValue(_.writeVal(null.asInstanceOf[UUID]))
+      checkNullKey(_.writeKey(null.asInstanceOf[UUID]))
     }
     "write UUID as a string representation according to format that defined in IETF RFC4122 (section 3)" in {
       def check(x: UUID): Unit = {
@@ -102,9 +102,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Duration" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[Duration])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Duration])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Duration])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[Duration]))
+      checkNullValue(_.writeVal(null.asInstanceOf[Duration]))
+      checkNullKey(_.writeKey(null.asInstanceOf[Duration]))
     }
     "write Duration as a string representation according to ISO-8601 format" in {
       def check(x: Duration, s: String): Unit = {
@@ -128,9 +128,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[Instant])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Instant])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Instant])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[Instant]))
+      checkNullValue(_.writeVal(null.asInstanceOf[Instant]))
+      checkNullKey(_.writeKey(null.asInstanceOf[Instant]))
     }
     "write Instant as a string representation according to ISO-8601 format" in {
       def check(x: Instant): Unit = {
@@ -152,9 +152,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDate" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[LocalDate])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[LocalDate])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[LocalDate])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[LocalDate]))
+      checkNullValue(_.writeVal(null.asInstanceOf[LocalDate]))
+      checkNullKey(_.writeKey(null.asInstanceOf[LocalDate]))
     }
     "write LocalDate as a string representation according to ISO-8601 format" in {
       def check(x: LocalDate): Unit = {
@@ -172,9 +172,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDateTime" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[LocalDateTime])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[LocalDateTime])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[LocalDateTime])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[LocalDateTime]))
+      checkNullValue(_.writeVal(null.asInstanceOf[LocalDateTime]))
+      checkNullKey(_.writeKey(null.asInstanceOf[LocalDateTime]))
     }
     "write LocalDateTime as a string representation according to ISO-8601 format" in {
       def check(x: LocalDateTime): Unit = {
@@ -192,9 +192,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalTime" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[LocalTime])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[LocalTime])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[LocalTime])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[LocalTime]))
+      checkNullValue(_.writeVal(null.asInstanceOf[LocalTime]))
+      checkNullKey(_.writeKey(null.asInstanceOf[LocalTime]))
     }
     "write LocalTime as a string representation according to ISO-8601 format" in {
       def check(x: LocalTime): Unit = {
@@ -212,9 +212,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for MonthDay" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[MonthDay])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[MonthDay])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[MonthDay])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[MonthDay]))
+      checkNullValue(_.writeVal(null.asInstanceOf[MonthDay]))
+      checkNullKey(_.writeKey(null.asInstanceOf[MonthDay]))
     }
     "write MonthDay as a string representation according to ISO-8601 format" in {
       def check(x: MonthDay): Unit = {
@@ -232,9 +232,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetDateTime" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[OffsetDateTime])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[OffsetDateTime])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[OffsetDateTime])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[OffsetDateTime]))
+      checkNullValue(_.writeVal(null.asInstanceOf[OffsetDateTime]))
+      checkNullKey(_.writeKey(null.asInstanceOf[OffsetDateTime]))
     }
     "write OffsetDateTime as a string representation according to ISO-8601 format" in {
       def check(x: OffsetDateTime): Unit = {
@@ -252,9 +252,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetTime" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[OffsetTime])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[OffsetTime])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[OffsetTime])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[OffsetTime]))
+      checkNullValue(_.writeVal(null.asInstanceOf[OffsetTime]))
+      checkNullKey(_.writeKey(null.asInstanceOf[OffsetTime]))
     }
     "write OffsetTime as a string representation according to ISO-8601 format" in {
       def check(x: OffsetTime): Unit = {
@@ -272,9 +272,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Period" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[Period])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Period])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Period])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[Period]))
+      checkNullValue(_.writeVal(null.asInstanceOf[Period]))
+      checkNullKey(_.writeKey(null.asInstanceOf[Period]))
     }
     "write Period as a string representation according to ISO-8601 format" in {
       def check(x: Period): Unit = {
@@ -293,9 +293,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Year" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[Year])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Year])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Year])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[Year]))
+      checkNullValue(_.writeVal(null.asInstanceOf[Year]))
+      checkNullKey(_.writeKey(null.asInstanceOf[Year]))
     }
     "write Year as a string representation according to ISO-8601 format" in {
       def check(x: Year): Unit = {
@@ -313,9 +313,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for YearMonth" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[YearMonth])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[YearMonth])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[YearMonth])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[YearMonth]))
+      checkNullValue(_.writeVal(null.asInstanceOf[YearMonth]))
+      checkNullKey(_.writeKey(null.asInstanceOf[YearMonth]))
     }
     "write YearMonth as a string representation according to ISO-8601 format" in {
       def check(x: YearMonth): Unit = {
@@ -333,9 +333,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZonedDateTime" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[ZonedDateTime])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[ZonedDateTime])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[ZonedDateTime])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[ZonedDateTime]))
+      checkNullValue(_.writeVal(null.asInstanceOf[ZonedDateTime]))
+      checkNullKey(_.writeKey(null.asInstanceOf[ZonedDateTime]))
     }
     "write ZonedDateTime as a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK format" in {
       def check(x: ZonedDateTime): Unit = {
@@ -353,9 +353,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZoneOffset" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[ZoneOffset])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[ZoneOffset])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[ZoneOffset])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[ZoneOffset]))
+      checkNullValue(_.writeVal(null.asInstanceOf[ZoneOffset]))
+      checkNullKey(_.writeKey(null.asInstanceOf[ZoneOffset]))
     }
     "write ZoneOffset as a string representation according to ISO-8601 format" in {
       def check(x: ZoneOffset): Unit = {
@@ -373,9 +373,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZoneId" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBytes(null.asInstanceOf[ZoneId])))
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[ZoneId])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[ZoneId])))
+      checkNullValue(_.writeBytes(null.asInstanceOf[ZoneId]))
+      checkNullValue(_.writeVal(null.asInstanceOf[ZoneId]))
+      checkNullKey(_.writeKey(null.asInstanceOf[ZoneId]))
     }
     "write ZoneId as a string representation according to ISO-8601 format for timezone offset or JDK format for IANA timezone identifier" in {
       def check(x: ZoneId): Unit = {
@@ -393,8 +393,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[String])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[String])))
+      checkNullValue(_.writeVal(null.asInstanceOf[String]))
+      checkNullKey(_.writeKey(null.asInstanceOf[String]))
     }
     "write string of Unicode chars which are non-surrogate and should not be escaped" in {
       def check(s: String): Unit = {
@@ -792,9 +792,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for BigInt" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[BigInt])))
-      intercept[NullPointerException](withWriter(_.writeValAsString(null.asInstanceOf[BigInt])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[BigInt])))
+      checkNullValue(_.writeVal(null.asInstanceOf[BigInt]))
+      checkNullValue(_.writeValAsString(null.asInstanceOf[BigInt]))
+      checkNullKey(_.writeKey(null.asInstanceOf[BigInt]))
     }
     "write number values" in {
       def check(n: BigInt): Unit = {
@@ -848,9 +848,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for BigDecimal" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[BigDecimal])))
-      intercept[NullPointerException](withWriter(_.writeValAsString(null.asInstanceOf[BigDecimal])))
-      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[BigDecimal])))
+      checkNullValue(_.writeVal(null.asInstanceOf[BigDecimal]))
+      checkNullValue(_.writeValAsString(null.asInstanceOf[BigDecimal]))
+      checkNullKey(_.writeKey(null.asInstanceOf[BigDecimal]))
     }
     "write number values" in {
       def check(n: BigDecimal): Unit = {
@@ -872,8 +872,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeBase16Val" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBase16Val(null.asInstanceOf[Array[Byte]], lowerCase = true)))
-      intercept[NullPointerException](withWriter(_.writeBase16Val(null.asInstanceOf[Array[Byte]], lowerCase = false)))
+      checkNullValue(_.writeBase16Val(null.asInstanceOf[Array[Byte]], lowerCase = true))
+      checkNullValue(_.writeBase16Val(null.asInstanceOf[Array[Byte]], lowerCase = false))
     }
     "write bytes as Base16 string according to format that defined in RFC4648" in {
       val toHex: Array[Char] = "0123456789abcdef".toCharArray
@@ -902,10 +902,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeBase64Val and JsonWriter.writeBase64UrlVal" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = true)))
-      intercept[NullPointerException](withWriter(_.writeBase64UrlVal(null.asInstanceOf[Array[Byte]], doPadding = true)))
-      intercept[NullPointerException](withWriter(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = false)))
-      intercept[NullPointerException](withWriter(_.writeBase64UrlVal(null.asInstanceOf[Array[Byte]], doPadding = false)))
+      checkNullValue(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = true))
+      checkNullValue(_.writeBase64UrlVal(null.asInstanceOf[Array[Byte]], doPadding = true))
+      checkNullValue(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = false))
+      checkNullValue(_.writeBase64UrlVal(null.asInstanceOf[Array[Byte]], doPadding = false))
     }
     "write bytes as Base64 string according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
@@ -921,7 +921,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeRawVal" should {
     "don't write null value" in {
-      intercept[NullPointerException](withWriter(_.writeRawVal(null.asInstanceOf[Array[Byte]])))
+      checkNullValue(_.writeRawVal(null.asInstanceOf[Array[Byte]]))
     }
     "write raw bytes as is" in {
       def check(s: String): Unit = withWriter(_.writeRawVal(s.getBytes(UTF_8))) shouldBe s
@@ -1086,6 +1086,69 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       w.writeToString(stringCodec, "c" * 100, WriterConfig) shouldBe json("c" * 100)
       contains(buf, json("c" * 100)) shouldBe true
     }
+  }
+
+  def checkNullValue(f: JsonWriter => Unit): Unit = {
+    intercept[NullPointerException](withWriter(f))
+    (0 to 40).foreach { n => // different lengths of the previous value to test cases when the internal buffer grows
+      val s = "x" * n
+      withWriterToArray { w =>
+        w.writeArrayStart()
+        intercept[NullPointerException](f(w))
+        w.writeVal(s)
+        w.writeArrayEnd()
+      } shouldBe s"""["$s"]"""
+      withWriterToArray { w =>
+        w.writeArrayStart()
+        w.writeVal(s)
+        intercept[NullPointerException](f(w))
+        w.writeArrayEnd()
+      } shouldBe s"""["$s"]"""
+    }
+  }
+
+  def checkNullKey(f: JsonWriter => Unit): Unit = {
+    intercept[NullPointerException](withWriter(f))
+    (0 to 40).foreach { n => // different lengths of the previous key to test cases when the internal buffer grows
+      val s = "x" * n
+      withWriterToArray { w =>
+        w.writeObjectStart()
+        intercept[NullPointerException](f(w))
+        w.writeKey(s)
+        w.writeVal(1)
+        w.writeObjectEnd()
+      } shouldBe s"""{"$s":1}"""
+      withWriterToArray { w =>
+        w.writeObjectStart()
+        w.writeKey(s)
+        w.writeVal(1)
+        intercept[NullPointerException](f(w))
+        w.writeObjectEnd()
+      } shouldBe s"""{"$s":1}"""
+      withWriterToArray { w =>
+        w.writeObjectStart()
+        w.writeKey(s)
+        w.writeVal(1)
+        intercept[NullPointerException](f(w))
+        w.writeKey(s)
+        w.writeVal(2)
+        w.writeObjectEnd()
+      } shouldBe s"""{"$s":1,"$s":2}"""
+    }
+  }
+
+  // Writing to a byte array only, because flushing of the internal buffer before throwing of an exception is allowed
+  def withWriterToArray(f: JsonWriter => Unit): String = {
+    val cfg = writerConfig
+    val len = cfg.preferredBufSize
+    val writer = new JsonWriter(new Array[Byte](len), 0, len, 0, false, false, null, null, cfg)
+    new String(writer.write(new JsonValueCodec[String] {
+      override def decodeValue(in: JsonReader, default: String): String = ""
+
+      override def encodeValue(x: String, out: JsonWriter): Unit = f(out)
+
+      override val nullValue: String = ""
+    }, "", cfg), UTF_8)
   }
 
   def withWriter(f: JsonWriter => Unit): String = withWriter(writerConfig)(f)
