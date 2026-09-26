@@ -906,6 +906,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("P106751991167300DT24H", "illegal duration, offset: 0x00000014")
       checkError("P0DT2562047788015215H60M", "illegal duration, offset: 0x00000017")
       checkError("P0DT0H153722867280912930M60S", "illegal duration, offset: 0x0000001b")
+      checkError("PT-9223372036854775808.5S", "illegal duration, offset: 0x00000018")
+      checkError("PT-2562047788015215H-30M-8.000000001S", "illegal duration, offset: 0x00000024")
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(json: String, error: String): Unit = {
@@ -954,6 +956,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""P106751991167300DT24H"""", "illegal duration, offset: 0x00000015")
       checkError(""""P0DT2562047788015215H60M"""", "illegal duration, offset: 0x00000018")
       checkError(""""P0DT0H153722867280912930M60S"""", "illegal duration, offset: 0x0000001c")
+      checkError(""""PT-9223372036854775808.5S"""", "illegal duration, offset: 0x00000019")
+      checkError(""""PT-2562047788015215H-30M-8.000000001S"""", "illegal duration, offset: 0x00000025")
     }
   }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {

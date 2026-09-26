@@ -1385,6 +1385,7 @@ final class JsonReader private[jsoniter_scala](
           }
           if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
           nano = ((nano ^ sx) - sx).toInt
+          if (nano < 0 && seconds == -9223372036854775808L) durationError(pos) // Duration.ofSeconds overflows here
         }
       } else durationError(state, pos)
       head = pos + 1
@@ -4609,6 +4610,7 @@ final class JsonReader private[jsoniter_scala](
           }
           if (b != 'S') nanoError(nanoDigitWeight, 'S', pos)
           nano = ((nano ^ sx) - sx).toInt
+          if (nano < 0 && seconds == -9223372036854775808L) durationError(pos) // Duration.ofSeconds overflows here
         }
       } else durationError(state, pos)
       b = nextByte(pos + 1)
