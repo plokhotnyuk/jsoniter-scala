@@ -4076,6 +4076,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
         check("1E+2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max positive scale that can be parsed
+        check("1234567890123456789012345678901234567890e0", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check(s"${fill('1', 400)}E+0", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
       }
     }
     "parse small number values without underflow up to limits" in {

@@ -3859,8 +3859,8 @@ final class JsonReader private[jsoniter_scala](
           // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
           // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
           val mid = digits >> 1
-          val midPos = pos - mid
-          toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, pos, s, 0)).unscaledValue
+          val midPos = limit - mid
+          toBigDecimal(buf, from, midPos, s, -mid).add(toBigDecimal(buf, midPos, limit, s, 0)).unscaledValue
         }
       } else {
         val limit = from + digits + 1
