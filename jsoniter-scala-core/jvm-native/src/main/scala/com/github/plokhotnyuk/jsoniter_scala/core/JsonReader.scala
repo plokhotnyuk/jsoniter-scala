@@ -4047,6 +4047,7 @@ final class JsonReader private[jsoniter_scala](
         scale ^= ss
         scale -= ss
         if (scale == -2147483648) numberError(pos - 1)
+        if (scale + fracLen < scale) scaleLimitError(pos - 1) // overflow of the scale of the BigDecimal value
       }
       head = pos
       if (mark == 0) from -= newMark
@@ -4373,6 +4374,7 @@ final class JsonReader private[jsoniter_scala](
         scale ^= ss
         scale -= ss
         if (scale == -2147483648) numberError(pos - 1)
+        if (scale + fracLen < scale) scaleLimitError(pos - 1) // overflow of the scale of the BigDecimal value
       }
       head = pos
       if (mark == 0) from -= newMark
