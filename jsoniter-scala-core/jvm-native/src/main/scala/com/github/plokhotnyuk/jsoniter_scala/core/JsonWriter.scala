@@ -1008,8 +1008,8 @@ final class JsonWriter private[jsoniter_scala](
       if (isNeg) totalSecs = (-nano >> 31) - totalSecs
       var hours = 0L
       var secsOfHour = totalSecs.toInt
-      if (totalSecs >= 3600) {
-        hours = Math.multiplyHigh(totalSecs >> 4, 655884233731895169L) >> 3 // divide a positive long by 3600
+      if (totalSecs >= 3600 || totalSecs < 0) { // totalSecs < 0 only for Duration.ofSeconds(Long.MinValue)
+        hours = Math.multiplyHigh(totalSecs >>> 4, 655884233731895169L) >> 3 // divide an unsigned long by 3600
         secsOfHour = (totalSecs - hours * 3600).toInt
       }
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
@@ -2033,8 +2033,8 @@ final class JsonWriter private[jsoniter_scala](
       if (isNeg) totalSecs = (-nano >> 31) - totalSecs
       var hours = 0L
       var secsOfHour = totalSecs.toInt
-      if (totalSecs >= 3600) {
-        hours = Math.multiplyHigh(totalSecs >> 4, 655884233731895169L) >> 3 // divide a positive long by 3600
+      if (totalSecs >= 3600 || totalSecs < 0) { // totalSecs < 0 only for Duration.ofSeconds(Long.MinValue)
+        hours = Math.multiplyHigh(totalSecs >>> 4, 655884233731895169L) >> 3 // divide an unsigned long by 3600
         secsOfHour = (totalSecs - hours * 3600).toInt
       }
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60

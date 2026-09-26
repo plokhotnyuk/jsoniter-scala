@@ -118,6 +118,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(Duration.ofSeconds(-60, -1), "PT-1M-0.000000001S")
       check(Duration.ofSeconds(-60, 1), "PT-59.999999999S")
       check(Duration.ofSeconds(-60, 20000000000L), "PT-40S")
+      check(Duration.ofSeconds(Long.MinValue), "PT-2562047788015215H-30M-8S")
+      check(Duration.ofSeconds(Long.MinValue, 1), "PT-2562047788015215H-30M-7.999999999S")
+      check(Duration.ofSeconds(Long.MaxValue, 999999999), "PT2562047788015215H30M7.999999999S")
       forAll(genDuration, minSuccessful(10000))(x => check(x, x.toString))
     }
   }
@@ -281,6 +284,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
 
       check(Period.ZERO)
+      check(Period.of(Int.MinValue, Int.MinValue, Int.MinValue))
+      check(Period.of(Int.MaxValue, Int.MaxValue, Int.MaxValue))
       forAll(genPeriod, minSuccessful(10000))(check)
     }
   }

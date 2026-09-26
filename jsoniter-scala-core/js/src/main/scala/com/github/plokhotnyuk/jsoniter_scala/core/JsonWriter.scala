@@ -1056,7 +1056,7 @@ final class JsonWriter private[jsoniter_scala](
       if (isNeg) totalSecs = (-nano >> 31) - totalSecs
       var hours = 0L
       var secsOfHour = totalSecs.toInt
-      if (totalSecs >= 3600) {
+      if (totalSecs >= 3600 || totalSecs < 0) { // totalSecs < 0 only for Duration.ofSeconds(Long.MinValue)
         hours = java.lang.Long.divideUnsigned(totalSecs, 3600L)
         secsOfHour = (totalSecs - (hours << 12) + (hours << 9) - (hours << 4)).toInt // (totalSecs - hours * 3600).toInt
       }
@@ -2319,7 +2319,7 @@ final class JsonWriter private[jsoniter_scala](
       if (isNeg) totalSecs = (-nano >> 31) - totalSecs
       var hours = 0L
       var secsOfHour = totalSecs.toInt
-      if (totalSecs >= 3600) {
+      if (totalSecs >= 3600 || totalSecs < 0) { // totalSecs < 0 only for Duration.ofSeconds(Long.MinValue)
         hours = java.lang.Long.divideUnsigned(totalSecs, 3600L)
         secsOfHour = (totalSecs - (hours << 12) + (hours << 9) - (hours << 4)).toInt // (totalSecs - hours * 3600).toInt
       }
