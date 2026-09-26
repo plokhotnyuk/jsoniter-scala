@@ -36,7 +36,6 @@ object JsoniterScalaCodec {
   /**
    * Default number parser that detects integers vs floating-point values
    * and chooses an appropriate JSON number representation.
-   * @return a JSON number value
    */
   val defaultNumberParser: JsonReader => Json = in => new JNumber({
     in.readNumber(null) match {
@@ -46,6 +45,9 @@ object JsoniterScalaCodec {
     }
   })
 
+  /**
+   * Default number serializer that writes JSON numbers as is.
+   */
   val defaultNumberSerializer: (JsonWriter, JsonNumber) => Unit = (out: JsonWriter, x: JsonNumber) => x match {
     case l: JsonLong => out.writeVal(l.value)
     case f: JsonFloat => out.writeVal(f.value)
@@ -54,6 +56,12 @@ object JsoniterScalaCodec {
     case _ => out.writeRawVal(x.toString.getBytes(StandardCharsets.UTF_8))
   }
 
+  /**
+   * A number serializer for JavaScript clients that writes as JSON strings numbers which can lose precision when parsed
+   * by JavaScript to the `Number` type: integers out of the `[-2^52, 2^52)` range and decimals with more than 52 bits in
+   * the unscaled value or with the scale out of the `[-256, 256]` range. `Float` and `Double` values are always written
+   * as JSON numbers.
+   */
   val jsCompatibleNumberSerializer: (JsonWriter, JsonNumber) => Unit = (out: JsonWriter, x: JsonNumber) => x match {
     case l: JsonLong =>
       val v = l.value
@@ -91,7 +99,7 @@ object JsoniterScalaCodec {
    * Converts an ASCII byte array to a JSON string.
    *
    * @param buf the ASCII byte array
-   * @param len the length of the byte array
+   * @param len the number of bytes to convert
    * @return a JSON string
    */
   @inline
@@ -101,7 +109,7 @@ object JsoniterScalaCodec {
    * Extracts a `String` value from a JSON cursor.
    *
    * @param c the JSON cursor
-   * @return the `String` value, or null if the cursor does not point to a string
+   * @return the `String` value, or `null` if the cursor does not point to a string
    */
   @inline
   def stringValue(c: HCursor): String = c.value match {
@@ -352,15 +360,14 @@ object JsoniterScalaCodec {
 }
 
 /**
- * A JSON value codec that parses and serialize to/from circe's JSON AST.
+ * A JSON value codec that parses and serializes JSON values to/from circe's JSON AST.
  *
- * @param maxDepth the maximum depth for decoding
- * @param initialSize the initial size hint for object and array collections
- * @param doSerialize a predicate that determines whether a value should be serialized
+ * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
+ * @param initialSize the initial size hint for maps of JSON object fields
+ * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
  * @param numberParser a function that parses JSON numbers
  * @param numberSerializer a function that serializes JSON numbers
- * @param sortKeys a flag to sort out keys alphabetically
- * @return The JSON codec
+ * @param sortKeys a flag to sort keys of JSON objects in the natural order of strings (using `String.compareTo`)
  */
 final class JsoniterScalaCodec(
     maxDepth: Int,
@@ -373,9 +380,9 @@ final class JsoniterScalaCodec(
   /**
    * An auxiliary constructor for backward binary compatibility.
    *
-   * @param maxDepth the maximum depth for decoding
-   * @param initialSize the initial size hint for object and array collections
-   * @param doSerialize a predicate that determines whether a value should be serialized
+   * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
+   * @param initialSize the initial size hint for maps of JSON object fields
+   * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
    * @param numberParser a function that parses JSON numbers
    */
   def this(maxDepth: Int, initialSize: Int, doSerialize: Json => Boolean, numberParser: JsonReader => Json) =
@@ -384,9 +391,9 @@ final class JsoniterScalaCodec(
   /**
    * An auxiliary constructor for backward binary compatibility.
    *
-   * @param maxDepth the maximum depth for decoding
-   * @param initialSize the initial size hint for object and array collections
-   * @param doSerialize a predicate that determines whether a value should be serialized
+   * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
+   * @param initialSize the initial size hint for maps of JSON object fields
+   * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
    * @param numberParser a function that parses JSON numbers
    * @param numberSerializer a function that serializes JSON numbers
    */

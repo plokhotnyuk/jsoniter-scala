@@ -26,7 +26,8 @@ import io.circe._
 import java.time._
 
 /**
- * Implicit instances of circe's codec for `BigInt` and `java.time.*` types.
+ * Implicit instances of circe's codecs for `Byte`, `Short`, `Int`, `Long`, `Float`, `Double`, `BigInt`, `BigDecimal`, and
+ * `java.time.*` types except `ZoneId` and `ZoneOffset`.
  *
  * Uses jsoniter-scala for efficient encoding and decoding.
  */
