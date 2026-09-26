@@ -3851,7 +3851,7 @@ final class JsonReader private[jsoniter_scala](
               x1 = -x1
               x2 = -x2
             }
-            java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
+            java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale)).toBigInteger
           }
         } else if (digits <= 308) toBigInteger308(buf, from, limit, s)
         else {

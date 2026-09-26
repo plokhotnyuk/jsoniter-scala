@@ -4081,6 +4081,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("1234567890123456789012345678901234567890e0", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
         check(s"${fill('1', 400)}E+0", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
       }
+      reader("9223372036854775808").readNumber(null) shouldBe new java.math.BigInteger("9223372036854775808")
+      reader("-9223372036854775809").readNumber(null) shouldBe new java.math.BigInteger("-9223372036854775809")
     }
     "parse small number values without underflow up to limits" in {
       forAll(genWhitespaces) { ws =>
@@ -4107,6 +4109,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           }
         }, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
       }
+      reader(""""000000000100000000000000000000000000"""").readStringAsNumber(null) shouldBe
+        new java.math.BigInteger("100000000000000000000000000")
     }
     "throw number format exception for too big mantissa" in {
       checkError(fill('9', 308),
