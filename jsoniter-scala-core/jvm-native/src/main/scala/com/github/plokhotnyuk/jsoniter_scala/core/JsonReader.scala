@@ -5560,7 +5560,9 @@ final class JsonReader private[jsoniter_scala](
     val b7 = buf(pos + 6)
     if (b6 < '0' || b6 > '9') digitError(pos + 5)
     if (b7 < '0' || b7 > '9') digitError(pos + 6)
-    tokenError('"', pos + 7)
+    if (buf(pos + 7) != '"') tokenError('"', pos + 7)
+    if (b3 > '1') monthError(pos + 3)
+    dayError(pos + 6)
   }
 
   @noinline

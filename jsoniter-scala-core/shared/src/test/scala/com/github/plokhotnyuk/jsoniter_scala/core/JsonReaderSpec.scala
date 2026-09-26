@@ -1700,6 +1700,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""-=01-20"""", "expected '-', offset: 0x00000002")
       checkError(""""--00-20"""", "illegal month, offset: 0x00000004")
       checkError(""""--13-20"""", "illegal month, offset: 0x00000004")
+      checkError(""""--20-01"""", "illegal month, offset: 0x00000004")
       checkError(""""--01-00"""", "illegal day, offset: 0x00000007")
       checkError(""""--01-32"""", "illegal day, offset: 0x00000007")
       checkError(""""--02-30"""", "illegal day, offset: 0x00000007")
@@ -1713,6 +1714,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""--10-32"""", "illegal day, offset: 0x00000007")
       checkError(""""--11-31"""", "illegal day, offset: 0x00000007")
       checkError(""""--12-32"""", "illegal day, offset: 0x00000007")
+      checkError(""""--12-40"""", "illegal day, offset: 0x00000007")
       forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonDash = if (ch == '-') 'X' else ch
