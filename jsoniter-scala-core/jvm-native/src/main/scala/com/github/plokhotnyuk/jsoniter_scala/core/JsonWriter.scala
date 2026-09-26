@@ -1401,6 +1401,18 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   /**
+   * Turns off reallocation of the internal buffer to the preferred size after writing.
+   *
+   * @note Use only for a newly allocated writer that is used once, so the reallocated buffer would not be used.
+   *
+   * @return this writer
+   */
+  private[jsoniter_scala] def withoutBufReallocation(): JsonWriter = {
+    maxPreferredBufSize = Int.MaxValue
+    this
+  }
+
+  /**
    * Encodes a value of type `A` to a string without buffer reallocation.
    *
    * @note Use only once with a newly allocated writer, so buffer reallocation is not required.

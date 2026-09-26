@@ -4451,6 +4451,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         read(r, stringCodec, json("b" * 5000), ReaderConfig)
         read(r, stringCodec, json("c" * 5000), ReaderConfig) shouldBe "c" * 5000
         new String(charBuf, 0, 5000) shouldBe "c" * 5000
+        val charBuf2 = new Array[Char](65536)
+        val r2 = new JsonReader(charBuf = charBuf2).withoutBufReallocation()
+        read(r2, stringCodec, json("d" * 5000), ReaderConfig)
+        read(r2, stringCodec, json("e" * 5000), ReaderConfig) shouldBe "e" * 5000
+        new String(charBuf2, 0, 5000) shouldBe "e" * 5000
       }
       s"reduce the char buffer to the preferred size after reading with the same config when $name" in {
         val charBuf = new Array[Char](65536)
@@ -4476,6 +4481,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         read(r, stringCodec, json("b" * 100), ReaderConfig)
         read(r, stringCodec, json("c" * 100), ReaderConfig) shouldBe "c" * 100
         contains(buf, "c" * 100) shouldBe true
+        val buf2 = new Array[Byte](1 << 20)
+        val r2 = new JsonReader(buf = buf2).withoutBufReallocation()
+        read(r2, stringCodec, json("d" * 100), ReaderConfig)
+        read(r2, stringCodec, json("e" * 100), ReaderConfig) shouldBe "e" * 100
+        contains(buf2, "e" * 100) shouldBe true
       }
       s"reduce the byte buffer to the preferred size after reading with the same config when $name" in {
         val buf = new Array[Byte](1 << 20)

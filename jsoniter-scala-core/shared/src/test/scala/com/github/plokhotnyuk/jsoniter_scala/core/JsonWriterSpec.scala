@@ -1057,6 +1057,11 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         write(w, "b" * 100, WriterConfig)
         write(w, "c" * 100, WriterConfig) shouldBe json("c" * 100)
         contains(buf, json("c" * 100)) shouldBe true
+        val buf2 = new Array[Byte](65536)
+        val w2 = new JsonWriter(buf = buf2, limit = buf2.length).withoutBufReallocation()
+        write(w2, "d" * 100, WriterConfig)
+        write(w2, "e" * 100, WriterConfig) shouldBe json("e" * 100)
+        contains(buf2, json("e" * 100)) shouldBe true
       }
       s"reduce the buffer to the preferred size after writing with the same config when $name" in {
         val buf = new Array[Byte](65536)

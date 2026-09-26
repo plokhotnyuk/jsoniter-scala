@@ -2027,6 +2027,19 @@ final class JsonReader private[jsoniter_scala](
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
   /**
+   * Turns off reallocation of internal buffers to preferred sizes after reading.
+   *
+   * @note Use only for a newly allocated reader that is used once, so reallocated buffers would not be used.
+   *
+   * @return this reader
+   */
+  private[jsoniter_scala] def withoutBufReallocation(): JsonReader = {
+    maxPreferredBufSize = Int.MaxValue
+    maxPreferredCharBufSize = Int.MaxValue
+    this
+  }
+
+  /**
     * Reads a JSON value from the given byte array slice into an instance of type `A` using the given [[JsonValueCodec]].
     *
     * @param codec the JSON value codec

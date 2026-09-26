@@ -77,7 +77,7 @@ package object core {
                                     (implicit codec: JsonValueCodec[A]): A = {
     if ((in eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
     new JsonReader(buf = emptyBuf, charBuf = new Array[Char](config.preferredCharBufSize))
-      .read(codec, in, config)
+      .withoutBufReallocation().read(codec, in, config)
   }
 
   /**
@@ -131,7 +131,7 @@ package object core {
                                               (implicit codec: JsonValueCodec[A]): Unit = {
     if ((in eq null) || (codec eq null) || (config eq null) || (f eq null)) throw new NullPointerException
     new JsonReader(buf = emptyBuf, charBuf = new Array[Char](config.preferredCharBufSize))
-      .scanValueStream(codec, in, config)(f)
+      .withoutBufReallocation().scanValueStream(codec, in, config)(f)
   }
 
   /**
@@ -183,7 +183,7 @@ package object core {
                                              (implicit codec: JsonValueCodec[A]): Unit = {
     if ((in eq null) || (codec eq null) || (config eq null) || (f eq null)) throw new NullPointerException
     new JsonReader(buf = emptyBuf, charBuf = new Array[Char](config.preferredCharBufSize))
-      .scanArray(codec, in, config)(f)
+      .withoutBufReallocation().scanArray(codec, in, config)(f)
   }
 
   /**
@@ -225,7 +225,7 @@ package object core {
                                    (implicit codec: JsonValueCodec[A]): A = {
     if ((buf eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
     new JsonReader(buf = buf, charBuf = new Array[Char](Math.min(config.preferredCharBufSize, buf.length >> 2)))
-      .read(codec, buf, 0, buf.length, config)
+      .withoutBufReallocation().read(codec, buf, 0, buf.length, config)
   }
 
   /**
@@ -283,7 +283,7 @@ package object core {
     if (from > to || from < 0)
       throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `to`")
     new JsonReader(buf = buf, charBuf = new Array[Char](Math.min(config.preferredCharBufSize, to - from >> 2)))
-      .read(codec, buf, from, to, config)
+      .withoutBufReallocation().read(codec, buf, from, to, config)
   }
 
   /**
@@ -333,7 +333,7 @@ package object core {
                                         (implicit codec: JsonValueCodec[A]): A = {
     if ((bbuf eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
     new JsonReader(buf = emptyBuf, charBuf = new Array[Char](Math.min(config.preferredCharBufSize, bbuf.limit() - bbuf.position() >> 2)))
-      .read(codec, bbuf, config)
+      .withoutBufReallocation().read(codec, bbuf, config)
   }
 
   /**
@@ -373,7 +373,7 @@ package object core {
   def readFromStringReentrant[A](s: String, config: ReaderConfig = ReaderConfig)(implicit codec: JsonValueCodec[A]): A = {
     if ((s eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
     new JsonReader(buf = emptyBuf, charBuf = new Array[Char](Math.min(config.preferredCharBufSize, s.length >> 2)))
-      .read(codec, s, config)
+      .withoutBufReallocation().read(codec, s, config)
   }
 
   /**
@@ -419,7 +419,7 @@ package object core {
   def writeToStreamReentrant[@sp A](x: A, out: OutputStream, config: WriterConfig = WriterConfig)
                                    (implicit codec: JsonValueCodec[A]): Unit = {
     if ((x == null) || (out eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
-    new JsonWriter(buf = emptyBuf, limit = 0).write(codec, x, out, config)
+    new JsonWriter(buf = emptyBuf, limit = 0).withoutBufReallocation().write(codec, x, out, config)
   }
 
   /**
@@ -463,7 +463,7 @@ package object core {
   def writeToArrayReentrant[@sp A](x: A, config: WriterConfig = WriterConfig)
                                   (implicit codec: JsonValueCodec[A]): Array[Byte] = {
     if ((x == null) || (codec eq null) || (config eq null)) throw new NullPointerException
-    new JsonWriter(buf = emptyBuf, limit = 0).write(codec, x, config)
+    new JsonWriter(buf = emptyBuf, limit = 0).withoutBufReallocation().write(codec, x, config)
   }
 
   /**
@@ -577,7 +577,7 @@ package object core {
   def writeToByteBufferReentrant[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = WriterConfig)
                                        (implicit codec: JsonValueCodec[A]): Unit = {
     if ((x == null) || (bbuf eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
-    new JsonWriter(buf = emptyBuf, limit = 0).write(codec, x, bbuf, config)
+    new JsonWriter(buf = emptyBuf, limit = 0).withoutBufReallocation().write(codec, x, bbuf, config)
   }
 
   /**
