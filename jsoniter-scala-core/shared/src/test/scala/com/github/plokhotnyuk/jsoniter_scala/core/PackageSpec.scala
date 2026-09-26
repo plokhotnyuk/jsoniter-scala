@@ -476,8 +476,8 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       check(readFromStringReentrant(_)(codec))
     }
     "size of the hex dump can be altered to have more lines" in {
-      def check(f: (String, ReaderConfig) => Unit): Unit =
-        assert(intercept[JsonReaderException](f(toString(httpMessage), ReaderConfig.withHexDumpSize(10))).getMessage ==
+      def check(f: (String, ReaderConfig) => Unit, hexDumpSize: Int): Unit =
+        assert(intercept[JsonReaderException](f(toString(httpMessage), ReaderConfig.withHexDumpSize(hexDumpSize))).getMessage ==
           """expected '{', offset: 0x00000000, buf:
             |+----------+-------------------------------------------------+------------------+
             ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
@@ -494,8 +494,10 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
             || 00000090 | 65 20 58 22 7d 5d 7d                            | e X"}]}          |
             |+----------+-------------------------------------------------+------------------+""".stripMargin)
 
-      check(readFromString(_, _)(codec))
-      check(readFromStringReentrant(_, _)(codec))
+      Seq(10, 1 << 27, Int.MaxValue).foreach { hexDumpSize => // bigger sizes are limited by the size of the input
+        check(readFromString(_, _)(codec), hexDumpSize)
+        check(readFromStringReentrant(_, _)(codec), hexDumpSize)
+      }
     }
     "optionally throw JsonReaderException if there are remaining non-whitespace characters" in {
       def check(f: (String, ReaderConfig) => User): Unit = {
