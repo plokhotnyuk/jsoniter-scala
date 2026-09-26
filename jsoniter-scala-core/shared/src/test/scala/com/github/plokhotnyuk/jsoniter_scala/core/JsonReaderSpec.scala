@@ -3798,6 +3798,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         if (x < 0) s.replace("-", "-" + zeros(z))
         else zeros(z) + s
       }, ws))
+      forAll(genWhitespaces)(ws => check2("000000000100000000000000000000000000", ws))
     }
     "parse big number values without overflow up to limits" in {
       forAll(genWhitespaces) { ws =>
@@ -3928,6 +3929,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
         check("1E-2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max negative scale that can be parsed
+        check("1.000000001000000000000000000000000000", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
       }
     }
     "parse keys and strigified values with leading zeros in mantissas and exponents" in {
@@ -4091,6 +4093,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
         check("1E-2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max negative scale that can be parsed
+        check("1.000000001000000000000000000000000000", bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit, ws)
       }
     }
     "parse keys and strigified values with leading zeros in mantissas and exponents" in {
