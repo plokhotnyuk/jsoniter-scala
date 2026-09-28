@@ -823,6 +823,7 @@ sbt -DassemblyWASMBenchmarks -java-home /usr/lib/jvm/jdk-17 ++3.9.0 jsoniter-sca
 
 Then use [WASM optimizer](https://github.com/WebAssembly/binaryen):
 ```
+brew upgrade binaryen
 wasm-opt --all-features --disable-custom-descriptors --disable-compact-imports -O3 main.wasm -o main-o3.wasm
 ```
 
