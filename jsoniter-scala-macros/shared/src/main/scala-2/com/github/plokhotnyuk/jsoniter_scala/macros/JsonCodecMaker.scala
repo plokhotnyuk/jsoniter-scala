@@ -819,6 +819,11 @@ object JsonCodecMaker {
         val doLinearSearch: Boolean = valueInfos.size <= 8 && valueInfos.foldLeft(0)(_ + _.name.length) <= 64
       }
 
+      // Values that are defined as public non-lazy `val`s of the Scala enumeration object with their `val` names
+      case class ScalaEnumInfo(stableValues: List[(Tree, String)]) extends TypeInfo {
+        val doEncoding: Boolean = stableValues.exists(v => isEncodingRequired(v._2))
+      }
+
       case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
                            defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
 
@@ -839,6 +844,8 @@ object JsonCodecMaker {
       case class NullValueKey(tpe: Type) extends TermNameKey
 
       case class ScalaEnumValueKey(tpe: Type) extends TermNameKey
+
+      case class ScalaEnumNameKey(tpe: Type) extends TermNameKey
 
       case class MathContextValueKey(precision: Int) extends TermNameKey
 
@@ -872,15 +879,256 @@ object JsonCodecMaker {
           })
         })
 
-      def withScalaEnumCacheFor(tpe: Type): Tree = Ident({
+      def getScalaEnumInfo(tpe: Type): ScalaEnumInfo = typeInfos.getOrElseUpdate(tpe, {
+        val e = enumSymbol(tpe)
+        val nonStableValues = new mutable.ArrayBuffer[String]
+        val stableValues = e.typeSignature.decls.toList.flatMap {
+          case t: TermSymbol =>
+            if (t.isMethod && t.asMethod.isGetter && t.asMethod.returnType <:< tpe) {
+              val reason =
+                if (t.isLazy) "lazy"
+                else if (!t.isStable) "mutable"
+                else if (!t.isPublic) "not public"
+                else ""
+              if (reason.isEmpty) (q"$e.${t.name}", t.name.decodedName.toString) :: Nil
+              else {
+                nonStableValues += s"'${t.name.decodedName.toString.trim}' ($reason)"
+                Nil
+              }
+            } else {
+              if (!t.isMethod && (t.isVal || t.isVar) && t.getter == NoSymbol && t.typeSignature <:< tpe) {
+                nonStableValues += s"'${t.name.decodedName.toString.trim}' (not public)"
+              }
+              Nil
+            }
+          case _ => Nil
+        }
+        if (nonStableValues.nonEmpty) {
+          val (parsed, parsing) =
+            if (cfg.useScalaEnumValueId) ("parsed", "parsing")
+            else ("parsed and serialized", "parsing and serialization")
+          warn(s"Values ${nonStableValues.mkString(", ")} of Scala enumeration '${e.fullName}' will be $parsed " +
+            s"using a slower lookup. Please consider defining them as public non-lazy 'val's for the fastest $parsing.")
+        }
+        new ScalaEnumInfo(stableValues)
+      }).asInstanceOf[ScalaEnumInfo]
+
+      // Returns a name of the method that returns a name of the Scala enumeration value (`(x: E)`) or `null` if
+      // the value is not a stable one or if its actual name is not equal to the name of `val`. Names of stable values
+      // are stored in an array that is indexed by ids of values and initialized lazily once all stable values are
+      // initialized. Returns `EmptyTree` if there are no stable values.
+      def withScalaEnumNameFor(tpe: Type): Tree =
+        if (getScalaEnumInfo(tpe).stableValues.isEmpty) EmptyTree
+        else Ident({
+          val termNameKey = new ScalaEnumNameKey(tpe)
+          termNames.getOrElse(termNameKey, {
+            val n = termNames.size
+            val name = TermName(s"en$n")
+            val namesName = TermName(s"ens$n")
+            val namesInitName = TermName(s"eni$n")
+            termNames.update(termNameKey, name)
+            val stableValues = getScalaEnumInfo(tpe).stableValues
+            trees ++= Seq(
+              q"@_root_.scala.volatile private[this] var $namesName: _root_.scala.Array[_root_.java.lang.String] = null",
+              q"""private[this] def $namesInitName(): _root_.scala.Array[_root_.java.lang.String] = {
+                    val vs = _root_.scala.Array[_root_.scala.AnyRef](..${stableValues.map(_._1)})
+                    val ns = _root_.scala.Array[_root_.java.lang.String](..${stableValues.map(_._2)})
+                    var i = 0
+                    while (i < vs.length && (vs(i) ne null)) i += 1
+                    if (i == vs.length) {
+                      var maxId = -1
+                      i = 0
+                      while (i < vs.length) {
+                        val id = vs(i).asInstanceOf[$tpe].id
+                        if (id > maxId) maxId = id
+                        i += 1
+                      }
+                      if (maxId > (vs.length << 2) + 64) maxId = -1
+                      val es = new _root_.scala.Array[_root_.java.lang.String](maxId + 1)
+                      i = 0
+                      while (i < vs.length) {
+                        val v = vs(i)
+                        val id = v.asInstanceOf[$tpe].id
+                        if (id >= 0 && id <= maxId && v.toString == ns(i)) es(id) = ns(i)
+                        i += 1
+                      }
+                      $namesName = es
+                      es
+                    } else null
+                  }""",
+              q"""private[this] def $name(x: $tpe): _root_.java.lang.String = {
+                    var ns = $namesName
+                    if (ns eq null) ns = $namesInitName()
+                    val i = x.id
+                    if ((ns ne null) && i >= 0 && i < ns.length) ns(i)
+                    else null
+                  }""")
+            name
+          })
+        })
+
+      // Returns a name of the method that looks up a value of the Scala enumeration by id (`(i: Int)`) or by name
+      // from the internal char buffer (`(in: JsonReader, l: Int)`) and returns `null` if the value is not found.
+      // Values that are defined as public `val`s of the enumeration object (stable values) are matched like enum
+      // ADTs: by names using `@switch` by hashes of `val` names for stable values which actual names are checked
+      // once to be equal to their `val` names, or by ids using an array that is indexed by ids of stable values.
+      // Other values (including ones that are added after the codec creation) are looked up with a slow path and
+      // cached in `ConcurrentHashMap`.
+      def withScalaEnumLookupFor(tpe: Type): Tree = Ident({
         val termNameKey = new ScalaEnumValueKey(tpe)
         termNames.getOrElse(termNameKey, {
-          val name = TermName(s"ec${termNames.size}")
+          val n = termNames.size
+          val name = TermName(s"el$n")
+          val stableName = TermName(s"ev$n")
+          val stableInitName = TermName(s"ei$n")
+          val cacheName = TermName(s"ec$n")
+          val slowName = TermName(s"es$n")
           termNames.update(termNameKey, name)
-          val keyTpe =
-            if (cfg.useScalaEnumValueId) tq"Int"
-            else tq"String"
-          trees += q"private[this] val $name = new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]"
+          val e = enumSymbol(tpe)
+          val stableValues = getScalaEnumInfo(tpe).stableValues
+          if (cfg.useScalaEnumValueId) {
+            trees ++= Seq(
+              q"private[this] val $cacheName = new _root_.java.util.concurrent.ConcurrentHashMap[_root_.scala.Int, $tpe]",
+              q"""private[this] def $slowName(i: _root_.scala.Int): $tpe = {
+                    var x = $cacheName.get(i)
+                    if (x eq null) {
+                      val it = $e.values.iterator
+                      while ((x eq null) && it.hasNext) {
+                        val v = it.next()
+                        if (v.id == i) x = v.asInstanceOf[$tpe]
+                      }
+                      if (x ne null) $cacheName.put(i, x)
+                    }
+                    x
+                  }""")
+            if (stableValues.isEmpty) trees += q"private[this] def $name(i: _root_.scala.Int): $tpe = $slowName(i)"
+            else trees ++= Seq(
+              q"@_root_.scala.volatile private[this] var $stableName: _root_.scala.Array[_root_.scala.AnyRef] = null",
+              q"""private[this] def $stableInitName(): _root_.scala.Array[_root_.scala.AnyRef] = {
+                    val vs = _root_.scala.Array[_root_.scala.AnyRef](..${stableValues.map(_._1)})
+                    var i = 0
+                    while (i < vs.length && (vs(i) ne null)) i += 1
+                    if (i == vs.length) {
+                      var maxId = -1
+                      i = 0
+                      while (i < vs.length) {
+                        val id = vs(i).asInstanceOf[$tpe].id
+                        if (id > maxId) maxId = id
+                        i += 1
+                      }
+                      if (maxId > (vs.length << 2) + 64) maxId = -1
+                      val es = new _root_.scala.Array[_root_.scala.AnyRef](maxId + 1)
+                      i = 0
+                      while (i < vs.length) {
+                        val id = vs(i).asInstanceOf[$tpe].id
+                        if (id >= 0 && id <= maxId) es(id) = vs(i)
+                        i += 1
+                      }
+                      $stableName = es
+                      es
+                    } else null
+                  }""",
+              q"""private[this] def $name(i: _root_.scala.Int): $tpe = {
+                    var vs = $stableName
+                    if (vs eq null) vs = $stableInitName()
+                    var x: $tpe = null.asInstanceOf[$tpe]
+                    if ((vs ne null) && i >= 0 && i < vs.length) x = vs(i).asInstanceOf[$tpe]
+                    if (x eq null) x = $slowName(i)
+                    x
+                  }""")
+          } else {
+            trees ++= Seq(
+              q"""private[this] val $cacheName =
+                    new _root_.java.util.concurrent.ConcurrentHashMap[_root_.scala.Int, _root_.scala.Array[_root_.scala.AnyRef]]""",
+              q"""private[this] def $slowName(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, l: _root_.scala.Int): $tpe = {
+                    val h = in.charBufToHashCode(l)
+                    var x: $tpe = null.asInstanceOf[$tpe]
+                    val b = $cacheName.get(h)
+                    if (b ne null) {
+                      var j = 0
+                      while (j < b.length) {
+                        if (in.isCharBufEqualsTo(l, b(j).asInstanceOf[_root_.java.lang.String])) {
+                          x = b(j + 1).asInstanceOf[$tpe]
+                          j = b.length
+                        } else j += 2
+                      }
+                    }
+                    if (x eq null) {
+                      val it = $e.values.iterator
+                      var s: _root_.java.lang.String = null
+                      while ((x eq null) && it.hasNext) {
+                        val v = it.next()
+                        s = v.toString
+                        if (in.isCharBufEqualsTo(l, s)) x = v.asInstanceOf[$tpe]
+                      }
+                      if (x ne null) {
+                        $cacheName.merge(h, _root_.scala.Array[_root_.scala.AnyRef](s, x),
+                          new _root_.java.util.function.BiFunction[_root_.scala.Array[_root_.scala.AnyRef], _root_.scala.Array[_root_.scala.AnyRef], _root_.scala.Array[_root_.scala.AnyRef]] {
+                            def apply(ob: _root_.scala.Array[_root_.scala.AnyRef], nb: _root_.scala.Array[_root_.scala.AnyRef]): _root_.scala.Array[_root_.scala.AnyRef] = {
+                              var j = 0
+                              while (j < ob.length && ob(j) != nb(0)) j += 2
+                              if (j < ob.length) ob
+                              else {
+                                val b = _root_.java.util.Arrays.copyOf(ob, ob.length + 2)
+                                b(ob.length) = nb(0)
+                                b(ob.length + 1) = nb(1)
+                                b
+                              }
+                            }
+                          })
+                      }
+                    }
+                    x
+                  }""")
+            if (stableValues.isEmpty) {
+              trees += q"""private[this] def $name(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, l: _root_.scala.Int): $tpe =
+                             $slowName(in, l)"""
+            } else {
+              val stableValueInfos = stableValues.zipWithIndex
+
+              def genReadCollisions(vs: collection.Seq[((Tree, String), Int)]): Tree =
+                vs.foldRight(q"$slowName(in, l)": Tree) { case (((ref, n), k), acc) =>
+                  q"if (in.isCharBufEqualsTo(l, $n) && fs($k)) $ref else $acc"
+                }
+
+              val readStable =
+                if (stableValues.size <= 8 && stableValues.foldLeft(0)(_ + _._2.length) <= 64) {
+                  genReadCollisions(stableValueInfos)
+                } else {
+                  val hashCode = (v: ((Tree, String), Int)) => JsonReader.toHashCode(v._1._2.toCharArray, v._1._2.length)
+                  val cases = groupByOrdered(stableValueInfos)(hashCode).map { case (hash, vs) =>
+                    cq"$hash => ${genReadCollisions(vs)}"
+                  } :+ cq"_ => $slowName(in, l)"
+                  q"""(in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
+                        case ..$cases
+                      }"""
+                }
+              trees ++= Seq(
+                q"private[this] var $stableName: _root_.scala.Array[_root_.scala.Boolean] = null",
+                q"""private[this] def $stableInitName(): _root_.scala.Array[_root_.scala.Boolean] = {
+                      val vs = _root_.scala.Array[_root_.scala.AnyRef](..${stableValues.map(_._1)})
+                      val ns = _root_.scala.Array[_root_.java.lang.String](..${stableValues.map(_._2)})
+                      var i = 0
+                      while (i < vs.length && (vs(i) ne null)) i += 1
+                      if (i == vs.length) {
+                        val fs = new _root_.scala.Array[_root_.scala.Boolean](vs.length)
+                        i = 0
+                        while (i < vs.length) {
+                          fs(i) = vs(i).toString == ns(i)
+                          i += 1
+                        }
+                        $stableName = fs
+                        fs
+                      } else null
+                    }""",
+                q"""private[this] def $name(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, l: _root_.scala.Int): $tpe = {
+                      var fs = $stableName
+                      if (fs eq null) fs = $stableInitName()
+                      if (fs eq null) $slowName(in, l)
+                      else $readStable
+                    }""")
+            }
+          }
           name
         })
       })
@@ -1113,22 +1361,16 @@ object JsonCodecMaker {
           isValueClass(tpe)
         }) q"new $tpe(${genReadKey(valueClassValueType(tpe) :: types)})"
         else if (tpe <:< typeOf[Enumeration#Value]) {
-          val ec = withScalaEnumCacheFor(tpe)
+          val el = withScalaEnumLookupFor(tpe)
           if (cfg.useScalaEnumValueId) {
             q"""val i = in.readKeyAsInt()
-                var x = $ec.get(i)
-                if (x eq null) {
-                  x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.enumValueError(i.toString))
-                  $ec.put(i, x)
-                }
+                val x = $el(i)
+                if (x eq null) in.enumValueError(i.toString)
                 x"""
           } else {
-            q"""val s = in.readKeyAsString()
-                var x = $ec.get(s)
-                if (x eq null) {
-                  x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
-                  $ec.put(s, x)
-                }
+            q"""val l = in.readKeyAsCharBuf()
+                val x = $el(in, l)
+                if (x eq null) in.enumValueError(l)
                 x"""
           }
         } else if (isJavaEnum(tpe)) {
@@ -1291,7 +1533,18 @@ object JsonCodecMaker {
         }) genWriteKey(q"$x.${valueClassValueSymbol(tpe)}", valueClassValueType(tpe) :: types)
         else if (tpe <:< typeOf[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) q"out.writeKey($x.id)"
-          else q"out.writeKey($x.toString)"
+          else {
+            val en = withScalaEnumNameFor(tpe)
+            if (en.isEmpty) q"out.writeKey($x.toString)"
+            else {
+              val writeName =
+                if (getScalaEnumInfo(tpe).doEncoding) q"out.writeKey(s)"
+                else q"out.writeNonEscapedAsciiKey(s)"
+              q"""val s = $en($x)
+                  if (s ne null) $writeName
+                  else out.writeKey($x.toString)"""
+            }
+          }
         } else if (isJavaEnum(tpe)) {
           val enumInfo = getJavaEnumInfo(tpe)
           if (enumInfo.hasTransformed) {
@@ -1964,17 +2217,14 @@ object JsonCodecMaker {
               })
             } else cannotFindValueCodecError(tpe)
           } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
-            val ec = withScalaEnumCacheFor(tpe)
+            val el = withScalaEnumLookupFor(tpe)
             if (cfg.useScalaEnumValueId) {
               if (isStringified) {
                 q"""if (in.isNextToken('"')) {
                       in.rollbackToken()
                       val i = in.readStringAsInt()
-                      var x = $ec.get(i)
-                      if (x eq null) {
-                        x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.enumValueError(i.toString))
-                        $ec.put(i, x)
-                      }
+                      val x = $el(i)
+                      if (x eq null) in.enumValueError(i.toString)
                       x
                     } else in.readNullOrTokenError(default, '"')"""
               } else {
@@ -1982,23 +2232,17 @@ object JsonCodecMaker {
                     if (t >= '0' && t <= '9') {
                       in.rollbackToken()
                       val i = in.readInt()
-                      var x = $ec.get(i)
-                      if (x eq null) {
-                        x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.decodeError("illegal enum value " + i))
-                        $ec.put(i, x)
-                      }
+                      val x = $el(i)
+                      if (x eq null) in.decodeError("illegal enum value " + i)
                       x
                     } else in.readNullOrError(default, "expected digit")"""
               }
             } else {
               q"""if (in.isNextToken('"')) {
                     in.rollbackToken()
-                    val s = in.readString(null)
-                    var x = $ec.get(s)
-                    if (x eq null) {
-                      x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
-                      $ec.put(s, x)
-                    }
+                    val l = in.readStringAsCharBuf()
+                    val x = $el(in, l)
+                    if (x eq null) in.enumValueError(l)
                     x
                   } else in.readNullOrTokenError(default, '"')"""
             }
@@ -2378,7 +2622,18 @@ object JsonCodecMaker {
             if (cfg.useScalaEnumValueId) {
               if (isStringified) q"out.writeValAsString(x.id)"
               else q"out.writeVal(x.id)"
-            } else q"out.writeVal(x.toString)"
+            } else {
+              val en = withScalaEnumNameFor(tpe)
+              if (en.isEmpty) q"out.writeVal(x.toString)"
+              else {
+                val writeName =
+                  if (getScalaEnumInfo(tpe).doEncoding) q"out.writeVal(s)"
+                  else q"out.writeNonEscapedAsciiVal(s)"
+                q"""val s = $en(x)
+                    if (s ne null) $writeName
+                    else out.writeVal(x.toString)"""
+              }
+            }
           } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
             val enumInfo = getJavaEnumInfo(tpe)
             if (enumInfo.hasTransformed) {

@@ -121,6 +121,37 @@ object LocationType extends Enumeration {
   def extra(name: String): LocationType = Value(nextId, name)
 }
 
+object CelestialBody extends Enumeration {
+  type CelestialBody = Value
+
+  val Sun, Moon, Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune: CelestialBody = Value
+  private val Vesta: CelestialBody = Value("Vesta")
+  protected val Pallas: CelestialBody = Value("Pallas")
+  private[this] val Hygiea: CelestialBody = Value("Hygiea")
+  private[macros] val Juno: CelestialBody = Value("Juno")
+  lazy val Halley: CelestialBody = Value("Halley")
+  var Encke: CelestialBody = Value
+
+  def extra(name: String): CelestialBody = Value(nextId, name)
+}
+
+object CardRank extends Enumeration {
+  type CardRank = Value
+
+  val Two: CardRank = Value("2")
+  val Ace: CardRank = Value("A")
+  val King: CardRank = Value("King")
+  val K: CardRank = King
+  val Queen: CardRank = Value("Jack")
+  val Jack: CardRank = Value("Queen")
+}
+
+object Bird extends Enumeration {
+  type Bird = Value
+
+  val `Ñandú`, Emu: Bird = Value
+}
+
 case class Enums(lt: LocationType.LocationType)
 
 case class Enums2(@stringified lt: LocationType.LocationType)
@@ -711,6 +742,42 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfEnums1, """{"lt":"GLONASS"}""", """illegal enum value "GLONASS", offset: 0x0000000e""")
       verifyDeserError(codecOfEnums2, """{"lt":null}""", "expected digit, offset: 0x00000006")
       verifyDeserError(codecOfEnums2, """{"lt":5}""", "illegal enum value 5, offset: 0x00000006")
+    }
+    "serialize and deserialize enumerations with values that are added after parsing of the stable ones" in {
+      val codecOfNames = make[List[CelestialBody.CelestialBody]]
+      val codecOfIds = make[List[CelestialBody.CelestialBody]](CodecMakerConfig.withUseScalaEnumValueId(true))
+      val codecOfNameKeys = make[Map[CelestialBody.CelestialBody, Int]]
+      val codecOfIdKeys = make[Map[CelestialBody.CelestialBody, Int]](CodecMakerConfig.withUseScalaEnumValueId(true))
+      val stable = CelestialBody.values.toList
+      verifySerDeser(codecOfNames, stable, stable.map(_.toString).mkString("[\"", "\",\"", "\"]"))
+      verifySerDeser(codecOfIds, stable, stable.map(_.id).mkString("[", ",", "]"))
+      verifySerDeser(codecOfNameKeys, Map(CelestialBody.Earth -> 3), """{"Earth":3}""")
+      verifySerDeser(codecOfIdKeys, Map(CelestialBody.Earth -> 3), s"""{"${CelestialBody.Earth.id}":3}""")
+      val ceres = CelestialBody.extra("Ceres")
+      val pluto = CelestialBody.extra("Pluto")
+      val all = stable ++ List(ceres, pluto)
+      verifySerDeser(codecOfNames, all, all.map(_.toString).mkString("[\"", "\",\"", "\"]"))
+      verifySerDeser(codecOfIds, all, all.map(_.id).mkString("[", ",", "]"))
+      verifySerDeser(codecOfNameKeys, Map(CelestialBody.Earth -> 3, pluto -> 9), """{"Earth":3,"Pluto":9}""")
+      verifySerDeser(codecOfIdKeys, Map(CelestialBody.Earth -> 3, pluto -> 9), s"""{"${CelestialBody.Earth.id}":3,"${pluto.id}":9}""")
+      verifyDeserError(codecOfNames, """["Earth","Eris"]""", """illegal enum value "Eris", offset: 0x0000000e""")
+      verifyDeserError(codecOfIds, """[2,100]""", "illegal enum value 100, offset: 0x00000005")
+      verifyDeserError(codecOfNameKeys, """{"Eris":1}""", """illegal enum value "Eris", offset: 0x00000007""")
+      verifyDeserError(codecOfIdKeys, """{"100":1}""", """illegal enum value "100", offset: 0x00000006""")
+    }
+    "serialize and deserialize enumerations with names that differ from names of vals" in {
+      verifySerDeser(make[List[CardRank.CardRank]], List(CardRank.Two, CardRank.Ace), """["2","A"]""")
+      verifySerDeser(make[Map[CardRank.CardRank, Int]], Map(CardRank.Ace -> 1), """{"A":1}""")
+      verifyDeserError(make[List[CardRank.CardRank]], """["Ace"]""", """illegal enum value "Ace", offset: 0x00000005""")
+      verifySerDeser(make[List[CardRank.CardRank]], List(CardRank.King, CardRank.Queen, CardRank.Jack, CardRank.Ace),
+        """["King","Jack","Queen","A"]""")
+      verifySerDeser(make[Map[CardRank.CardRank, Int]], Map(CardRank.K -> 1, CardRank.Jack -> 2), """{"King":1,"Queen":2}""")
+      verifyDeserError(make[List[CardRank.CardRank]], """["King","K"]""", """illegal enum value "K", offset: 0x0000000a""")
+    }
+    "serialize and deserialize enumerations with names that require encoding" in {
+      verifySerDeser(make[List[Bird.Bird]], List(Bird.`Ñandú`, Bird.Emu), """["Ñandú","Emu"]""")
+      verifySerDeser(make[Map[Bird.Bird, Int]], Map(Bird.`Ñandú` -> 1, Bird.Emu -> 2), """{"Ñandú":1,"Emu":2}""")
+      verifySer(make[List[Bird.Bird]], List(Bird.`Ñandú`), "[\"\\u00d1and\\u00fa\"]", WriterConfig.withEscapeUnicode(true))
     }
     "serialize and deserialize top-level enumerations" in {
       verifySerDeser(make[LocationType.LocationType], LocationType.GPS, """"GPS"""")
