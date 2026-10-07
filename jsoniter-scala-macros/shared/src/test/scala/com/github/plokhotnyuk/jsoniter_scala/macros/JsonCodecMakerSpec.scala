@@ -1952,6 +1952,81 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(make[_root_.scala.collection.immutable.Map[Int, Int]](CodecMakerConfig.withMapMaxInsertNumber(10)),
         """{"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"11":11}""",
         "too many map inserts, offset: 0x00000045")
+      verifyDeserError(make[_root_.scala.collection.immutable.Map[Int, Int]](CodecMakerConfig.withMapMaxInsertNumber(10).withSetMaxInsertNumber(Int.MaxValue)),
+        """{"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"11":11}""",
+        "too many map inserts, offset: 0x00000045")
+      verifyDeserError(make[_root_.scala.collection.immutable.Map[Int, Int]](CodecMakerConfig.withMapAsArray(true).withMapMaxInsertNumber(10).withSetMaxInsertNumber(Int.MaxValue)),
+        """[[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[9,9],[10,10],[11,11]]""",
+        "too many map inserts, offset: 0x00000044")
+      verifyDeserError(make[_root_.scala.collection.immutable.LongMap[Int]](CodecMakerConfig.withMapMaxInsertNumber(10)),
+        """{"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"11":11}""",
+        "too many map inserts, offset: 0x00000045")
+      verifyDeserError(make[_root_.scala.collection.immutable.LongMap[Int]](CodecMakerConfig.withMapAsArray(true).withMapMaxInsertNumber(10)),
+        """[[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[9,9],[10,10],[11,11]]""",
+        "too many map inserts, offset: 0x00000044")
+      verifyDeserError(make[_root_.scala.collection.immutable.IntMap[Int]](CodecMakerConfig.withMapMaxInsertNumber(10)),
+        """{"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"11":11}""",
+        "too many map inserts, offset: 0x00000045")
+      verifyDeserError(make[_root_.scala.collection.immutable.IntMap[Int]](CodecMakerConfig.withMapAsArray(true).withMapMaxInsertNumber(10)),
+        """[[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[9,9],[10,10],[11,11]]""",
+        "too many map inserts, offset: 0x00000044")
+    }
+    "deserialize long maps with unordered, negative and duplicated keys" in {
+      val codec = make[_root_.scala.collection.immutable.LongMap[Int]](CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue))
+      val codecOfMapAsArray = make[_root_.scala.collection.immutable.LongMap[Int]](CodecMakerConfig.withMapAsArray(true).withMapMaxInsertNumber(Int.MaxValue))
+      val rnd = new _root_.scala.util.Random(42)
+      Seq(1, 2, 3, 15, 16, 17, 18, 33, 79, 80, 81, 100, 1000, 3000).foreach { n =>
+        (0 to 4).foreach { _ =>
+          val kvs = (0 until n).map { i =>
+            val k = (rnd.nextInt(5): @switch) match {
+              case 0 => rnd.nextLong()
+              case 1 => (rnd.nextInt(n * 2) - n).toLong
+              case 2 => if (rnd.nextBoolean()) Long.MinValue else Long.MaxValue
+              case 3 => rnd.nextInt().toLong << 32
+              case _ => i.toLong
+            }
+            (k, rnd.nextInt())
+          }
+          val expected = kvs.foldLeft(_root_.scala.collection.immutable.LongMap.empty[Int])((m, kv) => m.updated(kv._1, kv._2))
+          val actual = readFromString(kvs.map(kv => s""""${kv._1}":${kv._2}""").mkString("{", ",", "}"))(codec)
+          actual shouldBe expected
+          actual.toList shouldBe expected.toList
+          val actualFromArray = readFromString(kvs.map(kv => s"[${kv._1},${kv._2}]").mkString("[", ",", "]"))(codecOfMapAsArray)
+          actualFromArray shouldBe expected
+          actualFromArray.toList shouldBe expected.toList
+          val sorted = readFromString(writeToString(expected)(codec))(codec)
+          sorted shouldBe expected
+          sorted.toList shouldBe expected.toList
+        }
+      }
+    }
+    "deserialize int maps with unordered, negative and duplicated keys" in {
+      val codec = make[_root_.scala.collection.immutable.IntMap[Int]](CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue))
+      val codecOfMapAsArray = make[_root_.scala.collection.immutable.IntMap[Int]](CodecMakerConfig.withMapAsArray(true).withMapMaxInsertNumber(Int.MaxValue))
+      val rnd = new _root_.scala.util.Random(42)
+      Seq(1, 2, 3, 15, 16, 17, 18, 33, 100, 1000, 3000).foreach { n =>
+        Seq(rnd.nextInt(): Int, rnd.nextInt(n * 2) - n: Int, Int.MinValue, Int.MaxValue).foreach { _ =>
+          val kvs = (0 until n).map { i =>
+            val k = (rnd.nextInt(4): @switch) match {
+              case 0 => rnd.nextInt()
+              case 1 => rnd.nextInt(n * 2) - n
+              case 2 => if (rnd.nextBoolean()) Int.MinValue else Int.MaxValue
+              case _ => i
+            }
+            (k, rnd.nextInt())
+          }
+          val expected = kvs.foldLeft(_root_.scala.collection.immutable.IntMap.empty[Int])((m, kv) => m.updated(kv._1, kv._2))
+          val actual = readFromString(kvs.map(kv => s""""${kv._1}":${kv._2}""").mkString("{", ",", "}"))(codec)
+          actual shouldBe expected
+          actual.toList shouldBe expected.toList
+          val actualFromArray = readFromString(kvs.map(kv => s"[${kv._1},${kv._2}]").mkString("[", ",", "]"))(codecOfMapAsArray)
+          actualFromArray shouldBe expected
+          actualFromArray.toList shouldBe expected.toList
+          val sorted = readFromString(writeToString(expected)(codec))(codec)
+          sorted shouldBe expected
+          sorted.toList shouldBe expected.toList
+        }
+      }
     }
     "throw parse exception in case of JSON object is not properly started/closed or with leading/trailing comma" in {
       verifyDeserError(codecOfImmutableMaps, """{"m":["1":1.1},"hm":{},"sm":{}}""",

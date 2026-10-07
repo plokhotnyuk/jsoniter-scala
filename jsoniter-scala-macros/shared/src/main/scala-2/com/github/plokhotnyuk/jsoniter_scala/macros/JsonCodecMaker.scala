@@ -1438,7 +1438,7 @@ object JsonCodecMaker {
         }
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
-        if (cfg.setMaxInsertNumber == Int.MaxValue) {
+        if (cfg.mapMaxInsertNumber == Int.MaxValue) {
           q"""if (in.isNextToken('{')) {
                 if (in.isNextToken('}')) default
                 else {
@@ -1472,7 +1472,7 @@ object JsonCodecMaker {
         }
 
       def genReadMapAsArray(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
-        if (cfg.setMaxInsertNumber == Int.MaxValue) {
+        if (cfg.mapMaxInsertNumber == Int.MaxValue) {
           q"""if (in.isNextToken('[')) {
                 if (in.isNextToken(']')) default
                 else {
@@ -1510,6 +1510,262 @@ object JsonCodecMaker {
                 }
               } else in.readNullOrTokenError(default, '[')"""
         }
+
+      def genReadIntMap(tpe1: Type, empty: Tree, readKey: Tree, readVal: Tree): Tree = {
+        val checkInsertNumber =
+          if (cfg.mapMaxInsertNumber == Int.MaxValue) q"()"
+          else q"""if (n > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")"""
+        val storeEntry =
+          q"""val i = n - 16
+              if (i < 0) x = x.updated(k, v)
+              else {
+                if (i == 0) {
+                  ks = new _root_.scala.Array[Long](16)
+                  vs = new _root_.scala.Array[AnyRef](16)
+                } else if (i == ks.length) {
+                  ks = _root_.java.util.Arrays.copyOf(ks, i << 1)
+                  vs = _root_.java.util.Arrays.copyOf(vs, i << 1)
+                }
+                ks(i) = (k ^ 0x80000000).toLong << 32 | i
+                vs(i) = v.asInstanceOf[AnyRef]
+              }
+              n += 1
+              $checkInsertNumber"""
+        // Builds an int map from keys and values in one pass without path copying of `updated` calls: each key is
+        // stored in the high 32 bits of `ks` with the sign bit flipped (to get the unsigned order of `IntMap` for sorted
+        // long values) and with an index of the value in `vs` stored in the low 32 bits (to keep the last value for
+        // duplicated keys)
+        val result =
+          q"""if (n <= 16) x
+              else {
+                def build(ks: _root_.scala.Array[Long], vs: _root_.scala.Array[AnyRef], from: Int,
+                          to: Int): _root_.scala.collection.immutable.IntMap[AnyRef] = {
+                  val k1 = (ks(from) >> 32).toInt
+                  val kv2 = ks(to - 1)
+                  val d = k1 ^ (kv2 >> 32).toInt
+                  if (d == 0) _root_.scala.collection.immutable.IntMap.singleton(k1 ^ 0x80000000, vs(kv2.toInt))
+                  else {
+                    val m = _root_.java.lang.Integer.highestOneBit(d)
+                    var lo = from + 1
+                    var hi = to - 1
+                    while (lo < hi) {
+                      val mid = (lo + hi) >>> 1
+                      if ((((ks(mid) >> 32).toInt ^ k1) & m) == 0) lo = mid + 1
+                      else hi = mid
+                    }
+                    build(ks, vs, from, lo) ++ build(ks, vs, lo, to) // O(1) union for maps with non-overlapping prefixes
+                  }
+                }
+
+                val l = n - 16
+                var i = 1
+                while (i < l && ks(i - 1) < ks(i)) i += 1
+                if (i != l) _root_.java.util.Arrays.sort(ks, 0, l)
+                x ++ build(ks, vs, 0, l).asInstanceOf[_root_.scala.collection.immutable.IntMap[$tpe1]]
+              }"""
+        if (cfg.mapAsArray) {
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) default
+                else {
+                  in.rollbackToken()
+                  var x = $empty
+                  var ks: _root_.scala.Array[Long] = null
+                  var vs: _root_.scala.Array[AnyRef] = null
+                  var n = 0
+                  while ({
+                    if (in.isNextToken('[')) {
+                      val k = $readKey
+                      val v = { if (in.isNextToken(',')) $readVal else in.commaError() }
+                      ..$storeEntry
+                      if (!in.isNextToken(']')) in.arrayEndError()
+                    } else in.decodeError("expected '['")
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) $result
+                  else in.arrayEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '[')"""
+        } else {
+          q"""if (in.isNextToken('{')) {
+                if (in.isNextToken('}')) default
+                else {
+                  in.rollbackToken()
+                  var x = $empty
+                  var ks: _root_.scala.Array[Long] = null
+                  var vs: _root_.scala.Array[AnyRef] = null
+                  var n = 0
+                  while ({
+                    val k = $readKey
+                    val v = $readVal
+                    ..$storeEntry
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken('}')) $result
+                  else in.objectEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '{')"""
+        }
+      }
+
+      def genReadLongMap(tpe1: Type, empty: Tree, readKey: Tree, readVal: Tree): Tree = {
+        val checkInsertNumber =
+          if (cfg.mapMaxInsertNumber == Int.MaxValue) q"()"
+          else q"""if (n > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")"""
+        val storeEntry =
+          q"""val i = n - 16
+              if (i < 0) x = x.updated(k, v)
+              else {
+                if (i == 0) {
+                  ks = new _root_.scala.Array[Long](16)
+                  vs = new _root_.scala.Array[AnyRef](16)
+                } else if (i == ks.length) {
+                  ks = _root_.java.util.Arrays.copyOf(ks, i << 1)
+                  vs = _root_.java.util.Arrays.copyOf(vs, i << 1)
+                }
+                ks(i) = k
+                vs(i) = v.asInstanceOf[AnyRef]
+              }
+              n += 1
+              $checkInsertNumber"""
+        // Builds a long map from keys and values in one pass without path copying of `updated` calls: keys are sorted
+        // in the unsigned order of `LongMap` together with values using a stable sort (to keep the last value for
+        // duplicated keys)
+        val result =
+          q"""if (n <= 16) x
+              else {
+                def sort(ks: _root_.scala.Array[_root_.scala.Long], vs: _root_.scala.Array[_root_.scala.AnyRef],
+                         n: _root_.scala.Int): _root_.scala.Unit =
+                  if (n < 64) { // stable insertion sort
+                    var i = 1
+                    while (i < n) {
+                      val k = ks(i)
+                      val v = vs(i)
+                      var j = i - 1
+                      while (j >= 0 && ks(j) + _root_.scala.Long.MinValue > k + _root_.scala.Long.MinValue) {
+                        ks(j + 1) = ks(j)
+                        vs(j + 1) = vs(j)
+                        j -= 1
+                      }
+                      ks(j + 1) = k
+                      vs(j + 1) = v
+                      i += 1
+                    }
+                  } else { // stable LSD radix sort with skipping of passes for bytes that are the same for all keys
+                    var ks1 = ks
+                    var vs1 = vs
+                    var ks2 = new _root_.scala.Array[Long](n)
+                    var vs2 = new _root_.scala.Array[AnyRef](n)
+                    val cs = new _root_.scala.Array[Int](256)
+                    var s = 0
+                    while (s < 64) {
+                      _root_.java.util.Arrays.fill(cs, 0)
+                      var i = 0
+                      while (i < n) {
+                        val b = (ks1(i) >>> s).toInt & 0xFF
+                        cs(b) += 1
+                        i += 1
+                      }
+                      if (cs((ks1(0) >>> s).toInt & 0xFF) != n) {
+                        var sum = 0
+                        var b = 0
+                        while (b < 256) {
+                          val c = cs(b)
+                          cs(b) = sum
+                          sum += c
+                          b += 1
+                        }
+                        i = 0
+                        while (i < n) {
+                          val k = ks1(i)
+                          val b = (k >>> s).toInt & 0xFF
+                          val j = cs(b)
+                          ks2(j) = k
+                          vs2(j) = vs1(i)
+                          cs(b) = j + 1
+                          i += 1
+                        }
+                        val tks = ks1
+                        ks1 = ks2
+                        ks2 = tks
+                        val tvs = vs1
+                        vs1 = vs2
+                        vs2 = tvs
+                      }
+                      s += 8
+                    }
+                    if (ks1 ne ks) {
+                      _root_.java.lang.System.arraycopy(ks1, 0, ks, 0, n)
+                      _root_.java.lang.System.arraycopy(vs1, 0, vs, 0, n)
+                    }
+                  }
+
+                def build(ks: _root_.scala.Array[Long], vs: _root_.scala.Array[AnyRef], from: Int,
+                          to: Int): _root_.scala.collection.immutable.LongMap[AnyRef] = {
+                  val k1 = ks(from)
+                  val d = k1 ^ ks(to - 1)
+                  if (d == 0) _root_.scala.collection.immutable.LongMap.singleton(k1, vs(to - 1))
+                  else {
+                    val m = _root_.java.lang.Long.highestOneBit(d)
+                    var lo = from + 1
+                    var hi = to - 1
+                    while (lo < hi) {
+                      val mid = (lo + hi) >>> 1
+                      if (((ks(mid) ^ k1) & m) == 0) lo = mid + 1
+                      else hi = mid
+                    }
+                    build(ks, vs, from, lo) ++ build(ks, vs, lo, to) // O(1) union for maps with non-overlapping prefixes
+                  }
+                }
+
+                val l = n - 16
+                var i = 1
+                while (i < l && ks(i - 1) + _root_.scala.Long.MinValue < ks(i) + _root_.scala.Long.MinValue) i += 1
+                if (i != l) sort(ks, vs, l)
+                x ++ build(ks, vs, 0, l).asInstanceOf[_root_.scala.collection.immutable.LongMap[$tpe1]]
+              }"""
+        if (cfg.mapAsArray) {
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) default
+                else {
+                  in.rollbackToken()
+                  var x = $empty
+                  var ks: _root_.scala.Array[Long] = null
+                  var vs: _root_.scala.Array[AnyRef] = null
+                  var n = 0
+                  while ({
+                    if (in.isNextToken('[')) {
+                      val k = $readKey
+                      val v = { if (in.isNextToken(',')) $readVal else in.commaError() }
+                      ..$storeEntry
+                      if (!in.isNextToken(']')) in.arrayEndError()
+                    } else in.decodeError("expected '['")
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) $result
+                  else in.arrayEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '[')"""
+        } else {
+          q"""if (in.isNextToken('{')) {
+                if (in.isNextToken('}')) default
+                else {
+                  in.rollbackToken()
+                  var x = $empty
+                  var ks: _root_.scala.Array[Long] = null
+                  var vs: _root_.scala.Array[AnyRef] = null
+                  var n = 0
+                  while ({
+                    val k = $readKey
+                    val v = $readVal
+                    ..$storeEntry
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken('}')) $result
+                  else in.objectEndOrCommaError()
+                }
+              } else in.readNullOrTokenError(default, '{')"""
+        }
+      }
 
       @tailrec
       def genWriteKey(x: Tree, types: List[Type]): Tree = {
@@ -2084,15 +2340,12 @@ object JsonCodecMaker {
             } else if (tpe <:< typeOf[immutable.IntMap[?]]) withDecoderFor(methodKey, default) {
               val tpe1 = typeArg1(tpe)
               val types1 = tpe1 :: types
-              val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
               val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
-              if (cfg.mapAsArray) {
-                val readKey =
-                  if (cfg.isStringified) q"in.readStringAsInt()"
-                  else q"in.readInt()"
-                genReadMapAsArray(newBuilder,
-                  q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
-              } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsInt(), $readVal)")
+              val readKey =
+                if (!cfg.mapAsArray) q"in.readKeyAsInt()"
+                else if (cfg.isStringified) q"in.readStringAsInt()"
+                else q"in.readInt()"
+              genReadIntMap(tpe1, withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]"), readKey, readVal)
             } else if (tpe <:< typeOf[mutable.LongMap[?]]) withDecoderFor(methodKey, default) {
               val tpe1 = typeArg1(tpe)
               val types1 = tpe1 :: types
@@ -2108,15 +2361,12 @@ object JsonCodecMaker {
             } else if (tpe <:< typeOf[immutable.LongMap[?]]) withDecoderFor(methodKey, default) {
               val tpe1 = typeArg1(tpe)
               val types1 = tpe1 :: types
-              val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
               val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
-              if (cfg.mapAsArray) {
-                val readKey =
-                  if (cfg.isStringified) q"in.readStringAsLong()"
-                  else q"in.readLong()"
-                genReadMapAsArray(newBuilder,
-                  q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
-              } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsLong(), $readVal)")
+              val readKey =
+                if (!cfg.mapAsArray) q"in.readKeyAsLong()"
+                else if (cfg.isStringified) q"in.readStringAsLong()"
+                else q"in.readLong()"
+              genReadLongMap(tpe1, withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]"), readKey, readVal)
             } else if (tpe <:< typeOf[mutable.Map[?, ?]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {
               val tpe1 = typeArg1(tpe)
               val tpe2 = typeArg2(tpe)

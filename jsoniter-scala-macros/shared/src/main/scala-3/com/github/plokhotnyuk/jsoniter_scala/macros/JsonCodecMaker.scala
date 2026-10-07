@@ -1824,7 +1824,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private def genReadMap[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
                                            result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader],
                                            default: Expr[C])(using Quotes): Expr[C] =
-    if (cfg.setMaxInsertNumber == Int.MaxValue) '{
+    if (cfg.mapMaxInsertNumber == Int.MaxValue) '{
       if ($in.isNextToken('{')) {
         if ($in.isNextToken('}')) $default
         else {
@@ -1860,7 +1860,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private def genReadMapAsArray[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
                                                   result: Quotes ?=> Expr[B] => Expr[C], in: Expr[JsonReader],
                                                   default: Expr[C])(using Quotes): Expr[C] =
-    if (cfg.setMaxInsertNumber == Int.MaxValue) '{
+    if (cfg.mapMaxInsertNumber == Int.MaxValue) '{
       if ($in.isNextToken('[')) {
         if ($in.isNextToken(']')) $default
         else {
@@ -1898,6 +1898,295 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         }
       } else $in.readNullOrTokenError($default, '[')
     }
+
+  private def genReadIntMap[V: Type](tpe: TypeRepr, readKey: Expr[Int], readVal: Expr[V], in: Expr[JsonReader],
+                                     default: Expr[immutable.IntMap[V]])(using Quotes): Expr[immutable.IntMap[V]] =
+    val empty = withNullValueFor(tpe)('{ immutable.IntMap.empty[V] })
+
+    def checkInsertNumber(n: Expr[Int])(using Quotes): Expr[Unit] =
+      if (cfg.mapMaxInsertNumber == Int.MaxValue) '{}
+      else '{ if ($n > ${Expr(cfg.mapMaxInsertNumber)}) $in.decodeError("too many map inserts") }
+
+    if (cfg.mapAsArray) '{
+      if ($in.isNextToken('[')) {
+        if ($in.isNextToken(']')) $default
+        else {
+          $in.rollbackToken()
+          var x = $empty
+          var ks: Array[Long] = null
+          var vs: Array[AnyRef] = null
+          var n = 0
+          while ({
+            if ($in.isNextToken('[')) {
+              val k = $readKey
+              val v = { if ($in.isNextToken(',')) $readVal else $in.commaError() }
+              val i = n - 16
+              if (i < 0) x = x.updated(k, v)
+              else {
+                if (i == 0) {
+                  ks = new Array[Long](16)
+                  vs = new Array[AnyRef](16)
+                } else if (i == ks.length) {
+                  ks = java.util.Arrays.copyOf(ks, i << 1)
+                  vs = java.util.Arrays.copyOf(vs, i << 1)
+                }
+                ks(i) = (k ^ 0x80000000).toLong << 32 | i
+                vs(i) = v.asInstanceOf[AnyRef]
+              }
+              n += 1
+              ${checkInsertNumber('n)}
+              if (!$in.isNextToken(']')) $in.arrayEndError()
+            } else $in.decodeError("expected '['")
+            $in.isNextToken(',')
+          }) ()
+          if ($in.isCurrentToken(']')) {
+            if (n <= 16) x
+            else x ++ ${genBuildIntMap[V]('ks, 'vs, '{ n - 16 })}
+          } else $in.arrayEndOrCommaError()
+        }
+      } else $in.readNullOrTokenError($default, '[')
+    } else '{
+      if ($in.isNextToken('{')) {
+        if ($in.isNextToken('}')) $default
+        else {
+          $in.rollbackToken()
+          var x = $empty
+          var ks: Array[Long] = null
+          var vs: Array[AnyRef] = null
+          var n = 0
+          while ({
+            val k = $readKey
+            val v = $readVal
+            val i = n - 16
+            if (i < 0) x = x.updated(k, v)
+            else {
+              if (i == 0) {
+                ks = new Array[Long](16)
+                vs = new Array[AnyRef](16)
+              } else if (i == ks.length) {
+                ks = java.util.Arrays.copyOf(ks, i << 1)
+                vs = java.util.Arrays.copyOf(vs, i << 1)
+              }
+              ks(i) = (k ^ 0x80000000).toLong << 32 | i
+              vs(i) = v.asInstanceOf[AnyRef]
+            }
+            n += 1
+            ${checkInsertNumber('n)}
+            $in.isNextToken(',')
+          }) ()
+          if ($in.isCurrentToken('}')) {
+            if (n <= 16) x
+            else x ++ ${genBuildIntMap[V]('ks, 'vs, '{ n - 16 })}
+          } else $in.objectEndOrCommaError()
+        }
+      } else $in.readNullOrTokenError($default, '{')
+    }
+
+  // Builds an int map from `n` keys and values in one pass without path copying of `updated` calls: each key is stored
+  // in the high 32 bits of `ks` with the sign bit flipped (to get the unsigned order of `IntMap` for sorted long values)
+  // and with an index of the value in `vs` stored in the low 32 bits (to keep the last value for duplicated keys)
+  private def genBuildIntMap[V: Type](ks: Expr[Array[Long]], vs: Expr[Array[AnyRef]], n: Expr[Int])
+                                     (using Quotes): Expr[immutable.IntMap[V]] = '{
+    def build(ks: Array[Long], vs: Array[AnyRef], from: Int, to: Int): immutable.IntMap[AnyRef] = {
+      val k1 = (ks(from) >> 32).toInt
+      val kv2 = ks(to - 1)
+      val d = k1 ^ (kv2 >> 32).toInt
+      if (d == 0) immutable.IntMap.singleton(k1 ^ 0x80000000, vs(kv2.toInt))
+      else {
+        val m = Integer.highestOneBit(d)
+        var lo = from + 1
+        var hi = to - 1
+        while (lo < hi) {
+          val mid = (lo + hi) >>> 1
+          if ((((ks(mid) >> 32).toInt ^ k1) & m) == 0) lo = mid + 1
+          else hi = mid
+        }
+        build(ks, vs, from, lo) ++ build(ks, vs, lo, to) // O(1) union for maps with non-overlapping prefixes
+      }
+    }
+
+    val l = $n
+    var i = 1
+    while (i < l && $ks(i - 1) < $ks(i)) i += 1
+    if (i != l) java.util.Arrays.sort($ks, 0, l)
+    build($ks, $vs, 0, l).asInstanceOf[immutable.IntMap[V]]
+  }
+
+  private def genReadLongMap[V: Type](tpe: TypeRepr, readKey: Expr[Long], readVal: Expr[V], in: Expr[JsonReader],
+                                      default: Expr[immutable.LongMap[V]])(using Quotes): Expr[immutable.LongMap[V]] =
+    val empty = withNullValueFor(tpe)('{ immutable.LongMap.empty[V] })
+
+    def checkInsertNumber(n: Expr[Int])(using Quotes): Expr[Unit] =
+      if (cfg.mapMaxInsertNumber == Int.MaxValue) '{}
+      else '{ if ($n > ${Expr(cfg.mapMaxInsertNumber)}) $in.decodeError("too many map inserts") }
+
+    if (cfg.mapAsArray) '{
+      if ($in.isNextToken('[')) {
+        if ($in.isNextToken(']')) $default
+        else {
+          $in.rollbackToken()
+          var x = $empty
+          var ks: Array[Long] = null
+          var vs: Array[AnyRef] = null
+          var n = 0
+          while ({
+            if ($in.isNextToken('[')) {
+              val k = $readKey
+              val v = { if ($in.isNextToken(',')) $readVal else $in.commaError() }
+              val i = n - 16
+              if (i < 0) x = x.updated(k, v)
+              else {
+                if (i == 0) {
+                  ks = new Array[Long](16)
+                  vs = new Array[AnyRef](16)
+                } else if (i == ks.length) {
+                  ks = java.util.Arrays.copyOf(ks, i << 1)
+                  vs = java.util.Arrays.copyOf(vs, i << 1)
+                }
+                ks(i) = k
+                vs(i) = v.asInstanceOf[AnyRef]
+              }
+              n += 1
+              ${checkInsertNumber('n)}
+              if (!$in.isNextToken(']')) $in.arrayEndError()
+            } else $in.decodeError("expected '['")
+            $in.isNextToken(',')
+          }) ()
+          if ($in.isCurrentToken(']')) {
+            if (n <= 16) x
+            else x ++ ${genBuildLongMap[V]('ks, 'vs, '{ n - 16 })}
+          } else $in.arrayEndOrCommaError()
+        }
+      } else $in.readNullOrTokenError($default, '[')
+    } else '{
+      if ($in.isNextToken('{')) {
+        if ($in.isNextToken('}')) $default
+        else {
+          $in.rollbackToken()
+          var x = $empty
+          var ks: Array[Long] = null
+          var vs: Array[AnyRef] = null
+          var n = 0
+          while ({
+            val k = $readKey
+            val v = $readVal
+            val i = n - 16
+            if (i < 0) x = x.updated(k, v)
+            else {
+              if (i == 0) {
+                ks = new Array[Long](16)
+                vs = new Array[AnyRef](16)
+              } else if (i == ks.length) {
+                ks = java.util.Arrays.copyOf(ks, i << 1)
+                vs = java.util.Arrays.copyOf(vs, i << 1)
+              }
+              ks(i) = k
+              vs(i) = v.asInstanceOf[AnyRef]
+            }
+            n += 1
+            ${checkInsertNumber('n)}
+            $in.isNextToken(',')
+          }) ()
+          if ($in.isCurrentToken('}')) {
+            if (n <= 16) x
+            else x ++ ${genBuildLongMap[V]('ks, 'vs, '{ n - 16 })}
+          } else $in.objectEndOrCommaError()
+        }
+      } else $in.readNullOrTokenError($default, '{')
+    }
+
+  // Builds a long map from `n` keys and values in one pass without path copying of `updated` calls: keys are sorted in
+  // the unsigned order of `LongMap` together with values using a stable sort (to keep the last value for duplicated keys)
+  private def genBuildLongMap[V: Type](ks: Expr[Array[Long]], vs: Expr[Array[AnyRef]], n: Expr[Int])
+                                      (using Quotes): Expr[immutable.LongMap[V]] = '{
+    def sort(ks: Array[Long], vs: Array[AnyRef], n: Int): Unit =
+      if (n < 64) { // stable insertion sort
+        var i = 1
+        while (i < n) {
+          val k = ks(i)
+          val v = vs(i)
+          var j = i - 1
+          while (j >= 0 && ks(j) + Long.MinValue > k + Long.MinValue) {
+            ks(j + 1) = ks(j)
+            vs(j + 1) = vs(j)
+            j -= 1
+          }
+          ks(j + 1) = k
+          vs(j + 1) = v
+          i += 1
+        }
+      } else { // stable LSD radix sort with skipping of passes for bytes that are the same for all keys
+        var ks1 = ks
+        var vs1 = vs
+        var ks2 = new Array[Long](n)
+        var vs2 = new Array[AnyRef](n)
+        val cs = new Array[Int](256)
+        var s = 0
+        while (s < 64) {
+          java.util.Arrays.fill(cs, 0)
+          var i = 0
+          while (i < n) {
+            val b = (ks1(i) >>> s).toInt & 0xFF
+            cs(b) += 1
+            i += 1
+          }
+          if (cs((ks1(0) >>> s).toInt & 0xFF) != n) {
+            var sum = 0
+            var b = 0
+            while (b < 256) {
+              val c = cs(b)
+              cs(b) = sum
+              sum += c
+              b += 1
+            }
+            i = 0
+            while (i < n) {
+              val k = ks1(i)
+              val b = (k >>> s).toInt & 0xFF
+              val j = cs(b)
+              ks2(j) = k
+              vs2(j) = vs1(i)
+              cs(b) = j + 1
+              i += 1
+            }
+            val tks = ks1
+            ks1 = ks2
+            ks2 = tks
+            val tvs = vs1
+            vs1 = vs2
+            vs2 = tvs
+          }
+          s += 8
+        }
+        if (ks1 ne ks) {
+          System.arraycopy(ks1, 0, ks, 0, n)
+          System.arraycopy(vs1, 0, vs, 0, n)
+        }
+      }
+
+    def build(ks: Array[Long], vs: Array[AnyRef], from: Int, to: Int): immutable.LongMap[AnyRef] = {
+      val k1 = ks(from)
+      val d = k1 ^ ks(to - 1)
+      if (d == 0) immutable.LongMap.singleton(k1, vs(to - 1))
+      else {
+        val m = java.lang.Long.highestOneBit(d)
+        var lo = from + 1
+        var hi = to - 1
+        while (lo < hi) {
+          val mid = (lo + hi) >>> 1
+          if (((ks(mid) ^ k1) & m) == 0) lo = mid + 1
+          else hi = mid
+        }
+        build(ks, vs, from, lo) ++ build(ks, vs, lo, to) // O(1) union for maps with non-overlapping prefixes
+      }
+    }
+
+    val l = $n
+    var i = 1
+    while (i < l && $ks(i - 1) + Long.MinValue < $ks(i) + Long.MinValue) i += 1
+    if (i != l) sort($ks, $vs, l)
+    build($ks, $vs, 0, l).asInstanceOf[immutable.LongMap[V]]
+  }
 
   @tailrec
   private def genWriteKey[T: Type](x: Expr[T], types: List[TypeRepr], out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
@@ -2828,20 +3117,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           val types1 = tpe1 :: types
           tpe1.asType match
             case '[t1] =>
-              val newBuilder = withNullValueFor(tpe)(scalaCollectionEmpty(tpe, tpe1).asExpr.asInstanceOf[Expr[immutable.IntMap[t1]]])
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
-              (if (cfg.mapAsArray) {
-                val readKey =
-                  if (cfg.isStringified) '{ $in.readStringAsInt() }
-                  else '{ $in.readInt() }
-                genReadMapAsArray(newBuilder, x => Assign(x.asTerm, '{
-                  $x.updated($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() })
-                }.asTerm).asExpr.asInstanceOf[Expr[Unit]], identity, in, default)
-              } else {
-                genReadMap(newBuilder,
-                  x => Assign(x.asTerm, '{ $x.updated($in.readKeyAsInt(), $readVal) }.asTerm).asExpr.asInstanceOf[Expr[Unit]],
-                  identity, in, default)
-              }).asInstanceOf[Expr[T]]
+              val readKey =
+                if (!cfg.mapAsArray) '{ $in.readKeyAsInt() }
+                else if (cfg.isStringified) '{ $in.readStringAsInt() }
+                else '{ $in.readInt() }
+              genReadIntMap(tpe, readKey, readVal, in, default.asInstanceOf[Expr[immutable.IntMap[t1]]]).asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val types1 = tpe1 :: types
@@ -2868,21 +3149,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           val types1 = tpe1 :: types
           tpe1.asType match
             case '[t1] =>
-              val newBuilder = withNullValueFor(tpe)(scalaCollectionEmpty(tpe, tpe1).asExpr.asInstanceOf[Expr[immutable.LongMap[t1]]])
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
-              (if (cfg.mapAsArray) {
-                val readKey =
-                  if (cfg.isStringified) '{ $in.readStringAsLong() }
-                  else '{ $in.readLong() }
-                genReadMapAsArray(newBuilder, x => Assign(x.asTerm, '{
-                    $x.updated($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() })
-                  }.asTerm).asExpr.asInstanceOf[Expr[Unit]],
-                  identity, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]])
-              } else {
-                genReadMap(newBuilder, x => Assign(x.asTerm, '{ $x.updated($in.readKeyAsLong(), $readVal) }.asTerm)
-                  .asExpr.asInstanceOf[Expr[Unit]],
-                  identity, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]])
-              }).asInstanceOf[Expr[T]]
+              val readKey =
+                if (!cfg.mapAsArray) '{ $in.readKeyAsLong() }
+                else if (cfg.isStringified) '{ $in.readStringAsLong() }
+                else '{ $in.readLong() }
+              genReadLongMap(tpe, readKey, readVal, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]]).asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[mutable.Map[?, ?]] ||
             tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
