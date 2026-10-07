@@ -3917,7 +3917,7 @@ final class JsonReader private[jsoniter_scala](
           BigInt((x ^ s) - s)
         } else if (len <= 36) toBigInt36(buf, from, pos, s)
         else new BigInt({
-          if (len <= 308) toBigInteger308(buf, from, pos, s)
+          if (len <= 308) toBigInteger308(buf, from, -1, pos, s)
           else {
             // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing huge numbers
             // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
@@ -4088,7 +4088,7 @@ final class JsonReader private[jsoniter_scala](
               from += 1
             }
             java.math.BigDecimal.valueOf((x ^ s) - s, scale + fracLen)
-          } else toBigDecimal(buf, from, fracLimit, s, scale).add(toBigDecimal(buf, fracPos, limit, s, scale + fracLen))
+          } else toBigDecimalWithFraction(buf, from, fracPos, limit, s, scale)
         } else toBigDecimal(buf, from, from + digits, s, scale)
       if (mc.getPrecision < digits) d = d.plus(mc)
       if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
@@ -4112,8 +4112,8 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       java.math.BigDecimal.valueOf((x ^ s) - s, scale)
-    } else if (len <= 36) toBigDecimal36(buf, p, limit, s, scale)
-    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, limit, s), scale)
+    } else if (len <= 36) toBigDecimal36(buf, p, -1, limit, s, scale)
+    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, -1, limit, s), scale)
     else {
       // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
       // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
@@ -4122,6 +4122,16 @@ final class JsonReader private[jsoniter_scala](
       val midPos = limit - mid
       toBigDecimal(buf, p, midPos, s, scale - mid).add(toBigDecimal(buf, midPos, limit, s, scale))
     }
+  }
+
+  // Parses digits of the integer and fractional parts as one unscaled value, skipping the dot at `fracPos - 1`
+  private[this] def toBigDecimalWithFraction(buf: Array[Byte], p: Int, fracPos: Int, limit: Int, s: Int,
+                                             scale: Int): java.math.BigDecimal = {
+    val len = limit - p - 1
+    val fracScale = scale + limit - fracPos
+    if (len <= 36) toBigDecimal36(buf, p, fracPos - 1, limit, s, fracScale)
+    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, fracPos - 1, limit, s), fracScale)
+    else toBigDecimal(buf, p, fracPos - 1, s, scale).add(toBigDecimal(buf, fracPos, limit, s, fracScale))
   }
 
   private[this] def toBigInt36(buf: Array[Byte], p: Int, limit: Int, s: Int): BigInt = {
@@ -4161,27 +4171,21 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigDecimal36(buf: Array[Byte], p: Int, limit: Int, s: Int, scale: Int): java.math.BigDecimal = {
-    val firstBlockLimit = limit - 18
-    var pos = p
-    var x1 = (buf(pos) - '0').toLong
-    pos += 1
-    while (pos + 3 < firstBlockLimit) {
-      x1 *= 10000
-      x1 += ((ByteArrayAccess.getInt(buf, pos) - 0x30303030) * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
-      pos += 4
-    }
-    while (pos < firstBlockLimit) {
-      x1 = x1 * 10 + (buf(pos) - '0')
-      pos += 1
-    }
-    val x2 = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-      val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
-      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
-    } + buf(pos + 8)) * 1000000000 + {
-      val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
-      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
-    } + buf(pos + 17) - 48000000048L
+  // Parses 19..36 digits, skipping the dot at the `dot` position if it is not -1
+  private[this] def toBigDecimal36(buf: Array[Byte], p: Int, dot: Int, limit: Int, s: Int,
+                                   scale: Int): java.math.BigDecimal = {
+    var pos = limit - 18
+    if (dot >= pos) pos -= 1 // the last block of 18 digits contains the dot
+    val x1 = toLong(buf, p, dot, pos)
+    val x2 =
+      if (dot >= pos) digits18(buf, pos, dot)
+      else ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+        val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+        (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+      } + buf(pos + 8)) * 1000000000 + {
+        val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+        (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+      } + buf(pos + 17) - 48000000048L
     val q = x1 * 1000000000000000000L
     val l = q + x2
     val h = Math.multiplyHigh(x1, 1000000000000000000L) + ((~l & q) >>> 63)
@@ -4198,8 +4202,47 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigInteger308(buf: Array[Byte], p: Int, limit: Int, s: Int): java.math.BigInteger = {
-    val len = limit - p
+  // Parses 18 digits from 19 bytes, skipping the dot at the `dot` position, using 8-byte words that are blended from
+  // two overlapping reads to exclude the dot
+  private[this] def digits18(buf: Array[Byte], pos: Int, dot: Int): Long = {
+    val k = dot - pos
+    ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+      val n = Math.min(Math.max(k, 0), 8)
+      val m = (1L << (n << 3)) - 1 | -(n >> 3)
+      val dec = ((ByteArrayAccess.getLong(buf, pos) & m | ByteArrayAccess.getLong(buf, pos + 1) & ~m) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 8 + (k - 9 >>> 31))) * 1000000000 + {
+      val n = Math.min(Math.max(k - 9, 0), 8)
+      val m = (1L << (n << 3)) - 1 | -(n >> 3)
+      val dec = ((ByteArrayAccess.getLong(buf, pos + 9) & m | ByteArrayAccess.getLong(buf, pos + 10) & ~m) - 0x3030303030303030L) * 2561
+      (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+    } + buf(pos + 18) - 48000000048L
+  }
+
+  // Parses up to 18 digits, skipping the dot at the `dot` position if it is in the range
+  private[this] def toLong(buf: Array[Byte], p: Int, dot: Int, limit: Int): Long =
+    if (dot >= p && dot < limit) toLong(buf, p, dot) * pow10Longs(limit - dot - 1) + toLong(buf, dot + 1, limit)
+    else toLong(buf, p, limit)
+
+  // Parses up to 18 digits
+  private[this] def toLong(buf: Array[Byte], p: Int, limit: Int): Long = {
+    var x = 0L
+    var pos = p
+    while (pos + 3 < limit) {
+      x = x * 10000 + (((ByteArrayAccess.getInt(buf, pos) - 0x30303030) * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16)
+      pos += 4
+    }
+    while (pos < limit) {
+      x = x * 10 + (buf(pos) - '0')
+      pos += 1
+    }
+    x
+  }
+
+  // Parses 19..308 digits, skipping the dot at the `dot` position if it is not -1
+  private[this] def toBigInteger308(buf: Array[Byte], p: Int, dot: Int, limit: Int, s: Int): java.math.BigInteger = {
+    var len = limit - p
+    if (dot >= 0) len -= 1
     val last = (len * 222930821L >> 32).toInt << 3 // (len * Math.log(10) / Math.log(1L << 64)).toInt * 8
     var magnitude = this.magnitude
     if (magnitude eq null) {
@@ -4212,29 +4255,25 @@ final class JsonReader private[jsoniter_scala](
         i += 8
       }
     }
-    var x = 0L
-    val firstBlockLimit = len % 18 + p
-    var pos = p
-    while (pos + 3 < firstBlockLimit) {
-      x *= 10000
-      x += ((ByteArrayAccess.getInt(buf, pos) - 0x30303030) * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
-      pos += 4
-    }
-    while (pos < firstBlockLimit) {
-      x = x * 10 + (buf(pos) - '0')
-      pos += 1
-    }
+    var pos = len % 18 + p
+    if (dot >= p && dot < pos) pos += 1 // the first block contains the dot
+    var x = toLong(buf, p, dot, pos)
     ByteArrayAccess.setLong(magnitude, last, x)
     var first = last
     while (pos < limit) {
-      x = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
-        val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
-        (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
-      } + buf(pos + 8)) * 1000000000 + {
-        val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
-        (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
-      } + buf(pos + 17) - 48000000048L
-      pos += 18
+      if (dot >= pos && dot < pos + 18) { // the block of 18 digits contains the dot
+        x = digits18(buf, pos, dot)
+        pos += 19
+      } else {
+        x = ({ // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
+          val dec = (ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L) * 2561
+          (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+        } + buf(pos + 8)) * 1000000000 + {
+          val dec = (ByteArrayAccess.getLong(buf, pos + 9) - 0x3030303030303030L) * 2561
+          (dec >> 8 & 0xFF000000FFL) * 42949672960001000L + (dec >> 24 & 0xFF000000FFL) * 429496729600010L >> 32
+        } + buf(pos + 17) - 48000000048L
+        pos += 18
+      }
       first = Math.max(first - 8, 0)
       var i = last
       val q = 1000000000000000000L
@@ -4442,7 +4481,7 @@ final class JsonReader private[jsoniter_scala](
             ByteArrayAccess.setLongReversed(magnitude, 8, l)
             new java.math.BigInteger(s | 1, magnitude, 0, 16)
           }
-        } else if (digits <= 308) toBigInteger308(buf, from, limit, s)
+        } else if (digits <= 308) toBigInteger308(buf, from, -1, limit, s)
         else {
           // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing huge numbers
           // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
@@ -4475,9 +4514,8 @@ final class JsonReader private[jsoniter_scala](
             }
             java.math.BigDecimal.valueOf((x ^ s) - s, scale + fracLen)
           } else {
-            val bd = toBigDecimal(buf, from, fracLimit, s, scale)
-            if (fracLen == 0) bd
-            else bd.add(toBigDecimal(buf, fracPos, limit, s, scale + fracLen))
+            if (fracLen == 0) toBigDecimal(buf, from, fracLimit, s, scale)
+            else toBigDecimalWithFraction(buf, from, fracPos, limit, s, scale)
           }
         if (mc.getPrecision < digits) d = d.plus(mc)
         if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
@@ -6308,6 +6346,9 @@ object JsonReader {
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
+  private final val pow10Longs: Array[Long] = Array(1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L,
+    100000000L, 1000000000L, 10000000000L, 100000000000L, 1000000000000L, 10000000000000L, 100000000000000L,
+    1000000000000000L, 10000000000000000L, 100000000000000000L, 1000000000000000000L)
   /* Use the following code to generate `pow10Mantissas` in Scala REPL:
     val ms = new Array[Long](653)
     var pow10 = BigInt(10)

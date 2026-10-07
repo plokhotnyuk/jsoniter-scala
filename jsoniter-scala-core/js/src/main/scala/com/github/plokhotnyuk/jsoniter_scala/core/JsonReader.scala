@@ -3442,8 +3442,8 @@ final class JsonReader private[jsoniter_scala](
           if (s != 0) x1 = -x1
           BigInt(x1)
         } else new BigInt({
-          if (len <= 36) toBigDecimal36(buf, from, pos, s, 0).unscaledValue
-          else if (len <= 308) toBigInteger308(buf, from, pos, s)
+          if (len <= 36) toBigDecimal36(buf, from, -1, pos, s, 0).unscaledValue
+          else if (len <= 308) toBigInteger308(buf, from, -1, pos, s)
           else {
             // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing huge numbers
             // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
@@ -3583,7 +3583,7 @@ final class JsonReader private[jsoniter_scala](
             }
             if (s != 0) x = -x
             java.math.BigDecimal.valueOf(x, scale + fracLen)
-          } else toBigDecimal(buf, from, fracLimit, s, scale).add(toBigDecimal(buf, fracPos, limit, s, scale + fracLen))
+          } else toBigDecimalWithFraction(buf, from, fracPos, limit, s, scale)
         } else toBigDecimal(buf, from, from + digits, s, scale)
       if (mc.getPrecision < digits) d = d.plus(mc)
       if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
@@ -3609,8 +3609,8 @@ final class JsonReader private[jsoniter_scala](
       }
       if (s != 0) x1 = -x1
       java.math.BigDecimal.valueOf(x1, scale)
-    } else if (len <= 36) toBigDecimal36(buf, p, limit, s, scale)
-    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, limit, s), scale)
+    } else if (len <= 36) toBigDecimal36(buf, p, -1, limit, s, scale)
+    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, -1, limit, s), scale)
     else {
       // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
       // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
@@ -3621,23 +3621,65 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigDecimal36(buf: Array[Byte], p: Int, limit: Int, s: Int, scale: Int): java.math.BigDecimal = {
+  // Parses digits of the integer and fractional parts as one unscaled value, skipping the dot at `fracPos - 1`
+  private[this] def toBigDecimalWithFraction(buf: Array[Byte], p: Int, fracPos: Int, limit: Int, s: Int,
+                                             scale: Int): java.math.BigDecimal = {
+    val len = limit - p - 1
+    val fracScale = scale + limit - fracPos
+    if (len <= 36) toBigDecimal36(buf, p, fracPos - 1, limit, s, fracScale)
+    else if (len <= 308) new java.math.BigDecimal(toBigInteger308(buf, p, fracPos - 1, limit, s), fracScale)
+    else toBigDecimal(buf, p, fracPos - 1, s, scale).add(toBigDecimal(buf, fracPos, limit, s, fracScale))
+  }
+
+  // Parses up to 9 digits, skipping the dot at the `dot` position
+  private[this] def toInt(buf: Array[Byte], p: Int, dot: Int, limit: Int): Int = {
+    var x = 0
     var pos = p
-    var x = buf(pos) - '0'
-    pos += 1
-    val limit2 = limit - 18
-    val limit1 = Math.min(pos + 8, limit2)
-    while (pos < limit1) {
-      x = x * 10 + (buf(pos) - '0')
+    while (pos < limit) {
+      if (pos != dot) x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    var x1 = x.toLong
-    while (pos < limit2) {
-      x1 = (x1 << 3) + (x1 << 1) + (buf(pos) - '0')
+    x
+  }
+
+  // Parses up to 18 digits, skipping the dot at the `dot` position
+  private[this] def toLong(buf: Array[Byte], p: Int, dot: Int, limit: Int): Long = {
+    var x = 0L
+    var pos = p
+    while (pos < limit) {
+      if (pos != dot) x = (x << 3) + (x << 1) + (buf(pos) - '0')
       pos += 1
     }
+    x
+  }
+
+  // Parses 19..36 digits, skipping the dot at the `dot` position if it is not -1
+  private[this] def toBigDecimal36(buf: Array[Byte], p: Int, dot: Int, limit: Int, s: Int,
+                                   scale: Int): java.math.BigDecimal = {
+    var limit2 = limit - 18
+    if (dot >= limit2) limit2 -= 1 // the last block of 18 digits contains the dot
+    var x1 =
+      if (dot >= 0 && dot < limit2) toLong(buf, p, dot, limit2)
+      else {
+        var pos = p
+        var x = buf(pos) - '0'
+        pos += 1
+        val limit1 = Math.min(pos + 8, limit2)
+        while (pos < limit1) {
+          x = x * 10 + (buf(pos) - '0')
+          pos += 1
+        }
+        var l = x.toLong
+        while (pos < limit2) {
+          l = (l << 3) + (l << 1) + (buf(pos) - '0')
+          pos += 1
+        }
+        l
+      }
+    val pos = limit2
     var x2 =
-      ((buf(pos) * 10 + buf(pos + 1) - 528) * 10000000 + // 528 == '0' * 11
+      if (dot >= pos) toLong(buf, pos, dot, limit)
+      else ((buf(pos) * 10 + buf(pos + 1) - 528) * 10000000 + // 528 == '0' * 11
         ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
           (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
           (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
@@ -3660,8 +3702,10 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigInteger308(buf: Array[Byte], p: Int, limit: Int, s: Int): java.math.BigInteger = {
-    val len = limit - p
+  // Parses 19..308 digits, skipping the dot at the `dot` position if it is not -1
+  private[this] def toBigInteger308(buf: Array[Byte], p: Int, dot: Int, limit: Int, s: Int): java.math.BigInteger = {
+    var len = limit - p
+    if (dot >= 0) len -= 1
     val last = (len * 0.10381025296523008).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
     var magnitude = this.magnitude
     if (magnitude eq null) {
@@ -3674,23 +3718,23 @@ final class JsonReader private[jsoniter_scala](
         i += 1
       }
     }
-    var x1 = 0
-    val limit1 = len % 9 + p
-    var pos = p
-    while (pos < limit1) {
-      x1 = x1 * 10 + (buf(pos) - '0')
-      pos += 1
-    }
-    magnitude(last) = x1
+    var pos = len % 9 + p
+    if (dot >= p && dot < pos) pos += 1 // the first block contains the dot
+    magnitude(last) = toInt(buf, p, dot, pos)
     var first = last
     while (pos < limit) {
       var x =
-        ((buf(pos) * 10 + buf(pos + 1) - 528) * 10000000 + // 528 == '0' * 11
-          ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
-            (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
-            (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
-            buf(pos + 8) - 53333328)).toLong // 53333328 == '0' * 1111111
-      pos += 9
+        if (dot >= pos && dot < pos + 9) { // the block of 9 digits contains the dot
+          pos += 10
+          toInt(buf, pos - 10, dot, pos).toLong
+        } else {
+          pos += 9
+          ((buf(pos - 9) * 10 + buf(pos - 8) - 528) * 10000000 + // 528 == '0' * 11
+            ((buf(pos - 7) * 10 + buf(pos - 6)) * 100000 +
+              (buf(pos - 5) * 10 + buf(pos - 4)) * 1000 +
+              (buf(pos - 3) * 10 + buf(pos - 2)) * 10 +
+              buf(pos - 1) - 53333328)).toLong // 53333328 == '0' * 1111111
+        }
       first = Math.max(first - 1, 0)
       var i = last
       while ({
@@ -3867,7 +3911,7 @@ final class JsonReader private[jsoniter_scala](
             }
             java.math.BigDecimal.valueOf(x1, -18).add(java.math.BigDecimal.valueOf(x2)).unscaledValue
           }
-        } else if (digits <= 308) toBigInteger308(buf, from, limit, s)
+        } else if (digits <= 308) toBigInteger308(buf, from, -1, limit, s)
         else {
           // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing huge numbers
           // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
@@ -3909,9 +3953,8 @@ final class JsonReader private[jsoniter_scala](
             if (s != 0) x = -x
             java.math.BigDecimal.valueOf(x, scale + fracLen)
           } else {
-            val bd = toBigDecimal(buf, from, fracLimit, s, scale)
-            if (fracLen == 0) bd
-            else bd.add(toBigDecimal(buf, fracPos, limit, s, scale + fracLen))
+            if (fracLen == 0) toBigDecimal(buf, from, fracLimit, s, scale)
+            else toBigDecimalWithFraction(buf, from, fracPos, limit, s, scale)
           }
         if (mc.getPrecision < digits) d = d.plus(mc)
         if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
