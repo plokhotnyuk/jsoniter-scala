@@ -1009,7 +1009,7 @@ final class JsonReader private[jsoniter_scala](
     *                             when both the JSON value and the provided default value are `null`
     */
   def readBase16AsBytes(default: Array[Byte]): Array[Byte] =
-    if (isNextToken('"', head)) parseBase16(nibbles)
+    if (isNextToken('"', head)) parseBase16()
     else readNullOrTokenError(default, '"')
 
   /**
@@ -5691,8 +5691,9 @@ final class JsonReader private[jsoniter_scala](
   private[this] def hexDigits8(bs: Long): Long = {
     val b6 = bs & 0x4040404040404040L // set for 'a'..'f' and 'A'..'F'
     var x = (bs & 0x0F0F0F0F0F0F0F0FL) + (b6 >>> 3) + (b6 >>> 6) // + 9 for letters
-    x = (x * 0x1001L >>> 8) & 0x00FF00FF00FF00FFL // pack pairs of nibbles into even bytes
-    x *= 0x1000001L // pack pairs of bytes into 16-bit words at bits 16..31 and 48..63
+    x |= x << 12
+    x = (x >>> 8) & 0x00FF00FF00FF00FFL // pack pairs of nibbles into even bytes
+    x |= x << 24 // pack pairs of bytes into 16-bit words at bits 16..31 and 48..63
     x & 0xFFFF0000L | x >>> 48
   }
 
@@ -5863,65 +5864,63 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def readEscapedUnicode(pos: Int, buf: Array[Byte]): Char = {
-    val ns = nibbles
-    val x =
-      ns(buf(pos) & 0xFF) << 12 |
-        ns(buf(pos + 1) & 0xFF) << 8 |
-        ns(buf(pos + 2) & 0xFF) << 4 |
-        ns(buf(pos + 3) & 0xFF)
-    if (x < 0) hexDigitError(pos)
-    x.toChar
+    val bs = ByteArrayAccess.getInt(buf, pos)
+    val lcs = bs | 0x20202020
+    if ((((bs + 0x46464646 | bs - 0x30303030) & // not '0'..'9'
+      (0xE0E0E0E0 - lcs | lcs + 0x19191919) | // not 'a'..'f' and not 'A'..'F'
+      bs) & 0x80808080) != 0) hexDigitError(pos)
+    val b6 = bs & 0x40404040 // set for 'a'..'f' and 'A'..'F'
+    var x = (bs & 0x0F0F0F0F) + (b6 >>> 3) + (b6 >>> 6) // + 9 for letters
+    x |= x << 12 // d0d1 in bits 8..15, d2d3 in bits 24..31
+    (x & 0xFF00 | x >>> 24).toChar
   }
 
   @inline
-  private[this] def parseBase16(ns: Array[Byte]): Array[Byte] = {
+  private[this] def parseBase16(): Array[Byte] = {
     var charBuf = this.charBuf
     var len = charBuf.length
     var pos = head
     var buf = this.buf
-    var i, bits = 0
-    while (bits >= 0 && (pos + 3 < tail || {
+    var i = 0
+    var isHex = true
+    while (isHex && (pos + 7 < tail || {
       pos = loadMore(pos)
       buf = this.buf
-      pos + 3 < tail
+      pos + 7 < tail
     })) {
-      if (i >= len) {
-        len = growCharBuf(i + 1)
+      if (i + 1 >= len) {
+        len = growCharBuf(i + 2)
         charBuf = this.charBuf
       }
-      val posLim = Math.min(tail - 3, (len - i << 2) + pos)
+      val posLim = Math.min(tail - 7, (len - i >> 1 << 3) + pos)
       while (pos < posLim && {
-        bits =
-          ns(buf(pos) & 0xFF) << 12 |
-            ns(buf(pos + 1) & 0xFF) << 8 |
-            ns(buf(pos + 2) & 0xFF) << 4 |
-            ns(buf(pos + 3) & 0xFF)
-        bits >= 0
+        val bs = ByteArrayAccess.getLong(buf, pos)
+        isHex = (hexDigitErrors(bs) & 0x8080808080808080L) == 0
+        isHex && {
+          val x = hexDigits8(bs).toInt
+          charBuf(i) = (x >>> 16).toChar
+          charBuf(i + 1) = x.toChar
+          true
+        }
       }) {
-        charBuf(i) = bits.toChar
-        i += 1
-        pos += 4
+        i += 2
+        pos += 8
       }
     }
-    val bLen = i << 1
-    var bs: Array[Byte] = null
+    var bits, k = 0 // less than 8 hex digits can remain here, so up to 3 bytes are accumulated in `bits`
     var b = nextByte(pos)
-    if (b == '"') bs = new Array[Byte](bLen)
-    else {
-      bits = ns(b & 0xFF).toInt
-      if (bits < 0) decodeError("expected '\"' or hex digit")
+    while (b != '"') {
+      val n1 = hexDigit(b)
+      if (n1 < 0) decodeError("expected '\"' or hex digit")
+      val n2 = hexDigit(nextByte(head))
+      if (n2 < 0) decodeError("expected hex digit")
+      bits = bits << 8 | n1 << 4 | n2
+      k += 1
       b = nextByte(head)
-      bits = bits << 4 | ns(b & 0xFF)
-      if (bits < 0) decodeError("expected hex digit")
-      b = nextByte(head)
-      if (b != '"') {
-        if (ns(b & 0xFF) < 0) decodeError("expected '\"' or hex digit")
-        b = nextByte(head)
-        decodeError("expected hex digit")
-      }
-      bs = new Array[Byte](bLen + 1)
-      bs(bLen) = bits.toByte
     }
+    if (i + (k >> 1) > len) growCharBuf(i + (k >> 1)) // check the `maxCharBufSize` limit for remaining bytes
+    var bLen = i << 1
+    val bs = new Array[Byte](bLen + k)
     i = 0
     var j = 0
     while (j < bLen) {
@@ -5931,8 +5930,23 @@ final class JsonReader private[jsoniter_scala](
       i += 1
       j += 2
     }
+    bLen += k
+    while (k > 0) {
+      bLen -= 1
+      bs(bLen) = bits.toByte
+      bits >>= 8
+      k -= 1
+    }
     bs
   }
+
+  private[this] def hexDigit(b: Byte): Int =
+    if (b >= '0' && b <= '9') b - '0'
+    else {
+      val lc = b | 0x20
+      if (lc >= 'a' && lc <= 'f') lc - 87
+      else -1
+    }
 
   private[this] def parseBase64(ds: Array[Byte]): Array[Byte] = {
     var charBuf = this.charBuf
@@ -6009,19 +6023,18 @@ final class JsonReader private[jsoniter_scala](
   @noinline
   @tailrec
   private[this] def hexDigitError(pos: Int): Nothing = {
-    if (nibbles(buf(pos) & 0xFF) < 0) decodeError("expected hex digit", pos)
+    if (hexDigit(buf(pos)) < 0) decodeError("expected hex digit", pos)
     hexDigitError(pos + 1)
   }
 
   @noinline
   private[this] def uuidError(pos: Int): Nothing = {
-    val ns = nibbles
     var i = 0
     while (i < 36) {
       val b = buf(pos + i)
       if (i == 8 || i == 13 || i == 18 || i == 23) {
         if (b != '-') tokenError('-', pos + i)
-      } else if (ns(b & 0xFF) < 0) decodeError("expected hex digit", pos + i)
+      } else if (hexDigit(b) < 0) decodeError("expected hex digit", pos + i)
       i += 1
     }
     tokenError('"', pos + 36)
@@ -6518,51 +6531,6 @@ object JsonReader {
     -1231068949876566920L, -7686947121313936181L, -4996997883215032323L, -1634561335591402499L,
     -7939129862385708418L, -5312226309554747619L, -2028596868516046619L, -8185402070463610993L,
     -5620066569652125837L
-  )
-  /* Use the following code to generate `nibbles` in Scala REPL:
-    val ns = new Array[Byte](256)
-    java.util.Arrays.fill(ns, -1: Byte)
-    ns('0') = 0
-    ns('1') = 1
-    ns('2') = 2
-    ns('3') = 3
-    ns('4') = 4
-    ns('5') = 5
-    ns('6') = 6
-    ns('7') = 7
-    ns('8') = 8
-    ns('9') = 9
-    ns('A') = 10
-    ns('B') = 11
-    ns('C') = 12
-    ns('D') = 13
-    ns('E') = 14
-    ns('F') = 15
-    ns('a') = 10
-    ns('b') = 11
-    ns('c') = 12
-    ns('d') = 13
-    ns('e') = 14
-    ns('f') = 15
-    ns.grouped(16).map(_.mkString(", ")).mkString("Array(\n", ",\n", "\n)")
-   */
-  private final val nibbles: Array[Byte] = Array(
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1, -1, -1, -1, -1,
-    -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
   )
   /* Use the following code to generate `base64Bytes` in Scala REPL:
     val bs = new Array[Byte](256)
