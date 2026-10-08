@@ -5670,59 +5670,31 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
-      val ns = nibbles
       val buf = this.buf
-      val mostSigBits1 =
-        ns(buf(pos) & 0xFF).toLong << 28 |
-          (ns(buf(pos + 1) & 0xFF) << 24 |
-            ns(buf(pos + 2) & 0xFF) << 20 |
-            ns(buf(pos + 3) & 0xFF) << 16 |
-            ns(buf(pos + 4) & 0xFF) << 12 |
-            ns(buf(pos + 5) & 0xFF) << 8 |
-            ns(buf(pos + 6) & 0xFF) << 4 |
-            ns(buf(pos + 7) & 0xFF))
-      if (mostSigBits1 < 0L) hexDigitError(pos)
-      if (buf(pos + 8) != '-') tokenError('-', pos + 8)
-      val mostSigBits2 =
-        ns(buf(pos + 9) & 0xFF) << 12 |
-          ns(buf(pos + 10) & 0xFF) << 8 |
-          ns(buf(pos + 11) & 0xFF) << 4 |
-          ns(buf(pos + 12) & 0xFF)
-      if (mostSigBits2 < 0) hexDigitError(pos + 9)
-      if (buf(pos + 13) != '-') tokenError('-', pos + 13)
-      val mostSigBits3 =
-        ns(buf(pos + 14) & 0xFF) << 12 |
-          ns(buf(pos + 15) & 0xFF) << 8 |
-          ns(buf(pos + 16) & 0xFF) << 4 |
-          ns(buf(pos + 17) & 0xFF)
-      if (mostSigBits3 < 0) hexDigitError(pos + 14)
-      if (buf(pos + 18) != '-') tokenError('-', pos + 18)
-      val leastSigBits1 =
-        ns(buf(pos + 19) & 0xFF) << 12 |
-          ns(buf(pos + 20) & 0xFF) << 8 |
-          ns(buf(pos + 21) & 0xFF) << 4 |
-          ns(buf(pos + 22) & 0xFF)
-      if (leastSigBits1 < 0) hexDigitError(pos + 19)
-      if (buf(pos + 23) != '-') tokenError('-', pos + 23)
-      val leastSigBits2 =
-        (ns(buf(pos + 24) & 0xFF) << 16 |
-          ns(buf(pos + 25) & 0xFF) << 12 |
-          ns(buf(pos + 26) & 0xFF) << 8 |
-          ns(buf(pos + 27) & 0xFF) << 4 |
-          ns(buf(pos + 28) & 0xFF)).toLong << 28 |
-          (ns(buf(pos + 29) & 0xFF) << 24 |
-            ns(buf(pos + 30) & 0xFF) << 20 |
-            ns(buf(pos + 31) & 0xFF) << 16 |
-            ns(buf(pos + 32) & 0xFF) << 12 |
-            ns(buf(pos + 33) & 0xFF) << 8 |
-            ns(buf(pos + 34) & 0xFF) << 4 |
-            ns(buf(pos + 35) & 0xFF))
-      if (leastSigBits2 < 0L) hexDigitError(pos + 24)
-      if (buf(pos + 36) != '"') tokenError('"', pos + 36)
+      val bs1 = ByteArrayAccess.getLong(buf, pos)
+      val bs2 = ByteArrayAccess.getInt(buf, pos + 9) & 0xFFFFFFFFL | ByteArrayAccess.getInt(buf, pos + 14).toLong << 32
+      val bs3 = ByteArrayAccess.getInt(buf, pos + 19) & 0xFFFFFFFFL | ByteArrayAccess.getInt(buf, pos + 24).toLong << 32
+      val bs4 = ByteArrayAccess.getLong(buf, pos + 28)
+      if (((hexDigitErrors(bs1) | hexDigitErrors(bs2) | hexDigitErrors(bs3) | hexDigitErrors(bs4)) & 0x8080808080808080L) != 0 ||
+        buf(pos + 8) != '-' || buf(pos + 13) != '-' || buf(pos + 18) != '-' || buf(pos + 23) != '-' || buf(pos + 36) != '"') uuidError(pos)
       head = pos + 37
-      new UUID(mostSigBits1 << 32 | mostSigBits2.toLong << 16 | mostSigBits3,
-        leastSigBits1.toLong << 48 | leastSigBits2)
+      new UUID(hexDigits8(bs1) << 32 | hexDigits8(bs2), hexDigits8(bs3) << 32 | hexDigits8(bs4))
     } else parseUUID(loadMoreOrError(pos))
+
+  private[this] def hexDigitErrors(bs: Long): Long = {
+    val lcs = bs | 0x2020202020202020L
+    (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & // not '0'..'9'
+      (0xE0E0E0E0E0E0E0E0L - lcs | lcs + 0x1919191919191919L) | // not 'a'..'f' and not 'A'..'F'
+      bs
+  }
+
+  private[this] def hexDigits8(bs: Long): Long = {
+    val b6 = bs & 0x4040404040404040L // set for 'a'..'f' and 'A'..'F'
+    var x = (bs & 0x0F0F0F0F0F0F0F0FL) + (b6 >>> 3) + (b6 >>> 6) // + 9 for letters
+    x = (x * 0x1001L >>> 8) & 0x00FF00FF00FF00FFL // pack pairs of nibbles into even bytes
+    x *= 0x1000001L // pack pairs of bytes into 16-bit words at bits 16..31 and 48..63
+    x & 0xFFFF0000L | x >>> 48
+  }
 
   @tailrec
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
@@ -6039,6 +6011,20 @@ final class JsonReader private[jsoniter_scala](
   private[this] def hexDigitError(pos: Int): Nothing = {
     if (nibbles(buf(pos) & 0xFF) < 0) decodeError("expected hex digit", pos)
     hexDigitError(pos + 1)
+  }
+
+  @noinline
+  private[this] def uuidError(pos: Int): Nothing = {
+    val ns = nibbles
+    var i = 0
+    while (i < 36) {
+      val b = buf(pos + i)
+      if (i == 8 || i == 13 || i == 18 || i == 23) {
+        if (b != '-') tokenError('-', pos + i)
+      } else if (ns(b & 0xFF) < 0) decodeError("expected hex digit", pos + i)
+      i += 1
+    }
+    tokenError('"', pos + 36)
   }
 
   @noinline
