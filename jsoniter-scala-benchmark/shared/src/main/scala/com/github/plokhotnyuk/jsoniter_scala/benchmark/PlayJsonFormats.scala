@@ -24,7 +24,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.time._
 import java.util.Base64
 import play.api.libs.json._
-import scala.collection.immutable.{BitSet, IndexedSeq, IntMap, Map, Seq}
+import scala.collection.immutable.{BitSet, IndexedSeq, IntMap, LongMap, Map, Seq}
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
@@ -64,6 +64,17 @@ object PlayJsonFormats extends PlatformSpecificPlayJsonFormats {
         new JsSuccess(js.as[Map[Int, A]].foldLeft(IntMap.empty[A])((m, p) => m.updated(p._1, p._2)))
 
       override def writes(v: IntMap[A]): JsValue =
+        Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {
+          (m, p) => m.addOne((p._1.toString, aWrites.writes(p._2)))
+        })
+    }
+
+  implicit def longMapFormat[A](implicit mapReads: Reads[Map[Long, A]], aWrites: Writes[A]): Format[LongMap[A]] =
+    new Format[LongMap[A]] {
+      override def reads(js: JsValue): JsResult[LongMap[A]] =
+        new JsSuccess(js.as[Map[Long, A]].foldLeft(LongMap.empty[A])((m, p) => m.updated(p._1, p._2)))
+
+      override def writes(v: LongMap[A]): JsValue =
         Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {
           (m, p) => m.addOne((p._1.toString, aWrites.writes(p._2)))
         })

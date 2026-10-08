@@ -30,7 +30,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import java.math.MathContext
 import java.time._
 import java.util.UUID
-import scala.collection.immutable.{BitSet, IntMap, Map}
+import scala.collection.immutable.{BitSet, IntMap, LongMap, Map}
 import scala.collection.mutable
 
 object AVSystemCodecs {
@@ -85,6 +85,9 @@ object AVSystemCodecs {
   implicit val intMapOfBooleansGenCodec: GenCodec[IntMap[Boolean]] =
     transformed(m => (m: Map[Int, Boolean]),
       (m: Map[Int, Boolean]) => m.foldLeft(IntMap.empty[Boolean])((im, p) => im.updated(p._1, p._2)))
+  implicit val longMapOfBooleansGenCodec: GenCodec[LongMap[Boolean]] =
+    transformed(m => (m: Map[Long, Boolean]),
+      (m: Map[Long, Boolean]) => m.foldLeft(LongMap.empty[Boolean])((lm, p) => lm.updated(p._1, p._2)))
   implicit val missingReqFieldGenCodec: GenCodec[MissingRequiredFields] = materializeRecursively
   implicit val mutableBitSetGenCodec: GenCodec[mutable.BitSet] =
     transformed(_.toArray, (a: Array[Int]) => mutable.BitSet.fromBitMaskNoCopy(toBitMask(a, Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))

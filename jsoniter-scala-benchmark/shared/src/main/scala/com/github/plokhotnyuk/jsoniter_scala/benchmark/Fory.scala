@@ -27,7 +27,7 @@ import org.apache.fory.json.annotation.{JsonByteArray, JsonFormat, JsonInclude, 
 import org.apache.fory.json.annotation.JsonProperty.Include
 import org.apache.fory.json.scala.{ForyJsonScala, ScalaJsonCodec, ScalaTypeRef}
 import org.apache.fory.reflect.TypeRef
-import scala.collection.immutable.{ArraySeq, IntMap}
+import scala.collection.immutable.{ArraySeq, IntMap, LongMap}
 import scala.collection.mutable
 
 object Fory {
@@ -117,6 +117,7 @@ object Fory {
   val arrayOfEnumADTsType: TypeRef[Array[SuitADT]] = ScalaTypeRef[Array[SuitADT]]
   val intMapOfBooleansType: TypeRef[IntMap[Boolean]] = ScalaTypeRef[IntMap[Boolean]]
   val listOfBooleansType: TypeRef[List[Boolean]] = ScalaTypeRef[List[Boolean]]
+  val longMapOfBooleansType: TypeRef[LongMap[Boolean]] = ScalaTypeRef[LongMap[Boolean]]
   val mapOfIntsToBooleansType: TypeRef[Map[Int, Boolean]] = ScalaTypeRef[Map[Int, Boolean]]
   val mutableLongMapOfBooleansType: TypeRef[mutable.LongMap[Boolean]] = ScalaTypeRef[mutable.LongMap[Boolean]]
   val mutableMapOfIntsToBooleansType: TypeRef[mutable.Map[Int, Boolean]] = ScalaTypeRef[mutable.Map[Int, Boolean]]

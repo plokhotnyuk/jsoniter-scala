@@ -112,6 +112,10 @@ object DslPlatformJson {
   mapOfIntsToBooleansDecoder: JsonReader.ReadObject[Map[Int, Boolean]]) = codec[Map[Int, Boolean]]
   implicit val (mutableBitSetEncoder: JsonWriter.WriteObject[mutable.BitSet],
   mutableBitSetDecoder: JsonReader.ReadObject[mutable.BitSet]) = codec[mutable.BitSet]
+  /* FIXME: DSL-JSON doesn't support immutable.LongMap
+    implicit val (longMapOfBooleansEncoder: JsonWriter.WriteObject[LongMap[Boolean]],
+    longMapOfBooleansDecoder: JsonReader.ReadObject[LongMap[Boolean]]) = codec[LongMap[Boolean]]
+  */
   /* FIXME: DSL-JSON doesn't support mutable.LongMap
     implicit val (mutableLongMapOfBooleansEncoder: JsonWriter.WriteObject[mutable.LongMap[Boolean]],
     mutableLongMapOfBooleansDecoder: JsonReader.ReadObject[mutable.LongMap[Boolean]]) = codec[mutable.LongMap[Boolean]]

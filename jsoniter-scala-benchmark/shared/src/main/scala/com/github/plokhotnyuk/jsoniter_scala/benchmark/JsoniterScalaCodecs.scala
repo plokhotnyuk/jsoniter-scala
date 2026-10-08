@@ -102,6 +102,8 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val googleMapsAPICodec: JsonValueCodec[GoogleMapsAPI.DistanceMatrix] =
     make(CodecMakerConfig.withCheckFieldDuplication(false))
+  implicit val longMapOfBooleansCodec: JsonValueCodec[LongMap[Boolean]] =
+    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val mapOfIntsToBooleansCodec: JsonValueCodec[Map[Int, Boolean]] =
     make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val missingReqFieldCodec: JsonValueCodec[MissingRequiredFields] =

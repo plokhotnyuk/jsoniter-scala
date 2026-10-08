@@ -1184,6 +1184,23 @@ object Main {
       B("zioSchemaJson")(benchmark.zioSchemaJson())
     ))
   }, {
+    val benchmark = new LongMapOfBooleansReading { size = 512; setup() }
+    GS(S(s"$packageName.LongMapOfBooleansReading")(
+      B("circe")(benchmark.circe()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
+    ))
+  }, {
+    val benchmark = new LongMapOfBooleansWriting { size = 512; setup() }
+    GS(S(s"$packageName.LongMapOfBooleansWriting")(
+      B("circe")(benchmark.circe()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle())
+    ))
+  }, {
     val benchmark = new MapOfIntsToBooleansReading { size = 512; setup() }
     GS(S(s"$packageName.MapOfIntsToBooleansReading")(
       B("circe")(benchmark.circe()),

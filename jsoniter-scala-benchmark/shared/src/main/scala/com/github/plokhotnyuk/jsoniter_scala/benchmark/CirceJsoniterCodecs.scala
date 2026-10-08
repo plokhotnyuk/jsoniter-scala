@@ -30,7 +30,7 @@ import io.circe.generic.semiauto._
 import io.circe.syntax.EncoderOps
 import java.time.Instant
 import java.util.Base64
-import scala.collection.immutable.{BitSet, IntMap, Map}
+import scala.collection.immutable.{BitSet, IntMap, LongMap, Map}
 import scala.collection.mutable
 
 object CirceJsoniterCodecs {
@@ -666,7 +666,10 @@ object CirceJsoniterCodecs {
   implicit val intMapC3c: Codec[IntMap[Boolean]] =
     Codec.from(Decoder.decodeMap[Int, Boolean].map(_.foldLeft(IntMap.empty[Boolean])((m, p) => m.updated(p._1, p._2))),
       Encoder.encodeMap[Int, Boolean].contramapObject((m: IntMap[Boolean]) => m))
-  implicit val longMapC3c: Codec[mutable.LongMap[Boolean]] =
+  implicit val longMapC3c: Codec[LongMap[Boolean]] =
+    Codec.from(Decoder.decodeMap[Long, Boolean].map(_.foldLeft(LongMap.empty[Boolean])((m, p) => m.updated(p._1, p._2))),
+      Encoder.encodeMap[Long, Boolean].contramapObject((m: LongMap[Boolean]) => m))
+  implicit val mutableLongMapC3c: Codec[mutable.LongMap[Boolean]] =
     Codec.from(Decoder.decodeMap[Long, Boolean].map(_.foldLeft(new mutable.LongMap[Boolean]) { (m, p) =>
       m.update(p._1, p._2)
       m

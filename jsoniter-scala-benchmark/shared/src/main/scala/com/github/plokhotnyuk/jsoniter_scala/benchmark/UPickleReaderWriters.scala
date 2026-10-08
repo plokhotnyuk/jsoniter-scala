@@ -27,7 +27,7 @@ import upickle.AttributeTagged
 import upickle.core.Visitor
 import java.time._
 import java.util.Base64
-import scala.collection.immutable.IntMap
+import scala.collection.immutable.{IntMap, LongMap}
 import scala.collection.mutable
 
 object UPickleReaderWriters extends AttributeTagged {
@@ -153,6 +153,12 @@ object UPickleReaderWriters extends AttributeTagged {
     MapWriter2(stringKeyW(IntWriter), BooleanWriter)
   implicit val intMapOfBooleansWriter: Writer[IntMap[Boolean]] =
     mapOfIntsToBooleansWriter.asInstanceOf[Writer[IntMap[Boolean]]]
+  implicit val longMapOfBooleansReader: Reader[LongMap[Boolean]] =
+    reader[Obj].map[LongMap[Boolean]] {
+      _.value.foldLeft(LongMap.empty[Boolean]) { (m, kv) => m.updated(kv._1.toLong, kv._2.bool) }
+    }
+  implicit val longMapOfBooleansWriter: Writer[LongMap[Boolean]] =
+    MapWriter2(stringKeyW(longWriter), BooleanWriter).asInstanceOf[Writer[LongMap[Boolean]]]
   implicit val mutableLongMapOfBooleansReader: Reader[mutable.LongMap[Boolean]] =
     reader[Obj].map[mutable.LongMap[Boolean]] {
       _.value.foldLeft(new mutable.LongMap[Boolean]) { (m, kv) => m.update(kv._1.toLong, kv._2.bool); m }
