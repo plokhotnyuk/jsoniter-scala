@@ -3172,13 +3172,13 @@ final class JsonReader private[jsoniter_scala](
     head = pos
     var x: Double =
       if (e10 == 0 && m10 < 922337203685477580L) m10.toDouble
-      else if (m10 < 4503599627370496L && e10 >= -22 && e10 <= 38 - digits) {
+      else if (m10 <= 9007199254740992L && e10 >= -22 && e10 <= 38 - digits) {
         val pow10 = pow10Doubles
-        if (e10 < 0) m10 / pow10(-e10)
-        else if (e10 <= 22) m10 * pow10(e10)
+        if (e10 < 0) m10 / pow10(22 - e10)
+        else if (e10 <= 22) m10 * pow10(e10 + 22)
         else {
           val slop = 16 - digits
-          (m10 * pow10(slop)) * pow10(e10 - slop)
+          (m10 * pow10(slop + 22)) * pow10(e10 - slop + 22)
         }
       } else toDouble(m10, e10, from, newMark, pos)
     if (isNeg) x = -x
@@ -3204,21 +3204,18 @@ final class JsonReader private[jsoniter_scala](
         else 19) << shift
       val truncatedBitNum = Math.max(-1074 - e2, 11)
       val savedBitNum = 64 - truncatedBitNum
-      val mask = -1L >>> Math.max(savedBitNum, 0)
-      val halfwayDiff = (m2 & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
-        if (savedBitNum <= 0) m2 = 0L
-        m2 >>>= truncatedBitNum
-        e2 += truncatedBitNum
-        if (savedBitNum >= 0 && halfwayDiff > 0L) {
-          if (m2 == 0x1FFFFFFFFFFFFFL) {
-            m2 = 0x10000000000000L
-            e2 += 1
-          } else m2 += 1L
-        }
-        if (e2 == -1074) m2
-        else if (e2 >= 972) 0x7FF0000000000000L
-        else (e2 + 1075).toLong << 52 | m2 & 0xFFFFFFFFFFFFFL
+      val halfwayDiff =
+        if (savedBitNum >= 0) {
+          val mask = -1L >>> savedBitNum
+          (m2 & mask) - (mask >>> 1)
+        } else m2 + 1L // the halfway point is 2^64 or above here, so it is an upper bound that is always <= 0
+      if (Math.abs(halfwayDiff) > roundingError) java.lang.Double.longBitsToDouble {
+        var md = halfwayDiff >> 63 // -1 when rounding down and 0 when rounding up, halfwayDiff cannot be 0 here
+        if (savedBitNum > 0) md += m2 >>> truncatedBitNum
+        // The implicit bit of normal mantissas increments the exponent, so subnormals, carries after rounding and
+        // overflows to infinity are handled without branches. The -1 of rounding down (added back after `min`) prevents
+        // the sign bit overflow when the clamped exponent is combined with a carry to the next power of 2
+        Math.min(((Math.min(e2 + truncatedBitNum, 972) + 1074).toLong << 52) + md, 0x7FEFFFFFFFFFFFFFL) + 1
       } else toDouble(from, newMark, pos)
     }
 
@@ -3322,10 +3319,8 @@ final class JsonReader private[jsoniter_scala](
     head = pos
     var x: Float =
       if (e10 == 0 && m10 < 922337203685477580L) m10.toFloat
-      else if (m10 < 4294967296L && e10 >= digits - 23 && e10 <= 19 - digits) {
-        val pow10 = pow10Doubles
-        (if (e10 < 0) m10 / pow10(-e10)
-        else m10 * pow10(e10)).toFloat
+      else if (m10 < 1000000000L && e10 >= digits - 23 && e10 <= 21 - digits) {
+        (m10 * pow10Doubles(e10 + 22)).toFloat
       } else toFloat(m10, e10, from, newMark, pos)
     if (isNeg) x = -x
     if (mark > oldMark) mark = oldMark
@@ -3350,21 +3345,18 @@ final class JsonReader private[jsoniter_scala](
         else 19) << shift
       val truncatedBitNum = Math.max(-149 - e2, 40)
       val savedBitNum = 64 - truncatedBitNum
-      val mask = -1L >>> Math.max(savedBitNum, 0)
-      val halfwayDiff = (m2 & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
-        var mf = 0
-        if (savedBitNum > 0) mf = (m2 >>> truncatedBitNum).toInt
-        e2 += truncatedBitNum
-        if (savedBitNum >= 0 && halfwayDiff > 0L) {
-          if (mf == 0xFFFFFF) {
-            mf = 0x800000
-            e2 += 1
-          } else mf += 1
-        }
-        if (e2 == -149) mf
-        else if (e2 >= 105) 0x7F800000
-        else e2 + 150 << 23 | mf & 0x7FFFFF
+      val halfwayDiff =
+        if (savedBitNum >= 0) {
+          val mask = -1L >>> savedBitNum
+          (m2 & mask) - (mask >>> 1)
+        } else m2 + 1L // the halfway point is 2^64 or above here, so it is an upper bound that is always <= 0
+      if (Math.abs(halfwayDiff) > roundingError) java.lang.Float.intBitsToFloat {
+        var mf = (halfwayDiff >> 63).toInt // -1 when rounding down and 0 when rounding up, halfwayDiff cannot be 0 here
+        if (savedBitNum > 0) mf += (m2 >>> truncatedBitNum).toInt
+        // The implicit bit of normal mantissas increments the exponent, so subnormals, carries after rounding and
+        // overflows to infinity are handled without branches. The -1 of rounding down (added back after `min`) prevents
+        // the sign bit overflow when the clamped exponent is combined with a carry to the next power of 2
+        Math.min((Math.min(e2 + truncatedBitNum, 105) + 149 << 23) + mf, 0x7F7FFFFF) + 1
       } else toFloat(from, newMark, pos)
     }
 
@@ -5295,8 +5287,9 @@ final class JsonReader private[jsoniter_scala](
 
 object JsonReader {
   private final val pow10Doubles: Array[Double] =
-    Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
-      1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
+    Array(1e-22, 1e-21, 1e-20, 1e-19, 1e-18, 1e-17, 1e-16, 1e-15, 1e-14, 1e-13, 1e-12, 1e-11,
+      1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8,
+      1e+9, 1e+10, 1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
   /* Use the following code to generate `pow10Mantissas` in Scala REPL:
     val ms = new Array[Long](653)
     var pow10 = BigInt(10)

@@ -3524,6 +3524,21 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkFloat("1.17549430E-38", ws)
         checkFloat("1.17549429E-38", ws)
         checkFloat("1.17549428E-38", ws)
+        checkFloat("3162410519e-22", ws) // Double rounding to the midpoint
+        checkFloat("2712892001e-14", ws)
+        checkFloat("2167005367e10", ws)
+        checkFloat("2182707467e-13", ws) // Double rounding after multiplication by an inexact negative power of 10
+        checkFloat("800508985e-22", ws)
+        checkFloat("585052973e13", ws)
+        checkFloat("1591091017e10", ws)
+        checkFloat("83886085e-1", ws) // Exact midpoint
+        checkFloat("9007199254740992e-22", ws)
+        checkFloat("9007199254740993e-22", ws)
+        checkFloat("1e38", ws)
+        checkFloat("12345678901234e24", ws)
+        checkFloat("7.0064923216240853547E-46", ws) // Just above the half of Float.MinValue with a truncated mantissa
+        checkFloat("7.006492321624085354618648E-46", ws)
+        checkFloat("680564733208670559090013829652547894782", ws) // Carry to 2^129 after rounding with an overflown exponent
       }
       forAll(arbitrary[Float], genWhitespaces, minSuccessful(10000))((n, ws) => check(n.toString, n, ws))
       forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => check(n.toString, n.toFloat, ws))
@@ -3533,7 +3548,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           check(x.toString, x, ws)
         }
       }
-      forAll(Gen.choose(0L, (1L << 32) - 1), Gen.choose(-22, 18), genWhitespaces, minSuccessful(10000)) { (m, e, ws) =>
+      forAll(Gen.choose(0L, 1L << 53), Gen.choose(-22, 22), genWhitespaces, minSuccessful(10000)) { (m, e, ws) =>
         checkFloat(s"${m}e$e", ws)
       }
       forAll(genBigInt, genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
@@ -3663,6 +3678,15 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkDouble("2.2250738585072013E-308", ws)
         checkDouble("2.2250738585072012E-308", ws)
         checkDouble("2.2250738585072011E-308", ws)
+        checkDouble("4503599627370497e-22", ws) // Fast path boundaries
+        checkDouble("9007199254740991e-22", ws)
+        checkDouble("9007199254740992e-22", ws)
+        checkDouble("9007199254740992e22", ws)
+        checkDouble("9007199254740993e-22", ws)
+        checkDouble("9007199254740993e22", ws)
+        checkDouble("2.4703282292062327209E-324", ws) // Just above the half of Double.MinValue with a truncated mantissa
+        checkDouble("2.470328229206232720882844E-324", ws)
+        checkDouble("7.190772539449262566324201788235034e308", ws) // Carry to 2^1026 after rounding with an overflown exponent
       }
       forAll(arbitrary[Double], genWhitespaces, minSuccessful(10000))((n, ws) => check(n.toString, n, ws))
       forAll(arbitrary[Float], genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))
@@ -3673,7 +3697,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         }
       }
       forAll(arbitrary[Long], genWhitespaces, minSuccessful(10000))((n, ws) => check(n.toString, n.toDouble, ws))
-      forAll(Gen.choose(0L, (1L << 53) - 1), Gen.choose(-22, 37), genWhitespaces, minSuccessful(10000)) { (m, e, ws) =>
+      forAll(Gen.choose(0L, 1L << 53), Gen.choose(-22, 37), genWhitespaces, minSuccessful(10000)) { (m, e, ws) =>
         checkDouble(s"${m}e$e", ws)
       }
       forAll(genBigInt, genWhitespaces, minSuccessful(10000))((n, ws) => checkDouble(n.toString, ws))
