@@ -2583,6 +2583,31 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
+  private[this] def get8DigitsSkippingTrailingZeros(x: Long, ds: Array[Short]): Long = {
+    // The same as write8Digits, but stops multiplications when the rest digits are zeros. The approximation error of the
+    // remainder is less than 0.65 * x * 100^(k - 1) for k-th pair of digits that is less than the minimal non-zero
+    // remainder (2^47 / 10^(8 - 2 * k)), so 10^(6 + 2 * k) are used as thresholds for detection of zero remainders
+    var q1 = x * 140737489L // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    var w = 0x3030303030303030L
+    w |= ds((q1 >> 47).toInt)
+    val m = 0x7FFFFFFFFFFFL
+    q1 &= m
+    if (q1 > 99999999L) {
+      val q = 100L
+      q1 *= q
+      w |= ds((q1 >> 47).toInt) << 16
+      q1 &= m
+      if (q1 > 9999999999L) {
+        q1 *= q
+        w |= ds((q1 >> 47).toInt).toLong << 32
+        q1 &= m
+        if (q1 > 999999999999L) w |= ds((q1 * q >> 47).toInt).toLong << 48
+      }
+    }
+    w
+  }
+
+  @inline
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q2 = Math.multiplyHigh(x, 8307674973655724206L) >>> 52 // divide a positive long by 10^16
     val q1 = Math.multiplyHigh(x, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
@@ -2727,60 +2752,121 @@ final class JsonWriter private[jsoniter_scala](
         if (m2IEEE == 0 && ((e2 == -119) | (e2 == 64) | (e2 == 67))) m10 += 1
       }
       val ds = digits
-      if (e10 == 0 && m10 < 10000000) { // fast path for whole numbers in decimal notation
-        pos = writePositiveIntDigits(m10, pos, buf, ds)
+      // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      // d1 is the first digit, w holds the rest digits (up to 8) padded by '0' chars
+      var d1 = 0
+      var w = 0x3030303030303030L
+      if (m10 < 100) {
+        if (m10 < 10) d1 = m10 | '0'
+        else {
+          val d = ds(m10)
+          d1 = d & 0xFF
+          w |= d >> 8
+          e10 += 1
+        }
+      } else if (m10 < 10000) {
+        val q1 = m10 * 5243 >> 19 // divide a small positive int by 100
+        val d2 = ds(m10 - q1 * 100)
+        if (m10 < 1000) {
+          d1 = q1 | '0'
+          w |= d2
+          e10 += 2
+        } else {
+          val d = ds(q1)
+          d1 = d & 0xFF
+          w |= d >> 8 | d2 << 8
+          e10 += 3
+        }
+      } else if (m10 < 1000000) {
+        val q1 = m10 * 429497L
+        val m = 0xFFFFFFFFL
+        val q = 100L
+        val q2 = (q1 & m) * q
+        val q3 = (q2 & m) * q
+        val r1 = (q1 >>> 32).toInt
+        val d2 = ds((q2 >>> 32).toInt).toLong
+        val d3 = ds((q3 >>> 32).toInt).toLong
+        if (m10 < 100000) {
+          d1 = r1 | '0'
+          w |= d2 | d3 << 16
+          e10 += 4
+        } else {
+          val d = ds(r1)
+          d1 = d & 0xFF
+          w |= d >> 8 | d2 << 8 | d3 << 24
+          e10 += 5
+        }
+      } else if (m10 < 100000000) {
+        val q1 = m10 * 140737489L
+        val m = 0x7FFFFFFFFFFFL
+        val q = 100L
+        val q2 = (q1 & m) * q
+        val q3 = (q2 & m) * q
+        val q4 = (q3 & m) * q
+        val r1 = (q1 >>> 47).toInt
+        val d2 = ds((q2 >>> 47).toInt).toLong
+        val d3 = ds((q3 >>> 47).toInt).toLong
+        val d4 = ds((q4 >>> 47).toInt).toLong
+        if (m10 < 10000000) {
+          d1 = r1 | '0'
+          w |= d2 | d3 << 16 | d4 << 32
+          e10 += 6
+        } else {
+          val d = ds(r1)
+          d1 = d & 0xFF
+          w |= d >> 8 | d2 << 8 | d3 << 24 | d4 << 40
+          e10 += 7
+        }
+      } else {
+        val q1 = m10 * 1441151881L
+        val m = 0x1FFFFFFFFFFFFFFL
+        val q = 100L
+        val q2 = (q1 & m) * q
+        val q3 = (q2 & m) * q
+        val q4 = (q3 & m) * q
+        val q5 = (q4 & m) * q
+        d1 = (q1 >>> 57).toInt | '0'
+        w = ds((q2 >>> 57).toInt) | ds((q3 >>> 57).toInt).toLong << 16 | ds((q4 >>> 57).toInt).toLong << 32 | ds((q5 >>> 57).toInt).toLong << 48
+        e10 += 8
+      }
+      val tz = java.lang.Long.numberOfLeadingZeros(w ^ 0x3030303030303030L) >> 3
+      if (e10 < -3 || e10 >= 7) {
+        ByteArrayAccess.setShort(buf, pos, (d1 | 0x2E00).toShort)
+        ByteArrayAccess.setLong(buf, pos + 2, w)
+        pos += Math.max(10 - tz, 3)
+        ByteArrayAccess.setShort(buf, pos, 0x2D45)
+        pos += 1
+        if (e10 < 0) {
+          e10 = -e10
+          pos += 1
+        }
+        if (e10 < 10) {
+          buf(pos) = (e10 | '0').toByte
+          pos += 1
+        } else {
+          ByteArrayAccess.setShort(buf, pos, ds(e10))
+          pos += 2
+        }
+      } else if (e10 < 0) {
+        ByteArrayAccess.setInt(buf, pos, 0x30302E30)
+        pos += 1 - e10
+        buf(pos) = d1.toByte
+        ByteArrayAccess.setLong(buf, pos + 1, w)
+        pos += 9 - tz
+      } else if (e10 < 8 - tz) {
+        val s = e10 << 3
+        val lm = -1L << s
+        buf(pos) = d1.toByte
+        ByteArrayAccess.setLong(buf, pos + 1, (w & ~lm) | (0x2EL << s) | (w & lm) << 8)
+        buf(pos + 9) = (w >>> 56).toByte
+        pos += 10 - tz
+      } else { // whole numbers
+        buf(pos) = d1.toByte
+        pos += 1
+        ByteArrayAccess.setLong(buf, pos, w)
+        pos += e10
         ByteArrayAccess.setShort(buf, pos, 0x302E)
         pos += 2
-      } else {
-        val len = digitCount(m10.toLong)
-        e10 += len - 1
-        // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-        var q1 = floatDigitMultipliers(len) * m10 // normalize to 9 digits with a fixed point at the 57th bit
-        val d1 = (q1 >>> 57).toInt | '0'
-        val m = 0x1FFFFFFFFFFFFFFL
-        q1 &= m
-        var w = 0x3030303030303030L // the last 8 digits
-        var tz = 8
-        if (q1 >= 1000000000L) { // check if the last 8 digits are not all zeros (the approximation error is less than 2.2 * 10^8)
-          val q = 100L
-          val q2 = q1 * q
-          val q3 = (q2 & m) * q
-          val q4 = (q3 & m) * q
-          val q5 = (q4 & m) * q
-          w = ds((q2 >>> 57).toInt) | ds((q3 >>> 57).toInt).toLong << 16 | ds((q4 >>> 57).toInt).toLong << 32 | ds((q5 >>> 57).toInt).toLong << 48
-          tz = java.lang.Long.numberOfLeadingZeros(w ^ 0x3030303030303030L) >> 3
-        }
-        if (e10 < -3 || e10 >= 7) {
-          ByteArrayAccess.setShort(buf, pos, (d1 | 0x2E00).toShort)
-          ByteArrayAccess.setLong(buf, pos + 2, w)
-          pos += Math.max(10 - tz, 3)
-          ByteArrayAccess.setShort(buf, pos, 0x2D45)
-          pos += 1
-          if (e10 < 0) {
-            e10 = -e10
-            pos += 1
-          }
-          if (e10 < 10) {
-            buf(pos) = (e10 | '0').toByte
-            pos += 1
-          } else {
-            ByteArrayAccess.setShort(buf, pos, ds(e10))
-            pos += 2
-          }
-        } else if (e10 < 0) {
-          ByteArrayAccess.setInt(buf, pos, 0x30302E30)
-          pos += 1 - e10
-          buf(pos) = d1.toByte
-          ByteArrayAccess.setLong(buf, pos + 1, w)
-          pos += 9 - tz
-        } else {
-          val s = e10 << 3
-          val lm = -1L << s
-          buf(pos) = d1.toByte
-          ByteArrayAccess.setLong(buf, pos + 1, (w & ~lm) | (0x2EL << s) | (w & lm) << 8)
-          buf(pos + 9) = (w >>> 56).toByte
-          pos += Math.max(8 - e10 - tz, 1) + e10 + 2
-        }
       }
     }
     count = pos
@@ -2854,74 +2940,142 @@ final class JsonWriter private[jsoniter_scala](
         } else m10 = (hi64 >>> 6) * 10L + mCorr
       }
       val ds = digits
-      if (e10 == 0 && m10 < 10000000) { // fast path for whole numbers in decimal notation
-        pos = writePositiveIntDigits(m10.toInt, pos, buf, ds)
-        ByteArrayAccess.setShort(buf, pos, 0x302E)
-        pos += 2
-      } else {
-        val len = digitCount(m10)
-        e10 += len - 1
-        // Based on James Anhalt's algorithm for 9 and 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-        // Normalize to 17 digits and multiply by ceil(2^115 / 10^16) to get them with a fixed point at the 57th bit,
-        // +1 compensates truncation, so the approximation error is in (0, 2) units of the lowest bit
-        var q0 = Math.multiplyHigh(doubleDigitMultipliers(len) * m10, 4153837486827862103L) + 1
-        val d1 = (q0 >>> 57).toInt | '0'
-        val m = 0x1FFFFFFFFFFFFFFL
-        q0 &= m
-        var w1 = 0x3030303030303030L // the middle 8 digits
-        var w2 = 0L // the last 8 digits
-        var tz = 16
-        if (q0 > 1L) { // check if the last 16 digits are not all zeros (the approximation error is exactly 1 for them)
+      // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      // d1 is the first digit, w1 and w2 hold the rest digits (up to 16) padded by '0' chars
+      var d1 = 0
+      var w1, w2 = 0x3030303030303030L
+      if (m10 < 10000000000000000L) {
+        var q0 = m10.toInt
+        if (m10 >= 100000000L) { // split to the high part and the last 8 digits
+          val q1 = Math.multiplyHigh(m10, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
+          w2 = get8DigitsSkippingTrailingZeros(m10 - q1 * 100000000L, ds)
+          q0 = q1.toInt
+          e10 += 8
+        }
+        // concatenate the rest digits of the high part with the last 8 digits (or '0' chars) from w2
+        if (q0 < 100) {
+          if (q0 < 10) {
+            d1 = q0 | '0'
+            w1 = w2
+            w2 = 0x3030303030303030L
+          } else {
+            val d = ds(q0)
+            d1 = d & 0xFF
+            w1 = d >> 8 | w2 << 8
+            w2 = w2 >>> 56 | 0x3030303030303000L
+            e10 += 1
+          }
+        } else if (q0 < 10000) {
+          val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+          val d2 = ds(q0 - q1 * 100)
+          if (q0 < 1000) {
+            d1 = q1 | '0'
+            w1 = d2 | w2 << 16
+            w2 = w2 >>> 48 | 0x3030303030300000L
+            e10 += 2
+          } else {
+            val d = ds(q1)
+            d1 = d & 0xFF
+            w1 = d >> 8 | d2 << 8 | w2 << 24
+            w2 = w2 >>> 40 | 0x3030303030000000L
+            e10 += 3
+          }
+        } else if (q0 < 1000000) {
+          val q1 = q0 * 429497L
+          val m = 0xFFFFFFFFL
           val q = 100L
-          val q1 = q0 * q
           val q2 = (q1 & m) * q
           val q3 = (q2 & m) * q
-          var q4 = (q3 & m) * q
-          w1 = ds((q1 >>> 57).toInt) | ds((q2 >>> 57).toInt).toLong << 16 | ds((q3 >>> 57).toInt).toLong << 32 | ds((q4 >>> 57).toInt).toLong << 48
-          q4 &= m
-          if (q4 >= 1000000000L) { // check if the last 8 digits are not all zeros (the approximation error is less than 1.1 * 10^8)
-            val q5 = q4 * q
-            val q6 = (q5 & m) * q
-            val q7 = (q6 & m) * q
-            val q8 = (q7 & m) * q
-            w2 = ds((q5 >>> 57).toInt) | ds((q6 >>> 57).toInt).toLong << 16 | ds((q7 >>> 57).toInt).toLong << 32 | ds((q8 >>> 57).toInt).toLong << 48
-            tz = java.lang.Long.numberOfLeadingZeros(w2 ^ 0x3030303030303030L) >> 3
-          } else tz = (java.lang.Long.numberOfLeadingZeros(w1 ^ 0x3030303030303030L) >> 3) + 8
-        }
-        if (e10 < -3 || e10 >= 7) {
-          ByteArrayAccess.setShort(buf, pos, (d1 | 0x2E00).toShort)
-          ByteArrayAccess.setLong(buf, pos + 2, w1)
-          if (w2 != 0L) ByteArrayAccess.setLong(buf, pos + 10, w2)
-          pos += Math.max(18 - tz, 3)
-          ByteArrayAccess.setShort(buf, pos, 0x2D45)
-          pos += 1
-          if (e10 < 0) {
-            e10 = -e10
-            pos += 1
+          val r1 = (q1 >>> 32).toInt
+          val d2 = ds((q2 >>> 32).toInt).toLong
+          val d3 = ds((q3 >>> 32).toInt).toLong
+          if (q0 < 100000) {
+            d1 = r1 | '0'
+            w1 = d2 | d3 << 16 | w2 << 32
+            w2 = w2 >>> 32 | 0x3030303000000000L
+            e10 += 4
+          } else {
+            val d = ds(r1)
+            d1 = d & 0xFF
+            w1 = d >> 8 | d2 << 8 | d3 << 24 | w2 << 40
+            w2 = w2 >>> 24 | 0x3030300000000000L
+            e10 += 5
           }
-          if (e10 < 10) {
-            buf(pos) = (e10 | '0').toByte
-            pos += 1
-          } else if (e10 < 100) {
-            ByteArrayAccess.setShort(buf, pos, ds(e10))
-            pos += 2
-          } else pos = write3Digits(e10, pos, buf, ds)
-        } else if (e10 < 0) {
-          ByteArrayAccess.setInt(buf, pos, 0x30302E30)
-          pos += 1 - e10
-          buf(pos) = d1.toByte
-          ByteArrayAccess.setLong(buf, pos + 1, w1)
-          if (w2 != 0L) ByteArrayAccess.setLong(buf, pos + 9, w2)
-          pos += 17 - tz
         } else {
-          val s = e10 << 3
-          val lm = -1L << s
-          buf(pos) = d1.toByte
-          ByteArrayAccess.setLong(buf, pos + 1, (w1 & ~lm) | (0x2EL << s) | (w1 & lm) << 8)
-          buf(pos + 9) = (w1 >>> 56).toByte
-          if (w2 != 0L) ByteArrayAccess.setLong(buf, pos + 10, w2)
-          pos += Math.max(16 - e10 - tz, 1) + e10 + 2
+          val q1 = q0 * 140737489L
+          val m = 0x7FFFFFFFFFFFL
+          val q = 100L
+          val q2 = (q1 & m) * q
+          val q3 = (q2 & m) * q
+          val q4 = (q3 & m) * q
+          val r1 = (q1 >>> 47).toInt
+          val d2 = ds((q2 >>> 47).toInt).toLong
+          val d3 = ds((q3 >>> 47).toInt).toLong
+          val d4 = ds((q4 >>> 47).toInt).toLong
+          if (q0 < 10000000) {
+            d1 = r1 | '0'
+            w1 = d2 | d3 << 16 | d4 << 32 | w2 << 48
+            w2 = w2 >>> 16 | 0x3030000000000000L
+            e10 += 6
+          } else {
+            val d = ds(r1)
+            d1 = d & 0xFF
+            w1 = d >> 8 | d2 << 8 | d3 << 24 | d4 << 40 | w2 << 56
+            w2 = w2 >>> 8 | 0x3000000000000000L
+            e10 += 7
+          }
         }
+      } else { // 17 digits
+        val q2 = Math.multiplyHigh(m10, 8307674973655724206L) >>> 52 // divide a positive long by 10^16
+        val q1 = Math.multiplyHigh(m10, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
+        d1 = q2.toInt | '0'
+        w1 = get8DigitsSkippingTrailingZeros(q1 - q2 * 100000000L, ds)
+        w2 = get8DigitsSkippingTrailingZeros(m10 - q1 * 100000000L, ds)
+        e10 += 16
+      }
+      val tz =
+        if (w2 != 0x3030303030303030L) java.lang.Long.numberOfLeadingZeros(w2 ^ 0x3030303030303030L) >> 3
+        else (java.lang.Long.numberOfLeadingZeros(w1 ^ 0x3030303030303030L) >> 3) + 8
+      if (e10 < -3 || e10 >= 7) {
+        ByteArrayAccess.setShort(buf, pos, (d1 | 0x2E00).toShort)
+        ByteArrayAccess.setLong(buf, pos + 2, w1)
+        ByteArrayAccess.setLong(buf, pos + 10, w2)
+        pos += Math.max(18 - tz, 3)
+        ByteArrayAccess.setShort(buf, pos, 0x2D45)
+        pos += 1
+        if (e10 < 0) {
+          e10 = -e10
+          pos += 1
+        }
+        if (e10 < 10) {
+          buf(pos) = (e10 | '0').toByte
+          pos += 1
+        } else if (e10 < 100) {
+          ByteArrayAccess.setShort(buf, pos, ds(e10))
+          pos += 2
+        } else pos = write3Digits(e10, pos, buf, ds)
+      } else if (e10 < 0) {
+        ByteArrayAccess.setInt(buf, pos, 0x30302E30)
+        pos += 1 - e10
+        buf(pos) = d1.toByte
+        ByteArrayAccess.setLong(buf, pos + 1, w1)
+        ByteArrayAccess.setLong(buf, pos + 9, w2)
+        pos += 17 - tz
+      } else if (e10 < 16 - tz) {
+        val s = e10 << 3
+        val lm = -1L << s
+        buf(pos) = d1.toByte
+        ByteArrayAccess.setLong(buf, pos + 1, (w1 & ~lm) | (0x2EL << s) | (w1 & lm) << 8)
+        buf(pos + 9) = (w1 >>> 56).toByte
+        ByteArrayAccess.setLong(buf, pos + 10, w2)
+        pos += 18 - tz
+      } else { // whole numbers
+        buf(pos) = d1.toByte
+        pos += 1
+        ByteArrayAccess.setLong(buf, pos, w1)
+        pos += e10
+        ByteArrayAccess.setShort(buf, pos, 0x302E)
+        pos += 2
       }
     }
     count = pos
@@ -2930,11 +3084,6 @@ final class JsonWriter private[jsoniter_scala](
   @inline
   private[this] def unsignedMultiplyHigh2(x: Long, y: Long): Long =
     Math.multiplyHigh(x, y) + ((x >> 63) & y) // Use implementation that works only when y is positive
-
-  // Adoption of a nice trick from Daniel Lemire's blog that works for numbers up to 10^18:
-  // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
-  @inline
-  private[this] def digitCount(x: Long) = (offsets(java.lang.Long.numberOfLeadingZeros(x)) + x >> 58).toInt
 
   @inline
   private[this] def writeSignificantFractionDigits(x: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
@@ -3110,24 +3259,6 @@ object JsonWriter {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1
   )
-  private final val offsets = Array(
-    5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L,
-    5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L,
-    4889916394579099648L, 4889916394579099648L, 4889916394579099648L, 4610686018427387904L,
-    4610686018427387904L, 4610686018427387904L, 4610686018427387904L, 4323355642275676160L,
-    4323355642275676160L, 4323355642275676160L, 4035215266123964416L, 4035215266123964416L,
-    4035215266123964416L, 3746993889972252672L, 3746993889972252672L, 3746993889972252672L,
-    3746993889972252672L, 3458764413820540928L, 3458764413820540928L, 3458764413820540928L,
-    3170534127668829184L, 3170534127668829184L, 3170534127668829184L, 2882303760517117440L,
-    2882303760517117440L, 2882303760517117440L, 2882303760517117440L, 2594073385265405696L,
-    2594073385265405696L, 2594073385265405696L, 2305843009203693952L, 2305843009203693952L,
-    2305843009203693952L, 2017612633060982208L, 2017612633060982208L, 2017612633060982208L,
-    2017612633060982208L, 1729382256910170464L, 1729382256910170464L, 1729382256910170464L,
-    1441151880758548720L, 1441151880758548720L, 1441151880758548720L, 1152921504606845976L,
-    1152921504606845976L, 1152921504606845976L, 1152921504606845976L, 864691128455135132L,
-    864691128455135132L, 864691128455135132L, 576460752303423478L, 576460752303423478L,
-    576460752303423478L, 576460752303423478L, 576460752303423478L, 576460752303423478L,
-    576460752303423478L)
   private final val digits: Array[Short] = Array(
     12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640,
     12337, 12593, 12849, 13105, 13361, 13617, 13873, 14129, 14385, 14641,
@@ -3267,13 +3398,6 @@ object JsonWriter {
     0xE596B7B0C643C71AL, // 43
     0x8F7E32CE7BEA5C70L // 44
   )
-  private final val floatDigitMultipliers: Array[Long] = Array( // ceil(2^57 / 10^(len - 1)) for len = 1..9
-    0L, 144115188075855872L, 14411518807585588L, 1441151880758559L, 144115188075856L, 14411518807586L, 1441151880759L,
-    144115188076L, 14411518808L, 1441151881L)
-  private final val doubleDigitMultipliers: Array[Long] = Array( // 64 * 10^(17 - len) for len = 0..17
-    6400000000000000000L, 640000000000000000L, 64000000000000000L, 6400000000000000L, 640000000000000L,
-    64000000000000L, 6400000000000L, 640000000000L, 64000000000L, 6400000000L, 640000000L, 64000000L, 6400000L,
-    640000L, 64000L, 6400L, 640L, 64L)
   private final val doublePow10s: Array[Long] = Array(
     0xCC5FC196FEFD7D0CL, 0x1E53ED49A96272C9L, // -293
     0xFF77B1FCBEBCDC4FL, 0x25E8E89C13BB0F7BL, // -292
