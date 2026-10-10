@@ -179,11 +179,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     pos = writeLong(es, pos, buf)
-    if (ns != 0) {
-      val dotPos = pos
-      pos = writeSignificantFractionDigits(ns, pos + 9, pos, buf, digits)
-      buf(dotPos) = '.'
-    }
+    if (ns != 0) pos = writeSignificantFractionDigits(ns, pos, buf, digits)
     this.count = pos
     writeParenthesesWithColon()
   }
@@ -814,11 +810,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     pos = writeLong(es, pos, buf)
-    if (ns != 0) {
-      val dotPos = pos
-      pos = writeSignificantFractionDigits(ns, pos + 9, pos, buf, digits)
-      buf(dotPos) = '.'
-    }
+    if (ns != 0) pos = writeSignificantFractionDigits(ns, pos, buf, digits)
     this.count = pos
   }
 
@@ -960,11 +952,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     pos = writeLong(es, pos, buf)
-    if (ns != 0) {
-      val dotPos = pos
-      pos = writeSignificantFractionDigits(ns, pos + 9, pos, buf, digits)
-      buf(dotPos) = '.'
-    }
+    if (ns != 0) pos = writeSignificantFractionDigits(ns, pos, buf, digits)
     buf(pos) = '"'
     pos += 1
     this.count = pos
@@ -1091,9 +1079,7 @@ final class JsonWriter private[jsoniter_scala](
         }
         if (nano != 0) {
           if (isNeg) nano = 1000000000 - nano
-          val dotPos = pos
-          pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, ds)
-          buf(dotPos) = '.'
+          pos = writeSignificantFractionDigits(nano, pos, buf, ds)
         }
         buf(pos) = 'S'
         pos += 1
@@ -2129,9 +2115,7 @@ final class JsonWriter private[jsoniter_scala](
         }
         if (nano != 0) {
           if (isNeg) nano = 1000000000 - nano
-          val dotPos = pos
-          pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, ds)
-          buf(dotPos) = '.'
+          pos = writeSignificantFractionDigits(nano, pos, buf, ds)
         }
         ByteArrayAccess.setShort(buf, pos, 0x2253)
         pos += 1
@@ -3086,34 +3070,33 @@ final class JsonWriter private[jsoniter_scala](
     Math.multiplyHigh(x, y) + ((x >> 63) & y) // Use implementation that works only when y is positive
 
   @inline
-  private[this] def writeSignificantFractionDigits(x: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var q0 = x
-    var q1 = 0
-    var pos = p
-    while ({
-      val qp = q0 * 1374389535L
-      q1 = (qp >> 37).toInt // divide a positive int by 100
-      (qp & 0x1FC0000000L) == 0 // check if q is divisible by 100
-    }) {
-      q0 = q1
-      pos -= 2
+  private[this] def writeSignificantFractionDigits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    // Writes '.' and up to 9 digits of a positive int less than 10^9 without trailing zeros. Multiplications for the
+    // rest pairs of digits are skipped when their remainder is less than the threshold that is greater than the
+    // approximation error (less than 0.25 * x * 100^k) and less than the minimal non-zero remainder (2^57 / 10^(8 - 2 * k))
+    var q1 = x * 1441151881L // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    ByteArrayAccess.setShort(buf, pos, (q1 >>> 57 << 8 | 0x302E).toShort)
+    val m = 0x1FFFFFFFFFFFFFFL
+    var w = 0x3030303030303030L
+    q1 &= m
+    if (q1 >= 1000000000L) {
+      q1 *= 100L
+      w |= ds((q1 >>> 57).toInt)
+      q1 &= m
+      if (q1 >= 100000000000L) {
+        q1 *= 100L
+        w |= ds((q1 >>> 57).toInt).toLong << 16
+        q1 &= m
+        if (q1 >= 10000000000000L) {
+          q1 *= 100L
+          w |= ds((q1 >>> 57).toInt).toLong << 32
+          q1 &= m
+          if (q1 >= 1000000000000000L) w |= ds((q1 * 100L >>> 57).toInt).toLong << 48
+        }
+      }
     }
-    val d = ds(q0 - q1 * 100)
-    ByteArrayAccess.setShort(buf, pos - 1, d)
-    writeFractionDigits(q1, pos - 2, posLim, buf, ds)
-    pos + ((0x3039 - d) >>> 31)
-  }
-
-  @inline
-  private[this] def writeFractionDigits(x: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
-    var q0 = x
-    var pos = p
-    while (pos > posLim) {
-      val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
-      ByteArrayAccess.setShort(buf, pos - 1, ds(q0 - q1 * 100))
-      q0 = q1
-      pos -= 2
-    }
+    ByteArrayAccess.setLong(buf, pos + 2, w)
+    pos - (java.lang.Long.numberOfLeadingZeros(w ^ 0x3030303030303030L) >> 3) + 10
   }
 
   private[this] def writePositiveIntDigits(q0: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
