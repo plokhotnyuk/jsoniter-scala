@@ -60,4 +60,13 @@ private[core] object ByteArrayAccess {
 
   @alwaysinline
   def getIntReversed(buf: Array[Byte], pos: Int): Int = `llvm.bswap.i32`(getInt(buf, pos))
+
+  @alwaysinline
+  def unsignedMultiplyHigh1(x: Long, y: Long): Long = unsignedMultiplyHigh(x, y)
+
+  @alwaysinline
+  def unsignedMultiplyHigh2(x: Long, y: Long): Long = unsignedMultiplyHigh(x, y)
+
+  @alwaysinline
+  def unsignedMultiplyHigh3(x: Long, y: Long): Long = unsignedMultiplyHigh(x, y)
 }

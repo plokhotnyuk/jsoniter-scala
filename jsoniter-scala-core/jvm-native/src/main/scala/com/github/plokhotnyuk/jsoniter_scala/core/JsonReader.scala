@@ -3659,7 +3659,7 @@ final class JsonReader private[jsoniter_scala](
     else if (e10 >= 310) Double.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2 = unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var m2 = ByteArrayAccess.unsignedMultiplyHigh3(pow10Mantissas(e10 + 343), m10 << shift) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
       var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -3804,7 +3804,7 @@ final class JsonReader private[jsoniter_scala](
     else if (e10 >= 39) Float.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2 = unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
+      var m2 = ByteArrayAccess.unsignedMultiplyHigh3(pow10Mantissas(e10 + 343), m10 << shift) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
       var e2 = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -3835,10 +3835,6 @@ final class JsonReader private[jsoniter_scala](
     if (mark == 0) offset -= newMark
     java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
   }
-
-  @inline
-  private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
-    Math.multiplyHigh(x, y) + x + y // Use implementation that works only when both params are negative
 
   def readBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
@@ -4278,7 +4274,7 @@ final class JsonReader private[jsoniter_scala](
         i -= 8
         i >= first
       }) {
-        x = Math.multiplyHigh(m, q) + (m >> 63 & q) + ((~x & mq) >>> 63) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(m, q) + ((~x & mq) >>> 63)
+        x = ByteArrayAccess.unsignedMultiplyHigh2(m, q) + ((~x & mq) >>> 63) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(m, q) + ((~x & mq) >>> 63)
       }
     }
     var i = 0
