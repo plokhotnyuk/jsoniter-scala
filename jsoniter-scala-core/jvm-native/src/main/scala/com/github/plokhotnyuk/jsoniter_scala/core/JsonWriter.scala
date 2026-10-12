@@ -964,12 +964,11 @@ final class JsonWriter private[jsoniter_scala](
    * @param bs the byte array to write
    * @param lowerCase if `true`, outputs lowercase hexadecimal digits
    */
-  def writeBase16Val(bs: Array[Byte], lowerCase: Boolean): Unit = {
-    val ds =
-      if (lowerCase) lowerCaseHexDigits
-      else upperCaseHexDigits
-    writeBase16Bytes(bs, ds)
-  }
+  def writeBase16Val(bs: Array[Byte], lowerCase: Boolean): Unit =
+    writeBase16Bytes(bs, {
+      if (lowerCase) 0x2727272727272727L // 39 == 'a' - '0' - 10
+      else 0x707070707070707L // 7 == 'A' - '0' - 10
+    })
 
   /**
    * Writes a byte array as a JSON string value encoded in a base-64 format.
@@ -1599,37 +1598,57 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private[this] def writeBase16Bytes(bs: Array[Byte], ds: Array[Short]): Unit = {
-    val lenM1 = bs.length - 1
+  private[this] def writeBase16Bytes(bs: Array[Byte], c3: Long): Unit = {
+    val len = bs.length
+    val lenM3 = len - 3
     writeOptionalCommaAndIndentionBeforeValue()
-    var posLim = limit - 6
     var pos = count
-    if (pos >= posLim) {
-      pos = flushAndGrowBuf(6, pos)
-      posLim = limit - 5
-    }
+    if (pos + 9 > limit) pos = flushAndGrowBuf(9, pos)
     var buf = this.buf
     buf(pos) = '"'
     pos += 1
+    var posLim = limit - 16 // keep 8 bytes for writing of the last 1-3 bytes and the closing quote
+    // SWAR conversion of 4 bytes to 8 hex digits, the lowest byte goes first. It has no multiplications to allow
+    // auto-vectorization of the loop by C2: a 0x80 bit is set in lanes with digits greater than 9 by adding 0x76,
+    // then a mask of 0x7F is built by subtracting of that bit shifted to 0x01, and the `c3` lane constant is selected
+    val m1 = 0xFFFF0000FFFFL
+    val m2 = 0xF000F000F000FL
+    val m3 = 0xF000F000F000F00L
+    val m4 = 0x8080808080808080L
+    val c1 = 0x7676767676767676L
+    val c2 = 0x3030303030303030L
     var offset = 0
-    while (offset < lenM1) {
-      val offsetLim = Math.min((posLim - pos + 1 >> 1) + offset, lenM1)
-      while (offset < offsetLim) {
-        val d1 = ds(bs(offset) & 0xFF)
-        val d2 = ds(bs(offset + 1) & 0xFF) << 16
-        ByteArrayAccess.setInt(buf, pos, d1 | d2)
-        pos += 4
-        offset += 2
-      }
-      if (pos >= posLim) {
-        pos = flushAndGrowBuf(5, pos)
+    while (offset < lenM3) {
+      if (pos > posLim) {
+        pos = flushAndGrowBuf(16, pos)
         buf = this.buf
-        posLim = limit - 5
+        posLim = limit - 16
+      }
+      val offsetLim = Math.min((posLim - pos >> 3 << 2) + 4 + offset, lenM3)
+      while (offset < offsetLim) {
+        var q = ByteArrayAccess.getInt(bs, offset) & 0xFFFFFFFFL
+        q = (q | q << 16) & m1
+        q |= q << 8
+        q = (q >> 4 & m2) | (q << 8 & m3)
+        val t = q + c1 & m4
+        ByteArrayAccess.setLong(buf, pos, q + c2 + (t - (t >>> 7) & c3))
+        pos += 8
+        offset += 4
       }
     }
-    if (offset == lenM1) {
-      ByteArrayAccess.setShort(buf, pos, ds(bs(offset) & 0xFF))
-      pos += 2
+    val rem = len - offset
+    if (rem > 0) {
+      var q = bs(offset) & 0xFFL
+      if (rem > 1) {
+        q |= (bs(offset + 1) & 0xFFL) << 8
+        if (rem > 2) q |= (bs(offset + 2) & 0xFFL) << 16
+      }
+      q = (q | q << 16) & m1
+      q |= q << 8
+      q = (q >> 4 & m2) | (q << 8 & m3)
+      val t = q + c1 & m4
+      ByteArrayAccess.setLong(buf, pos, q + c2 + (t - (t >>> 7) & c3))
+      pos += rem << 1
     }
     buf(pos) = '"'
     count = pos + 1
@@ -1738,35 +1757,35 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeUUID(mostSigBits: Long, leastSigBits: Long): Unit = {
-    val pos = ensureBufCapacity(40) // 40 == 5 * size of Long in bytes
+    val pos = ensureBufCapacity(38) // 38 == UUID string length + 2
     val buf = this.buf
-    val ds = lowerCaseHexDigits
-    val mostSigBits1 = (mostSigBits >> 32).toInt
-    val d1 = ds(mostSigBits1 >>> 24) << 8
-    val d2 = ds(mostSigBits1 >> 16 & 0xFF).toLong << 24
-    val d3 = ds(mostSigBits1 >> 8 & 0xFF).toLong << 40
-    val d4 = ds(mostSigBits1 & 0xFF)
-    ByteArrayAccess.setLong(buf, pos, d1 | d2 | d3 | d4.toLong << 56 | 0x22)
-    val mostSigBits2 = mostSigBits.toInt
-    val d5 = ds(mostSigBits2 >>> 24) << 16
-    val d6 = ds(mostSigBits2 >> 16 & 0xFF).toLong << 32
-    val d7 = ds(mostSigBits2 >> 8 & 0xFF)
-    ByteArrayAccess.setLong(buf, pos + 8, d4 >> 8 | d5 | d6 | d7.toLong << 56 | 0x2D000000002D00L)
-    val d8 = ds(mostSigBits2 & 0xFF) << 8
-    val leastSigBits1 = (leastSigBits >> 32).toInt
-    val d9 = ds(leastSigBits1 >>> 24).toLong << 32
-    val d10 = ds(leastSigBits1 >> 16 & 0xFF).toLong << 48
-    ByteArrayAccess.setLong(buf, pos + 16, d7 >> 8 | d8 | d9 | d10 | 0x2D000000)
-    val d11 = ds(leastSigBits1 >> 8 & 0xFF) << 8
-    val d12 = ds(leastSigBits1 & 0xFF).toLong << 24
-    val leastSigBits2 = leastSigBits.toInt
-    val d13 = ds(leastSigBits2 >>> 24).toLong << 40
-    val d14 = ds(leastSigBits2 >> 16 & 0xFF)
-    ByteArrayAccess.setLong(buf, pos + 24, d11 | d12| d13 | d14.toLong << 56 | 0x2D)
-    val d15 = ds(leastSigBits2 >> 8 & 0xFF) << 8
-    val d16 = ds(leastSigBits2 & 0xFF).toLong << 24
-    ByteArrayAccess.setLong(buf, pos + 32, d14 >> 8 | d15 | d16 | 0x220000000000L)
+    val m = 0xFFFF0000FFFFL
+    val h1 = toHexDigits(mostSigBits >>> 16 & m) // 1st and 3rd groups of 4 hex digits
+    val h2 = toHexDigits(mostSigBits & m) // 2nd and 4th groups of 4 hex digits
+    val h3 = toHexDigits(leastSigBits >>> 16 & m) // 5th and 7th groups of 4 hex digits
+    val h4 = toHexDigits(leastSigBits & m) // 6th and 8th groups of 4 hex digits
+    // Overlapping stores in ascending order, each next one overwrites garbage bytes after the previous one
+    buf(pos) = '"'
+    ByteArrayAccess.setLong(buf, pos + 1, h1)
+    ByteArrayAccess.setLong(buf, pos + 5, h2)
+    ByteArrayAccess.setLong(buf, pos + 9, h1 >>> 24 & 0xFFFFFFFF00L | 0x2D000000002DL)
+    ByteArrayAccess.setLong(buf, pos + 15, h2 >>> 32 | 0x2D00000000L)
+    ByteArrayAccess.setLong(buf, pos + 20, h3)
+    ByteArrayAccess.setLong(buf, pos + 24, h4 << 8 | 0x2D)
+    ByteArrayAccess.setLong(buf, pos + 29, h3 >>> 32 | h4 & 0xFFFFFFFF00000000L)
+    buf(pos + 37) = '"'
     count = pos + 38
+  }
+
+  @inline
+  private[this] def toHexDigits(x: Long): Long = {
+    // SWAR conversion of two 16-bit groups at 0-15 and 32-47 bits of x to 8 lower case hex digits, the highest nibble goes
+    // first: nibbles are spread starting from the lowest one, then converted and reversed by bytes. It is cheaper than
+    // reversing of the input bytes. Also, here the multiplication is cheaper than in the loop of writeBase16Bytes where it
+    // prevents auto-vectorization
+    var q = x | x << 8
+    q = (q & 0xF000F000F000FL) | (q << 4 & 0xF000F000F000F00L)
+    java.lang.Long.reverseBytes(q + (q + 0x606060606060606L >> 4 & 0x101010101010101L) * 39 + 0x3030303030303030L)
   }
 
   @tailrec
@@ -3268,24 +3287,6 @@ object JsonWriter {
     12388, 12644, 12900, 13156, 13412, 13668, 13924, 14180, 14436, 14692, 24932, 25188, 25444, 25700, 25956, 26212,
     12389, 12645, 12901, 13157, 13413, 13669, 13925, 14181, 14437, 14693, 24933, 25189, 25445, 25701, 25957, 26213,
     12390, 12646, 12902, 13158, 13414, 13670, 13926, 14182, 14438, 14694, 24934, 25190, 25446, 25702, 25958, 26214
-  )
-  private final val upperCaseHexDigits: Array[Short] = Array(
-    12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640, 16688, 16944, 17200, 17456, 17712, 17968,
-    12337, 12593, 12849, 13105, 13361, 13617, 13873, 14129, 14385, 14641, 16689, 16945, 17201, 17457, 17713, 17969,
-    12338, 12594, 12850, 13106, 13362, 13618, 13874, 14130, 14386, 14642, 16690, 16946, 17202, 17458, 17714, 17970,
-    12339, 12595, 12851, 13107, 13363, 13619, 13875, 14131, 14387, 14643, 16691, 16947, 17203, 17459, 17715, 17971,
-    12340, 12596, 12852, 13108, 13364, 13620, 13876, 14132, 14388, 14644, 16692, 16948, 17204, 17460, 17716, 17972,
-    12341, 12597, 12853, 13109, 13365, 13621, 13877, 14133, 14389, 14645, 16693, 16949, 17205, 17461, 17717, 17973,
-    12342, 12598, 12854, 13110, 13366, 13622, 13878, 14134, 14390, 14646, 16694, 16950, 17206, 17462, 17718, 17974,
-    12343, 12599, 12855, 13111, 13367, 13623, 13879, 14135, 14391, 14647, 16695, 16951, 17207, 17463, 17719, 17975,
-    12344, 12600, 12856, 13112, 13368, 13624, 13880, 14136, 14392, 14648, 16696, 16952, 17208, 17464, 17720, 17976,
-    12345, 12601, 12857, 13113, 13369, 13625, 13881, 14137, 14393, 14649, 16697, 16953, 17209, 17465, 17721, 17977,
-    12353, 12609, 12865, 13121, 13377, 13633, 13889, 14145, 14401, 14657, 16705, 16961, 17217, 17473, 17729, 17985,
-    12354, 12610, 12866, 13122, 13378, 13634, 13890, 14146, 14402, 14658, 16706, 16962, 17218, 17474, 17730, 17986,
-    12355, 12611, 12867, 13123, 13379, 13635, 13891, 14147, 14403, 14659, 16707, 16963, 17219, 17475, 17731, 17987,
-    12356, 12612, 12868, 13124, 13380, 13636, 13892, 14148, 14404, 14660, 16708, 16964, 17220, 17476, 17732, 17988,
-    12357, 12613, 12869, 13125, 13381, 13637, 13893, 14149, 14405, 14661, 16709, 16965, 17221, 17477, 17733, 17989,
-    12358, 12614, 12870, 13126, 13382, 13638, 13894, 14150, 14406, 14662, 16710, 16966, 17222, 17478, 17734, 17990
   )
   private final val base64Digits: Array[Byte] = Array(
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
