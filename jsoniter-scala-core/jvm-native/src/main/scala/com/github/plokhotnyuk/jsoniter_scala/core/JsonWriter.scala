@@ -2567,31 +2567,6 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private[this] def get8DigitsSkippingTrailingZeros(x: Long, ds: Array[Short]): Long = {
-    // The same as write8Digits, but stops multiplications when the rest digits are zeros. The approximation error of the
-    // remainder is less than 0.65 * x * 100^(k - 1) for k-th pair of digits that is less than the minimal non-zero
-    // remainder (2^47 / 10^(8 - 2 * k)), so 10^(6 + 2 * k) are used as thresholds for detection of zero remainders
-    var q1 = x * 140737489L // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-    var w = 0x3030303030303030L
-    w |= ds((q1 >> 47).toInt)
-    val m = 0x7FFFFFFFFFFFL
-    q1 &= m
-    if (q1 > 99999999L) {
-      val q = 100L
-      q1 *= q
-      w |= ds((q1 >> 47).toInt) << 16
-      q1 &= m
-      if (q1 > 9999999999L) {
-        q1 *= q
-        w |= ds((q1 >> 47).toInt).toLong << 32
-        q1 &= m
-        if (q1 > 999999999999L) w |= ds((q1 * q >> 47).toInt).toLong << 48
-      }
-    }
-    w
-  }
-
-  @inline
   private[this] def write18Digits(x: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q2 = Math.multiplyHigh(x, 8307674973655724206L) >>> 52 // divide a positive long by 10^16
     val q1 = Math.multiplyHigh(x, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
@@ -3070,28 +3045,58 @@ final class JsonWriter private[jsoniter_scala](
     Math.multiplyHigh(x, y) + ((x >> 63) & y) // Use implementation that works only when y is positive
 
   @inline
+  private[this] def get8DigitsSkippingTrailingZeros(x: Long, ds: Array[Short]): Long = {
+    var w = 0x3030303030303030L
+    if (x != 0L) {
+      // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      // The same as write8Digits, but stops multiplications when the rest digits are zeros. The approximation error of the
+      // remainder is less than 0.65 * x * 100^(k - 1) for k-th pair of digits that is less than the minimal non-zero
+      // remainder (2^47 / 10^(8 - 2 * k)), so 10^(6 + 2 * k) are used as thresholds for detection of zero remainders
+      var q1 = x * 140737489L
+      w |= ds((q1 >> 47).toInt)
+      val m = 0x7FFFFFFFFFFFL
+      q1 &= m
+      if (q1 > 99999999L) {
+        val q = 100L
+        q1 *= q
+        w |= ds((q1 >> 47).toInt) << 16
+        q1 &= m
+        if (q1 > 9999999999L) {
+          q1 *= q
+          w |= ds((q1 >> 47).toInt).toLong << 32
+          q1 &= m
+          if (q1 > 999999999999L) w |= ds((q1 * q >> 47).toInt).toLong << 48
+        }
+      }
+    }
+    w
+  }
+
+  @inline
   private[this] def writeSignificantFractionDigits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     // Writes '.' and up to 9 digits of a positive int less than 10^9 without trailing zeros. Multiplications for the
     // rest pairs of digits are skipped when their remainder is less than the threshold that is greater than the
     // approximation error (less than 0.25 * x * 100^k) and less than the minimal non-zero remainder (2^57 / 10^(8 - 2 * k))
-    var q1 = x * 1441151881L // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    var q1 = x * 1441151881L
     ByteArrayAccess.setShort(buf, pos, (q1 >>> 57 << 8 | 0x302E).toShort)
     val m = 0x1FFFFFFFFFFFFFFL
     var w = 0x3030303030303030L
     q1 &= m
-    if (q1 >= 1000000000L) {
-      q1 *= 100L
+    if (q1 > 999999999L) {
+      val q = 100L
+      q1 *= q
       w |= ds((q1 >>> 57).toInt)
       q1 &= m
-      if (q1 >= 100000000000L) {
-        q1 *= 100L
+      if (q1 > 99999999999L) {
+        q1 *= q
         w |= ds((q1 >>> 57).toInt).toLong << 16
         q1 &= m
-        if (q1 >= 10000000000000L) {
-          q1 *= 100L
+        if (q1 > 9999999999999L) {
+          q1 *= q
           w |= ds((q1 >>> 57).toInt).toLong << 32
           q1 &= m
-          if (q1 >= 1000000000000000L) w |= ds((q1 * 100L >>> 57).toInt).toLong << 48
+          if (q1 > 999999999999999L) w |= ds((q1 * q >>> 57).toInt).toLong << 48
         }
       }
     }
