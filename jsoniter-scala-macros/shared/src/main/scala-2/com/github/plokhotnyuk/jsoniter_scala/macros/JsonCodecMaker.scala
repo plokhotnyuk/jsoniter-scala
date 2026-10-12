@@ -1200,7 +1200,13 @@ object JsonCodecMaker {
           if (cfg.scalaTransientSupport) s"'${typeOf[transient]}' (or '${typeOf[scala.transient]}')"
           else s"'${typeOf[transient]}')"
 
-        lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
+        lazy val module = { // don't lookup for the companion when there are no default values for constructor params
+          val m = companion(tpe).asModule
+          tpe match { // use the prefix of the class type to avoid `this` references to enclosing traits
+            case TypeRef(pre, _, _) if pre != NoPrefix => gen.mkAttributedRef(pre, m)
+            case _ => Ident(m)
+          }
+        }
         var getters = Map.empty[String, MethodSymbol]
         var annotations = Map.empty[String, FieldAnnotations]
         tpe.members.foreach {

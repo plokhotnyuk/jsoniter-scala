@@ -359,6 +359,17 @@ object Person extends Aggregate with Events {
   // val myEventCodec: JsonValueCodec[MyEvent] = make
 }
 
+trait NestedDefaults { // See https://github.com/plokhotnyuk/jsoniter-scala/issues/1245
+  case class User(name: String, age: Int = 42)
+
+  case class Box[A](a: A, tags: List[String] = List("x"))
+}
+
+object NestedDefaults extends NestedDefaults {
+  implicit val userCodec: JsonValueCodec[User] = make
+  implicit val boxCodec: JsonValueCodec[Box[Int]] = make
+}
+
 class JsonCodecMakerSpec extends VerifyingSpec {
   import com.github.plokhotnyuk.jsoniter_scala.macros.NamespacePollutions._
 
@@ -2404,6 +2415,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"st":null,"bi":null,"l":null,"oc":null,"e":null,"ab":null,"m":null,"mm":null,"im":null,"lm":null,"s":null,"ms":null,"bs":null,"mbs":null}""".stripMargin)
       verifyDeser(codecOfDefaults2, Defaults2(),
         """{"l":[],"ab":[],"m":{},"mm":{},"im":{},"lm":{},"s":[],"ms":[],"bs":[],"mbs":[]}""")
+      verifySerDeser(NestedDefaults.userCodec, NestedDefaults.User("John"), """{"name":"John"}""")
+      verifySerDeser(NestedDefaults.boxCodec, NestedDefaults.Box(1), """{"a":1}""")
     }
     "deserialize new default values of case classes without memorization" in {
       case class Defaults3(u: UUID = new UUID(ThreadLocalRandom.current().nextLong(), ThreadLocalRandom.current().nextLong()),

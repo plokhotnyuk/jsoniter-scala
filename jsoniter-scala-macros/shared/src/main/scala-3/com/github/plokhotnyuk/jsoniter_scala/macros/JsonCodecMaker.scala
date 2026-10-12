@@ -1505,7 +1505,15 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         val defaultValue = if (!cfg.requireDefaultFields && symbol.flags.is(Flags.HasDefault)) new Some({
           if (companionRefAndClass eq null) {
             val typeSymbol = tpe.typeSymbol
-            companionRefAndClass = (Ref(typeSymbol.companionModule), typeSymbol.companionClass)
+            val companionModule = typeSymbol.companionModule
+            val companionRef = (tpe match
+              case AppliedType(tycon, _) => tycon
+              case _ => tpe
+            ) match // use the prefix of the class type to avoid `this` references to enclosing traits
+              case TypeRef(_: NoPrefix, _) => Ref(companionModule)
+              case TypeRef(pre, _) => Ref.term(TermRef(pre, companionModule.name))
+              case _ => Ref(companionModule)
+            companionRefAndClass = (companionRef, typeSymbol.companionClass)
           }
           val methodSymbol = companionRefAndClass._2.declaredMethod("$lessinit$greater$default$" + i).head
           val dvSelectNoTypes = Select(companionRefAndClass._1, methodSymbol)
