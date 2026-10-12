@@ -4472,21 +4472,21 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val charBuf = new Array[Char](65536)
         val r = new JsonReader(charBuf = charBuf)
         read(r, stringCodec, json("a" * 100), ReaderConfig.withPreferredCharBufSize(65536))
-        read(r, stringCodec, json("b" * 5000), ReaderConfig)
-        read(r, stringCodec, json("c" * 5000), ReaderConfig) shouldBe "c" * 5000
-        new String(charBuf, 0, 5000) shouldBe "c" * 5000
+        read(r, stringCodec, json("β" * 5000), ReaderConfig)
+        read(r, stringCodec, json("γ" * 5000), ReaderConfig) shouldBe "γ" * 5000
+        new String(charBuf, 0, 5000) shouldBe "γ" * 5000
         val charBuf2 = new Array[Char](65536)
         val r2 = new JsonReader(charBuf = charBuf2).withoutBufReallocation()
-        read(r2, stringCodec, json("d" * 5000), ReaderConfig)
-        read(r2, stringCodec, json("e" * 5000), ReaderConfig) shouldBe "e" * 5000
-        new String(charBuf2, 0, 5000) shouldBe "e" * 5000
+        read(r2, stringCodec, json("δ" * 5000), ReaderConfig)
+        read(r2, stringCodec, json("ε" * 5000), ReaderConfig) shouldBe "ε" * 5000
+        new String(charBuf2, 0, 5000) shouldBe "ε" * 5000
       }
       s"reduce the char buffer to the preferred size after reading with the same config when $name" in {
         val charBuf = new Array[Char](65536)
         val r = new JsonReader(charBuf = charBuf)
-        read(r, stringCodec, json("b" * 5000), ReaderConfig)
-        read(r, stringCodec, json("c" * 5000), ReaderConfig) shouldBe "c" * 5000
-        new String(charBuf, 0, 5000) shouldBe "b" * 5000
+        read(r, stringCodec, json("β" * 5000), ReaderConfig)
+        read(r, stringCodec, json("γ" * 5000), ReaderConfig) shouldBe "γ" * 5000
+        new String(charBuf, 0, 5000) shouldBe "β" * 5000
       }
       s"don't use the char buffer that is greater than the max size of the current config when $name" in {
         val charBuf = new Array[Char](65536)

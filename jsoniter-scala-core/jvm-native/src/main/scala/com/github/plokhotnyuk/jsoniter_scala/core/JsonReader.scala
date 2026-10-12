@@ -213,10 +213,9 @@ final class JsonReader private[jsoniter_scala](
     */
   def readKeyAsString(): String = {
     nextTokenOrError('"', head)
-    val pos = head
-    val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
+    val s = parseString(head)
     nextTokenOrError(':', head)
-    new String(charBuf, 0, len)
+    s
   }
 
   /**
@@ -782,11 +781,8 @@ final class JsonReader private[jsoniter_scala](
     *                             when both the JSON value and the provided default value are `null`
     */
   def readString(default: String): String =
-    if (isNextToken('"', head)) {
-      val pos = head
-      val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
-      new String(charBuf, 0, len)
-    } else readNullOrTokenError(default, '"')
+    if (isNextToken('"', head)) parseString(head)
+    else readNullOrTokenError(default, '"')
 
   /**
     * Reads a JSON string value into a [[java.time.Duration]] instance.
@@ -5683,6 +5679,60 @@ final class JsonReader private[jsoniter_scala](
     x = (x >>> 8) & 0x00FF00FF00FF00FFL // pack pairs of nibbles into even bytes
     x |= x << 24 // pack pairs of bytes into 16-bit words at bits 16..31 and 48..63
     x & 0xFFFF0000L | x >>> 48
+  }
+
+  private[this] def parseString(pos: Int): String = {
+    val buf = this.buf
+    val tail = this.tail
+    var p = pos
+    var b = 0x100 // the first '"', '\\', control or non-ASCII byte, or 0x100 if not found
+    var bs, m = 0L
+    while (m == 0 && p + 7 < tail) {
+      bs = ByteArrayAccess.getLong(buf, p)
+      m = ((bs - 0x2020202020202020L ^ 0x3C3C3C3C3C3C3C3CL) - 0x101010101010101L |
+        (bs ^ 0x5D5D5D5D5D5D5D5DL) + 0x101010101010101L) & 0x8080808080808080L
+      p += 8
+    }
+    if (m != 0) {
+      val o = java.lang.Long.numberOfTrailingZeros(m) - 7
+      p += (o >> 3) - 8
+      b = (bs >> o).toByte
+    } else if (p + 3 < tail) {
+      val bi = ByteArrayAccess.getInt(buf, p)
+      val mi = ((bi - 0x20202020 ^ 0x3C3C3C3C) - 0x1010101 | (bi ^ 0x5D5D5D5D) + 0x1010101) & 0x80808080
+      if (mi != 0) {
+        val o = java.lang.Integer.numberOfTrailingZeros(mi) - 7
+        p += o >> 3
+        b = (bi >> o).toByte
+      } else p += 4
+    }
+    while (b == 0x100 && p < tail) {
+      val x = buf(p)
+      if (x == '"' || (x - 0x20 ^ 0x3C) <= 0) b = x
+      else p += 1
+    }
+    val len = p - pos
+    if (b == '"' && (len < charBuf.length || len < config.maxCharBufSize)) { // a fast path for plain ASCII strings
+      head = p + 1
+      new String(buf, 0, pos, len)
+    } else parseNonAsciiString(pos, p)
+  }
+
+  @noinline
+  private[this] def parseNonAsciiString(pos: Int, endPos: Int): String = {
+    val len = endPos - pos
+    val charBuf = this.charBuf
+    val charLen =
+      if (len < charBuf.length) { // copy the scanned prefix and continue from the first special byte
+        val buf = this.buf
+        var i = 0
+        while (i < len) {
+          charBuf(i) = buf(pos + i).toChar
+          i += 1
+        }
+        parseString(len, Math.min(charBuf.length, len + tail - endPos), charBuf, endPos)
+      } else parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
+    new String(this.charBuf, 0, charLen)
   }
 
   @tailrec
