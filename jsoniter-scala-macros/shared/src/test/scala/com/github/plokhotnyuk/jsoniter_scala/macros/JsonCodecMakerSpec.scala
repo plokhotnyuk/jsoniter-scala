@@ -972,37 +972,23 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "parse offset date time values with escaped characters using a custom codec" in {
       implicit val customCodecOfOffsetDateTime: JsonValueCodec[OffsetDateTime] = new JsonValueCodec[OffsetDateTime] {
         private[this] val defaultCodec: JsonValueCodec[OffsetDateTime] = make[OffsetDateTime]
-        private[this] val maxLen = 44 // should be enough for the longest offset date time value
-        private[this] val pool = new ThreadLocal[_root_.scala.Array[_root_.scala.Byte]] {
-          override def initialValue(): _root_.scala.Array[_root_.scala.Byte] =
-            new _root_.scala.Array[_root_.scala.Byte](maxLen + 2)
-        }
 
         def nullValue: OffsetDateTime = null
 
         def decodeValue(in: JsonReader, default: OffsetDateTime): OffsetDateTime = {
-          val buf = pool.get
-          val s = in.readString(null)
-          val len = s.length
-          if (len <= maxLen && {
-            buf(0) = '"'
-            var bits, i = 0
-            while (i < len) {
-              val ch = s.charAt(i)
-              buf(i + 1) = ch.toByte
-              bits |= ch
-              i += 1
-            }
-            buf(i + 1) = '"'
-            bits < 0x80
-          }) {
-            try {
-              return readFromSubArrayReentrant(buf, 0, len + 2, ReaderConfig)(defaultCodec)
-            } catch {
-              case NonFatal(_) => ()
-            }
+          in.setMark()
+          try {
+            val x = in.readOffsetDateTime(default)
+            in.resetMark()
+            x
+          } catch {
+            case _: JsonReaderException =>
+              in.rollbackToMark()
+              val s = in.readString(null)
+              try readFromStringReentrant("\"" + s + "\"")(defaultCodec) catch {
+                case NonFatal(_) => in.decodeError("illegal offset date time")
+              }
           }
-          in.decodeError("illegal offset date time")
         }
 
         def encodeValue(x: OffsetDateTime, out: JsonWriter): _root_.scala.Unit = out.writeVal(x)
