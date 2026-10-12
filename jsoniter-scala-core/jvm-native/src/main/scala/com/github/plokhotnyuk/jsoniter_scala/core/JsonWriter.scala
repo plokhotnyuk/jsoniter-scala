@@ -242,7 +242,7 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos += 1
-    pos = writeString(x, 0, pos, buf, Math.min(len, limit - pos - 1) + pos)
+    pos = writeString(x, len, pos, buf)
     if (pos + 4 >= limit) pos = flushAndGrowBuf(4, pos)
     ByteArrayAccess.setInt(this.buf, pos, 0x203A22)
     if (indention > 0) pos += 1
@@ -513,7 +513,7 @@ final class JsonWriter private[jsoniter_scala](
     } else comma = true
     buf(pos) = '"'
     pos += 1
-    pos = writeString(x, 0, pos, buf, Math.min(len, limit - pos - 1) + pos)
+    pos = writeString(x, len, pos, buf)
     this.buf(pos) = '"'
     count = pos + 1
   }
@@ -1786,6 +1786,47 @@ final class JsonWriter private[jsoniter_scala](
     var q = x | x << 8
     q = (q & 0xF000F000F000FL) | (q << 4 & 0xF000F000F000F00L)
     java.lang.Long.reverseBytes(q + (q + 0x606060606060606L >> 4 & 0x101010101010101L) * 39 + 0x3030303030303030L)
+  }
+
+  private[this] def writeString(s: String, len: Int, pos: Int, buf: Array[Byte]): Int = {
+    var i = 0
+    if (len < limit - pos) { // the string fits to the buffer with a room for the closing quote
+      var m, bs = 0L
+      while (m == 0L && i + 7 < len) { // SWAR checking of 8 chars for ones that require escaping or encoding
+        var c0 = s.charAt(i).toLong
+        m = c0
+        bs = c0
+        var c1 = s.charAt(i + 1).toLong
+        m |= c1
+        bs |= c1 << 8
+        var c2 = s.charAt(i + 2).toLong
+        m |= c2
+        bs |= c2 << 16
+        var c3 = s.charAt(i + 3).toLong
+        m |= c3
+        bs |= c3 << 24
+        c0 = s.charAt(i + 4).toLong
+        m |= c0
+        bs |= c0 << 32
+        c1 = s.charAt(i + 5).toLong
+        m |= c1
+        bs |= c1 << 40
+        c2 = s.charAt(i + 6).toLong
+        m |= c2
+        bs |= c2 << 48
+        c3 = s.charAt(i + 7).toLong
+        m |= c3
+        bs |= c3 << 56
+        m = (0x7FL - m) >>> 56 // non-ASCII chars set the lowest byte
+        ByteArrayAccess.setLong(buf, pos + i, bs) // bytes of special chars will be overwritten by the slow path
+        m = ((bs ^ 0x2222222222222222L) - 0x101010101010101L | (bs ^ 0x5C5C5C5C5C5C5C5CL) - 0x101010101010101L |
+          bs + 0x101010101010101L | bs - 0x2020202020202020L | m) & 0x8080808080808080L
+        i += 8
+      }
+      i += (java.lang.Long.numberOfTrailingZeros(m) >> 3) - 8 // move back to the first char that requires escaping or encoding
+    }
+    val newPos = pos + i
+    writeString(s, i, newPos, buf, Math.min(len - i, limit - newPos - 1) + newPos)
   }
 
   @tailrec

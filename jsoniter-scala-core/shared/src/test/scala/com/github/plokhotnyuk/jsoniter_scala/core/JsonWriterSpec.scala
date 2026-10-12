@@ -403,6 +403,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
 
       check("Oó!")
+      (0 to 16).foreach(i => "óЄŁ".foreach(ch => check("a" * i + ch + "b" * (16 - i))))
       forAll(arbitrary[String], minSuccessful(10000)) { s =>
         whenever(s.forall(ch => !Character.isSurrogate(ch) && !isEscapedAscii(ch))) {
           check(s)
@@ -417,6 +418,14 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       check("Oó!", escapeUnicode = true, _ => "O\\u00f3!")
       check("Є!", escapeUnicode = true, _ => "\\u0404!")
+      (0 to 16).foreach { i =>
+        "\"\\\b\u0000\u001f\u007fóЄŁ".foreach { ch =>
+          check("a" * i + ch + "b" * (16 - i), escapeUnicode = true, _ => "a" * i + toEscaped(ch) + "b" * (16 - i))
+        }
+        "\"\\\b\u0000\u001f\u007f".foreach { ch =>
+          check("a" * i + ch + "b" * (16 - i), escapeUnicode = false, _ => "a" * i + toEscaped(ch) + "b" * (16 - i))
+        }
+      }
       forAll(Gen.listOf(genEscapedAsciiChar).map(_.mkString), Gen.oneOf(true, false), minSuccessful(10000)) {
         (s, escapeUnicode) => check(s, escapeUnicode)
       }
