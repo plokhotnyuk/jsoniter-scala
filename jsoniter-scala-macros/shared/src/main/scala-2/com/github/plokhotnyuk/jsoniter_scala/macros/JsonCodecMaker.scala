@@ -820,9 +820,7 @@ object JsonCodecMaker {
       }
 
       // Values that are defined as public non-lazy `val`s of the Scala enumeration object with their `val` names
-      case class ScalaEnumInfo(stableValues: List[(Tree, String)]) extends TypeInfo {
-        val doEncoding: Boolean = stableValues.exists(v => isEncodingRequired(v._2))
-      }
+      case class ScalaEnumInfo(stableValues: List[(Tree, String)]) extends TypeInfo
 
       case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
                            defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
@@ -913,59 +911,74 @@ object JsonCodecMaker {
         new ScalaEnumInfo(stableValues)
       }).asInstanceOf[ScalaEnumInfo]
 
-      // Returns a name of the method that returns a name of the Scala enumeration value (`(x: E)`) or `null` if
-      // the value is not a stable one or if its actual name is not equal to the name of `val`. Names of stable values
-      // are stored in an array that is indexed by ids of values and initialized lazily once all stable values are
-      // initialized. Returns `EmptyTree` if there are no stable values.
-      def withScalaEnumNameFor(tpe: Type): Tree =
-        if (getScalaEnumInfo(tpe).stableValues.isEmpty) EmptyTree
-        else Ident({
-          val termNameKey = new ScalaEnumNameKey(tpe)
-          termNames.getOrElse(termNameKey, {
-            val n = termNames.size
-            val name = TermName(s"en$n")
-            val namesName = TermName(s"ens$n")
-            val namesInitName = TermName(s"eni$n")
-            termNames.update(termNameKey, name)
-            val stableValues = getScalaEnumInfo(tpe).stableValues
-            trees ++= Seq(
-              q"@_root_.scala.volatile private[this] var $namesName: _root_.scala.Array[_root_.java.lang.String] = null",
-              q"""private[this] def $namesInitName(): _root_.scala.Array[_root_.java.lang.String] = {
-                    val vs = _root_.scala.Array[_root_.scala.AnyRef](..${stableValues.map(_._1)})
-                    val ns = _root_.scala.Array[_root_.java.lang.String](..${stableValues.map(_._2)})
-                    var i = 0
-                    while (i < vs.length && (vs(i) ne null)) i += 1
-                    if (i == vs.length) {
-                      var maxId = -1
-                      i = 0
-                      while (i < vs.length) {
-                        val id = vs(i).asInstanceOf[$tpe].id
-                        if (id > maxId) maxId = id
-                        i += 1
-                      }
-                      if (maxId > (vs.length << 2) + 64) maxId = -1
-                      val es = new _root_.scala.Array[_root_.java.lang.String](maxId + 1)
-                      i = 0
-                      while (i < vs.length) {
-                        val v = vs(i)
-                        val id = v.asInstanceOf[$tpe].id
-                        if (id >= 0 && id <= maxId && v.toString == ns(i)) es(id) = ns(i)
-                        i += 1
-                      }
-                      $namesName = es
-                      es
-                    } else null
-                  }""",
-              q"""private[this] def $name(x: $tpe): _root_.java.lang.String = {
-                    var ns = $namesName
-                    if (ns eq null) ns = $namesInitName()
-                    val i = x.id
-                    if ((ns ne null) && i >= 0 && i < ns.length) ns(i)
-                    else null
-                  }""")
-            name
-          })
-        })
+      // Generates writing of a name of the Scala enumeration value (`x`) like for enum ADTs: using `@switch` by indexes
+      // of stable values with constant names that are written by `writeConstName`. Indexes of stable values (plus 1, to
+      // have `0` for unknown values in case of racy reads of the array) are stored in an array that is indexed by ids
+      // of values and initialized lazily once all stable values are initialized.
+      // Values that are not stable ones or which actual names are not equal to names of their `val`s are written by
+      // `writeName` with their actual names.
+      def genWriteScala2EnumerationName(tpe: Type, x: Tree, writeConstName: String => Tree, writeName: Tree => Tree): Tree = {
+        val stableValues = getScalaEnumInfo(tpe).stableValues
+        val writeActualName = writeName(q"$x.toString")
+        if (stableValues.isEmpty) writeActualName
+        else {
+          val name = {
+            val termNameKey = new ScalaEnumNameKey(tpe)
+            termNames.getOrElse(termNameKey, {
+              val n = termNames.size
+              val name = TermName(s"en$n")
+              val indexesName = TermName(s"ens$n")
+              val indexesInitName = TermName(s"eni$n")
+              termNames.update(termNameKey, name)
+              trees ++= Seq(
+                q"private[this] var $indexesName: _root_.scala.Array[_root_.scala.Int] = null",
+                q"""private[this] def $indexesInitName(): _root_.scala.Array[_root_.scala.Int] = {
+                      val vs = _root_.scala.Array[_root_.scala.AnyRef](..${stableValues.map(_._1)})
+                      val ns = _root_.scala.Array[_root_.java.lang.String](..${stableValues.map(_._2)})
+                      var i = 0
+                      while (i < vs.length && (vs(i) ne null)) i += 1
+                      if (i == vs.length) {
+                        var maxId = -1
+                        i = 0
+                        while (i < vs.length) {
+                          val id = vs(i).asInstanceOf[$tpe].id
+                          if (id > maxId) maxId = id
+                          i += 1
+                        }
+                        if (maxId > (vs.length << 2) + 64) maxId = -1
+                        val is = new _root_.scala.Array[_root_.scala.Int](maxId + 1)
+                        i = 0
+                        while (i < vs.length) {
+                          val v = vs(i)
+                          val id = v.asInstanceOf[$tpe].id
+                          if (id >= 0 && id <= maxId && v.toString == ns(i)) is(id) = i + 1
+                          i += 1
+                        }
+                        $indexesName = is
+                        is
+                      } else null
+                    }""",
+                q"""private[this] def $name(x: $tpe): _root_.scala.Int = {
+                      var is = $indexesName
+                      if (is eq null) is = $indexesInitName()
+                      val i = x.id
+                      if ((is ne null) && i >= 0 && i < is.length) is(i)
+                      else 0
+                    }""")
+              name
+            })
+          }
+          val cases = stableValues.map {
+            var i = 0
+            v =>
+              i += 1
+              cq"$i => ${writeConstName(v._2)}"
+          } :+ cq"_ => $writeActualName"
+          q"""($name($x): @_root_.scala.annotation.switch) match {
+                case ..$cases
+              }"""
+        }
+      }
 
       // Returns a name of the method that looks up a value of the Scala enumeration by id (`(i: Int)`) or by name
       // from the internal char buffer (`(in: JsonReader, l: Int)`) and returns `null` if the value is not found.
@@ -1795,18 +1808,7 @@ object JsonCodecMaker {
         }) genWriteKey(q"$x.${valueClassValueSymbol(tpe)}", valueClassValueType(tpe) :: types)
         else if (tpe <:< typeOf[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) q"out.writeKey($x.id)"
-          else {
-            val en = withScalaEnumNameFor(tpe)
-            if (en.isEmpty) q"out.writeKey($x.toString)"
-            else {
-              val writeName =
-                if (getScalaEnumInfo(tpe).doEncoding) q"out.writeKey(s)"
-                else q"out.writeNonEscapedAsciiKey(s)"
-              q"""val s = $en($x)
-                  if (s ne null) $writeName
-                  else out.writeKey($x.toString)"""
-            }
-          }
+          else genWriteScala2EnumerationName(tpe, x, genWriteConstantKey(_), s => q"out.writeKey($s)")
         } else if (isJavaEnum(tpe)) {
           val enumInfo = getJavaEnumInfo(tpe)
           if (enumInfo.hasTransformed) {
@@ -2878,18 +2880,7 @@ object JsonCodecMaker {
             if (cfg.useScalaEnumValueId) {
               if (isStringified) q"out.writeValAsString(x.id)"
               else q"out.writeVal(x.id)"
-            } else {
-              val en = withScalaEnumNameFor(tpe)
-              if (en.isEmpty) q"out.writeVal(x.toString)"
-              else {
-                val writeName =
-                  if (getScalaEnumInfo(tpe).doEncoding) q"out.writeVal(s)"
-                  else q"out.writeNonEscapedAsciiVal(s)"
-                q"""val s = $en(x)
-                    if (s ne null) $writeName
-                    else out.writeVal(x.toString)"""
-              }
-            }
+            } else genWriteScala2EnumerationName(tpe, q"x", genWriteConstantVal(_), s => q"out.writeVal($s)")
           } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
             val enumInfo = getJavaEnumInfo(tpe)
             if (enumInfo.hasTransformed) {

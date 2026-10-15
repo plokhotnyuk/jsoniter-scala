@@ -152,6 +152,15 @@ object Bird extends Enumeration {
   val `Ñandú`, Emu: Bird = Value
 }
 
+object SpectralClass extends Enumeration {
+  type SpectralClass = Value
+
+  val O: SpectralClass = Value(0, "O")
+  val G: SpectralClass = Value(5, "G")
+
+  def extra(id: Int, name: String): SpectralClass = Value(id, name)
+}
+
 case class Enums(lt: LocationType.LocationType)
 
 case class Enums2(@stringified lt: LocationType.LocationType)
@@ -775,6 +784,23 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfIds, """[2,100]""", "illegal enum value 100, offset: 0x00000005")
       verifyDeserError(codecOfNameKeys, """{"Eris":1}""", """illegal enum value "Eris", offset: 0x00000007""")
       verifyDeserError(codecOfIdKeys, """{"100":1}""", """illegal enum value "100", offset: 0x00000006""")
+    }
+    "serialize and deserialize enumerations with values that are added with ids between ids of the stable ones" in {
+      val codecOfNames = make[List[SpectralClass.SpectralClass]]
+      val codecOfIds = make[List[SpectralClass.SpectralClass]](CodecMakerConfig.withUseScalaEnumValueId(true))
+      val codecOfNameKeys = make[Map[SpectralClass.SpectralClass, Int]]
+      val codecOfIdKeys = make[Map[SpectralClass.SpectralClass, Int]](CodecMakerConfig.withUseScalaEnumValueId(true))
+      verifySerDeser(codecOfNames, List(SpectralClass.O, SpectralClass.G), """["O","G"]""")
+      verifySerDeser(codecOfIds, List(SpectralClass.O, SpectralClass.G), "[0,5]")
+      verifySerDeser(codecOfNameKeys, Map(SpectralClass.G -> 1), """{"G":1}""")
+      verifySerDeser(codecOfIdKeys, Map(SpectralClass.G -> 1), """{"5":1}""")
+      val b = SpectralClass.extra(2, "B")
+      verifySerDeser(codecOfNames, List(SpectralClass.O, b, SpectralClass.G), """["O","B","G"]""")
+      verifySerDeser(codecOfIds, List(SpectralClass.O, b, SpectralClass.G), "[0,2,5]")
+      verifySerDeser(codecOfNameKeys, Map(b -> 2, SpectralClass.G -> 1), """{"B":2,"G":1}""")
+      verifySerDeser(codecOfIdKeys, Map(b -> 2, SpectralClass.G -> 1), """{"2":2,"5":1}""")
+      verifyDeserError(codecOfNames, """["A"]""", """illegal enum value "A", offset: 0x00000003""")
+      verifyDeserError(codecOfIds, """[3]""", "illegal enum value 3, offset: 0x00000001")
     }
     "serialize and deserialize enumerations with names that differ from names of vals" in {
       verifySerDeser(make[List[CardRank.CardRank]], List(CardRank.Two, CardRank.Ace), """["2","A"]""")

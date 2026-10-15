@@ -802,9 +802,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   }
 
   // Values that are defined as public non-lazy `val`s of the Scala enumeration object with their `val` names
-  private case class ScalaEnumInfo(stableValues: List[(Term, String)]) extends TypeInfo {
-    val doEncoding: Boolean = stableValues.exists(v => isEncodingRequired(v._2))
-  }
+  private case class ScalaEnumInfo(stableValues: List[(Term, String)]) extends TypeInfo
 
   private case class FieldInfo(symbol: Symbol, mappedName: String, getterOrField: Symbol, defaultValue: Option[Term],
                                resolvedTpe: TypeRepr, isTransient: Boolean, isStringified: Boolean, nonTransientFieldIndex: Int)
@@ -1151,63 +1149,77 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         new ScalaEnumInfo(stableValues)
   }).asInstanceOf[ScalaEnumInfo]
 
-  // Generates a call of the method that returns a name of the Scala enumeration value (`(x: E)`) or `null` if
-  // the value is not a stable one or if its actual name is not equal to the name of `val`. Names of stable values
-  // are stored in an array that is indexed by ids of values and initialized lazily once all stable values are
-  // initialized. Returns `None` if there are no stable values.
-  private def genScala2EnumerationName(tpe: TypeRepr, x: Expr[Enumeration#Value])(using Quotes): Option[Expr[String]] =
+  // Generates writing of a name of the Scala enumeration value (`x`) like for enum ADTs: using `@switch` by indexes
+  // of stable values with constant names that are written by `writeConstName`. Indexes of stable values (plus 1, to
+  // have `0` for unknown values in case of racy reads of the array) are stored in an array that is indexed by ids of
+  // values and initialized lazily once all stable values are initialized.
+  // Values that are not stable ones or which actual names are not equal to names of their `val`s are written by
+  // `writeName` with their actual names.
+  private def genWriteScala2EnumerationName(tpe: TypeRepr, x: Expr[Enumeration#Value],
+                                            writeConstName: String => Expr[Unit],
+                                            writeName: Expr[String] => Expr[Unit])(using Quotes): Expr[Unit] =
     val stableValues = getScalaEnumInfo(tpe).stableValues
-    if (stableValues.isEmpty) None
-    else new Some(Apply(refs.getOrElse(new ScalaEnumNameKey(tpe), {
-      val n = refs.size
-      val sym = Symbol.newMethod(Symbol.spliceOwner, s"en$n", MethodType("x" :: Nil)(_ => tpe :: Nil, _ => stringTpe))
-      val ref = Ref(sym)
-      refs.update(new ScalaEnumNameKey(tpe), ref)
-      val namesSym = symbol(s"ens$n", TypeRepr.of[AtomicReference[Array[String]]])
-      val names = Ref(namesSym).asExpr.asInstanceOf[Expr[AtomicReference[Array[String]]]]
-      val namesInitSym = Symbol.newMethod(Symbol.spliceOwner, s"eni$n", MethodType(Nil)(_ => Nil, _ => TypeRepr.of[Array[String]]))
-      val stableValueRefs = Varargs(stableValues.map(_._1.asExpr.asInstanceOf[Expr[AnyRef]]))
-      val stableNames = Varargs(stableValues.map(v => Expr(v._2)))
-      defs.addOne(ValDef(namesSym, new Some('{ new AtomicReference[Array[String]](null) }.asTerm)))
-      defs.addOne(DefDef(namesInitSym, _ => new Some('{
-        val vs = Array[AnyRef]($stableValueRefs*)
-        val ns = Array[String]($stableNames*)
+    val writeActualName = writeName('{ $x.toString })
+    if (stableValues.isEmpty) writeActualName
+    else {
+      val index = Apply(refs.getOrElse(new ScalaEnumNameKey(tpe), {
+        val n = refs.size
+        val sym = Symbol.newMethod(Symbol.spliceOwner, s"en$n", MethodType("x" :: Nil)(_ => tpe :: Nil, _ => intTpe))
+        val ref = Ref(sym)
+        refs.update(new ScalaEnumNameKey(tpe), ref)
+        val indexesSym = symbol(s"ens$n", TypeRepr.of[Array[Array[Int]]])
+        val indexes = Ref(indexesSym).asExpr.asInstanceOf[Expr[Array[Array[Int]]]]
+        val indexesInitSym = Symbol.newMethod(Symbol.spliceOwner, s"eni$n", MethodType(Nil)(_ => Nil, _ => TypeRepr.of[Array[Int]]))
+        val stableValueRefs = Varargs(stableValues.map(_._1.asExpr.asInstanceOf[Expr[AnyRef]]))
+        val stableNames = Varargs(stableValues.map(v => Expr(v._2)))
+        defs.addOne(ValDef(indexesSym, new Some('{ new Array[Array[Int]](1) }.asTerm)))
+        defs.addOne(DefDef(indexesInitSym, _ => new Some('{
+          val vs = Array[AnyRef]($stableValueRefs*)
+          val ns = Array[String]($stableNames*)
+          var i = 0
+          while (i < vs.length && (vs(i) ne null)) i += 1
+          if (i == vs.length) {
+            var maxId = -1
+            i = 0
+            while (i < vs.length) {
+              val id = vs(i).asInstanceOf[Enumeration#Value].id
+              if (id > maxId) maxId = id
+              i += 1
+            }
+            if (maxId > (vs.length << 2) + 64) maxId = -1
+            val is = new Array[Int](maxId + 1)
+            i = 0
+            while (i < vs.length) {
+              val v = vs(i)
+              val id = v.asInstanceOf[Enumeration#Value].id
+              if (id >= 0 && id <= maxId && v.toString == ns(i)) is(id) = i + 1
+              i += 1
+            }
+            $indexes(0) = is
+            is
+          } else null
+        }.asTerm.changeOwner(indexesInitSym))))
+        val indexesInit = Apply(Ref(indexesInitSym), Nil).asExpr.asInstanceOf[Expr[Array[Int]]]
+        defs.addOne(DefDef(sym, params => {
+          val x = params.head.head.asExpr.asInstanceOf[Expr[Enumeration#Value]]
+          new Some('{
+            var is = $indexes(0)
+            if (is eq null) is = $indexesInit
+            val i = $x.id
+            if ((is ne null) && i >= 0 && i < is.length) is(i)
+            else 0
+          }.asTerm.changeOwner(sym))
+        }))
+        ref
+      }), x.asTerm :: Nil)
+      val cases = stableValues.map {
         var i = 0
-        while (i < vs.length && (vs(i) ne null)) i += 1
-        if (i == vs.length) {
-          var maxId = -1
-          i = 0
-          while (i < vs.length) {
-            val id = vs(i).asInstanceOf[Enumeration#Value].id
-            if (id > maxId) maxId = id
-            i += 1
-          }
-          if (maxId > (vs.length << 2) + 64) maxId = -1
-          val es = new Array[String](maxId + 1)
-          i = 0
-          while (i < vs.length) {
-            val v = vs(i)
-            val id = v.asInstanceOf[Enumeration#Value].id
-            if (id >= 0 && id <= maxId && v.toString == ns(i)) es(id) = ns(i)
-            i += 1
-          }
-          $names.set(es)
-          es
-        } else null
-      }.asTerm.changeOwner(namesInitSym))))
-      val namesInit = Apply(Ref(namesInitSym), Nil).asExpr.asInstanceOf[Expr[Array[String]]]
-      defs.addOne(DefDef(sym, params => {
-        val x = params.head.head.asExpr.asInstanceOf[Expr[Enumeration#Value]]
-        new Some('{
-          var ns = $names.get
-          if (ns eq null) ns = $namesInit
-          val i = $x.id
-          if ((ns ne null) && i >= 0 && i < ns.length) ns(i)
-          else null
-        }.asTerm.changeOwner(sym))
-      }))
-      ref
-    }), x.asTerm :: Nil).asExpr.asInstanceOf[Expr[String]])
+        v =>
+          i += 1
+          CaseDef(Literal(IntConstant(i)), None, writeConstName(v._2).asTerm)
+      } :+ CaseDef(Wildcard(), None, writeActualName.asTerm)
+      Match(index, cases).asExpr.asInstanceOf[Expr[Unit]]
+    }
 
   // Generates a call of the method that looks up a value of the Scala enumeration by id (`(i: Int)`) or by name
   // from the internal char buffer (`(in: JsonReader, l: Int)`) and returns `null` if the value is not found.
@@ -2247,18 +2259,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     } else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
       val tx = x.asInstanceOf[Expr[Enumeration#Value]]
       if (cfg.useScalaEnumValueId) '{ $out.writeKey($tx.id) }
-      else genScala2EnumerationName(tpe, tx) match
-        case Some(name) =>
-          if (getScalaEnumInfo(tpe).doEncoding) '{
-            val s = $name
-            if (s ne null) $out.writeKey(s)
-            else $out.writeKey($tx.toString)
-          } else '{
-            val s = $name
-            if (s ne null) $out.writeNonEscapedAsciiKey(s)
-            else $out.writeKey($tx.toString)
-          }
-        case _ => '{ $out.writeKey($tx.toString) }
+      else genWriteScala2EnumerationName(tpe, tx, genWriteConstantKey(_, out), s => '{ $out.writeKey($s) })
     } else if (isJavaEnum(tpe)) {
       val enumInfo = getJavaEnumInfo(tpe)
       if (enumInfo.hasTransformed) {
@@ -3882,18 +3883,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         if (cfg.useScalaEnumValueId) {
           if (isStringified) '{ $out.writeValAsString($tx.id) }
           else '{ $out.writeVal($tx.id) }
-        } else genScala2EnumerationName(tpe, tx) match
-          case Some(name) =>
-            if (getScalaEnumInfo(tpe).doEncoding) '{
-              val s = $name
-              if (s ne null) $out.writeVal(s)
-              else $out.writeVal($tx.toString)
-            } else '{
-              val s = $name
-              if (s ne null) $out.writeNonEscapedAsciiVal(s)
-              else $out.writeVal($tx.toString)
-            }
-          case _ => '{ $out.writeVal($tx.toString) }
+        } else genWriteScala2EnumerationName(tpe, tx, genWriteConstantVal(_, out), s => '{ $out.writeVal($s) })
       } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
         val enumInfo = getJavaEnumInfo(tpe)
         if (enumInfo.hasTransformed) {
