@@ -460,9 +460,9 @@ private[macros] object CompileTimeEval {
       else if (obj.isInstanceOf[java.lang.Byte]) ByteConstant(obj.asInstanceOf[java.lang.Byte].byteValue())
       else if (obj.isInstanceOf[java.lang.Short]) ShortConstant(obj.asInstanceOf[java.lang.Short].shortValue())
       else if (obj.isInstanceOf[java.lang.Integer]) IntConstant(obj.asInstanceOf[java.lang.Integer].intValue())
-      else if (obj.isInstanceOf[java.lang.Long]) LongConstant(obj.asInstanceOf[java.lang.Long].intValue())
+      else if (obj.isInstanceOf[java.lang.Long]) LongConstant(obj.asInstanceOf[java.lang.Long].longValue())
       else if (obj.isInstanceOf[java.lang.Float]) FloatConstant(obj.asInstanceOf[java.lang.Float].floatValue())
-      else if (obj.isInstanceOf[java.lang.Double]) DoubleConstant(obj.asInstanceOf[java.lang.Double].floatValue())
+      else if (obj.isInstanceOf[java.lang.Double]) DoubleConstant(obj.asInstanceOf[java.lang.Double].doubleValue())
       else {
         throw CompileTimeEvalException(s"Return value of an external function ($obj) is not primitive or string", applyTerm.asExpr)
       }
