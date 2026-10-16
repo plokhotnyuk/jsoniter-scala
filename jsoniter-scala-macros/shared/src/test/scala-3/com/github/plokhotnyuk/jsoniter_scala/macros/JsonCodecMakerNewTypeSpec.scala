@@ -373,6 +373,14 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         List(NullableProperty(null), NullableProperty(1), NullableProperty("VVV")),
         """[{},{"a":1},{"a":"VVV"}]""")
     }
+    "serialize and deserialize case class with union types having null value (circe-like behavior)" in {
+      verifySerDeser(makeCirceLike[List[NullableProperty]],
+        List(NullableProperty(null), NullableProperty(1), NullableProperty("VVV")),
+        """[{"a":null},{"a":1},{"a":"VVV"}]""")
+      verifySerDeser(makeCirceLikeSnakeCased[List[NullableProperty]],
+        List(NullableProperty(null), NullableProperty(1), NullableProperty("VVV")),
+        """[{"a":null},{"a":1},{"a":"VVV"}]""")
+    }
     "don't generate codecs for non-concrete ADTs with at least one free type parameter" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait TypeBase[T]

@@ -722,7 +722,7 @@ object JsonCodecMaker {
         transientDefault = false,
         transientEmpty = false,
         transientNone = false,
-        transientNull = true,
+        transientNull = false,
         requireCollectionFields = false,
         bigDecimalPrecision = 34,
         bigDecimalScaleLimit = 6178,
