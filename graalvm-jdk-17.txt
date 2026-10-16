@@ -21828,50 +21828,51 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWr
 
 # Run progress: 16.96% complete, ETA 04:57:11
 # Fork: 1 of 1
-# Warmup Iteration   1: 509105.266 ops/s
-# Warmup Iteration   2: 577354.122 ops/s
-# Warmup Iteration   3: 570330.102 ops/s
-# Warmup Iteration   4: 570372.191 ops/s
-# Warmup Iteration   5: 555479.070 ops/s
-# Warmup Iteration   6: 546065.184 ops/s
-# Warmup Iteration   7: 546539.165 ops/s
-Iteration   1: 546476.514 ops/s
-                 gc.alloc.rate:      2479.992 MB/sec
+# Warmup Iteration   1: 926756.003 ops/s
+# Warmup Iteration   2: 988638.207 ops/s
+# Warmup Iteration   3: 978048.463 ops/s
+# Warmup Iteration   4: 980392.398 ops/s
+# Warmup Iteration   5: 980193.963 ops/s
+# Warmup Iteration   6: 977220.950 ops/s
+# Warmup Iteration   7: 981384.112 ops/s
+Iteration   1: 976534.393 ops/s
+                 gc.alloc.rate:      4431.868 MB/sec
+                 gc.alloc.rate.norm: 4760.001 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            3.000 ms
+
+Iteration   2: 980485.245 ops/s
+                 gc.alloc.rate:      4449.362 MB/sec
                  gc.alloc.rate.norm: 4760.001 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   2: 546501.460 ops/s
-                 gc.alloc.rate:      2480.182 MB/sec
+Iteration   3: 981455.131 ops/s
+                 gc.alloc.rate:      4453.769 MB/sec
                  gc.alloc.rate.norm: 4760.001 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   3: 535799.526 ops/s
-                 gc.alloc.rate:      2431.649 MB/sec
+Iteration   4: 978375.073 ops/s
+                 gc.alloc.rate:      4440.115 MB/sec
                  gc.alloc.rate.norm: 4760.001 B/op
                  gc.count:           1.000 counts
                  gc.time:            2.000 ms
 
-Iteration   4: 536340.913 ops/s
-                 gc.alloc.rate:      2434.048 MB/sec
-                 gc.alloc.rate.norm: 4760.001 B/op
-                 gc.count:           ≈ 0 counts
-
-Iteration   5: 535247.042 ops/s
-                 gc.alloc.rate:      2428.825 MB/sec
+Iteration   5: 980454.177 ops/s
+                 gc.alloc.rate:      4449.246 MB/sec
                  gc.alloc.rate.norm: 4760.001 B/op
                  gc.count:           ≈ 0 counts
 
 
 
 Result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScala":
-  540073.091 ±(99.9%) 22601.920 ops/s [Average]
-  (min, avg, max) = (535247.042, 540073.091, 546501.460), stdev = 5869.647
-  CI (99.9%): [517471.171, 562675.011] (assumes normal distribution)
+  979460.804 ±(99.9%) 7642.413 ops/s [Average]
+  (min, avg, max) = (976534.393, 979460.804, 981455.131), stdev = 1984.710
+  CI (99.9%): [971818.391, 987103.217] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScala:gc.alloc.rate":
-  2450.939 ±(99.9%) 102.707 MB/sec [Average]
-  (min, avg, max) = (2428.825, 2450.939, 2480.182), stdev = 26.673
-  CI (99.9%): [2348.232, 2553.646] (assumes normal distribution)
+  4444.872 ±(99.9%) 33.909 MB/sec [Average]
+  (min, avg, max) = (4431.868, 4444.872, 4453.769), stdev = 8.806
+  CI (99.9%): [4410.962, 4478.781] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScala:gc.alloc.rate.norm":
   4760.001 ±(99.9%) 0.001 B/op [Average]
@@ -21879,14 +21880,14 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWr
   CI (99.9%): [4760.001, 4760.001] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScala:gc.count":
-  1.000 ±(99.9%) 0.001 counts [Sum]
-  (min, avg, max) = (≈ 0, 0.200, 1.000), stdev = 0.447
-  CI (99.9%): [1.000, 1.000] (assumes normal distribution)
+  2.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (≈ 0, 0.400, 1.000), stdev = 0.548
+  CI (99.9%): [2.000, 2.000] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScala:gc.time":
-  2.000 ±(99.9%) 0.001 ms [Sum]
-  (min, avg, max) = (≈ 0, 0.400, 2.000), stdev = 0.894
-  CI (99.9%): [2.000, 2.000] (assumes normal distribution)
+  5.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (≈ 0, 1.000, 3.000), stdev = 1.414
+  CI (99.9%): [5.000, 5.000] (assumes normal distribution)
 
 
 # JMH version: 1.37
@@ -21904,44 +21905,44 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWr
 
 # Run progress: 17.02% complete, ETA 04:56:58
 # Fork: 1 of 1
-# Warmup Iteration   1: 574108.198 ops/s
-# Warmup Iteration   2: 646080.011 ops/s
-# Warmup Iteration   3: 651864.242 ops/s
-# Warmup Iteration   4: 650892.565 ops/s
-# Warmup Iteration   5: 651793.790 ops/s
-# Warmup Iteration   6: 654978.916 ops/s
-# Warmup Iteration   7: 653432.550 ops/s
-Iteration   1: 651523.033 ops/s
+# Warmup Iteration   1: 1206079.685 ops/s
+# Warmup Iteration   2: 1395843.588 ops/s
+# Warmup Iteration   3: 1401159.149 ops/s
+# Warmup Iteration   4: 1398488.707 ops/s
+# Warmup Iteration   5: 1399380.753 ops/s
+# Warmup Iteration   6: 1400484.987 ops/s
+# Warmup Iteration   7: 1399417.386 ops/s
+Iteration   1: 1400074.181 ops/s
                  gc.alloc.rate:      0.001 MB/sec
-                 gc.alloc.rate.norm: 0.001 B/op
+                 gc.alloc.rate.norm: ≈ 10⁻³ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   2: 655497.469 ops/s
+Iteration   2: 1397101.818 ops/s
                  gc.alloc.rate:      0.001 MB/sec
-                 gc.alloc.rate.norm: 0.001 B/op
+                 gc.alloc.rate.norm: ≈ 10⁻³ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   3: 652085.480 ops/s
+Iteration   3: 1399724.231 ops/s
                  gc.alloc.rate:      0.001 MB/sec
-                 gc.alloc.rate.norm: 0.001 B/op
+                 gc.alloc.rate.norm: ≈ 10⁻³ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   4: 651230.584 ops/s
+Iteration   4: 1398589.748 ops/s
                  gc.alloc.rate:      0.001 MB/sec
-                 gc.alloc.rate.norm: 0.001 B/op
+                 gc.alloc.rate.norm: ≈ 10⁻³ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   5: 651923.146 ops/s
+Iteration   5: 1399207.493 ops/s
                  gc.alloc.rate:      0.001 MB/sec
-                 gc.alloc.rate.norm: 0.001 B/op
+                 gc.alloc.rate.norm: ≈ 10⁻³ B/op
                  gc.count:           ≈ 0 counts
 
 
 
 Result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScalaPrealloc":
-  652451.942 ±(99.9%) 6681.656 ops/s [Average]
-  (min, avg, max) = (651230.584, 652451.942, 655497.469), stdev = 1735.205
-  CI (99.9%): [645770.287, 659133.598] (assumes normal distribution)
+  1398939.494 ±(99.9%) 4504.811 ops/s [Average]
+  (min, avg, max) = (1397101.818, 1398939.494, 1400074.181), stdev = 1169.885
+  CI (99.9%): [1394434.684, 1403444.305] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScalaPrealloc:gc.alloc.rate":
   0.001 ±(99.9%) 0.001 MB/sec [Average]
@@ -21949,9 +21950,7 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWr
   CI (99.9%): [0.001, 0.001] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScalaPrealloc:gc.alloc.rate.norm":
-  0.001 ±(99.9%) 0.001 B/op [Average]
-  (min, avg, max) = (0.001, 0.001, 0.001), stdev = 0.001
-  CI (99.9%): [0.001, 0.001] (assumes normal distribution)
+  ≈ 10⁻³ B/op
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.ArrayOfEnumsWriting.jsoniterScalaPrealloc:gc.count":
   ≈ 0 counts
@@ -74075,50 +74074,50 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Reading.
 
 # Run progress: 57.30% complete, ETA 02:32:57
 # Fork: 1 of 1
-# Warmup Iteration   1: 3845776.898 ops/s
-# Warmup Iteration   2: 4033264.487 ops/s
-# Warmup Iteration   3: 3957460.506 ops/s
-# Warmup Iteration   4: 3955353.426 ops/s
-# Warmup Iteration   5: 3953130.389 ops/s
-# Warmup Iteration   6: 3943244.501 ops/s
-# Warmup Iteration   7: 3950687.524 ops/s
-Iteration   1: 3951409.452 ops/s
-                 gc.alloc.rate:      1989.277 MB/sec
+# Warmup Iteration   1: 4677580.588 ops/s
+# Warmup Iteration   2: 4727654.728 ops/s
+# Warmup Iteration   3: 4436435.640 ops/s
+# Warmup Iteration   4: 4477988.838 ops/s
+# Warmup Iteration   5: 4457273.082 ops/s
+# Warmup Iteration   6: 4476606.580 ops/s
+# Warmup Iteration   7: 4460174.495 ops/s
+Iteration   1: 4465000.501 ops/s
+                 gc.alloc.rate:      2247.561 MB/sec
                  gc.alloc.rate.norm: 528.000 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   2: 3906739.146 ops/s
-                 gc.alloc.rate:      1966.516 MB/sec
+Iteration   2: 4452101.753 ops/s
+                 gc.alloc.rate:      2240.691 MB/sec
                  gc.alloc.rate.norm: 528.000 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   3: 3954804.671 ops/s
-                 gc.alloc.rate:      1990.459 MB/sec
+Iteration   3: 4444909.581 ops/s
+                 gc.alloc.rate:      2237.071 MB/sec
                  gc.alloc.rate.norm: 528.000 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   4: 3952295.170 ops/s
-                 gc.alloc.rate:      1989.239 MB/sec
-                 gc.alloc.rate.norm: 528.000 B/op
-                 gc.count:           ≈ 0 counts
-
-Iteration   5: 3939720.395 ops/s
-                 gc.alloc.rate:      1983.103 MB/sec
+Iteration   4: 4403295.716 ops/s
+                 gc.alloc.rate:      2216.044 MB/sec
                  gc.alloc.rate.norm: 528.000 B/op
                  gc.count:           1.000 counts
                  gc.time:            2.000 ms
 
+Iteration   5: 4360596.955 ops/s
+                 gc.alloc.rate:      2195.261 MB/sec
+                 gc.alloc.rate.norm: 528.000 B/op
+                 gc.count:           ≈ 0 counts
+
 
 
 Result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Reading.jsoniterScala":
-  3940993.767 ±(99.9%) 77059.789 ops/s [Average]
-  (min, avg, max) = (3906739.146, 3940993.767, 3954804.671), stdev = 20012.182
-  CI (99.9%): [3863933.978, 4018053.556] (assumes normal distribution)
+  4425180.901 ±(99.9%) 165057.494 ops/s [Average]
+  (min, avg, max) = (4360596.955, 4425180.901, 4465000.501), stdev = 42864.907
+  CI (99.9%): [4260123.407, 4590238.395] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Reading.jsoniterScala:gc.alloc.rate":
-  1983.718 ±(99.9%) 38.656 MB/sec [Average]
-  (min, avg, max) = (1966.516, 1983.718, 1990.459), stdev = 10.039
-  CI (99.9%): [1945.062, 2022.375] (assumes normal distribution)
+  2227.326 ±(99.9%) 82.554 MB/sec [Average]
+  (min, avg, max) = (2195.261, 2227.326, 2247.561), stdev = 21.439
+  CI (99.9%): [2144.772, 2309.879] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Reading.jsoniterScala:gc.alloc.rate.norm":
   528.000 ±(99.9%) 0.001 B/op [Average]
@@ -74306,54 +74305,54 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.
 
 # Run progress: 57.47% complete, ETA 02:32:18
 # Fork: 1 of 1
-# Warmup Iteration   1: 12223558.859 ops/s
-# Warmup Iteration   2: 12627336.791 ops/s
-# Warmup Iteration   3: 12516349.086 ops/s
-# Warmup Iteration   4: 12516487.837 ops/s
-# Warmup Iteration   5: 12492260.548 ops/s
-# Warmup Iteration   6: 12487774.065 ops/s
-# Warmup Iteration   7: 12512416.047 ops/s
-Iteration   1: 12488255.088 ops/s
-                 gc.alloc.rate:      12479.109 MB/sec
+# Warmup Iteration   1: 12010580.378 ops/s
+# Warmup Iteration   2: 12881699.569 ops/s
+# Warmup Iteration   3: 12680231.798 ops/s
+# Warmup Iteration   4: 12720014.667 ops/s
+# Warmup Iteration   5: 12706882.339 ops/s
+# Warmup Iteration   6: 12681611.229 ops/s
+# Warmup Iteration   7: 12677590.957 ops/s
+Iteration   1: 12692542.228 ops/s
+                 gc.alloc.rate:      12682.098 MB/sec
                  gc.alloc.rate.norm: 1048.000 B/op
                  gc.count:           1.000 counts
-                 gc.time:            2.000 ms
+                 gc.time:            4.000 ms
 
-Iteration   2: 12515922.334 ops/s
-                 gc.alloc.rate:      12506.308 MB/sec
+Iteration   2: 12678753.783 ops/s
+                 gc.alloc.rate:      12668.449 MB/sec
                  gc.alloc.rate.norm: 1048.000 B/op
                  gc.count:           1.000 counts
-                 gc.time:            2.000 ms
+                 gc.time:            3.000 ms
 
-Iteration   3: 12490702.227 ops/s
-                 gc.alloc.rate:      12481.088 MB/sec
-                 gc.alloc.rate.norm: 1048.000 B/op
-                 gc.count:           1.000 counts
-                 gc.time:            1.000 ms
-
-Iteration   4: 12495685.172 ops/s
-                 gc.alloc.rate:      12485.849 MB/sec
-                 gc.alloc.rate.norm: 1048.000 B/op
-                 gc.count:           1.000 counts
-                 gc.time:            2.000 ms
-
-Iteration   5: 12474448.846 ops/s
-                 gc.alloc.rate:      12464.914 MB/sec
+Iteration   3: 12674732.568 ops/s
+                 gc.alloc.rate:      12665.486 MB/sec
                  gc.alloc.rate.norm: 1048.000 B/op
                  gc.count:           2.000 counts
-                 gc.time:            4.000 ms
+                 gc.time:            5.000 ms
+
+Iteration   4: 12617029.276 ops/s
+                 gc.alloc.rate:      12607.575 MB/sec
+                 gc.alloc.rate.norm: 1048.000 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            3.000 ms
+
+Iteration   5: 12675222.634 ops/s
+                 gc.alloc.rate:      12662.388 MB/sec
+                 gc.alloc.rate.norm: 1048.000 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            2.000 ms
 
 
 
 Result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.jsoniterScala":
-  12493002.733 ±(99.9%) 57906.527 ops/s [Average]
-  (min, avg, max) = (12474448.846, 12493002.733, 12515922.334), stdev = 15038.141
-  CI (99.9%): [12435096.207, 12550909.260] (assumes normal distribution)
+  12667656.098 ±(99.9%) 112477.072 ops/s [Average]
+  (min, avg, max) = (12617029.276, 12667656.098, 12692542.228), stdev = 29209.938
+  CI (99.9%): [12555179.026, 12780133.170] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.jsoniterScala:gc.alloc.rate":
-  12483.453 ±(99.9%) 57.639 MB/sec [Average]
-  (min, avg, max) = (12464.914, 12483.453, 12506.308), stdev = 14.969
-  CI (99.9%): [12425.814, 12541.093] (assumes normal distribution)
+  12657.199 ±(99.9%) 110.679 MB/sec [Average]
+  (min, avg, max) = (12607.575, 12657.199, 12682.098), stdev = 28.743
+  CI (99.9%): [12546.520, 12767.879] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.jsoniterScala:gc.alloc.rate.norm":
   1048.000 ±(99.9%) 0.001 B/op [Average]
@@ -74366,9 +74365,9 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.
   CI (99.9%): [6.000, 6.000] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.jsoniterScala:gc.time":
-  11.000 ±(99.9%) 0.001 ms [Sum]
-  (min, avg, max) = (1.000, 2.200, 4.000), stdev = 1.095
-  CI (99.9%): [11.000, 11.000] (assumes normal distribution)
+  17.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (2.000, 3.400, 5.000), stdev = 1.140
+  CI (99.9%): [17.000, 17.000] (assumes normal distribution)
 
 
 # JMH version: 1.37
@@ -74386,34 +74385,34 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.
 
 # Run progress: 57.53% complete, ETA 02:32:06
 # Fork: 1 of 1
-# Warmup Iteration   1: 30638185.815 ops/s
-# Warmup Iteration   2: 29633513.762 ops/s
-# Warmup Iteration   3: 30105911.400 ops/s
-# Warmup Iteration   4: 30878076.939 ops/s
-# Warmup Iteration   5: 31041483.830 ops/s
-# Warmup Iteration   6: 31011780.598 ops/s
-# Warmup Iteration   7: 30905662.317 ops/s
-Iteration   1: 30372588.947 ops/s
+# Warmup Iteration   1: 30543747.638 ops/s
+# Warmup Iteration   2: 30965739.519 ops/s
+# Warmup Iteration   3: 29911210.628 ops/s
+# Warmup Iteration   4: 30740313.084 ops/s
+# Warmup Iteration   5: 30697451.533 ops/s
+# Warmup Iteration   6: 30637848.352 ops/s
+# Warmup Iteration   7: 29805860.067 ops/s
+Iteration   1: 30496745.029 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁵ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   2: 31029569.327 ops/s
+Iteration   2: 29747520.419 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁵ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   3: 30463293.200 ops/s
+Iteration   3: 29889411.593 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁵ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   4: 30832766.913 ops/s
+Iteration   4: 30222285.100 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁵ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   5: 31255912.124 ops/s
+Iteration   5: 30455031.223 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁵ B/op
                  gc.count:           ≈ 0 counts
@@ -74421,9 +74420,9 @@ Iteration   5: 31255912.124 ops/s
 
 
 Result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.jsoniterScalaPrealloc":
-  30790826.102 ±(99.9%) 1437253.151 ops/s [Average]
-  (min, avg, max) = (30372588.947, 30790826.102, 31255912.124), stdev = 373250.079
-  CI (99.9%): [29353572.951, 32228079.254] (assumes normal distribution)
+  30162198.673 ±(99.9%) 1288173.334 ops/s [Average]
+  (min, avg, max) = (29747520.419, 30162198.673, 30496745.029), stdev = 334534.524
+  CI (99.9%): [28874025.339, 31450372.006] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base16Writing.jsoniterScalaPrealloc:gc.alloc.rate":
   0.001 ±(99.9%) 0.001 MB/sec [Average]
@@ -74912,50 +74911,50 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Reading.
 
 # Run progress: 57.95% complete, ETA 02:30:36
 # Fork: 1 of 1
-# Warmup Iteration   1: 4343435.105 ops/s
-# Warmup Iteration   2: 4488905.035 ops/s
-# Warmup Iteration   3: 4523967.415 ops/s
-# Warmup Iteration   4: 4515732.435 ops/s
-# Warmup Iteration   5: 4513739.177 ops/s
-# Warmup Iteration   6: 4506868.795 ops/s
-# Warmup Iteration   7: 4458319.374 ops/s
-Iteration   1: 4519605.970 ops/s
-                 gc.alloc.rate:      2274.860 MB/sec
+# Warmup Iteration   1: 4901573.943 ops/s
+# Warmup Iteration   2: 4750098.575 ops/s
+# Warmup Iteration   3: 4754241.589 ops/s
+# Warmup Iteration   4: 4754261.556 ops/s
+# Warmup Iteration   5: 4746750.298 ops/s
+# Warmup Iteration   6: 4763767.501 ops/s
+# Warmup Iteration   7: 4760420.441 ops/s
+Iteration   1: 4769189.900 ops/s
+                 gc.alloc.rate:      2400.696 MB/sec
                  gc.alloc.rate.norm: 528.000 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   2: 4516710.279 ops/s
-                 gc.alloc.rate:      2273.650 MB/sec
+Iteration   2: 4762011.133 ops/s
+                 gc.alloc.rate:      2397.055 MB/sec
                  gc.alloc.rate.norm: 528.000 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   3: 4525845.503 ops/s
-                 gc.alloc.rate:      2278.410 MB/sec
-                 gc.alloc.rate.norm: 528.000 B/op
-                 gc.count:           ≈ 0 counts
-
-Iteration   4: 4510763.236 ops/s
-                 gc.alloc.rate:      2270.561 MB/sec
+Iteration   3: 4739349.931 ops/s
+                 gc.alloc.rate:      2385.420 MB/sec
                  gc.alloc.rate.norm: 528.000 B/op
                  gc.count:           1.000 counts
-                 gc.time:            2.000 ms
+                 gc.time:            3.000 ms
 
-Iteration   5: 4518464.306 ops/s
-                 gc.alloc.rate:      2274.387 MB/sec
+Iteration   4: 4767968.147 ops/s
+                 gc.alloc.rate:      2399.830 MB/sec
+                 gc.alloc.rate.norm: 528.000 B/op
+                 gc.count:           ≈ 0 counts
+
+Iteration   5: 4763304.209 ops/s
+                 gc.alloc.rate:      2397.706 MB/sec
                  gc.alloc.rate.norm: 528.000 B/op
                  gc.count:           ≈ 0 counts
 
 
 
 Result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Reading.jsoniterScala":
-  4518277.859 ±(99.9%) 20913.885 ops/s [Average]
-  (min, avg, max) = (4510763.236, 4518277.859, 4525845.503), stdev = 5431.269
-  CI (99.9%): [4497363.974, 4539191.743] (assumes normal distribution)
+  4760364.664 ±(99.9%) 46713.109 ops/s [Average]
+  (min, avg, max) = (4739349.931, 4760364.664, 4769189.900), stdev = 12131.246
+  CI (99.9%): [4713651.555, 4807077.773] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Reading.jsoniterScala:gc.alloc.rate":
-  2274.374 ±(99.9%) 10.821 MB/sec [Average]
-  (min, avg, max) = (2270.561, 2274.374, 2278.410), stdev = 2.810
-  CI (99.9%): [2263.553, 2285.194] (assumes normal distribution)
+  2396.141 ±(99.9%) 23.782 MB/sec [Average]
+  (min, avg, max) = (2385.420, 2396.141, 2400.696), stdev = 6.176
+  CI (99.9%): [2372.359, 2419.924] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Reading.jsoniterScala:gc.alloc.rate.norm":
   528.000 ±(99.9%) 0.001 B/op [Average]
@@ -74968,9 +74967,9 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Reading.
   CI (99.9%): [1.000, 1.000] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Reading.jsoniterScala:gc.time":
-  2.000 ±(99.9%) 0.001 ms [Sum]
-  (min, avg, max) = (≈ 0, 0.400, 2.000), stdev = 0.894
-  CI (99.9%): [2.000, 2.000] (assumes normal distribution)
+  3.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (≈ 0, 0.600, 3.000), stdev = 1.342
+  CI (99.9%): [3.000, 3.000] (assumes normal distribution)
 
 
 # JMH version: 1.37
@@ -76059,36 +76058,37 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.
 
 # Run progress: 58.84% complete, ETA 02:27:25
 # Fork: 1 of 1
-# Warmup Iteration   1: 5997944.288 ops/s
-# Warmup Iteration   2: 5898223.065 ops/s
-# Warmup Iteration   3: 5875837.401 ops/s
-# Warmup Iteration   4: 5952069.343 ops/s
-# Warmup Iteration   5: 6201242.125 ops/s
-# Warmup Iteration   6: 5872792.965 ops/s
-# Warmup Iteration   7: 5887300.342 ops/s
-Iteration   1: 5895138.359 ops/s
-                 gc.alloc.rate:      3956.195 MB/sec
+# Warmup Iteration   1: 8961005.449 ops/s
+# Warmup Iteration   2: 10574068.112 ops/s
+# Warmup Iteration   3: 10792522.342 ops/s
+# Warmup Iteration   4: 10736122.324 ops/s
+# Warmup Iteration   5: 10736383.604 ops/s
+# Warmup Iteration   6: 10785085.721 ops/s
+# Warmup Iteration   7: 10758671.357 ops/s
+Iteration   1: 10783298.148 ops/s
+                 gc.alloc.rate:      7238.201 MB/sec
                  gc.alloc.rate.norm: 704.000 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   2: 6011903.604 ops/s
-                 gc.alloc.rate:      4035.029 MB/sec
+Iteration   2: 10424510.098 ops/s
+                 gc.alloc.rate:      6996.252 MB/sec
                  gc.alloc.rate.norm: 704.000 B/op
                  gc.count:           1.000 counts
-                 gc.time:            2.000 ms
+                 gc.time:            3.000 ms
 
-Iteration   3: 6216727.176 ops/s
-                 gc.alloc.rate:      4173.010 MB/sec
+Iteration   3: 10759003.589 ops/s
+                 gc.alloc.rate:      7220.570 MB/sec
+                 gc.alloc.rate.norm: 704.000 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            3.000 ms
+
+Iteration   4: 10796716.489 ops/s
+                 gc.alloc.rate:      7245.796 MB/sec
                  gc.alloc.rate.norm: 704.000 B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   4: 5940689.119 ops/s
-                 gc.alloc.rate:      3986.504 MB/sec
-                 gc.alloc.rate.norm: 704.000 B/op
-                 gc.count:           ≈ 0 counts
-
-Iteration   5: 5888848.405 ops/s
-                 gc.alloc.rate:      3951.778 MB/sec
+Iteration   5: 10752098.340 ops/s
+                 gc.alloc.rate:      7216.955 MB/sec
                  gc.alloc.rate.norm: 704.000 B/op
                  gc.count:           1.000 counts
                  gc.time:            3.000 ms
@@ -76096,14 +76096,14 @@ Iteration   5: 5888848.405 ops/s
 
 
 Result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.jsoniterScala":
-  5990661.333 ±(99.9%) 522130.607 ops/s [Average]
-  (min, avg, max) = (5888848.405, 5990661.333, 6216727.176), stdev = 135595.660
-  CI (99.9%): [5468530.726, 6512791.939] (assumes normal distribution)
+  10703125.333 ±(99.9%) 603747.841 ops/s [Average]
+  (min, avg, max) = (10424510.098, 10703125.333, 10796716.489), stdev = 156791.397
+  CI (99.9%): [10099377.492, 11306873.174] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.jsoniterScala:gc.alloc.rate":
-  4020.503 ±(99.9%) 352.307 MB/sec [Average]
-  (min, avg, max) = (3951.778, 4020.503, 4173.010), stdev = 91.493
-  CI (99.9%): [3668.196, 4372.810] (assumes normal distribution)
+  7183.555 ±(99.9%) 405.819 MB/sec [Average]
+  (min, avg, max) = (6996.252, 7183.555, 7245.796), stdev = 105.390
+  CI (99.9%): [6777.736, 7589.374] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.jsoniterScala:gc.alloc.rate.norm":
   704.000 ±(99.9%) 0.001 B/op [Average]
@@ -76111,14 +76111,14 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.
   CI (99.9%): [704.000, 704.000] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.jsoniterScala:gc.count":
-  2.000 ±(99.9%) 0.001 counts [Sum]
-  (min, avg, max) = (≈ 0, 0.400, 1.000), stdev = 0.548
-  CI (99.9%): [2.000, 2.000] (assumes normal distribution)
+  3.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (≈ 0, 0.600, 1.000), stdev = 0.548
+  CI (99.9%): [3.000, 3.000] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.jsoniterScala:gc.time":
-  5.000 ±(99.9%) 0.001 ms [Sum]
-  (min, avg, max) = (≈ 0, 1.000, 3.000), stdev = 1.414
-  CI (99.9%): [5.000, 5.000] (assumes normal distribution)
+  9.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (≈ 0, 1.800, 3.000), stdev = 1.643
+  CI (99.9%): [9.000, 9.000] (assumes normal distribution)
 
 
 # JMH version: 1.37
@@ -76136,34 +76136,34 @@ Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.
 
 # Run progress: 58.90% complete, ETA 02:27:12
 # Fork: 1 of 1
-# Warmup Iteration   1: 6174877.897 ops/s
-# Warmup Iteration   2: 6295007.857 ops/s
-# Warmup Iteration   3: 6263793.895 ops/s
-# Warmup Iteration   4: 6255194.922 ops/s
-# Warmup Iteration   5: 6298566.826 ops/s
-# Warmup Iteration   6: 6260776.458 ops/s
-# Warmup Iteration   7: 6258452.412 ops/s
-Iteration   1: 6268858.562 ops/s
+# Warmup Iteration   1: 11398557.303 ops/s
+# Warmup Iteration   2: 13399631.715 ops/s
+# Warmup Iteration   3: 13291068.549 ops/s
+# Warmup Iteration   4: 13266660.979 ops/s
+# Warmup Iteration   5: 13273446.761 ops/s
+# Warmup Iteration   6: 13263235.624 ops/s
+# Warmup Iteration   7: 13282364.592 ops/s
+Iteration   1: 13281504.765 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁴ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   2: 6264247.449 ops/s
+Iteration   2: 13367065.086 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁴ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   3: 6270340.345 ops/s
+Iteration   3: 13295869.467 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁴ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   4: 6266829.291 ops/s
+Iteration   4: 13218546.417 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁴ B/op
                  gc.count:           ≈ 0 counts
 
-Iteration   5: 6263668.018 ops/s
+Iteration   5: 13289297.612 ops/s
                  gc.alloc.rate:      0.001 MB/sec
                  gc.alloc.rate.norm: ≈ 10⁻⁴ B/op
                  gc.count:           ≈ 0 counts
@@ -76171,9 +76171,9 @@ Iteration   5: 6263668.018 ops/s
 
 
 Result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.jsoniterScalaPrealloc":
-  6266788.733 ±(99.9%) 11076.338 ops/s [Average]
-  (min, avg, max) = (6263668.018, 6266788.733, 6270340.345), stdev = 2876.490
-  CI (99.9%): [6255712.395, 6277865.071] (assumes normal distribution)
+  13290456.669 ±(99.9%) 203308.094 ops/s [Average]
+  (min, avg, max) = (13218546.417, 13290456.669, 13367065.086), stdev = 52798.466
+  CI (99.9%): [13087148.575, 13493764.763] (assumes normal distribution)
 
 Secondary result "com.github.plokhotnyuk.jsoniter_scala.benchmark.Base64Writing.jsoniterScalaPrealloc:gc.alloc.rate":
   0.001 ±(99.9%) 0.001 MB/sec [Average]
@@ -129976,14 +129976,14 @@ ArrayOfEnumsWriting.json4sNative:gc.alloc.rate                                  
 ArrayOfEnumsWriting.json4sNative:gc.alloc.rate.norm                             512  thrpt    5    113478.457 ±   35273.904    B/op
 ArrayOfEnumsWriting.json4sNative:gc.count                                       512  thrpt    5         1.000                counts
 ArrayOfEnumsWriting.json4sNative:gc.time                                        512  thrpt    5         2.000                    ms
-ArrayOfEnumsWriting.jsoniterScala                                               512  thrpt    5    540073.091 ±   22601.920   ops/s
-ArrayOfEnumsWriting.jsoniterScala:gc.alloc.rate                                 512  thrpt    5      2450.939 ±     102.707  MB/sec
+ArrayOfEnumsWriting.jsoniterScala                                               512  thrpt    5    979460.804 ±    7642.413   ops/s
+ArrayOfEnumsWriting.jsoniterScala:gc.alloc.rate                                 512  thrpt    5      4444.872 ±      33.909  MB/sec
 ArrayOfEnumsWriting.jsoniterScala:gc.alloc.rate.norm                            512  thrpt    5      4760.001 ±       0.001    B/op
-ArrayOfEnumsWriting.jsoniterScala:gc.count                                      512  thrpt    5         1.000                counts
-ArrayOfEnumsWriting.jsoniterScala:gc.time                                       512  thrpt    5         2.000                    ms
-ArrayOfEnumsWriting.jsoniterScalaPrealloc                                       512  thrpt    5    652451.942 ±    6681.656   ops/s
+ArrayOfEnumsWriting.jsoniterScala:gc.count                                      512  thrpt    5         2.000                counts
+ArrayOfEnumsWriting.jsoniterScala:gc.time                                       512  thrpt    5         5.000                    ms
+ArrayOfEnumsWriting.jsoniterScalaPrealloc                                       512  thrpt    5   1398939.494 ±    4504.811   ops/s
 ArrayOfEnumsWriting.jsoniterScalaPrealloc:gc.alloc.rate                         512  thrpt    5         0.001 ±       0.001  MB/sec
-ArrayOfEnumsWriting.jsoniterScalaPrealloc:gc.alloc.rate.norm                    512  thrpt    5         0.001 ±       0.001    B/op
+ArrayOfEnumsWriting.jsoniterScalaPrealloc:gc.alloc.rate.norm                    512  thrpt    5        ≈ 10⁻³                  B/op
 ArrayOfEnumsWriting.jsoniterScalaPrealloc:gc.count                              512  thrpt    5           ≈ 0                counts
 ArrayOfEnumsWriting.playJson                                                    512  thrpt    5    239754.372 ±   13767.327   ops/s
 ArrayOfEnumsWriting.playJson:gc.alloc.rate                                      512  thrpt    5      5030.428 ±     290.858  MB/sec
@@ -133348,8 +133348,8 @@ Base16Reading.foryJsonScala:gc.alloc.rate                                       
 Base16Reading.foryJsonScala:gc.alloc.rate.norm                                  512  thrpt    5       528.000 ±       0.001    B/op
 Base16Reading.foryJsonScala:gc.count                                            512  thrpt    5         1.000                counts
 Base16Reading.foryJsonScala:gc.time                                             512  thrpt    5         3.000                    ms
-Base16Reading.jsoniterScala                                                     512  thrpt    5   3940993.767 ±   77059.789   ops/s
-Base16Reading.jsoniterScala:gc.alloc.rate                                       512  thrpt    5      1983.718 ±      38.656  MB/sec
+Base16Reading.jsoniterScala                                                     512  thrpt    5   4425180.901 ±  165057.494   ops/s
+Base16Reading.jsoniterScala:gc.alloc.rate                                       512  thrpt    5      2227.326 ±      82.554  MB/sec
 Base16Reading.jsoniterScala:gc.alloc.rate.norm                                  512  thrpt    5       528.000 ±       0.001    B/op
 Base16Reading.jsoniterScala:gc.count                                            512  thrpt    5         1.000                counts
 Base16Reading.jsoniterScala:gc.time                                             512  thrpt    5         2.000                    ms
@@ -133363,12 +133363,12 @@ Base16Writing.foryJsonScala:gc.alloc.rate                                       
 Base16Writing.foryJsonScala:gc.alloc.rate.norm                                  512  thrpt    5      1048.000 ±       0.001    B/op
 Base16Writing.foryJsonScala:gc.count                                            512  thrpt    5         3.000                counts
 Base16Writing.foryJsonScala:gc.time                                             512  thrpt    5         8.000                    ms
-Base16Writing.jsoniterScala                                                     512  thrpt    5  12493002.733 ±   57906.527   ops/s
-Base16Writing.jsoniterScala:gc.alloc.rate                                       512  thrpt    5     12483.453 ±      57.639  MB/sec
+Base16Writing.jsoniterScala                                                     512  thrpt    5  12667656.098 ±  112477.072   ops/s
+Base16Writing.jsoniterScala:gc.alloc.rate                                       512  thrpt    5     12657.199 ±     110.679  MB/sec
 Base16Writing.jsoniterScala:gc.alloc.rate.norm                                  512  thrpt    5      1048.000 ±       0.001    B/op
 Base16Writing.jsoniterScala:gc.count                                            512  thrpt    5         6.000                counts
-Base16Writing.jsoniterScala:gc.time                                             512  thrpt    5        11.000                    ms
-Base16Writing.jsoniterScalaPrealloc                                             512  thrpt    5  30790826.102 ± 1437253.151   ops/s
+Base16Writing.jsoniterScala:gc.time                                             512  thrpt    5        17.000                    ms
+Base16Writing.jsoniterScalaPrealloc                                             512  thrpt    5  30162198.673 ± 1288173.334   ops/s
 Base16Writing.jsoniterScalaPrealloc:gc.alloc.rate                               512  thrpt    5         0.001 ±       0.001  MB/sec
 Base16Writing.jsoniterScalaPrealloc:gc.alloc.rate.norm                          512  thrpt    5        ≈ 10⁻⁵                  B/op
 Base16Writing.jsoniterScalaPrealloc:gc.count                                    512  thrpt    5           ≈ 0                counts
@@ -133402,11 +133402,11 @@ Base64Reading.json4sJackson:gc.alloc.rate                                       
 Base64Reading.json4sJackson:gc.alloc.rate.norm                                  512  thrpt    5      1976.000 ±       0.001    B/op
 Base64Reading.json4sJackson:gc.count                                            512  thrpt    5         1.000                counts
 Base64Reading.json4sJackson:gc.time                                             512  thrpt    5         2.000                    ms
-Base64Reading.jsoniterScala                                                     512  thrpt    5   4518277.859 ±   20913.885   ops/s
-Base64Reading.jsoniterScala:gc.alloc.rate                                       512  thrpt    5      2274.374 ±      10.821  MB/sec
+Base64Reading.jsoniterScala                                                     512  thrpt    5   4760364.664 ±   46713.109   ops/s
+Base64Reading.jsoniterScala:gc.alloc.rate                                       512  thrpt    5      2396.141 ±      23.782  MB/sec
 Base64Reading.jsoniterScala:gc.alloc.rate.norm                                  512  thrpt    5       528.000 ±       0.001    B/op
 Base64Reading.jsoniterScala:gc.count                                            512  thrpt    5         1.000                counts
-Base64Reading.jsoniterScala:gc.time                                             512  thrpt    5         2.000                    ms
+Base64Reading.jsoniterScala:gc.time                                             512  thrpt    5         3.000                    ms
 Base64Reading.playJson                                                          512  thrpt    5   1555005.097 ± 1305724.015   ops/s
 Base64Reading.playJson:gc.alloc.rate                                            512  thrpt    5      2958.099 ±    2340.610  MB/sec
 Base64Reading.playJson:gc.alloc.rate.norm                                       512  thrpt    5      2000.259 ±     198.811    B/op
@@ -133477,12 +133477,12 @@ Base64Writing.json4sNative:gc.alloc.rate                                        
 Base64Writing.json4sNative:gc.alloc.rate.norm                                   512  thrpt    5      5240.001 ±       0.001    B/op
 Base64Writing.json4sNative:gc.count                                             512  thrpt    5         2.000                counts
 Base64Writing.json4sNative:gc.time                                              512  thrpt    5         4.000                    ms
-Base64Writing.jsoniterScala                                                     512  thrpt    5   5990661.333 ±  522130.607   ops/s
-Base64Writing.jsoniterScala:gc.alloc.rate                                       512  thrpt    5      4020.503 ±     352.307  MB/sec
+Base64Writing.jsoniterScala                                                     512  thrpt    5  10703125.333 ±  603747.841   ops/s
+Base64Writing.jsoniterScala:gc.alloc.rate                                       512  thrpt    5      7183.555 ±     405.819  MB/sec
 Base64Writing.jsoniterScala:gc.alloc.rate.norm                                  512  thrpt    5       704.000 ±       0.001    B/op
-Base64Writing.jsoniterScala:gc.count                                            512  thrpt    5         2.000                counts
-Base64Writing.jsoniterScala:gc.time                                             512  thrpt    5         5.000                    ms
-Base64Writing.jsoniterScalaPrealloc                                             512  thrpt    5   6266788.733 ±   11076.338   ops/s
+Base64Writing.jsoniterScala:gc.count                                            512  thrpt    5         3.000                counts
+Base64Writing.jsoniterScala:gc.time                                             512  thrpt    5         9.000                    ms
+Base64Writing.jsoniterScalaPrealloc                                             512  thrpt    5  13290456.669 ±  203308.094   ops/s
 Base64Writing.jsoniterScalaPrealloc:gc.alloc.rate                               512  thrpt    5         0.001 ±       0.001  MB/sec
 Base64Writing.jsoniterScalaPrealloc:gc.alloc.rate.norm                          512  thrpt    5        ≈ 10⁻⁴                  B/op
 Base64Writing.jsoniterScalaPrealloc:gc.count                                    512  thrpt    5           ≈ 0                counts
