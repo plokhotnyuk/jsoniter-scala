@@ -977,7 +977,7 @@ final class JsonWriter private[jsoniter_scala](
    * @param doPadding if `true`, outputs padding characters (`=`) as needed
    */
   def writeBase64Val(bs: Array[Byte], doPadding: Boolean): Unit =
-    writeBase64Bytes(bs, base64Digits, doPadding)
+    writeBase64Bytes(bs, base64Digits, 0x1111111111111111L, 0x1D1D1D1D1D1D1D1DL, doPadding)
 
   /**
    * Writes a byte array as a JSON string value encoded in a base-64 format for URLs.
@@ -986,7 +986,7 @@ final class JsonWriter private[jsoniter_scala](
    * @param doPadding if `true`, outputs padding characters (`=`) as needed
    */
   def writeBase64UrlVal(bs: Array[Byte], doPadding: Boolean): Unit =
-    writeBase64Bytes(bs, base64UrlDigits, doPadding)
+    writeBase64Bytes(bs, base64UrlDigits, 0x1313131313131313L, 0x4F4F4F4F4F4F4F4FL, doPadding)
 
   /**
    * Writes a byte array as a JSON raw binary value.
@@ -1654,33 +1654,75 @@ final class JsonWriter private[jsoniter_scala](
     count = pos + 1
   }
 
-  private[this] def writeBase64Bytes(bs: Array[Byte], ds: Array[Byte], doPadding: Boolean): Unit = {
-    val lenM3 = bs.length - 3
+  private[this] def writeBase64Bytes(bs: Array[Byte], ds: Array[Byte], c5: Long, c6: Long, doPadding: Boolean): Unit = {
+    val len = bs.length
+    val lenM3 = len - 3
+    val lenM7 =
+      if (len < 64) 0 // small inputs are encoded faster by the LUT-based loop below
+      else len - 7
     writeOptionalCommaAndIndentionBeforeValue()
-    var posLim = limit - 6
     var pos = count
-    if (pos >= posLim) {
-      pos = flushAndGrowBuf(6, pos)
-      posLim = limit - 5
-    }
+    if (pos + 17 > limit) pos = flushAndGrowBuf(17, pos)
     var buf = this.buf
     buf(pos) = '"'
     pos += 1
+    var posLim = limit - 16 // keep 16 bytes for writing of the last 1-7 bytes and the closing quote
+    // Three-pass SWAR conversion of 6 bytes to 8 base-64 digits without LUTs. The 1st pass copies 6-byte groups to
+    // 8-byte lanes, it is the only pass that cannot be auto-vectorized. The 2nd and 3rd passes are kept small enough to
+    // be unrolled and auto-vectorized by C2 and GraalVM, and have no multiplications. In the 2nd pass two 3-byte groups
+    // are moved to 32-bit halves and their sextets are spread to bytes in the little-endian order. In the 3rd pass a
+    // 0x80 bit is set in lanes with sextets greater than or equal to 26, 52, 62, and 63 by adding 0x66, 0x4C, 0x42, and
+    // 0x41 accordingly, then masks of 0x7F are built by subtracting of those bits shifted to 0x01 and used to select
+    // (by XOR-ing) lane offsets modulo 128 that are added to sextets. The `c5` and `c6` lane constants are deltas of
+    // offsets for 62 and 63 sextets: (ds(62) - 62 ^ 0x7C) & 0x7F and (ds(63) - 63 ^ ds(62) - 62) & 0x7F
+    val m5 = 0x8080808080808080L
+    val m6 = 0x7F7F7F7F7F7F7F7FL
     var offset = 0
-    while (offset < lenM3) {
-      val offsetLim = Math.min((posLim - pos + 3 >> 2) * 3 + offset, lenM3)
-      while (offset < offsetLim) {
-        val p = ByteArrayAccess.getIntReversed(bs, offset)
-        ByteArrayAccess.setInt(buf, pos,
-          ds(p >> 8 & 0x3F) << 24 | ds(p >> 14 & 0x3F) << 16 | ds(p >> 20 & 0x3F) << 8 | ds(p >>> 26))
-        pos += 4
-        offset += 3
-      }
-      if (pos >= posLim) {
-        pos = flushAndGrowBuf(5, pos)
+    while (offset < lenM7) {
+      if (pos > posLim) {
+        pos = flushAndGrowBuf(16, pos)
         buf = this.buf
-        posLim = limit - 5
+        posLim = limit - 16
       }
+      val offsetLim = Math.min((posLim - pos >> 3) * 6 + 6 + offset, lenM7)
+      val from = pos
+      while (offset < offsetLim) { // 1st pass: copying of 6-byte groups to 8-byte lanes
+        ByteArrayAccess.setLong(buf, pos, ByteArrayAccess.getLong(bs, offset))
+        pos += 8
+        offset += 6
+      }
+      var j = from
+      while (j < pos) { // 2nd pass: in-place spreading of sextets to bytes that can be auto-vectorized
+        val x = ByteArrayAccess.getLong(buf, j)
+        val y = (x & 0xFFFFFFL) | (x << 8 & 0xFFFFFF00000000L)
+        ByteArrayAccess.setLong(buf, j, (y >>> 2 & 0x3F0000003FL) | (y << 12 & 0x300000003000L) |
+          (y >>> 4 & 0xF0000000F00L) | (y << 10 & 0x3C0000003C0000L) | (y >>> 6 & 0x3000000030000L) |
+          (y << 8 & 0x3F0000003F000000L))
+        j += 8
+      }
+      var i = from
+      while (i < pos) { // 3rd pass: in-place conversion of sextets to base-64 digits that can be auto-vectorized
+        val q = ByteArrayAccess.getLong(buf, i)
+        val t1 = q + 0x6666666666666666L & m5
+        val t2 = q + 0x4C4C4C4C4C4C4C4CL & m5
+        val t3 = q + 0x4242424242424242L & m5
+        val t4 = q + 0x4141414141414141L & m5
+        ByteArrayAccess.setLong(buf, i, q + (0x4141414141414141L ^ (t1 - (t1 >>> 7) & 0x606060606060606L) ^
+          (t2 - (t2 >>> 7) & 0x3B3B3B3B3B3B3B3BL) ^ (t3 - (t3 >>> 7) & c5) ^ (t4 - (t4 >>> 7) & c6)) & m6)
+        i += 8
+      }
+    }
+    while (offset < lenM3) {
+      if (pos > posLim) {
+        pos = flushAndGrowBuf(16, pos)
+        buf = this.buf
+        posLim = limit - 16
+      }
+      val p = ByteArrayAccess.getIntReversed(bs, offset)
+      ByteArrayAccess.setInt(buf, pos,
+        ds(p >> 8 & 0x3F) << 24 | ds(p >> 14 & 0x3F) << 16 | ds(p >> 20 & 0x3F) << 8 | ds(p >>> 26))
+      pos += 4
+      offset += 3
     }
     if (offset == lenM3) {
       val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
