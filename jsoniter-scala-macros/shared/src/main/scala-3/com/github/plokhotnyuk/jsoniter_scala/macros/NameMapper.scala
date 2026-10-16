@@ -455,7 +455,7 @@ private[macros] object CompileTimeEval {
 
     private def jvmToTerm(applyTerm: Term, obj: AnyRef): Term = Literal {
       if (obj.isInstanceOf[String]) StringConstant(obj.asInstanceOf[String])
-      else if (obj.asInstanceOf[java.lang.Boolean]) BooleanConstant(obj.asInstanceOf[java.lang.Boolean].booleanValue())
+      else if (obj.isInstanceOf[java.lang.Boolean]) BooleanConstant(obj.asInstanceOf[java.lang.Boolean].booleanValue())
       else if (obj.isInstanceOf[java.lang.Character]) CharConstant(obj.asInstanceOf[java.lang.Character].charValue())
       else if (obj.isInstanceOf[java.lang.Byte]) ByteConstant(obj.asInstanceOf[java.lang.Byte].byteValue())
       else if (obj.isInstanceOf[java.lang.Short]) ShortConstant(obj.asInstanceOf[java.lang.Short].shortValue())
