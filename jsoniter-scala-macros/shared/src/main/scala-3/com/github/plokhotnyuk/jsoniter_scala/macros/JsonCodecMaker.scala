@@ -2469,7 +2469,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             withEqualsFor(new EqualsMethodKey(tpe1), '{ $x1($i) }, '{ $x2($i) })((x1, x2) => genArrayEquals(tpe1, x1, x2))
 
           '{
-            (($x1 ne null) && ($x2 ne null) && {
+            ($x1 eq $x2.asInstanceOf[AnyRef]) || (($x1 ne null) && ($x2 ne null) && {
               val l = $x1.length
               ($x2.length == l) && {
                 var i = 0
@@ -2488,7 +2488,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             val x2 = x2t.asInstanceOf[Expr[IArray[t1]]]
 
             '{
-              (($x1 ne null) && ($x2 ne null) && {
+              ($x1 eq $x2.asInstanceOf[AnyRef]) || (($x1 ne null) && ($x2 ne null) && {
                 val l = $x1.length
                 ($x2.length == l) && {
                   var i = 0

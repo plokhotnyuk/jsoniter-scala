@@ -158,6 +158,12 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       verifySer(codecOfDefaults, IArrayDefaults(), "{}")
       verifySer(codecOfDefaults, IArrayDefaults(aa = IArray[IArray[Int]](), a = IArray[BigInt]()), """{}""")
     }
+    "don't serialize default values of case classes that defined for fields with null arrays" in {
+      case class IArrayNullDefaults(aa: IArray[IArray[Int]] = IArray(null.asInstanceOf[IArray[Int]]),
+                                    a: IArray[BigInt] = null.asInstanceOf[IArray[BigInt]])
+
+      verifySer(make[IArrayNullDefaults](CodecMakerConfig.withTransientEmpty(false)), IArrayNullDefaults(), "{}")
+    }
     "serialize default values of case classes that defined for fields when the transientDefault flag is off" in {
       verifySer(make[IArrayDefaults](CodecMakerConfig.withTransientDefault(false)),
         IArrayDefaults(), """{"aa":[[1]],"a":[2]}""")
