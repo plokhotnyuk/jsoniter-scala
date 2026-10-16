@@ -2154,6 +2154,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }), CamelPascalSnakeKebabCases(1, 2, 3, 4, 5, 6, 7, 8),
         """{"CMLCS":1,"PascalCase":2,"snake_case":3,"kebab-case":4,"camel1":5,"Pascal1":6,"snake_1":7,"KBB1":8}""")
     }
+    "serialize and deserialize with keys renamed using alternatives in patterns" in {
+      verifySerDeser(make[CamelPascalSnakeKebabCases](CodecMakerConfig.withFieldNameMapper {
+        case s @ ("camelCase" | "kebab-1") => s.toUpperCase
+        case s @ ("camel1" | "snake_1") => s + "_"
+      }), CamelPascalSnakeKebabCases(1, 2, 3, 4, 5, 6, 7, 8),
+        """{"CAMELCASE":1,"PascalCase":2,"snake_case":3,"kebab-case":4,"camel1_":5,"Pascal1":6,"snake_1_":7,"KEBAB-1":8}""")
+    }
     "serialize and deserialize with keys enforced to camelCase and throw parse exception when they are missing" in {
       val codecOfEnforcedCamelCase =
         make[CamelPascalSnakeKebabCases](CodecMakerConfig.withFieldNameMapper(JsonCodecMaker.enforceCamelCase))

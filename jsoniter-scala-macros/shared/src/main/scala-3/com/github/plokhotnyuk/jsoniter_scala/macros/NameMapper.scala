@@ -187,7 +187,7 @@ private[macros] object CompileTimeEval {
         case Alternatives(cases) =>
           var c = cases
           var retval: Option[Map[quotes.reflect.Symbol, quotes.reflect.Term]] = None
-          while (!c.isEmpty) {
+          while (!c.isEmpty && retval.isEmpty) {
             retval = evalCaseDefPattern(m, c.head, scrutinee, bindings)
             c = c.tail
           }
