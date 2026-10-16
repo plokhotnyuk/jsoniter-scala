@@ -872,7 +872,7 @@ object JsonCodecMaker {
           termNames.getOrElse(termNameKey, {
             val name = TermName(s"mc${termNames.size}")
             termNames.update(termNameKey, name)
-            trees += q"private[this] val $name = new _root_.java.math.MathContext(${cfg.bigDecimalPrecision}, _root_.java.math.RoundingMode.HALF_EVEN)"
+            trees += q"private[this] val $name = new _root_.java.math.MathContext($precision, _root_.java.math.RoundingMode.HALF_EVEN)"
             name
           })
         })
