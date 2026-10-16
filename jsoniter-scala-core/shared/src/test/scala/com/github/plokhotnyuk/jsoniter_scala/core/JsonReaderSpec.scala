@@ -732,7 +732,43 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       forAll(arbitrary[String], genWhitespaces, minSuccessful(10000))(check)
     }
-    "throw parsing exception for empty input and illegal or too long Base16 string" in {
+    "parse long Base16 strings and throw parsing exception for illegal digits in them" in {
+      val digits = "0123456789abcdefABCDEF"
+      forAll(Gen.choose(0, 2000), Gen.choose(0, 255), Gen.choose(0, Int.MaxValue), minSuccessful(10000)) {
+        (len, b, seed) =>
+          val bs = new Array[Byte](len)
+          val rnd = new Random(seed)
+          rnd.nextBytes(bs)
+          val base16 = new Array[Byte](len * 2)
+          var i = 0
+          while (i < len) {
+            base16(i * 2) = digits.charAt(bs(i) >> 4 & 0xF).toByte
+            base16(i * 2 + 1) = digits.charAt(bs(i) & 0xF).toByte
+            i += 1
+          }
+          val upperCase = new String(base16, UTF_8).toUpperCase.getBytes(UTF_8)
+          reader2(('"'.toByte +: base16) :+ '"'.toByte).readBase16AsBytes(null) shouldBe bs
+          reader2(('"'.toByte +: upperCase) :+ '"'.toByte).readBase16AsBytes(null) shouldBe bs
+          if (len > 0 && b != '"' && digits.indexOf(b) < 0) {
+            val invalid = base16.clone
+            invalid(seed % base16.length) = b.toByte
+            assert(intercept[JsonReaderException](reader2(('"'.toByte +: invalid) :+ '"'.toByte).readBase16AsBytes(null))
+              .getMessage.startsWith("expected "))
+          }
+      }
+    }
+    "throw parsing exception for too long input" in {
+      if (TestUtils.isJS) { // the JS version uses the internal char buffer for decoding
+        val tooLongString = "\"" + "1" * ((ReaderConfig.maxCharBufSize + 1) * 4) + "\""
+        assert(intercept[JsonReaderException](reader(tooLongString).readBase16AsBytes(null))
+          .getMessage.startsWith("too long string exceeded 'maxCharBufSize'"))
+      } else { // other versions keep all digits in the internal byte buffer
+        val tooLongString = "\"" + "0" * ReaderConfig.maxBufSize + "\""
+        assert(intercept[JsonReaderException](reader(tooLongString).readBase16AsBytes(null))
+          .getMessage.startsWith("too long part of input exceeded 'maxBufSize'"))
+      }
+    }
+    "throw parsing exception for empty input and illegal Base16 string" in {
       def checkError(json: String, error: String): Unit =
         assert(intercept[JsonReaderException](reader(json).readBase16AsBytes(null)).getMessage.startsWith(error))
 
@@ -749,16 +785,6 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         checkError(s""""00${nonHexDigitOrDoubleQuotes}0"""", """expected '"' or hex digit, offset: 0x00000003""")
         checkError(s""""000${nonHexDigit}"""", "expected hex digit, offset: 0x00000004")
       }
-      val sb = new StringBuilder
-      sb.append('"')
-      val l = (ReaderConfig.maxCharBufSize + 1) * 4
-      var i = 0
-      while (i < l) {
-        sb.append('1')
-        i += 1
-      }
-      sb.append('"')
-      checkError(sb.toString, "too long string exceeded 'maxCharBufSize'")
     }
   }
   "JsonReader.readBase64AsBytes and JsonReader.readBase64UrlAsBytes" should {
@@ -788,7 +814,45 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       forAll(arbitrary[String], genWhitespaces, minSuccessful(10000))(check)
     }
-    "throw parsing exception for empty input and illegal or too long base64 string" in {
+    "parse long Base64 strings and throw parsing exception for illegal digits in them" in {
+      val digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+      forAll(Gen.choose(0, 2000), Gen.choose(0, 255), Gen.choose(0, Int.MaxValue), minSuccessful(10000)) {
+        (len, b, seed) =>
+          val bs = new Array[Byte](len)
+          new Random(seed).nextBytes(bs)
+          val base64 = Base64.getEncoder.encode(bs)
+          val base64Url = Base64.getUrlEncoder.withoutPadding.encode(bs)
+          reader2(('"'.toByte +: base64) :+ '"'.toByte).readBase64AsBytes(null) shouldBe bs
+          reader2(('"'.toByte +: base64Url) :+ '"'.toByte).readBase64UrlAsBytes(null) shouldBe bs
+          if (len > 0 && b != '"' && b != '=' && digits.indexOf(b) < 0) {
+            val i = seed % base64Url.length
+            if (b != '+' && b != '/') {
+              val invalid = base64.clone
+              invalid(i) = b.toByte
+              assert(intercept[JsonReaderException](reader2(('"'.toByte +: invalid) :+ '"'.toByte).readBase64AsBytes(null))
+                .getMessage.startsWith("expected "))
+            }
+            if (b != '-' && b != '_') {
+              val invalid = base64Url.clone
+              invalid(i) = b.toByte
+              assert(intercept[JsonReaderException](reader2(('"'.toByte +: invalid) :+ '"'.toByte).readBase64UrlAsBytes(null))
+                .getMessage.startsWith("expected "))
+            }
+          }
+      }
+    }
+    "throw parsing exception for too long input" in {
+      if (TestUtils.isJS) { // the JS version uses the internal char buffer for decoding
+        val tooLongString = "\"" + "1" * ((ReaderConfig.maxCharBufSize + 1) * 3) + "\""
+        assert(intercept[JsonReaderException](reader(tooLongString).readBase64AsBytes(null))
+          .getMessage.startsWith("too long string exceeded 'maxCharBufSize'"))
+      } else { // other versions keep all digits in the internal byte buffer
+        val tooLongString = "\"" + "0" * ReaderConfig.maxBufSize + "\""
+        assert(intercept[JsonReaderException](reader(tooLongString).readBase64AsBytes(null))
+          .getMessage.startsWith("too long part of input exceeded 'maxBufSize'"))
+      }
+    }
+    "throw parsing exception for empty input and illegal base64 string" in {
       def checkError(json: String, error: String): Unit = {
         assert(intercept[JsonReaderException](reader(json).readBase64AsBytes(null)).getMessage.startsWith(error))
         assert(intercept[JsonReaderException](reader(json).readBase64UrlAsBytes(null)).getMessage.startsWith(error))
@@ -806,16 +870,6 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""00=!"""", "expected '=', offset: 0x00000004")
       checkError(""""00==!""", """expected '"', offset: 0x00000005""")
       checkError(""""000=!""", """expected '"', offset: 0x00000005""")
-      val sb = new StringBuilder
-      sb.append('"')
-      val l = (ReaderConfig.maxCharBufSize + 1) * 3
-      var i = 0
-      while (i < l) {
-        sb.append('1')
-        i += 1
-      }
-      sb.append('"')
-      checkError(sb.toString, "too long string exceeded 'maxCharBufSize'")
     }
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {

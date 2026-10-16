@@ -72,6 +72,10 @@ class ByteArrayAccess {
         return (int) VH_INT_REVERSED.get(buf, pos);
     }
 
+    static void setIntReversed(byte[] buf, int pos, int value) {
+        VH_INT_REVERSED.set(buf, pos, value);
+    }
+
     // Use only when x is negative and y is positive
     static long unsignedMultiplyHigh1(long x, long y) {
         try {

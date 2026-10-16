@@ -1019,7 +1019,7 @@ final class JsonReader private[jsoniter_scala](
     *                             when both the JSON value and the provided default value are `null`
     */
   def readBase64AsBytes(default: Array[Byte]): Array[Byte] =
-    if (isNextToken('"', head)) parseBase64(base64Bytes)
+    if (isNextToken('"', head)) parseBase64(base64Bytes, isUrl = false)
     else readNullOrTokenError(default, '"')
 
   /**
@@ -1033,7 +1033,7 @@ final class JsonReader private[jsoniter_scala](
     *                             when both the JSON value and the provided default value are `null`
     */
   def readBase64UrlAsBytes(default: Array[Byte]): Array[Byte] =
-    if (isNextToken('"', head)) parseBase64(base64UrlBytes)
+    if (isNextToken('"', head)) parseBase64(base64UrlBytes, isUrl = true)
     else readNullOrTokenError(default, '"')
 
   /**
@@ -5913,69 +5913,85 @@ final class JsonReader private[jsoniter_scala](
     (x & 0xFF00 | x >>> 24).toChar
   }
 
-  @inline
   private[this] def parseBase16(): Array[Byte] = {
-    var charBuf = this.charBuf
-    var len = charBuf.length
-    var pos = head
+    var from = head
+    var pos = from
     var buf = this.buf
+    var m = 0L
+    while (pos + 7 < tail && { // SWAR search of the closing quote or other bytes less than the smallest digit ('0')
+      m = ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L & 0x8080808080808080L
+      m == 0
+    }) pos += 8
+    if (m == 0 && pos + 3 < tail) { // SWAR search by 4 bytes for short strings
+      m = (ByteArrayAccess.getInt(buf, pos) - 0x30303030 & 0x80808080).toLong
+      if (m == 0) pos += 4
+    }
+    if (m != 0) pos += java.lang.Long.numberOfTrailingZeros(m) >> 3
+    else {
+      while (pos < tail && buf(pos) >= '0') pos += 1
+      if (pos == tail) { // loading of remaining digits to the buffer using mark to keep all of them
+        val oldMark = mark
+        val newMark =
+          if (oldMark < 0) from
+          else oldMark
+        mark = newMark
+        while ({
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail && {
+            while (pos + 7 < tail && {
+              m = ByteArrayAccess.getLong(buf, pos) - 0x3030303030303030L & 0x8080808080808080L
+              m == 0
+            }) pos += 8
+            if (m != 0) {
+              pos += java.lang.Long.numberOfTrailingZeros(m) >> 3
+              false
+            } else {
+              while (pos < tail && buf(pos) >= '0') pos += 1
+              pos == tail
+            }
+          }
+        }) ()
+        if (mark == 0) from -= newMark
+        if (mark > oldMark) mark = oldMark
+      }
+    }
+    val to = pos
+    val n = to - from
+    if (to >= tail || buf(to) != '"' || (n & 0x1) != 0) base16Error(from) // the closing quote is not found or illegal byte
+    val bs = new Array[Byte](n >> 1)
+    pos = from
     var i = 0
-    var isHex = true
-    while (isHex && (pos + 7 < tail || {
-      pos = loadMore(pos)
-      buf = this.buf
-      pos + 7 < tail
-    })) {
-      if (i + 1 >= len) {
-        len = growCharBuf(i + 2)
-        charBuf = this.charBuf
-      }
-      val posLim = Math.min(tail - 7, (len - i >> 1 << 3) + pos)
-      while (pos < posLim && {
-        val bs = ByteArrayAccess.getLong(buf, pos)
-        isHex = (hexDigitErrors(bs) & 0x8080808080808080L) == 0
-        isHex && {
-          val x = hexDigits8(bs).toInt
-          charBuf(i) = (x >>> 16).toChar
-          charBuf(i + 1) = x.toChar
-          true
-        }
-      }) {
-        i += 2
-        pos += 8
-      }
+    var err = 0L
+    val posLim = from + (n & ~0x7)
+    while (pos < posLim) {
+      val x = ByteArrayAccess.getLong(buf, pos)
+      err |= hexDigitErrors(x)
+      ByteArrayAccess.setIntReversed(bs, i, hexDigits8(x).toInt)
+      i += 4
+      pos += 8
     }
-    var bits, k = 0 // less than 8 hex digits can remain here, so up to 3 bytes are accumulated in `bits`
-    var b = nextByte(pos)
-    while (b != '"') {
-      val n1 = hexDigit(b)
-      if (n1 < 0) decodeError("expected '\"' or hex digit")
-      val n2 = hexDigit(nextByte(head))
-      if (n2 < 0) decodeError("expected hex digit")
-      bits = bits << 8 | n1 << 4 | n2
-      k += 1
-      b = nextByte(head)
-    }
-    if (i + (k >> 1) > len) growCharBuf(i + (k >> 1)) // check the `maxCharBufSize` limit for remaining bytes
-    var bLen = i << 1
-    val bs = new Array[Byte](bLen + k)
-    i = 0
-    var j = 0
-    while (j < bLen) {
-      val ch = charBuf(i)
-      bs(j) = (ch >> 8).toByte
-      bs(j + 1) = ch.toByte
+    var bits = 0
+    while (pos < to) {
+      val x = hexDigit(buf(pos)) << 4 | hexDigit(buf(pos + 1))
+      bits |= x
+      bs(i) = x.toByte
       i += 1
-      j += 2
+      pos += 2
     }
-    bLen += k
-    while (k > 0) {
-      bLen -= 1
-      bs(bLen) = bits.toByte
-      bits >>= 8
-      k -= 1
-    }
+    if ((err & 0x8080808080808080L) != 0 || bits < 0) base16Error(from)
+    head = to + 1
     bs
+  }
+
+  @noinline
+  private[this] def base16Error(from: Int): Nothing = {
+    val buf = this.buf
+    var pos = from
+    while (pos + 1 < tail && (hexDigit(buf(pos)) | hexDigit(buf(pos + 1))) >= 0) pos += 2
+    if (hexDigit(nextByte(pos)) < 0) decodeError("expected '\"' or hex digit")
+    if (hexDigit(nextByte(head)) < 0) decodeError("expected hex digit")
+    decodeError("expected '\"'") // unreachable, only invalid strings are passed to this method
   }
 
   private[this] def hexDigit(b: Byte): Int =
@@ -5986,80 +6002,210 @@ final class JsonReader private[jsoniter_scala](
       else -1
     }
 
-  private[this] def parseBase64(ds: Array[Byte]): Array[Byte] = {
-    var charBuf = this.charBuf
-    var lenM1 = charBuf.length - 1
-    var pos = head
+  private[this] def parseBase64(ds: Array[Byte], isUrl: Boolean): Array[Byte] = {
+    var from = head
+    var pos = from
     var buf = this.buf
-    var i, bits = 0
-    while (bits >= 0 && (pos + 3 < tail || {
-      pos = loadMore(pos)
-      buf = this.buf
-      pos + 3 < tail
-    })) {
-      if (i >= lenM1) {
-        lenM1 = growCharBuf(i + 1) - 1
-        charBuf = this.charBuf
-      }
-      val posLim = Math.min(tail - 3, (lenM1 - i << 1) + pos)
-      while (pos < posLim && {
-        bits =
-          ds(buf(pos) & 0xFF) << 18 |
-            ds(buf(pos + 1) & 0xFF) << 12 |
-            ds(buf(pos + 2) & 0xFF) << 6 |
-            ds(buf(pos + 3) & 0xFF)
-        bits >= 0
-      }) {
-        charBuf(i) = (bits >> 8).toChar
-        charBuf(i + 1) = bits.toChar
-        i += 2
-        pos += 4
-      }
+    var m = 0L
+    while (pos + 7 < tail && { // SWAR search of the closing quote or other bytes less than the smallest digit ('+')
+      m = ByteArrayAccess.getLong(buf, pos) - 0x2B2B2B2B2B2B2B2BL & 0x8080808080808080L
+      m == 0
+    }) pos += 8
+    if (m == 0 && pos + 3 < tail) { // SWAR search by 4 bytes for short strings
+      m = (ByteArrayAccess.getInt(buf, pos) - 0x2B2B2B2B & 0x80808080).toLong
+      if (m == 0) pos += 4
     }
-    val bLen = i + (i >> 1)
-    var bs: Array[Byte] = null
-    var b = nextByte(pos)
-    if (b == '"') bs = new Array[Byte](bLen)
+    if (m != 0) pos += java.lang.Long.numberOfTrailingZeros(m) >> 3
     else {
-      bits = ds(b & 0xFF).toInt
-      if (bits < 0) decodeError("expected '\"' or base64 digit")
-      b = nextByte(head)
-      bits = bits << 6 | ds(b & 0xFF)
-      if (bits < 0) decodeError("expected base64 digit")
-      b = nextByte(head)
-      if (b == '"' || b == '=') {
-        if (b == '=') {
-          nextByteOrError('=', head)
-          nextByteOrError('"', head)
-        }
-        bs = new Array[Byte](bLen + 1)
-        bs(bLen) = (bits >> 4).toByte
-      } else {
-        bits = bits << 6 | ds(b & 0xFF)
-        if (bits < 0) decodeError("expected '\"' or '=' or base64 digit")
-        b = nextByte(head)
-        if (b == '=') nextByteOrError('"', head)
-        else if (b != '"') tokensError('"', '=')
-        bs = new Array[Byte](bLen + 2)
-        bs(bLen) = (bits >> 10).toByte
-        bs(bLen + 1) = (bits >> 2).toByte
+      while (pos < tail && buf(pos) >= '+') pos += 1
+      if (pos == tail) { // loading of remaining digits to the buffer using mark to keep all of them
+        val oldMark = mark
+        val newMark =
+          if (oldMark < 0) from
+          else oldMark
+        mark = newMark
+        while ({
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail && {
+            while (pos + 7 < tail && {
+              m = ByteArrayAccess.getLong(buf, pos) - 0x2B2B2B2B2B2B2B2BL & 0x8080808080808080L
+              m == 0
+            }) pos += 8
+            if (m != 0) {
+              pos += java.lang.Long.numberOfTrailingZeros(m) >> 3
+              false
+            } else {
+              while (pos < tail && buf(pos) >= '+') pos += 1
+              pos == tail
+            }
+          }
+        }) ()
+        if (mark == 0) from -= newMark
+        if (mark > oldMark) mark = oldMark
       }
     }
-    i = 0
-    var j = 0
-    while (j < bLen) {
-      val ch = charBuf(i)
-      bs(j) = (ch >> 8).toByte
-      bs(j + 1) = ch.toByte
-      bs(j + 2) = charBuf(i + 1).toByte
-      i += 2
-      j += 3
+    if (pos >= tail || buf(pos) != '"') base64Error(ds, from) // the closing quote is not found or illegal byte
+    val to = pos
+    var n = to - from // number of base-64 digits without padding characters
+    if (n > 0 && buf(to - 1) == '=') {
+      if ((n & 0x3) != 0) base64Error(ds, from)
+      n -= 1
+      if (buf(to - 2) == '=') n -= 1
     }
+    val r = n & 0x3
+    if (r == 1) base64Error(ds, from)
+    val len = (n >> 2) * 3 + (r + 1 >> 1) // r == 0, 2, 3 => 0, 1, 2 trailing bytes
+    val bs = new Array[Byte](len)
+    var lanes = 0
+    if (n >= 1024) { // small inputs are decoded faster by the LUT-based loop below
+      lanes = decodeBase64Lanes(buf, from, bs, n >> 3, isUrl)
+      if (lanes < 0) base64Error(ds, from)
+    }
+    var i = lanes * 6
+    pos = from + (lanes << 3)
+    var bits = 0
+    val posLim = from + (n & ~0x3)
+    while (pos < posLim) {
+      val x =
+        ds(buf(pos) & 0xFF) << 18 |
+          ds(buf(pos + 1) & 0xFF) << 12 |
+          ds(buf(pos + 2) & 0xFF) << 6 |
+          ds(buf(pos + 3) & 0xFF)
+      bits |= x
+      bs(i) = (x >> 16).toByte
+      bs(i + 1) = (x >> 8).toByte
+      bs(i + 2) = x.toByte
+      i += 3
+      pos += 4
+    }
+    if (r != 0) {
+      bits = bits >> 31 | ds(buf(pos) & 0xFF) << 6 | ds(buf(pos + 1) & 0xFF) // keep negative for illegal digits
+      if (r == 2) bs(i) = (bits >> 4).toByte
+      else {
+        bits = bits << 6 | ds(buf(pos + 2) & 0xFF)
+        bs(i) = (bits >> 10).toByte
+        bs(i + 1) = (bits >> 2).toByte
+      }
+    }
+    if (bits < 0) base64Error(ds, from)
+    head = to + 1
     bs
   }
 
+  private[this] def decodeBase64Lanes(buf: Array[Byte], from: Int, bs: Array[Byte], maxLanes: Int, isUrl: Boolean): Int = {
+    // Multi-pass SWAR conversion of 8 base-64 digits to 6 bytes without LUTs and multiplications. The 1st pass
+    // copies a block of 8-byte lanes of digits to the free tail of the result array, it is the only pass that cannot
+    // be auto-vectorized. The 2nd, 3rd, and 4th passes are kept small enough to be unrolled and auto-vectorized by C2
+    // and GraalVM. In the 2nd pass a 0x80 bit is set in lanes with digits greater than or equal to ('/' or '_'), '0',
+    // 'A', and 'a' by adding 0x51 or 0x21, 0x50, 0x3F, and 0x1F accordingly, then masks of 0x7F are built by
+    // subtracting of those bits shifted to 0x01 and used to select (by XOR-ing) lane offsets modulo 128 that are
+    // added to digits to get sextets. In the 3rd pass sextets are converted back to digits (in the same way as in
+    // `JsonWriter.writeBase64Bytes`) and compared with original ones to detect illegal digits. In the 4th pass two
+    // 4-sextet groups are packed to 24-bit values and moved to lower 48 bits in the big-endian order. In the 5th pass
+    // 48-bit values are copied to 6-byte groups of the result array, it cannot be auto-vectorized too.
+    // The `c1`-`c7` lane constants are different for base-64 and base-64 URL digits: offsets for adding to digits
+    // greater than or equal to ('/' or '_'), the base offset, deltas of offsets for ('/' or '_'), '0', 'a' digits, and
+    // deltas of offsets for 62 and 63 sextets as in `JsonWriter.writeBase64Bytes`
+    var c1, c2, c3, c4, c5, c6, c7 = 0L
+    if (isUrl) {
+      c1 = 0x2121212121212121L
+      c2 = 0x1111111111111111L
+      c3 = 0x5F5F5F5F5F5F5F5FL
+      c4 = 0x1515151515151515L
+      c5 = 0x5959595959595959L
+      c6 = 0x1313131313131313L
+      c7 = 0x4F4F4F4F4F4F4F4FL
+    } else {
+      c1 = 0x5151515151515151L
+      c2 = 0x1313131313131313L
+      c3 = 0x0303030303030303L
+      c4 = 0x1414141414141414L
+      c5 = 0x0606060606060606L
+      c6 = 0x1111111111111111L
+      c7 = 0x1D1D1D1D1D1D1D1DL
+    }
+    val m1 = 0x8080808080808080L
+    val m2 = 0x3F3F3F3F3F3F3F3FL
+    val len = bs.length
+    val posLim = from + (maxLanes << 3)
+    var pos = from
+    var i = 0
+    var err = 0L
+    var lanes = Math.min(posLim - pos, len) >> 3
+    while (lanes > 0) {
+      lanes = Math.min(lanes, 512)
+      val size = lanes << 3
+      System.arraycopy(buf, pos, bs, i, size) // 1st pass: copying of 8-byte lanes of base-64 digits
+      val lim = i + size
+      var j = i
+      while (j < lim) { // 2nd pass: in-place conversion of base-64 digits to sextets
+        val x = ByteArrayAccess.getLong(bs, j)
+        val t1 = x + c1 & m1
+        val t2 = x + 0x5050505050505050L & m1
+        val t3 = x + 0x3F3F3F3F3F3F3F3FL & m1
+        val t4 = x + 0x1F1F1F1F1F1F1F1FL & m1
+        ByteArrayAccess.setLong(bs, j, x + (c2 ^ (t1 - (t1 >>> 7) & c3) ^ (t2 - (t2 >>> 7) & c4) ^
+          (t3 - (t3 >>> 7) & 0x3B3B3B3B3B3B3B3BL) ^ (t4 - (t4 >>> 7) & c5)) & m2)
+        j += 8
+      }
+      val offset = pos - i
+      j = i
+      while (j < lim) { // 3rd pass: validation of base-64 digits by converting of sextets back
+        val s = ByteArrayAccess.getLong(bs, j)
+        val u1 = s + 0x6666666666666666L & m1
+        val u2 = s + 0x4C4C4C4C4C4C4C4CL & m1
+        val u3 = s + 0x4242424242424242L & m1
+        val u4 = s + 0x4141414141414141L & m1
+        err |= ByteArrayAccess.getLong(buf, j + offset) ^ (s + (0x4141414141414141L ^
+          (u1 - (u1 >>> 7) & 0x606060606060606L) ^ (u2 - (u2 >>> 7) & 0x3B3B3B3B3B3B3B3BL) ^ (u3 - (u3 >>> 7) & c6) ^
+          (u4 - (u4 >>> 7) & c7)) & 0x7F7F7F7F7F7F7F7FL)
+        j += 8
+      }
+      j = i
+      while (j < lim) { // 4th pass: in-place packing of sextets
+        val s = ByteArrayAccess.getLong(bs, j)
+        val p = (s >>> 8 & 0x3F003F003F003FL) | (s << 6 & 0xFC00FC00FC00FC0L)
+        val q = (p >>> 16 & 0xFFF00000FFFL) | (p << 12 & 0xFFF00000FFF000L)
+        ByteArrayAccess.setLong(bs, j, (q << 24 & 0xFFFFFF000000L) | (q >>> 32))
+        j += 8
+      }
+      j = i
+      while (j < lim) { // 5th pass: in-place copying of 6-byte groups, the next lane is not overwritten
+        ByteArrayAccess.setLongReversed(bs, i, ByteArrayAccess.getLong(bs, j) << 16)
+        i += 6
+        j += 8
+      }
+      pos += size
+      lanes = Math.min(posLim - pos, len - i) >> 3
+    }
+    if (err != 0) -1
+    else pos - from >> 3
+  }
+
   @noinline
-  @tailrec
+  private[this] def base64Error(ds: Array[Byte], from: Int): Nothing = {
+    val buf = this.buf
+    var pos = from
+    while (pos + 3 < tail &&
+      (ds(buf(pos) & 0xFF) | ds(buf(pos + 1) & 0xFF) | ds(buf(pos + 2) & 0xFF) | ds(buf(pos + 3) & 0xFF)) >= 0) {
+      pos += 4
+    }
+    if (ds(nextByte(pos) & 0xFF) < 0) decodeError("expected '\"' or base64 digit")
+    if (ds(nextByte(head) & 0xFF) < 0) decodeError("expected base64 digit")
+    var b = nextByte(head)
+    if (b == '=') {
+      nextByteOrError('=', head)
+      nextByteOrError('"', head)
+    } else if (b != '"') {
+      if (ds(b & 0xFF) < 0) decodeError("expected '\"' or '=' or base64 digit")
+      b = nextByte(head)
+      if (b == '=') nextByteOrError('"', head)
+      else if (b != '"') tokensError('"', '=')
+    }
+    decodeError("expected '\"'") // unreachable, only invalid strings are passed to this method
+  }
+
   private[this] def hexDigitError(pos: Int): Nothing = {
     if (hexDigit(buf(pos)) < 0) decodeError("expected hex digit", pos)
     hexDigitError(pos + 1)
