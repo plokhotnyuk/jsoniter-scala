@@ -3346,7 +3346,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             } else $in.readNullOrTokenError($default, '"')
           } else '{
             val t = $in.nextToken()
-            if (t >= '0' && t <= '9') {
+            if ((t >= '0' && t <= '9') || t == '-') {
               $in.rollbackToken()
               val i = $in.readInt()
               val x = ${genScala2EnumerationLookup[T & Enumeration#Value](tpe, 'i.asTerm :: Nil)}

@@ -2493,7 +2493,7 @@ object JsonCodecMaker {
                     } else in.readNullOrTokenError(default, '"')"""
               } else {
                 q"""val t = in.nextToken()
-                    if (t >= '0' && t <= '9') {
+                    if ((t >= '0' && t <= '9') || t == '-') {
                       in.rollbackToken()
                       val i = in.readInt()
                       val x = $el(i)

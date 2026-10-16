@@ -161,6 +161,13 @@ object SpectralClass extends Enumeration {
   def extra(id: Int, name: String): SpectralClass = Value(id, name)
 }
 
+object Temperature extends Enumeration {
+  type Temperature = Value
+
+  val Cold: Temperature = Value(-1)
+  val Hot: Temperature = Value(1)
+}
+
 case class Enums(lt: LocationType.LocationType)
 
 case class Enums2(@stringified lt: LocationType.LocationType)
@@ -801,6 +808,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfIdKeys, Map(b -> 2, SpectralClass.G -> 1), """{"2":2,"5":1}""")
       verifyDeserError(codecOfNames, """["A"]""", """illegal enum value "A", offset: 0x00000003""")
       verifyDeserError(codecOfIds, """[3]""", "illegal enum value 3, offset: 0x00000001")
+    }
+    "serialize and deserialize enumerations with negative ids" in {
+      verifySerDeser(make[List[Temperature.Temperature]](CodecMakerConfig.withUseScalaEnumValueId(true)),
+        List(Temperature.Cold, Temperature.Hot), "[-1,1]")
+      verifySerDeser(make[Map[Temperature.Temperature, Int]](CodecMakerConfig.withUseScalaEnumValueId(true)),
+        Map(Temperature.Cold -> 1), """{"-1":1}""")
     }
     "serialize and deserialize enumerations with names that differ from names of vals" in {
       verifySerDeser(make[List[CardRank.CardRank]], List(CardRank.Two, CardRank.Ace), """["2","A"]""")
