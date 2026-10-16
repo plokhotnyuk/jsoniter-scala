@@ -1500,9 +1500,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     var fieldMembers: List[Symbol] = null
     var companionRefAndClass: (Ref, Symbol) = null
     var methodMembers: List[Symbol] = null
+    var i = 0 // default method index is counted through all parameter lists
 
     def createFieldInfos(params: List[Symbol], typeParams: List[Symbol], fieldIndex: Boolean => Int): List[FieldInfo] = params.map {
-      var i = 0
       symbol =>
         i += 1
         val name = symbol.name
@@ -1532,7 +1532,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           methodSymbol.paramSymss match
             case Nil => dvSelectNoTypes
             case List(params) if params.exists(_.isTypeParam) => TypeApply(dvSelectNoTypes, tpeTypeArgs.map(Inferred(_)))
-            case paramss => fail(s"Default method for $name of class ${tpe.show} have a complex parameter list: $paramss")
+            case _ => fail(s"Default values in non-first parameter lists of the primary constructor are not supported for '$name' of '${tpe.show}'. " +
+              "Please move them to the first parameter list or turn on the 'requireDefaultFields' option.")
         }) else None
         val getterOrField = caseFields.find(_.name == name) match
           case Some(caseField) => caseField

@@ -3383,6 +3383,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(makeWithRequiredDefaultFields[MultiListOfArgs],
         new MultiListOfArgs()(2)("VVV"), """{"i":1,"l":2,"s":"VVV"}""")
     }
+    "don't generate codecs for case classes with default values in non-first parameter lists of a primary constructor" in {
+      val expectedError = "Default values in non-first parameter lists of the primary constructor are not supported for 'l' of"
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class MultiListOfArgs(i: Int = 1)(val l: Long = 2L)
+          |JsonCodecMaker.make[MultiListOfArgs]""".stripMargin
+      }).getMessage.contains(expectedError))
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class MultiListOfArgs(i: Int)(val l: Long = 2L)
+          |JsonCodecMaker.make[MultiListOfArgs]""".stripMargin
+      }).getMessage.contains(expectedError))
+    }
     "generate codecs for case classes with multiple parameter lists in a primary constructor with depended default values when the requireDefaultFields is on" in {
       case class MultiListOfArgs(i: Int = 1)(val l: Long = i - 1)(var s: String = l.toString)
 

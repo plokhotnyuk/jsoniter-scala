@@ -1243,9 +1243,11 @@ object JsonCodecMaker {
         }
         new ClassInfo(tpe, {
           var i = 0
-          tpe.decls.collectFirst {
+          val paramLists = tpe.decls.collectFirst {
             case m: MethodSymbol if m.isPrimaryConstructor => m // FIXME: sometime it cannot be accessed from the place of the `make` call
-          }.getOrElse(fail(s"Cannot find a primary constructor for '$tpe'")).paramLists.map(_.flatMap { p =>
+          }.getOrElse(fail(s"Cannot find a primary constructor for '$tpe'")).paramLists
+          val firstParamListSize = paramLists.headOption.fold(0)(_.size)
+          paramLists.map(_.flatMap { p =>
             i += 1
             val symbol = p.asTerm
             val name = decodeName(symbol)
@@ -1260,6 +1262,10 @@ object JsonCodecMaker {
               val getter = getters.getOrElse(name,
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor."))
               val defaultValue = if (!cfg.requireDefaultFields && symbol.isParamWithDefault) {
+                if (i > firstParamListSize) {
+                  fail(s"Default values in non-first parameter lists of the primary constructor are not supported for '$name' of '$tpe'. " +
+                    "Please move them to the first parameter list or turn on the 'requireDefaultFields' option.")
+                }
                 new Some(q"$module.${TermName("$lessinit$greater$default$" + i)}")
               } else None
               val isStringified = annotationOption.exists(_.stringified)
