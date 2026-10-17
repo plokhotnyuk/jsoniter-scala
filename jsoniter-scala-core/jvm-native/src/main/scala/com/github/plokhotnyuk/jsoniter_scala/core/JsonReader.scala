@@ -3832,6 +3832,44 @@ final class JsonReader private[jsoniter_scala](
     java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
   }
 
+  // Loads remaining bytes of the number to the buffer if they are not there yet using mark to keep all bytes
+  // starting from the `from` position, returns the `from` position after shifting of the buffer
+  @noinline
+  private[this] def loadNumber(from: Int, p: Int): Int = {
+    val oldMark = mark
+    val newMark =
+      if (oldMark < 0) from
+      else oldMark
+    mark = newMark
+    var pos = p
+    while ({
+      val buf = this.buf
+      val tail = this.tail
+      var m = 0L
+      while ({
+        m = 0L
+        while (pos + 7 < tail && {
+          val bs = ByteArrayAccess.getLong(buf, pos)
+          m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
+          m == 0
+        }) pos += 8
+        if (m != 0) pos += java.lang.Long.numberOfTrailingZeros(m) >> 3
+        pos < tail && {
+          val b = buf(pos)
+          (b >= '0' && b <= '9') || b == '.' || (b | 0x20) == 'e' || b == '-' || b == '+'
+        }
+      }) pos += 1
+      pos == tail && {
+        pos = loadMore(pos)
+        pos < this.tail
+      }
+    }) ()
+    var newFrom = from
+    if (mark == 0) newFrom -= newMark
+    if (mark > oldMark) mark = oldMark
+    newFrom
+  }
+
   def readBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
       if (isToken) nextToken(head)
@@ -3850,39 +3888,35 @@ final class JsonReader private[jsoniter_scala](
       } else {
         var pos = head
         var buf = this.buf
+        var tail = this.tail
         var from = pos - 1
-        val oldMark = mark
-        val newMark =
-          if (oldMark < 0) from
-          else oldMark
-        mark = newMark
         var m, bs = 0L
-        while ((pos + 7 < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos + 7 < tail
-        }) && {
+        while (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
           m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
           m == 0
         }) pos += 8
         if (m == 0) {
-          while ((pos < tail || {
-            pos = loadMore(pos)
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) pos += 1
+          while ({
+            while (pos < tail && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos += 1
+            pos == tail && { // loading of remaining digits to the buffer using mark to keep all of them
+              val newFrom = loadNumber(from, pos)
+              pos += newFrom - from
+              from = newFrom
+              buf = this.buf
+              tail = this.tail
+              pos < tail
+            }
+          }) ()
         } else {
           val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
           pos += offset
           b = (bs >> (offset << 3)).toByte
         }
         head = pos
-        if (mark == 0) from -= newMark
-        if (mark > oldMark) mark = oldMark
         val len = pos - from
         if (len >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
         if ((b | 0x20) == 'e' || b == '.') numberError(pos)
@@ -3929,126 +3963,133 @@ final class JsonReader private[jsoniter_scala](
       }
       if (b < '0' || b > '9') numberError()
       var pos = head
-      var buf = this.buf
       var from = pos - 1
-      val oldMark = mark
-      val newMark =
-        if (oldMark < 0) from
-        else oldMark
-      mark = newMark
+      var buf = this.buf
+      var tail = this.tail
       var digits = 1
       if (isToken && b == '0') {
-        if ((pos < tail || {
-          pos = loadMore(pos)
+        if (pos == tail) { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+          val newFrom = loadNumber(from, pos)
+          pos += newFrom - from
+          from = newFrom
           buf = this.buf
-          pos < tail
-        }) && {
+          tail = this.tail
+        }
+        if (pos < tail && {
           b = buf(pos)
           b >= '0' && b <= '9'
         }) leadingZeroError(pos - 1)
       } else {
-        digits -= pos
         var m, bs = 0L
-        while ((pos + 7 < tail || {
-          digits += pos
-          pos = loadMore(pos)
-          digits -= pos
-          buf = this.buf
-          pos + 7 < tail
-        }) && {
+        while (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
           m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
           m == 0
         }) pos += 8
         if (m == 0) {
-          while ((pos < tail || {
-            digits += pos
-            pos = loadMore(pos)
-            digits -= pos
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) pos += 1
+          while ({
+            while (pos < tail && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos += 1
+            pos == tail && { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+              val newFrom = loadNumber(from, pos)
+              pos += newFrom - from
+              from = newFrom
+              buf = this.buf
+              tail = this.tail
+              pos < tail
+            }
+          }) ()
         } else {
           val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
           pos += offset
           b = (bs >> (offset << 3)).toByte
         }
-        digits += pos
+        digits = pos - from
       }
       var fracLen, scale = 0
       if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
       if (b == '.') {
         pos += 1
-        fracLen -= pos
         var m, bs = 0L
-        while ((pos + 7 < tail || {
-          fracLen += pos
-          pos = loadMore(pos)
-          fracLen -= pos
-          buf = this.buf
-          pos + 7 < tail
-        }) && {
+        while (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
           m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
           m == 0
         }) pos += 8
         if (m == 0) {
-          while ((pos < tail || {
-            fracLen += pos
-            pos = loadMore(pos)
-            fracLen -= pos
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) pos += 1
+          while ({
+            while (pos < tail && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos += 1
+            pos == tail && { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+              val newFrom = loadNumber(from, pos)
+              pos += newFrom - from
+              from = newFrom
+              buf = this.buf
+              tail = this.tail
+              pos < tail
+            }
+          }) ()
         } else {
           val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
           pos += offset
           b = (bs >> (offset << 3)).toByte
         }
-        fracLen += pos
+        fracLen = pos - from - digits - 1
         digits += fracLen
         if (fracLen == 0) numberError(pos)
         if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
       }
       if ((b | 0x20) == 'e') {
-        b = nextByte(pos + 1)
+        pos += 1
+        if (pos + 1 >= tail) { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+          val newFrom = loadNumber(from, pos)
+          pos += newFrom - from
+          from = newFrom
+          buf = this.buf
+          tail = this.tail
+        }
+        if (pos >= tail) endOfInputError()
+        b = buf(pos)
         var ss = 0
         if (b == '-' || b == '+') {
           ss = '+' - b >> 31
-          b = nextByte(head)
-        }
-        if (b < '0' || b > '9') numberError()
-        scale = '0' - b
-        pos = head
-        buf = this.buf
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (scale < -214748364 || {
-            scale = scale * 10 + ('0' - b)
-            scale > 0
-          }) numberError(pos)
           pos += 1
+          if (pos >= tail) endOfInputError()
+          b = buf(pos)
         }
+        if (b < '0' || b > '9') numberError(pos)
+        scale = '0' - b
+        pos += 1
+        while ({
+          while (pos < tail && {
+            b = buf(pos)
+            b >= '0' && b <= '9'
+          }) {
+            if (scale < -214748364 || {
+              scale = scale * 10 + ('0' - b)
+              scale > 0
+            }) numberError(pos)
+            pos += 1
+          }
+          pos == tail && { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+            val newFrom = loadNumber(from, pos)
+            pos += newFrom - from
+            from = newFrom
+            buf = this.buf
+            tail = this.tail
+            pos < tail
+          }
+        }) ()
         scale ^= ss
         scale -= ss
         if (scale == -2147483648) numberError(pos - 1)
         if (scale + fracLen < scale) scaleLimitError(pos - 1) // overflow of the scale of the BigDecimal value
       }
       head = pos
-      if (mark == 0) from -= newMark
-      if (mark > oldMark) mark = oldMark
       var d =
         if (fracLen != 0) {
           val limit = from + digits + 1
@@ -4295,126 +4336,133 @@ final class JsonReader private[jsoniter_scala](
       }
       if (b < '0' || b > '9') numberError()
       var pos = head
-      var buf = this.buf
       var from = pos - 1
-      val oldMark = mark
-      val newMark =
-        if (oldMark < 0) from
-        else oldMark
-      mark = newMark
+      var buf = this.buf
+      var tail = this.tail
       var digits = 1
       if (isToken && b == '0') {
-        if ((pos < tail || {
-          pos = loadMore(pos)
+        if (pos == tail) { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+          val newFrom = loadNumber(from, pos)
+          pos += newFrom - from
+          from = newFrom
           buf = this.buf
-          pos < tail
-        }) && {
+          tail = this.tail
+        }
+        if (pos < tail && {
           b = buf(pos)
           b >= '0' && b <= '9'
         }) leadingZeroError(pos - 1)
       } else {
-        digits -= pos
         var m, bs = 0L
-        while ((pos + 7 < tail || {
-          digits += pos
-          pos = loadMore(pos)
-          digits -= pos
-          buf = this.buf
-          pos + 7 < tail
-        }) && {
+        while (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
           m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
           m == 0
         }) pos += 8
         if (m == 0) {
-          while ((pos < tail || {
-            digits += pos
-            pos = loadMore(pos)
-            digits -= pos
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) pos += 1
+          while ({
+            while (pos < tail && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos += 1
+            pos == tail && { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+              val newFrom = loadNumber(from, pos)
+              pos += newFrom - from
+              from = newFrom
+              buf = this.buf
+              tail = this.tail
+              pos < tail
+            }
+          }) ()
         } else {
           val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
           pos += offset
           b = (bs >> (offset << 3)).toByte
         }
-        digits += pos
+        digits = pos - from
       }
       var fracLen, scale = 0
       if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
       if (b == '.') {
         pos += 1
-        fracLen -= pos
         var m, bs = 0L
-        while ((pos + 7 < tail || {
-          fracLen += pos
-          pos = loadMore(pos)
-          fracLen -= pos
-          buf = this.buf
-          pos + 7 < tail
-        }) && {
+        while (pos + 7 < tail && {
           bs = ByteArrayAccess.getLong(buf, pos) // Based on the fast parsing of numbers by 8-byte words: https://github.com/wrandelshofer/FastDoubleParser/blob/0903817a765b25e654f02a5a9d4f1476c98a80c9/src/main/java/ch.randelshofer.fastdoubleparser/ch/randelshofer/fastdoubleparser/FastDoubleSimd.java#L114-L130
           m = (bs + 0x4646464646464646L | bs - 0x3030303030303030L) & 0x8080808080808080L
           m == 0
         }) pos += 8
         if (m == 0) {
-          while ((pos < tail || {
-            fracLen += pos
-            pos = loadMore(pos)
-            fracLen -= pos
-            buf = this.buf
-            pos < tail
-          }) && {
-            b = buf(pos)
-            b >= '0' && b <= '9'
-          }) pos += 1
+          while ({
+            while (pos < tail && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos += 1
+            pos == tail && { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+              val newFrom = loadNumber(from, pos)
+              pos += newFrom - from
+              from = newFrom
+              buf = this.buf
+              tail = this.tail
+              pos < tail
+            }
+          }) ()
         } else {
           val offset = java.lang.Long.numberOfTrailingZeros(m) >> 3
           pos += offset
           b = (bs >> (offset << 3)).toByte
         }
-        fracLen += pos
+        fracLen = pos - from - digits - 1
         digits += fracLen
         if (fracLen == 0) numberError(pos)
         if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
       }
       if ((b | 0x20) == 'e') {
-        b = nextByte(pos + 1)
+        pos += 1
+        if (pos + 1 >= tail) { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+          val newFrom = loadNumber(from, pos)
+          pos += newFrom - from
+          from = newFrom
+          buf = this.buf
+          tail = this.tail
+        }
+        if (pos >= tail) endOfInputError()
+        b = buf(pos)
         var ss = 0
         if (b == '-' || b == '+') {
           ss = '+' - b >> 31
-          b = nextByte(head)
-        }
-        if (b < '0' || b > '9') numberError()
-        scale = '0' - b
-        pos = head
-        buf = this.buf
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (scale < -214748364 || {
-            scale = scale * 10 + ('0' - b)
-            scale > 0
-          }) numberError(pos)
           pos += 1
+          if (pos >= tail) endOfInputError()
+          b = buf(pos)
         }
+        if (b < '0' || b > '9') numberError(pos)
+        scale = '0' - b
+        pos += 1
+        while ({
+          while (pos < tail && {
+            b = buf(pos)
+            b >= '0' && b <= '9'
+          }) {
+            if (scale < -214748364 || {
+              scale = scale * 10 + ('0' - b)
+              scale > 0
+            }) numberError(pos)
+            pos += 1
+          }
+          pos == tail && { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+            val newFrom = loadNumber(from, pos)
+            pos += newFrom - from
+            from = newFrom
+            buf = this.buf
+            tail = this.tail
+            pos < tail
+          }
+        }) ()
         scale ^= ss
         scale -= ss
         if (scale == -2147483648) numberError(pos - 1)
         if (scale + fracLen < scale) scaleLimitError(pos - 1) // overflow of the scale of the BigDecimal value
       }
       head = pos
-      if (mark == 0) from -= newMark
-      if (mark > oldMark) mark = oldMark
       if (fracLen == 0 && scale == 0) {
         val limit = from + digits
         if (digits < 19) {
