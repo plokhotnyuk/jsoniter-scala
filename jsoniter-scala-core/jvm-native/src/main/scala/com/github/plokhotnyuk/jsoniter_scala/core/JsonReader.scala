@@ -3514,19 +3514,16 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b < '0' || b > '9') numberError()
     var pos = head
+    var from = pos - 1
     var buf = this.buf
-    val from = pos - 1
-    val oldMark = mark
-    val newMark =
-      if (oldMark < 0) from
-      else oldMark
-    mark = newMark
     var m10 = (b - '0').toLong
     var e10 = 0
     var digits = 1
     if (isToken && m10 == 0) {
-      if ((pos < tail || {
-        pos = loadMore(pos)
+      if ((pos < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
         buf = this.buf
         pos < tail
       }) && {
@@ -3534,8 +3531,10 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) leadingZeroError(pos - 1)
     } else {
-      while ((pos < tail || {
-        pos = loadMore(pos)
+      while ((pos < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
         buf = this.buf
         pos < tail
       }) && {
@@ -3552,15 +3551,18 @@ final class JsonReader private[jsoniter_scala](
     if (b == '.') {
       pos += 1
       e10 += digits
-      var noFracDigits = true
       var dec = 0
-      while ((m10 < 922337203685477L && (pos + 3 < tail || {
-        pos = loadMore(pos)
+      while ((m10 < 922337203685477L && (pos + 3 < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
         buf = this.buf
         pos + 3 < tail
       }) || {
-        while ((pos < tail || {
-          pos = loadMore(pos)
+        while ((pos < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+          val newFrom = loadNumber(from, pos)
+          pos += newFrom - from
+          from = newFrom
           buf = this.buf
           pos < tail
         }) && {
@@ -3571,7 +3573,6 @@ final class JsonReader private[jsoniter_scala](
             m10 = m10 * 10 + (b - '0')
             digits += 1
           }
-          noFracDigits = false
           pos += 1
         }
         false
@@ -3585,7 +3586,6 @@ final class JsonReader private[jsoniter_scala](
           }) {
             m10 *= 10
             m10 += d
-            noFracDigits = false
             digits += 1
             dec >>= 8
             pos += 1
@@ -3597,26 +3597,36 @@ final class JsonReader private[jsoniter_scala](
         dec = (dec * 2561 >> 8 & 0xFF00FF) * 6553601 >> 16
         m10 *= 10000
         m10 += dec
-        noFracDigits = false
         digits += 4
         pos += 4
       }
       e10 -= digits
-      if (noFracDigits) numberError(pos)
+      if (buf(pos - 1) == '.') numberError(pos)
     }
     if ((b | 0x20) == 'e') {
-      b = nextByte(pos + 1)
+      pos += 1
+      if (pos + 1 >= tail) { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
+        buf = this.buf
+      }
+      if (pos >= tail) endOfInputError()
+      b = buf(pos)
       var s = 0
       if (b == '-' || b == '+') {
         s = '+' - b >> 31
-        b = nextByte(head)
+        pos += 1
+        if (pos >= tail) endOfInputError()
+        b = buf(pos)
       }
-      if (b < '0' || b > '9') numberError()
+      if (b < '0' || b > '9') numberError(pos)
       var exp = b - '0'
-      pos = head
-      buf = this.buf
-      while ((pos < tail || {
-        pos = loadMore(pos)
+      pos += 1
+      while ((pos < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
         buf = this.buf
         pos < tail
       }) && {
@@ -3641,16 +3651,15 @@ final class JsonReader private[jsoniter_scala](
           val slop = 16 - digits
           (m10 * pow10(slop + 22)) * pow10(e10 - slop + 22)
         }
-      } else toDouble(m10, e10, from, newMark, pos)
+      } else toDouble(m10, e10, from, pos)
     if (isNeg) x = -x
-    if (mark > oldMark) mark = oldMark
     x
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
   @inline
-  private[this] def toDouble(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Double =
+  private[this] def toDouble(m10: Long, e10: Int, from: Int, pos: Int): Double =
     if (m10 == 0 || e10 < -343) 0.0
     else if (e10 >= 310) Double.PositiveInfinity
     else {
@@ -3677,15 +3686,12 @@ final class JsonReader private[jsoniter_scala](
         // overflows to infinity are handled without branches. The -1 of rounding down (added back after `min`) prevents
         // the sign bit overflow when the clamped exponent is combined with a carry to the next power of 2
         Math.min(((Math.min(e2 + truncatedBitNum, 972) + 1074).toLong << 52) + md, 0x7FEFFFFFFFFFFFFFL) + 1
-      } else toDouble(from, newMark, pos)
+      } else toDouble(from, pos)
     }
 
   @noinline
-  private[this] def toDouble(from: Int, newMark: Int, pos: Int): Double = {
-    var offset = from
-    if (mark == 0) offset -= newMark
-    java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
-  }
+  private[this] def toDouble(from: Int, pos: Int): Double =
+    java.lang.Double.parseDouble(new String(buf, 0, from, pos - from))
 
   def readFloat(isToken: Boolean): Float = {
     var b =
@@ -3698,19 +3704,16 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b < '0' || b > '9') numberError()
     var pos = head
+    var from = pos - 1
     var buf = this.buf
-    val from = pos - 1
-    val oldMark = mark
-    val newMark =
-      if (oldMark < 0) from
-      else oldMark
-    mark = newMark
     var m10 = (b - '0').toLong
     var e10 = 0
     var digits = 1
     if (isToken && m10 == 0) {
-      if ((pos < tail || {
-        pos = loadMore(pos)
+      if ((pos < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
         buf = this.buf
         pos < tail
       }) && {
@@ -3718,8 +3721,10 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) leadingZeroError(pos - 1)
     } else {
-      while ((pos < tail || {
-        pos = loadMore(pos)
+      while ((pos < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
         buf = this.buf
         pos < tail
       }) && {
@@ -3736,9 +3741,10 @@ final class JsonReader private[jsoniter_scala](
     if (b == '.') {
       pos += 1
       e10 += digits
-      var noFracDigits = true
-      while ((pos < tail || {
-        pos = loadMore(pos)
+      while ((pos < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
         buf = this.buf
         pos < tail
       }) && {
@@ -3749,25 +3755,35 @@ final class JsonReader private[jsoniter_scala](
           m10 = m10 * 10 + (b - '0')
           digits += 1
         }
-        noFracDigits = false
         pos += 1
       }
       e10 -= digits
-      if (noFracDigits) numberError(pos)
+      if (buf(pos - 1) == '.') numberError(pos)
     }
     if ((b | 0x20) == 'e') {
-      b = nextByte(pos + 1)
+      pos += 1
+      if (pos + 1 >= tail) { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
+        buf = this.buf
+      }
+      if (pos >= tail) endOfInputError()
+      b = buf(pos)
       var s = 0
       if (b == '-' || b == '+') {
         s = '+' - b >> 31
-        b = nextByte(head)
+        pos += 1
+        if (pos >= tail) endOfInputError()
+        b = buf(pos)
       }
-      if (b < '0' || b > '9') numberError()
+      if (b < '0' || b > '9') numberError(pos)
       var exp = b - '0'
-      pos = head
-      buf = this.buf
-      while ((pos < tail || {
-        pos = loadMore(pos)
+      pos += 1
+      while ((pos < tail || { // loading of remaining bytes of the number to the buffer using mark to keep all of them
+        val newFrom = loadNumber(from, pos)
+        pos += newFrom - from
+        from = newFrom
         buf = this.buf
         pos < tail
       }) && {
@@ -3786,16 +3802,15 @@ final class JsonReader private[jsoniter_scala](
       if (e10 == 0 && m10 < 922337203685477580L) m10.toFloat
       else if (m10 < 1000000000L && e10 >= digits - 23 && e10 <= 21 - digits) {
         (m10 * pow10Doubles(e10 + 22)).toFloat
-      } else toFloat(m10, e10, from, newMark, pos)
+      } else toFloat(m10, e10, from, pos)
     if (isNeg) x = -x
-    if (mark > oldMark) mark = oldMark
     x
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
   @inline
-  private[this] def toFloat(m10: Long, e10: Int, from: Int, newMark: Int, pos: Int): Float =
+  private[this] def toFloat(m10: Long, e10: Int, from: Int, pos: Int): Float =
     if (m10 == 0 || e10 < -64) 0.0f
     else if (e10 >= 39) Float.PositiveInfinity
     else {
@@ -3822,15 +3837,12 @@ final class JsonReader private[jsoniter_scala](
         // overflows to infinity are handled without branches. The -1 of rounding down (added back after `min`) prevents
         // the sign bit overflow when the clamped exponent is combined with a carry to the next power of 2
         Math.min((Math.min(e2 + truncatedBitNum, 105) + 149 << 23) + mf, 0x7F7FFFFF) + 1
-      } else toFloat(from, newMark, pos)
+      } else toFloat(from, pos)
     }
 
   @noinline
-  private[this] def toFloat(from: Int, newMark: Int, pos: Int): Float = {
-    var offset = from
-    if (mark == 0) offset -= newMark
-    java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
-  }
+  private[this] def toFloat(from: Int, pos: Int): Float =
+    java.lang.Float.parseFloat(new String(buf, 0, from, pos - from))
 
   // Loads remaining bytes of the number to the buffer if they are not there yet using mark to keep all bytes
   // starting from the `from` position, returns the `from` position after shifting of the buffer
