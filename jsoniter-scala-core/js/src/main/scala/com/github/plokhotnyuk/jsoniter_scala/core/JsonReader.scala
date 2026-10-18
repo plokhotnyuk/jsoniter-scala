@@ -4930,137 +4930,151 @@ final class JsonReader private[jsoniter_scala](
     x.toChar
   }
 
-  @inline
   private[this] def parseBase16(ns: Array[Byte]): Array[Byte] = {
-    var charBuf = this.charBuf
-    var len = charBuf.length
-    var pos = head
+    var from = head
+    var pos = from
     var buf = this.buf
+    while (pos < tail && buf(pos) >= '0') pos += 1 // search of the closing quote or other bytes less than the smallest digit ('0')
+    if (pos == tail) { // loading of remaining digits to the buffer using mark to keep all of them
+      val oldMark = mark
+      val newMark =
+        if (oldMark < 0) from
+        else oldMark
+      mark = newMark
+      while ({
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail && {
+          while (pos < tail && buf(pos) >= '0') pos += 1
+          pos == tail
+        }
+      }) ()
+      if (mark == 0) from -= newMark
+      if (mark > oldMark) mark = oldMark
+    }
+    val to = pos
+    val n = to - from
+    if (to >= tail || buf(to) != '"' || (n & 0x1) != 0) base16Error(ns, from) // the closing quote is not found or illegal byte
+    val bs = new Array[Byte](n >> 1)
+    pos = from
     var i, bits = 0
-    while (bits >= 0 && (pos + 3 < tail || {
-      pos = loadMore(pos)
-      buf = this.buf
-      pos + 3 < tail
-    })) {
-      if (i >= len) {
-        len = growCharBuf(i + 1)
-        charBuf = this.charBuf
-      }
-      val posLim = Math.min(tail - 3, (len - i << 2) + pos)
-      while (pos < posLim && {
-        bits =
-          ns(buf(pos) & 0xFF) << 12 |
-            ns(buf(pos + 1) & 0xFF) << 8 |
-            ns(buf(pos + 2) & 0xFF) << 4 |
-            ns(buf(pos + 3) & 0xFF)
-        bits >= 0
-      }) {
-        charBuf(i) = bits.toChar
-        i += 1
-        pos += 4
-      }
+    val posLim = from + (n & ~0x3)
+    while (pos < posLim) {
+      val x =
+        ns(buf(pos) & 0xFF) << 12 |
+          ns(buf(pos + 1) & 0xFF) << 8 |
+          ns(buf(pos + 2) & 0xFF) << 4 |
+          ns(buf(pos + 3) & 0xFF)
+      bits |= x
+      bs(i) = (x >> 8).toByte
+      bs(i + 1) = x.toByte
+      i += 2
+      pos += 4
     }
-    val bLen = i << 1
-    var bs: Array[Byte] = null
-    var b = nextByte(pos)
-    if (b == '"') bs = new Array[Byte](bLen)
-    else {
-      bits = ns(b & 0xFF).toInt
-      if (bits < 0) decodeError("expected '\"' or hex digit")
-      b = nextByte(head)
-      bits = bits << 4 | ns(b & 0xFF)
-      if (bits < 0) decodeError("expected hex digit")
-      b = nextByte(head)
-      if (b != '"') {
-        if (ns(b & 0xFF) < 0) decodeError("expected '\"' or hex digit")
-        b = nextByte(head)
-        decodeError("expected hex digit")
-      }
-      bs = new Array[Byte](bLen + 1)
-      bs(bLen) = bits.toByte
+    if (pos < to) {
+      val x = ns(buf(pos) & 0xFF) << 4 | ns(buf(pos + 1) & 0xFF)
+      bits |= x
+      bs(i) = x.toByte
     }
-    i = 0
-    var j = 0
-    while (j < bLen) {
-      val ch = charBuf(i)
-      bs(j) = (ch >> 8).toByte
-      bs(j + 1) = ch.toByte
-      i += 1
-      j += 2
-    }
+    if (bits < 0) base16Error(ns, from)
+    head = to + 1
     bs
   }
 
+  @noinline
+  private[this] def base16Error(ns: Array[Byte], from: Int): Nothing = {
+    val buf = this.buf
+    var pos = from
+    while (pos + 1 < tail && (ns(buf(pos) & 0xFF) | ns(buf(pos + 1) & 0xFF)) >= 0) pos += 2
+    if (ns(nextByte(pos) & 0xFF) < 0) decodeError("expected '\"' or hex digit")
+    if (ns(nextByte(head) & 0xFF) < 0) decodeError("expected hex digit")
+    decodeError("expected '\"'") // unreachable, only invalid strings are passed to this method
+  }
+
   private[this] def parseBase64(ds: Array[Byte]): Array[Byte] = {
-    var charBuf = this.charBuf
-    var lenM1 = charBuf.length - 1
-    var pos = head
+    var from = head
+    var pos = from
     var buf = this.buf
-    var i, bits = 0
-    while (bits >= 0 && (pos + 3 < tail || {
-      pos = loadMore(pos)
-      buf = this.buf
-      pos + 3 < tail
-    })) {
-      if (i >= lenM1) {
-        lenM1 = growCharBuf(i + 1) - 1
-        charBuf = this.charBuf
-      }
-      val posLim = Math.min(tail - 3, (lenM1 - i << 1) + pos)
-      while (pos < posLim && {
-        bits =
-          ds(buf(pos) & 0xFF) << 18 |
-            ds(buf(pos + 1) & 0xFF) << 12 |
-            ds(buf(pos + 2) & 0xFF) << 6 |
-            ds(buf(pos + 3) & 0xFF)
-        bits >= 0
-      }) {
-        charBuf(i) = (bits >> 8).toChar
-        charBuf(i + 1) = bits.toChar
-        i += 2
-        pos += 4
-      }
-    }
-    val bLen = i + (i >> 1)
-    var bs: Array[Byte] = null
-    var b = nextByte(pos)
-    if (b == '"') bs = new Array[Byte](bLen)
-    else {
-      bits = ds(b & 0xFF).toInt
-      if (bits < 0) decodeError("expected '\"' or base64 digit")
-      b = nextByte(head)
-      bits = bits << 6 | ds(b & 0xFF)
-      if (bits < 0) decodeError("expected base64 digit")
-      b = nextByte(head)
-      if (b == '"' || b == '=') {
-        if (b == '=') {
-          nextByteOrError('=', head)
-          nextByteOrError('"', head)
+    while (pos < tail && buf(pos) >= '+') pos += 1 // search of the closing quote or other bytes less than the smallest digit ('+')
+    if (pos == tail) { // loading of remaining digits to the buffer using mark to keep all of them
+      val oldMark = mark
+      val newMark =
+        if (oldMark < 0) from
+        else oldMark
+      mark = newMark
+      while ({
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail && {
+          while (pos < tail && buf(pos) >= '+') pos += 1
+          pos == tail
         }
-        bs = new Array[Byte](bLen + 1)
-        bs(bLen) = (bits >> 4).toByte
-      } else {
-        bits = bits << 6 | ds(b & 0xFF)
-        if (bits < 0) decodeError("expected '\"' or '=' or base64 digit")
-        b = nextByte(head)
-        if (b == '=') nextByteOrError('"', head)
-        else if (b != '"') tokensError('"', '=')
-        bs = new Array[Byte](bLen + 2)
-        bs(bLen) = (bits >> 10).toByte
-        bs(bLen + 1) = (bits >> 2).toByte
+      }) ()
+      if (mark == 0) from -= newMark
+      if (mark > oldMark) mark = oldMark
+    }
+    if (pos >= tail || buf(pos) != '"') base64Error(ds, from) // the closing quote is not found or illegal byte
+    val to = pos
+    var n = to - from // number of base-64 digits without padding characters
+    if (n > 0 && buf(to - 1) == '=') {
+      if ((n & 0x3) != 0) base64Error(ds, from)
+      n -= 1
+      if (buf(to - 2) == '=') n -= 1
+    }
+    val r = n & 0x3
+    if (r == 1) base64Error(ds, from)
+    val bs = new Array[Byte]((n >> 2) * 3 + (r + 1 >> 1)) // r == 0, 2, 3 => 0, 1, 2 trailing bytes
+    pos = from
+    var i, bits = 0
+    val posLim = from + (n & ~0x3)
+    while (pos < posLim) {
+      val x =
+        ds(buf(pos) & 0xFF) << 18 |
+          ds(buf(pos + 1) & 0xFF) << 12 |
+          ds(buf(pos + 2) & 0xFF) << 6 |
+          ds(buf(pos + 3) & 0xFF)
+      bits |= x
+      bs(i) = (x >> 16).toByte
+      bs(i + 1) = (x >> 8).toByte
+      bs(i + 2) = x.toByte
+      i += 3
+      pos += 4
+    }
+    if (r != 0) {
+      bits = bits >> 31 | ds(buf(pos) & 0xFF) << 6 | ds(buf(pos + 1) & 0xFF) // keep negative for illegal digits
+      if (r == 2) bs(i) = (bits >> 4).toByte
+      else {
+        bits = bits << 6 | ds(buf(pos + 2) & 0xFF)
+        bs(i) = (bits >> 10).toByte
+        bs(i + 1) = (bits >> 2).toByte
       }
     }
-    i = 0
-    var j = 0
-    while (j < bLen) {
-      val ch = charBuf(i)
-      bs(j) = (ch >> 8).toByte
-      bs(j + 1) = ch.toByte
-      bs(j + 2) = charBuf(i + 1).toByte
-      i += 2
-      j += 3
-    }
+    if (bits < 0) base64Error(ds, from)
+    head = to + 1
     bs
+  }
+
+  @noinline
+  private[this] def base64Error(ds: Array[Byte], from: Int): Nothing = {
+    val buf = this.buf
+    var pos = from
+    while (pos + 3 < tail &&
+      (ds(buf(pos) & 0xFF) | ds(buf(pos + 1) & 0xFF) | ds(buf(pos + 2) & 0xFF) | ds(buf(pos + 3) & 0xFF)) >= 0) {
+      pos += 4
+    }
+    if (ds(nextByte(pos) & 0xFF) < 0) decodeError("expected '\"' or base64 digit")
+    if (ds(nextByte(head) & 0xFF) < 0) decodeError("expected base64 digit")
+    var b = nextByte(head)
+    if (b == '=') {
+      nextByteOrError('=', head)
+      nextByteOrError('"', head)
+    } else if (b != '"') {
+      if (ds(b & 0xFF) < 0) decodeError("expected '\"' or '=' or base64 digit")
+      b = nextByte(head)
+      if (b == '=') nextByteOrError('"', head)
+      else if (b != '"') tokensError('"', '=')
+    }
+    decodeError("expected '\"'") // unreachable, only invalid strings are passed to this method
   }
 
   @noinline

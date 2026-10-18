@@ -758,15 +758,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "throw parsing exception for too long input" in {
-      if (TestUtils.isJS) { // the JS version uses the internal char buffer for decoding
-        val tooLongString = "\"" + "1" * ((ReaderConfig.maxCharBufSize + 1) * 4) + "\""
-        assert(intercept[JsonReaderException](reader(tooLongString).readBase16AsBytes(null))
-          .getMessage.startsWith("too long string exceeded 'maxCharBufSize'"))
-      } else { // other versions keep all digits in the internal byte buffer
-        val tooLongString = "\"" + "0" * ReaderConfig.maxBufSize + "\""
-        assert(intercept[JsonReaderException](reader(tooLongString).readBase16AsBytes(null))
-          .getMessage.startsWith("too long part of input exceeded 'maxBufSize'"))
-      }
+      val tooLongString = "\"" + "0" * ReaderConfig.maxBufSize + "\""
+      assert(intercept[JsonReaderException](reader(tooLongString).readBase16AsBytes(null))
+        .getMessage.startsWith("too long part of input exceeded 'maxBufSize'"))
     }
     "throw parsing exception for empty input and illegal Base16 string" in {
       def checkError(json: String, error: String): Unit =
@@ -842,15 +836,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "throw parsing exception for too long input" in {
-      if (TestUtils.isJS) { // the JS version uses the internal char buffer for decoding
-        val tooLongString = "\"" + "1" * ((ReaderConfig.maxCharBufSize + 1) * 3) + "\""
-        assert(intercept[JsonReaderException](reader(tooLongString).readBase64AsBytes(null))
-          .getMessage.startsWith("too long string exceeded 'maxCharBufSize'"))
-      } else { // other versions keep all digits in the internal byte buffer
-        val tooLongString = "\"" + "0" * ReaderConfig.maxBufSize + "\""
-        assert(intercept[JsonReaderException](reader(tooLongString).readBase64AsBytes(null))
-          .getMessage.startsWith("too long part of input exceeded 'maxBufSize'"))
-      }
+      val tooLongString = "\"" + "0" * ReaderConfig.maxBufSize + "\""
+      assert(intercept[JsonReaderException](reader(tooLongString).readBase64AsBytes(null))
+        .getMessage.startsWith("too long part of input exceeded 'maxBufSize'"))
     }
     "throw parsing exception for empty input and illegal base64 string" in {
       def checkError(json: String, error: String): Unit = {
