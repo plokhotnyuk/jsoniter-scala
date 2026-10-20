@@ -5160,8 +5160,9 @@ final class JsonReader private[jsoniter_scala](
       val linePos = j & 0xF
       if (linePos == 0) {
         if (i + 81 >= lim) { // 81 == dumpBorder.length
-          lim = growCharBuf(i + 81)
+          ensureCharBufCapacity(i + 81)
           charBuf = this.charBuf
+          lim = charBuf.length
         }
         charBuf(i) = '\n'
         charBuf(i + 1) = '|'
@@ -5250,7 +5251,11 @@ final class JsonReader private[jsoniter_scala](
 
   @inline
   private[this] def ensureCharBufCapacity(required: Int): Unit =
-    if (charBuf.length < required) growCharBuf(required): Unit
+    if (charBuf.length < required) growCharBufForErrorMessage(required)
+
+  @noinline
+  private[this] def growCharBufForErrorMessage(required: Int): Unit = // ignores `maxCharBufSize` to build error messages
+    charBuf = java.util.Arrays.copyOf(charBuf, (-1 >>> Integer.numberOfLeadingZeros(required)) + 1)
 
   @tailrec
   private def skipString(p: Int): Int = {
