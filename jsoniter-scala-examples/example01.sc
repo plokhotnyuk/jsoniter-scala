@@ -1,5 +1,5 @@
-//> using dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.41.6"
-//> using compileOnly.dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.41.6"
+//> using dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.41.7"
+//> using compileOnly.dep "com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.41.7"
 
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.github.plokhotnyuk.jsoniter_scala.core._
