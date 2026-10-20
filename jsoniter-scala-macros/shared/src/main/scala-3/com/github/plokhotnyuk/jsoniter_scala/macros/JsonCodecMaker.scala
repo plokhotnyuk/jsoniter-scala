@@ -2346,7 +2346,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     fail(s"No implicit '${TypeRepr.of[JsonKeyCodec[?]].show}' defined for '${tpe.show}'.")
 
   private def cannotFindValueCodecError(tpe: TypeRepr): Nothing =
-    fail(if (tpe.typeSymbol.flags.is(Flags.Abstract) || tpe.typeSymbol.flags.is(Flags.Trait)) {
+    fail(if ((tpe.typeSymbol.flags.is(Flags.Abstract) || tpe.typeSymbol.flags.is(Flags.Trait)) &&
+      !tpe.typeSymbol.flags.is(Flags.Final)) {
       "Only sealed traits or abstract classes are supported as an ADT base. " +
         s"Please consider sealing the '${tpe.show}' or provide a custom implicitly accessible codec for it."
     } else s"No implicit '${TypeRepr.of[JsonValueCodec[?]].show}' defined for '${tpe.show}'.")

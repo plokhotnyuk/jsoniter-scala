@@ -3507,6 +3507,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         if (ScalaVersionCheck.isScala2) "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."
         else "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for '_root_.java.util.Date'."
       })
+      assert(intercept[TestFailedException](assertCompiles {
+        "JsonCodecMaker.make[_root_.scala.Unit]"
+      }).getMessage.contains {
+        if (ScalaVersionCheck.isScala2) "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'Unit'."
+        else "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for '_root_.scala.Unit'."
+      })
     }
     "don't generate codecs for classes with transient field without default value" in {
       assert(intercept[TestFailedException](assertCompiles {
