@@ -3981,7 +3981,7 @@ final class JsonReader private[jsoniter_scala](
           if (x1 < 9 || x1 == 9 && x2 <= 223372036854775807L) {
             x1 = x1 * 1000000000000000000L + x2
             if (s != 0) x1 = -x1
-            new java.lang.Long(x1)
+            (new java.lang.Long(x1): @annotation.nowarn("cat=deprecation"))
           } else {
             if (s != 0) {
               x1 = -x1

@@ -2598,7 +2598,7 @@ final class JsonReader private[jsoniter_scala](
       } finally {
         this.buf = currBuf
         val charBufSize = Math.min(maxPreferredCharBufSize, config.maxCharBufSize)
-      if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
+        if (charBuf.length > charBufSize) reallocateCharBuf(charBufSize)
         bbuf.position(head - offset)
       }
     } else {
@@ -4514,7 +4514,7 @@ final class JsonReader private[jsoniter_scala](
           val q = x1 * 1000000000000000000L
           val l = q + x2
           val h = Math.multiplyHigh(x1, 1000000000000000000L) + ((~l & q) >>> 63)
-          if (l >= 0 && h == 0) new java.lang.Long((l ^ s) - s)
+          if (l >= 0 && h == 0) (new java.lang.Long((l ^ s) - s): @annotation.nowarn("cat=deprecation"))
           else {
             var magnitude = this.magnitude
             if (magnitude eq null) {
