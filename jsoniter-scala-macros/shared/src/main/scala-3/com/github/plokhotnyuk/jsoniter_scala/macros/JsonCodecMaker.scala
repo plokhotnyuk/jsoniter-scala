@@ -3496,6 +3496,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
                 ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
               }
+            } else if (cfg.transientNone && isOpaque(fTpe) && isOption(fTpe, types)) '{ // opaque subtypes of `Option` use their own codecs
+              val v = ${getter.asInstanceOf[Expr[ft]]}
+              if ((v.asInstanceOf[AnyRef] ne None) && v != ${d.asExpr.asInstanceOf[Expr[ft]]}) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
             } else if (cfg.transientNone && isOption(fTpe, types)) {
               val tpe1 = typeArg1(fTpe)
               tpe1.asType match
@@ -3560,6 +3566,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             } else if (cfg.transientEmpty && fTpe <:< iteratorOfWildcardTpe) '{
               val v = ${getter.asInstanceOf[Expr[ft & Iterator[?]]]}
               if (v.hasNext) {
+                ${genWriteConstantKey(fieldInfo.mappedName, out)}
+                ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
+              }
+            } else if (cfg.transientNone && isOpaque(fTpe) && isOption(fTpe, types)) '{ // opaque subtypes of `Option` use their own codecs
+              val v = ${getter.asInstanceOf[Expr[ft]]}
+              if (v.asInstanceOf[AnyRef] ne None) {
                 ${genWriteConstantKey(fieldInfo.mappedName, out)}
                 ${genWriteVal('v, allTypes, fieldInfo.isStringified, None, out)}
               }

@@ -62,6 +62,14 @@ object Year {
     inline def apply(year: Year): Int = year
 }
 
+opaque type ReqId <: Option[String] = Option[String]
+
+object ReqId {
+  inline def apply(x: Option[String]): ReqId = x
+
+  given JsonValueCodec[ReqId] = JsonCodecMaker.make[Option[String]]
+}
+
 case class IArrays(aa: IArray[IArray[Int]], a: IArray[BigInt])
 
 case class IArrayDefaults(aa: IArray[IArray[Int]] = IArray(IArray[Int](1)), a: IArray[BigInt] = IArray[BigInt](2))
@@ -226,6 +234,13 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
       }
       verifySerDeser(make[Period], Period(Year.of(1976), Year.of(2022)), """{"start":1976,"end":2022}""")
       verifySerDeser(make[Array[Year]], Array(Year.of(1976)), "[1976]")
+
+      case class Request(id: ReqId, optId: ReqId = ReqId(Some("VVV")))
+
+      verifySerDeser(make[Request], Request(ReqId(Some("WWW"))), """{"id":"WWW"}""")
+      verifySerDeser(make[Request], Request(ReqId(None)), """{}""")
+      verifySerDeser(make[Request], Request(ReqId(None), ReqId(Some("XXX"))), """{"optId":"XXX"}""")
+      verifySerDeser(make[Request](CodecMakerConfig.withTransientNone(false)), Request(ReqId(None)), """{"id":null}""")
     }
     "serialize and deserialize a Scala3 union type using a custom codec" in {
       type Value = String | Boolean | Double
@@ -408,29 +423,6 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
           |""".stripMargin
       }).getMessage.contains {
         "Only concrete (no free type parameters) Scala classes & objects are supported for ADT leaf classes."
-      })
-    }
-    "don't generate codecs for opaque types that hides type arguments" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        """object Wrappers {
-          |  opaque type ReqId <: Option[String] = Option[String]
-          |
-          |  object ReqId {
-          |    inline def apply(x: Option[String]): ReqId = x
-          |
-          |    given JsonValueCodec[ReqId] = JsonCodecMaker.make[Option[String]]
-          |  }
-          |}
-          |
-          |import Wrappers.*
-          |import Wrappers.ReqId.*
-          |
-          |case class A(r: ReqId)
-          |
-          |given JsonValueCodec[A] = JsonCodecMaker.make
-          |""".stripMargin
-      }).getMessage.contains {
-        "Cannot get 1st type argument in 'Wrappers.ReqId'"
       })
     }
   }
