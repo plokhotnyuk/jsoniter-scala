@@ -3328,8 +3328,14 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   @noinline
-  private[this] def growBuf(required: Int): Unit =
-    setBuf(java.util.Arrays.copyOf(buf, (-1 >>> Integer.numberOfLeadingZeros(limit | required)) + 1))
+  private[this] def growBuf(required: Int): Unit = {
+    var newLimit = (-1 >>> Integer.numberOfLeadingZeros(limit | required)) + 1
+    if (newLimit <= 0) { // overflow of the next power of 2 or of the required size
+      if (required < 0 || required > 2147483645) encodeError("too long output")
+      newLimit = 2147483645
+    }
+    setBuf(java.util.Arrays.copyOf(buf, newLimit))
+  }
 
   @noinline
   private[this] def reallocateBuf(length: Int): Unit = setBuf(new Array[Byte](length))

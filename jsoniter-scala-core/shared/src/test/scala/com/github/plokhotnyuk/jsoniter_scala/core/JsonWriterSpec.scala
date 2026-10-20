@@ -1094,6 +1094,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       contains(buf, "b") shouldBe false
       w.writeToString(stringCodec, "c" * 100, WriterConfig) shouldBe json("c" * 100)
       contains(buf, json("c" * 100)) shouldBe true
+      val indention = Int.MaxValue - (if (TestUtils.isJS) 4 else 10) // to require `Int.MaxValue` bytes for `writeVal(x: String)`
+      val w2 = new JsonWriter(new Array[Byte](16), 0, 16, indention, false, false, null, null, WriterConfig)
+      assert(intercept[JsonWriterException](w2.writeVal("d" * 100)).getMessage.startsWith("too long output"))
     }
   }
 
