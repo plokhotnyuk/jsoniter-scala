@@ -845,6 +845,8 @@ object JsonCodecMaker {
 
       case class ScalaEnumNameKey(tpe: Type) extends TermNameKey
 
+      case class JavaEnumNameKey(tpe: Type) extends TermNameKey
+
       case class MathContextValueKey(precision: Int) extends TermNameKey
 
       val rootTpe = weakTypeOf[A].dealias
@@ -974,6 +976,72 @@ object JsonCodecMaker {
               i += 1
               cq"$i => ${writeConstName(v._2)}"
           } :+ cq"_ => $writeActualName"
+          q"""($name($x): @_root_.scala.annotation.switch) match {
+                case ..$cases
+              }"""
+        }
+      }
+
+      // Generates writing of a name of the Java enum value (`x`) like for enum ADTs: with constant names that are
+      // written by `writeConstName`. Small enums are matched by references to values, others are matched using
+      // `@switch` by indexes of values. Indexes of values (plus 1, to have `0` for unknown values in case of racy reads
+      // of the array) are stored in an array that is indexed by ordinals of values and initialized lazily once all
+      // values are initialized.
+      // Unknown values are written by `writeName`.
+      def genWriteJavaEnumName(tpe: Type, x: Tree, writeConstName: String => Tree, writeName: Tree): Tree = {
+        val valueInfos = getJavaEnumInfo(tpe).valueInfos
+        if (valueInfos.isEmpty) writeName
+        else if (valueInfos.size <= 8) valueInfos.foldRight(writeName) { (v, acc) =>
+          q"if ($x eq ${v.value}) ${writeConstName(v.name)} else $acc"
+        } else {
+          val name = {
+            val termNameKey = new JavaEnumNameKey(tpe)
+            termNames.getOrElse(termNameKey, {
+              val n = termNames.size
+              val name = TermName(s"jn$n")
+              val indexesName = TermName(s"jns$n")
+              val indexesInitName = TermName(s"jni$n")
+              termNames.update(termNameKey, name)
+              trees ++= Seq(
+                q"private[this] var $indexesName: _root_.scala.Array[_root_.scala.Int] = null",
+                q"""private[this] def $indexesInitName(): _root_.scala.Array[_root_.scala.Int] = {
+                      val vs = _root_.scala.Array[_root_.java.lang.Enum[_]](..${valueInfos.map(_.value)})
+                      var i = 0
+                      while (i < vs.length && (vs(i) ne null)) i += 1
+                      if (i == vs.length) {
+                        var maxOrdinal = -1
+                        i = 0
+                        while (i < vs.length) {
+                          val o = vs(i).ordinal
+                          if (o > maxOrdinal) maxOrdinal = o
+                          i += 1
+                        }
+                        val is = new _root_.scala.Array[_root_.scala.Int](maxOrdinal + 1)
+                        i = 0
+                        while (i < vs.length) {
+                          is(vs(i).ordinal) = i + 1
+                          i += 1
+                        }
+                        $indexesName = is
+                        is
+                      } else null
+                    }""",
+                q"""private[this] def $name(x: $tpe): _root_.scala.Int = {
+                      var is = $indexesName
+                      if (is eq null) is = $indexesInitName()
+                      val i = x.ordinal
+                      if ((is ne null) && i < is.length) is(i)
+                      else 0
+                    }""")
+              name
+            })
+          }
+          val cases = valueInfos.map {
+            var i = 0
+            v =>
+              i += 1
+              cq"$i => ${writeConstName(v.name)}"
+          } :+ cq"_ => $writeName"
           q"""($name($x): @_root_.scala.annotation.switch) match {
                 case ..$cases
               }"""
@@ -1817,15 +1885,11 @@ object JsonCodecMaker {
           else genWriteScala2EnumerationName(tpe, x, genWriteConstantKey(_), s => q"out.writeKey($s)")
         } else if (isJavaEnum(tpe)) {
           val enumInfo = getJavaEnumInfo(tpe)
-          if (enumInfo.hasTransformed) {
-            val cases = enumInfo.valueInfos.map(e => cq"${e.value} => ${e.name}") :+
-              cq"""_ => out.encodeError("illegal enum value: " + $x)"""
-            if (enumInfo.doEncoding) q"out.writeKey($x match { case ..$cases })"
-            else q"out.writeNonEscapedAsciiKey($x match { case ..$cases })"
-          } else {
-            if (enumInfo.doEncoding) q"out.writeKey($x.name)"
+          genWriteJavaEnumName(tpe, x, genWriteConstantKey(_), {
+            if (enumInfo.hasTransformed) q"""out.encodeError("illegal enum value: " + $x)"""
+            else if (enumInfo.doEncoding) q"out.writeKey($x.name)"
             else q"out.writeNonEscapedAsciiKey($x.name)"
-          }
+          })
         } else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(s: String)) => genWriteConstantKey(s)
@@ -2889,15 +2953,11 @@ object JsonCodecMaker {
             } else genWriteScala2EnumerationName(tpe, q"x", genWriteConstantVal(_), s => q"out.writeVal($s)")
           } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
             val enumInfo = getJavaEnumInfo(tpe)
-            if (enumInfo.hasTransformed) {
-              val cases = enumInfo.valueInfos.map(e => cq"${e.value} => ${e.name}") :+
-                cq"""_ => out.encodeError("illegal enum value: " + x)"""
-              if (enumInfo.doEncoding) q"out.writeVal(x match { case ..$cases })"
-              else q"out.writeNonEscapedAsciiVal(x match { case ..$cases })"
-            } else {
-              if (enumInfo.doEncoding) q"out.writeVal(x.name)"
+            genWriteJavaEnumName(tpe, q"x", genWriteConstantVal(_), {
+              if (enumInfo.hasTransformed) q"""out.encodeError("illegal enum value: " + x)"""
+              else if (enumInfo.doEncoding) q"out.writeVal(x.name)"
               else q"out.writeNonEscapedAsciiVal(x.name)"
-            }
+            })
           } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
             val writeFields = typeArgs(tpe).map {
               var i = 0

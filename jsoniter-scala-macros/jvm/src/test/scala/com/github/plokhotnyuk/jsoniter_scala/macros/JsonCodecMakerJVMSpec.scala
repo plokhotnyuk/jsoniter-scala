@@ -37,6 +37,15 @@ class JsonCodecMakerJVMSpec extends VerifyingSpec {
         _root_.scala.collection.mutable.WeakHashMap[String, Int]("WWW" -> 1, "VVV" -> 2),
         """{"WWW":1,"VVV":2}""")
     }
+    "serialize and deserialize Java enumerations with more than 8 values" in {
+      val months = _root_.java.time.Month.values.toList
+      verifySerDeser(make[List[_root_.java.time.Month]], months, months.map(_.name).mkString("[\"", "\",\"", "\"]"))
+      verifySerDeser(make[List[_root_.java.time.Month]](CodecMakerConfig.withJavaEnumValueNameMapper(JsonCodecMaker.enforce_snake_case)),
+        months, months.map(_.name.toLowerCase).mkString("[\"", "\",\"", "\"]"))
+      verifySerDeser(make[Map[_root_.java.time.Month, Int]], Map(_root_.java.time.Month.DECEMBER -> 12), """{"DECEMBER":12}""")
+      verifySerDeser(make[Map[_root_.java.time.Month, Int]](CodecMakerConfig.withJavaEnumValueNameMapper(JsonCodecMaker.enforce_snake_case)),
+        Map(_root_.java.time.Month.DECEMBER -> 12), """{"december":12}""")
+    }
     "serialize and deserialize recursive structures with an implicit codec using a minimal thread stack" in {
       case class Nested(n: Option[Nested] = _root_.scala.None)
 

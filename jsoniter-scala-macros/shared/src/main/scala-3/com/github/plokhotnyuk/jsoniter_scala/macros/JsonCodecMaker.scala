@@ -871,6 +871,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
 
   private case class ScalaEnumNameKey(tpe: TypeRepr) extends RefKey
 
+  private case class JavaEnumNameKey(tpe: TypeRepr) extends RefKey
+
   private case class MathContextValueKey(precision: Int) extends RefKey
 
   private case class WriteDiscriminator(fieldName: String, fieldValue: String) {
@@ -1218,6 +1220,74 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           i += 1
           CaseDef(Literal(IntConstant(i)), None, writeConstName(v._2).asTerm)
       } :+ CaseDef(Wildcard(), None, writeActualName.asTerm)
+      Match(index, cases).asExpr.asInstanceOf[Expr[Unit]]
+    }
+
+  // Generates writing of a name of the Java enum value (`x`) like for enum ADTs: with constant names that are written
+  // by `writeConstName`. Small enums are matched by references to values, others are matched using `@switch` by
+  // indexes of values. Indexes of values (plus 1, to have `0` for unknown values in case of racy reads of the array)
+  // are stored in an array that is indexed by ordinals of values and initialized lazily once all values are
+  // initialized.
+  // Unknown values are written by `writeName`.
+  private def genWriteJavaEnumName(tpe: TypeRepr, x: Expr[java.lang.Enum[?]], writeConstName: String => Expr[Unit],
+                                   writeName: Expr[Unit])(using Quotes): Expr[Unit] =
+    val valueInfos = getJavaEnumInfo(tpe).valueInfos
+    if (valueInfos.isEmpty) writeName
+    else if (valueInfos.size <= 8) valueInfos.foldRight(writeName) { (v, acc) =>
+      val ref = Ref(v.value).asExpr.asInstanceOf[Expr[java.lang.Enum[?]]]
+      '{ if ($x eq $ref) ${writeConstName(v.name)} else $acc }
+    } else {
+      val index = Apply(refs.getOrElse(new JavaEnumNameKey(tpe), {
+        val n = refs.size
+        val sym = Symbol.newMethod(Symbol.spliceOwner, s"jn$n", MethodType("x" :: Nil)(_ => tpe :: Nil, _ => intTpe))
+        val ref = Ref(sym)
+        refs.update(new JavaEnumNameKey(tpe), ref)
+        val indexesSym = symbol(s"jns$n", TypeRepr.of[Array[Array[Int]]])
+        val indexes = Ref(indexesSym).asExpr.asInstanceOf[Expr[Array[Array[Int]]]]
+        val indexesInitSym = Symbol.newMethod(Symbol.spliceOwner, s"jni$n", MethodType(Nil)(_ => Nil, _ => TypeRepr.of[Array[Int]]))
+        val valueRefs = Varargs(valueInfos.map(v => Ref(v.value).asExpr.asInstanceOf[Expr[java.lang.Enum[?]]]))
+        defs.addOne(ValDef(indexesSym, new Some('{ new Array[Array[Int]](1) }.asTerm)))
+        defs.addOne(DefDef(indexesInitSym, _ => new Some('{
+          val vs = Array[java.lang.Enum[?]]($valueRefs*)
+          var i = 0
+          while (i < vs.length && (vs(i) ne null)) i += 1
+          if (i == vs.length) {
+            var maxOrdinal = -1
+            i = 0
+            while (i < vs.length) {
+              val o = vs(i).ordinal
+              if (o > maxOrdinal) maxOrdinal = o
+              i += 1
+            }
+            val is = new Array[Int](maxOrdinal + 1)
+            i = 0
+            while (i < vs.length) {
+              is(vs(i).ordinal) = i + 1
+              i += 1
+            }
+            $indexes(0) = is
+            is
+          } else null
+        }.asTerm.changeOwner(indexesInitSym))))
+        val indexesInit = Apply(Ref(indexesInitSym), Nil).asExpr.asInstanceOf[Expr[Array[Int]]]
+        defs.addOne(DefDef(sym, params => {
+          val x = params.head.head.asExpr.asInstanceOf[Expr[java.lang.Enum[?]]]
+          new Some('{
+            var is = $indexes(0)
+            if (is eq null) is = $indexesInit
+            val i = $x.ordinal
+            if ((is ne null) && i < is.length) is(i)
+            else 0
+          }.asTerm.changeOwner(sym))
+        }))
+        ref
+      }), x.asTerm :: Nil)
+      val cases = valueInfos.map {
+        var i = 0
+        v =>
+          i += 1
+          CaseDef(Literal(IntConstant(i)), None, writeConstName(v.name).asTerm)
+      } :+ CaseDef(Wildcard(), None, writeName.asTerm)
       Match(index, cases).asExpr.asInstanceOf[Expr[Unit]]
     }
 
@@ -2263,17 +2333,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       else genWriteScala2EnumerationName(tpe, tx, genWriteConstantKey(_, out), s => '{ $out.writeKey($s) })
     } else if (isJavaEnum(tpe)) {
       val enumInfo = getJavaEnumInfo(tpe)
-      if (enumInfo.hasTransformed) {
-        val cases = enumInfo.valueInfos.map(e => CaseDef(Ref(e.value), None, Literal(StringConstant(e.name)))) :+
-          CaseDef(Wildcard(), None, '{ $out.encodeError("illegal enum value: " + $x) }.asTerm)
-        val matchExpr = Match(x.asTerm, cases).asExpr.asInstanceOf[Expr[String]]
-        if (enumInfo.doEncoding) '{ $out.writeKey($matchExpr) }
-        else '{ $out.writeNonEscapedAsciiKey($matchExpr) }
-      } else {
-        val tx = x.asInstanceOf[Expr[java.lang.Enum[?]]]
-        if (enumInfo.doEncoding) '{ $out.writeKey($tx.name) }
+      val tx = x.asInstanceOf[Expr[java.lang.Enum[?]]]
+      genWriteJavaEnumName(tpe, tx, genWriteConstantKey(_, out), {
+        if (enumInfo.hasTransformed) '{ $out.encodeError("illegal enum value: " + $tx) }
+        else if (enumInfo.doEncoding) '{ $out.writeKey($tx.name) }
         else '{ $out.writeNonEscapedAsciiKey($tx.name) }
-      }
+      })
     } else if (isConstType(tpe)) {
       tpe match
         case ConstantType(StringConstant(v)) => genWriteConstantKey(v, out)
@@ -3900,17 +3965,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         } else genWriteScala2EnumerationName(tpe, tx, genWriteConstantVal(_, out), s => '{ $out.writeVal($s) })
       } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
         val enumInfo = getJavaEnumInfo(tpe)
-        if (enumInfo.hasTransformed) {
-          val cases = enumInfo.valueInfos.map(e => CaseDef(Ref(e.value), None, Expr(e.name).asTerm)) :+
-            CaseDef(Wildcard(), None, '{ $out.encodeError("illegal enum value: null") }.asTerm)
-          val matching = Match(x.asTerm, cases).asExpr.asInstanceOf[Expr[String]]
-          if (enumInfo.doEncoding) '{ $out.writeVal($matching) }
-          else '{ $out.writeNonEscapedAsciiVal($matching) }
-        } else {
-          val tx = x.asInstanceOf[Expr[java.lang.Enum[?]]]
-          if (enumInfo.doEncoding) '{ $out.writeVal($tx.name) }
+        val tx = x.asInstanceOf[Expr[java.lang.Enum[?]]]
+        genWriteJavaEnumName(tpe, tx, genWriteConstantVal(_, out), {
+          if (enumInfo.hasTransformed) '{ $out.encodeError("illegal enum value: " + $tx) }
+          else if (enumInfo.doEncoding) '{ $out.writeVal($tx.name) }
           else '{ $out.writeNonEscapedAsciiVal($tx.name) }
-        }
+        })
       } else if (isNamedTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
         genWriteNonAbstractScalaClass(x, getNamedTupleInfo(tpe), types, optWriteDiscriminator, out)
       } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
