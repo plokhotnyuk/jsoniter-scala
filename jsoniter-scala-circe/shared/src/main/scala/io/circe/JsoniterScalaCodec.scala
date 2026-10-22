@@ -254,6 +254,7 @@ object JsoniterScalaCodec {
       case s: JString => try new Right(fromString(s.value)) catch {
         case e if NonFatal(e) => fail(c)
       }
+      case _: JNull.type => new Right(Float.NaN)
       case _ => fail(c)
     }
 
@@ -271,6 +272,7 @@ object JsoniterScalaCodec {
       case s: JString => try new Right(fromString(s.value)) catch {
         case e if NonFatal(e) => fail(c)
       }
+      case _: JNull.type => new Right(Double.NaN)
       case _ => fail(c)
     }
 

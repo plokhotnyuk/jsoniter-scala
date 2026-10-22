@@ -224,7 +224,7 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[Float].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("Float", Nil))
       Decoder[Float].decodeJson(Json.fromString("1.0 ")) shouldBe Left(DecodingFailure("Float", Nil))
       Decoder[Float].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Float", Nil))
-      Decoder[Float].decodeJson(Json.Null) shouldBe Left(DecodingFailure("Float", Nil))
+      Decoder[Float].decodeJson(Json.Null).map(_.isNaN) shouldBe Right(true)
       forAll(arbitrary[Float], minSuccessful(10000)) { x =>
         Decoder[Float].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
       }
@@ -247,7 +247,7 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[Double].decodeJson(Json.fromString(" 1.0")) shouldBe Left(DecodingFailure("Double", Nil))
       Decoder[Double].decodeJson(Json.fromString("1.0 ")) shouldBe Left(DecodingFailure("Double", Nil))
       Decoder[Double].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Double", Nil))
-      Decoder[Double].decodeJson(Json.Null) shouldBe Left(DecodingFailure("Double", Nil))
+      Decoder[Double].decodeJson(Json.Null).map(_.isNaN) shouldBe Right(true)
       forAll(arbitrary[Double], minSuccessful(10000)) { x =>
         Decoder[Double].decodeJson(Json.fromString(x.toString)).getOrElse(null) shouldBe x
       }
