@@ -38,9 +38,16 @@ object JsoniterScalaCodec {
    * and chooses an appropriate JSON number representation.
    */
   val defaultNumberParser: JsonReader => Json = in => new JNumber({
+    val isNeg = in.isNextToken('-')
+    in.rollbackToken()
     in.readNumber(null) match {
-      case l: java.lang.Long => new JsonLong(l.longValue)
-      case bd: java.math.BigDecimal => new JsonBigDecimal(bd)
+      case l: java.lang.Long =>
+        val v = l.longValue
+        if (v != 0 || !isNeg) new JsonLong(v)
+        else JsonNumber.fromDecimalStringUnsafe("-0") // the same representation as circe uses for negative zeros
+      case bd: java.math.BigDecimal =>
+        if (bd.signum != 0 || !isNeg) new JsonBigDecimal(bd)
+        else JsonNumber.fromDecimalStringUnsafe("-" + bd.toString)
       case bi: java.math.BigInteger => new JsonBigDecimal(new java.math.BigDecimal(bi))
     }
   })

@@ -90,6 +90,20 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       val json = readFromString(jsonStr)(codec)
       writeToString(json)(codec) shouldBe jsonStrExpected
     }
+    "deserialize negative zeros keeping the sign like circe does" in {
+      Seq("-0", "-0.0", "-0e0", "-0.00E+5", "[-0]", "{\"n\":-0.0}").foreach { jsonStr =>
+        readFromString(jsonStr) shouldBe parse(jsonStr).getOrElse(null)
+      }
+      Seq("-0", "-0.0", "-0e0").foreach { jsonStr =>
+        (1.0 / readFromString(jsonStr).asNumber.get.toDouble) shouldBe Double.NegativeInfinity
+      }
+      Seq("0", "0.0", "-1", "-0.5", "-1e-5").foreach { jsonStr =>
+        readFromString(jsonStr) shouldBe parse(jsonStr).getOrElse(null)
+        (1.0 / readFromString(jsonStr).asNumber.get.toDouble) should not be Double.NegativeInfinity
+      }
+      writeToString(readFromString("-0")) shouldBe "-0"
+      writeToString(readFromString("-0.0")) shouldBe "-0.0"
+    }
     "deserialize a single big number" in {
       val jsonStr = "9223372036854775808"
       readFromString(jsonStr) shouldBe Json.fromBigInt(BigInt("9223372036854775808"))
