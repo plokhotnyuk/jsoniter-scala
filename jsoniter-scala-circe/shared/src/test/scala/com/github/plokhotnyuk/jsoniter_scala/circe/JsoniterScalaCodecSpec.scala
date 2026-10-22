@@ -104,6 +104,26 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       writeToString(readFromString("-0")) shouldBe "-0"
       writeToString(readFromString("-0.0")) shouldBe "-0.0"
     }
+    "deserialize decimal numbers exactly like circe does" in {
+      val pi = "3.14159265358979323846264338327950288419716939937510"
+      readFromString(pi) shouldBe Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe(pi)) // circe-parser for Scala.js parses numbers to `Double`
+      writeToString(readFromString(pi)) shouldBe pi
+      val longDecimal = "0." + "1234567890" * 30 + "123456" // 307 digits, including the leading zero
+      writeToString(readFromString(longDecimal)) shouldBe longDecimal
+      readFromString(s"[$longDecimal]") shouldBe Json.arr(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe(longDecimal)))
+      assert(intercept[JsonReaderException](readFromString(longDecimal + "8")).getMessage.contains("value exceeds limit for number of digits"))
+      assert(intercept[JsonReaderException](readFromString("1e-6178")).getMessage.contains("value exceeds limit for scale"))
+    }
+    "allow customization of the math context and limits for number parsing" in {
+      val roundingCodec = jsonCodec(numberParser = io.circe.JsoniterScalaCodec.numberParser(mc = JsonReader.bigDecimalMathContext))
+      writeToString(readFromString("3.14159265358979323846264338327950288419716939937510")(roundingCodec)) shouldBe "3.141592653589793238462643383279503"
+      writeToString(readFromString("[-0.0]")(roundingCodec)) shouldBe "[-0.0]"
+      val limitingCodec = jsonCodec(numberParser = io.circe.JsoniterScalaCodec.numberParser(scaleLimit = 10, digitsLimit = 10))
+      writeToString(readFromString("[1.23456789,123456789,1e-9]")(limitingCodec)) shouldBe "[1.23456789,123456789,1E-9]"
+      assert(intercept[JsonReaderException](readFromString("1.234567890")(limitingCodec)).getMessage.contains("value exceeds limit for number of digits"))
+      assert(intercept[JsonReaderException](readFromString("1234567890")(limitingCodec)).getMessage.contains("value exceeds limit for number of digits"))
+      assert(intercept[JsonReaderException](readFromString("1e-10")(limitingCodec)).getMessage.contains("value exceeds limit for scale"))
+    }
     "deserialize a single big number" in {
       val jsonStr = "9223372036854775808"
       readFromString(jsonStr) shouldBe Json.fromBigInt(BigInt("9223372036854775808"))

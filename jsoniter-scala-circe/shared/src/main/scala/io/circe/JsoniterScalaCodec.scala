@@ -34,13 +34,21 @@ import scala.util.control.NonFatal
 
 object JsoniterScalaCodec {
   /**
-   * Default number parser that detects integers vs floating-point values
+   * Creates a number parser that detects integers vs floating-point values
    * and chooses an appropriate JSON number representation.
+   *
+   * @param mc the math context for rounding of decimal values, `java.math.MathContext.UNLIMITED` to parse them exactly
+   * @param scaleLimit the exclusive limit for the scale of decimal values
+   * @param digitsLimit the exclusive limit for the number of mantissa digits
+   * @return a number parser
    */
-  val defaultNumberParser: JsonReader => Json = in => new JNumber({
+  def numberParser(
+      mc: java.math.MathContext = java.math.MathContext.UNLIMITED,
+      scaleLimit: Int = JsonReader.bigDecimalScaleLimit,
+      digitsLimit: Int = JsonReader.bigDecimalDigitsLimit): JsonReader => Json = in => new JNumber({
     val isNeg = in.isNextToken('-')
     in.rollbackToken()
-    in.readNumber(null) match {
+    in.readNumber(null, mc, scaleLimit, digitsLimit) match {
       case l: java.lang.Long =>
         val v = l.longValue
         if (v != 0 || !isNeg) new JsonLong(v)
@@ -51,6 +59,15 @@ object JsoniterScalaCodec {
       case bi: java.math.BigInteger => new JsonBigDecimal(new java.math.BigDecimal(bi))
     }
   })
+
+  /**
+   * Default number parser that detects integers vs floating-point values
+   * and chooses an appropriate JSON number representation.
+   *
+   * Parses numbers exactly, without rounding, but rejects numbers that exceed the default limits of `JsonReader` for
+   * the number of digits (`JsonReader.bigDecimalDigitsLimit`) and the scale (`JsonReader.bigDecimalScaleLimit`).
+   */
+  val defaultNumberParser: JsonReader => Json = numberParser()
 
   /**
    * Default number serializer that writes JSON numbers as is.
