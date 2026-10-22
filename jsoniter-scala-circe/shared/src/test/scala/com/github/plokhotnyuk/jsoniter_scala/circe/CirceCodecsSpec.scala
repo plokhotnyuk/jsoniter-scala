@@ -21,7 +21,7 @@
 
 package com.github.plokhotnyuk.jsoniter_scala.circe
 
-import io.circe.{Decoder, DecodingFailure, Encoder, Json}
+import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonNumber}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import java.time._
@@ -293,8 +293,18 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[BigInt].decodeJson(Json.fromDoubleOrNull(1234567890123456.0)).getOrElse(null) shouldBe BigInt(1234567890123456L)
       Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("12345678901234567890"))).getOrElse(null) shouldBe BigInt("12345678901234567890")
       Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("0e+1000000000"))).getOrElse(null) shouldBe BigInt(0)
-      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+262143"))).getOrElse(null) shouldBe BigInt(10).pow(262143)
-      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+262144"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+306"))).getOrElse(null) shouldBe BigInt(10).pow(306)
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+307"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e306"))).getOrElse(null) shouldBe BigInt(10).pow(306)
+      Decoder[BigInt].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e307"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1." + "0" * 306))).getOrElse(null) shouldBe BigInt(1)
+      Decoder[BigInt].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1." + "0" * 307))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1" * 200000))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigInt(BigInt(10).pow(306))).getOrElse(null) shouldBe BigInt(10).pow(306)
+      Decoder[BigInt].decodeJson(Json.fromBigInt(BigInt(10).pow(307))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromDoubleOrNull(1e306)).getOrElse(null) shouldBe BigInt(10).pow(306)
+      Decoder[BigInt].decodeJson(Json.fromDoubleOrNull(1e307)) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1." + "0" * 306 + "e+306"))).getOrElse(null) shouldBe BigInt(10).pow(306)
       Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("12300e-2"))).getOrElse(null) shouldBe BigInt(123)
       Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1.5"))) shouldBe Left(DecodingFailure("BigInt", Nil))
       Decoder[BigInt].decodeJson(Json.fromString("001")).getOrElse(null) shouldBe BigInt(1)
@@ -331,6 +341,26 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       forAll(arbitrary[BigInt], minSuccessful(10000)) { x =>
         Encoder[BigInt].apply(x) shouldBe Json.fromBigInt(x)
       }
+    }
+    "decode BigInt with a custom limit for the number of digits" in {
+      val decoder = io.circe.JsoniterScalaCodec.bigIntCodec(BigInt(_), 5)
+      decoder.decodeJson(Json.fromBigDecimal(BigDecimal("1e+3"))) shouldBe Right(BigInt(1000))
+      decoder.decodeJson(Json.fromBigDecimal(BigDecimal("99990e-1"))) shouldBe Right(BigInt(9999))
+      decoder.decodeJson(Json.fromBigDecimal(BigDecimal("1e+4"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      decoder.decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e3"))) shouldBe Right(BigInt(1000))
+      decoder.decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e4"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      decoder.decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1.000"))) shouldBe Right(BigInt(1))
+      decoder.decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1.0000"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      decoder.decodeJson(Json.fromBigInt(BigInt(9999))) shouldBe Right(BigInt(9999))
+      decoder.decodeJson(Json.fromBigInt(BigInt(10000))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      decoder.decodeJson(Json.fromDoubleOrNull(1234.0)) shouldBe Right(BigInt(1234))
+      decoder.decodeJson(Json.fromDoubleOrNull(1e4)) shouldBe Left(DecodingFailure("BigInt", Nil))
+      decoder.decodeJson(Json.fromFloatOrNull(1234.0f)) shouldBe Right(BigInt(1234))
+      decoder.decodeJson(Json.fromFloatOrNull(1e4f)) shouldBe Left(DecodingFailure("BigInt", Nil))
+      decoder.decodeJson(Json.fromString("1e3")) shouldBe Right(BigInt(1000))
+      decoder.decodeJson(Json.fromString("1e4")) shouldBe Left(DecodingFailure("BigInt", Nil))
+      decoder.decodeJson(Json.fromString("1.000")) shouldBe Right(BigInt(1))
+      decoder.decodeJson(Json.fromString("1.0000")) shouldBe Left(DecodingFailure("BigInt", Nil))
     }
     "decode and encode BigDecimal" in {
       Decoder[BigDecimal].decodeJson(Json.fromLong(1234567890123456789L)).getOrElse(null) shouldBe BigDecimal(1234567890123456789L)

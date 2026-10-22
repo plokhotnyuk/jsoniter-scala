@@ -119,9 +119,6 @@ object JsoniterScalaCodec {
 
   private[this] val longMax = java.math.BigDecimal.valueOf(Long.MaxValue)
 
-  private[this] final val bigIntMaxDigits = 262144 // the same limit as `io.circe.numbers.BiggerDecimal.MaxBigIntegerDigits`
-
-  private[this] val stringBigIntMaxDigits = java.math.BigInteger.valueOf(JsonReader.bigIntDigitsLimit - 1) // like `JsonReader` that rejects strings with `bigIntDigitsLimit` or more digits
 
   /**
    * Converts an ASCII byte array to a JSON string.
@@ -354,32 +351,46 @@ object JsoniterScalaCodec {
     private[this] def fail(c: HCursor): Result[Double] = new Left(DecodingFailure("Double", c.history))
   }
 
-  def bigIntCodec(fromString: String => BigInt): Codec[BigInt] = new Codec[BigInt] {
+  def bigIntCodec(fromString: String => BigInt): Codec[BigInt] = bigIntCodec(fromString, JsonReader.bigIntDigitsLimit)
+
+  /**
+   * Creates a codec for `BigInt` values.
+   *
+   * @param fromString a function that parses `BigInt` values from JSON strings without a fraction and an exponent
+   * @param digitsLimit the exclusive limit for the number of decimal digits of decoded values
+   * @return a codec for `BigInt` values
+   */
+  def bigIntCodec(fromString: String => BigInt, digitsLimit: Int): Codec[BigInt] = new Codec[BigInt] {
+    private[this] val maxDigits = java.math.BigInteger.valueOf(digitsLimit - 1)
+
     final def apply(c: HCursor): Result[BigInt] = try c.value match {
       case n: JNumber => n.value match {
         case jl: JsonLong => new Right(BigInt(jl.value))
         case jbd: JsonBigDecimal =>
           val bd = jbd.value
           val s = bd.scale
-          val isZeroOrZeroScale = s == 0 || bd.signum == 0
-          if (isZeroOrZeroScale || bd.precision - s + Int.MaxValue < Int.MinValue + bigIntMaxDigits) { // see `intValueExact`
+          val isZero = bd.signum == 0
+          if (s == 0 || isZero || bd.precision - s + Int.MaxValue < Int.MinValue + digitsLimit - 1) { // see `intValueExact`
             new Right(new BigInt({
-              if (isZeroOrZeroScale) bd.unscaledValue
+              if (s == 0) bd.unscaledValue
+              else if (isZero) java.math.BigInteger.ZERO
               else bd.toBigIntegerExact
             }))
           } else fail(c)
         case x =>
-          val obi = x.toBigInt
-          if (obi ne None) new Right(obi.get)
+          val obi =
+            if (hasTooManyDigits(x, digitsLimit)) None
+            else x.toBiggerDecimal.toBigIntegerWithMaxDigits(maxDigits)
+          if (obi ne None) new Right(new BigInt(obi.get))
           else fail(c)
       }
       case s: JString =>
         val v = s.value
         if (hasFractionOrExponent(v)) {
-          if (!hasTooManyDigits(v, JsonReader.bigIntDigitsLimit)) {
+          if (!hasTooManyDigits(v, digitsLimit)) {
             val on = JsonNumber.fromString(v)
             if (on ne None) {
-              val obi = on.get.toBiggerDecimal.toBigIntegerWithMaxDigits(stringBigIntMaxDigits)
+              val obi = on.get.toBiggerDecimal.toBigIntegerWithMaxDigits(maxDigits)
               if (obi ne None) new Right(new BigInt(obi.get))
               else fail(c)
             } else fail(c)
@@ -458,6 +469,12 @@ object JsoniterScalaCodec {
       }
     }) ()
     i >= 0
+  }
+
+  // checks the number of mantissa digits of string-based numbers before parsing them, like `JsonReader` does
+  private[this] def hasTooManyDigits(x: JsonNumber, digitsLimit: Int): Boolean = x match {
+    case _: BiggerDecimalJsonNumber => hasTooManyDigits(x.toString, digitsLimit)
+    case _ => false
   }
 
   // checks the number of mantissa digits before parsing, like `JsonReader` does
