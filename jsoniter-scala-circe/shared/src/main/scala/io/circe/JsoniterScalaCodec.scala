@@ -95,6 +95,8 @@ object JsoniterScalaCodec {
 
   private[this] val longMax = java.math.BigDecimal.valueOf(Long.MaxValue)
 
+  private[this] final val bigIntMaxDigits = 262144 // the same limit as `io.circe.numbers.BiggerDecimal.MaxBigIntegerDigits`
+
   /**
    * Converts an ASCII byte array to a JSON string.
    *
@@ -284,11 +286,16 @@ object JsoniterScalaCodec {
     final def apply(c: HCursor): Result[BigInt] = try c.value match {
       case n: JNumber => n.value match {
         case jl: JsonLong => new Right(BigInt(jl.value))
-        case jbd: JsonBigDecimal => new Right(new BigInt({
+        case jbd: JsonBigDecimal =>
           val bd = jbd.value
-          if (bd.scale == 0) bd.unscaledValue
-          else bd.toBigIntegerExact
-        }))
+          val s = bd.scale
+          val isZeroOrZeroScale = s == 0 || bd.signum == 0
+          if (isZeroOrZeroScale || bd.precision - s + Int.MaxValue < Int.MinValue + bigIntMaxDigits) { // see `intValueExact`
+            new Right(new BigInt({
+              if (isZeroOrZeroScale) bd.unscaledValue
+              else bd.toBigIntegerExact
+            }))
+          } else fail(c)
         case x =>
           val obi = x.toBigInt
           if (obi ne None) new Right(obi.get)
@@ -335,32 +342,34 @@ object JsoniterScalaCodec {
   private[this] def intValueExact(x: java.math.BigDecimal): java.math.BigDecimal =
     if (x.signum != 0) {
       val s = x.scale
+      val p = x.precision
       var bd = x
-      if (s != 0) {
-        try bd = x.setScale(0, RoundingMode.UNNECESSARY)
-        catch {
-          case _: ArithmeticException => return null
-        }
-      }
-      val p = bd.precision
-      if (p > 10 || p == 10 && (bd.compareTo(intMin) < 0 || bd.compareTo(intMax) > 0)) return null
-      bd
+      // unsigned comparison of `p - s - 1` with 10: rejects values with no integer digits or more than 10 of them
+      if (p - s + Int.MaxValue < Int.MinValue + 10 && (s == 0 || {
+        bd = wholeOrNull(x)
+        bd ne null
+      }) && (p - s != 10 || bd.compareTo(intMin) >= 0 && bd.compareTo(intMax) <= 0)) bd
+      else null
     } else java.math.BigDecimal.ZERO
 
   private[this] def longValueExact(x: java.math.BigDecimal): java.math.BigDecimal =
     if (x.signum != 0) {
       val s = x.scale
+      val p = x.precision
       var bd = x
-      if (s != 0) {
-        try bd = x.setScale(0, RoundingMode.UNNECESSARY)
-        catch {
-          case _: ArithmeticException => return null
-        }
-      }
-      val p = bd.precision
-      if (p > 19 || p == 19 && (bd.compareTo(longMin) < 0 || bd.compareTo(longMax) > 0)) return null
-      bd
+      // unsigned comparison of `p - s - 1` with 19: rejects values with no integer digits or more than 19 of them
+      if (p - s + Int.MaxValue < Int.MinValue + 19 && (s == 0 || {
+        bd = wholeOrNull(x)
+        bd ne null
+      }) && (p - s != 19 || bd.compareTo(longMin) >= 0 && bd.compareTo(longMax) <= 0)) bd
+      else null
     } else java.math.BigDecimal.ZERO
+
+  private[this] def wholeOrNull(x: java.math.BigDecimal): java.math.BigDecimal =
+    try x.setScale(0, RoundingMode.UNNECESSARY)
+    catch {
+      case _: ArithmeticException => null
+    }
 }
 
 /**

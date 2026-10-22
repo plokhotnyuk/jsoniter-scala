@@ -57,6 +57,16 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[Byte].decodeJson(Json.fromString("-129")) shouldBe Left(DecodingFailure("Byte", Nil))
       Decoder[Byte].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Byte", Nil))
       Decoder[Byte].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal("1e-1000000000"))) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal("1e+1000000000"))) shouldBe Left(DecodingFailure("Byte", Nil))
+      // Values with huge exponents above are rejected quickly by the JDK with "BigInteger would overflow supported range",
+      // but rescaling of values with smaller exponents is expensive: before the fix it took ~0.75 s for each of the
+      // following values, and ~22 s with ~40 MB allocated for `1e+100000000` and `1e-100000000`
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal("1e+10000000"))) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal("1e-10000000"))) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MinValue)))) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MaxValue)))) shouldBe Left(DecodingFailure("Byte", Nil))
+      Decoder[Byte].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.TEN.pow(1000), 1000)))).map(_.toInt) shouldBe Right(1)
       Decoder[Byte].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Byte", Nil))
       Decoder[Byte].decodeJson(Json.Null) shouldBe Left(DecodingFailure("Byte", Nil))
       forAll(arbitrary[Byte], minSuccessful(10000)) { x =>
@@ -94,6 +104,16 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[Short].decodeJson(Json.fromString("-32769")) shouldBe Left(DecodingFailure("Short", Nil))
       Decoder[Short].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Short", Nil))
       Decoder[Short].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal("1e-1000000000"))) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal("1e+1000000000"))) shouldBe Left(DecodingFailure("Short", Nil))
+      // Values with huge exponents above are rejected quickly by the JDK with "BigInteger would overflow supported range",
+      // but rescaling of values with smaller exponents is expensive: before the fix it took ~0.75 s for each of the
+      // following values, and ~22 s with ~40 MB allocated for `1e+100000000` and `1e-100000000`
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal("1e+10000000"))) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal("1e-10000000"))) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MinValue)))) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MaxValue)))) shouldBe Left(DecodingFailure("Short", Nil))
+      Decoder[Short].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.TEN.pow(1000), 1000)))).map(_.toInt) shouldBe Right(1)
       Decoder[Short].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Short", Nil))
       Decoder[Short].decodeJson(Json.Null) shouldBe Left(DecodingFailure("Short", Nil))
       forAll(arbitrary[Short], minSuccessful(10000)) { x =>
@@ -130,6 +150,16 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[Int].decodeJson(Json.fromString("-2147483649")) shouldBe Left(DecodingFailure("Int", Nil))
       Decoder[Int].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Int", Nil))
       Decoder[Int].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal("1e-1000000000"))) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal("1e+1000000000"))) shouldBe Left(DecodingFailure("Int", Nil))
+      // Values with huge exponents above are rejected quickly by the JDK with "BigInteger would overflow supported range",
+      // but rescaling of values with smaller exponents is expensive: before the fix it took ~0.75 s for each of the
+      // following values, and ~22 s with ~40 MB allocated for `1e+100000000` and `1e-100000000`
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal("1e+10000000"))) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal("1e-10000000"))) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MinValue)))) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MaxValue)))) shouldBe Left(DecodingFailure("Int", Nil))
+      Decoder[Int].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.TEN.pow(1000), 1000)))).map(_.toInt) shouldBe Right(1)
       Decoder[Int].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Int", Nil))
       Decoder[Int].decodeJson(Json.Null) shouldBe Left(DecodingFailure("Int", Nil))
       forAll(arbitrary[Int], minSuccessful(10000)) { x =>
@@ -163,6 +193,16 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[Long].decodeJson(Json.fromString("-9223372036854775809")) shouldBe Left(DecodingFailure("Long", Nil))
       Decoder[Long].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("Long", Nil))
       Decoder[Long].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal("1e-1000000000"))) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal("1e+1000000000"))) shouldBe Left(DecodingFailure("Long", Nil))
+      // Values with huge exponents above are rejected quickly by the JDK with "BigInteger would overflow supported range",
+      // but rescaling of values with smaller exponents is expensive: before the fix it took ~0.75 s for each of the
+      // following values, and ~22 s with ~40 MB allocated for `1e+100000000` and `1e-100000000`
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal("1e+10000000"))) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal("1e-10000000"))) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MinValue)))) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MaxValue)))) shouldBe Left(DecodingFailure("Long", Nil))
+      Decoder[Long].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.TEN.pow(1000), 1000)))).map(_.toInt) shouldBe Right(1)
       Decoder[Long].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("Long", Nil))
       Decoder[Long].decodeJson(Json.Null) shouldBe Left(DecodingFailure("Long", Nil))
       forAll(arbitrary[Long], minSuccessful(10000)) { x =>
@@ -226,10 +266,25 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[BigInt].decodeJson(Json.fromFloatOrNull(12345678.0f)).getOrElse(null) shouldBe BigInt(12345678)
       Decoder[BigInt].decodeJson(Json.fromDoubleOrNull(1234567890123456.0)).getOrElse(null) shouldBe BigInt(1234567890123456L)
       Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("12345678901234567890"))).getOrElse(null) shouldBe BigInt("12345678901234567890")
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("0e+1000000000"))).getOrElse(null) shouldBe BigInt(0)
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+262143"))).getOrElse(null) shouldBe BigInt(10).pow(262143)
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+262144"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("12300e-2"))).getOrElse(null) shouldBe BigInt(123)
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1.5"))) shouldBe Left(DecodingFailure("BigInt", Nil))
       Decoder[BigInt].decodeJson(Json.fromString("001")).getOrElse(null) shouldBe BigInt(1)
       Decoder[BigInt].decodeJson(Json.fromString("12345678901234567890")).getOrElse(null) shouldBe BigInt("12345678901234567890")
       Decoder[BigInt].decodeJson(Json.fromString(" 1")) shouldBe Left(DecodingFailure("BigInt", Nil))
       Decoder[BigInt].decodeJson(Json.fromString("1 ")) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e-1000000000"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+1000000000"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      // Values with huge exponents above are rejected quickly by the JDK with "BigInteger would overflow supported range",
+      // but rescaling of values with smaller exponents is expensive: before the fix it took ~0.75 s for each of the
+      // following values, and ~22 s with ~40 MB allocated for `1e+100000000` and `1e-100000000`
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+10000000"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e-10000000"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MinValue)))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MaxValue)))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.TEN.pow(1000), 1000)))).map(_.toInt) shouldBe Right(1)
       Decoder[BigInt].decodeJson(Json.fromBoolean(true)) shouldBe Left(DecodingFailure("BigInt", Nil))
       Decoder[BigInt].decodeJson(Json.Null) shouldBe Left(DecodingFailure("BigInt", Nil))
       forAll(arbitrary[BigInt], minSuccessful(10000)) { x =>
