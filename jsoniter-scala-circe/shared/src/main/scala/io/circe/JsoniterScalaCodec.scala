@@ -104,6 +104,8 @@ object JsoniterScalaCodec {
 
   private[this] final val bigIntMaxDigits = 262144 // the same limit as `io.circe.numbers.BiggerDecimal.MaxBigIntegerDigits`
 
+  private[this] val stringBigIntMaxDigits = java.math.BigInteger.valueOf(JsonReader.bigIntDigitsLimit - 1) // like `JsonReader` that rejects strings with `bigIntDigitsLimit` or more digits
+
   /**
    * Converts an ASCII byte array to a JSON string.
    *
@@ -150,9 +152,20 @@ object JsoniterScalaCodec {
             }
         }
         fail(c)
-      case s: JString => try new Right(fromString(s.value)) catch {
-        case e if NonFatal(e) => fail(c)
-      }
+      case s: JString =>
+        val v = s.value
+        if (hasFractionOrExponent(v)) {
+          if (!hasTooManyDigits(v, JsonReader.bigDecimalDigitsLimit)) {
+            val on = JsonNumber.fromString(v)
+            if (on ne None) {
+              val ox = on.get.toByte
+              if (ox ne None) return new Right(ox.get)
+            }
+          }
+          fail(c)
+        } else try new Right(fromString(v)) catch {
+          case e if NonFatal(e) => fail(c)
+        }
       case _ => fail(c)
     }
 
@@ -186,9 +199,20 @@ object JsoniterScalaCodec {
             }
         }
         fail(c)
-      case s: JString => try new Right(fromString(s.value)) catch {
-        case e if NonFatal(e) => fail(c)
-      }
+      case s: JString =>
+        val v = s.value
+        if (hasFractionOrExponent(v)) {
+          if (!hasTooManyDigits(v, JsonReader.bigDecimalDigitsLimit)) {
+            val on = JsonNumber.fromString(v)
+            if (on ne None) {
+              val ox = on.get.toShort
+              if (ox ne None) return new Right(ox.get)
+            }
+          }
+          fail(c)
+        } else try new Right(fromString(v)) catch {
+          case e if NonFatal(e) => fail(c)
+        }
       case _ => fail(c)
     }
 
@@ -218,9 +242,20 @@ object JsoniterScalaCodec {
             }
         }
         fail(c)
-      case s: JString => try new Right(fromString(s.value)) catch {
-        case e if NonFatal(e) => fail(c)
-      }
+      case s: JString =>
+        val v = s.value
+        if (hasFractionOrExponent(v)) {
+          if (!hasTooManyDigits(v, JsonReader.bigDecimalDigitsLimit)) {
+            val on = JsonNumber.fromString(v)
+            if (on ne None) {
+              val ox = on.get.toInt
+              if (ox ne None) return new Right(ox.get)
+            }
+          }
+          fail(c)
+        } else try new Right(fromString(v)) catch {
+          case e if NonFatal(e) => fail(c)
+        }
       case _ => fail(c)
     }
 
@@ -243,9 +278,20 @@ object JsoniterScalaCodec {
             if (ol ne None) return new Right(ol.get)
         }
         fail(c)
-      case s: JString => try new Right(fromString(s.value)) catch {
-        case e if NonFatal(e) => fail(c)
-      }
+      case s: JString =>
+        val v = s.value
+        if (hasFractionOrExponent(v)) {
+          if (!hasTooManyDigits(v, JsonReader.bigDecimalDigitsLimit)) {
+            val on = JsonNumber.fromString(v)
+            if (on ne None) {
+              val ox = on.get.toLong
+              if (ox ne None) return new Right(ox.get)
+            }
+          }
+          fail(c)
+        } else try new Right(fromString(v)) catch {
+          case e if NonFatal(e) => fail(c)
+        }
       case _ => fail(c)
     }
 
@@ -310,7 +356,18 @@ object JsoniterScalaCodec {
           if (obi ne None) new Right(obi.get)
           else fail(c)
       }
-      case s: JString => new Right(fromString(s.value))
+      case s: JString =>
+        val v = s.value
+        if (hasFractionOrExponent(v)) {
+          if (!hasTooManyDigits(v, JsonReader.bigIntDigitsLimit)) {
+            val on = JsonNumber.fromString(v)
+            if (on ne None) {
+              val obi = on.get.toBiggerDecimal.toBigIntegerWithMaxDigits(stringBigIntMaxDigits)
+              if (obi ne None) new Right(new BigInt(obi.get))
+              else fail(c)
+            } else fail(c)
+          } else fail(c)
+        } else new Right(fromString(v))
       case _ => fail(c)
     } catch {
       case e if NonFatal(e) => fail(c)
@@ -373,6 +430,30 @@ object JsoniterScalaCodec {
       }) && (p - s != 19 || bd.compareTo(longMin) >= 0 && bd.compareTo(longMax) <= 0)) bd
       else null
     } else java.math.BigDecimal.ZERO
+
+  private[this] def hasFractionOrExponent(s: String): Boolean = {
+    var i = s.length
+    while ({
+      i -= 1
+      i >= 0 && {
+        val ch = s.charAt(i)
+        ch != '.' && (ch | 0x20) != 'e'
+      }
+    }) ()
+    i >= 0
+  }
+
+  // checks the number of mantissa digits before parsing, like `JsonReader` does
+  private[this] def hasTooManyDigits(s: String, digitsLimit: Int): Boolean = {
+    val len = s.length
+    var digits, i = 0
+    while (i < len && digits < digitsLimit && {
+      val ch = s.charAt(i)
+      if (ch >= '0' && ch <= '9') digits += 1
+      (ch | 0x20) != 'e'
+    }) i += 1
+    digits >= digitsLimit
+  }
 
   private[this] def wholeOrNull(x: java.math.BigDecimal): java.math.BigDecimal =
     try x.setScale(0, RoundingMode.UNNECESSARY)
