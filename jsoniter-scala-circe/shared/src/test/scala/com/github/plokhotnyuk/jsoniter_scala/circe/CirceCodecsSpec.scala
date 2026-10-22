@@ -191,6 +191,9 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       forAll(arbitrary[Float], minSuccessful(10000)) { x =>
         Json.fromFloat(x).foreach(Decoder[Float].decodeJson(_).getOrElse(null) shouldBe x)
       }
+      Encoder[Float].apply(Float.NaN) shouldBe Json.Null
+      Encoder[Float].apply(Float.PositiveInfinity) shouldBe Json.Null
+      Encoder[Float].apply(Float.NegativeInfinity) shouldBe Json.Null
       forAll(arbitrary[Float], minSuccessful(10000)) { x =>
         Encoder[Float].apply(x) shouldBe Json.fromFloat(x).getOrElse(Json.Null)
       }
@@ -211,6 +214,9 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       forAll(arbitrary[Double], minSuccessful(10000)) { x =>
         Json.fromDouble(x).foreach(Decoder[Double].decodeJson(_).getOrElse(null) shouldBe x)
       }
+      Encoder[Double].apply(Double.NaN) shouldBe Json.Null
+      Encoder[Double].apply(Double.PositiveInfinity) shouldBe Json.Null
+      Encoder[Double].apply(Double.NegativeInfinity) shouldBe Json.Null
       forAll(arbitrary[Double], minSuccessful(10000)) { x =>
         Encoder[Double].apply(x) shouldBe Json.fromDouble(x).getOrElse(Json.Null)
       }

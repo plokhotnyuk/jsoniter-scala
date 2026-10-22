@@ -256,7 +256,9 @@ object JsoniterScalaCodec {
     }
 
     @inline
-    final def apply(x: Float): Json = new JNumber(new JsonFloat(x))
+    final def apply(x: Float): Json =
+      if (java.lang.Float.isFinite(x)) new JNumber(new JsonFloat(x))
+      else Null
 
     private[this] def fail(c: HCursor): Result[Float] = new Left(DecodingFailure("Float", c.history))
   }
@@ -271,7 +273,9 @@ object JsoniterScalaCodec {
     }
 
     @inline
-    final def apply(x: Double): Json = new JNumber(new JsonDouble(x))
+    final def apply(x: Double): Json =
+      if (java.lang.Double.isFinite(x)) new JNumber(new JsonDouble(x))
+      else Null
 
     private[this] def fail(c: HCursor): Result[Double] = new Left(DecodingFailure("Double", c.history))
   }
