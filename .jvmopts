@@ -1,4 +1,4 @@
--Xmx6g
+-Xmx8g
 -Xss4m
 -XX:+UseG1GC
 -XX:InitialCodeCacheSize=512m
