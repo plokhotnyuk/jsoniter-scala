@@ -977,10 +977,6 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     case AppliedType(ntTpe, _) => ntTpe.dealias.typeSymbol.fullName == "scala.NamedTuple$.NamedTuple"
     case _ => false
 
-  private def valueClassValueSymbol(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers.head
-
-  private def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(valueClassValueSymbol(tpe)).dealias
-
   private def isNonAbstractScalaClass(tpe: TypeRepr): Boolean = tpe.classSymbol.fold(false) { sym =>
     val flags = sym.flags
     !(flags.is(Flags.Abstract) || flags.is(Flags.JavaDefined) || flags.is(Flags.Trait))
@@ -1667,6 +1663,25 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) && isNonAbstractScalaClass(tpe) &&
     (tpe <:< anyValTpe || cfg.inlineOneValueClasses && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1)
 
+  // Inlined one value classes can have transient fields with default values, so for them the only non-transient field
+  // is used to get the value, and transient fields are initialized by default values during construction
+  private def valueClassValueSymbol(tpe: TypeRepr): Symbol =
+    if (tpe <:< anyValTpe) tpe.typeSymbol.fieldMembers.head
+    else getClassInfo(tpe).fields.head.getterOrField
+
+  private def valueClassValueType(tpe: TypeRepr): TypeRepr =
+    if (tpe <:< anyValTpe) tpe.memberType(valueClassValueSymbol(tpe)).dealias
+    else getClassInfo(tpe).fields.head.resolvedTpe
+
+  private def genNewValueClass(tpe: TypeRepr, value: Term): Term =
+    val classInfo = getClassInfo(tpe)
+    classInfo.genNew(classInfo.paramLists.map(_.map { fieldInfo =>
+      if (fieldInfo.isTransient) {
+        fieldInfo.defaultValue
+          .getOrElse(fail(s"Transient field '${fieldInfo.symbol.name}' in class '${tpe.show}' should have default value."))
+      } else value
+    }))
+
   private def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = {
     def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
                              binding: Map[String, TypeRepr]): Map[String, TypeRepr] = {
@@ -1806,7 +1821,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     }) {
       val vtpe = valueClassValueType(tpe)
       vtpe.asType match
-        case '[vt] => getClassInfo(tpe).genNew(List(List(genReadKey[vt](vtpe :: types, in).asTerm))).asExpr
+        case '[vt] => genNewValueClass(tpe, genReadKey[vt](vtpe :: types, in).asTerm).asExpr
     } else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
       if (cfg.useScalaEnumValueId) '{
         val i = $in.readKeyAsInt()
@@ -2643,7 +2658,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     }) Ref(defn.NoneModule).asExpr
     else if (isValueClass(tpe)) {
       val tpe1 = valueClassValueType(tpe)
-      tpe1.asType match { case'[t1] => getClassInfo(tpe).genNew(List(List(genNullValue[t1](tpe1 :: types).asTerm))).asExpr }
+      tpe1.asType match { case'[t1] => genNewValueClass(tpe, genNullValue[t1](tpe1 :: types).asTerm).asExpr }
     } else if (isCollection(tpe)) {
       if (tpe <:< arrayOfWildcardTpe) withNullValueFor(tpe) {
         typeArg1(tpe).asType match { case '[t1] => genNewArray[t1](Expr(0)) }
@@ -3121,7 +3136,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         case '[t1] =>
           val types1 = tpe1 :: types
           val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
-          getClassInfo(tpe).genNew(List(List(readVal.asTerm))).asExpr
+          genNewValueClass(tpe, readVal.asTerm).asExpr
     } else {
       val isColl = isCollection(tpe)
       val methodKey = new DecoderMethodKey(tpe, isColl & isStringified, useDiscriminator)

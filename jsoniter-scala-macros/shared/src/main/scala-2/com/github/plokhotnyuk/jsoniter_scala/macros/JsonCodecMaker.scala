@@ -735,10 +735,6 @@ object JsonCodecMaker {
         else mtpe.substituteTypes(tpeTypeParams, typeArgs(tpe))
       }
 
-      def valueClassValueSymbol(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
-
-      def valueClassValueType(tpe: Type): Type = resolveConcreteType(tpe, valueClassValueSymbol(tpe).returnType.dealias)
-
       def isNonAbstractScalaClass(tpe: Type): Boolean =
         tpe.typeSymbol.isClass && !tpe.typeSymbol.isAbstract && !tpe.typeSymbol.isJava
 
@@ -1349,6 +1345,20 @@ object JsonCodecMaker {
       def isValueClass(tpe: Type): Boolean = !isConstType(tpe) && isNonAbstractScalaClass(tpe) &&
         (tpe.typeSymbol.asClass.isDerivedValueClass || cfg.inlineOneValueClasses && !isCollection(tpe) && getClassInfo(tpe).fields.size == 1)
 
+      // Inlined one value classes can have transient fields with default values, so for them the only non-transient
+      // field is used to get the value, and transient fields are initialized by default values during construction
+      def valueClassValueSymbol(tpe: Type): MethodSymbol =
+        if (tpe.typeSymbol.asClass.isDerivedValueClass) tpe.decls.head.asMethod
+        else getClassInfo(tpe).fields.head.getter
+
+      def valueClassValueType(tpe: Type): Type =
+        if (tpe.typeSymbol.asClass.isDerivedValueClass) resolveConcreteType(tpe, valueClassValueSymbol(tpe).returnType.dealias)
+        else getClassInfo(tpe).fields.head.resolvedTpe
+
+      def genNewValueClass(tpe: Type, value: Tree): Tree =
+        if (tpe.typeSymbol.asClass.isDerivedValueClass) q"new $tpe($value)"
+        else q"new $tpe(...${getClassInfo(tpe).paramLists.map(_.map(fieldInfo => q"${fieldInfo.symbol.name} = $value"))})"
+
       def adtLeafClasses(adtBaseTpe: Type): Seq[Type] = {
         val seen = new mutable.HashSet[Type]
         val subTypes = new mutable.ListBuffer[Type]
@@ -1454,7 +1464,7 @@ object JsonCodecMaker {
         else if ({
           checkRecursionInTypes(types)
           isValueClass(tpe)
-        }) q"new $tpe(${genReadKey(valueClassValueType(tpe) :: types)})"
+        }) genNewValueClass(tpe, genReadKey(valueClassValueType(tpe) :: types))
         else if (tpe <:< typeOf[Enumeration#Value]) {
           val el = withScalaEnumLookupFor(tpe)
           if (cfg.useScalaEnumValueId) {
@@ -2114,7 +2124,7 @@ object JsonCodecMaker {
           checkRecursionInTypes(types)
           isOption(tpe, types.tail)
         }) q"_root_.scala.None"
-        else if (isValueClass(tpe)) q"new $tpe(${genNullValue(valueClassValueType(tpe) :: types)})"
+        else if (isValueClass(tpe)) genNewValueClass(tpe, genNullValue(valueClassValueType(tpe) :: types))
         else if (isCollection(tpe)) {
           if (tpe <:< typeOf[mutable.BitSet]) q"new _root_.scala.collection.mutable.BitSet"
           else if (tpe <:< typeOf[collection.BitSet]) withNullValueFor(tpe)(q"_root_.scala.collection.immutable.BitSet.empty")
@@ -2375,7 +2385,7 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           val types1 = tpe1 :: types
-          q"new $tpe(${genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)})"
+          genNewValueClass(tpe, genReadVal(types1, genNullValue(types1), isStringified, EmptyTree))
         } else {
           val isColl = isCollection(tpe)
           val methodKey = new DecoderMethodKey(tpe, isColl & isStringified, discriminator)

@@ -1591,6 +1591,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(make[OneValueClassTypes](CodecMakerConfig.withInlineOneValueClasses(true)),
         OneValueClassTypes(UserId("123abc"), OrderId(123123)), """{"uid":"123abc","oid":123123}""")
+
+      case class TransientUserId(@transient source: String = "unknown", value: String)
+
+      case class TransientOrderId(@transient source: Int = -1, value: Int)
+
+      case class TransientOneValueClassTypes(uid: TransientUserId, oid: TransientOrderId)
+
+      verifySerDeser(make[TransientOneValueClassTypes](CodecMakerConfig.withInlineOneValueClasses(true)),
+        TransientOneValueClassTypes(TransientUserId(value = "123abc"), TransientOrderId(value = 123123)),
+        """{"uid":"123abc","oid":123123}""")
+      verifySerDeser(make[Map[TransientUserId, TransientOrderId]](CodecMakerConfig.withInlineOneValueClasses(true)),
+        Map(TransientUserId(value = "123abc") -> TransientOrderId(value = 123123)), """{"123abc":123123}""")
     }
     "serialize and deserialize top-level value one value classes when turned on inlining of one value classes" in {
       case class UserId(value: String)
