@@ -2455,11 +2455,20 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     if (named ne Nil) {
       if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '${tpe.show}'.")
       namedValueOpt(named.headOption, tpe).get
-    } else cfg.adtLeafClassNameMapper({
-      val name = symbol.fullName
-      if (symbol.flags.is(Flags.Module)) name.substring(0, name.length - 1)
-      else name
-    }).getOrElse(fail(s"Discriminator is not defined for ${tpe.show}"))
+    } else cfg.adtLeafClassNameMapper(fullClassName(symbol)).getOrElse(fail(s"Discriminator is not defined for ${tpe.show}"))
+
+  // Full names of classes and objects that are passed to `adtLeafClassNameMapper`, e.g. `pkg.Outer.Inner`. They are
+  // built like in Scala 2: without `$` suffixes of objects and names of non-class owners (e.g. methods for local classes)
+  private def fullClassName(symbol: Symbol): String =
+    var owner = symbol.owner
+    while (!owner.isClassDef && !owner.isPackageDef) owner = owner.owner
+    var name = symbol.name
+    if (symbol.isClassDef && symbol.flags.is(Flags.Module) && name.endsWith("$")) name = name.substring(0, name.length - 1)
+    if (owner.isPackageDef) {
+      val packageName = owner.fullName
+      if (packageName == "<root>" || packageName == "<empty>") name
+      else s"$packageName.$name"
+    } else s"${fullClassName(owner)}.$name"
 
   private def checkFieldNameCollisions(tpe: TypeRepr, names: Seq[String]): Unit =
     val collisions = duplicated(names)

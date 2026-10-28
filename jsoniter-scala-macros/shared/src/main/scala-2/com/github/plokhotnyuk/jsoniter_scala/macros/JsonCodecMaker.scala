@@ -2006,9 +2006,11 @@ object JsonCodecMaker {
       def discriminatorValue(tpe: Type): String = {
         val named = tpe.typeSymbol.annotations.filter(_.tree.tpe =:= typeOf[named])
         if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$tpe'.")
-        namedValueOpt(named.headOption, tpe)
-          .getOrElse(cfg.adtLeafClassNameMapper(NameTransformer.decode(tpe.typeSymbol.fullName)))
+        namedValueOpt(named.headOption, tpe).getOrElse(cfg.adtLeafClassNameMapper(fullClassName(tpe.typeSymbol)))
       }
+
+      // Full names of classes and objects that are passed to `adtLeafClassNameMapper`, e.g. `pkg.Outer.Inner`
+      def fullClassName(symbol: Symbol): String = NameTransformer.decode(symbol.fullName)
 
       def checkFieldNameCollisions(tpe: Type, names: Seq[String]): Unit = {
         val collisions = duplicated(names)

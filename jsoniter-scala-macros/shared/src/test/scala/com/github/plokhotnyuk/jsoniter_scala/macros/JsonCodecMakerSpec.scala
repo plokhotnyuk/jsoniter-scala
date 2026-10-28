@@ -301,6 +301,16 @@ case class CCC(a: Int, b: String) extends Inner
 
 case object DDD extends AdtBase
 
+object NestedAdts {
+  sealed trait Base extends Product with Serializable
+
+  object Leafs {
+    case class Leaf(a: Int) extends Base
+
+    case object LeafObj extends Base
+  }
+}
+
 sealed trait GADT2[A] extends Product with Serializable
 
 object GADT2 {
@@ -2875,6 +2885,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         case "B" => "Y"
       }).withSkipUnexpectedFields(false)),
       List(A(B("x")), B("x")), """[{"type":"X","b":{"c":"x"}},{"type":"Y","c":"x"}]""")
+      verifySerDeser(make[List[NestedAdts.Base]](CodecMakerConfig.withAdtLeafClassNameMapper(x => x)),
+        List(NestedAdts.Leafs.Leaf(1), NestedAdts.Leafs.LeafObj),
+        """[{"type":"com.github.plokhotnyuk.jsoniter_scala.macros.NestedAdts.Leafs.Leaf","a":1},{"type":"com.github.plokhotnyuk.jsoniter_scala.macros.NestedAdts.Leafs.LeafObj"}]""")
     }
     "serialize and deserialize ADTs using custom values of the discriminator field set by the named annotation" in {
       sealed abstract class Base extends Product with Serializable

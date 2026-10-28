@@ -122,7 +122,7 @@ class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig
         .withAdtLeafClassNameMapper(x => x).withDiscriminatorFieldName(None)),
         List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green),
-        """["com.github.plokhotnyuk.jsoniter_scala.macros.TrafficLight$.Red","com.github.plokhotnyuk.jsoniter_scala.macros.TrafficLight$.Yellow","com.github.plokhotnyuk.jsoniter_scala.macros.TrafficLight$.Green"]""")
+        """["com.github.plokhotnyuk.jsoniter_scala.macros.TrafficLight.Red","com.github.plokhotnyuk.jsoniter_scala.macros.TrafficLight.Yellow","com.github.plokhotnyuk.jsoniter_scala.macros.TrafficLight.Green"]""")
     }
     "serialize and deserialize Scala3 enums that extend java.lang.Enum" in {
       verifySerDeser(make[List[Java]],
