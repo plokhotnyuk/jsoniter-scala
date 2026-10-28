@@ -47,6 +47,18 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         _root_.scala.collection.mutable.PriorityQueue[Int](2, 1), """[2,1]""")
       verifyDeserByCheck(make[_root_.scala.collection.mutable.PriorityQueue[Int]],
         """[2,1]""", (x: _root_.scala.collection.mutable.PriorityQueue[Int]) => x.toList shouldBe List(2, 1))
+      verifySerDeser(make[_root_.scala.collection.immutable.ArraySeq[Int]],
+        _root_.scala.collection.immutable.ArraySeq[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[_root_.scala.collection.immutable.ArraySeq[Int]],
+        _root_.scala.collection.immutable.ArraySeq.untagged[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[_root_.scala.collection.immutable.ArraySeq[String]],
+        _root_.scala.collection.immutable.ArraySeq.untagged[String]("VVV", "WWW"), """["VVV","WWW"]""")
+      verifySerDeser(make[_root_.scala.collection.mutable.ArraySeq[Int]],
+        _root_.scala.collection.mutable.ArraySeq[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[_root_.scala.collection.mutable.ArraySeq[Int]],
+        _root_.scala.collection.mutable.ArraySeq.untagged[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[_root_.scala.collection.mutable.ArraySeq[String]],
+        _root_.scala.collection.mutable.ArraySeq.untagged[String]("VVV", "WWW"), """["VVV","WWW"]""")
     }
   }
 }

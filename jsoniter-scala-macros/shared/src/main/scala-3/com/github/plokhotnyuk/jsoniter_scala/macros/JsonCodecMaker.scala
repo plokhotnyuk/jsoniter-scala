@@ -926,6 +926,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private val newArrayOfAny = TypeApply(newArray, List(Inferred(anyTpe)))
   private val fromIArrayMethod = Select.unique(Ref(Symbol.requiredModule("scala.runtime.TupleXXL")), "fromIArray")
   private val asInstanceOfMethod = anyTpe.typeSymbol.declaredMethod("asInstanceOf").head
+  private val isInstanceOfMethod = anyTpe.typeSymbol.declaredMethod("isInstanceOf").head
   private val inferredKeyCodecs = new mutable.HashMap[TypeRepr, Option[Expr[JsonKeyCodec[?]]]]
   private val inferredValueCodecs = new mutable.HashMap[TypeRepr, Option[Expr[JsonValueCodec[?]]]]
   private val inferredOrderings = new mutable.HashMap[TypeRepr, Term]
@@ -3812,32 +3813,39 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           tpe1.asType match
             case '[t1] =>
               val types1 = tpe1 :: types
+
+              // Array sequences can be backed by arrays of other types than `Array[t1]` (e.g. `Array[AnyRef]` for ones
+              // created by `untagged` factories or by `map` calls), so the underlying array is iterated directly only
+              // when it has the expected type, otherwise elements are accessed by indexes of the sequence
+              def genWriteArraySeq(tx: Expr[collection.IndexedSeq[t1]], array: Expr[Array[?]]): Expr[Unit] = '{
+                $out.writeArrayStart()
+                val a = $array
+                if (${TypeApply(Select('a.asTerm, isInstanceOfMethod), List(Inferred(AnnotatedType(
+                    defn.ArrayClass.typeRef.appliedTo(tpe1), '{ new scala.unchecked }.asTerm)))).asExpr.asInstanceOf[Expr[Boolean]]}) {
+                  val xs = a.asInstanceOf[Array[t1]]
+                  val l = xs.length
+                  var i = 0
+                  while (i < l) {
+                    ${genWriteVal('{ xs(i) }, types1, isStringified, None, out)}
+                    i += 1
+                  }
+                } else {
+                  val l = $tx.length
+                  var i = 0
+                  while (i < l) {
+                    ${genWriteVal('{ $tx(i) }, types1, isStringified, None, out)}
+                    i += 1
+                  }
+                }
+                $out.writeArrayEnd()
+              }
+
               if (tpe <:< TypeRepr.of[immutable.ArraySeq[?]]) {
                 val tx = x.asInstanceOf[Expr[immutable.ArraySeq[t1]]]
-                '{
-                  $out.writeArrayStart()
-                  val xs = $tx.unsafeArray.asInstanceOf[Array[t1]]
-                  val l = xs.length
-                  var i = 0
-                  while (i < l) {
-                    ${genWriteVal('{ xs(i) }, types1, isStringified, None, out)}
-                    i += 1
-                  }
-                  $out.writeArrayEnd()
-                }
+                genWriteArraySeq(tx, '{ $tx.unsafeArray })
               } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]]) {
                 val tx = x.asInstanceOf[Expr[mutable.ArraySeq[t1]]]
-                '{
-                  $out.writeArrayStart()
-                  val xs = $tx.array.asInstanceOf[Array[t1]]
-                  val l = xs.length
-                  var i = 0
-                  while (i < l) {
-                    ${genWriteVal('{ xs(i) }, types1, isStringified, None, out)}
-                    i += 1
-                  }
-                  $out.writeArrayEnd()
-                }
+                genWriteArraySeq(tx, '{ $tx.array })
               } else if (isIArray(tpe)) {
                 val tx = x.asInstanceOf[Expr[IArray[t1]]]
                 '{

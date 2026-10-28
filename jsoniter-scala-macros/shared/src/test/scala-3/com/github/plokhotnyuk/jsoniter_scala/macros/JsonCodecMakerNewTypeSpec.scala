@@ -200,6 +200,18 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         collection.mutable.PriorityQueue[Int](2,1), """[2,1]""")
       verifyDeserByCheck(make[collection.mutable.PriorityQueue[Int]],
         """[2,1]""", (x: collection.mutable.PriorityQueue[Int]) => x.toList shouldBe List(2, 1))
+      verifySerDeser(make[collection.immutable.ArraySeq[Int]],
+        collection.immutable.ArraySeq[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[collection.immutable.ArraySeq[Int]],
+        collection.immutable.ArraySeq.untagged[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[collection.immutable.ArraySeq[String]],
+        collection.immutable.ArraySeq.untagged[String]("VVV", "WWW"), """["VVV","WWW"]""")
+      verifySerDeser(make[collection.mutable.ArraySeq[Int]],
+        collection.mutable.ArraySeq[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[collection.mutable.ArraySeq[Int]],
+        collection.mutable.ArraySeq.untagged[Int](1, 2), """[1,2]""")
+      verifySerDeser(make[collection.mutable.ArraySeq[String]],
+        collection.mutable.ArraySeq.untagged[String]("VVV", "WWW"), """["VVV","WWW"]""")
     }
     "don't generate codecs for union types with proper compilation error" in {
       assert(intercept[TestFailedException](assertCompiles {

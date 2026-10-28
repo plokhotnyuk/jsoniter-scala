@@ -2845,27 +2845,38 @@ object JsonCodecMaker {
             if (tpe <:< typeOf[Array[?]] || isImmutableArraySeq(tpe) || isMutableArraySeq(tpe)) withEncoderFor(methodKey, m) {
               val tpe1 = typeArg1(tpe)
               val types1 = tpe1 :: types
-              if (isImmutableArraySeq(tpe)) {
+
+              // Array sequences can be backed by arrays of other types than `Array[$tpe1]` (e.g. `Array[AnyRef]` for
+              // ones created by `untagged` factories or by `map` calls), so the underlying array is iterated directly
+              // only when it has the expected type, otherwise elements are accessed by indexes of the sequence
+              def genWriteArraySeq(array: Tree): Tree = {
+                val arrayTpt = tq"_root_.scala.Array[$tpe1] @_root_.scala.unchecked"
+                val writeUnderlyingArray = CaseDef(Bind(TermName("xs"), Typed(Ident(c.universe.termNames.WILDCARD), arrayTpt)),
+                  EmptyTree,
+                  q"""val l = xs.length
+                      var i = 0
+                      while (i < l) {
+                        ..${genWriteVal(q"xs(i)", types1, isStringified, EmptyTree)}
+                        i += 1
+                      }""")
+                val writeByIndexes =
+                  cq"""_ =>
+                        val l = x.length
+                        var i = 0
+                        while (i < l) {
+                          ..${genWriteVal(q"x(i)", types1, isStringified, EmptyTree)}
+                          i += 1
+                        }"""
                 q"""out.writeArrayStart()
-                    val xs = x.unsafeArray.asInstanceOf[Array[$tpe1]]
-                    val l = xs.length
-                    var i = 0
-                    while (i < l) {
-                      ..${genWriteVal(q"xs(i)", types1, isStringified, EmptyTree)}
-                      i += 1
+                    ($array: _root_.scala.Any) match {
+                      case ..${List(writeUnderlyingArray, writeByIndexes)}
                     }
                     out.writeArrayEnd()"""
-              } else if (isMutableArraySeq(tpe)) {
-                q"""out.writeArrayStart()
-                    val xs = x.array.asInstanceOf[Array[$tpe1]]
-                    val l = xs.length
-                    var i = 0
-                    while (i < l) {
-                      ..${genWriteVal(q"xs(i)", types1, isStringified, EmptyTree)}
-                      i += 1
-                    }
-                    out.writeArrayEnd()"""
-              } else {
+              }
+
+              if (isImmutableArraySeq(tpe)) genWriteArraySeq(q"x.unsafeArray")
+              else if (isMutableArraySeq(tpe)) genWriteArraySeq(q"x.array")
+              else {
                 q"""out.writeArrayStart()
                     val l = x.length
                     var i = 0
