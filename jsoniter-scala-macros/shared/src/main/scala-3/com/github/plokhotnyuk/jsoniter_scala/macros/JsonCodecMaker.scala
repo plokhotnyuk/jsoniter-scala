@@ -3210,10 +3210,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           tpe1.asType match
             case '[t1] =>
               val tDefault = default.asInstanceOf[Expr[mutable.LongMap[t1]]]
-              val newBuilder = '{
-                if ($tDefault.isEmpty) $tDefault
-                else ${scalaCollectionEmpty(tpe, tpe1).asExpr.asInstanceOf[Expr[mutable.LongMap[t1]]]}
-              }
+              val newBuilder = scalaCollectionEmpty(tpe, tpe1).asExpr.asInstanceOf[Expr[mutable.LongMap[t1]]]
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
               (if (cfg.mapAsArray) {
                 val readKey =
@@ -3246,14 +3243,10 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val types2 = tpe2 :: types
               val tDefault = default.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
               val emptyMapNoArgs = scalaMapEmpty(tpe, tpe1, tpe2)
-              val tEmpty =
+              val newBuilder =
                 (if (tpe <:< TypeRepr.of[mutable.SortedMap[?, ?]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) {
                   Apply(emptyMapNoArgs, List(summonOrdering(tpe1)))
                 } else emptyMapNoArgs).asExpr.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
-              val newBuilder = '{
-                if ($tDefault.isEmpty) $tDefault
-                else $tEmpty
-              }.asInstanceOf[Expr[T & mutable.Map[t1, t2]]]
               val readVal2 = genReadVal(types2, genNullValue[t2](types2), isStringified, false, in)
               (if (cfg.mapAsArray) {
                 val readVal1 = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
@@ -3322,10 +3315,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val emptySet =
                 (if (tpe <:< TypeRepr.of[mutable.SortedSet[?]]) Apply(emptySetNoOrdering, List(summonOrdering(tpe1)))
                 else emptySetNoOrdering).asExpr.asInstanceOf[Expr[T & mutable.Set[t1]]]
-              genReadSet('{
-                if ($tDefault.isEmpty) $tDefault
-                else $emptySet
-              }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, identity, in).asInstanceOf[Expr[T]]
+              genReadSet(emptySet, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, identity, in).asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[collection.Set[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -3372,10 +3362,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           tpe1.asType match
             case '[t1] =>
               val tDefault = default.asInstanceOf[Expr[mutable.ListBuffer[t1]]]
-              genReadCollection('{
-                if ($tDefault.isEmpty) $tDefault
-                else new mutable.ListBuffer[t1]
-              }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, identity, in).asInstanceOf[Expr[T]]
+              genReadCollection('{ new mutable.ListBuffer[t1] }, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), tDefault, identity, in).asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[Vector[?]] || tpe.typeSymbol == TypeRepr.of[IndexedSeq[?]].typeSymbol) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -3393,11 +3380,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 } else if (tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
                   Apply(emptyCollectionNoArgs, List(summonOrdering(tpe1)))
                 } else emptyCollectionNoArgs).asExpr.asInstanceOf[Expr[T & mutable.Growable[t1]]]
-              genReadCollection('{
-                if (${default.asInstanceOf[Expr[Iterable[?]]]}.isEmpty) $default
-                else $emptyCollection
-              }.asInstanceOf[Expr[T & mutable.Growable[t1]]],
-                x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, identity, in).asInstanceOf[Expr[T]]
+              genReadCollection(emptyCollection, x => genReadValForGrowable(tpe1 :: types, isStringified, x, in), default, identity, in).asInstanceOf[Expr[T]]
         } else if (tpe <:< iterableOfWildcardTpe || tpe <:< iteratorOfWildcardTpe) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match

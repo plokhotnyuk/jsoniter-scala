@@ -268,6 +268,21 @@ case class Defaults2(
   bs: collection.immutable.BitSet = collection.immutable.BitSet(1),
   mbs: collection.mutable.BitSet = collection.mutable.BitSet(1))
 
+object SharedEmptyMutables {
+  val ab: collection.mutable.ArrayBuffer[Int] = collection.mutable.ArrayBuffer.empty
+  val lb: collection.mutable.ListBuffer[Int] = collection.mutable.ListBuffer.empty
+  val mm: collection.mutable.Map[String, Int] = collection.mutable.Map.empty
+  val lm: collection.mutable.LongMap[Int] = collection.mutable.LongMap.empty
+  val ms: collection.mutable.Set[Int] = collection.mutable.Set.empty
+}
+
+case class SharedEmptyMutableDefaults(
+  ab: collection.mutable.ArrayBuffer[Int] = SharedEmptyMutables.ab,
+  lb: collection.mutable.ListBuffer[Int] = SharedEmptyMutables.lb,
+  mm: collection.mutable.Map[String, Int] = SharedEmptyMutables.mm,
+  lm: collection.mutable.LongMap[Int] = SharedEmptyMutables.lm,
+  ms: collection.mutable.Set[Int] = SharedEmptyMutables.ms)
+
 case class PolymorphicDefaults[A, B](i: A = 1, cs: List[B] = Nil)
 
 case class IterablesWithDefaults(l: List[Int] = _root_.scala.collection.immutable.Nil, s: Set[Option[String]] = Set())
@@ -2491,6 +2506,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"l":[],"ab":[],"m":{},"mm":{},"im":{},"lm":{},"s":[],"ms":[],"bs":[],"mbs":[]}""")
       verifySerDeser(NestedDefaults.userCodec, NestedDefaults.User("John"), """{"name":"John"}""")
       verifySerDeser(NestedDefaults.boxCodec, NestedDefaults.Box(1), """{"a":1}""")
+      verifyDeser(make[SharedEmptyMutableDefaults],
+        SharedEmptyMutableDefaults(_root_.scala.collection.mutable.ArrayBuffer(1),
+          _root_.scala.collection.mutable.ListBuffer(2), _root_.scala.collection.mutable.Map("VVV" -> 3),
+          _root_.scala.collection.mutable.LongMap(4L -> 5), _root_.scala.collection.mutable.Set(6)),
+        """{"ab":[1],"lb":[2],"mm":{"VVV":3},"lm":{"4":5},"ms":[6]}""")
+      SharedEmptyMutables.ab shouldBe empty
+      SharedEmptyMutables.lb shouldBe empty
+      SharedEmptyMutables.mm shouldBe empty
+      SharedEmptyMutables.lm shouldBe empty
+      SharedEmptyMutables.ms shouldBe empty
     }
     "deserialize new default values of case classes without memorization" in {
       case class Defaults3(u: UUID = new UUID(ThreadLocalRandom.current().nextLong(), ThreadLocalRandom.current().nextLong()),
