@@ -2680,6 +2680,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[CCC](CodecMakerConfig.withAlwaysEmitDiscriminator(true)), CCC(1, "VVV"),
         """{"type":"CCC","a":1,"b":"VVV"}""")
       verifySerDeser(make[DDD.type](CodecMakerConfig.withAlwaysEmitDiscriminator(true)), DDD, """{"type":"DDD"}""")
+      val codecOfAAA = make[AAA](CodecMakerConfig.withAlwaysEmitDiscriminator(true).withSkipUnexpectedFields(false))
+      verifySerDeser(codecOfAAA, AAA(1), """{"type":"AAA","a":1}""")
+      verifyDeser(codecOfAAA, AAA(1), """{"a":1}""")
+      verifyDeserError(codecOfAAA, """{"type":"AAA","type":"AAA","a":1}""", """duplicated field "type", offset: 0x00000014""")
+      verifySerDeser(make[CCC](CodecMakerConfig.withAlwaysEmitDiscriminator(true).withSkipUnexpectedFields(false)),
+        CCC(1, "VVV"), """{"type":"CCC","a":1,"b":"VVV"}""")
+      verifySerDeser(make[DDD.type](CodecMakerConfig.withAlwaysEmitDiscriminator(true).withSkipUnexpectedFields(false)),
+        DDD, """{"type":"DDD"}""")
     }
     "don't generate codecs for CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None).withAlwaysEmitDiscriminator(true) compile-time configuration" in {
       assert(intercept[TestFailedException](assertCompiles {

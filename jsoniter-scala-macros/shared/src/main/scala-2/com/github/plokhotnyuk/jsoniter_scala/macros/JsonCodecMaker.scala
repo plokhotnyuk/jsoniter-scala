@@ -2713,8 +2713,14 @@ object JsonCodecMaker {
                       }"""
                 }
             }
-          } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
-            genReadNonAbstractScalaClass(types, discriminator)
+          } else if (isNonAbstractScalaClass(tpe)) {
+            // Skip discriminators that are serialized for ADT leaf classes when `alwaysEmitDiscriminator` is turned on
+            val discr =
+              if (discriminator.isEmpty && cfg.alwaysEmitDiscriminator && hasSealedParent(tpe)) skipDiscriminatorField
+              else discriminator
+            withDecoderFor(new DecoderMethodKey(tpe, false, discr), default) {
+              genReadNonAbstractScalaClass(types, discr)
+            }
           } else if (isConstType(tpe)) genReadConstType(tpe, isStringified)
           else cannotFindValueCodecError(tpe)
         }

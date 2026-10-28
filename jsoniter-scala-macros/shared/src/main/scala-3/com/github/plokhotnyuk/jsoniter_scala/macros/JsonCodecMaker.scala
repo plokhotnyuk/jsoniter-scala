@@ -3488,8 +3488,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         }.asInstanceOf[Expr[T]]
       } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
         genReadSealedClass(types, in, default, isStringified)
-      } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
-        genReadNonAbstractScalaClass(getClassInfo(tpe), types, useDiscriminator, in, default)
+      } else if (isNonAbstractScalaClass(tpe)) {
+        // Skip discriminators that are serialized for ADT leaf classes when `alwaysEmitDiscriminator` is turned on
+        val useDiscr = useDiscriminator || cfg.alwaysEmitDiscriminator && hasSealedParent(tpe)
+        withDecoderFor(new DecoderMethodKey(tpe, false, useDiscr), default, in) { (in, default) =>
+          genReadNonAbstractScalaClass(getClassInfo(tpe), types, useDiscr, in, default)
+        }
       } else if (isOpaque(tpe)) {
         val sTpe = opaqueDealias(tpe)
         sTpe.asType match
