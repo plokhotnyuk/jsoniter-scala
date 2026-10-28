@@ -1613,6 +1613,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"uid":"123abc","oid":123123}""")
       verifySerDeser(make[Map[TransientUserId, TransientOrderId]](CodecMakerConfig.withInlineOneValueClasses(true)),
         Map(TransientUserId(value = "123abc") -> TransientOrderId(value = 123123)), """{"123abc":123123}""")
+
+      case class DependentTransientUserId(value: String)(@transient val length: Int = value.length)
+
+      verifyDeserByCheck(make[Map[DependentTransientUserId, List[DependentTransientUserId]]](CodecMakerConfig.withInlineOneValueClasses(true)),
+        """{"123abc":["1234"]}""", (x: Map[DependentTransientUserId, List[DependentTransientUserId]]) => {
+          x.head._1.length shouldBe 6
+          x.head._2.head.length shouldBe 4
+        })
     }
     "serialize and deserialize top-level value one value classes when turned on inlining of one value classes" in {
       case class UserId(value: String)
@@ -3519,16 +3527,44 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(makeWithRequiredDefaultFields[MultiListOfArgs],
         new MultiListOfArgs()(2)("VVV"), """{"i":1,"l":2,"s":"VVV"}""")
     }
-    "don't generate codecs for case classes with default values in non-first parameter lists of a primary constructor" in {
-      val expectedError = "Default values in non-first parameter lists of the primary constructor are not supported for 'l' of"
-      assert(intercept[TestFailedException](assertCompiles {
-        """case class MultiListOfArgs(i: Int = 1)(val l: Long = 2L)
-          |JsonCodecMaker.make[MultiListOfArgs]""".stripMargin
-      }).getMessage.contains(expectedError))
-      assert(intercept[TestFailedException](assertCompiles {
-        """case class MultiListOfArgs(i: Int)(val l: Long = 2L)
-          |JsonCodecMaker.make[MultiListOfArgs]""".stripMargin
-      }).getMessage.contains(expectedError))
+    "generate codecs for case classes with default values in non-first parameter lists of a primary constructor that depend on values of preceding parameters" in {
+      case class MultiListOfArgs(i: Int = 1)(val l: Long = i - 1L)(var s: String = s"$i-$l")
+
+      def check(i: Int, l: Long, s: String): MultiListOfArgs => _root_.scala.Unit = x => {
+        x.i shouldBe i
+        x.l shouldBe l
+        x.s shouldBe s
+      }
+
+      val codec1 = make[MultiListOfArgs]
+      verifyDeserByCheck(codec1, "{}", check(1, 0L, "1-0"))
+      verifyDeserByCheck(codec1, """{"i":3}""", check(3, 2L, "3-2"))
+      verifyDeserByCheck(codec1, """{"l":5}""", check(1, 5L, "1-5"))
+      verifyDeserByCheck(codec1, """{"s":"VVV","l":5,"i":3}""", check(3, 5L, "VVV"))
+      verifyDeserError(codec1, """{"i":3,"i":3}""", """duplicated field "i", offset: 0x0000000a""")
+      verifySer(codec1, new MultiListOfArgs(3)(2L)("3-2"), """{"i":3}""")
+      verifySer(codec1, new MultiListOfArgs(3)(5L)("3-5"), """{"i":3,"l":5}""")
+      verifySer(codec1, new MultiListOfArgs(1)(0L)("VVV"), """{"s":"VVV"}""")
+      val codec2 = make[MultiListOfArgs](CodecMakerConfig.withTransientDefault(false).withCheckFieldDuplication(false))
+      verifyDeserByCheck(codec2, """{"i":3}""", check(3, 2L, "3-2"))
+      verifyDeserByCheck(codec2, """{"l":5}""", check(1, 5L, "1-5"))
+      verifySer(codec2, new MultiListOfArgs(3)(2L)("3-2"), """{"i":3,"l":2,"s":"3-2"}""")
+
+      case class GenericMultiListOfArgs[A](a: A)(@transient val n: Int = 2)(val as: List[A] = List.fill(n)(a))(val m: Int = as.size * n)
+
+      val codec3 = make[GenericMultiListOfArgs[String]]
+      verifyDeserByCheck(codec3, """{"a":"A"}""", (x: GenericMultiListOfArgs[String]) => {
+        x.n shouldBe 2
+        x.as shouldBe List("A", "A")
+        x.m shouldBe 4
+      })
+      verifyDeserByCheck(codec3, """{"a":"A","as":["B"]}""", (x: GenericMultiListOfArgs[String]) => {
+        x.as shouldBe List("B")
+        x.m shouldBe 2
+      })
+      verifySer(codec3, new GenericMultiListOfArgs("A")()()(), """{"a":"A"}""")
+      verifySer(codec3, new GenericMultiListOfArgs("A")()(List("B"))(), """{"a":"A","as":["B"]}""")
+      verifySer(codec3, new GenericMultiListOfArgs("A")()(List("B"))(3), """{"a":"A","as":["B"],"m":3}""")
     }
     "generate codecs for case classes with multiple parameter lists in a primary constructor with depended default values when the requireDefaultFields is on" in {
       case class MultiListOfArgs(i: Int = 1)(val l: Long = i - 1)(var s: String = l.toString)

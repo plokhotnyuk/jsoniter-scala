@@ -122,7 +122,9 @@ view of an error context
   `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays
   (including immutable arrays in Scala 3), module classes, literal types, value classes, and case classes with
   values/fields having any of types listed here
-- Classes should be defined with a primary constructor that hasn't defined default values in non-first parameter lists
+- Classes should be defined with a primary constructor that can have multiple parameter lists with default values,
+  including default values in non-first parameter lists that depend on values of parameters from preceding parameter
+  lists (they are evaluated for missing fields after parsing of all fields of a JSON object)
 - Non-case Scala classes also supported, but they should have getter accessors for all arguments of a primary
   constructor
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`,
