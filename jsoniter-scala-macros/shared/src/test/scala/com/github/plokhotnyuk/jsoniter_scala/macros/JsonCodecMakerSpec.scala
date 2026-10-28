@@ -3179,19 +3179,40 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "don't generate codecs for case classes with fields that the same name as discriminator name" in {
+      val expectedError =
+        """Duplicated JSON key(s) defined for 'A': 'x'. Keys are derived from field names of the class that are mapped
+          |by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.fieldNameMapper' function or can be
+          |overridden by 'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s). Result keys should be
+          |unique and should not match with a key for the discriminator field that is specified by the
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.discriminatorFieldName' option.""".stripMargin.replace('\n', ' ')
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait DuplicatedJsonName extends Product with Serializable
           |
           |case class A(x: Int) extends DuplicatedJsonName
           |
           |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("x")))""".stripMargin
-      }).getMessage.contains {
-        """Duplicated JSON key(s) defined for 'A': 'x'. Keys are derived from field names of the class that are mapped
-          |by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.fieldNameMapper' function or can be
-          |overridden by 'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s). Result keys should be
-          |unique and should not match with a key for the discriminator field that is specified by the
-          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.discriminatorFieldName' option.""".stripMargin.replace('\n', ' ')
-      })
+      }).getMessage.contains(expectedError))
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait DuplicatedJsonName extends Product with Serializable
+          |
+          |case class A(x: Int) extends DuplicatedJsonName
+          |
+          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("x")).withEncodingOnly(true))""".stripMargin
+      }).getMessage.contains(expectedError))
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait DuplicatedJsonName extends Product with Serializable
+          |
+          |case class A(x: Int) extends DuplicatedJsonName
+          |
+          |JsonCodecMaker.make[A](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("x")).withAlwaysEmitDiscriminator(true))""".stripMargin
+      }).getMessage.contains(expectedError))
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait DuplicatedJsonName extends Product with Serializable
+          |
+          |case class A(x: Int) extends DuplicatedJsonName
+          |
+          |JsonCodecMaker.make[A](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("x")).withAlwaysEmitDiscriminator(true).withEncodingOnly(true))""".stripMargin
+      }).getMessage.contains(expectedError))
     }
     "serialize and deserialize ADTs with self-recursive (aka F-bounded) types without discriminators" in {
       case class Basket[T <: Fruit[T]](fruits: List[T])

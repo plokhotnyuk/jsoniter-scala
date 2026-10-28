@@ -3515,6 +3515,9 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                                                      optDiscriminator: Option[WriteDiscriminator],
                                                      out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
     val tpe = types.head
+    if (cfg.encodingOnly && optDiscriminator.isDefined) { // otherwise collisions are checked by decoders
+      checkFieldNameCollisions(tpe, typeInfo.fields.map(_.mappedName) :+ optDiscriminator.get.fieldName)
+    }
     val (valDefs, valRef) =
       typeInfo match
         case namedTupleInfo: NamedTupleInfo =>

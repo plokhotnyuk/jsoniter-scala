@@ -2729,6 +2729,9 @@ object JsonCodecMaker {
       def genWriteNonAbstractScalaClass(types: List[Type], discriminator: Tree): Tree = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
+        if (cfg.encodingOnly && discriminator.nonEmpty) { // otherwise collisions are checked by decoders
+          cfg.discriminatorFieldName.foreach(n => checkFieldNameCollisions(tpe, classInfo.fields.map(_.mappedName) :+ n))
+        }
         val writeFields = classInfo.fields.map { fieldInfo =>
           val fTpe = fieldInfo.resolvedTpe
           val allTypes = fTpe :: types
