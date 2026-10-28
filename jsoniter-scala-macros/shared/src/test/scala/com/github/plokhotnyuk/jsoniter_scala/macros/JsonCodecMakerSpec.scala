@@ -2553,6 +2553,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codecOfTransient2, Transient(required = "VVV"), """{"required":"VVV"}""")
       verifyDeser(codecOfTransient2, Transient(required = "VVV"), """{"transient":"XXX","required":"VVV"}""")
       verifySer(codecOfTransient2, Transient(required = "VVV", transient = "non-default"), """{"required":"VVV"}""")
+      val codecOfTransient3 = make[Transient](CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true))
+      verifySer(codecOfTransient3, Transient(required = "VVV"), """{"required":"VVV"}""")
+      verifyDeser(codecOfTransient3, Transient(required = "VVV"), """{"transient":"XXX","required":"VVV"}""")
+      verifySer(codecOfTransient3, Transient(required = "VVV", transient = "non-default"), """{"required":"VVV"}""")
     }
     "don't serialize and deserialize scala.transient defined fields of case classes when scala transient support is on" in {
       case class ScalaTransient(@_root_.scala.transient transient: String = "default", required: String) {
@@ -2567,6 +2571,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codecOfScalaTransient2, ScalaTransient(required = "VVV"), """{"required":"VVV"}""")
       verifyDeser(codecOfScalaTransient2, ScalaTransient(required = "VVV"), """{"transient":"XXX","required":"VVV"}""")
       verifySer(codecOfScalaTransient2, ScalaTransient(required = "VVV", transient = "non-default"), """{"required":"VVV"}""")
+      val codecOfScalaTransient3 = make[ScalaTransient](CodecMakerConfig.withScalaTransientSupport(true)
+        .withTransientDefault(false).withRequireDefaultFields(true))
+      verifySer(codecOfScalaTransient3, ScalaTransient(required = "VVV"), """{"required":"VVV"}""")
+      verifyDeser(codecOfScalaTransient3, ScalaTransient(required = "VVV"), """{"transient":"XXX","required":"VVV"}""")
+      verifySer(codecOfScalaTransient3, ScalaTransient(required = "VVV", transient = "non-default"), """{"required":"VVV"}""")
     }
     "don't serialize case class fields with 'None' values" in {
       case class NoneValues(opt: Option[String])
