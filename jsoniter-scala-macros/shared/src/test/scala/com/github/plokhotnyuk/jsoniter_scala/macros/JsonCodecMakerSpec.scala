@@ -2099,6 +2099,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[MutableLongMaps],
         MutableLongMaps(_root_.scala.collection.mutable.LongMap(1L -> 1.1),
           _root_.scala.collection.mutable.LongMap(3L -> "33")), """{"lm1":{"1":1.1},"lm2":{"3":"33"}}""")
+      verifySerDeser(make[List[MutableLongMaps]](CodecMakerConfig.withMapAsArray(true).withIsStringified(true)),
+        List(MutableLongMaps(_root_.scala.collection.mutable.LongMap(1L -> 1.1),
+          _root_.scala.collection.mutable.LongMap(3L -> "33"))), """[{"lm1":[[1,1.1]],"lm2":[[3,"33"]]}]""")
+
+      case class StringifiedMutableLongMaps(@stringified lm: _root_.scala.collection.mutable.LongMap[Double])
+
+      verifySerDeser(make[StringifiedMutableLongMaps](CodecMakerConfig.withMapAsArray(true)),
+        StringifiedMutableLongMaps(_root_.scala.collection.mutable.LongMap(1L -> 1.1)), """{"lm":[["1","1.1"]]}""")
     }
     "serialize and deserialize case classes with immutable int and long maps" in {
       case class ImmutableIntLongMaps(
@@ -2108,6 +2116,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[ImmutableIntLongMaps],
         ImmutableIntLongMaps(_root_.scala.collection.immutable.IntMap(1 -> 1.1, 2 -> 2.2),
           _root_.scala.collection.immutable.LongMap(3L -> "33")), """{"im":{"1":1.1,"2":2.2},"lm":{"3":"33"}}""")
+      verifySerDeser(make[List[ImmutableIntLongMaps]](CodecMakerConfig.withMapAsArray(true).withIsStringified(true)),
+        List(ImmutableIntLongMaps(_root_.scala.collection.immutable.IntMap(1 -> 1.1, 2 -> 2.2),
+          _root_.scala.collection.immutable.LongMap(3L -> "33"))), """[{"im":[[1,1.1],[2,2.2]],"lm":[[3,"33"]]}]""")
+
+      case class StringifiedImmutableIntLongMaps(
+        @stringified im: _root_.scala.collection.immutable.IntMap[Double],
+        @stringified lm: _root_.scala.collection.immutable.LongMap[Double])
+
+      verifySerDeser(make[StringifiedImmutableIntLongMaps](CodecMakerConfig.withMapAsArray(true)),
+        StringifiedImmutableIntLongMaps(_root_.scala.collection.immutable.IntMap(1 -> 1.1, 2 -> 2.2),
+          _root_.scala.collection.immutable.LongMap(3L -> 3.3)), """{"im":[["1","1.1"],["2","2.2"]],"lm":[["3","3.3"]]}""")
     }
     "serialize and deserialize case classes with mutable & immutable bitsets" in {
       case class BitSets(

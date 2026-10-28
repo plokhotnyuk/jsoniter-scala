@@ -2421,7 +2421,7 @@ object JsonCodecMaker {
               val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
               val readKey =
                 if (!cfg.mapAsArray) q"in.readKeyAsInt()"
-                else if (cfg.isStringified) q"in.readStringAsInt()"
+                else if (isStringified) q"in.readStringAsInt()"
                 else q"in.readInt()"
               genReadIntMap(tpe1, withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]"), readKey, readVal)
             } else if (tpe <:< typeOf[mutable.LongMap[?]]) withDecoderFor(methodKey, default) {
@@ -2431,7 +2431,7 @@ object JsonCodecMaker {
               val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
               if (cfg.mapAsArray) {
                 val readKey =
-                  if (cfg.isStringified) q"in.readStringAsLong()"
+                  if (isStringified) q"in.readStringAsLong()"
                   else q"in.readLong()"
                 genReadMapAsArray(newBuilder,
                   q"x.update($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
@@ -2442,7 +2442,7 @@ object JsonCodecMaker {
               val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
               val readKey =
                 if (!cfg.mapAsArray) q"in.readKeyAsLong()"
-                else if (cfg.isStringified) q"in.readStringAsLong()"
+                else if (isStringified) q"in.readStringAsLong()"
                 else q"in.readLong()"
               genReadLongMap(tpe1, withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]"), readKey, readVal)
             } else if (tpe <:< typeOf[mutable.Map[?, ?]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {

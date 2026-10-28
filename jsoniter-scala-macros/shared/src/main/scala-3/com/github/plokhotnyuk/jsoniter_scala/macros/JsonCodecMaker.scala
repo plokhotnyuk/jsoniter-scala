@@ -3196,7 +3196,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
               val readKey =
                 if (!cfg.mapAsArray) '{ $in.readKeyAsInt() }
-                else if (cfg.isStringified) '{ $in.readStringAsInt() }
+                else if (isStringified) '{ $in.readStringAsInt() }
                 else '{ $in.readInt() }
               genReadIntMap(tpe, readKey, readVal, in, default.asInstanceOf[Expr[immutable.IntMap[t1]]]).asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
@@ -3212,7 +3212,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
               (if (cfg.mapAsArray) {
                 val readKey =
-                  if (cfg.isStringified) '{ $in.readStringAsLong() }
+                  if (isStringified) '{ $in.readStringAsLong() }
                   else '{ $in.readLong() }
                 genReadMapAsArray(newBuilder,
                   x => '{ $x.update($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() }) },
@@ -3228,7 +3228,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
               val readKey =
                 if (!cfg.mapAsArray) '{ $in.readKeyAsLong() }
-                else if (cfg.isStringified) '{ $in.readStringAsLong() }
+                else if (isStringified) '{ $in.readStringAsLong() }
                 else '{ $in.readLong() }
               genReadLongMap(tpe, readKey, readVal, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]]).asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[mutable.Map[?, ?]] ||
