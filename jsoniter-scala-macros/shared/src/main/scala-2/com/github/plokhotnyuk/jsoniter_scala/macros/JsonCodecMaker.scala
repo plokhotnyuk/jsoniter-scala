@@ -776,6 +776,8 @@ object JsonCodecMaker {
       def isCollection(tpe: Type): Boolean =
         tpe <:< typeOf[Iterable[?]] || tpe <:< typeOf[Iterator[?]] || tpe <:< typeOf[Array[?]]
 
+      def isNonEmptyList(tpe: Type): Boolean = tpe <:< typeOf[::[?]]
+
       def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[?]]
 
       def scalaCollectionCompanion(tpe: Type): Tree = {
@@ -2117,7 +2119,7 @@ object JsonCodecMaker {
           if (tpe <:< typeOf[mutable.BitSet]) q"new _root_.scala.collection.mutable.BitSet"
           else if (tpe <:< typeOf[collection.BitSet]) withNullValueFor(tpe)(q"_root_.scala.collection.immutable.BitSet.empty")
           else if (tpe <:< typeOf[mutable.LongMap[?]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-          else if (tpe <:< typeOf[::[?]]) q"null"
+          else if (isNonEmptyList(tpe)) q"null"
           else if (tpe <:< typeOf[List[?]] || tpe.typeSymbol == typeOf[Seq[?]].typeSymbol) q"_root_.scala.Nil"
           else if (tpe <:< typeOf[immutable.IntMap[?]] || tpe <:< typeOf[immutable.LongMap[?]] ||
             tpe <:< typeOf[immutable.Seq[?]] || tpe <:< typeOf[immutable.Set[?]]) withNullValueFor(tpe) {
@@ -2160,9 +2162,11 @@ object JsonCodecMaker {
           if (discriminator.isEmpty) mappedNames
           else cfg.discriminatorFieldName.fold(mappedNames)(mappedNames :+ _)
         })
+        // Fields of non-empty lists are always required because they have no empty value to use for missing fields
         val required: Set[String] = fields.collect {
           case fieldInfo if !(!cfg.requireDefaultFields && fieldInfo.symbol.isParamWithDefault || isOption(fieldInfo.resolvedTpe, types) ||
-            (!cfg.requireCollectionFields && isCollection(fieldInfo.resolvedTpe))) => fieldInfo.mappedName
+            (!cfg.requireCollectionFields && isCollection(fieldInfo.resolvedTpe) &&
+              !isNonEmptyList(fieldInfo.resolvedTpe))) => fieldInfo.mappedName
         }.toSet
         val paramVarNum = fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
@@ -2496,7 +2500,7 @@ object JsonCodecMaker {
               val tpe1 = typeArg1(tpe)
               genReadSet(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
                 genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
-            } else if (tpe <:< typeOf[::[?]]) withDecoderFor(methodKey, default) {
+            } else if (isNonEmptyList(tpe)) withDecoderFor(methodKey, default) {
               val tpe1 = typeArg1(tpe)
               val readVal = genReadValForGrowable(tpe1 :: types, isStringified)
               q"""if (in.isNextToken('[')) {

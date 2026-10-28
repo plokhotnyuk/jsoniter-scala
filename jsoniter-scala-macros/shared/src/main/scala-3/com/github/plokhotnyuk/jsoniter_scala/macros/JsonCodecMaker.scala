@@ -1033,6 +1033,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private def isCollection(tpe: TypeRepr): Boolean =
     tpe <:< arrayOfWildcardTpe || isIArray(tpe) || tpe <:< iterableOfWildcardTpe || tpe <:< iteratorOfWildcardTpe
 
+  private def isNonEmptyList(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[::[?]]
+
   private def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[?]]
 
   private def scalaCollectionCompanion(tpe: TypeRepr): Term =
@@ -2648,7 +2650,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         typeArg1(tpe).asType match { case '[t1] => '{ IArray.unsafeFromArray(${genNewArray[t1](Expr(0))}) } }
       } else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ new mutable.BitSet }
       else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)('{ immutable.BitSet.empty })
-      else if (tpe <:< TypeRepr.of[::[?]]) '{ null.asInstanceOf[T] }
+      else if (isNonEmptyList(tpe)) '{ null.asInstanceOf[T] }
       else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) '{ Nil }
       else if (tpe <:< TypeRepr.of[collection.SortedSet[?]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
         val tpe1 = typeArg1(tpe)
@@ -2814,10 +2816,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       if (useDiscriminator) cfg.discriminatorFieldName.fold(mappedNames)(mappedNames :+ _)
       else mappedNames
     })
+    // Fields of non-empty lists are always required because they have no empty value to use for missing fields
     val required = fields.foldLeft(Set.newBuilder[String]) { (acc, fieldInfo) =>
       if (!((!cfg.requireDefaultFields && fieldInfo.symbol.flags.is(Flags.HasDefault)) ||
         isOption(fieldInfo.resolvedTpe, types) || isNullable(fieldInfo.resolvedTpe) ||
-        (!cfg.requireCollectionFields && isCollection(fieldInfo.resolvedTpe)))) {
+        (!cfg.requireCollectionFields && isCollection(fieldInfo.resolvedTpe) &&
+          !isNonEmptyList(fieldInfo.resolvedTpe)))) {
         acc.addOne(fieldInfo.mappedName)
       }
       acc
@@ -3332,7 +3336,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                 else builderNoOrdering).asExpr.asInstanceOf[Expr[mutable.Builder[t1, T & collection.Set[t1]]]]
               genReadSet(builder, b => genReadValForGrowable(tpe1 :: types, isStringified, b, in),
                 default.asInstanceOf[Expr[T & collection.Set[t1]]], b => '{ $b.result() }, in).asInstanceOf[Expr[T]]
-        } else if (tpe <:< TypeRepr.of[::[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (isNonEmptyList(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>

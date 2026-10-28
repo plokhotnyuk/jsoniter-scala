@@ -1833,6 +1833,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfImmutableIterables,
         """{"l":[["1"]],"nl":null,"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""",
         "expected non-empty JSON array")
+      verifyDeserError(codecOfImmutableIterables,
+        """{"l":[["1"]],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""",
+        """missing required field "nl", offset: 0x00000042""")
     }
     "serialize and deserialize top-level ::" in {
       val codecOfNonEmptyListOfInts = make[::[Int]]
