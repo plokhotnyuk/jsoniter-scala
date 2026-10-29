@@ -3986,6 +3986,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
         check("1E+2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max positive scale that can be parsed
+        check(s"${fill('1', 36)}E+2147483640", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check(s"${fill('1', 400)}E+2147483640", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check(s"${fill('1', 36)}E+2147483644", MathContext.DECIMAL128, Int.MaxValue, Int.MaxValue, ws)
       }
     }
     "parse small number values without underflow up to limits" in {
@@ -4067,6 +4070,18 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("1.5e-2147483647",
         "value exceeds limit for scale, offset: 0x0000000e",
         "value exceeds limit for scale, offset: 0x0000000f")
+      checkError(s"${fill('7', 36)}e2147483647",
+        "value exceeds limit for scale, offset: 0x0000002e",
+        "value exceeds limit for scale, offset: 0x0000002f")
+      checkError(s"-${fill('7', 36)}e2147483647",
+        "value exceeds limit for scale, offset: 0x0000002f",
+        "value exceeds limit for scale, offset: 0x00000030")
+      checkError(s"${fill('7', 300)}e2147483647",
+        "value exceeds limit for scale, offset: 0x00000136",
+        "value exceeds limit for scale, offset: 0x00000137")
+      checkError(s"${fill('9', 35)}e2147483646", // rounding with a carry to DECIMAL128
+        "value exceeds limit for scale, offset: 0x0000002d",
+        "value exceeds limit for scale, offset: 0x0000002e")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
@@ -4156,6 +4171,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       reader("9223372036854775808").readNumber(null) shouldBe new java.math.BigInteger("9223372036854775808")
       reader("-9223372036854775809").readNumber(null) shouldBe new java.math.BigInteger("-9223372036854775809")
+      reader(s"${fill('1', 36)}E+2147483640").readNumber(null, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue) shouldBe
+        new java.math.BigDecimal(new java.math.BigInteger(fill('1', 36)), -2147483640)
+      reader(s"${fill('1', 400)}E+2147483640").readNumber(null, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue) shouldBe
+        new java.math.BigDecimal(new java.math.BigInteger(fill('1', 400)), -2147483640)
+      reader(s"${fill('1', 36)}E+2147483644").readNumber(null, MathContext.DECIMAL128, Int.MaxValue, Int.MaxValue) shouldBe
+        new java.math.BigDecimal(new java.math.BigInteger(fill('1', 34)), -2147483646)
     }
     "parse small number values without underflow up to limits" in {
       forAll(genWhitespaces) { ws =>
@@ -4238,6 +4259,18 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("1.5e-2147483647",
         "value exceeds limit for scale, offset: 0x0000000e",
         "value exceeds limit for scale, offset: 0x0000000f")
+      checkError(s"${fill('7', 36)}e2147483647",
+        "value exceeds limit for scale, offset: 0x0000002e",
+        "value exceeds limit for scale, offset: 0x0000002f")
+      checkError(s"-${fill('7', 36)}e2147483647",
+        "value exceeds limit for scale, offset: 0x0000002f",
+        "value exceeds limit for scale, offset: 0x00000030")
+      checkError(s"${fill('7', 300)}e2147483647",
+        "value exceeds limit for scale, offset: 0x00000136",
+        "value exceeds limit for scale, offset: 0x00000137")
+      checkError(s"${fill('9', 35)}e2147483646", // rounding with a carry to DECIMAL128
+        "value exceeds limit for scale, offset: 0x0000002d",
+        "value exceeds limit for scale, offset: 0x0000002e")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")

@@ -3644,7 +3644,17 @@ final class JsonReader private[jsoniter_scala](
             java.math.BigDecimal.valueOf(x, scale + fracLen)
           } else toBigDecimalWithFraction(buf, from, fracPos, limit, s, scale)
         } else toBigDecimal(buf, from, from + digits, s, scale)
-      if (mc.getPrecision < digits) d = d.plus(mc)
+      val precision = mc.getPrecision
+      if (precision > 0 && precision < digits) {
+        val dScale = d.scale
+        // Rounding drops `digits - precision` digits, plus one more digit in case of a carry (like 999 -> 1.00E+3), so
+        // the scale can decrease down to `dScale - (digits - precision + 1)`. Subtracting of the positive number that is
+        // less than 2^31 wraps around to a value that is greater than `dScale` only when the result underflows below
+        // `Int.MinValue`, so subtracting one more (`- 2` instead of `- 1`) also rejects the `Int.MinValue` scale for which
+        // `Math.abs` returns a negative value. That avoids `Long` arithmetic, which is expensive for Scala.js.
+        if (dScale + precision - digits - 2 > dScale) scaleLimitError() // overflow of the scale when rounding with a carry
+        d = d.plus(mc)
+      }
       if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
       new BigDecimal(d, mc)
     }
@@ -3676,7 +3686,8 @@ final class JsonReader private[jsoniter_scala](
       // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
       val mid = len >> 1
       val midPos = limit - mid
-      toBigDecimal(buf, p, midPos, s, scale - mid).add(toBigDecimal(buf, midPos, limit, s, scale))
+      if (scale - mid < scale) toBigDecimal(buf, p, midPos, s, scale - mid).add(toBigDecimal(buf, midPos, limit, s, scale))
+      else new java.math.BigDecimal(toBigDecimal(buf, p, limit, s, 0).unscaledValue, scale) // to avoid overflow of the scale
     }
   }
 
@@ -3757,7 +3768,8 @@ final class JsonReader private[jsoniter_scala](
         x1 = -x1
         x2 = -x2
       }
-      java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
+      if (scale - 18 < scale) java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
+      else new java.math.BigDecimal(toBigInteger308(buf, p, dot, limit, s), scale) // to avoid overflow of the scale
     }
   }
 
@@ -4034,7 +4046,17 @@ final class JsonReader private[jsoniter_scala](
             if (fracLen == 0) toBigDecimal(buf, from, fracLimit, s, scale)
             else toBigDecimalWithFraction(buf, from, fracPos, limit, s, scale)
           }
-        if (mc.getPrecision < digits) d = d.plus(mc)
+        val precision = mc.getPrecision
+        if (precision > 0 && precision < digits) {
+          val dScale = d.scale
+          // Rounding drops `digits - precision` digits, plus one more digit in case of a carry (like 999 -> 1.00E+3), so
+          // the scale can decrease down to `dScale - (digits - precision + 1)`. Subtracting of the positive number that is
+          // less than 2^31 wraps around to a value that is greater than `dScale` only when the result underflows below
+          // `Int.MinValue`, so subtracting one more (`- 2` instead of `- 1`) also rejects the `Int.MinValue` scale for which
+          // `Math.abs` returns a negative value. That avoids `Long` arithmetic, which is expensive for Scala.js.
+          if (dScale + precision - digits - 2 > dScale) scaleLimitError() // overflow of the scale when rounding with a carry
+          d = d.plus(mc)
+        }
         if (Math.abs(d.scale) >= scaleLimit) scaleLimitError()
         d
       }
