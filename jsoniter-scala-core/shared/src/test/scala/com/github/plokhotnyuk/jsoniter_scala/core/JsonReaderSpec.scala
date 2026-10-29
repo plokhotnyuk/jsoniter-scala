@@ -4575,6 +4575,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           .getMessage.startsWith("too long string exceeded 'maxCharBufSize', offset: 0x"))
         assert(intercept[JsonReaderException](read(r, stringCodec, "x".getBytes(UTF_8), tinyConfig))
           .getMessage.startsWith("expected '\"', offset: 0x"))
+        // the 1st line of the hex dump starts at 313 and ends at 394 (inclusive) of the char buffer limited by 394
+        val boundaryConfig = ReaderConfig.withPreferredCharBufSize(0).withMaxCharBufSize(394)
+        assert(intercept[JsonReaderException](read(r, stringCodec, json("d" * 400), boundaryConfig))
+          .getMessage.startsWith("too long string exceeded 'maxCharBufSize', offset: 0x"))
       }
     }
     streamReads[String].foreach { case (name, read) =>

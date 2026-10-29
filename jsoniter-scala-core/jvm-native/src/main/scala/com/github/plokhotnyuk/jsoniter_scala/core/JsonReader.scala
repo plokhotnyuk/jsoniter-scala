@@ -6380,8 +6380,8 @@ final class JsonReader private[jsoniter_scala](
     while (j < len) {
       val linePos = j & 0xF
       if (linePos == 0) {
-        if (i + 81 >= lim) { // 81 == dumpBorder.length
-          ensureCharBufCapacity(i + 81)
+        if (i + 82 > lim) { // 82 == dumpBorder.length == length of the dump line
+          ensureCharBufCapacity(i + 82)
           charBuf = this.charBuf
           lim = charBuf.length
         }
