@@ -1349,15 +1349,15 @@ final class JsonReader private[jsoniter_scala](
         if (x < -106751991167300L || x > 106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
         seconds = x * 86400
         state = 0
-      } else if (b == 'H' && state <= 0) {
+      } else if (b == 'H' && state == 0) {
         if (x < -2562047788015215L || x > 2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
         seconds = sumSeconds((x << 12) - (x << 9) + (x << 4), seconds, pos)
         state = 1
-      } else if (b == 'M' && state <= 1) {
+      } else if (b == 'M' && (state == 0 || state == 1)) {
         if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
         seconds = sumSeconds(((x << 4) - x) << 2, seconds, pos)
         state = 2
-      } else if (b == 'S' || b == '.') {
+      } else if ((b == 'S' || b == '.') && state >= 0) {
         seconds = sumSeconds(x, seconds, pos)
         state = 3
         if (b == '.') {
@@ -4151,15 +4151,15 @@ final class JsonReader private[jsoniter_scala](
         if (x < -106751991167300L || x > 106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
         seconds = x * 86400
         state = 0
-      } else if (b == 'H' && state <= 0) {
+      } else if (b == 'H' && state == 0) {
         if (x < -2562047788015215L || x > 2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
         seconds = sumSeconds((x << 12) - (x << 9) + (x << 4), seconds, pos)
         state = 1
-      } else if (b == 'M' && state <= 1) {
+      } else if (b == 'M' && (state == 0 || state == 1)) {
         if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
         seconds = sumSeconds(((x << 4) - x) << 2, seconds, pos)
         state = 2
-      } else if (b == 'S' || b == '.') {
+      } else if ((b == 'S' || b == '.') && state >= 0) {
         seconds = sumSeconds(x, seconds, pos)
         state = 3
         if (b == '.') {

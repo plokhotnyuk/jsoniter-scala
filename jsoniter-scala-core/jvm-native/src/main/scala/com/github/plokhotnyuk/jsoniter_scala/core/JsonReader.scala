@@ -1329,15 +1329,15 @@ final class JsonReader private[jsoniter_scala](
         if (x < -106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
         seconds = (sx - (x ^ sx)) * 86400
         state = 0
-      } else if (b == 'H' && state <= 0) {
+      } else if (b == 'H' && state == 0) {
         if (x < -2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
         seconds = sumSeconds((sx - (x ^ sx)) * 3600, seconds, pos)
         state = 1
-      } else if (b == 'M' && state <= 1) {
+      } else if (b == 'M' && (state == 0 || state == 1)) {
         if (x < -153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
         seconds = sumSeconds((sx - (x ^ sx)) * 60, seconds, pos)
         state = 2
-      } else if (b == 'S' || b == '.') {
+      } else if ((b == 'S' || b == '.') && state >= 0) {
         if ((x | sx) == -9223372036854775808L) durationError(pos)
         seconds = sumSeconds(sx - (x ^ sx), seconds, pos)
         state = 3
@@ -4677,15 +4677,15 @@ final class JsonReader private[jsoniter_scala](
         if (x < -106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
         seconds = (sx - (x ^ sx)) * 86400
         state = 0
-      } else if (b == 'H' && state <= 0) {
+      } else if (b == 'H' && state == 0) {
         if (x < -2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
         seconds = sumSeconds((sx - (x ^ sx)) * 3600, seconds, pos)
         state = 1
-      } else if (b == 'M' && state <= 1) {
+      } else if (b == 'M' && (state == 0 || state == 1)) {
         if (x < -153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
         seconds = sumSeconds((sx - (x ^ sx)) * 60, seconds, pos)
         state = 2
-      } else if (b == 'S' || b == '.') {
+      } else if ((b == 'S' || b == '.') && state >= 0) {
         if ((x | sx) == -9223372036854775808L) durationError(pos)
         seconds = sumSeconds(sx - (x ^ sx), seconds, pos)
         state = 3
