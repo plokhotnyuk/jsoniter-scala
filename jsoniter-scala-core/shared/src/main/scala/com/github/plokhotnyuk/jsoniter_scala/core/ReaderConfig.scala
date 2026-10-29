@@ -22,39 +22,37 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 /**
-  * Configuration for [[com.github.plokhotnyuk.jsoniter_scala.core.JsonReader]] that contains flags for tuning of
-  * parsing exceptions and preferred sizes for internal buffers that are created on the reader instantiation and reused
-  * in runtime for parsing of messages.
+  * Configuration of [[com.github.plokhotnyuk.jsoniter_scala.core.JsonReader]]: parse exceptions and sizes of internal
+  * buffers, which the reader allocates once and reuses.
   * <br/>
-  * All configuration params already initialized by recommended default values, but in some cases they should be altered
-  * for performance reasons:
+  * The defaults suit most cases. Change them for performance:
   * <ul>
-  * <li>turn off stack traces for parsing exceptions to greatly reduce impact on performance for cases when exceptions
-  * can be not exceptional (e.g. under DoS attacks over open to the world systems), see more details here:
+  * <li>turn off stack traces when exceptions are frequent, e.g. under DoS attacks, see
   * [[https://shipilev.net/blog/2014/exceptional-performance/]]</li>
-  * <li>turn off appending of hex dump to minimize length of exception message</li>
-  * <li>increase preferred size of an internal byte buffer for parsing from [[java.io.InputStream]] or
-  * [[java.nio.DirectByteBuffer]] to reduce allocation rate of grown and then reduced buffers during parsing of large
-  * (>16Kb) numbers (including stringified), raw values, or ADT instances with the discriminator field doesn't
-  * appear in the beginning of the JSON object</li>
-  * <li>increase preferred size of an internal char buffer to reduce allocation rate of grown and then reduced
-  * buffers when large (>4Kb) string instances need to be parsed including those that use Base16 or Base64
-  * encodings</li>
+  * <li>turn off hex dumps to shorten exception messages</li>
+  * <li>increase `preferredBufSize` to avoid reallocation of the byte buffer when parsing large (>16Kb) numbers, raw
+  * values, or ADT instances with the discriminator field not at the start of the JSON object</li>
+  * <li>increase `preferredCharBufSize` to avoid reallocation of the char buffer when parsing large (>4Kb) strings,
+  * including Base16 and Base64 encoded ones</li>
   * </ul>
-  * @param throwReaderExceptionWithStackTrace a flag that allows to turn on stack traces for debugging purposes in
-  *                                           development
-  * @param appendHexDumpToParseException a flag that allows to turn off hex dumping of affected by error part of
-  *                                      an internal byte buffer
-  * @param maxBufSize a max size (in bytes) of an internal byte buffer when parsing from [[java.io.InputStream]] or
-  *                   [[java.nio.DirectByteBuffer]]
-  * @param maxCharBufSize a max size (in chars) of an internal char buffer for parsing of string values including
-  *                       those that use Base16 or Base64 encodings
-  * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when parsing from
-  *                         [[java.io.InputStream]] or [[java.nio.DirectByteBuffer]]
-  * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
-  * @param checkForEndOfInput a flag to check and raise an error if some non-whitespace bytes will be detected after
-  *                           successful parsing of the value
-  * @param hexDumpSize a size of the hex dump in 16-byte lines before and after the 16-byte line where an error occurs
+  * The `with...` methods throw `IllegalArgumentException` for values outside of the ranges below.
+  *
+  * @param throwReaderExceptionWithStackTrace turns on stack traces of parse exceptions for debugging (`false` by
+  *                                           default)
+  * @param appendHexDumpToParseException turns on the hex dump of the input around the error in parse exceptions (`true`
+  *                                      by default)
+  * @param maxBufSize the max size (in bytes) of the byte buffer for parsing from [[java.io.InputStream]] or
+  *                   [[java.nio.DirectByteBuffer]] (33554432 by default, from `preferredBufSize` to 2147483645)
+  * @param maxCharBufSize the max size (in chars) of the char buffer for parsing strings, including Base16 and Base64
+  *                       encoded ones (4194304 by default, from `preferredCharBufSize` to 2147483645)
+  * @param preferredBufSize the preferred size (in bytes) of the byte buffer for parsing from [[java.io.InputStream]]
+  *                         or [[java.nio.DirectByteBuffer]] (32768 by default, from 12 to `maxBufSize`)
+  * @param preferredCharBufSize the preferred size (in chars) of the char buffer for parsing strings (4096 by
+  *                             default, from 0 to `maxCharBufSize`)
+  * @param checkForEndOfInput turns on a parse exception for non-whitespace bytes after the parsed value (`true` by
+  *                           default)
+  * @param hexDumpSize the number of 16-byte lines in the hex dump before and after the line with the error (2 by
+  *                    default, at least 1)
   */
 class ReaderConfig private (val preferredBufSize: Int, val preferredCharBufSize: Int, val maxBufSize: Int,
                             val maxCharBufSize: Int, val checkForEndOfInput: Boolean,

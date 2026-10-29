@@ -21,5 +21,11 @@
 
 package com.github.plokhotnyuk.jsoniter_scala.core
 
+/**
+  * A parse exception, thrown by [[JsonReader]] for illegal or unexpected JSON input.
+  *
+  * The message describes the problem and its hex offset in the input. Stack traces are off by default, see
+  * [[ReaderConfig]].
+  */
 class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
   extends RuntimeException(msg, cause, true, withStackTrace)

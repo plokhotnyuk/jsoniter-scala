@@ -47,84 +47,70 @@ final class transient extends StaticAnnotation
 final class stringified extends StaticAnnotation
 
 /**
-  * Configuration parameter for `JsonCodecMaker.make()` call.
+  * Configuration of codec derivation by `JsonCodecMaker.make` calls.
   *
-  * BEWARE: a parameter of the `make` macro should not depend on code from the same compilation module where it is called.
-  * Use a separated submodule of the project to compile all such dependencies before their usage for generation of codecs.
+  * BEWARE: A `make` call fails to compile if its configuration depends on code from the same compilation module.
+  * Compile such dependencies in a separate submodule.
   *
-  * Examples of `fieldNameMapper`, `javaEnumValueNameMapper`, and `adtLeafClassNameMapper` functions that have no
-  * dependencies in the same compilation module are: `JsonCodecMaker.enforceCamelCase`, `JsonCodecMaker.enforce_snake_case`,
-  * `JsonCodecMaker.enforce-kebab-case`, and `JsonCodecMaker.simpleClassName`. Or their composition like:
-  * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`
+  * These mappers have no such dependencies and can be composed: `JsonCodecMaker.enforceCamelCase`,
+  * `JsonCodecMaker.enforce_snake_case`, `JsonCodecMaker.enforce-kebab-case`, and `JsonCodecMaker.simpleClassName`, e.g.
+  * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`.
   *
-  * @param fieldNameMapper        the partial function of mapping from string of case class field name to JSON key
-  *                               (an identity function by default)
-  * @param javaEnumValueNameMapper the partial function of mapping from string of Java enum name to JSON key
-  *                               (an identity function by default)
-  * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
-  *                               discriminator field (a function that truncate to simple class name by default)
-  * @param discriminatorFieldName an optional name of discriminator field, where None can be used for alternative
-  *                               representation of ADTs without the discriminator field (Some("type") by default)
-  * @param isStringified          a flag that turns on stringification of number or boolean values of collections,
-  *                               options and value classes (turned off by default)
-  * @param mapAsArray             a flag that turns on serialization and parsing of maps as a JSON array (or sequences
-  *                               of tuples) instead of a JSON object, that allow to use 'JsonValueCodec' for encoding
-  *                               and decoding of keys (turned off by default)
-  * @param skipUnexpectedFields   a flag that turns on skipping of unexpected fields or in other case a parse exception
-  *                               will be thrown (turned on by default)
-  * @param transientDefault       a flag that turns on skipping serialization of fields that have same values as
-  *                               default values defined for them in the primary constructor (turned on by default)
-  * @param transientEmpty         a flag that turns on skipping serialization of fields that have empty values of
-  *                               arrays or collections (turned on by default)
-  * @param transientNone          a flag that turns on skipping serialization of fields that have empty values of
-  *                               options (turned on by default)
-  * @param requireCollectionFields a flag that turn on checking of presence of collection fields and forces
-  *                               serialization when they are empty
-  * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default that is a precision for decimal128,
-  *                               see `java.math.MathContext.DECIMAL128.getPrecision`, don't set too big or infinite
-  *                               precision to avoid attacks from untrusted input)
-  * @param bigDecimalScaleLimit   an exclusive limit for accepted scale in 'BigDecimal' values (6178 by default that is
-  *                               a range for decimal128, don't set too big scale limit to avoid attacks from untrusted
-  *                               input)
-  * @param bigDecimalDigitsLimit  an exclusive limit for accepted number of mantissa digits of to be parsed before
-  *                               rounding with the precision specified for 'BigDecimal' values (308 by default, don't
-  *                               set too big limit to avoid of OOM errors or attacks from untrusted input)
-  * @param bigIntDigitsLimit      an exclusive limit for accepted number of decimal digits in 'BigInt' values
-  *                               (308 by default, don't set too big limit to avoid of OOM errors or attacks from
-  *                               untrusted input)
-  * @param bitSetValueLimit       an exclusive limit for accepted numeric values in bit sets (1024 by default, don't set
-  *                               too big limit to avoid of OOM errors or attacks from untrusted input)
-  * @param mapMaxInsertNumber     a max number of inserts into maps (1024 by default to limit attacks from untrusted
-  *                               input that exploit worst complexity for inserts, see https://github.com/scala/bug/issues/11203 )
-  * @param setMaxInsertNumber     a max number of inserts into sets excluding bit sets (1024 by default to limit attacks
-  *                               from untrusted input that exploit worst complexity for inserts, see https://github.com/scala/bug/issues/11203 )
-  * @param allowRecursiveTypes    a flag that turns on support of recursive types (turned off by default to avoid
-  *                               stack overflow errors with untrusted input)
-  * @param requireDiscriminatorFirst a flag that turns off limitation for a position of the discriminator field to be
-  *                               the first field of the JSON object (turned on by default to avoid CPU overuse when
-  *                               the discriminator appears in the end of JSON objects, especially nested)
-  * @param useScalaEnumValueId    a flag that turns on using of ids for parsing and serialization of Scala enumeration
-  *                               values
-  * @param skipNestedOptionValues a flag that turns on skipping of some values for nested more than 2-times options and
-  *                               allow using `Option[Option[?]]` field values to distinguish `null` and missing field
-  *                               cases
-  * @param circeLikeObjectEncoding a flag that turns on serialization and parsing of Scala objects as JSON objects with
-  *                               a key and empty object value: `{"EnumValue":{}}`
-  * @param decodingOnly           a flag that turns generation of decoding implementation only (turned off by default)
-  * @param encodingOnly           a flag that turns generation of encoding implementation only (turned off by default)
-  * @param requireDefaultFields   a flag that turns on checking of presence of fields with default values and forces
-  *                               serialization of them
-  * @param checkFieldDuplication  a flag that turns on checking of duplicated fields during parsing of classes (turned
-  *                               on by default)
-  * @param scalaTransientSupport  a flag that turns on support of `scala.transient` (turned off by default)
-  * @param inlineOneValueClasses  a flag that turns on derivation of inlined codecs for non-values classes that have
-  *                               the primary constructor with just one argument (turned off by default)
-  * @param alwaysEmitDiscriminator a flag that causes the discriminator field and value to always be serialized, even
-  *                               when the codec derived is for an ADT leaf class and not the ADT base class. Note that
-  *                               this flag has no effect on generated decoders -- that is this flag does NOT cause
-  *                               decoders to start requiring the discriminator field when they are not strictly necessary
-  * @param transientNull          a flag that turns on skipping serialization of fields that have null values of
-  *                               objects (turned off by default)
+  * Limits of parsed values protect from untrusted input, so increase them with care.
+  *
+  * @param fieldNameMapper        maps names of case class fields to JSON keys (an identity function by default)
+  * @param javaEnumValueNameMapper maps names of Java enum values to JSON strings (an identity function by default)
+  * @param adtLeafClassNameMapper maps full names of ADT leaf classes and objects to discriminator values
+  *                               (`JsonCodecMaker.simpleClassName` by default)
+  * @param discriminatorFieldName the name of the discriminator field, or `None` for the alternative representation of
+  *                               ADTs: strings for objects and wrapper JSON objects for classes (`Some("type")` by
+  *                               default)
+  * @param isStringified          turns on stringification of numbers and booleans in collections, options and value
+  *                               classes (`false` by default)
+  * @param mapAsArray             turns on serialization and parsing of maps as JSON arrays of key-value pairs, which
+  *                               allows `JsonValueCodec` instances for keys (`false` by default)
+  * @param skipUnexpectedFields   turns on skipping of unexpected fields, otherwise they cause a parse exception (`true`
+  *                               by default)
+  * @param transientDefault       turns on skipping serialization of fields with default values of the primary
+  *                               constructor (`true` by default)
+  * @param transientEmpty         turns on skipping serialization of fields with empty arrays or collections (`true` by
+  *                               default)
+  * @param transientNone          turns on skipping serialization of fields with `None` values (`true` by default)
+  * @param requireCollectionFields turns on checking of presence of collection fields when parsing, and serialization of
+  *                                empty ones (`false` by default)
+  * @param bigDecimalPrecision    the precision of parsed `BigDecimal` values (34 by default, as for decimal128)
+  * @param bigDecimalScaleLimit   the exclusive limit of the absolute scale of parsed `BigDecimal` values (6178 by
+  *                               default, as for decimal128)
+  * @param bigDecimalDigitsLimit  the exclusive limit of mantissa digits in parsed `BigDecimal` values before rounding
+  *                               (308 by default)
+  * @param bigIntDigitsLimit      the exclusive limit of decimal digits in parsed `BigInt` values (308 by default)
+  * @param bitSetValueLimit       the exclusive limit of values in parsed bit sets (1024 by default)
+  * @param mapMaxInsertNumber     the max number of inserts into parsed maps (1024 by default, see
+  *                               https://github.com/scala/bug/issues/11203 )
+  * @param setMaxInsertNumber     the max number of inserts into parsed sets, except bit sets (1024 by default, see
+  *                               https://github.com/scala/bug/issues/11203 )
+  * @param allowRecursiveTypes    turns on support of recursive types (`false` by default, because untrusted input can
+  *                               cause stack overflow errors)
+  * @param requireDiscriminatorFirst requires the discriminator field to be the first field of JSON objects (`true` by
+  *                                  default, because a discriminator at the end of nested objects causes CPU overuse)
+  * @param useScalaEnumValueId    turns on parsing and serialization of Scala enumeration values by their ids (`false`
+  *                               by default)
+  * @param skipNestedOptionValues turns on skipping of some values of options nested more than 2 times, and
+  *                               distinguishing of `null` and missing fields with `Option[Option[?]]` values (`false`
+  *                               by default)
+  * @param circeLikeObjectEncoding turns on serialization and parsing of Scala objects as JSON objects with a key and an
+  *                                empty object value, like `{"EnumValue":{}}` (`false` by default)
+  * @param decodingOnly           turns on generation of the decoding implementation only (`false` by default)
+  * @param encodingOnly           turns on generation of the encoding implementation only (`false` by default)
+  * @param requireDefaultFields   turns on checking of presence of fields with default values when parsing, and their
+  *                               serialization (`false` by default)
+  * @param checkFieldDuplication  turns on checking of duplicated fields when parsing classes (`true` by default)
+  * @param scalaTransientSupport  turns on support of `scala.transient` (`false` by default)
+  * @param inlineOneValueClasses  turns on inlined codecs for non-value classes whose primary constructor has one
+  *                               argument (`false` by default)
+  * @param alwaysEmitDiscriminator turns on serialization of the discriminator field by codecs of ADT leaf classes, not
+  *                                only of ADT base classes, while decoders still don't require it (`false` by default)
+  * @param transientNull          turns on skipping serialization of fields with `null` values (`false` by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -340,7 +326,7 @@ object CodecMakerConfig extends CodecMakerConfig(
   transientNull = false) {
 
   /**
-    * Use to enable printing of codec during compilation:
+    * Turns on printing of generated codecs during compilation:
     * {{{
     * given CodecMakerConfig.PrintCodec with {}
     * val codec = JsonCodecMaker.make[MyClass]
@@ -394,58 +380,54 @@ object CodecMakerConfig extends CodecMakerConfig(
 
 object JsonCodecMaker {
   /**
-    * A partial function that is a total in fact and always returns a string passed to it.
+    * A partial function that is total and returns its argument.
     *
-    * @return a provided value
+    * @return the given string
     */
   val partialIdentity: PartialFunction[String, String] = { case s => s }
 
   /**
-    * Mapping function for field or class names that should be in camelCase format.
+    * Maps field or class names to camelCase.
     *
-    * @return a transformed name or the same name if no transformation is required
+    * @return the transformed name
     */
   val enforceCamelCase: PartialFunction[String, String] = { case s => enforceCamelOrPascalCase(s, toPascal = false) }
 
   /**
-    * Mapping function for field or class names that should be in PascalCase format.
+    * Maps field or class names to PascalCase.
     *
-    * @return a transformed name or the same name if no transformation is required
+    * @return the transformed name
     */
   val EnforcePascalCase: PartialFunction[String, String] = { case s => enforceCamelOrPascalCase(s, toPascal = true) }
 
   /**
-    * Mapping function for field or class names that should be in snake_case format
-    * with separated non-alphabetic characters.
+    * Maps field or class names to snake_case, separating non-alphabetic characters.
     *
-    * @return a transformed name or the same name if no transformation is required
+    * @return the transformed name
     */
   val enforce_snake_case: PartialFunction[String, String] =
     { case s => enforceSnakeOrKebabCaseWithSeparatedNonAlphabetic(s, '_') }
 
   /**
-    * Mapping function for field or class names that should be in snake_case format
-    * with joined non-alphabetic characters.
+    * Maps field or class names to snake_case, joining non-alphabetic characters.
     *
-    * @return a transformed name or the same name if no transformation is required
+    * @return the transformed name
     */
   val enforce_snake_case2: PartialFunction[String, String] =
     { case s => enforceSnakeOrKebabCaseWithJoinedNonAphabetic(s, '_') }
 
   /**
-    * Mapping function for field or class names that should be in kebab-case format
-    * with separated non-alphabetic characters.
+    * Maps field or class names to kebab-case, separating non-alphabetic characters.
     *
-    * @return a transformed name or the same name if no transformation is required
+    * @return the transformed name
     */
   val `enforce-kebab-case`: PartialFunction[String, String] =
     { case s => enforceSnakeOrKebabCaseWithSeparatedNonAlphabetic(s, '-') }
 
   /**
-    * Mapping function for field or class names that should be in kebab-case format
-    * with joined non-alphabetic characters.
+    * Maps field or class names to kebab-case, joining non-alphabetic characters.
     *
-    * @return a transformed name or the same name if no transformation is required
+    * @return the transformed name
     */
   val `enforce-kebab-case2`: PartialFunction[String, String] =
     { case s => enforceSnakeOrKebabCaseWithJoinedNonAphabetic(s, '-') }
@@ -542,10 +524,10 @@ object JsonCodecMaker {
   }
 
   /**
-    * Mapping function for class names that should be trimmed to the simple class name without package prefix.
+    * Maps full class names to simple class names, without the package prefix.
     *
     * @param fullClassName the name to transform
-    * @return a transformed name or the same name if no transformation is required
+    * @return the transformed name
     */
   def simpleClassName(fullClassName: String): String =
     val lastComponent = fullClassName.substring(Math.max(fullClassName.lastIndexOf('.') + 1, 0))
@@ -554,135 +536,133 @@ object JsonCodecMaker {
     lastComponent.substring(localPrefixIndex)
 
   /**
-    * Derives a codec for JSON values for the specified type `A`.
+    * Derives a JSON value codec for type `A`.
     *
-    * @tparam A a type that should be encoded and decoded by the derived codec
-    * @return an instance of the derived codec
+    * @tparam A the type to encode and decode
+    * @return the derived codec
     */
   inline def make[A]: JsonValueCodec[A] = ${Impl.makeWithDefaultConfig}
 
   /**
-    * A replacement for the `make` call with the `CodecMakerConfig.withDiscriminatorFieldName(None)` configuration
-    * parameter.
+    * Derives a JSON value codec for type `A`, like `make` with the `CodecMakerConfig.withDiscriminatorFieldName(None)`
+    * configuration.
     *
-    * @tparam A a type that should be encoded and decoded by the derived codec
-    * @return an instance of the derived codec
+    * @tparam A the type to encode and decode
+    * @return the derived codec
     */
   inline def makeWithoutDiscriminator[A]: JsonValueCodec[A] = ${Impl.makeWithoutDiscriminator}
 
   /**
-    * A replacement for the `make` call with the
-    * `CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)`
-    * configuration parameter.
+    * Derives a JSON value codec for type `A`, like `make` with the
+    * `CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)` configuration.
     *
-    * @tparam A a type that should be encoded and decoded by the derived codec
-    * @return an instance of the derived codec
+    * @tparam A the type to encode and decode
+    * @return the derived codec
     */
   inline def makeWithRequiredCollectionFields[A]: JsonValueCodec[A] = ${Impl.makeWithRequiredCollectionFields}
 
   /**
-    * A replacement for the `make` call with the
+    * Derives a JSON value codec for type `A`, like `make` with the
     * `CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true).withDiscriminatorFieldName(Some("name"))`
-    * configuration parameter.
+    * configuration.
     *
-    * @tparam A a type that should be encoded and decoded by the derived codec
-    * @return an instance of the derived codec
+    * @tparam A the type to encode and decode
+    * @return the derived codec
     */
   inline def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A]: JsonValueCodec[A] =
     ${Impl.makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName}
 
   /**
-   * A replacement for the `make` call with the
-   * `CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true)`
-   * configuration parameter.
+   * Derives a JSON value codec for type `A`, like `make` with the
+   * `CodecMakerConfig.withTransientDefault(false).withRequireDefaultFields(true)` configuration.
    *
-   * @tparam A a type that should be encoded and decoded by the derived codec
-   * @return an instance of the derived codec
+   * @tparam A the type to encode and decode
+   * @return the derived codec
    */
   inline def makeWithRequiredDefaultFields[A]: JsonValueCodec[A] = ${Impl.makeWithRequiredDefaultFields}
 
   /**
-   * A replacement for the `make` call with the
-   * `CodecMakerConfig.withSkipNestedOptionValues(true)`
-   * configuration parameter.
+   * Derives a JSON value codec for type `A`, like `make` with the `CodecMakerConfig.withSkipNestedOptionValues(true)`
+   * configuration.
    *
-   * @tparam A a type that should be encoded and decoded by the derived codec
-   * @return an instance of the derived codec
+   * @tparam A the type to encode and decode
+   * @return the derived codec
    */
   inline def makeWithSkipNestedOptionValues[A]: JsonValueCodec[A] = ${Impl.makeWithSkipNestedOptionValues}
 
   /**
-    * A replacement for the `make` call with the
+    * Derives a JSON value codec for type `A`, like `make` with the
     * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None)`
-    * configuration parameter.
+    * configuration.
     *
-    * @tparam A a type that should be encoded and decoded by the derived codec
-    * @return an instance of the derived codec
+    * @tparam A the type to encode and decode
+    * @return the derived codec
     */
   inline def makeCirceLike[A]: JsonValueCodec[A] = ${Impl.makeCirceLike}
 
   /**
-    * A replacement for the `make` call with the
+    * Derives a JSON value codec for type `A`, like `make` with the
     * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case)`
-    * configuration parameter.
+    * configuration.
     *
-    * @tparam A a type that should be encoded and decoded by the derived codec
-    * @return an instance of the derived codec
+    * @tparam A the type to encode and decode
+    * @return the derived codec
     */
   inline def makeCirceLikeSnakeCased[A]: JsonValueCodec[A] = ${Impl.makeCirceLikeSnakeCased}
 
     /**
-   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
+   * Derives a JSON value codec for type `A` that matches OpenAPI specifications, like `make` with the
    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true).withAllowRecursiveTypes(true)`
+   * configuration.
    *
-   * @tparam A a type that should be encoded and decoded by the derived codec
-   * @return an instance of the derived codec
+   * @tparam A the type to encode and decode
+   * @return the derived codec
    */
   inline def makeOpenapiLike[A]: JsonValueCodec[A] = ${Impl.makeOpenapiLike}
 
   /**
-   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
+   * Derives a JSON value codec for type `A` that matches OpenAPI specifications, like `make` with the
    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true).withAllowRecursiveTypes(true)`
-   * with a privided discriminator field name.
+   * configuration and the given discriminator field name.
    *
-   * @tparam A a type that should be encoded and decoded by the derived codec
-   * @param discriminatorFieldName a name of discriminator field
-   * @return an instance of the derived codec
+   * @tparam A the type to encode and decode
+   * @param discriminatorFieldName the name of the discriminator field
+   * @return the derived codec
    */
   inline def makeOpenapiLike[A](discriminatorFieldName: String): JsonValueCodec[A] =
     ${Impl.makeOpenapiLike('discriminatorFieldName)}
 
   /**
-   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
+   * Derives a JSON value codec for type `A` that matches OpenAPI specifications, like `make` with the
    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true).withAllowRecursiveTypes(true)`
-   * with a privided discriminator field name and an ADT leaf-class name mapper with sequentionally applied function
-   * that truncates to simple class name by default
+   * configuration, the given discriminator field name, and the given ADT leaf class name mapper, which receives simple
+   * class names.
    *
-   * @tparam A a type that should be encoded and decoded by the derived codec
-   * @param discriminatorFieldName a name of discriminator field
-   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
-   *                               discriminator field
-   * @return an instance of the derived codec
+   * @tparam A the type to encode and decode
+   * @param discriminatorFieldName the name of the discriminator field
+   * @param adtLeafClassNameMapper maps simple names of ADT leaf classes and objects to discriminator values
+   * @return the derived codec
    */
   inline def makeOpenapiLike[A](discriminatorFieldName: String, inline adtLeafClassNameMapper: PartialFunction[String, String]): JsonValueCodec[A] =
     ${Impl.makeOpenapiLike('discriminatorFieldName, 'adtLeafClassNameMapper)}
 
   /**
-   * Replacements for the `make` call preconfigured to behave as expected by openapi specifications:
+   * Derives a JSON value codec for type `A` that matches OpenAPI specifications, like `make` with the
    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withRequireCollectionFields(true).withAllowRecursiveTypes(true).withDiscriminatorFieldName(scala.None))`
+   * configuration.
    *
-   * @tparam A a type that should be encoded and decoded by the derived codec
-   * @return an instance of the derived codec
+   * @tparam A the type to encode and decode
+   * @return the derived codec
    */
   inline def makeOpenapiLikeWithoutDiscriminator[A]: JsonValueCodec[A] =
     ${Impl.makeOpenapiLikeWithoutDiscriminator}
 
   /**
-    * Derives a codec for JSON values for the specified type `A` and a provided derivation configuration.
+    * Derives a JSON value codec for type `A` with the given configuration.
     *
-    * @param config a derivation configuration
-    * @tparam A a type that should be encoded and decoded by the derived codec
-    * @return an instance of the derived codec
+    * @param config the derivation configuration
+    * @tparam A the type to encode and decode
+    * @return the derived codec
     */
   inline def make[A](inline config: CodecMakerConfig): JsonValueCodec[A] = ${Impl.makeWithSpecifiedConfig('config)}
 
@@ -1772,8 +1752,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     typeSymbol.children.map { sym =>
       if (sym.isType) {
         if (
-            sym.name == "<local child>" // scala 2 anonymous class anonymous class extending typeSymbol type
-            || sym == typeSymbol // scala 3 anonymous class extending typeSymbol type
+            sym.name == "<local child>" // Scala 2 anonymous class that extends the typeSymbol type
+            || sym == typeSymbol // Scala 3 anonymous class that extends the typeSymbol type
           )
             fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a " +
               "custom implicitly accessible codec")
@@ -1789,7 +1769,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             }
             val polyRes = resPolyTp match
               case MethodType(_, _, resTp) => resTp
-              case other => other // hope we have no multiple typed param lists yet.
+              case other => other // assumes no multiple type parameter lists
             if (ctArgs.isEmpty) polyRes
             else polyRes match
               case AppliedType(base, _) => base.appliedTo(ctArgs)

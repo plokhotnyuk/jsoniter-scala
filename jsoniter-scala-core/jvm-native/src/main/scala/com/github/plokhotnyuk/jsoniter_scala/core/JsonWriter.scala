@@ -33,17 +33,17 @@ import scala.{specialized => sp}
 import java.lang.Long.compareUnsigned
 
 /**
- * A writer for iterative serialization of JSON keys and values.
+ * A writer that serializes JSON keys and values iteratively.
  *
- * @param buf an internal buffer for writing JSON data
- * @param count the current position in the internal buffer
- * @param limit the last position in the internal buffer
- * @param indention the current indention level
- * @param comma a flag indicating if the next element should be preceded by comma
- * @param disableBufGrowing a flag indicating if growing of the internal buffer is disabled
- * @param bbuf a byte buffer for writing JSON data
- * @param out the output stream for writing JSON data
- * @param config a writer configuration
+ * @param buf the internal buffer for JSON output
+ * @param count the write position in the internal buffer
+ * @param limit the end position (exclusive) of the internal buffer
+ * @param indention the current indentation level
+ * @param comma `true` if a comma must precede the next element
+ * @param disableBufGrowing `true` if growing of the internal buffer is turned off
+ * @param bbuf the byte buffer for JSON output
+ * @param out the output stream for JSON output
+ * @param config the writer configuration
  */
 final class JsonWriter private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](32768),
@@ -85,7 +85,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Char` value as a JSON key.
    *
    * @param x the `Char` value to write
-   * @throws JsonWriterException in case of `Char` value is a part of surrogate pair
+   * @throws JsonWriterException if the `Char` value is a part of a surrogate pair
    */
   def writeKey(x: Char): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
@@ -160,7 +160,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param epochSecond the epoch second of the timestamp to write
    * @param nano the nanoseconds of the timestamp to write
-   * @throws JsonWriterException if the nanoseconds value is less than 0 or greater than 999999999
+   * @throws JsonWriterException if `nano` is outside of 0..999999999
    */
   def writeTimestampKey(epochSecond: Long, nano: Int): Unit = {
     if (nano < 0 || nano > 999999999) encodeError("illegal nanoseconds value: " + nano)
@@ -227,7 +227,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `String` value as a JSON key.
    *
    * @param x the `String` value to write
-   * @throws JsonWriterException if the provided string has an illegal surrogate pair
+   * @throws JsonWriterException if the string has an illegal surrogate pair
    */
   def writeKey(x: String): Unit = {
     val len = x.length
@@ -252,7 +252,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a `String` value that doesn't require encoding or escaping as a JSON key.
    *
-   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligible for writing by this method.
+   * @note Check the string with [[JsonWriter.isNonEscapedAscii]] before calling this method.
    *
    * @param x the `String` value to write
    */
@@ -452,9 +452,9 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Throws a [[JsonWriterException]] with the given error message.
+   * Throws a [[JsonWriterException]] with the given message.
    *
-   * @param msg the error message
+   * @param msg the exception message
    * @throws JsonWriterException always
    */
   @noinline
@@ -499,7 +499,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `String` value as a JSON value.
    *
    * @param x the `String` value to write
-   * @throws JsonWriterException if the provided string has an illegal surrogate pair
+   * @throws JsonWriterException if the string has an illegal surrogate pair
    */
   def writeVal(x: String): Unit = {
     val len = x.length
@@ -521,7 +521,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Writes a `String` value that doesn't require encoding or escaping as a JSON value.
    *
-   * @note Use [[JsonWriter.isNonEscapedAscii]] for validation if the string is eligible for writing by this method.
+   * @note Check the string with [[JsonWriter.isNonEscapedAscii]] before calling this method.
    *
    * @param x the `String` value to write
    */
@@ -738,7 +738,7 @@ final class JsonWriter private[jsoniter_scala](
    * Writes a `Char` value as a JSON value.
    *
    * @param x the `Char` value to write
-   * @throws JsonWriterException in case of `Char` value is a part of surrogate pair
+   * @throws JsonWriterException if the `Char` value is a part of a surrogate pair
    */
   def writeVal(x: Char): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
@@ -792,7 +792,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param epochSecond the epoch second of the timestamp to write
    * @param nano the nanoseconds of the timestamp to write
-   * @throws JsonWriterException if the nanoseconds value is less than 0 or greater than 999999999
+   * @throws JsonWriterException if `nano` is outside of 0..999999999
    */
   def writeTimestampVal(epochSecond: Long, nano: Int): Unit = {
     if (nano < 0 || nano > 999999999) encodeError("illegal nanoseconds value: " + nano)
@@ -932,7 +932,7 @@ final class JsonWriter private[jsoniter_scala](
    *
    * @param epochSecond the epoch second of the timestamp to write
    * @param nano the nanoseconds of the timestamp to write
-   * @throws JsonWriterException if the nanoseconds value is less than 0 or greater than 999999999
+   * @throws JsonWriterException if `nano` is outside of 0..999999999
    */
   def writeTimestampValAsString(epochSecond: Long, nano: Int): Unit = {
     if (nano < 0 || nano > 999999999) encodeError("illegal nanoseconds value: " + nano)
@@ -959,10 +959,10 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a byte array as a JSON hexadecimal string value.
+   * Writes a byte array as a JSON string value encoded with the base-16 format.
    *
    * @param bs the byte array to write
-   * @param lowerCase if `true`, outputs lowercase hexadecimal digits
+   * @param lowerCase `true` to write lowercase hexadecimal digits
    */
   def writeBase16Val(bs: Array[Byte], lowerCase: Boolean): Unit =
     writeBase16Bytes(bs, {
@@ -971,25 +971,25 @@ final class JsonWriter private[jsoniter_scala](
     })
 
   /**
-   * Writes a byte array as a JSON string value encoded in a base-64 format.
+   * Writes a byte array as a JSON string value encoded with the base-64 format.
    *
    * @param bs the byte array to write
-   * @param doPadding if `true`, outputs padding characters (`=`) as needed
+   * @param doPadding `true` to write padding characters (`=`) when needed
    */
   def writeBase64Val(bs: Array[Byte], doPadding: Boolean): Unit =
     writeBase64Bytes(bs, base64Digits, 0x1111111111111111L, 0x1D1D1D1D1D1D1D1DL, doPadding)
 
   /**
-   * Writes a byte array as a JSON string value encoded in a base-64 format for URLs.
+   * Writes a byte array as a JSON string value encoded with the base-64 format for URLs.
    *
    * @param bs the byte array to write
-   * @param doPadding if `true`, outputs padding characters (`=`) as needed
+   * @param doPadding `true` to write padding characters (`=`) when needed
    */
   def writeBase64UrlVal(bs: Array[Byte], doPadding: Boolean): Unit =
     writeBase64Bytes(bs, base64UrlDigits, 0x1313131313131313L, 0x4F4F4F4F4F4F4F4FL, doPadding)
 
   /**
-   * Writes a byte array as a JSON raw binary value.
+   * Writes a byte array as a raw JSON value, without escaping or validation.
    *
    * @param bs the byte array to write
    */
@@ -1011,7 +1011,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.Duration]] value as bytes.
+   * Writes a [[java.time.Duration]] value as unquoted bytes.
    *
    * @param x the [[java.time.Duration]] value to write
    */
@@ -1088,14 +1088,14 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.Instant]] value as bytes.
+   * Writes a [[java.time.Instant]] value as unquoted bytes.
    *
    * @param x the [[java.time.Instant]] value to write
    */
   def writeBytes(x: Instant): Unit = writeInstantAsBytes(x)
 
   /**
-   * Writes a [[java.time.LocalDate]] value as bytes.
+   * Writes a [[java.time.LocalDate]] value as unquoted bytes.
    *
    * @param x the [[java.time.LocalDate]] value to write
    */
@@ -1111,7 +1111,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.LocalDateTime]] value as bytes.
+   * Writes a [[java.time.LocalDateTime]] value as unquoted bytes.
    *
    * @param x the [[java.time.LocalDateTime]] value to write
    */
@@ -1123,7 +1123,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.LocalTime]] value as bytes.
+   * Writes a [[java.time.LocalTime]] value as unquoted bytes.
    *
    * @param x the [[java.time.LocalTime]] value to write
    */
@@ -1133,7 +1133,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.MonthDay]] value as bytes.
+   * Writes a [[java.time.MonthDay]] value as unquoted bytes.
    *
    * @param x the [[java.time.MonthDay]] value to write
    */
@@ -1147,7 +1147,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.OffsetDateTime]] value as bytes.
+   * Writes a [[java.time.OffsetDateTime]] value as unquoted bytes.
    *
    * @param x the [[java.time.OffsetDateTime]] value to write
    */
@@ -1160,7 +1160,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.OffsetTime]] value as bytes.
+   * Writes a [[java.time.OffsetTime]] value as unquoted bytes.
    *
    * @param x the [[java.time.OffsetTime]] value to write
    */
@@ -1172,7 +1172,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.Period]] value as bytes.
+   * Writes a [[java.time.Period]] value as unquoted bytes.
    *
    * @param x the [[java.time.Period]] value to write
    */
@@ -1219,14 +1219,14 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.Year]] value as bytes.
+   * Writes a [[java.time.Year]] value as unquoted bytes.
    *
    * @param x the [[java.time.Year]] value to write
    */
   def writeBytes(x: Year): Unit = count = writeYear(x.getValue, ensureBufCapacity(10), buf, digits)
 
   /**
-   * Writes a [[java.time.YearMonth]] value as bytes.
+   * Writes a [[java.time.YearMonth]] value as unquoted bytes.
    *
    * @param x the [[java.time.YearMonth]] value to write
    */
@@ -1240,7 +1240,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.ZonedDateTime]] value as bytes.
+   * Writes a [[java.time.ZonedDateTime]] value as unquoted bytes.
    *
    * @param x the [[java.time.ZonedDateTime]] value to write
    */
@@ -1270,7 +1270,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.ZoneOffset]] value as bytes.
+   * Writes a [[java.time.ZoneOffset]] value as unquoted bytes.
    *
    * @param x the [[java.time.ZoneOffset]] value to write
    */
@@ -1304,7 +1304,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Writes a [[java.time.ZoneId]] value as bytes.
+   * Writes a [[java.time.ZoneId]] value as unquoted bytes.
    *
    * @param x the [[java.time.ZoneId]] value to write
    */
@@ -1347,11 +1347,11 @@ final class JsonWriter private[jsoniter_scala](
   def writeObjectEnd(): Unit = writeNestedEnd('}')
 
   /**
-   * Writes JSON-encoded value of type `A` to an output stream.
+   * Serializes a value of type `A` to the given output stream.
    *
-   * @param codec a JSON value codec for type `A`
-   * @param x the value to encode
-   * @param out the output stream to write to
+   * @param codec the JSON value codec
+   * @param x the value to serialize
+   * @param out the output stream for JSON output
    * @param config the writer configuration
    */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit =
@@ -1373,12 +1373,12 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   /**
-   * Encodes a value of type `A` to a byte array.
+   * Serializes a value of type `A` to a byte array.
    *
-   * @param codec a JSON value codec for type `A`
-   * @param x the value to encode
+   * @param codec the JSON value codec
+   * @param x the value to serialize
    * @param config the writer configuration
-   * @return the encoded JSON as a byte array
+   * @return the JSON bytes
    */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): Array[Byte] =
     try {
@@ -1396,12 +1396,12 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   /**
-   * Encodes a value of type `A` to a string.
+   * Serializes a value of type `A` to a string.
    *
-   * @param codec a JSON value codec for type `A`
-   * @param x the value to encode
+   * @param codec the JSON value codec
+   * @param x the value to serialize
    * @param config the writer configuration
-   * @return the encoded JSON as a string
+   * @return the JSON string
    */
   private[jsoniter_scala] def writeToString[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String =
     try {
@@ -1421,7 +1421,7 @@ final class JsonWriter private[jsoniter_scala](
   /**
    * Turns off reallocation of the internal buffer to the preferred size after writing.
    *
-   * @note Use only for a newly allocated writer that is used once, so the reallocated buffer would not be used.
+   * @note Use it only for a new writer that serializes once, because its buffer won't be reused.
    *
    * @return this writer
    */
@@ -1431,14 +1431,14 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Encodes a value of type `A` to a string without buffer reallocation.
+   * Serializes a value of type `A` to a string without reallocating the buffer.
    *
-   * @note Use only once with a newly allocated writer, so buffer reallocation is not required.
+   * @note Use it only for a new writer that serializes once, because its buffer won't be reused.
    *
-   * @param codec a JSON value codec for type `A`
-   * @param x the value to encode
+   * @param codec the JSON value codec
+   * @param x the value to serialize
    * @param config the writer configuration
-   * @return the encoded JSON as a string
+   * @return the JSON string
    */
   private[jsoniter_scala] def writeToStringWithoutBufReallocation[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String = {
     this.config = config
@@ -1451,15 +1451,15 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Encodes a value of type `A` into a pre-allocated byte array slice.
+   * Serializes a value of type `A` to the given byte array slice.
    *
-   * @param codec a JSON value codec for type `A`
-   * @param x the value to encode
-   * @param buf the target byte array
-   * @param from the start index of the target slice (inclusive)
-   * @param to the end index of the target slice (exclusive)
+   * @param codec the JSON value codec
+   * @param x the value to serialize
+   * @param buf the byte array for JSON output
+   * @param from the start index of the slice (inclusive)
+   * @param to the end index of the slice (exclusive)
    * @param config the writer configuration
-   * @return the number of bytes written to the target slice
+   * @return the number of bytes written to the slice
    */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig): Int = {
     val currBuf = this.buf
@@ -1479,11 +1479,11 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   /**
-   * Encodes a value of type `A` into a byte buffer.
+   * Serializes a value of type `A` to the given byte buffer.
    *
-   * @param codec JSON value codec for type `A`
-   * @param x the value to encode
-   * @param bbuf the target byte buffer
+   * @param codec the JSON value codec
+   * @param x the value to serialize
+   * @param bbuf the byte buffer for JSON output
    * @param config the writer configuration
    */
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, bbuf: ByteBuffer, config: WriterConfig): Unit =
@@ -1686,13 +1686,13 @@ final class JsonWriter private[jsoniter_scala](
       }
       val offsetLim = Math.min((posLim - pos >> 3) * 6 + 6 + offset, lenM7)
       val from = pos
-      while (offset < offsetLim) { // 1st pass: copying of 6-byte groups to 8-byte lanes
+      while (offset < offsetLim) { // 1st pass: copies 6-byte groups to 8-byte lanes
         ByteArrayAccess.setLong(buf, pos, ByteArrayAccess.getLong(bs, offset))
         pos += 8
         offset += 6
       }
       var j = from
-      while (j < pos) { // 2nd pass: in-place spreading of sextets to bytes that can be auto-vectorized
+      while (j < pos) { // 2nd pass: spreads sextets to bytes in place (auto-vectorizable)
         val x = ByteArrayAccess.getLong(buf, j)
         val y = (x & 0xFFFFFFL) | (x << 8 & 0xFFFFFF00000000L)
         ByteArrayAccess.setLong(buf, j, (y >>> 2 & 0x3F0000003FL) | (y << 12 & 0x300000003000L) |
@@ -1701,7 +1701,7 @@ final class JsonWriter private[jsoniter_scala](
         j += 8
       }
       var i = from
-      while (i < pos) { // 3rd pass: in-place conversion of sextets to base-64 digits that can be auto-vectorized
+      while (i < pos) { // 3rd pass: converts sextets to base-64 digits in place (auto-vectorizable)
         val q = ByteArrayAccess.getLong(buf, i)
         val t1 = q + 0x6666666666666666L & m5
         val t2 = q + 0x4C4C4C4C4C4C4C4CL & m5
@@ -1832,9 +1832,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeString(s: String, len: Int, pos: Int, buf: Array[Byte]): Int = {
     var i = 0
-    if (len < limit - pos) { // the string fits to the buffer with a room for the closing quote
+    if (len < limit - pos) { // the string and the closing quote fit in the buffer
       var m, bs = 0L
-      while (m == 0L && i + 7 < len) { // SWAR checking of 8 chars for ones that require escaping or encoding
+      while (m == 0L && i + 7 < len) { // SWAR check of 8 chars for ones that need escaping or encoding
         var c0 = s.charAt(i).toLong
         m = c0
         bs = c0
@@ -4107,10 +4107,10 @@ object JsonWriter {
   }
 
   /**
-   * Checks if a character does not require JSON escaping or encoding.
+   * Checks if a char doesn't require escaping or encoding in JSON strings.
    *
-   * @param ch the character to check
-   * @return `true` if the character is a basic ASCII character (code point less than `0x80`) that does not need JSON escaping
+   * @param ch the char to check
+   * @return `true` if the char is an ASCII char (below `0x80`) that doesn't need escaping
    */
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch.toInt) == 0
 }

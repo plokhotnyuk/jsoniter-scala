@@ -21,5 +21,10 @@
 
 package com.github.plokhotnyuk.jsoniter_scala.core
 
+/**
+  * A serialization exception, thrown by [[JsonWriter]] for values that can't be serialized to JSON.
+  *
+  * Stack traces are off by default, see [[WriterConfig]].
+  */
 class JsonWriterException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
   extends RuntimeException(msg, cause, true, withStackTrace)

@@ -38,8 +38,8 @@ object JsoniterScalaCodec {
    * and chooses an appropriate JSON number representation.
    *
    * @param mc the math context for rounding of decimal values, `java.math.MathContext.UNLIMITED` to parse them exactly
-   * @param scaleLimit the exclusive limit for the scale of decimal values
-   * @param digitsLimit the exclusive limit for the number of mantissa digits
+   * @param scaleLimit the exclusive limit of the absolute scale
+   * @param digitsLimit the exclusive limit of decimal digits in the mantissa
    * @return a number parser
    */
   def numberParser(
@@ -357,7 +357,7 @@ object JsoniterScalaCodec {
    * Creates a codec for `BigInt` values.
    *
    * @param fromString a function that parses `BigInt` values from JSON strings without a fraction and an exponent
-   * @param digitsLimit the exclusive limit for the number of decimal digits of decoded values
+   * @param digitsLimit the exclusive limit of decimal digits
    * @return a codec for `BigInt` values
    */
   def bigIntCodec(fromString: String => BigInt, digitsLimit: Int): Codec[BigInt] = new Codec[BigInt] {
@@ -499,12 +499,12 @@ object JsoniterScalaCodec {
 /**
  * A JSON value codec that parses and serializes JSON values to/from circe's JSON AST.
  *
- * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
+ * @param maxDepth the max depth of nested JSON arrays and objects for decoding and encoding
  * @param initialSize the initial size hint for maps of JSON object fields
- * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
- * @param numberParser a function that parses JSON numbers
- * @param numberSerializer a function that serializes JSON numbers
- * @param sortKeys a flag to sort keys of JSON objects in the natural order of strings (using `String.compareTo`)
+ * @param doSerialize returns `true` for values of JSON object fields to serialize
+ * @param numberParser parses JSON numbers
+ * @param numberSerializer serializes JSON numbers
+ * @param sortKeys turns on sorting of JSON object keys by `String.compareTo`
  */
 final class JsoniterScalaCodec(
     maxDepth: Int,
@@ -517,10 +517,10 @@ final class JsoniterScalaCodec(
   /**
    * An auxiliary constructor for backward binary compatibility.
    *
-   * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
+   * @param maxDepth the max depth of nested JSON arrays and objects for decoding and encoding
    * @param initialSize the initial size hint for maps of JSON object fields
-   * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
-   * @param numberParser a function that parses JSON numbers
+   * @param doSerialize returns `true` for values of JSON object fields to serialize
+   * @param numberParser parses JSON numbers
    */
   def this(maxDepth: Int, initialSize: Int, doSerialize: Json => Boolean, numberParser: JsonReader => Json) =
     this(maxDepth, initialSize, doSerialize, numberParser, JsoniterScalaCodec.defaultNumberSerializer, false)
@@ -528,11 +528,11 @@ final class JsoniterScalaCodec(
   /**
    * An auxiliary constructor for backward binary compatibility.
    *
-   * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
+   * @param maxDepth the max depth of nested JSON arrays and objects for decoding and encoding
    * @param initialSize the initial size hint for maps of JSON object fields
-   * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
-   * @param numberParser a function that parses JSON numbers
-   * @param numberSerializer a function that serializes JSON numbers
+   * @param doSerialize returns `true` for values of JSON object fields to serialize
+   * @param numberParser parses JSON numbers
+   * @param numberSerializer serializes JSON numbers
    */
   def this(
     maxDepth: Int,

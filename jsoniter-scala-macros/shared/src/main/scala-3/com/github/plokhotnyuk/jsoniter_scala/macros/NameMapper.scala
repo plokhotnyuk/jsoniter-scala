@@ -343,7 +343,7 @@ private[macros] object CompileTimeEval {
       }
 
     private def retrieveRuntimeModule(applyTerm: Term, sym: Symbol): AnyRef =
-      val className = sym.fullName + "$" // assume that java and scala encoding are same.
+      val className = sym.fullName + "$" // assumes that Java and Scala name encodings are the same
       val moduleField =
         try java.lang.Class.forName(className).getField("MODULE$") catch {
           case ex: Exception =>
@@ -353,7 +353,7 @@ private[macros] object CompileTimeEval {
       if (instance eq null) throw CompileTimeEvalException(s"Module is null for lass $className", applyTerm.asExpr)
       instance
 
-    // Field is a Scala field, we search for an access method with the same name
+    // a Scala field: searches for an accessor method with the same name
     private def retrieveRuntimeField(obj: AnyRef, name: String): AnyRef =
       try obj.getClass.getMethod(name).invoke(obj) catch { // TODO: error handling
         case _: NoSuchMethodException => obj.getClass.getField(name).get(obj)

@@ -24,14 +24,13 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import com.github.plokhotnyuk.jsoniter_scala.core._
 
 /**
- * An extension of `JsonValueCodec[A]` that could be used to derive codecs using the `... derives ...` syntax.
+ * A `JsonValueCodec[A]` that supports codec derivation with the `derives` clause.
  *
- * A compile-time configuration can be provided by an `inline given CodecMakerConfig` value, which needs to be visible
- * in the scope, and defined/imported before the `... derives ...` syntax usage.
+ * To configure derivation, define or import an `inline given CodecMakerConfig` before the `derives` clause.
  *
- * BEWARE: Using of this class requires _runtime_ scope for the `jsoniter-scala-macros` dependency.
+ * BEWARE: Requires the `jsoniter-scala-macros` dependency in the _runtime_ scope.
  *
- * Also, to avoid overhead in runtime use it only for top-level and big commonly used data structures.
+ * Use it only for top-level and big, commonly used data structures, to limit runtime overhead.
  */
 trait ConfiguredJsonValueCodec[A] extends JsonValueCodec[A]
 

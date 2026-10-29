@@ -35,10 +35,10 @@ object JsoniterScalaCodec {
   /**
    * Creates a JSON value codec that parses and serializes JSON values to/from circe's JSON AST.
    *
-   * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
+   * @param maxDepth the max depth of nested JSON arrays and objects for decoding and encoding
    * @param initialSize the initial size hint for maps of JSON object fields
-   * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
-   * @param numberParser a function that parses JSON numbers
+   * @param doSerialize returns `true` for values of JSON object fields to serialize
+   * @param numberParser parses JSON numbers
    * @return the JSON codec
    */
   def jsonCodec(
@@ -51,11 +51,11 @@ object JsoniterScalaCodec {
   /**
    * Creates a JSON value codec that parses and serializes JSON values to/from circe's JSON AST.
    *
-   * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
+   * @param maxDepth the max depth of nested JSON arrays and objects for decoding and encoding
    * @param initialSize the initial size hint for maps of JSON object fields
-   * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
-   * @param numberParser a function that parses JSON numbers
-   * @param numberSerializer a routine that serializes JSON numbers
+   * @param doSerialize returns `true` for values of JSON object fields to serialize
+   * @param numberParser parses JSON numbers
+   * @param numberSerializer serializes JSON numbers
    * @return the JSON codec
    */
   def jsonCodec(
@@ -69,12 +69,12 @@ object JsoniterScalaCodec {
   /**
    * Creates a JSON value codec that parses and serializes JSON values to/from circe's JSON AST.
    *
-   * @param maxDepth the maximum depth of nested JSON arrays and objects for decoding and encoding
-   * @param initialSize the initial size hint for maps of JSON object fields
-   * @param doSerialize a predicate that determines whether a value of a JSON object field should be serialized
-   * @param numberParser a function that parses JSON numbers
-   * @param numberSerializer a routine that serializes JSON numbers
-   * @param sortKeys a flag to sort keys of JSON objects in the natural order of strings (using `String.compareTo`)
+   * @param maxDepth the max depth of nested JSON arrays and objects for decoding and encoding (128 by default)
+   * @param initialSize the initial size hint for maps of JSON object fields (8 by default)
+   * @param doSerialize returns `true` for values of JSON object fields to serialize (always `true` by default)
+   * @param numberParser parses JSON numbers (`io.circe.JsoniterScalaCodec.defaultNumberParser` by default)
+   * @param numberSerializer serializes JSON numbers (`io.circe.JsoniterScalaCodec.defaultNumberSerializer` by default)
+   * @param sortKeys turns on sorting of JSON object keys by `String.compareTo` (`false` by default)
    * @return the JSON codec
    */
   def jsonCodec(

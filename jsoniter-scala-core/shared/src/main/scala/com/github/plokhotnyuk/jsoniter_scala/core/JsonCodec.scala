@@ -24,10 +24,10 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 import scala.{specialized => sp}
 
 /**
-  * A `JsonCodec[A]` instance is a universal codec for JSON values and keys.
+  * A codec for both JSON values and JSON keys of type `A`.
   *
-  * BEWARE: Minimize usage of `JsonCodec[A]` due to possible creation of the scalability limit on the JDK level,
-  * for more info see:
+  * BEWARE: `JsonCodec[A]` can hit a JDK scalability bottleneck of type checks for classes with multiple interfaces,
+  * so use it sparingly. For details see:
   *
   *   - [[https://www.youtube.com/watch?v=PxcO3WHqmng]]
   *   - [[https://bugs.openjdk.org/browse/JDK-8180450]]
@@ -38,62 +38,54 @@ import scala.{specialized => sp}
 trait JsonCodec[@sp A] extends JsonValueCodec[A] with JsonKeyCodec[A]
 
 /**
-  * A `JsonValueCodec[A]` instance has the ability to decode and encode JSON values to/from values of type `A`,
-  * potentially failing with an error if the JSON content does not encode a value of the given type or `A` cannot be
-  * encoded properly according to RFC-8259 requirements.
+  * A codec that decodes and encodes JSON values of type `A`.
   */
 trait JsonValueCodec[@sp A] extends Serializable {
   /**
-    * Attempts to decode a value of type `A` from the specified `JsonReader`, but may fail with `JsonReaderException`
-    * error if the JSON input does not encode a value of this type.
+    * Decodes a JSON value of type `A`.
     *
-    * @param in an instance of `JsonReader` which provides access to the JSON input to parse a JSON value to value of
-    *           type `A`
-    * @param default the placeholder value provided to initialize some possible local variables
+    * @param in the reader of JSON input
+    * @param default the value to return for a JSON `null`, and to initialize local variables
+    * @throws JsonReaderException if the JSON value doesn't match type `A`
     */
   def decodeValue(in: JsonReader, default: A): A
 
   /**
-    * Encodes the specified value using provided `JsonWriter`, but may fail with `JsonWriterException` if it cannot be
-    * encoded properly according to RFC-8259 requirements.
+    * Encodes `x` as a JSON value.
     *
-    * @param x the value provided for serialization
-    * @param out an instance of `JsonWriter` which provides access to JSON output to serialize the specified value as
-    *            a JSON value
+    * @param x the value to encode
+    * @param out the writer of JSON output
+    * @throws JsonWriterException if `x` can't be encoded as RFC-8259 compliant JSON
     */
   def encodeValue(x: A, out: JsonWriter): Unit
 
   /**
-    * Returns some placeholder value that will be used by the high level code that generates codec instances to
-    * initialize local variables for parsed field values which have a codec that was injected using implicit `val`.
+    * Returns the placeholder value that generated codecs use to initialize local variables of fields that have an
+    * injected implicit codec.
     *
-    * See the `jsoniter-scala-macros` sub-project code and its tests for usages of `.nullValue` calls.
+    * See the `jsoniter-scala-macros` sources and tests for usages of `.nullValue` calls.
     */
   def nullValue: A
 }
 
 /**
-  * A `JsonKeyCodec[A]` instance has the ability to decode and encode JSON keys to/from values of type `A`,
-  * potentially failing with an error if the JSON input is not a key or does not encode a value of the given type or
-  * `A` cannot be encoded properly according to RFC-8259 requirements.
+  * A codec that decodes and encodes JSON keys of type `A`.
   */
 trait JsonKeyCodec[@sp A] extends Serializable {
   /**
-    * Attempts to decode a value of type `A` from the specified `JsonReader`, but may fail with `JsonReaderException`
-    * error if the JSON input is not a key or does not encode a value of this type.
+    * Decodes a JSON key of type `A`.
     *
-    * @param in an instance of `JsonReader` which provides access to the JSON input to parse a JSON key to value of
-    *           type `A`
+    * @param in the reader of JSON input
+    * @throws JsonReaderException if the input isn't a JSON key or the key doesn't match type `A`
     */
   def decodeKey(in: JsonReader): A
 
   /**
-    * Encodes the specified value using provided `JsonWriter` as a JSON key, but may fail with `JsonWriterException` if
-    * it cannot be encoded properly according to RFC-8259 requirements.
+    * Encodes `x` as a JSON key.
     *
-    * @param x the value provided for serialization
-    * @param out an instance of `JsonWriter` which provides access to JSON output to serialize the specified value as
-    *            a JSON key
+    * @param x the value to encode
+    * @param out the writer of JSON output
+    * @throws JsonWriterException if `x` can't be encoded as RFC-8259 compliant JSON
     */
   def encodeKey(x: A, out: JsonWriter): Unit
 }
