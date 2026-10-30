@@ -139,6 +139,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         validateSkip(""""\\"""", ws)
         validateSkip(""""\\\"\\"""", ws)
       }
+      forAll(Gen.listOf(Gen.oneOf("a", "Ї", "\\\\", "\\\"", "\\u0022", "{", "}", "[", "]")).map(_.mkString), genWhitespaces) {
+        (s, ws) =>
+          validateSkip(s""""$s"""", ws)
+          validateSkip(s"""{"$s":{"$s":"$s"}}""", ws)
+          validateSkip(s"""["$s",["$s"]]""", ws)
+      }
     }
     "skip number values" in {
       forAll(genWhitespaces) { ws =>
