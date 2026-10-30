@@ -6408,21 +6408,27 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private def skipString(p: Int): Int = {
-    var buf = this.buf
     var pos = p
+    val limit = tail - 7
+    val buf = this.buf
+    while (pos < limit) { // SWAR for long strings: find the first '"' or '\\' in the next 8 bytes
+      val bs = ByteArrayAccess.getLong(buf, pos)
+      val m = ((bs ^ 0x2222222222222222L) - 0x101010101010101L | (bs ^ 0x5C5C5C5C5C5C5C5CL) - 0x101010101010101L) &
+        ~bs & 0x8080808080808080L // non-ASCII bytes are masked out, the lowest set bit is exact
+      if (m != 0) {
+        val tz = java.lang.Long.numberOfTrailingZeros(m)
+        pos += tz >> 3
+        if ((bs << -tz) >= 0) return pos + 1 // the 0x40 bit of the found byte is moved to the sign: cleared for '"', set for '\\'
+        pos += 2
+      } else pos += 8
+    }
     while (pos < tail) {
       val b = buf(pos)
       pos += 1
       if (b == '"') return pos
-      if (b == '\\') {
-        pos += 1
-        if (pos > tail) {
-          pos = loadMoreOrError(pos - 2)
-          buf = this.buf
-        }
-      }
+      if (b == '\\') pos += 1
     }
-    skipString(loadMoreOrError(pos))
+    skipString(pos - tail + loadMoreOrError(tail)) // 1 if the escaped byte is not loaded yet, otherwise 0
   }
 
   private[this] def skipNumber(p: Int): Int = {
