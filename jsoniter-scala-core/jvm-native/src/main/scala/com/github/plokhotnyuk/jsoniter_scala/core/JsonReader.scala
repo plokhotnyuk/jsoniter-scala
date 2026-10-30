@@ -5721,7 +5721,7 @@ final class JsonReader private[jsoniter_scala](
       else p += 1
     }
     val len = p - pos
-    if (b == '"' && (len < charBuf.length || len < config.maxCharBufSize)) { // a fast path for plain ASCII strings
+    if (b == '"' && len < config.maxCharBufSize) { // a fast path for plain ASCII strings
       head = p + 1
       new String(buf, 0, pos, len)
     } else parseNonAsciiString(pos, p)
