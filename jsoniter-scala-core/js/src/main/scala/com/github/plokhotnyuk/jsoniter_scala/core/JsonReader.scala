@@ -1290,7 +1290,7 @@ final class JsonReader private[jsoniter_scala](
         if (x < -2562047788015215L || x > 2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
         seconds = sumSeconds((x << 12) - (x << 9) + (x << 4), seconds, pos)
         state = 1
-      } else if (b == 'M' && (state == 0 || state == 1)) {
+      } else if (b == 'M' && (state | 1) == 1) {
         if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
         seconds = sumSeconds(((x << 4) - x) << 2, seconds, pos)
         state = 2
@@ -3876,7 +3876,7 @@ final class JsonReader private[jsoniter_scala](
         if (scale + fracLen < scale) scaleLimitError(pos - 1) // overflow of the scale of the BigDecimal value
       }
       head = pos
-      if (fracLen == 0 && scale == 0) {
+      if ((fracLen | scale) == 0) {
         val limit = from + digits
         if (digits < 19) {
           var x = buf(from) - '0'
@@ -4083,7 +4083,7 @@ final class JsonReader private[jsoniter_scala](
         if (x < -2562047788015215L || x > 2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
         seconds = sumSeconds((x << 12) - (x << 9) + (x << 4), seconds, pos)
         state = 1
-      } else if (b == 'M' && (state == 0 || state == 1)) {
+      } else if (b == 'M' && (state | 1) == 1) {
         if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
         seconds = sumSeconds(((x << 4) - x) << 2, seconds, pos)
         state = 2
@@ -4781,7 +4781,7 @@ final class JsonReader private[jsoniter_scala](
             val b2 = buf(pos + 1)
             val ch = (b1 << 6 ^ b2 ^ 0xF80).toChar // 0xF80 == 0xC0.toByte << 6 ^ 0x80.toByte
             charBuf(i) = ch
-            if ((b2 & 0xC0) != 0x80 || ch < 0x80) malformedBytesError(b1, b2, pos)
+            if (b2 >= -64 || ch < 0x80) malformedBytesError(b1, b2, pos)
             parseEncodedString(i + 1, lim, charBuf, pos + 2)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else if ((b1 & 0xF0) == 0xE0) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
@@ -4790,7 +4790,7 @@ final class JsonReader private[jsoniter_scala](
             val b3 = buf(pos + 2)
             val ch = (b1 << 12 ^ b2 << 6 ^ b3 ^ 0x1F80).toChar // 0x1F80 == (0x80.toByte << 6 ^ 0x80.toByte).toChar
             charBuf(i) = ch
-            if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || ch < 0x800 ||
+            if (b2 >= -64 || b3 >= -64 || ch < 0x800 ||
               (ch & 0xF800) == 0xD800) malformedBytesError(b1, b2, b3, pos)
             parseEncodedString(i + 1, lim, charBuf, pos + 3)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
@@ -4803,7 +4803,7 @@ final class JsonReader private[jsoniter_scala](
             val ch1 = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x10000 >>> 10)
             charBuf(i) = ch1
             charBuf(i + 1) = ((cp & 0x3FF) | 0xDC00).toChar
-            if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80 ||
+            if (b2 >= -64 || b3 >= -64 || b4 >= -64 ||
               (ch1 & 0xF800) != 0xD800) malformedBytesError(b1, b2, b3, b4, pos)
             parseEncodedString(i + 2, lim, charBuf, pos + 4)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
@@ -4850,7 +4850,7 @@ final class JsonReader private[jsoniter_scala](
           val b2 = buf(pos + 1)
           val ch = (b1 << 6 ^ b2 ^ 0xF80).toChar // 0xF80 == 0xC0.toByte << 6 ^ 0x80.toByte
           head = pos + 2
-          if ((b2 & 0xC0) != 0x80 || ch < 0x80) malformedBytesError(b1, b2, pos)
+          if (b2 >= -64 || ch < 0x80) malformedBytesError(b1, b2, pos)
           return ch
         }
       } else if ((b1 & 0xF0) == 0xE0) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
@@ -4859,7 +4859,7 @@ final class JsonReader private[jsoniter_scala](
           val b3 = buf(pos + 2)
           val ch = (b1 << 12 ^ b2 << 6 ^ b3 ^ 0x1F80).toChar // 0x1F80 == (0x80.toByte << 6 ^ 0x80.toByte).toChar
           head = pos + 3
-          if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || ch < 0x800 ||
+          if (b2 >= -64 || b3 >= -64 || ch < 0x800 ||
             (ch & 0xF800) == 0xD800) malformedBytesError(b1, b2, b3, pos)
           return ch
         }
