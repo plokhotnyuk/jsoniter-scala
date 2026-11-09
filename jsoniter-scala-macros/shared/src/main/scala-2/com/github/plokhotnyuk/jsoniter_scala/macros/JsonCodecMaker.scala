@@ -113,6 +113,9 @@ final class stringified extends StaticAnnotation
   *                                otherwise they cause a parse exception (`true` by default)
   * @param allowStringifiedNumbers turns on parsing of numbers from both JSON numbers and JSON strings, while
   *                                serialization of numbers stays the same (`false` by default)
+  * @param allowDecimalNotationForIntegers turns on parsing of `Byte`, `Short`, `Int`, `Long`, and `BigInt` values from
+  *                                JSON numbers with fractions or exponents, like `1.0` or `1e0`, when they are whole
+  *                                numbers in the range of the type (`false` by default)
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -147,7 +150,8 @@ class CodecMakerConfig private (
     val alwaysEmitDiscriminator: Boolean,
     val useDefaultForNullOrEmpty: Boolean,
     val allowNullForCollections: Boolean,
-    val allowStringifiedNumbers: Boolean) {
+    val allowStringifiedNumbers: Boolean,
+    val allowDecimalNotationForIntegers: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -238,6 +242,9 @@ class CodecMakerConfig private (
   def withAllowStringifiedNumbers(allowStringifiedNumbers: Boolean): CodecMakerConfig =
     copy(allowStringifiedNumbers = allowStringifiedNumbers)
 
+  def withAllowDecimalNotationForIntegers(allowDecimalNotationForIntegers: Boolean): CodecMakerConfig =
+    copy(allowDecimalNotationForIntegers = allowDecimalNotationForIntegers)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -270,7 +277,8 @@ class CodecMakerConfig private (
                          alwaysEmitDiscriminator: Boolean = alwaysEmitDiscriminator,
                          useDefaultForNullOrEmpty: Boolean = useDefaultForNullOrEmpty,
                          allowNullForCollections: Boolean = allowNullForCollections,
-                         allowStringifiedNumbers: Boolean = allowStringifiedNumbers): CodecMakerConfig =
+                         allowStringifiedNumbers: Boolean = allowStringifiedNumbers,
+                         allowDecimalNotationForIntegers: Boolean = allowDecimalNotationForIntegers): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -304,7 +312,8 @@ class CodecMakerConfig private (
       alwaysEmitDiscriminator = alwaysEmitDiscriminator,
       useDefaultForNullOrEmpty = useDefaultForNullOrEmpty,
       allowNullForCollections = allowNullForCollections,
-      allowStringifiedNumbers = allowStringifiedNumbers)
+      allowStringifiedNumbers = allowStringifiedNumbers,
+      allowDecimalNotationForIntegers = allowDecimalNotationForIntegers)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -340,7 +349,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   alwaysEmitDiscriminator = false,
   useDefaultForNullOrEmpty = true,
   allowNullForCollections = true,
-  allowStringifiedNumbers = false) {
+  allowStringifiedNumbers = false,
+  allowDecimalNotationForIntegers = false) {
 
   /**
     * Turns on printing of generated codecs during compilation:
@@ -562,8 +572,8 @@ object JsonCodecMaker {
 
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
-    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None)`
-    * configuration.
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)`
+    * configuration, which matches decoding and encoding of codecs that are derived by circe with its defaults.
     *
     * @tparam A the type to encode and decode
     * @return the derived codec
@@ -572,7 +582,7 @@ object JsonCodecMaker {
 
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
-    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case)`
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)`
     * configuration.
     *
     * @tparam A the type to encode and decode
@@ -655,7 +665,10 @@ object JsonCodecMaker {
 
     def makeCirceLike[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
-        .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true))
+        .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true)
+        .withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false)
+        .withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false)
+        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true))
 
     def makeOpenapiLike1[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
@@ -681,7 +694,10 @@ object JsonCodecMaker {
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false)
         .withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x)))
         .withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case)
-        .withCirceLikeObjectEncoding(true))
+        .withCirceLikeObjectEncoding(true)
+        .withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false)
+        .withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false)
+        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true))
 
     def makeWithSpecifiedConfig[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] =
       make(c) {
@@ -2410,11 +2426,87 @@ object JsonCodecMaker {
         } else if (isStringified) readString
         else readNumber
 
+      def genReadAnyNumber(isStringified: Boolean, digitsLimit: Int): Tree =
+        genReadNumber(isStringified,
+          q"in.readStringAsNumber(null, _root_.java.math.MathContext.UNLIMITED, ${cfg.bigDecimalScaleLimit}, $digitsLimit)",
+          q"in.readNumber(null, _root_.java.math.MathContext.UNLIMITED, ${cfg.bigDecimalScaleLimit}, $digitsLimit)")
+
+      def genReadInteger(tpe: Type, zero: Tree, isStringified: Boolean, readString: Tree, readNumber: Tree,
+                         fromLong: (Tree, String) => Tree): Tree =
+        if (cfg.allowDecimalNotationForIntegers) {
+          // Decoding methods are never generated for primitive types, so their keys are free to use here
+          withDecoderFor(DecoderMethodKey(tpe, isStringified, EmptyTree), zero) {
+            val msg = s"value is too large for ${tpe.typeSymbol.name.decodedName.toString.toLowerCase}"
+            q"""(try ${genReadAnyNumber(isStringified, cfg.bigDecimalDigitsLimit)} catch {
+                  case e: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReaderException
+                    if e.getMessage.startsWith("value exceeds limit for number of digits") => in.decodeError($msg)
+                }) match {
+                  case l: _root_.java.lang.Long => ${fromLong(q"l.longValue", msg)}
+                  case bd: _root_.java.math.BigDecimal =>
+                    if (bd.signum == 0) $zero
+                    else {
+                      if (bd.precision - bd.scale > 19) in.decodeError($msg)
+                      ${fromLong(q"""try bd.longValueExact catch {
+                        case _: _root_.java.lang.ArithmeticException =>
+                          // Trailing zeros are stripped on the error path only to distinguish fractions from overflows
+                          in.decodeError(if (bd.stripTrailingZeros.scale > 0) "illegal number" else $msg)
+                      }""", msg)}
+                    }
+                  case bi: _root_.java.math.BigInteger =>
+                    if (bi.bitLength > 63) in.decodeError($msg)
+                    ${fromLong(q"bi.longValue", msg)}
+                  case _ => in.decodeError($msg)
+                }"""
+          }
+        } else genReadNumber(isStringified, readString, readNumber)
+
+      def genReadByteValue(isStringified: Boolean): Tree =
+        genReadInteger(definitions.ByteTpe, q"(0: _root_.scala.Byte)", isStringified, q"in.readStringAsByte()",
+          q"in.readByte()", (x, msg) => q"{ val v = $x; if (v.toByte != v) in.decodeError($msg); v.toByte }")
+
+      def genReadShortValue(isStringified: Boolean): Tree =
+        genReadInteger(definitions.ShortTpe, q"(0: _root_.scala.Short)", isStringified, q"in.readStringAsShort()",
+          q"in.readShort()", (x, msg) => q"{ val v = $x; if (v.toShort != v) in.decodeError($msg); v.toShort }")
+
+      def genReadIntValue(isStringified: Boolean): Tree =
+        genReadInteger(definitions.IntTpe, q"0", isStringified, q"in.readStringAsInt()", q"in.readInt()",
+          (x, msg) => q"{ val v = $x; if (v.toInt != v) in.decodeError($msg); v.toInt }")
+
+      def genReadLongValue(isStringified: Boolean): Tree =
+        genReadInteger(definitions.LongTpe, q"0L", isStringified, q"in.readStringAsLong()", q"in.readLong()",
+          (x, _) => x)
+
+      def genReadBigInt(isStringified: Boolean, default: Tree): Tree =
+        if (cfg.allowDecimalNotationForIntegers) {
+          withDecoderFor(DecoderMethodKey(typeOf[BigInt], isStringified, EmptyTree), default) {
+            q"""if (in.isNextToken('n')) in.readNullOrError(default, "illegal number")
+                else {
+                  in.rollbackToken()
+                  ${genReadAnyNumber(isStringified, cfg.bigIntDigitsLimit)} match {
+                    case l: _root_.java.lang.Long => _root_.scala.math.BigInt(l.longValue)
+                    case bi: _root_.java.math.BigInteger => new _root_.scala.math.BigInt(bi)
+                    case bd: _root_.java.math.BigDecimal =>
+                      if (bd.signum == 0) _root_.scala.math.BigInt(0)
+                      else {
+                        if (bd.stripTrailingZeros.scale > 0) in.decodeError("illegal number")
+                        if (bd.precision - bd.scale >= ${cfg.bigIntDigitsLimit}) {
+                          in.decodeError("value exceeds limit for number of digits")
+                        }
+                        new _root_.scala.math.BigInt(bd.toBigIntegerExact)
+                      }
+                  }
+                }"""
+          }
+        } else {
+          genReadNumber(isStringified, q"in.readStringAsBigInt($default, ${cfg.bigIntDigitsLimit})",
+            q"in.readBigInt($default, ${cfg.bigIntDigitsLimit})")
+        }
+
       def genReadConstType(tpe: c.universe.Type, isStringified: Boolean): Tree = {
-        def genReadConstNumber(v: Any, readString: Tree, readNumber: Tree): Tree = {
+        def genReadConstNumber(v: Any, readVal: Tree): Tree = {
           val msg = if (isStringified) "expected value: \"" + v + '"' else s"expected value: $v"
           val c = Literal(Constant(v))
-          q"""if (${genReadNumber(isStringified, readString, readNumber)} != $c) in.decodeError($msg); $c"""
+          q"""if ($readVal != $c) in.decodeError($msg); $c"""
         }
 
         tpe match {
@@ -2423,14 +2515,14 @@ object JsonCodecMaker {
         case ConstantType(Constant(v: Boolean)) =>
           if (isStringified) q"""if (in.readStringAsBoolean() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
           else q"""if (in.readBoolean() != $v) in.decodeError(${s"expected value: $v"}); $v"""
-        case ConstantType(Constant(v: Byte)) => genReadConstNumber(v, q"in.readStringAsByte()", q"in.readByte()")
+        case ConstantType(Constant(v: Byte)) => genReadConstNumber(v, genReadByteValue(isStringified))
         case ConstantType(Constant(v: Char)) =>
           q"""if (in.readChar() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-        case ConstantType(Constant(v: Short)) => genReadConstNumber(v, q"in.readStringAsShort()", q"in.readShort()")
-        case ConstantType(Constant(v: Int)) => genReadConstNumber(v, q"in.readStringAsInt()", q"in.readInt()")
-        case ConstantType(Constant(v: Long)) => genReadConstNumber(v, q"in.readStringAsLong()", q"in.readLong()")
-        case ConstantType(Constant(v: Float)) => genReadConstNumber(v, q"in.readStringAsFloat()", q"in.readFloat()")
-        case ConstantType(Constant(v: Double)) => genReadConstNumber(v, q"in.readStringAsDouble()", q"in.readDouble()")
+        case ConstantType(Constant(v: Short)) => genReadConstNumber(v, genReadShortValue(isStringified))
+        case ConstantType(Constant(v: Int)) => genReadConstNumber(v, genReadIntValue(isStringified))
+        case ConstantType(Constant(v: Long)) => genReadConstNumber(v, genReadLongValue(isStringified))
+        case ConstantType(Constant(v: Float)) => genReadConstNumber(v, genReadNumber(isStringified, q"in.readStringAsFloat()", q"in.readFloat()"))
+        case ConstantType(Constant(v: Double)) => genReadConstNumber(v, genReadNumber(isStringified, q"in.readStringAsDouble()", q"in.readDouble()"))
         case _ => cannotFindValueCodecError(tpe)
         }
       }
@@ -2448,21 +2540,20 @@ object JsonCodecMaker {
           if (isStringified) q"in.readStringAsBoolean()"
           else q"in.readBoolean()"
         } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
-          genReadNumber(isStringified, q"in.readStringAsByte()", q"in.readByte()")
+          genReadByteValue(isStringified)
         } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readChar()"
         else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) {
-          genReadNumber(isStringified, q"in.readStringAsShort()", q"in.readShort()")
+          genReadShortValue(isStringified)
         } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
-          genReadNumber(isStringified, q"in.readStringAsInt()", q"in.readInt()")
+          genReadIntValue(isStringified)
         } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
-          genReadNumber(isStringified, q"in.readStringAsLong()", q"in.readLong()")
+          genReadLongValue(isStringified)
         } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
           genReadNumber(isStringified, q"in.readStringAsFloat()", q"in.readFloat()")
         } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
           genReadNumber(isStringified, q"in.readStringAsDouble()", q"in.readDouble()")
         } else if (tpe =:= typeOf[BigInt]) {
-          genReadNumber(isStringified, q"in.readStringAsBigInt($default, ${cfg.bigIntDigitsLimit})",
-            q"in.readBigInt($default, ${cfg.bigIntDigitsLimit})")
+          genReadBigInt(isStringified, default)
         } else if (tpe =:= typeOf[BigDecimal]) {
           val mc = withMathContextFor(cfg.bigDecimalPrecision)
           genReadNumber(isStringified,
@@ -2550,7 +2641,7 @@ object JsonCodecMaker {
               val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
               val readKey =
                 if (!cfg.mapAsArray) q"in.readKeyAsInt()"
-                else genReadNumber(isStringified, q"in.readStringAsInt()", q"in.readInt()")
+                else genReadIntValue(isStringified)
               genReadIntMap(tpe1, withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]"), readKey, readVal)
             } else if (tpe <:< typeOf[mutable.LongMap[?]]) withDecoderFor(methodKey, default) {
               val tpe1 = typeArg1(tpe)
@@ -2559,7 +2650,7 @@ object JsonCodecMaker {
               val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
               if (cfg.mapAsArray) {
                 val readKey =
-                  genReadNumber(isStringified, q"in.readStringAsLong()", q"in.readLong()")
+                  genReadLongValue(isStringified)
                 genReadMapAsArray(newBuilder,
                   q"x.update($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
               } else genReadMap(newBuilder, q"x.update(in.readKeyAsLong(), $readVal)")
@@ -2569,7 +2660,7 @@ object JsonCodecMaker {
               val readVal = genReadVal(types1, genNullValue(types1), isStringified, EmptyTree)
               val readKey =
                 if (!cfg.mapAsArray) q"in.readKeyAsLong()"
-                else genReadNumber(isStringified, q"in.readStringAsLong()", q"in.readLong()")
+                else genReadLongValue(isStringified)
               genReadLongMap(tpe1, withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]"), readKey, readVal)
             } else if (tpe <:< typeOf[mutable.Map[?, ?]] || isCollisionProofHashMap(tpe)) withDecoderFor(methodKey, default) {
               val tpe1 = typeArg1(tpe)
@@ -2604,7 +2695,7 @@ object JsonCodecMaker {
               }
             } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
               val readVal =
-                genReadNumber(isStringified, q"in.readStringAsInt()", q"in.readInt()")
+                genReadIntValue(isStringified)
               genReadArray(q"var x = new _root_.scala.Array[Long](2)",
                 q"""val v = $readVal
                     if (v < 0 || v >= ${cfg.bitSetValueLimit}) in.decodeError("illegal value for bit set")

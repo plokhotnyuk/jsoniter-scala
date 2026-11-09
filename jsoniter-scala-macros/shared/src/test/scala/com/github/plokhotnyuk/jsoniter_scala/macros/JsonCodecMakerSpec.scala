@@ -2627,6 +2627,66 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeser(make[_root_.scala.collection.immutable.IntMap[Int]](CodecMakerConfig.withAllowStringifiedNumbers(true)
         .withMapAsArray(true)), _root_.scala.collection.immutable.IntMap(1 -> 2), """[["1","2"]]""")
     }
+    "deserialize integers from JSON numbers with fractions or exponents when the allowDecimalNotationForIntegers flag is on" in {
+      case class Integers(b: _root_.scala.Byte, s: _root_.scala.Short, i: Int, l: Long, bi: BigInt,
+                          ji: _root_.java.lang.Integer, oi: Option[Int], ll: List[Long], dbi: BigInt = 10)
+
+      val codecOfIntegers = make[Integers](CodecMakerConfig.withAllowDecimalNotationForIntegers(true))
+      val integers = Integers(1, 2, 3, 4L, BigInt(5), 6, _root_.scala.Some(7), List(8L, 9L))
+      verifySerDeser(codecOfIntegers, integers, """{"b":1,"s":2,"i":3,"l":4,"bi":5,"ji":6,"oi":7,"ll":[8,9]}""")
+      verifyDeser(codecOfIntegers, integers,
+        """{"b":1.0,"s":2e0,"i":30e-1,"l":4.000,"bi":5E+0,"ji":6.0,"oi":7.0,"ll":[8e0,9],"dbi":null}""")
+      verifyDeser(codecOfIntegers, integers.copy(i = 0, l = Long.MaxValue, bi = BigInt("1" + "0" * 300)),
+        """{"b":1,"s":2,"i":-0.0,"l":9223372036854775807.0,"bi":1e300,"ji":6,"oi":7,"ll":[8,9]}""")
+      verifyDeserError(codecOfIntegers, """{"i":1.5}""", "illegal number, offset: 0x00000007")
+      verifyDeserError(codecOfIntegers, """{"i":1e-1}""", "illegal number, offset: 0x00000008")
+      verifyDeserError(codecOfIntegers, """{"b":128.0}""", "value is too large for byte, offset: 0x00000009")
+      verifyDeserError(codecOfIntegers, """{"s":32768.0}""", "value is too large for short, offset: 0x0000000b")
+      verifyDeserError(codecOfIntegers, """{"i":3e9}""", "value is too large for int, offset: 0x00000007")
+      verifyDeserError(codecOfIntegers, """{"l":1e19}""", "value is too large for long, offset: 0x00000008")
+      verifyDeserError(codecOfIntegers, """{"l":9223372036854775808.0}""", "value is too large for long, offset: 0x00000019")
+      verifyDeserError(codecOfIntegers, """{"i":1e20}""", "value is too large for int, offset: 0x00000008")
+      verifyDeserError(codecOfIntegers, """{"s":-1e19}""", "value is too large for short, offset: 0x00000009")
+      verifyDeserError(codecOfIntegers, s"""{"b":-1${"0" * 400}}""", "value is too large for byte, offset: 0x00000006")
+      verifyDeserError(codecOfIntegers, s"""{"l":1${"0" * 400}.0}""", "value is too large for long, offset: 0x00000005")
+      verifyDeserError(codecOfIntegers, """{"l":"1"}""", "illegal number, offset: 0x00000005")
+      verifyDeserError(codecOfIntegers, """{"bi":1e400}""", "value exceeds limit for number of digits, offset: 0x0000000a")
+      verifyDeserError(codecOfIntegers, """{"bi":null}""", "illegal number, offset: 0x00000006")
+      verifyDeser(make[List[Int]](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withIsStringified(true)),
+        List(1, 2), """["1.0","2e0"]""")
+      verifyDeser(make[List[Int]](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withAllowStringifiedNumbers(true)),
+        List(1, 2), """["1.0",2e0]""")
+      verifyDeser(codecOfIntegers, integers.copy(i = 0, l = 0L, bi = BigInt(0)),
+        """{"b":1,"s":2,"i":0e100,"l":0.0e1000,"bi":-0e5000,"ji":6,"oi":7,"ll":[8,9]}""")
+      verifyDeserError(codecOfIntegers, """{"bi":1e307}""", "value exceeds limit for number of digits, offset: 0x0000000a")
+      verifyDeser(make[_root_.scala.collection.immutable.BitSet](CodecMakerConfig.withAllowDecimalNotationForIntegers(true)),
+        _root_.scala.collection.immutable.BitSet(1, 2), """[1.0,2e0]""")
+      verifyDeser(make[_root_.scala.collection.immutable.IntMap[Int]](CodecMakerConfig.withAllowDecimalNotationForIntegers(true)
+        .withMapAsArray(true)), _root_.scala.collection.immutable.IntMap(1 -> 2), """[[1.0,2e0]]""")
+      verifyDeser(make[_root_.scala.collection.immutable.LongMap[Int]](CodecMakerConfig.withAllowDecimalNotationForIntegers(true)
+        .withMapAsArray(true)), _root_.scala.collection.immutable.LongMap(1L -> 2), """[[1.0,2e0]]""")
+      verifyDeser(make[_root_.scala.collection.mutable.LongMap[Int]](CodecMakerConfig.withAllowDecimalNotationForIntegers(true)
+        .withMapAsArray(true)), _root_.scala.collection.mutable.LongMap(1L -> 2), """[[1.0,2e0]]""")
+    }
+    "deserialize min and max values of integers when the allowDecimalNotationForIntegers flag is on" in {
+      val codecOfLongs = makeCirceLike[List[Long]]
+      val longs = List(Long.MinValue, Long.MaxValue, Long.MinValue, Long.MaxValue, Long.MinValue, Long.MaxValue)
+      verifySerDeser(codecOfLongs, longs.take(2), "[-9223372036854775808,9223372036854775807]")
+      verifyDeser(codecOfLongs, longs,
+        """[-9223372036854775808,9223372036854775807,-9223372036854775808.0,9.223372036854775807e18,"-9223372036854775808","9223372036854775807"]""")
+      verifyDeserError(codecOfLongs, "[-9223372036854775809]", "value is too large for long")
+      verifyDeserError(codecOfLongs, "[9223372036854775808]", "value is too large for long")
+      verifyDeserError(codecOfLongs, "[-9223372036854775809.0]", "value is too large for long")
+      verifyDeserError(codecOfLongs, "[9223372036854775808.0]", "value is too large for long")
+      verifyDeserError(codecOfLongs, "[9223372036854775806.5]", "illegal number")
+      verifyDeserError(codecOfLongs, "[-922337203685477580.75e1]", "illegal number")
+      verifyDeserError(codecOfLongs, "[0.5]", "illegal number")
+      val codecOfInts = makeCirceLike[List[Int]]
+      verifyDeser(codecOfInts, List(Int.MinValue, Int.MaxValue, Int.MinValue, Int.MaxValue),
+        """[-2147483648,2147483647,-2147483648.0,"2147483647"]""")
+      verifyDeserError(codecOfInts, "[-2147483649]", "value is too large for int")
+      verifyDeserError(codecOfInts, "[2147483648]", "value is too large for int")
+    }
     "deserialize new default values of case classes without memorization" in {
       case class Defaults3(u: UUID = new UUID(ThreadLocalRandom.current().nextLong(), ThreadLocalRandom.current().nextLong()),
                            i: Int = ThreadLocalRandom.current().nextInt())
@@ -2868,6 +2928,20 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val baseCodec2: JsonValueCodec[Base] = makeCirceLikeSnakeCased
       verifySerDeser(baseCodec2, AbbA(2, List(1, 2, 3), _root_.scala.Some(EnumValue)), """{"abb_a":{"x":2,"xs":[1,2,3],"o_x":{"enum_value":{}}}}""")
       verifySerDeser(baseCodec2, AbbA(1, List(), _root_.scala.None), """{"abb_a":{"x":1,"xs":[],"o_x":null}}""")
+      verifyDeser(baseCodec1, AbbA(2, List(1, 2), _root_.scala.None), """{"AbbA":{"x":"2.0","xs":[1e0,"2"],"oX":null}}""")
+      verifyDeser(baseCodec1, AbbA(2, List(), _root_.scala.None), """{"AbbA":{"x":1,"x":2,"xs":[],"oX":null}}""")
+      verifyDeserError(baseCodec1, """{"AbbA":{"xs":[],"oX":null}}""", """missing required field "x", offset: 0x0000001a""")
+      verifyDeserError(baseCodec1, """{"AbbA":{"x":1,"oX":null}}""", """missing required field "xs", offset: 0x00000018""")
+      verifyDeserError(baseCodec1, """{"AbbA":{"x":1,"xs":null,"oX":null}}""", "expected '[', offset: 0x00000014")
+      verifyDeserError(baseCodec2, """{"abb_a":{"x":1,"xs":null,"o_x":null}}""", "expected '[', offset: 0x00000015")
+
+      case class NestedOptions(o: Option[Option[Int]])
+
+      val codecOfNestedOptions: JsonValueCodec[NestedOptions] = makeCirceLike
+      verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.Some(1))), """{"o":1}""")
+      verifySer(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.None)), """{"o":null}""")
+      verifySer(codecOfNestedOptions, NestedOptions(_root_.scala.None), """{"o":null}""")
+      verifyDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), """{}""")
     }
     "serialize and deserialize ADTs with circe-like encoding for Scala objects" in {
       sealed trait Enum

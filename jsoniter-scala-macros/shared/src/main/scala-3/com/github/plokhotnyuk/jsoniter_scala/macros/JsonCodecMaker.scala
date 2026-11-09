@@ -119,6 +119,9 @@ final class stringified extends StaticAnnotation
   *                                otherwise they cause a parse exception (`true` by default)
   * @param allowStringifiedNumbers turns on parsing of numbers from both JSON numbers and JSON strings, while
   *                                serialization of numbers stays the same (`false` by default)
+  * @param allowDecimalNotationForIntegers turns on parsing of `Byte`, `Short`, `Int`, `Long`, and `BigInt` values from
+  *                                JSON numbers with fractions or exponents, like `1.0` or `1e0`, when they are whole
+  *                                numbers in the range of the type (`false` by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -154,7 +157,8 @@ class CodecMakerConfig private[macros] (
     val transientNull: Boolean,
     val useDefaultForNullOrEmpty: Boolean,
     val allowNullForCollections: Boolean,
-    val allowStringifiedNumbers: Boolean) {
+    val allowStringifiedNumbers: Boolean,
+    val allowDecimalNotationForIntegers: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -247,6 +251,9 @@ class CodecMakerConfig private[macros] (
   def withAllowStringifiedNumbers(allowStringifiedNumbers: Boolean): CodecMakerConfig =
     copy(allowStringifiedNumbers = allowStringifiedNumbers)
 
+  def withAllowDecimalNotationForIntegers(allowDecimalNotationForIntegers: Boolean): CodecMakerConfig =
+    copy(allowDecimalNotationForIntegers = allowDecimalNotationForIntegers)
+
   private def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                    javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                    adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -280,7 +287,8 @@ class CodecMakerConfig private[macros] (
                    transientNull: Boolean = transientNull,
                    useDefaultForNullOrEmpty: Boolean = useDefaultForNullOrEmpty,
                    allowNullForCollections: Boolean = allowNullForCollections,
-                   allowStringifiedNumbers: Boolean = allowStringifiedNumbers): CodecMakerConfig =
+                   allowStringifiedNumbers: Boolean = allowStringifiedNumbers,
+                   allowDecimalNotationForIntegers: Boolean = allowDecimalNotationForIntegers): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -315,7 +323,8 @@ class CodecMakerConfig private[macros] (
       transientNull = transientNull,
       useDefaultForNullOrEmpty = useDefaultForNullOrEmpty,
       allowNullForCollections = allowNullForCollections,
-      allowStringifiedNumbers = allowStringifiedNumbers)
+      allowStringifiedNumbers = allowStringifiedNumbers,
+      allowDecimalNotationForIntegers = allowDecimalNotationForIntegers)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -352,7 +361,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   transientNull = false,
   useDefaultForNullOrEmpty = true,
   allowNullForCollections = true,
-  allowStringifiedNumbers = false) {
+  allowStringifiedNumbers = false,
+  allowDecimalNotationForIntegers = false) {
 
   /**
     * Turns on printing of generated codecs during compilation:
@@ -403,6 +413,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withUseDefaultForNullOrEmpty($v) } => new Some(x.valueOrAbort.withUseDefaultForNullOrEmpty(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withAllowNullForCollections($v) } => new Some(x.valueOrAbort.withAllowNullForCollections(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withAllowStringifiedNumbers($v) } => new Some(x.valueOrAbort.withAllowStringifiedNumbers(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withAllowDecimalNotationForIntegers($v) } => new Some(x.valueOrAbort.withAllowDecimalNotationForIntegers(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -624,8 +635,8 @@ object JsonCodecMaker {
 
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
-    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None)`
-    * configuration.
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)`
+    * configuration, which matches decoding and encoding of codecs that are derived by circe with its defaults.
     *
     * @tparam A the type to encode and decode
     * @return the derived codec
@@ -634,7 +645,7 @@ object JsonCodecMaker {
 
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
-    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case)`
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)`
     * configuration.
     *
     * @tparam A the type to encode and decode
@@ -720,7 +731,10 @@ object JsonCodecMaker {
 
     def makeCirceLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       new JsonCodecMakerInstance(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
-        .withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true)).make
+        .withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true)
+        .withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false)
+        .withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false)
+        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)).make
 
     def makeCirceLikeSnakeCased[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       new JsonCodecMakerInstance(CodecMakerConfig(
@@ -735,7 +749,7 @@ object JsonCodecMaker {
         transientEmpty = false,
         transientNone = false,
         transientNull = false,
-        requireCollectionFields = false,
+        requireCollectionFields = true,
         bigDecimalPrecision = 34,
         bigDecimalScaleLimit = 6178,
         bigDecimalDigitsLimit = 308,
@@ -746,18 +760,19 @@ object JsonCodecMaker {
         allowRecursiveTypes = false,
         requireDiscriminatorFirst = true,
         useScalaEnumValueId = false,
-        skipNestedOptionValues = false,
+        skipNestedOptionValues = true,
         circeLikeObjectEncoding = true,
         decodingOnly = false,
         encodingOnly = false,
-        requireDefaultFields = false,
-        checkFieldDuplication = true,
+        requireDefaultFields = true,
+        checkFieldDuplication = false,
         scalaTransientSupport = false,
         inlineOneValueClasses = false,
         alwaysEmitDiscriminator = false,
-        useDefaultForNullOrEmpty = true,
-        allowNullForCollections = true,
-        allowStringifiedNumbers = false)).make
+        useDefaultForNullOrEmpty = false,
+        allowNullForCollections = false,
+        allowStringifiedNumbers = true,
+        allowDecimalNotationForIntegers = true)).make
 
     def makeOpenapiLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       new JsonCodecMakerInstance(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
@@ -3087,6 +3102,94 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     } else if (isStringified) readString
     else readNumber
 
+  private def genReadAnyNumber(isStringified: Boolean, digitsLimit: Int,
+                               in: Expr[JsonReader])(using Quotes): Expr[java.lang.Number] = {
+    val scaleLimit = Expr(cfg.bigDecimalScaleLimit)
+    val limit = Expr(digitsLimit)
+    genReadNumber(isStringified, in)('{ $in.readStringAsNumber(null, MathContext.UNLIMITED, $scaleLimit, $limit) },
+      '{ $in.readNumber(null, MathContext.UNLIMITED, $scaleLimit, $limit) })
+  }
+
+  private def genReadInteger[N: Type](tpe: TypeRepr, zero: Expr[N], isStringified: Boolean, in: Expr[JsonReader])
+                                     (readString: Expr[N], readNumber: Expr[N])
+                                     (fromLong: Quotes ?=> (Expr[JsonReader], Expr[Long], Expr[String]) => Expr[N])(using Quotes): Expr[N] =
+    if (cfg.allowDecimalNotationForIntegers) {
+      // Decoding methods are never generated for primitive types, so their keys are free to use here
+      withDecoderFor(new DecoderMethodKey(tpe, isStringified, false), zero, in) { (in, _) =>
+        val msg = Expr(s"value is too large for ${tpe.typeSymbol.name.toLowerCase}")
+        '{
+          (try ${genReadAnyNumber(isStringified, cfg.bigDecimalDigitsLimit, in)} catch {
+            case e: JsonReaderException if e.getMessage.startsWith("value exceeds limit for number of digits") =>
+              $in.decodeError($msg)
+          }) match {
+            case l: java.lang.Long => ${fromLong(in, '{ l.longValue }, msg)}
+            case bd: java.math.BigDecimal =>
+              if (bd.signum == 0) $zero
+              else {
+                if (bd.precision - bd.scale > 19) $in.decodeError($msg)
+                ${fromLong(in, '{
+                  try bd.longValueExact catch {
+                    case _: ArithmeticException =>
+                      // Trailing zeros are stripped on the error path only to distinguish fractions from overflows
+                      $in.decodeError(if (bd.stripTrailingZeros.scale > 0) "illegal number" else $msg)
+                  }
+                }, msg)}
+              }
+            case bi: java.math.BigInteger =>
+              if (bi.bitLength > 63) $in.decodeError($msg)
+              ${fromLong(in, '{ bi.longValue }, msg)}
+            case _ => $in.decodeError($msg)
+          }
+        }
+      }
+    } else genReadNumber(isStringified, in)(readString, readNumber)
+
+  private def genReadByteValue(isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[Byte] =
+    genReadInteger(byteTpe, Expr(0: Byte), isStringified, in)('{ $in.readStringAsByte() }, '{ $in.readByte() }) { (in, x, msg) =>
+      '{ val v = $x; if (v.toByte != v) $in.decodeError($msg); v.toByte }
+    }
+
+  private def genReadShortValue(isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[Short] =
+    genReadInteger(shortTpe, Expr(0: Short), isStringified, in)('{ $in.readStringAsShort() }, '{ $in.readShort() }) { (in, x, msg) =>
+      '{ val v = $x; if (v.toShort != v) $in.decodeError($msg); v.toShort }
+    }
+
+  private def genReadIntValue(isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[Int] =
+    genReadInteger(intTpe, Expr(0), isStringified, in)('{ $in.readStringAsInt() }, '{ $in.readInt() }) { (in, x, msg) =>
+      '{ val v = $x; if (v.toInt != v) $in.decodeError($msg); v.toInt }
+    }
+
+  private def genReadLongValue(isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[Long] =
+    genReadInteger(longTpe, Expr(0L), isStringified, in)('{ $in.readStringAsLong() }, '{ $in.readLong() })((_, x, _) => x)
+
+  private def genReadBigInt(isStringified: Boolean, default: Expr[BigInt], in: Expr[JsonReader])(using Quotes): Expr[BigInt] = {
+    val digitsLimit = Expr(cfg.bigIntDigitsLimit)
+    if (cfg.allowDecimalNotationForIntegers) {
+      withDecoderFor(new DecoderMethodKey(TypeRepr.of[BigInt], isStringified, false), default, in) { (in, default) =>
+        '{
+          if ($in.isNextToken('n')) $in.readNullOrError($default, "illegal number")
+          else {
+            $in.rollbackToken()
+            ${genReadAnyNumber(isStringified, cfg.bigIntDigitsLimit, in)} match {
+              case l: java.lang.Long => BigInt(l.longValue)
+              case bi: java.math.BigInteger => new BigInt(bi)
+              case bd: java.math.BigDecimal =>
+                if (bd.signum == 0) BigInt(0)
+                else {
+                  if (bd.stripTrailingZeros.scale > 0) $in.decodeError("illegal number")
+                  if (bd.precision - bd.scale >= $digitsLimit) $in.decodeError("value exceeds limit for number of digits")
+                  new BigInt(bd.toBigIntegerExact)
+                }
+            }
+          }
+        }
+      }
+    } else {
+      genReadNumber(isStringified, in)('{ $in.readStringAsBigInt($default, $digitsLimit) },
+        '{ $in.readBigInt($default, $digitsLimit) })
+    }
+  }
+
   private def genReadConstType[T: Type](tpe: TypeRepr, isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] = {
     tpe match
       case ConstantType(StringConstant(v)) =>
@@ -3098,19 +3201,19 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           '{ if ($in.readBoolean() != ${Expr(v)}) $in.decodeError(${Expr(s"expected value: $v")}); ${Expr(v)} }
       case ConstantType(ByteConstant(v)) =>
         val msg = Expr(if (isStringified) s"expected value: \"$v\"" else s"expected value: $v")
-        val readVal = genReadNumber(isStringified, in)('{ $in.readStringAsByte() }, '{ $in.readByte() })
+        val readVal = genReadByteValue(isStringified, in)
         '{ if ($readVal != ${Expr(v)}) $in.decodeError($msg); ${Expr(v)} }
       case ConstantType(ShortConstant(v)) =>
         val msg = Expr(if (isStringified) s"expected value: \"$v\"" else s"expected value: $v")
-        val readVal = genReadNumber(isStringified, in)('{ $in.readStringAsShort() }, '{ $in.readShort() })
+        val readVal = genReadShortValue(isStringified, in)
         '{ if ($readVal != ${Expr(v)}) $in.decodeError($msg); ${Expr(v)} }
       case ConstantType(IntConstant(v)) =>
         val msg = Expr(if (isStringified) s"expected value: \"$v\"" else s"expected value: $v")
-        val readVal = genReadNumber(isStringified, in)('{ $in.readStringAsInt() }, '{ $in.readInt() })
+        val readVal = genReadIntValue(isStringified, in)
         '{ if ($readVal != ${Expr(v)}) $in.decodeError($msg); ${Expr(v)} }
       case ConstantType(LongConstant(v)) =>
         val msg = Expr(if (isStringified) s"expected value: \"$v\"" else s"expected value: $v")
-        val readVal = genReadNumber(isStringified, in)('{ $in.readStringAsLong() }, '{ $in.readLong() })
+        val readVal = genReadLongValue(isStringified, in)
         '{ if ($readVal != ${Expr(v)}) $in.decodeError($msg); ${Expr(v)} }
       case ConstantType(FloatConstant(v)) =>
         val msg = Expr(if (isStringified) s"expected value: \"$v\"" else s"expected value: $v")
@@ -3152,13 +3255,13 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       if (isStringified) '{ $in.readStringAsBoolean() }
       else '{ $in.readBoolean() }
     } else if (tpe =:= byteTpe) {
-      genReadNumber(isStringified, in)('{ $in.readStringAsByte() }, '{ $in.readByte() })
+      genReadByteValue(isStringified, in)
     } else if (tpe =:= shortTpe) {
-      genReadNumber(isStringified, in)('{ $in.readStringAsShort() }, '{ $in.readShort() })
+      genReadShortValue(isStringified, in)
     } else if (tpe =:= intTpe) {
-      genReadNumber(isStringified, in)('{ $in.readStringAsInt() }, '{ $in.readInt() })
+      genReadIntValue(isStringified, in)
     } else if (tpe =:= longTpe) {
-      genReadNumber(isStringified, in)('{ $in.readStringAsLong() }, '{ $in.readLong() })
+      genReadLongValue(isStringified, in)
     } else if (tpe =:= floatTpe) {
       genReadNumber(isStringified, in)('{ $in.readStringAsFloat() }, '{ $in.readFloat() })
     } else if (tpe =:= doubleTpe) {
@@ -3168,13 +3271,13 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       if (isStringified) '{ java.lang.Boolean.valueOf($in.readStringAsBoolean()) }
       else '{ java.lang.Boolean.valueOf($in.readBoolean()) }
     } else if (tpe =:= TypeRepr.of[java.lang.Byte]) {
-      '{ java.lang.Byte.valueOf(${genReadNumber(isStringified, in)('{ $in.readStringAsByte() }, '{ $in.readByte() })}) }
+      '{ java.lang.Byte.valueOf(${genReadByteValue(isStringified, in)}) }
     } else if (tpe =:= TypeRepr.of[java.lang.Short]) {
-      '{ java.lang.Short.valueOf(${genReadNumber(isStringified, in)('{ $in.readStringAsShort() }, '{ $in.readShort() })}) }
+      '{ java.lang.Short.valueOf(${genReadShortValue(isStringified, in)}) }
     } else if (tpe =:= TypeRepr.of[java.lang.Integer]) {
-      '{ java.lang.Integer.valueOf(${genReadNumber(isStringified, in)('{ $in.readStringAsInt() }, '{ $in.readInt() })}) }
+      '{ java.lang.Integer.valueOf(${genReadIntValue(isStringified, in)}) }
     } else if (tpe =:= TypeRepr.of[java.lang.Long]) {
-      '{ java.lang.Long.valueOf(${genReadNumber(isStringified, in)('{ $in.readStringAsLong() }, '{ $in.readLong() })}) }
+      '{ java.lang.Long.valueOf(${genReadLongValue(isStringified, in)}) }
     } else if (tpe =:= TypeRepr.of[java.lang.Float]) {
       '{ java.lang.Float.valueOf(${genReadNumber(isStringified, in)('{ $in.readStringAsFloat() }, '{ $in.readFloat() })}) }
     } else if (tpe =:= TypeRepr.of[java.lang.Double]) {
@@ -3182,9 +3285,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     } else if (tpe =:= TypeRepr.of[java.lang.Character]) '{ java.lang.Character.valueOf($in.readChar()) }
     else if (tpe =:= TypeRepr.of[BigInt]) {
       val tDefault = default.asInstanceOf[Expr[BigInt]]
-      val digitsLimit = Expr(cfg.bigIntDigitsLimit)
-      genReadNumber(isStringified, in)('{ $in.readStringAsBigInt($tDefault, $digitsLimit) },
-        '{ $in.readBigInt($tDefault, $digitsLimit) })
+      genReadBigInt(isStringified, tDefault, in)
     } else if (tpe =:= TypeRepr.of[BigDecimal]) {
       val mc = withMathContextFor(cfg.bigDecimalPrecision)
       val tDefault = default.asInstanceOf[Expr[BigDecimal]]
@@ -3313,7 +3414,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
               val readKey =
                 if (!cfg.mapAsArray) '{ $in.readKeyAsInt() }
-                else genReadNumber(isStringified, in)('{ $in.readStringAsInt() }, '{ $in.readInt() })
+                else genReadIntValue(isStringified, in)
               genReadIntMap(tpe, readKey, readVal, in, default.asInstanceOf[Expr[immutable.IntMap[t1]]]).asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
@@ -3325,7 +3426,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
               (if (cfg.mapAsArray) {
                 val readKey =
-                  genReadNumber(isStringified, in)('{ $in.readStringAsLong() }, '{ $in.readLong() })
+                  genReadLongValue(isStringified, in)
                 genReadMapAsArray(newBuilder,
                   x => '{ $x.update($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() }) },
                   identity, in, tDefault)
@@ -3340,7 +3441,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val readVal = genReadVal(types1, genNullValue[t1](types1), isStringified, false, in)
               val readKey =
                 if (!cfg.mapAsArray) '{ $in.readKeyAsLong() }
-                else genReadNumber(isStringified, in)('{ $in.readStringAsLong() }, '{ $in.readLong() })
+                else genReadLongValue(isStringified, in)
               genReadLongMap(tpe, readKey, readVal, in, default.asInstanceOf[Expr[immutable.LongMap[t1]]]).asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[mutable.Map[?, ?]] ||
             tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
@@ -3392,7 +3493,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           }
         } else if (tpe <:< TypeRepr.of[BitSet]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val readVal =
-            genReadNumber(isStringified, in)('{ $in.readStringAsInt() }, '{ $in.readInt() })
+            genReadIntValue(isStringified, in)
           '{
             if ($in.isNextToken('[')) {
               if ($in.isNextToken(']')) $default

@@ -57,6 +57,11 @@ class JsonCodecMakerLiteralTypesSpec extends VerifyingSpec {
       verifySerDeser(make[4.0f](CodecMakerConfig.withIsStringified(true)), 4.0f, "\"4.0\"")
       verifySerDeser(make[5.0](CodecMakerConfig.withIsStringified(true)), 5.0, "\"5.0\"")
     }
+    "deserialize integer literal types from JSON numbers with fractions or exponents when the allowDecimalNotationForIntegers flag is on" in {
+      verifyDeser(make[2](CodecMakerConfig.withAllowDecimalNotationForIntegers(true)), 2, "2.0")
+      verifyDeser(make[3L](CodecMakerConfig.withAllowDecimalNotationForIntegers(true)), 3L, "3e0")
+      verifyDeser(make[2](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withAllowStringifiedNumbers(true)), 2, "\"20e-1\"")
+    }
     "throw parse exception with expected value in case of illegal input" in {
       verifyDeserError(make["VVV"], "\"XXX\"", "expected value: \"VVV\", offset: 0x00000004")
       verifyDeserError(make[true], "false", "expected value: true, offset: 0x00000004")

@@ -171,6 +171,8 @@ Limitations:
 Compile-time options of `CodecMakerConfig`:
 - Reads and writes numbers as strings (`isStringified`)
 - Reads numbers from both JSON numbers and JSON strings, while writing them as before (`allowStringifiedNumbers`)
+- Reads integers from JSON numbers with fractions or exponents, like `1.0` or `1e0`, when they are whole numbers
+  (`allowDecimalNotationForIntegers`)
 - Reads and writes maps as JSON arrays (`mapAsArray`)
 - Skips unexpected fields, or rejects them with a parse exception (`skipUnexpectedFields`)
 - Turns off skipping serialization of fields with default values (`transientDefault`), empty collections
