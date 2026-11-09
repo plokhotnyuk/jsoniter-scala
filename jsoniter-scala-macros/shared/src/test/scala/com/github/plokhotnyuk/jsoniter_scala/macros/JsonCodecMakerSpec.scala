@@ -2600,6 +2600,33 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeser(make[Defaults2](CodecMakerConfig.withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false)),
         Defaults2(l = _root_.scala.collection.immutable.Nil, m = Map()), """{"l":[],"m":{}}""")
     }
+    "deserialize numbers from both JSON numbers and JSON strings when the allowStringifiedNumbers flag is on" in {
+      case class Numbers(b: _root_.scala.Byte, s: _root_.scala.Short, i: Int, l: Long, f: Float, d: Double, bi: BigInt,
+                         bd: BigDecimal, ji: _root_.java.lang.Integer, oi: Option[Int], ll: List[Long], md: Map[String, Double],
+                         bs: _root_.scala.collection.immutable.BitSet, @stringified si: Int)
+
+      val codecOfNumbers = make[Numbers](CodecMakerConfig.withAllowStringifiedNumbers(true))
+      val numbers = Numbers(1, 2, 3, 4L, 5.5f, 6.6, BigInt(7), BigDecimal("8.8"), 9, _root_.scala.Some(10), List(11L),
+        Map("VVV" -> 12.12), _root_.scala.collection.immutable.BitSet(13), 14)
+      verifySerDeser(codecOfNumbers, numbers,
+        """{"b":1,"s":2,"i":3,"l":4,"f":5.5,"d":6.6,"bi":7,"bd":8.8,"ji":9,"oi":10,"ll":[11],"md":{"VVV":12.12},"bs":[13],"si":"14"}""")
+      verifyDeser(codecOfNumbers, numbers,
+        """{"b":"1","s":"2","i":"3","l":"4","f":"5.5","d":"6.6","bi":"7","bd":"8.8","ji":"9","oi":"10","ll":["11"],"md":{"VVV":"12.12"},"bs":["13"],"si":14}""")
+      verifyDeser(codecOfNumbers, numbers.copy(oi = _root_.scala.None),
+        """{"b":1,"s":2,"i":3,"l":4,"f":5.5,"d":6.6,"bi":7,"bd":8.8,"ji":9,"oi":null,"ll":[11],"md":{"VVV":12.12},"bs":[13],"si":"14"}""")
+      verifyDeserError(codecOfNumbers, """{"b":"1000"}""", "value is too large for byte, offset: 0x00000009")
+      verifyDeserError(codecOfNumbers, """{"i":"3.0"}""", "illegal number, offset: 0x00000007")
+      verifyDeserError(codecOfNumbers, """{"i":" 3"}""", "illegal number, offset: 0x00000006")
+      verifyDeserError(codecOfNumbers, """{"i":""}""", "illegal number, offset: 0x00000006")
+      verifyDeserError(codecOfNumbers, """{"i":true}""", "illegal number, offset: 0x00000005")
+      verifyDeserError(make[Numbers], """{"i":"3"}""", "illegal number, offset: 0x00000005")
+      verifySerDeser(make[List[Int]](CodecMakerConfig.withAllowStringifiedNumbers(true).withIsStringified(true)),
+        List(1, 2), """["1","2"]""")
+      verifyDeser(make[List[Int]](CodecMakerConfig.withAllowStringifiedNumbers(true).withIsStringified(true)),
+        List(1, 2), """[1,"2"]""")
+      verifyDeser(make[_root_.scala.collection.immutable.IntMap[Int]](CodecMakerConfig.withAllowStringifiedNumbers(true)
+        .withMapAsArray(true)), _root_.scala.collection.immutable.IntMap(1 -> 2), """[["1","2"]]""")
+    }
     "deserialize new default values of case classes without memorization" in {
       case class Defaults3(u: UUID = new UUID(ThreadLocalRandom.current().nextLong(), ThreadLocalRandom.current().nextLong()),
                            i: Int = ThreadLocalRandom.current().nextInt())
