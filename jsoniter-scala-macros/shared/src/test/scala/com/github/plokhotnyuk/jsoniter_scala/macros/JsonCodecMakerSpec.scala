@@ -1375,6 +1375,25 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           Model(_root_.scala.None, _root_.scala.Some(_root_.scala.None))),
         """[{"field1":"VVV","field2":"WWW"},{},{"field2":null}]""")
     }
+    "deserialize both `null` field values and missing fields as None for Option[Option[_]] when the distinguishNullAndMissingNestedOptions flag is off" in {
+      case class Model(field1: Option[String], field2: Option[Option[String]] = _root_.scala.None)
+
+      val codecOfModels = make[List[Model]](CodecMakerConfig.withSkipNestedOptionValues(true)
+        .withDistinguishNullAndMissingNestedOptions(false))
+      verifySerDeser(codecOfModels,
+        List(Model(_root_.scala.Some("VVV"), _root_.scala.Some(_root_.scala.Some("WWW"))), Model(_root_.scala.None)),
+        """[{"field1":"VVV","field2":"WWW"},{}]""")
+      verifySer(codecOfModels, List(Model(_root_.scala.None, _root_.scala.Some(_root_.scala.None))), """[{"field2":null}]""")
+      verifyDeser(codecOfModels, List(Model(_root_.scala.None)), """[{"field1":null,"field2":null}]""")
+      val codecOfNestedOptions = make[List[Option[Option[Int]]]](CodecMakerConfig.withSkipNestedOptionValues(true)
+        .withDistinguishNullAndMissingNestedOptions(false))
+      verifySer(codecOfNestedOptions,
+        List(_root_.scala.None, _root_.scala.Some(_root_.scala.None), _root_.scala.Some(_root_.scala.Some(1))),
+        """[null,null,1]""")
+      verifyDeser(codecOfNestedOptions, List(_root_.scala.None, _root_.scala.Some(_root_.scala.Some(1))), """[null,1]""")
+      verifyDeser(make[List[Option[Option[Int]]]](CodecMakerConfig.withSkipNestedOptionValues(true)),
+        List(_root_.scala.Some(_root_.scala.None), _root_.scala.Some(_root_.scala.Some(1))), """[null,1]""")
+    }
     "serialize and deserialize Nullable[_] to distinguish `null` field values and missing fields using a custom value codec" in {
       sealed trait Nullable[+A]
 
@@ -2942,6 +2961,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.None)), """{"o":null}""")
       verifySer(codecOfNestedOptions, NestedOptions(_root_.scala.None), """{"o":null}""")
       verifyDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), """{}""")
+      verifyDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), """{"o":null}""")
     }
     "serialize and deserialize ADTs with circe-like encoding for Scala objects" in {
       sealed trait Enum

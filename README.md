@@ -193,6 +193,8 @@ Compile-time options of `CodecMakerConfig`:
 - Parses and serializes Scala enumerations by ids (`useScalaEnumValueId`)
 - Distinguishes `null` and missing fields as `Some(None)` and `None` values of `Option[Option[_]]`
   (`skipNestedOptionValues`)
+- Parses both `null` and missing fields as `None` values of `Option[Option[_]]` when nested options are turned on
+  (`distinguishNullAndMissingNestedOptions`)
 - Limits precision, scale, and digits of parsed `BigDecimal` values (`bigDecimalPrecision`, `bigDecimalScaleLimit`,
   `bigDecimalDigitsLimit`)
 - Limits digits of parsed `BigInt` values (`bigIntDigitsLimit`)

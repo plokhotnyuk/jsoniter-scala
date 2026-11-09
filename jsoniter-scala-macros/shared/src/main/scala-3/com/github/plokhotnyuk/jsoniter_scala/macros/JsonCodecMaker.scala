@@ -122,6 +122,9 @@ final class stringified extends StaticAnnotation
   * @param allowDecimalNotationForIntegers turns on parsing of `Byte`, `Short`, `Int`, `Long`, and `BigInt` values from
   *                                JSON numbers with fractions or exponents, like `1.0` or `1e0`, when they are whole
   *                                numbers in the range of the type (`false` by default)
+  * @param distinguishNullAndMissingNestedOptions turns on parsing of JSON `null` values as `Some(None)`, and of
+  *                                missing fields as `None`, for `Option[Option[?]]` values when `skipNestedOptionValues`
+  *                                is turned on, otherwise both are parsed as `None` (`true` by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -158,7 +161,8 @@ class CodecMakerConfig private[macros] (
     val useDefaultForNullOrEmpty: Boolean,
     val allowNullForCollections: Boolean,
     val allowStringifiedNumbers: Boolean,
-    val allowDecimalNotationForIntegers: Boolean) {
+    val allowDecimalNotationForIntegers: Boolean,
+    val distinguishNullAndMissingNestedOptions: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -254,6 +258,9 @@ class CodecMakerConfig private[macros] (
   def withAllowDecimalNotationForIntegers(allowDecimalNotationForIntegers: Boolean): CodecMakerConfig =
     copy(allowDecimalNotationForIntegers = allowDecimalNotationForIntegers)
 
+  def withDistinguishNullAndMissingNestedOptions(distinguishNullAndMissingNestedOptions: Boolean): CodecMakerConfig =
+    copy(distinguishNullAndMissingNestedOptions = distinguishNullAndMissingNestedOptions)
+
   private def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                    javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                    adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -288,7 +295,8 @@ class CodecMakerConfig private[macros] (
                    useDefaultForNullOrEmpty: Boolean = useDefaultForNullOrEmpty,
                    allowNullForCollections: Boolean = allowNullForCollections,
                    allowStringifiedNumbers: Boolean = allowStringifiedNumbers,
-                   allowDecimalNotationForIntegers: Boolean = allowDecimalNotationForIntegers): CodecMakerConfig =
+                   allowDecimalNotationForIntegers: Boolean = allowDecimalNotationForIntegers,
+                   distinguishNullAndMissingNestedOptions: Boolean = distinguishNullAndMissingNestedOptions): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -324,7 +332,8 @@ class CodecMakerConfig private[macros] (
       useDefaultForNullOrEmpty = useDefaultForNullOrEmpty,
       allowNullForCollections = allowNullForCollections,
       allowStringifiedNumbers = allowStringifiedNumbers,
-      allowDecimalNotationForIntegers = allowDecimalNotationForIntegers)
+      allowDecimalNotationForIntegers = allowDecimalNotationForIntegers,
+      distinguishNullAndMissingNestedOptions = distinguishNullAndMissingNestedOptions)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -362,7 +371,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   useDefaultForNullOrEmpty = true,
   allowNullForCollections = true,
   allowStringifiedNumbers = false,
-  allowDecimalNotationForIntegers = false) {
+  allowDecimalNotationForIntegers = false,
+  distinguishNullAndMissingNestedOptions = true) {
 
   /**
     * Turns on printing of generated codecs during compilation:
@@ -414,6 +424,7 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withAllowNullForCollections($v) } => new Some(x.valueOrAbort.withAllowNullForCollections(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withAllowStringifiedNumbers($v) } => new Some(x.valueOrAbort.withAllowStringifiedNumbers(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withAllowDecimalNotationForIntegers($v) } => new Some(x.valueOrAbort.withAllowDecimalNotationForIntegers(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withDistinguishNullAndMissingNestedOptions($v) } => new Some(x.valueOrAbort.withDistinguishNullAndMissingNestedOptions(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -635,8 +646,10 @@ object JsonCodecMaker {
 
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
-    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)`
-    * configuration, which matches decoding and encoding of codecs that are derived by circe with its defaults.
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true).withDistinguishNullAndMissingNestedOptions(false)`
+    * configuration, which matches decoding and encoding of codecs that are derived by circe with its defaults, except
+    * for value classes that are serialized without wrapping JSON objects, ADT values with more than one key in their
+    * wrapping JSON objects that are rejected, and JSON `null` values of Scala objects that are accepted.
     *
     * @tparam A the type to encode and decode
     * @return the derived codec
@@ -645,7 +658,7 @@ object JsonCodecMaker {
 
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
-    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)`
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true).withDistinguishNullAndMissingNestedOptions(false)`
     * configuration.
     *
     * @tparam A the type to encode and decode
@@ -734,7 +747,8 @@ object JsonCodecMaker {
         .withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true)
         .withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false)
         .withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false)
-        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)).make
+        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)
+        .withDistinguishNullAndMissingNestedOptions(false)).make
 
     def makeCirceLikeSnakeCased[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       new JsonCodecMakerInstance(CodecMakerConfig(
@@ -772,7 +786,8 @@ object JsonCodecMaker {
         useDefaultForNullOrEmpty = false,
         allowNullForCollections = false,
         allowStringifiedNumbers = true,
-        allowDecimalNotationForIntegers = true)).make
+        allowDecimalNotationForIntegers = true,
+        distinguishNullAndMissingNestedOptions = false)).make
 
     def makeOpenapiLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       new JsonCodecMakerInstance(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
@@ -3314,7 +3329,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     }) {
       val tpe1 = typeArg1(tpe)
       val nullValue =
-        if (cfg.skipNestedOptionValues && tpe <:< TypeRepr.of[Option[Option[?]]]) '{ new Some(None) }.asInstanceOf[Expr[T]]
+        if (cfg.skipNestedOptionValues && cfg.distinguishNullAndMissingNestedOptions &&
+          tpe <:< TypeRepr.of[Option[Option[?]]]) '{ new Some(None) }.asInstanceOf[Expr[T]]
         else default
       tpe1.asType match
         case '[t1] =>

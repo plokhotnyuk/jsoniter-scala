@@ -116,6 +116,9 @@ final class stringified extends StaticAnnotation
   * @param allowDecimalNotationForIntegers turns on parsing of `Byte`, `Short`, `Int`, `Long`, and `BigInt` values from
   *                                JSON numbers with fractions or exponents, like `1.0` or `1e0`, when they are whole
   *                                numbers in the range of the type (`false` by default)
+  * @param distinguishNullAndMissingNestedOptions turns on parsing of JSON `null` values as `Some(None)`, and of
+  *                                missing fields as `None`, for `Option[Option[_]]` values when `skipNestedOptionValues`
+  *                                is turned on, otherwise both are parsed as `None` (`true` by default)
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -151,7 +154,8 @@ class CodecMakerConfig private (
     val useDefaultForNullOrEmpty: Boolean,
     val allowNullForCollections: Boolean,
     val allowStringifiedNumbers: Boolean,
-    val allowDecimalNotationForIntegers: Boolean) {
+    val allowDecimalNotationForIntegers: Boolean,
+    val distinguishNullAndMissingNestedOptions: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -245,6 +249,9 @@ class CodecMakerConfig private (
   def withAllowDecimalNotationForIntegers(allowDecimalNotationForIntegers: Boolean): CodecMakerConfig =
     copy(allowDecimalNotationForIntegers = allowDecimalNotationForIntegers)
 
+  def withDistinguishNullAndMissingNestedOptions(distinguishNullAndMissingNestedOptions: Boolean): CodecMakerConfig =
+    copy(distinguishNullAndMissingNestedOptions = distinguishNullAndMissingNestedOptions)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -278,7 +285,8 @@ class CodecMakerConfig private (
                          useDefaultForNullOrEmpty: Boolean = useDefaultForNullOrEmpty,
                          allowNullForCollections: Boolean = allowNullForCollections,
                          allowStringifiedNumbers: Boolean = allowStringifiedNumbers,
-                         allowDecimalNotationForIntegers: Boolean = allowDecimalNotationForIntegers): CodecMakerConfig =
+                         allowDecimalNotationForIntegers: Boolean = allowDecimalNotationForIntegers,
+                         distinguishNullAndMissingNestedOptions: Boolean = distinguishNullAndMissingNestedOptions): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -313,7 +321,8 @@ class CodecMakerConfig private (
       useDefaultForNullOrEmpty = useDefaultForNullOrEmpty,
       allowNullForCollections = allowNullForCollections,
       allowStringifiedNumbers = allowStringifiedNumbers,
-      allowDecimalNotationForIntegers = allowDecimalNotationForIntegers)
+      allowDecimalNotationForIntegers = allowDecimalNotationForIntegers,
+      distinguishNullAndMissingNestedOptions = distinguishNullAndMissingNestedOptions)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -350,7 +359,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   useDefaultForNullOrEmpty = true,
   allowNullForCollections = true,
   allowStringifiedNumbers = false,
-  allowDecimalNotationForIntegers = false) {
+  allowDecimalNotationForIntegers = false,
+  distinguishNullAndMissingNestedOptions = true) {
 
   /**
     * Turns on printing of generated codecs during compilation:
@@ -572,8 +582,10 @@ object JsonCodecMaker {
 
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
-    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)`
-    * configuration, which matches decoding and encoding of codecs that are derived by circe with its defaults.
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true).withDistinguishNullAndMissingNestedOptions(false)`
+    * configuration, which matches decoding and encoding of codecs that are derived by circe with its defaults, except
+    * for value classes that are serialized without wrapping JSON objects, ADT values with more than one key in their
+    * wrapping JSON objects that are rejected, and JSON `null` values of Scala objects that are accepted.
     *
     * @tparam A the type to encode and decode
     * @return the derived codec
@@ -582,7 +594,7 @@ object JsonCodecMaker {
 
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
-    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)`
+    * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true).withDistinguishNullAndMissingNestedOptions(false)`
     * configuration.
     *
     * @tparam A the type to encode and decode
@@ -668,7 +680,8 @@ object JsonCodecMaker {
         .withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true)
         .withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false)
         .withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false)
-        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true))
+        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)
+        .withDistinguishNullAndMissingNestedOptions(false))
 
     def makeOpenapiLike1[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
@@ -697,7 +710,8 @@ object JsonCodecMaker {
         .withCirceLikeObjectEncoding(true)
         .withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false)
         .withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false)
-        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true))
+        .withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true)
+        .withDistinguishNullAndMissingNestedOptions(false))
 
     def makeWithSpecifiedConfig[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] =
       make(c) {
@@ -2581,7 +2595,8 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           val types1 = tpe1 :: types
           val nullValue =
-            if (cfg.skipNestedOptionValues && tpe <:< typeOf[Option[Option[?]]]) q"new _root_.scala.Some(_root_.scala.None)"
+            if (cfg.skipNestedOptionValues && cfg.distinguishNullAndMissingNestedOptions &&
+              tpe <:< typeOf[Option[Option[?]]]) q"new _root_.scala.Some(_root_.scala.None)"
             else default
           q"""if (in.isNextToken('n')) in.readNullOrError($nullValue, "expected value or null")
               else {
