@@ -177,6 +177,10 @@ Compile-time options of `CodecMakerConfig`:
 - Skips serialization of fields with `null` values for custom codecs of Scala 3 union types with `Null` (`transientNull`)
 - Requires collection fields (`requireCollectionFields`) or fields with default values (`requireDefaultFields`) in JSON
   input
+- Uses default values of option and collection fields for missing fields only, instead of also for `null` values and
+  empty collections (`useDefaultForNullOrEmpty`)
+- Rejects `null` values of collections with a parse exception instead of parsing them as empty collections
+  (`allowNullForCollections`)
 - Maps names of fields (`fieldNameMapper`), ADT leaf classes (`adtLeafClassNameMapper`), and Java enum values
   (`javaEnumValueNameMapper`) to JSON, with predefined mappers to snake_case, kebab-case, camelCase, or PascalCase
 - Sets an optional name of the discriminator field for ADTs (`discriminatorFieldName`)

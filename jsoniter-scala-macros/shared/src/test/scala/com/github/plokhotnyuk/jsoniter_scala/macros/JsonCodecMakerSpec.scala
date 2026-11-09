@@ -2547,6 +2547,59 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       SharedEmptyMutables.lm shouldBe empty
       SharedEmptyMutables.ms shouldBe empty
     }
+    "deserialize default values of option and collection fields for missing fields only when the useDefaultForNullOrEmpty flag is off" in {
+      val codecOfDefaults2 = make[Defaults2](CodecMakerConfig.withUseDefaultForNullOrEmpty(false))
+      val emptyDefaults2 = Defaults2(oc = _root_.scala.None, l = _root_.scala.collection.immutable.Nil,
+        ab = _root_.scala.collection.mutable.ArrayBuffer(), m = Map(), mm = _root_.scala.collection.mutable.Map(),
+        im = _root_.scala.collection.immutable.IntMap(), lm = _root_.scala.collection.mutable.LongMap(), s = Set(),
+        ms = _root_.scala.collection.mutable.Set(), bs = _root_.scala.collection.immutable.BitSet(),
+        mbs = _root_.scala.collection.mutable.BitSet())
+      verifyDeser(codecOfDefaults2, Defaults2(), """{}""")
+      verifyDeser(codecOfDefaults2, emptyDefaults2,
+        """{"st":null,"bi":null,"l":null,"oc":null,"ab":null,"m":null,"mm":null,"im":null,"lm":null,"s":null,"ms":null,"bs":null,"mbs":null}""")
+      verifyDeser(codecOfDefaults2, emptyDefaults2,
+        """{"oc":null,"l":[],"ab":[],"m":{},"mm":{},"im":{},"lm":{},"s":[],"ms":[],"bs":[],"mbs":[]}""")
+      verifyDeser(codecOfDefaults2, Defaults2(oc = _root_.scala.Some('V'), l = _root_.scala.collection.immutable.List(1), s = Set("X")), """{"oc":"V","l":[1],"s":["X"]}""")
+
+      case class NonEmptyListWithDefault(l: ::[Int] = ::(1, _root_.scala.collection.immutable.Nil))
+
+      val codecOfNonEmptyListWithDefault = make[NonEmptyListWithDefault](CodecMakerConfig.withUseDefaultForNullOrEmpty(false))
+      verifyDeser(codecOfNonEmptyListWithDefault, NonEmptyListWithDefault(), """{}""")
+      verifyDeserError(codecOfNonEmptyListWithDefault, """{"l":[]}""", "expected non-empty JSON array, offset: 0x00000006")
+      verifyDeserError(codecOfNonEmptyListWithDefault, """{"l":null}""", "expected non-empty JSON array, offset: 0x00000005")
+    }
+    "throw parse exception for JSON null values of collections when the allowNullForCollections flag is off" in {
+      val codecOfDefaults2 = make[Defaults2](CodecMakerConfig.withAllowNullForCollections(false))
+      verifyDeser(codecOfDefaults2, Defaults2(), """{}""")
+      verifyDeser(codecOfDefaults2, Defaults2(), """{"st":null,"bi":null,"oc":null}""")
+      verifyDeserError(codecOfDefaults2, """{"l":null}""", "expected '[', offset: 0x00000005")
+      verifyDeserError(codecOfDefaults2, """{"ab":null}""", "expected '[', offset: 0x00000006")
+      verifyDeserError(codecOfDefaults2, """{"m":null}""", "expected '{', offset: 0x00000005")
+      verifyDeserError(codecOfDefaults2, """{"mm":null}""", "expected '{', offset: 0x00000006")
+      verifyDeserError(codecOfDefaults2, """{"im":null}""", "expected '{', offset: 0x00000006")
+      verifyDeserError(codecOfDefaults2, """{"lm":null}""", "expected '{', offset: 0x00000006")
+      verifyDeserError(codecOfDefaults2, """{"s":null}""", "expected '[', offset: 0x00000005")
+      verifyDeserError(codecOfDefaults2, """{"ms":null}""", "expected '[', offset: 0x00000006")
+      verifyDeserError(codecOfDefaults2, """{"bs":null}""", "expected '[', offset: 0x00000006")
+      verifyDeserError(codecOfDefaults2, """{"mbs":null}""", "expected '[', offset: 0x00000007")
+      verifyDeserError(make[EmptyIterables](CodecMakerConfig.withAllowNullForCollections(false)),
+        """{"l":null}""", "expected '[', offset: 0x00000005")
+      verifyDeserError(make[EmptyMaps](CodecMakerConfig.withAllowNullForCollections(false)),
+        """{"im":null}""", "expected '{', offset: 0x00000006")
+      verifyDeserError(make[Arrays](CodecMakerConfig.withAllowNullForCollections(false)),
+        """{"aa":null}""", "expected '[', offset: 0x00000006")
+      verifyDeserError(make[List[Int]](CodecMakerConfig.withAllowNullForCollections(false)),
+        "null", "expected '[', offset: 0x00000000")
+      verifyDeserError(make[List[List[Int]]](CodecMakerConfig.withAllowNullForCollections(false)),
+        "[null]", "expected '[', offset: 0x00000001")
+      verifyDeserError(make[Map[String, List[Int]]](CodecMakerConfig.withAllowNullForCollections(false)),
+        """{"VVV":null}""", "expected '[', offset: 0x00000007")
+      verifyDeserError(make[Map[String, List[Int]]](CodecMakerConfig.withAllowNullForCollections(false).withMapAsArray(true)),
+        "null", "expected '[', offset: 0x00000000")
+      verifySerDeser(make[Option[List[Int]]](CodecMakerConfig.withAllowNullForCollections(false)), _root_.scala.None, "null")
+      verifyDeser(make[Defaults2](CodecMakerConfig.withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false)),
+        Defaults2(l = _root_.scala.collection.immutable.Nil, m = Map()), """{"l":[],"m":{}}""")
+    }
     "deserialize new default values of case classes without memorization" in {
       case class Defaults3(u: UUID = new UUID(ThreadLocalRandom.current().nextLong(), ThreadLocalRandom.current().nextLong()),
                            i: Int = ThreadLocalRandom.current().nextInt())

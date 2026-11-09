@@ -111,6 +111,12 @@ final class stringified extends StaticAnnotation
   * @param alwaysEmitDiscriminator turns on serialization of the discriminator field by codecs of ADT leaf classes, not
   *                                only of ADT base classes, while decoders still don't require it (`false` by default)
   * @param transientNull          turns on skipping serialization of fields with `null` values (`false` by default)
+  * @param useDefaultForNullOrEmpty turns on parsing of JSON `null` values of option fields, and of JSON `null` values or
+  *                                empty JSON arrays and objects of collection fields, as default values of those fields,
+  *                                otherwise default values are used for missing fields only (`true` by default)
+  * @param allowNullForCollections turns on parsing of JSON `null` values as empty collections, arrays, and maps, or as
+  *                                default values of collection fields when `useDefaultForNullOrEmpty` is turned on,
+  *                                otherwise they cause a parse exception (`true` by default)
   */
 class CodecMakerConfig private[macros] (
     val fieldNameMapper: NameMapper,
@@ -143,7 +149,9 @@ class CodecMakerConfig private[macros] (
     val scalaTransientSupport: Boolean,
     val inlineOneValueClasses: Boolean,
     val alwaysEmitDiscriminator: Boolean,
-    val transientNull: Boolean) {
+    val transientNull: Boolean,
+    val useDefaultForNullOrEmpty: Boolean,
+    val allowNullForCollections: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -227,6 +235,12 @@ class CodecMakerConfig private[macros] (
 
   def withTransientNull(transientNull: Boolean): CodecMakerConfig = copy(transientNull = transientNull)
 
+  def withUseDefaultForNullOrEmpty(useDefaultForNullOrEmpty: Boolean): CodecMakerConfig =
+    copy(useDefaultForNullOrEmpty = useDefaultForNullOrEmpty)
+
+  def withAllowNullForCollections(allowNullForCollections: Boolean): CodecMakerConfig =
+    copy(allowNullForCollections = allowNullForCollections)
+
   private def copy(fieldNameMapper: NameMapper = fieldNameMapper,
                    javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
                    adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
@@ -257,7 +271,9 @@ class CodecMakerConfig private[macros] (
                    scalaTransientSupport: Boolean = scalaTransientSupport,
                    inlineOneValueClasses: Boolean = inlineOneValueClasses,
                    alwaysEmitDiscriminator: Boolean = alwaysEmitDiscriminator,
-                   transientNull: Boolean = transientNull): CodecMakerConfig =
+                   transientNull: Boolean = transientNull,
+                   useDefaultForNullOrEmpty: Boolean = useDefaultForNullOrEmpty,
+                   allowNullForCollections: Boolean = allowNullForCollections): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -289,7 +305,9 @@ class CodecMakerConfig private[macros] (
       scalaTransientSupport = scalaTransientSupport,
       inlineOneValueClasses = inlineOneValueClasses,
       alwaysEmitDiscriminator = alwaysEmitDiscriminator,
-      transientNull = transientNull)
+      transientNull = transientNull,
+      useDefaultForNullOrEmpty = useDefaultForNullOrEmpty,
+      allowNullForCollections = allowNullForCollections)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -323,7 +341,9 @@ object CodecMakerConfig extends CodecMakerConfig(
   scalaTransientSupport = false,
   inlineOneValueClasses = false,
   alwaysEmitDiscriminator = false,
-  transientNull = false) {
+  transientNull = false,
+  useDefaultForNullOrEmpty = true,
+  allowNullForCollections = true) {
 
   /**
     * Turns on printing of generated codecs during compilation:
@@ -371,6 +391,8 @@ object CodecMakerConfig extends CodecMakerConfig(
         case '{ ($x: CodecMakerConfig).withSkipNestedOptionValues($v) } => new Some(x.valueOrAbort.withSkipNestedOptionValues(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withCirceLikeObjectEncoding($v) } => new Some(x.valueOrAbort.withCirceLikeObjectEncoding(v.valueOrAbort))
         case '{ ($x: CodecMakerConfig).withTransientNull($v) } => new Some(x.valueOrAbort.withTransientNull(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withUseDefaultForNullOrEmpty($v) } => new Some(x.valueOrAbort.withUseDefaultForNullOrEmpty(v.valueOrAbort))
+        case '{ ($x: CodecMakerConfig).withAllowNullForCollections($v) } => new Some(x.valueOrAbort.withAllowNullForCollections(v.valueOrAbort))
         case other =>
           report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
           None
@@ -722,7 +744,9 @@ object JsonCodecMaker {
         checkFieldDuplication = true,
         scalaTransientSupport = false,
         inlineOneValueClasses = false,
-        alwaysEmitDiscriminator = false)).make
+        alwaysEmitDiscriminator = false,
+        useDefaultForNullOrEmpty = true,
+        allowNullForCollections = true)).make
 
     def makeOpenapiLike[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       new JsonCodecMakerInstance(CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false)
@@ -1907,6 +1931,10 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     } else cannotFindKeyCodecError(tpe)
   }.asInstanceOf[Expr[T]]
 
+  private def genReadNullOrTokenError[C: Type](default: Expr[C], t: Expr[Byte], in: Expr[JsonReader])(using Quotes): Expr[C] =
+    if (cfg.allowNullForCollections) '{ $in.readNullOrTokenError($default, $t) }
+    else '{ $in.readNullOrTokenError(null.asInstanceOf[C], $t) }
+
   private def genReadArray[B: Type, C: Type](newBuilder: Quotes ?=> Expr[Int] => Expr[B],
                                              readVal: Quotes ?=> (Expr[B], Expr[Int], Expr[Int]) => Expr[Unit],
                                              default: Expr[C], result: Quotes ?=> (Expr[B], Expr[Int], Expr[Int]) => Expr[C],
@@ -1926,7 +1954,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         if ($in.isCurrentToken(']')) ${result('x, 'i, 'l)}
         else $in.arrayEndOrCommaError()
       }
-    } else $in.readNullOrTokenError($default, '[')
+    } else ${genReadNullOrTokenError(default, Expr('['.toByte), in)}
   }
 
   private def genReadCollection[B: Type, C: Type](newBuilder: Expr[B], readVal: Quotes ?=> Expr[B] => Expr[Unit],
@@ -1944,7 +1972,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         if ($in.isCurrentToken(']')) ${result('x)}
         else $in.arrayEndOrCommaError()
       }
-    } else $in.readNullOrTokenError($default, '[')
+    } else ${genReadNullOrTokenError(default, Expr('['.toByte), in)}
   }
 
   private def genReadSet[B: Type, C: Type](newBuilder: Expr[B], readVal: Quotes ?=> Expr[B] => Expr[Unit], default: Expr[C],
@@ -1966,7 +1994,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           if ($in.isCurrentToken(']')) ${result('x)}
           else $in.arrayEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '[')
+      } else ${genReadNullOrTokenError(default, Expr('['.toByte), in)}
     }
 
   private def genReadMap[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
@@ -1985,7 +2013,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           if ($in.isCurrentToken('}')) ${result('x)}
           else $in.objectEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '{')
+      } else ${genReadNullOrTokenError(default, Expr('{'.toByte), in)}
     } else '{
       if ($in.isNextToken('{')) {
         if ($in.isNextToken('}')) $default
@@ -2002,7 +2030,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           if ($in.isCurrentToken('}')) ${result('x)}
           else $in.objectEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '{')
+      } else ${genReadNullOrTokenError(default, Expr('{'.toByte), in)}
     }
 
   private def genReadMapAsArray[B: Type, C: Type](newBuilder: Expr[B], readKV: Quotes ?=> Expr[B] => Expr[Unit],
@@ -2024,7 +2052,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           if ($in.isCurrentToken(']')) ${result('x)}
           else $in.arrayEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '[')
+      } else ${genReadNullOrTokenError(default, Expr('['.toByte), in)}
     } else '{
       if ($in.isNextToken('[')) {
         if ($in.isNextToken(']')) $default
@@ -2044,7 +2072,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           if ($in.isCurrentToken(']')) ${result('x)}
           else $in.arrayEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '[')
+      } else ${genReadNullOrTokenError(default, Expr('['.toByte), in)}
     }
 
   private def genReadIntMap[V: Type](tpe: TypeRepr, readKey: Expr[Int], readVal: Expr[V], in: Expr[JsonReader],
@@ -2092,7 +2120,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             else x ++ ${genBuildIntMap[V]('ks, 'vs, '{ n - 16 })}
           } else $in.arrayEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '[')
+      } else ${genReadNullOrTokenError(default, Expr('['.toByte), in)}
     } else '{
       if ($in.isNextToken('{')) {
         if ($in.isNextToken('}')) $default
@@ -2127,7 +2155,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             else x ++ ${genBuildIntMap[V]('ks, 'vs, '{ n - 16 })}
           } else $in.objectEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '{')
+      } else ${genReadNullOrTokenError(default, Expr('{'.toByte), in)}
     }
 
   // Builds an int map from `n` keys and values in one pass without path copying of `updated` calls: each key is stored
@@ -2205,7 +2233,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             else x ++ ${genBuildLongMap[V]('ks, 'vs, '{ n - 16 })}
           } else $in.arrayEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '[')
+      } else ${genReadNullOrTokenError(default, Expr('['.toByte), in)}
     } else '{
       if ($in.isNextToken('{')) {
         if ($in.isNextToken('}')) $default
@@ -2240,7 +2268,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             else x ++ ${genBuildLongMap[V]('ks, 'vs, '{ n - 16 })}
           } else $in.objectEndOrCommaError()
         }
-      } else $in.readNullOrTokenError($default, '{')
+      } else ${genReadNullOrTokenError(default, Expr('{'.toByte), in)}
     }
 
   // Builds a long map from `n` keys and values in one pass without path copying of `updated` calls: keys are sorted in
@@ -2984,7 +3012,13 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             fTpe.asType match
               case '[ft] =>
                 val tmpVar = Ref(readVarsMap(fieldInfo.mappedName).symbol)
-                val readVal = genReadVal(fTpe :: types, tmpVar.asExpr.asInstanceOf[Expr[ft]], fieldInfo.isStringified, false, in)
+                val allTypes = fTpe :: types
+                // Default values of option and collection fields are used for missing fields only
+                val default =
+                  if (!cfg.useDefaultForNullOrEmpty && fieldInfo.defaultValue.isDefined &&
+                    (isOption(fTpe, types) || isCollection(fTpe))) genNullValue[ft](allTypes)
+                  else tmpVar.asExpr.asInstanceOf[Expr[ft]]
+                val readVal = genReadVal(allTypes, default, fieldInfo.isStringified, false, in)
                 Block({
                   if (cfg.checkFieldDuplication || required.contains(fieldInfo.mappedName) ||
                     withDependentDefaultValues.contains(fieldInfo.mappedName)) {
@@ -3375,7 +3409,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                   else '{ immutable.BitSet.fromBitMaskNoCopy(x) }
                 } else $in.arrayEndOrCommaError()
               }
-            } else $in.readNullOrTokenError($default, '[')
+            } else ${genReadNullOrTokenError(default, Expr('['.toByte), in)}
           }.asInstanceOf[Expr[T]]
         } else if (tpe <:< TypeRepr.of[mutable.Set[?]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
@@ -3418,7 +3452,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
                     else $in.arrayEndOrCommaError()
                   }
                 } else {
-                  if ($tDefault ne null) $in.readNullOrTokenError($tDefault, '[')
+                  if ($tDefault ne null) ${genReadNullOrTokenError(tDefault, Expr('['.toByte), in)}
                   else $in.decodeError("expected non-empty JSON array")
                 }
               }.asInstanceOf[Expr[T]]

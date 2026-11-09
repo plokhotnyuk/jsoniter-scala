@@ -105,6 +105,12 @@ final class stringified extends StaticAnnotation
   *                               argument (`false` by default)
   * @param alwaysEmitDiscriminator turns on serialization of the discriminator field by codecs of ADT leaf classes, not
   *                                only of ADT base classes, while decoders still don't require it (`false` by default)
+  * @param useDefaultForNullOrEmpty turns on parsing of JSON `null` values of option fields, and of JSON `null` values or
+  *                                empty JSON arrays and objects of collection fields, as default values of those fields,
+  *                                otherwise default values are used for missing fields only (`true` by default)
+  * @param allowNullForCollections turns on parsing of JSON `null` values as empty collections, arrays, and maps, or as
+  *                                default values of collection fields when `useDefaultForNullOrEmpty` is turned on,
+  *                                otherwise they cause a parse exception (`true` by default)
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -136,7 +142,9 @@ class CodecMakerConfig private (
     val checkFieldDuplication: Boolean,
     val scalaTransientSupport: Boolean,
     val inlineOneValueClasses: Boolean,
-    val alwaysEmitDiscriminator: Boolean) {
+    val alwaysEmitDiscriminator: Boolean,
+    val useDefaultForNullOrEmpty: Boolean,
+    val allowNullForCollections: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -218,6 +226,12 @@ class CodecMakerConfig private (
   def withInlineOneValueClasses(inlineOneValueClasses: Boolean): CodecMakerConfig =
     copy(inlineOneValueClasses = inlineOneValueClasses)
 
+  def withUseDefaultForNullOrEmpty(useDefaultForNullOrEmpty: Boolean): CodecMakerConfig =
+    copy(useDefaultForNullOrEmpty = useDefaultForNullOrEmpty)
+
+  def withAllowNullForCollections(allowNullForCollections: Boolean): CodecMakerConfig =
+    copy(allowNullForCollections = allowNullForCollections)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -247,7 +261,9 @@ class CodecMakerConfig private (
                          checkFieldDuplication: Boolean = checkFieldDuplication,
                          scalaTransientSupport: Boolean = scalaTransientSupport,
                          inlineOneValueClasses: Boolean = inlineOneValueClasses,
-                         alwaysEmitDiscriminator: Boolean = alwaysEmitDiscriminator): CodecMakerConfig =
+                         alwaysEmitDiscriminator: Boolean = alwaysEmitDiscriminator,
+                         useDefaultForNullOrEmpty: Boolean = useDefaultForNullOrEmpty,
+                         allowNullForCollections: Boolean = allowNullForCollections): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -278,7 +294,9 @@ class CodecMakerConfig private (
       checkFieldDuplication = checkFieldDuplication,
       scalaTransientSupport = scalaTransientSupport,
       inlineOneValueClasses = inlineOneValueClasses,
-      alwaysEmitDiscriminator = alwaysEmitDiscriminator)
+      alwaysEmitDiscriminator = alwaysEmitDiscriminator,
+      useDefaultForNullOrEmpty = useDefaultForNullOrEmpty,
+      allowNullForCollections = allowNullForCollections)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -311,7 +329,9 @@ object CodecMakerConfig extends CodecMakerConfig(
   checkFieldDuplication = true,
   scalaTransientSupport = false,
   inlineOneValueClasses = false,
-  alwaysEmitDiscriminator = false) {
+  alwaysEmitDiscriminator = false,
+  useDefaultForNullOrEmpty = true,
+  allowNullForCollections = true) {
 
   /**
     * Turns on printing of generated codecs during compilation:
@@ -1559,6 +1579,10 @@ object JsonCodecMaker {
         } else cannotFindKeyCodecError(tpe)
       }
 
+      def genReadNullOrTokenError(t: Tree): Tree =
+        if (cfg.allowNullForCollections) q"in.readNullOrTokenError(default, $t)"
+        else q"in.readNullOrTokenError(null, $t)"
+
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
         q"""if (in.isNextToken('[')) {
               if (in.isNextToken(']')) default
@@ -1572,7 +1596,7 @@ object JsonCodecMaker {
                 if (in.isCurrentToken(']')) $result
                 else in.arrayEndOrCommaError()
               }
-            } else in.readNullOrTokenError(default, '[')"""
+            } else ${genReadNullOrTokenError(q"'['")}"""
 
       def genReadSet(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
         if (cfg.setMaxInsertNumber == Int.MaxValue) genReadArray(newBuilder, readVal, result)
@@ -1592,7 +1616,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken(']')) $result
                   else in.arrayEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '[')"""
+              } else ${genReadNullOrTokenError(q"'['")}"""
         }
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
@@ -1609,7 +1633,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken('}')) $result
                   else in.objectEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '{')"""
+              } else ${genReadNullOrTokenError(q"'{'")}"""
         } else {
           q"""if (in.isNextToken('{')) {
                 if (in.isNextToken('}')) default
@@ -1626,7 +1650,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken('}')) $result
                   else in.objectEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '{')"""
+              } else ${genReadNullOrTokenError(q"'{'")}"""
         }
 
       def genReadMapAsArray(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
@@ -1646,7 +1670,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken(']')) $result
                   else in.arrayEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '[')"""
+              } else ${genReadNullOrTokenError(q"'['")}"""
         } else {
           q"""if (in.isNextToken('[')) {
                 if (in.isNextToken(']')) default
@@ -1666,7 +1690,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken(']')) $result
                   else in.arrayEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '[')"""
+              } else ${genReadNullOrTokenError(q"'['")}"""
         }
 
       def genReadIntMap(tpe1: Type, empty: Tree, readKey: Tree, readVal: Tree): Tree = {
@@ -1742,7 +1766,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken(']')) $result
                   else in.arrayEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '[')"""
+              } else ${genReadNullOrTokenError(q"'['")}"""
         } else {
           q"""if (in.isNextToken('{')) {
                 if (in.isNextToken('}')) default
@@ -1761,7 +1785,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken('}')) $result
                   else in.objectEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '{')"""
+              } else ${genReadNullOrTokenError(q"'{'")}"""
         }
       }
 
@@ -1902,7 +1926,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken(']')) $result
                   else in.arrayEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '[')"""
+              } else ${genReadNullOrTokenError(q"'['")}"""
         } else {
           q"""if (in.isNextToken('{')) {
                 if (in.isNextToken('}')) default
@@ -1921,7 +1945,7 @@ object JsonCodecMaker {
                   if (in.isCurrentToken('}')) $result
                   else in.objectEndOrCommaError()
                 }
-              } else in.readNullOrTokenError(default, '{')"""
+              } else ${genReadNullOrTokenError(q"'{'")}"""
         }
       }
 
@@ -2319,8 +2343,14 @@ object JsonCodecMaker {
               if (discriminator.nonEmpty && cfg.discriminatorFieldName.contains(fieldInfo.mappedName)) discriminator
               else {
                 val fTpe = fieldInfo.resolvedTpe
+                val allTypes = fTpe :: types
+                // Default values of option and collection fields are used for missing fields only
+                val default =
+                  if (!cfg.useDefaultForNullOrEmpty && fieldInfo.defaultValue.isDefined &&
+                    (isOption(fTpe, types) || isCollection(fTpe))) genNullValue(allTypes)
+                  else q"${fieldInfo.tmpName}"
                 q"""${checkAndResetFieldPresenceFlags(fieldInfo.mappedName)}
-                    ${fieldInfo.tmpName} = ${genReadVal(fTpe :: types, q"${fieldInfo.tmpName}", fieldInfo.isStringified, EmptyTree)}"""
+                    ${fieldInfo.tmpName} = ${genReadVal(allTypes, default, fieldInfo.isStringified, EmptyTree)}"""
               }
             q"if (in.isCharBufEqualsTo(l, ${fieldInfo.mappedName})) $readValue else $acc"
           }
@@ -2604,7 +2634,7 @@ object JsonCodecMaker {
                       else in.arrayEndOrCommaError()
                     }
                   } else {
-                    if (default ne null) in.readNullOrTokenError(default, '[')
+                    if (default ne null) ${genReadNullOrTokenError(q"'['")}
                     else in.decodeError("expected non-empty JSON array")
                   }"""
             } else if (tpe <:< typeOf[List[?]] || tpe.typeSymbol == typeOf[Seq[?]].typeSymbol) withDecoderFor(methodKey, default) {
