@@ -1175,8 +1175,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""+1000000000=01-20T07:24:33Z"""", "expected '-', offset: 0x0000000c")
       checkError(""""-0000-01-20T07:24:33Z"""", "illegal year, offset: 0x00000005")
       checkError(""""+1000000001-01-20T07:24:33Z"""", "illegal year, offset: 0x0000000b")
-      checkError(""""+1000000000-12-31T23:59:59-00:01"""", "illegal timezone offset, offset: 0x00000021")
-      checkError(""""-1000000000-01-01T00:00:00+00:01"""", "illegal timezone offset, offset: 0x00000021")
+      checkError(""""+1000000000-12-31T23:59:59-00:01"""", "illegal timezone offset, offset: 0x00000020")
+      checkError(""""-1000000000-01-01T00:00:00+00:01"""", "illegal timezone offset, offset: 0x00000020")
       checkError(""""+4000000000-01-20T07:24:33Z"""", "illegal year, offset: 0x0000000b")
       checkError(""""+9999999999-01-20T07:24:33Z"""", "illegal year, offset: 0x0000000b")
       checkError(""""-1000000001-01-20T07:24:33Z"""", "illegal year, offset: 0x0000000b")
@@ -1204,8 +1204,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""2008-01-20T07:24:33.+20:10"""", "illegal timezone offset hour, offset: 0x00000017")
       checkError(""""2008-01-20T07:24:33.+10:60"""", "illegal timezone offset minute, offset: 0x0000001a")
       checkError(""""2008-01-20T07:24:33.+10:10:60"""", "illegal timezone offset second, offset: 0x0000001d")
-      checkError(""""2008-01-20T07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x0000001e")
-      checkError(""""2008-01-20T07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x0000001e")
+      checkError(""""2008-01-20T07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x0000001d")
+      checkError(""""2008-01-20T07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x0000001d")
       forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
@@ -1946,8 +1946,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""2008-01-20T07:24:33.+20:10"""", "illegal timezone offset hour, offset: 0x00000017")
       checkError(""""2008-01-20T07:24:33.+10:60"""", "illegal timezone offset minute, offset: 0x0000001a")
       checkError(""""2008-01-20T07:24:33.+10:10:60"""", "illegal timezone offset second, offset: 0x0000001d")
-      checkError(""""2008-01-20T07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x0000001e")
-      checkError(""""2008-01-20T07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x0000001e")
+      checkError(""""2008-01-20T07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x0000001d")
+      checkError(""""2008-01-20T07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x0000001d")
       forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumber = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+') 'X' else ch
         val nonNumberOrZ = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
@@ -2101,8 +2101,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""07:24:33.+19:10"""", "illegal timezone offset hour, offset: 0x0000000c")
       checkError(""""07:24:33.+10:60"""", "illegal timezone offset minute, offset: 0x0000000f")
       checkError(""""07:24:33.+10:10:60"""", "illegal timezone offset second, offset: 0x00000012")
-      checkError(""""07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x00000013")
-      checkError(""""07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x00000013")
+      checkError(""""07:24:33.+18:00:01"""", "illegal timezone offset, offset: 0x00000012")
+      checkError(""""07:24:33.-18:00:01"""", "illegal timezone offset, offset: 0x00000012")
       forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonNumberOrZ = if (ch >= '0' && ch <= '9' || ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
         val nonSignOrZ = if (ch == '-' || ch == '+' || ch == 'Z') 'X' else ch
@@ -2679,8 +2679,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""2008-01-20T07:24:33.+10:10:X0[UTC]"""", "expected digit, offset: 0x0000001c")
       checkError(""""2008-01-20T07:24:33.+10:10:1,[UTC]"""", "expected digit, offset: 0x0000001d")
       checkError(""""2008-01-20T07:24:33.+10:10:10[UTC]X"""", """expected '"', offset: 0x00000023""")
-      checkError(""""2008-01-20T07:24:33.+18:01[UTC]"""", "illegal timezone offset, offset: 0x0000001b")
-      checkError(""""2008-01-20T07:24:33.-18:01[UTC]"""", "illegal timezone offset, offset: 0x0000001b")
+      checkError(""""2008-01-20T07:24:33.+18:01[UTC]"""", "illegal timezone offset, offset: 0x0000001a")
+      checkError(""""2008-01-20T07:24:33.-18:01[UTC]"""", "illegal timezone offset, offset: 0x0000001a")
       checkError(""""2008-01-20T07:24:33.+20:10[UTC]"""", "illegal timezone offset hour, offset: 0x00000017")
       checkError(""""2008-01-20T07:24:33.+10:60[UTC]"""", "illegal timezone offset minute, offset: 0x0000001a")
       checkError(""""2008-01-20T07:24:33.+10:10:60[UTC]"""", "illegal timezone offset second, offset: 0x0000001d")
@@ -2916,8 +2916,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(""""+19:10"""", "illegal timezone offset hour, offset: 0x00000003")
       checkError(""""+10:60"""", "illegal timezone offset minute, offset: 0x00000006")
       checkError(""""+10:10:60"""", "illegal timezone offset second, offset: 0x00000009")
-      checkError(""""+18:00:01"""", "illegal timezone offset, offset: 0x0000000a")
-      checkError(""""-18:00:01"""", "illegal timezone offset, offset: 0x0000000a")
+      checkError(""""+18:00:01"""", "illegal timezone offset, offset: 0x00000009")
+      checkError(""""-18:00:01"""", "illegal timezone offset, offset: 0x00000009")
       forAll(genISO8859Char, minSuccessful(100)) { ch =>
         val nonDigit = if (ch >= '0' && ch <= '9') 'X' else ch
         val nonColonOrDoubleQuotes = if (ch == ':' || ch == '"') 'X' else ch

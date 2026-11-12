@@ -4161,7 +4161,7 @@ final class JsonReader private[jsoniter_scala](
     else if (b == '-') epochSecond += parseOffsetTotalWithDoubleQuotes(head)
     else if (b == '+') epochSecond -= parseOffsetTotalWithDoubleQuotes(head)
     else timeError(nanoDigitWeight)
-    if (epochSecond < -31557014167219200L || epochSecond > 31556889864403199L) timezoneOffsetError() // out of the range from Instant.MIN to Instant.MAX because of the offset
+    if (epochSecond < -31557014167219200L || epochSecond > 31556889864403199L) timezoneOffsetError(head - 2) // out of the range from Instant.MIN to Instant.MAX because of the offset
     if (nano == 0) Instant.ofEpochSecond(epochSecond)
     else Instant.ofEpochSecond(epochSecond, nano.toLong)
   }
@@ -4421,7 +4421,7 @@ final class JsonReader private[jsoniter_scala](
             b = nextByte(head)
           }
         }
-        if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
+        if (offsetTotal > 64800) timezoneOffsetError(head - 2) // 64800 == 18 * 60 * 60
         toZoneOffset(sb, offsetTotal)
       } else timeError(nanoDigitWeight)
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
@@ -4497,7 +4497,7 @@ final class JsonReader private[jsoniter_scala](
       b == ':'
     }) offsetTotal += parseOffsetSecondWithDoubleQuotes(head)
     else if (b != '"') tokensError(':', '"')
-    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
+    if (offsetTotal > 64800) timezoneOffsetError(head - 2) // 64800 == 18 * 60 * 60
     offsetTotal
   }
 
@@ -4646,6 +4646,8 @@ final class JsonReader private[jsoniter_scala](
 
   @noinline
   private[this] def timezoneOffsetError(): Nothing = decodeError("illegal timezone offset")
+
+  private[this] def timezoneOffsetError(pos: Int): Nothing = decodeError("illegal timezone offset", pos)
 
   @noinline
   private[this] def timezoneOffsetHourError(pos: Int): Nothing = decodeError("illegal timezone offset hour", pos)
