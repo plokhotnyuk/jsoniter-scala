@@ -1829,6 +1829,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       checkError("", "unexpected end of input, offset: 0x00000000")
       checkError("2008-01-20T07:24:3", "unexpected end of input, offset: 0x00000012")
+      checkError("2008-01-20T07:24", "expected ':' or '+' or '-' or 'Z', offset: 0x0000000f")
+      checkError("2008-01-20T07:24:33", "expected '.' or '+' or '-' or 'Z', offset: 0x00000012")
       checkError("+1000000000-01-20T07:24:33Z", "expected '-', offset: 0x0000000a")
       checkError("-1000000000-01-20T07:24:33Z", "expected '-', offset: 0x0000000a")
       checkError("-0000-01-20T07:24:33Z", "illegal year, offset: 0x00000004")
@@ -2054,6 +2056,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       checkError("", "unexpected end of input, offset: 0x00000000")
       checkError("07:24:3", "unexpected end of input, offset: 0x00000007")
+      checkError("07:24", "expected ':' or '+' or '-' or 'Z', offset: 0x00000004")
+      checkError("07:24:33", "expected '.' or '+' or '-' or 'Z', offset: 0x00000007")
       checkError("24:24:33Z", "illegal hour, offset: 0x00000001")
       checkError("07:60:33Z", "illegal minute, offset: 0x00000004")
       checkError("07:24:60Z", "illegal second, offset: 0x00000007")

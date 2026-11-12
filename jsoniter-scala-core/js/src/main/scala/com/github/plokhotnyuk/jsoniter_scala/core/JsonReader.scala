@@ -1473,13 +1473,14 @@ final class JsonReader private[jsoniter_scala](
     val day = parseDayWithByte(year, month, 'T', head)
     val hour = parseHourWithColon(head)
     val minute = parseMinute(head)
-    var b = nextByte(head)
+    var b = 0: Byte
+    if (hasRemaining()) b = nextByte(head)
     var second, nano = 0
     var nanoDigitWeight = -1
     if (b == ':') {
       nanoDigitWeight = -2
       second = parseSecond(head)
-      b = nextByte(head)
+      if (hasRemaining()) b = nextByte(head)
       if (b == '.') {
         nanoDigitWeight = 100000000
         var pos = head
@@ -1515,13 +1516,14 @@ final class JsonReader private[jsoniter_scala](
   def readBytesAsOffsetTime(): OffsetTime = {
     val hour = parseHourWithColon(head)
     val minute = parseMinute(head)
-    var b = nextByte(head)
+    var b = 0: Byte
+    if (hasRemaining()) b = nextByte(head)
     var second, nano = 0
     var nanoDigitWeight = -1
     if (b == ':') {
       nanoDigitWeight = -2
       second = parseSecond(head)
-      b = nextByte(head)
+      if (hasRemaining()) b = nextByte(head)
       if (b == '.') {
         nanoDigitWeight = 100000000
         var pos = head
