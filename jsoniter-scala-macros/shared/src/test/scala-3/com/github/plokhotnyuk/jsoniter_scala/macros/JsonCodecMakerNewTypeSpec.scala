@@ -406,6 +406,13 @@ class JsonCodecMakerNewTypeSpec extends VerifyingSpec {
         List(NullableProperty(null), NullableProperty(1), NullableProperty("VVV")),
         """[{},{"a":1},{"a":"VVV"}]""")
     }
+    "serialize and deserialize case class with union types having null and default values (transient null behavior)" in {
+      case class NullablePropertyWithDefault(a: Int | Null | String = 1)
+
+      verifySer(make[List[NullablePropertyWithDefault]](CodecMakerConfig.withTransientNull(true)),
+        List(NullablePropertyWithDefault(null), NullablePropertyWithDefault(1), NullablePropertyWithDefault("VVV")),
+        """[{},{},{"a":"VVV"}]""")
+    }
     "serialize and deserialize case class with union types having null value (circe-like behavior)" in {
       verifySerDeser(makeCirceLike[List[NullableProperty]],
         List(NullableProperty(null), NullableProperty(1), NullableProperty("VVV")),

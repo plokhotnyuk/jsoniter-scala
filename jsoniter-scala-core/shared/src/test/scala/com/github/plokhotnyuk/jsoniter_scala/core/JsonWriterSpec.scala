@@ -644,6 +644,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(200f)
       check(3.3554432E7f)
       check(1.26217745E-29f)
+      (1 to 8).foreach { n => // whole numbers with different number of digits
+        check("12345678".take(n).toFloat)
+        check(-"98765432".take(n).toFloat)
+      }
       forAll(arbitrary[Int], minSuccessful(10000))(n => check(n.toFloat))
       forAll(arbitrary[Int], minSuccessful(10000)) { n =>
         val x = java.lang.Float.intBitsToFloat(n)
@@ -675,6 +679,11 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(6.3E9f, "6.3E9") // Java serializes it to "6.3000003E9" (string of redundant 0s)
       check(3.0E10f, "3.0E10") // Java serializes it to "3.0000001E10" (string of redundant 0s)
       check(1.1E10f, "1.1E10") // Java serializes it to "1.10000005E10" (string of redundant 0s)
+      (1 to 7).foreach { n => // decimal notation with a single fractional digit
+        val s = "1234567".take(n) + ".5"
+        check(s.toFloat, s)
+        check(-s.toFloat, "-" + s)
+      }
     }
     "write round-even float values" in {
       def check(n: Float, s: String): Unit = {
@@ -744,6 +753,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(7.1202363472230444E-307)
       check(3.67301024534615E16)
       check(5.9604644775390625E-8)
+      (1 to 16).foreach { n => // whole numbers with different number of digits
+        check("1234567890123456".take(n).toDouble)
+        check(-"9876543210987654".take(n).toDouble)
+      }
       forAll(arbitrary[Long], minSuccessful(10000))(n => check(n.toDouble))
       forAll(arbitrary[Long], minSuccessful(10000)) { n =>
         val x = java.lang.Double.longBitsToDouble(n)
@@ -779,6 +792,11 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(3.6131332396758635E25, "3.6131332396758635E25") // Java serializes it to "3.6131332396758634E25" (not the closest to the intermediate double)
       check(2.5138990223946153E25, "2.5138990223946153E25") // Java serializes it to "2.5138990223946152E25" (not the closest to the intermediate double)
       check(3.9799999999999997e-13, "3.9799999999999997E-13")
+      (1 to 7).foreach { n => // decimal notation with a single fractional digit
+        val s = "1234567".take(n) + ".5"
+        check(s.toDouble, s)
+        check(-s.toDouble, "-" + s)
+      }
     }
     "write round-even double values" in {
       def check(n: Double, s: String): Unit = {
@@ -956,10 +974,11 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         w.writeVal(1)
         w.writeVal("VVV")
         w.writeValAsString(2L)
+        w.writeNonEscapedAsciiVal("WWW")
         w.writeValAsString(true)
         w.writeRawVal(Array[Byte](51))
         w.writeArrayEnd()
-      } shouldBe """[1,"VVV","2","true",3]"""
+      } shouldBe """[1,"VVV","2","WWW","true",3]"""
     }
     "allow to write a prettified JSON array with values separated by comma" in {
       withWriter(WriterConfig.withIndentionStep(2)) { w =>
@@ -998,8 +1017,12 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         w.writeNonEscapedAsciiVal("WWW")
         w.writeNonEscapedAsciiKey("2")
         w.writeRawVal(Array[Byte](51))
+        w.writeKey('c')
+        w.writeVal(4)
+        w.writeKey(LocalDate.of(2008, 1, 2))
+        w.writeVal(5)
         w.writeObjectEnd()
-      } shouldBe """{"1":"VVV","true":"WWW","2":3}"""
+      } shouldBe """{"1":"VVV","true":"WWW","2":3,"c":4,"2008-01-02":5}"""
     }
     "allow to write a prettified JSON array with key/value pairs separated by comma" in {
       withWriter(writerConfig.withIndentionStep(2)) { w =>
@@ -1010,12 +1033,18 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         w.writeNonEscapedAsciiVal("WWW")
         w.writeNonEscapedAsciiKey("2")
         w.writeRawVal(Array[Byte](51))
+        w.writeKey('c')
+        w.writeVal(4)
+        w.writeKey(LocalDate.of(2008, 1, 2))
+        w.writeVal(5)
         w.writeObjectEnd()
       } shouldBe
         """{
           |  "1": "VVV",
           |  "true": "WWW",
-          |  "2": 3
+          |  "2": 3,
+          |  "c": 4,
+          |  "2008-01-02": 5
           |}""".stripMargin
     }
   }
