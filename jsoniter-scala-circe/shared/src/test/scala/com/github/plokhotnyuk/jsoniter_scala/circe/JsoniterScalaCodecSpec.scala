@@ -66,12 +66,21 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("3.141592653589793")))(codec) shouldBe "3.141592653589793"
       writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("3.14159265358979323846264338327950288419716939937510")))(codec) shouldBe """"3.14159265358979323846264338327950288419716939937510""""
       writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("4e+297")))(codec) shouldBe """"4E+297""""
+      writeToString(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e10000000000")))(codec) shouldBe """"1e10000000000""""
+      writeToString(Json.arr(Json.fromLong(-4503599627370497L), Json.fromLong(-4503599627370496L), Json.fromLong(4503599627370495L),
+        Json.fromLong(4503599627370496L)))(codec) shouldBe """["-4503599627370497",-4503599627370496,4503599627370495,"4503599627370496"]"""
+      Seq[String => Json](s => Json.fromBigDecimal(BigDecimal(s)), s => Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe(s))).foreach { f =>
+        writeToString(Json.arr(f("4503599627370.495"), f("4503599627370.496"), f("1e256"), f("1e257"), f("1e-256"), f("1e-257")))(codec) shouldBe
+          """[4503599627370.495,"4503599627370.496",1E+256,"1E+257",1E-256,"1E-257"]"""
+      }
     }
     "allow customization for key sorting during serialization" in {
       val codec = jsonCodec(sortKeys = true)
       val jsonStr = """{"s":1,"n1":1.0,"n2":4503599627370497,"a":[null,"WWW",[],{}],"o":{"a":4e+297}}"""
       val json = readFromString(jsonStr)
       writeToString(json)(codec) shouldBe """{"a":[null,"WWW",[],{}],"n1":1.0,"n2":4503599627370497,"o":{"a":4E+297},"s":1}"""
+      val filteringCodec = jsonCodec(sortKeys = true, doSerialize = _ ne Json.Null)
+      writeToString(readFromString("""{"s":1,"n":null,"a":[null],"b":null}"""))(filteringCodec) shouldBe """{"a":[null],"s":1}"""
     }
     "not serialize invalid json" in {
       val json1 = parse("\"\ud800\"").getOrElse(null)
@@ -82,6 +91,21 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       val json2 = parse("""{"n":[""" * 64 + "{}" + "]}" * 64).getOrElse(null)
       assert(intercept[Throwable](writeToString(json1)).getMessage.contains("depth limit exceeded"))
       assert(intercept[Throwable](writeToString(json2)).getMessage.contains("depth limit exceeded"))
+    }
+    "create codecs using overloaded factory methods and backward compatible constructors" in {
+      val jsonStr = """{"n":null,"b":[4503599627370497],"a":[]}"""
+      val json = readFromString(jsonStr)
+      val parser = io.circe.JsoniterScalaCodec.defaultNumberParser
+      val serializer = io.circe.JsoniterScalaCodec.jsCompatibleNumberSerializer
+      val doSerialize: Json => Boolean = _ ne Json.Null
+      Seq(jsonCodec(2, 8, doSerialize, parser), new io.circe.JsoniterScalaCodec(2, 8, doSerialize, parser)).foreach { codec =>
+        writeToString(readFromString(jsonStr)(codec))(codec) shouldBe """{"b":[4503599627370497],"a":[]}"""
+        assert(intercept[JsonReaderException](readFromString("[[[]]]")(codec)).getMessage.contains("depth limit exceeded"))
+      }
+      Seq(jsonCodec(2, 8, doSerialize, parser, serializer), new io.circe.JsoniterScalaCodec(2, 8, doSerialize, parser, serializer)).foreach { codec =>
+        writeToString(json)(codec) shouldBe """{"b":["4503599627370497"],"a":[]}"""
+        assert(intercept[Throwable](writeToString(Json.arr(Json.arr(Json.arr())))(codec)).getMessage.contains("depth limit exceeded"))
+      }
     }
     "allow filtering for key-value serialization" in {
       val codec = jsonCodec(doSerialize = _ ne Json.Null)
@@ -141,12 +165,13 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
     "serialize numbers" in {
       val json = Json.arr(
         Json.fromFloatOrNull(1.0f),
+        Json.fromFloatOrNull(3.1415927f),
         Json.fromDoubleOrNull(2.0),
         Json.fromLong(3L),
         Json.fromBigDecimal(BigDecimal("777e+777")),
         Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("999e+999"))
       )
-      writeToString(json) shouldBe "[1.0,2.0,3,7.77E+779,999e+999]"
+      writeToString(json) shouldBe "[1.0,3.1415927,2.0,3,7.77E+779,999e+999]"
     }
   }
 }

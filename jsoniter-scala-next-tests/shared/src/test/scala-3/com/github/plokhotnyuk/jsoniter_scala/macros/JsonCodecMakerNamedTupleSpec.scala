@@ -31,6 +31,72 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
       verifySerDeser(make[(i: Int)], (i = 1), """{"i":1}""")
       verifySerDeser(make[(i: Int, s: String)], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
     }
+    "deserialize named tuples with fields in any order and skip unexpected fields" in {
+      val codec = make[(i: Int, s: String)]
+      verifyDeser(codec, (i = 1, s = "VVV"), """{"x":[1,{"y":null}],"s":"VVV","i":1}""")
+      verifyDeser(make[(i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int, i7: Int, i8: Int, i9: Int, i10: Int, i11: Int, i12: Int, i13: Int, i14: Int, i15: Int, i16: Int, i17: Int, i18: Int, i19: Int, i20: Int, i21: Int, i22: Int, i23: String)],
+        (i1 = 1, i2 = 2, i3 = 3, i4 = 4, i5 = 5, i6 = 6, i7 = 7, i8 = 8, i9 = 9, i10 = 10, i11 = 11, i12 = 12, i13 = 13, i14 = 14, i15 = 15, i16 = 16, i17 = 17, i18 = 18, i19 = 19, i20 = 20, i21 = 21, i22 = 22, i23 = "VVV"),
+        """{"i23":"VVV","i22":22,"i21":21,"i20":20,"i19":19,"i18":18,"i17":17,"i16":16,"i15":15,"i14":14,"i13":13,"i12":12,"i11":11,"i10":10,"i9":9,"i8":8,"i7":7,"i6":6,"i5":5,"i4":4,"i3":3,"i2":2,"i1":1}""")
+    }
+    "throw parse exception for missing, duplicated, or unexpected fields of named tuples" in {
+      val codec = make[(i: Int, s: String)]
+      verifyDeserError(codec, """{"i":1}""", """missing required field "s", offset: 0x00000006""")
+      verifyDeserError(codec, """{"s":"VVV"}""", """missing required field "i", offset: 0x0000000a""")
+      verifyDeserError(codec, """{"i":1,"i":2,"s":"VVV"}""", """duplicated field "i", offset: 0x0000000a""")
+      verifyDeser(make[(i: Int, s: String)](CodecMakerConfig.withCheckFieldDuplication(false)), (i = 2, s = "VVV"), """{"i":1,"i":2,"s":"VVV"}""")
+      verifyDeserError(codec, """[1,"VVV"]""", """expected '{', offset: 0x00000000""")
+      verifyDeserError(make[(i: Int, s: String)](CodecMakerConfig.withSkipUnexpectedFields(false)), """{"i":1,"s":"VVV","x":0}""",
+        """unexpected field "x", offset: 0x00000014""")
+      verifyDeserError(make[(i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int, i7: Int, i8: Int, i9: Int, i10: Int, i11: Int, i12: Int, i13: Int, i14: Int, i15: Int, i16: Int, i17: Int, i18: Int, i19: Int, i20: Int, i21: Int, i22: Int, i23: Int)],
+        """{"i1":1,"i2":2,"i3":3,"i4":4,"i5":5,"i6":6,"i7":7,"i8":8,"i9":9,"i10":10,"i11":11,"i12":12,"i13":13,"i14":14,"i15":15,"i16":16,"i17":17,"i18":18,"i19":19,"i20":20,"i21":21,"i22":22}""",
+        """missing required field "i23", offset: 0x000000b4""")
+    }
+    "serialize and deserialize named tuples with optional and collection fields" in {
+      verifySerDeser(make[(o: Option[Int], l: List[Int], s: String)], (o = None, l = Nil, s = "VVV"), """{"s":"VVV"}""")
+      verifySerDeser(make[(o: Option[Int], l: List[Int], s: String)], (o = Some(1), l = List(2), s = "VVV"), """{"o":1,"l":[2],"s":"VVV"}""")
+      verifySerDeser(make[(o: Option[Int], l: List[Int], s: String)](CodecMakerConfig.withTransientNone(false).withTransientEmpty(false)),
+        (o = None, l = Nil, s = "VVV"), """{"o":null,"l":[],"s":"VVV"}""")
+      verifyDeserError(make[(o: Option[Int], l: List[Int], s: String)](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
+        """{"s":"VVV"}""", """missing required field "l", offset: 0x0000000a""")
+    }
+    "serialize and deserialize named tuples with array and iterator fields" in {
+      val codec = make[(a: Array[Int], ia: IArray[Int], s: String)]
+      verifySer(codec, (a = Array[Int](), ia = IArray[Int](), s = "VVV"), """{"s":"VVV"}""")
+      verifySer(codec, (a = Array(1), ia = IArray(2), s = "VVV"), """{"a":[1],"ia":[2],"s":"VVV"}""")
+      verifySer(make[(a: Array[Int], ia: IArray[Int], s: String)](CodecMakerConfig.withTransientEmpty(false)),
+        (a = Array[Int](), ia = IArray[Int](), s = "VVV"), """{"a":[],"ia":[],"s":"VVV"}""")
+      verifyDeserByCheck(codec, """{"a":[1],"ia":[2],"s":"VVV"}""", check = (x: (a: Array[Int], ia: IArray[Int], s: String)) => {
+        x.a.toList shouldBe List(1)
+        x.ia.toList shouldBe List(2)
+        x.s shouldBe "VVV"
+      })
+      writeToString((i = Iterator.empty[Int], s = "VVV"))(make[(i: Iterator[Int], s: String)]) shouldBe """{"s":"VVV"}"""
+      writeToString((i = Iterator(1, 2), s = "VVV"))(make[(i: Iterator[Int], s: String)]) shouldBe """{"i":[1,2],"s":"VVV"}"""
+      writeToString((i = Iterator.empty[Int], s = "VVV"))(make[(i: Iterator[Int], s: String)](CodecMakerConfig.withTransientEmpty(false))) shouldBe
+        """{"i":[],"s":"VVV"}"""
+    }
+    "deserialize named tuples with null collections only when it is allowed" in {
+      verifyDeser(make[(l: List[Int], s: String)], (l = Nil, s = "VVV"), """{"l":null,"s":"VVV"}""")
+      verifyDeserError(make[(l: List[Int], s: String)](CodecMakerConfig.withAllowNullForCollections(false)), """{"l":null,"s":"VVV"}""",
+        """expected '[', offset: 0x00000005""")
+    }
+    "serialize and deserialize named tuples with nested options" in {
+      val codec = make[(o: Option[Option[Int]], s: String)](CodecMakerConfig.withSkipNestedOptionValues(true).withDistinguishNullAndMissingNestedOptions(true))
+      verifySerDeser(codec, (o = None, s = "VVV"), """{"s":"VVV"}""")
+      verifySerDeser(codec, (o = Some(None), s = "VVV"), """{"o":null,"s":"VVV"}""")
+      verifySerDeser(codec, (o = Some(Some(1)), s = "VVV"), """{"o":1,"s":"VVV"}""")
+    }
+    "serialize and deserialize named tuples with field names that require encoding" in {
+      verifySerDeser(make[(`ключ`: Int, `a"b`: String)], (`ключ` = 1, `a"b` = "VVV"), """{"ключ":1,"a\"b":"VVV"}""")
+    }
+    "serialize and deserialize named tuples with arity 22" in {
+      verifySerDeser(make[(i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int, i7: Int, i8: Int, i9: Int, i10: Int, i11: Int, i12: Int, i13: Int, i14: Int, i15: Int, i16: Int, i17: Int, i18: Int, i19: Int, i20: Int, i21: Int, i22: String)],
+        (i1 = 1, i2 = 2, i3 = 3, i4 = 4, i5 = 5, i6 = 6, i7 = 7, i8 = 8, i9 = 9, i10 = 10, i11 = 11, i12 = 12, i13 = 13, i14 = 14, i15 = 15, i16 = 16, i17 = 17, i18 = 18, i19 = 19, i20 = 20, i21 = 21, i22 = "VVV"),
+        """{"i1":1,"i2":2,"i3":3,"i4":4,"i5":5,"i6":6,"i7":7,"i8":8,"i9":9,"i10":10,"i11":11,"i12":12,"i13":13,"i14":14,"i15":15,"i16":16,"i17":17,"i18":18,"i19":19,"i20":20,"i21":21,"i22":"VVV"}""")
+      verifySerDeser(make[NamedTuple.Concat[(i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int, i7: Int, i8: Int, i9: Int, i10: Int, i11: Int), (i12: Int, i13: Int, i14: Int, i15: Int, i16: Int, i17: Int, i18: Int, i19: Int, i20: Int, i21: Int, i22: String)]],
+        (i1 = 1, i2 = 2, i3 = 3, i4 = 4, i5 = 5, i6 = 6, i7 = 7, i8 = 8, i9 = 9, i10 = 10, i11 = 11, i12 = 12, i13 = 13, i14 = 14, i15 = 15, i16 = 16, i17 = 17, i18 = 18, i19 = 19, i20 = 20, i21 = 21, i22 = "VVV"),
+        """{"i1":1,"i2":2,"i3":3,"i4":4,"i5":5,"i6":6,"i7":7,"i8":8,"i9":9,"i10":10,"i11":11,"i12":12,"i13":13,"i14":14,"i15":15,"i16":16,"i17":17,"i18":18,"i19":19,"i20":20,"i21":21,"i22":"VVV"}""")
+    }
     "serialize and deserialize generic named tuples" in {
       type GenericNamedTuple[A, B] = (a: A, b: B)
 
@@ -51,6 +117,8 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
       type Values = I *:: S *:: EmptyTuple
 
       verifySerDeser(make[NamedTuple.NamedTuple[Names, Values]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
+      type NT[N <: Tuple, V <: Tuple] = NamedTuple.NamedTuple[N, V]
+      verifySerDeser(make[NT[Names, Values]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.From[Record]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
       verifySerDeser(make[NamedTuple.Reverse[(i: Int, s: String)]], (s = "VVV", i = 1), """{"s":"VVV","i":1}""")
       verifySerDeser(make[NamedTuple.Concat[(i: Int), (s: String)]], (i = 1, s = "VVV"), """{"i":1,"s":"VVV"}""")
@@ -101,6 +169,9 @@ class JsonCodecMakerNamedTupleSpec extends VerifyingSpec {
       verifySerDeser(make[Tuple.++[(Byte, Short), (Int, Long)]], (1: Byte, 2: Short, 3, 4L), "[1,2,3,4]")
       verifySerDeser(make[Tuple.Reverse[(String, Int)]], (1, "VVV"), """[1,"VVV"]""")
       verifySerDeser(make[NamedTuple.DropNames[(i: Int, s: String)]], (1, "VVV"), """[1,"VVV"]""")
+      verifySerDeser(make[NamedTuple.DropNames[(i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int, i7: Int, i8: Int, i9: Int, i10: Int, i11: Int, i12: Int, i13: Int, i14: Int, i15: Int, i16: Int, i17: Int, i18: Int, i19: Int, i20: Int, i21: Int, i22: Int, i23: String)]],
+        (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, "VVV"),
+        """[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,"VVV"]""")
     }
     "serialize and deserialize recursive regular and named tuples" in {
       type RecursiveTuple = (Int, Option[RecursiveTuple])

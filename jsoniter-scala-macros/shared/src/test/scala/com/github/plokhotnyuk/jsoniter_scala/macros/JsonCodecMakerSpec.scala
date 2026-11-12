@@ -579,6 +579,64 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[BigDecimal](CodecMakerConfig.withIsStringified(true)),
         BigDecimal("1234567890.12345678901234567890"), """"1234567890.12345678901234567890"""")
     }
+    "serialize and deserialize BigDecimal values using the configured precision" in {
+      def check(codec: JsonValueCodec[BigDecimal], json: String, expected: String, precision: Int): _root_.scala.Unit =
+        verifyDeserByCheck(codec, json, check = (x: BigDecimal) => {
+          x.bigDecimal shouldBe new _root_.java.math.BigDecimal(expected)
+          x.mc.getPrecision shouldBe precision
+        })
+
+      val s = "1.2345678901234567890123456789012345678901234567890"
+      check(make[BigDecimal], s, "1.234567890123456789012345678901235", 34)
+      check(make[BigDecimal](CodecMakerConfig.withBigDecimalPrecision(16)), s, "1.234567890123457", 16)
+      check(make[BigDecimal](CodecMakerConfig.withBigDecimalPrecision(7)), s, "1.234568", 7)
+      check(make[BigDecimal](CodecMakerConfig.withBigDecimalPrecision(5)), s, "1.2346", 5)
+      check(make[BigDecimal](CodecMakerConfig.withBigDecimalPrecision(0)), s, s, 0)
+      check(make[BigDecimal](CodecMakerConfig.withBigDecimalPrecision(5).withIsStringified(true)), s""""$s"""", "1.2346", 5)
+      verifyDeserByCheck(make[Map[BigDecimal, BigDecimal]](CodecMakerConfig.withBigDecimalPrecision(5)),
+        """{"1.234567":1.234567}""", check = (x: Map[BigDecimal, BigDecimal]) => {
+          x.keys.head.bigDecimal shouldBe new _root_.java.math.BigDecimal("1.2346")
+          x.values.head.bigDecimal shouldBe new _root_.java.math.BigDecimal("1.2346")
+        })
+    }
+    "throw parse exception for BigDecimal values that exceed the configured limits" in {
+      verifySerDeser(make[BigDecimal](CodecMakerConfig.withBigDecimalScaleLimit(10).withBigDecimalDigitsLimit(10)),
+        BigDecimal("123456.789"), "123456.789")
+      verifyDeserError(make[BigDecimal](CodecMakerConfig.withBigDecimalScaleLimit(10)), "1e10", "value exceeds limit for scale, offset: 0x00000003")
+      verifyDeserError(make[BigDecimal](CodecMakerConfig.withBigDecimalDigitsLimit(10)), "12345678901",
+        "value exceeds limit for number of digits, offset: 0x00000009")
+      verifyDeserError(make[BigDecimal](CodecMakerConfig.withBigDecimalScaleLimit(10).withIsStringified(true)),
+        """"1e10"""", "value exceeds limit for scale, offset: 0x00000004")
+      verifyDeserError(make[BigDecimal](CodecMakerConfig.withBigDecimalDigitsLimit(10).withIsStringified(true)),
+        """"12345678901"""", "value exceeds limit for number of digits, offset: 0x0000000a")
+      verifyDeserError(make[Map[BigDecimal, Int]](CodecMakerConfig.withBigDecimalScaleLimit(10)), """{"1e10":1}""",
+        "value exceeds limit for scale, offset: 0x00000005")
+      verifyDeserError(make[Map[BigDecimal, Int]](CodecMakerConfig.withBigDecimalDigitsLimit(10)), """{"12345678901":1}""",
+        "value exceeds limit for number of digits, offset: 0x0000000b")
+    }
+    "throw parse exception for BigInt values that exceed the configured limit of digits" in {
+      verifySerDeser(make[BigInt](CodecMakerConfig.withBigIntDigitsLimit(10)), BigInt("123456789"), "123456789")
+      verifyDeserError(make[BigInt](CodecMakerConfig.withBigIntDigitsLimit(10)), "12345678901",
+        "value exceeds limit for number of digits, offset: 0x00000009")
+      verifyDeserError(make[BigInt](CodecMakerConfig.withBigIntDigitsLimit(10).withIsStringified(true)), """"12345678901"""",
+        "value exceeds limit for number of digits, offset: 0x0000000a")
+      verifyDeserError(make[Map[BigInt, Int]](CodecMakerConfig.withBigIntDigitsLimit(10)), """{"12345678901":1}""",
+        "value exceeds limit for number of digits, offset: 0x0000000b")
+      verifyDeserError(make[BigInt](CodecMakerConfig.withBigIntDigitsLimit(10).withAllowDecimalNotationForIntegers(true)),
+        "12345678901", "value exceeds limit for number of digits, offset: 0x00000009")
+    }
+    "throw parse exception for integers in decimal notation that exceed the configured limits for BigDecimal" in {
+      verifyDeser(make[Long](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalDigitsLimit(10)),
+        123456789L, "1.23456789e8")
+      verifyDeserError(make[Long](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalScaleLimit(10)),
+        "1e10", "value exceeds limit for scale, offset: 0x00000003")
+      verifyDeserError(make[Long](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalDigitsLimit(10)),
+        "1234567890", "value is too large for long, offset: 0x00000000")
+      verifyDeserError(make[Long](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalScaleLimit(10)
+        .withIsStringified(true)), """"1e10"""", "value exceeds limit for scale, offset: 0x00000004")
+      verifyDeserError(make[BigInt](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalScaleLimit(10)),
+        "1e10", "value exceeds limit for scale, offset: 0x00000003")
+    }
     "deserialize duplicated key for case classes when checking of field duplication is disabled" in {
       verifyDeser(make[StandardTypes](CodecMakerConfig.withCheckFieldDuplication(false)),
         StandardTypes("VVV", BigInt(1), BigDecimal(2.0)),
@@ -1834,6 +1892,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize fields of case classes with empty Iterators when transientEmpty is off" in {
       val obj = readFromString("""{"s":[[]],"i":[]}""")(codecOfIterators)
       writeToString(obj)(make[Iterators](CodecMakerConfig.withTransientEmpty(false))) shouldBe """{"s":[[]],"i":[]}"""
+    }
+    "don't serialize fields of case classes with empty Iterators that have default values" in {
+      case class IteratorWithDefault(i: Iterator[Int] = Iterator.single(1))
+
+      writeToString(IteratorWithDefault(Iterator.empty))(make[IteratorWithDefault]) shouldBe "{}"
+      writeToString(IteratorWithDefault(Iterator(2, 3)))(make[IteratorWithDefault]) shouldBe """{"i":[2,3]}"""
+      writeToString(IteratorWithDefault(Iterator.empty))(make[IteratorWithDefault](CodecMakerConfig.withTransientEmpty(false))) shouldBe
+        """{"i":[]}"""
     }
     "serialize and deserialize case classes with Iterables" in {
       case class Iterables(
