@@ -113,14 +113,13 @@ class BigDecimalReading extends BigDecimalBenchmark {
     readFromArray[BigDecimal](jsonBytes)(bigDecimalCodec)
   }
 
-  /* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
-    @Benchmark
-    def playJson(): BigDecimal = {
-      import play.api.libs.json.Json
+  @Benchmark
+  def playJson(): BigDecimal = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlatformUtils.parseBigNumbers
 
-      Json.parse(jsonBytes).as[BigDecimal]
-    }
-  */
+    parseBigNumbers(jsonBytes).as[BigDecimal]
+  }
+
   /* FIXME: smithy4sJson parses up to 308 digits only
     @Benchmark
     def smithy4sJson(): BigDecimal = {

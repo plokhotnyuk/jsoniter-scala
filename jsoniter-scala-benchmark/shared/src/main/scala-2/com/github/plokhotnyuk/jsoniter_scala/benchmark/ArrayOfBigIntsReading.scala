@@ -111,15 +111,14 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
     readFromArray[Array[BigInt]](jsonBytes)
   }
 
-  /* FIXME: Play-JSON looses significant digits in BigInt values
-    @Benchmark
-    def playJson(): Array[BigInt] = {
-      import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-      import play.api.libs.json.Json
+  @Benchmark
+  def playJson(): Array[BigInt] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlatformUtils.parseBigNumbers
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 
-      Json.parse(jsonBytes).as[Array[BigInt]]
-    }
-  */
+    parseBigNumbers(jsonBytes).as[Array[BigInt]]
+  }
+
   /* FIXME: Play-JSON looses significant digits in BigInt values
     @Benchmark
     def playJsonJsoniter(): Array[BigInt] = {

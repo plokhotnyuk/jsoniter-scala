@@ -21,8 +21,10 @@
 
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import com.fasterxml.jackson.core.{JsonFactoryBuilder, StreamReadConstraints}
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
+import java.math.MathContext
 import java.time.Instant
 import play.api.libs.json._
 import play.api.libs.json.jackson.PlayJsonMapperModule
@@ -43,4 +45,16 @@ object PlatformUtils {
   }
 
   def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.writeValueAsBytes(jsValue)
+
+  private[this] val bigNumberMapper =
+    new ObjectMapper(new JsonFactoryBuilder().streamReadConstraints(StreamReadConstraints.builder()
+      .maxNumberLength(Int.MaxValue).build()).build()) {
+      registerModule(new PlayJsonMapperModule(JsonConfig(
+        BigDecimalParseConfig(MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue),
+        BigDecimalSerializerConfig(maxPlain = BigDecimal(BigInt(1), -Int.MaxValue)))))
+    }
+
+  def parseBigNumbers(bytes: Array[Byte]): JsValue = bigNumberMapper.readValue(bytes, classOf[JsValue])
+
+  def bigNumbersToBytes(jsValue: JsValue): Array[Byte] = bigNumberMapper.writeValueAsBytes(jsValue)
 }
