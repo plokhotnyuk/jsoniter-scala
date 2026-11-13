@@ -51,20 +51,18 @@ class BigIntReading extends BigIntBenchmark {
     }
   }
 
-  /* FIXME: circe-jsoniter parses up to 308 digits only
-    @Benchmark
-    def circeJsoniter(): BigInt = {
-      import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
-      import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
-      import com.github.plokhotnyuk.jsoniter_scala.core._
-      import io.circe.Decoder
+  @Benchmark
+  def circeJsoniter(): BigInt = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import io.circe.Decoder
 
-      Decoder[BigInt].decodeJson(readFromArray(jsonBytes)) match {
-        case Right(x) => x
-        case Left(e) => throw e
-      }
+    Decoder.decodeBigInt.decodeJson(readFromArray(jsonBytes)(unlimitedJsonCodec)) match {
+      case Right(x) => x
+      case Left(e) => throw e
     }
-  */
+  }
+
   @Benchmark
   def dslJsonScala(): BigInt = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._

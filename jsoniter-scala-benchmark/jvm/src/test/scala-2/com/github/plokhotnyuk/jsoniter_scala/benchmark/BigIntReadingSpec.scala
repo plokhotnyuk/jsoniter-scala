@@ -34,8 +34,7 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
       // FIXME: borer parses up to 200 digits only
       // benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
-      // FIXME: circe-jsoniter parses up to 308 digits only
-      // benchmark.circeJsoniter() shouldBe benchmark.obj
+      benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.foryJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
@@ -59,8 +58,7 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
       // FIXME: borer parses up to 200 digits only
       // intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      // FIXME: circe-jsoniter parses up to 308 digits only
-      // intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.foryJsonScala())
       intercept[Throwable](b.jacksonScala())
