@@ -765,7 +765,7 @@ object JsonCodecMaker {
 
       def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
 
-      def decodeFieldName(s: Symbol): String = NameTransformer.decode(s.name.toString.trim) // FIXME: Why is there a space at the end of field name?!
+      def decodeFieldName(s: Symbol): String = NameTransformer.decode(s.name.toString.trim) // trims the local suffix of underlying fields
 
       def resolveConcreteType(tpe: Type, mtpe: Type): Type = {
         val tpeTypeParams =
