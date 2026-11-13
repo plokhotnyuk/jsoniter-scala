@@ -25,7 +25,7 @@ import java.time._
 import java.util.UUID
 import com.dslplatform.json._
 import com.dslplatform.json.runtime.Settings
-import scala.collection.immutable.{BitSet, Seq}
+import scala.collection.immutable.{ArraySeq, BitSet, Seq}
 import scala.collection.mutable
 import scala.reflect.runtime.universe.TypeTag
 
@@ -89,6 +89,8 @@ object DslPlatformJson {
   arrayOfUUIDsDecoder: JsonReader.ReadObject[Array[UUID]]) = codec[Array[UUID]]
   implicit val (arrayOfZonedDateTimesEncoder: JsonWriter.WriteObject[Array[ZonedDateTime]],
   arrayOfZonedDateTimesDecoder: JsonReader.ReadObject[Array[ZonedDateTime]]) = codec[Array[ZonedDateTime]]
+  implicit val (arraySeqOfBooleansEncoder: JsonWriter.WriteObject[ArraySeq[Boolean]],
+  arraySeqOfBooleansDecoder: JsonReader.ReadObject[ArraySeq[Boolean]]) = codec[ArraySeq[Boolean]]
   implicit val (base64Encoder: JsonWriter.WriteObject[Array[Byte]],
   base64Decoder: JsonReader.ReadObject[Array[Byte]]) = codec[Array[Byte]]
   implicit val (bigIntEncoder: JsonWriter.WriteObject[BigInt],
