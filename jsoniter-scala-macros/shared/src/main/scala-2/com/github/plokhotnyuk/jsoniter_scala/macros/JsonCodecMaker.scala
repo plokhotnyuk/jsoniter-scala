@@ -1370,7 +1370,7 @@ object JsonCodecMaker {
             val name = decodeName(symbol)
             val annotationOption = annotations.get(name)
             val tmpName = TermName(s"_${symbol.name}")
-            val resolvedTpe = resolveConcreteType(tpe, symbol.typeSignature.dealias)
+            val resolvedTpe = resolveConcreteType(tpe, symbol.typeSignature.dealias).asSeenFrom(tpe, tpe.typeSymbol)
             val isTransient = annotationOption.exists(_.transient)
             // Default values of transient fields are required to construct instances even when `requireDefaultFields` is on.
             // Value parameters of default methods for non-first parameter lists are applied by `genDefaultValue`

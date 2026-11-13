@@ -1614,6 +1614,11 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         }))
   }).asInstanceOf[NamedTupleInfo]
 
+  private def hasThisTypeMember(tpe: TypeRepr): Boolean = tpe match
+    case TypeRef(_: ThisType, _) => !tpe.typeSymbol.isClassDef
+    case AppliedType(tycon, args) => hasThisTypeMember(tycon) || args.exists(hasThisTypeMember)
+    case _ => false
+
   private def getClassInfo(tpe: TypeRepr): ClassInfo = typeInfos.getOrElseUpdate(tpe, {
     def supportedTransientTypeNames: String =
       if (cfg.scalaTransientSupport) s"'${transientTpe.show}' (or '${TypeRepr.of[scala.transient].show}')"
@@ -1632,14 +1637,6 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       symbol =>
         i += 1
         val name = symbol.name
-        var fieldTpe = tpe.memberType(symbol).dealias
-        if (tpeTypeArgs ne Nil) fieldTpe = fieldTpe.substituteTypes(typeParams, tpeTypeArgs)
-        fieldTpe match
-          case _: TypeLambda =>
-            fail(s"Type lambdas are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
-          case _: TypeBounds =>
-            fail(s"Type bounds are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
-          case _ =>
         val getterOrField = caseFields.find(_.name == name) match
           case Some(caseField) => caseField
           case _ =>
@@ -1654,6 +1651,16 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         if (!getterOrField.exists || getterOrField.flags.is(Flags.PrivateLocal)) {
           fail(s"Getter or field '$name' of '${tpe.show}' is private. It should be defined as 'val' or 'var' in the primary constructor.")
         }
+        var fieldTpe = tpe.memberType(symbol).dealias
+        // Types of class members are seen from `tpe`, so abstract type members resolved in a self-type are resolved too
+        if (getterOrField.isValDef && hasThisTypeMember(fieldTpe)) fieldTpe = tpe.memberType(getterOrField).dealias
+        if (tpeTypeArgs ne Nil) fieldTpe = fieldTpe.substituteTypes(typeParams, tpeTypeArgs)
+        fieldTpe match
+          case _: TypeLambda =>
+            fail(s"Type lambdas are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
+          case _: TypeBounds =>
+            fail(s"Type bounds are not supported for type '${tpe.show}' with field type for $name '${fieldTpe.show}'")
+          case _ =>
         var named: Option[Term] = None
         var isStringified: Boolean = false
         var isTransient: Boolean = false
