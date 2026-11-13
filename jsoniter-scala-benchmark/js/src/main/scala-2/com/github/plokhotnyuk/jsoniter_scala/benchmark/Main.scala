@@ -1005,8 +1005,7 @@ object Main {
       // FIXME: borer parses up to 200 digits only
       // B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
-      // FIXME: circe-jsoniter parses up to 308 digits only
-      // B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("uPickle")(benchmark.uPickle()),
       B("zioBlocks")(benchmark.zioBlocks()),
@@ -1035,8 +1034,7 @@ object Main {
       // FIXME: borer parses up to 200 digits only
       // B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
-      // FIXME: circe-jsoniter parses up to 308 digits only
-      // B("circeJsoniter")(benchmark.circeJsoniter()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       // FIXME: smithy4sJson parses up to 308 digits only
       // B("smithy4sJson")(benchmark.smithy4sJson()),

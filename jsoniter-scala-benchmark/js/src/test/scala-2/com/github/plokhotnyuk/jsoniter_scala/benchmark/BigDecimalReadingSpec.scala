@@ -34,8 +34,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       // FIXME: borer parses up to 200 digits only
       // benchmark.borer() shouldBe benchmark.sourceObj
       benchmark.circe() shouldBe benchmark.sourceObj
-      // FIXME: circe-jsoniter parses up to 308 digits only
-      // benchmark.circeJsoniter() shouldBe benchmark.sourceObj
+      benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
       // FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
       // benchmark.playJson() shouldBe benchmark.sourceObj
@@ -51,8 +50,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       // FIXME: borer parses up to 200 digits only
       // intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      // FIXME: circe-jsoniter parses up to 308 digits only
-      // intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())

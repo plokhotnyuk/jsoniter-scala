@@ -44,6 +44,8 @@ object CirceJsoniterCodecs {
   val jsonCodec2: JsonValueCodec[Json] = JsoniterScalaCodec.jsonCodec(maxDepth = 512, doSerialize = x => {
     (x ne Json.Null) && !(x.isArray && x.asArray.get.isEmpty)
   })
+  val unlimitedJsonCodec: JsonValueCodec[Json] = JsoniterScalaCodec.jsonCodec(maxDepth = 512,
+    numberParser = io.circe.JsoniterScalaCodec.numberParser(scaleLimit = Int.MaxValue, digitsLimit = Int.MaxValue))
   val base64C3c: Codec[Array[Byte]] =
     Codec.from(Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
       Encoder.encodeString.contramap[Array[Byte]](Base64.getEncoder.encodeToString))
