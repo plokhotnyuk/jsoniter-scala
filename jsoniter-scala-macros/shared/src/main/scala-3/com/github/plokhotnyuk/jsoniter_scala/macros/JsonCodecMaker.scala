@@ -1633,6 +1633,10 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         i += 1
         val name = symbol.name
         var fieldTpe = tpe.memberType(symbol).dealias
+        fieldTpe match
+          case TypeRef(_: ThisType, _) if !fieldTpe.typeSymbol.isClassDef =>
+            caseFields.find(_.name == name).foreach(f => fieldTpe = tpe.memberType(f).dealias)
+          case _ =>
         if (tpeTypeArgs ne Nil) fieldTpe = fieldTpe.substituteTypes(typeParams, tpeTypeArgs)
         fieldTpe match
           case _: TypeLambda =>

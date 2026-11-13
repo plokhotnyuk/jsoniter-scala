@@ -385,7 +385,6 @@ trait Aggregate {
 trait Events { self: Aggregate =>
   case class MyEvent(props: Props)
 
-  // Works here
   implicit val myEventCodec: JsonValueCodec[MyEvent] = make
 }
 
@@ -394,10 +393,7 @@ object Person extends Aggregate with Events {
 
   implicit val propsCodec: JsonValueCodec[Props] = make
 
-  // FIXME: Doesn't work here
-  // Scala 3: No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_ >: scala.Nothing <: scala.Any]' defined for 'Events.this.Props'.
-  // Scala 2: Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'Events.this.Props' or provide a custom implicitly accessible codec for it.
-  // val myEventCodec: JsonValueCodec[MyEvent] = make
+  val myEventCodec2: JsonValueCodec[MyEvent] = make
 }
 
 trait NestedDefaults { // See https://github.com/plokhotnyuk/jsoniter-scala/issues/1245
@@ -1633,6 +1629,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       import Person._
 
       verifySerDeser(myEventCodec, MyEvent(Props("John", 42)), """{"props":{"name":"John","age":42}}""")
+      verifySerDeser(myEventCodec2, MyEvent(Props("John", 42)), """{"props":{"name":"John","age":42}}""")
     }
     "serialize and deserialize a custom collection that implements a scala collection" in {
       verifySerDeser(make[zio.Chunk[String]], zio.Chunk("VVV", "WWW"), """["VVV","WWW"]""")
