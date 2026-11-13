@@ -63,14 +63,13 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
     }
   }
 
-  /* FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
-    @Benchmark
-    def dslJsonScala(): Array[Float] = {
-      import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+  @Benchmark
+  def dslJsonScala(): Array[Float] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
-      dslJsonDecode[Array[Float]](jsonBytes)
-    }
-  */
+    dslJsonDecode[Array[Float]](jsonBytes)
+  }
+
   @Benchmark
   def foryJsonScala(): Array[Float] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.Fory
