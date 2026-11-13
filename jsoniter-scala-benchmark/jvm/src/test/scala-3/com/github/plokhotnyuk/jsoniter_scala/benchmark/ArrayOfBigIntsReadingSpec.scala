@@ -38,8 +38,7 @@ class ArrayOfBigIntsReadingSpec extends BenchmarkSpecBase {
       benchmark.json4sJackson() shouldBe benchmark.obj
       benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
-      // FIXME: Play-JSON looses significant digits in BigInt values
-      // benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
       // FIXME: Play-JSON looses significant digits in BigInt values
       // benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
@@ -60,8 +59,7 @@ class ArrayOfBigIntsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.json4sJackson())
       intercept[Throwable](b.json4sNative())
       intercept[Throwable](b.jsoniterScala())
-      // FIXME: Play-JSON looses significant digits in BigInt values
-      // intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJson())
       // FIXME: Play-JSON looses significant digits in BigInt values
       // intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())

@@ -40,8 +40,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       // FIXME: json4s.native throws org.json4s.ParserUtil$ParseException: expected field or array
       // benchmark.json4sNative() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
-      // FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
-      // benchmark.playJson() shouldBe benchmark.sourceObj
+      benchmark.playJson() shouldBe benchmark.sourceObj
       // FIXME: smithy4sJson parses up to 308 digits only
       // benchmark.smithy4sJson() shouldBe benchmark.sourceObj
       benchmark.sprayJson() shouldBe benchmark.sourceObj
