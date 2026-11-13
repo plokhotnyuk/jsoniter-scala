@@ -98,14 +98,13 @@ class BigIntWriting extends BigIntBenchmark {
     writeToSubArray(obj, preallocatedBuf, 64, preallocatedBuf.length)(bigIntCodec)
   }
 
-  /* FIXME: Play-JSON serializes BigInt values as floating point numbers with a scientific representation
-    @Benchmark
-    def playJson(): Array[Byte] = {
-      import play.api.libs.json.Json
+  @Benchmark
+  def playJson(): Array[Byte] = {
+    import play.api.libs.json.Json
 
-      Json.toBytes(Json.toJson(obj))
-    }
-  */
+    Json.toBytes(Json.toJson(obj))
+  }
+
   @Benchmark
   def playJsonJsoniter(): Array[Byte] = {
     import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
