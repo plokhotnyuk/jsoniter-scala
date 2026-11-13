@@ -1043,7 +1043,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             }
 
           def encodeValue(x: List[A], out: JsonWriter): _root_.scala.Unit =
-            if (x.size == 1) aCodec.encodeValue(x.head, out) // FIXME: Use `x.sizeCompare(1) == 0` for Scala 2.13+
+            if (x.lengthCompare(1) == 0) aCodec.encodeValue(x.head, out)
             else {
               out.writeArrayStart()
               var y = x
