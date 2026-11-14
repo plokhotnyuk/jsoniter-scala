@@ -45,8 +45,7 @@ class ArrayOfBigIntsWritingSpec extends BenchmarkSpecBase {
       toString(b.smithy4sJson()) shouldBe b.jsonString
       toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
-      // FIXME: weePickle writes BigDecimal as JSON strings by default
-      //toString(b.weePickle()) shouldBe b.jsonString
+      toString(b.weePickle()) shouldBe b.jsonString
       toString(b.zioBlocks()) shouldBe b.jsonString
       toString(b.zioJson()) shouldBe b.jsonString
     }

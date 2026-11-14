@@ -155,15 +155,14 @@ class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
     writeToByteArray(obj)
   }
 
-  /* FIXME: weePickle writes BigDecimal as JSON strings by default
-    @Benchmark
-    def weePickle(): Array[Byte] = {
-      import com.rallyhealth.weejson.v1.jackson.ToJson
-      import com.rallyhealth.weepickle.v1.WeePickle.FromScala
+  @Benchmark
+  def weePickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+    import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 
-      FromScala(obj).transform(ToJson.bytes)
-    }
-  */
+    FromScala(obj).transform(ToJson.bytes)
+  }
+
   @Benchmark
   def zioBlocks(): Array[Byte] = ZioBlocksCodecs.arrayOfBigIntsCodec.encode(obj)
 
