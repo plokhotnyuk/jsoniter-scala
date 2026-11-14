@@ -40,8 +40,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.smithy4sJson() shouldBe benchmark.obj
-      // FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
-      // benchmark.sprayJson() shouldBe benchmark.obj
+      benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioBlocks() shouldBe benchmark.obj
@@ -61,6 +60,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.smithy4sJson())
+      intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioBlocks())

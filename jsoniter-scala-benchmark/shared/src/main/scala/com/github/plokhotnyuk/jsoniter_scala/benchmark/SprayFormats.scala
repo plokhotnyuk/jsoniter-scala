@@ -24,7 +24,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import spray.json._
 import java.time._
 import java.util.{Base64, UUID}
-import scala.collection.immutable.{ArraySeq, Map, TreeMap}
+import scala.collection.immutable.{ArraySeq, Map, TreeMap, VectorMap}
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -184,6 +184,22 @@ object SprayFormats extends DefaultJsonProtocol {
   implicit val localDateJsonFormat: RootJsonFormat[LocalDate] = stringJsonFormat(LocalDate.parse)
   implicit val localDateTimeJsonFormat: RootJsonFormat[LocalDateTime] = stringJsonFormat(LocalDateTime.parse)
   implicit val localTimeJsonFormat: RootJsonFormat[LocalTime] = stringJsonFormat(LocalTime.parse)
+  implicit val mapOfIntsToBooleansJsonFormat: RootJsonFormat[Map[Int, Boolean]] =
+    new RootJsonFormat[Map[Int, Boolean]] {
+      def read(json: JsValue): Map[Int, Boolean] = json match {
+        case jo: JsObject =>
+          val builder = Map.newBuilder[Int, Boolean]
+          jo.fields.foreach(kv => builder.addOne((kv._1.toInt, kv._2.convertTo[Boolean])))
+          builder.result()
+        case _ => deserializationError(s"Expected JSON object")
+      }
+
+      def write(m: Map[Int, Boolean]): JsValue = {
+        val builder = VectorMap.newBuilder[String, JsValue]
+        m.foreach(kv => builder.addOne((kv._1.toString, JsBoolean(kv._2))))
+        new JsObject(builder.result())
+      }
+    }
   implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingRequiredFields] = jsonFormat2(MissingRequiredFields.apply)
   implicit val monthDayJsonFormat: RootJsonFormat[MonthDay] = stringJsonFormat(MonthDay.parse)
   implicit lazy val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = rootFormat(lazyFormat(jsonFormat1(NestedStructs.apply)))

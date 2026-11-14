@@ -114,15 +114,15 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
     writeToArray(obj)
   }
 
-  /* FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
-    @Benchmark
-    def sprayJson(): Array[Byte] = {
-      import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-      import spray.json._
+  @Benchmark
+  def sprayJson(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+    import spray.json._
+    import java.nio.charset.StandardCharsets.UTF_8
 
-      obj.toJson.compactPrint.getBytes(UTF_8)
-    }
-  */
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
+
   @Benchmark
   def uPickle(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
