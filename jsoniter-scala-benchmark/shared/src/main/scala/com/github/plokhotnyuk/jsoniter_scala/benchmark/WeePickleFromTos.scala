@@ -56,6 +56,13 @@ object WeePickleFromTos extends WeePickleFromTos1 with WeePickleFromTos2 {
       .build()
   )
 
+  // Overrides WeePickle defaults that serialize big numbers as JSON strings
+  implicit val bigDecimalFrom: From[BigDecimal] = new From[BigDecimal] {
+    def transform0[R](v: BigDecimal, out: Visitor[_, R]): R = out.visitFloat64String(v.toString)
+  }
+  implicit val bigIntFrom: From[BigInt] = new From[BigInt] {
+    def transform0[R](v: BigInt, out: Visitor[_, R]): R = out.visitFloat64String(v.toString)
+  }
   implicit val durationFromTo: FromTo[Duration] = fromTo[String].bimap(_.toString, Duration.parse)
   implicit val enumADTFromTo: FromTo[SuitADT] = fromTo[String].bimap(_.toString, {
     val suite = Map(
