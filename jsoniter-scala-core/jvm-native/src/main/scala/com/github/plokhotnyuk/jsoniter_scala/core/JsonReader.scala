@@ -88,6 +88,20 @@ final class JsonReader private[jsoniter_scala](
   }
 
   /**
+    * Throws a [[JsonReaderException]] for a duplicated field with the given name.
+    *
+    * @param key the name of the duplicated field
+    * @throws JsonReaderException always
+    */
+  @noinline
+  def duplicatedKeyError(key: String): Nothing = {
+    var i = appendString("duplicated field \"", 0)
+    i = appendString(key, i)
+    i = appendChar('"', i)
+    decodeError(i, head - 1, null)
+  }
+
+  /**
     * Throws a [[JsonReaderException]] for an unexpected field whose name is in the internal char buffer.
     *
     * @param len the length of the unexpected field name in the internal char buffer
@@ -203,6 +217,27 @@ final class JsonReader private[jsoniter_scala](
     val len = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
     nextTokenOrError(':', head)
     len
+  }
+
+  /**
+    * Reads a JSON key and checks if its bytes match the expected ASCII key. If not, the key is read into the internal
+    * char buffer.
+    *
+    * @param s the expected key, it should contain only ASCII chars except `"`, a backslash and control chars
+    * @return `-1` if bytes of the key match the expected one, otherwise the length of the key in the internal char
+    *         buffer, that still can be equal to the expected key when it is escaped or not fully loaded to the buffer
+    * @throws JsonReaderException if the JSON key has an illegal encoding or the input ends unexpectedly
+    */
+  def readKeyAsCharBufOrNonEscapedAsciiMatch(s: String): Int = {
+    nextTokenOrError('"', head)
+    val pos = head
+    val len = s.length
+    var l = -1
+    // Only already loaded bytes are matched, keys that are not fully loaded yet are parsed to the internal char buffer
+    if (pos + len < tail && isExpectedNonEscapedAsciiKey(s, len, pos)) head = pos + len + 1
+    else l = parseString(0, Math.min(tail - pos, charBuf.length), charBuf, pos)
+    nextTokenOrError(':', head)
+    l
   }
 
   /**
@@ -2798,6 +2833,17 @@ final class JsonReader private[jsoniter_scala](
       head = pos + 1
       b == t || ((b == ' ' || b == '\n' || (b | 0x4) == '\r') && nextToken(pos + 1) == t)
     } else isNextToken(t, loadMoreOrError(pos))
+
+  @noinline
+  private[this] def isExpectedNonEscapedAsciiKey(s: String, len: Int, pos: Int): Boolean = {
+    val buf = this.buf
+    var i = 0
+    while (i < len) { // non-ASCII bytes are negative, so they never match
+      if (buf(pos + i) != s.charAt(i)) return false
+      i += 1
+    }
+    buf(pos + len) == '"'
+  }
 
   @noinline
   private[this] def illegalTokenOperation(): Nothing =

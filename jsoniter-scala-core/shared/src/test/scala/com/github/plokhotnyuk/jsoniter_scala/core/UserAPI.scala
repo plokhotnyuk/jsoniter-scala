@@ -149,27 +149,41 @@ object UserAPI {
 
     private[this] def d2(in: JsonReader, default: Device): Device =
       if (in.isNextToken('{')) {
+        val ns_ = ns1
         var _id: Int = 0
         var _model: String = null
         var p0 = 0x3
         if (!in.isNextToken('}')) {
           in.rollbackToken()
-          var l = -1
-          while (l < 0 || in.isNextToken(',')) {
-            l = in.readKeyAsCharBuf()
-            if (in.isCharBufEqualsTo(l, "id")) {
-              if ((p0 & 0x1) != 0) p0 ^= 0x1
-              else in.duplicatedKeyError(l)
-              _id = in.readInt()
-            } else if (in.isCharBufEqualsTo(l, "model")) {
-              if ((p0 & 0x2) != 0) p0 ^= 0x2
-              else in.duplicatedKeyError(l)
-              _model = in.readString(_model)
-            } else in.skip()
+          var i = -1
+          while (i < 0 || in.isNextToken(',')) {
+            i += 1
+            if (i >= 2) i -= 2
+            val l = in.readKeyAsCharBufOrNonEscapedAsciiMatch(ns_(i))
+            val s = i
+            if (l >= 0) {
+              while ({
+                i += 1
+                if (i >= 2) i = 0
+                !in.isCharBufEqualsTo(l, ns_(i)) && (i != s || { i = 2; false })
+              }) ()
+            }
+            if (i < 2) {
+              val m = 1 << i
+              if ((p0 & m) == 0) in.duplicatedKeyError(ns_(i))
+              p0 ^= m
+            }
+            (i: @switch) match {
+              case 0 => _id = in.readInt()
+              case 1 => _model = in.readString(_model)
+              case _ =>
+                in.skip()
+                i = s + 1
+            }
           }
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
-        if ((p0 & 0x3) != 0) in.requiredFieldError(f1(Integer.numberOfTrailingZeros(p0)))
+        if (p0 != 0) in.requiredFieldError(ns_(Integer.numberOfTrailingZeros(p0)))
         new Device(id = _id, model = _model)
       } else in.readNullOrTokenError(default, '{')
 
@@ -190,27 +204,41 @@ object UserAPI {
 
     private[this] def d0(in: JsonReader, default: User): User =
       if (in.isNextToken('{')) {
+        val ns_ = ns0
         var _name: String = null
         var _devices: Seq[Device] = Seq.empty[Device]
         var p0 = 0x3
         if (!in.isNextToken('}')) {
           in.rollbackToken()
-          var l = -1
-          while (l < 0 || in.isNextToken(',')) {
-            l = in.readKeyAsCharBuf()
-            if (in.isCharBufEqualsTo(l, "name")) {
-              if ((p0 & 0x1) != 0) p0 ^= 0x1
-              else in.duplicatedKeyError(l)
-              _name = in.readString(_name)
-            } else if (in.isCharBufEqualsTo(l, "devices")) {
-              if ((p0 & 0x2) != 0) p0 ^= 0x2
-              else in.duplicatedKeyError(l)
-              _devices = d1(in, _devices)
-            } else in.skip()
+          var i = -1
+          while (i < 0 || in.isNextToken(',')) {
+            i += 1
+            if (i >= 2) i -= 2
+            val l = in.readKeyAsCharBufOrNonEscapedAsciiMatch(ns_(i))
+            val s = i
+            if (l >= 0) {
+              while ({
+                i += 1
+                if (i >= 2) i = 0
+                !in.isCharBufEqualsTo(l, ns_(i)) && (i != s || { i = 2; false })
+              }) ()
+            }
+            if (i < 2) {
+              val m = 1 << i
+              if ((p0 & m) == 0) in.duplicatedKeyError(ns_(i))
+              p0 ^= m
+            }
+            (i: @switch) match {
+              case 0 => _name = in.readString(_name)
+              case 1 => _devices = d1(in, _devices)
+              case _ =>
+                in.skip()
+                i = s + 1
+            }
           }
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
-        if ((p0 & 0x1) != 0) in.requiredFieldError(f0(Integer.numberOfTrailingZeros(p0)))
+        if ((p0 & 0x1) != 0) in.requiredFieldError(ns_(Integer.numberOfTrailingZeros(p0 & 0x1)))
         new User(name = _name, devices = _devices)
       } else in.readNullOrTokenError(default, '{')
 
@@ -243,14 +271,13 @@ object UserAPI {
       out.writeObjectEnd()
     }
 
-    private[this] def f0(i: Int): String = (i: @switch) match {
-      case 0 => "name"
-    }
+    private[this] def nsi0(): Array[String] = Array("name", "devices")
 
-    private[this] def f1(i: Int): String = (i: @switch) match {
-      case 0 => "id"
-      case 1 => "model"
-    }
+    private[this] val ns0: Array[String] = nsi0()
+
+    private[this] def nsi1(): Array[String] = Array("id", "model")
+
+    private[this] val ns1: Array[String] = nsi1()
   }
   val reentrantCodec: JsonValueCodec[User] = new JsonValueCodec[User] {
     override def decodeValue(in: JsonReader, default: User): User =
