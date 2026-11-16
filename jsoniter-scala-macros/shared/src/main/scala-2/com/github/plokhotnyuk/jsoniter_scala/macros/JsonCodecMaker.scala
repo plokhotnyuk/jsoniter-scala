@@ -887,8 +887,6 @@ object JsonCodecMaker {
 
       case class EqualsMethodKey(tpe: Type) extends TermNameKey
 
-      case class FieldIndexMethodKey(tpe: Type) extends TermNameKey
-
       case class NullValueKey(tpe: Type) extends TermNameKey
 
       case class ScalaEnumValueKey(tpe: Type) extends TermNameKey
@@ -905,6 +903,7 @@ object JsonCodecMaker {
       val typeInfos = new mutable.HashMap[Type, TypeInfo]
       val termNames = new mutable.HashMap[TermNameKey, TermName]
       val trees = new mutable.ArrayBuffer[Tree]
+      var fieldNamesNum = 0
 
       def findImplicitKeyCodec(tpe: Type): Tree = inferredKeyCodecs.getOrElseUpdate(tpe, {
         c.inferImplicitValue(c.typecheck(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]", c.TYPEmode).tpe)
@@ -928,6 +927,24 @@ object JsonCodecMaker {
             name
           })
         })
+
+      def genDuplicatedKeyError(name: String): Tree = q"in.duplicatedKeyError($name)"
+
+      // Returns a name of the own array of field names for the decoded class. The array is initialized in a separate
+      // method to keep the size of the bytecode for codec initialization proportional to the number of classes, not fields
+      def withFieldNamesFor(names: List[String]): TermName = {
+        val name = TermName(s"ns$fieldNamesNum")
+        val initName = TermName(s"nsi$fieldNamesNum")
+        fieldNamesNum += 1
+        trees += q"private[this] def $initName(): _root_.scala.Array[_root_.java.lang.String] = _root_.scala.Array(..$names)"
+        trees += q"private[this] val $name: _root_.scala.Array[_root_.java.lang.String] = $initName()"
+        name
+      }
+
+      // Uses the local `ns` that is the reference to the array of field names, read from the codec field before parsing
+      def genFieldName(offset: Int, i: Tree): Tree =
+        if (offset == 0) q"ns($i)"
+        else q"ns($i + $offset)"
 
       def getScalaEnumInfo(tpe: Type): ScalaEnumInfo = typeInfos.getOrElseUpdate(tpe, {
         val e = enumSymbol(tpe)
@@ -2116,7 +2133,7 @@ object JsonCodecMaker {
           q"""if (pd) {
                 pd = false
                 in.skip()
-              } else in.duplicatedKeyError(l)"""
+              } else ${genDuplicatedKeyError(cfg.discriminatorFieldName.getOrElse(""))}"""
         } else q"in.skip()"
 
       def discriminatorValue(tpe: Type): String = {
@@ -2157,24 +2174,6 @@ object JsonCodecMaker {
           name
         })
       })
-
-      def withFieldsByIndexFor(termNameKey: FieldIndexMethodKey)(f: => Seq[String]): Tree =
-        Ident(termNames.getOrElse(termNameKey, {
-          val name = TermName(s"f${termNames.size}")
-          termNames.update(termNameKey, name)
-          val cases = f.map {
-            var i = -1
-            n =>
-              i += 1
-              cq"$i => $n"
-          }
-          trees +=
-            q"""private[this] def $name(i: Int): String =
-                  (i: @_root_.scala.annotation.switch @_root_.scala.unchecked) match {
-                    case ..$cases
-                  }"""
-          name
-        }))
 
       def withEqualsFor(termNameKey: EqualsMethodKey, arg1: Tree, arg2: Tree)(f: => Tree): Tree = {
         val equalsMethodName = termNames.getOrElse(termNameKey, {
@@ -2286,10 +2285,16 @@ object JsonCodecMaker {
         val classInfo = getClassInfo(tpe)
         val fields = classInfo.fields
         val mappedNames = fields.map(_.mappedName)
-        checkFieldNameCollisions(tpe, {
+        val readFieldNames =
           if (discriminator.isEmpty) mappedNames
           else cfg.discriminatorFieldName.fold(mappedNames)(mappedNames :+ _)
-        })
+        checkFieldNameCollisions(tpe, readFieldNames)
+        val isMatchedByBytes = readFieldNames.nonEmpty && readFieldNames.forall(!isEncodingRequired(_)) // keys that are written by bytes as is
+        val isShortObject = readFieldNames.nonEmpty && readFieldNames.size <= 8 && readFieldNames.foldLeft(0)(_ + _.length) <= 64
+        // The reference to the array of field names is read from the codec field once before parsing
+        val nsVal =
+          if (readFieldNames.isEmpty) EmptyTree
+          else q"val ns = ${withFieldNamesFor(readFieldNames)}"
         // Fields of non-empty lists are always required because they have no empty value to use for missing fields
         val required: Set[String] = fields.collect {
           case fieldInfo if !(!cfg.requireDefaultFields && fieldInfo.symbol.isParamWithDefault || isOption(fieldInfo.resolvedTpe, types) ||
@@ -2301,28 +2306,14 @@ object JsonCodecMaker {
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVarNames = (0 to lastParamVarIndex).map(i => TermName(s"p$i"))
-        val checkAndResetFieldPresenceFlags = fields.map {
-          var i = -1
-          fieldInfo =>
-            i += 1
-            val n = paramVarNames(i >> 5)
-            val m = 1 << i
-            val nm = ~m
-            (fieldInfo.mappedName, {
-              if (cfg.checkFieldDuplication) {
-                q"""if (($n & $m) == 0) in.duplicatedKeyError(l)
-                    $n ^= $m"""
-              } else if (required(fieldInfo.mappedName) || withDependentDefaultValues(fieldInfo.mappedName)) q"$n &= $nm"
-              else EmptyTree
-            })
-        }.toMap
         val paramVars =
           if (required.isEmpty && !cfg.checkFieldDuplication && withDependentDefaultValues.isEmpty) Nil
           else paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
+        // Presence flags are updated by the field index before reading of values
+        val updatesFlagsByIndex = paramVarNum > 0 && paramVars.nonEmpty
         val checkReqVars =
           if (required.isEmpty) Nil
           else {
-            val names = withFieldsByIndexFor(new FieldIndexMethodKey(tpe))(mappedNames)
             val reqMasks = fields.grouped(32).toArray.map(_.foldLeft(0) {
               var i = -1
               (acc, fieldInfo) =>
@@ -2335,16 +2326,11 @@ object JsonCodecMaker {
               n =>
                 i += 1
                 val m = reqMasks(i)
+                val offset = i << 5
                 if (m == -1 || (i == lastParamVarIndex && m == lastParamVarBits)) {
-                  val fieldName =
-                    if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n))"
-                    else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n) + ${i << 5})"
-                  q"if ($n != 0) in.requiredFieldError($fieldName)"
+                  q"if ($n != 0) in.requiredFieldError(${genFieldName(offset, q"_root_.java.lang.Integer.numberOfTrailingZeros($n)")})"
                 } else {
-                  val fieldName =
-                    if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m))"
-                    else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m) + ${i << 5})"
-                  q"if (($n & $m) != 0) in.requiredFieldError($fieldName)"
+                  q"if (($n & $m) != 0) in.requiredFieldError(${genFieldName(offset, q"_root_.java.lang.Integer.numberOfTrailingZeros($n & $m)")})"
                 }
             }
           }
@@ -2376,50 +2362,145 @@ object JsonCodecMaker {
           if (discriminator.isEmpty) fields
           else cfg.discriminatorFieldName.fold(fields)(n => fields :+ new FieldInfo(null, n, null, null, null, null, false, true))
 
-        def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
-          fs.foldRight(unexpectedFieldHandler) { (fieldInfo, acc) =>
-            val readValue =
-              if (discriminator.nonEmpty && cfg.discriminatorFieldName.contains(fieldInfo.mappedName)) discriminator
-              else {
-                val fTpe = fieldInfo.resolvedTpe
-                val allTypes = fTpe :: types
-                // Default values of option and collection fields are used for missing fields only
-                val default =
-                  if (!cfg.useDefaultForNullOrEmpty && fieldInfo.defaultValue.isDefined &&
-                    (isOption(fTpe, types) || isCollection(fTpe))) genNullValue(allTypes)
-                  else q"${fieldInfo.tmpName}"
-                q"""${checkAndResetFieldPresenceFlags(fieldInfo.mappedName)}
-                    ${fieldInfo.tmpName} = ${genReadVal(allTypes, default, fieldInfo.isStringified, EmptyTree)}"""
-              }
-            q"if (in.isCharBufEqualsTo(l, ${fieldInfo.mappedName})) $readValue else $acc"
+        val readFieldIndices = readFields.foldLeft(Map.empty[String, Int])((m, fi) => m.updated(fi.mappedName, m.size))
+
+        def genReadValue(fieldInfo: FieldInfo): Tree =
+          if (discriminator.nonEmpty && cfg.discriminatorFieldName.contains(fieldInfo.mappedName)) discriminator
+          else {
+            val fTpe = fieldInfo.resolvedTpe
+            val allTypes = fTpe :: types
+            // Default values of option and collection fields are used for missing fields only
+            val default =
+              if (!cfg.useDefaultForNullOrEmpty && fieldInfo.defaultValue.isDefined &&
+                (isOption(fTpe, types) || isCollection(fTpe))) genNullValue(allTypes)
+              else q"${fieldInfo.tmpName}"
+            q"${fieldInfo.tmpName} = ${genReadVal(allTypes, default, fieldInfo.isStringified, EmptyTree)}"
           }
 
-        val readFieldsBlock =
-          if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
-            genReadCollisions(readFields)
-          } else {
-            val hashCode = (fi: FieldInfo) => JsonReader.toHashCode(fi.mappedName.toCharArray, fi.mappedName.length)
-            val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
-              cq"$hash => ${genReadCollisions(fs)}"
-            } :+ cq"_ => $unexpectedFieldHandler"
-            q"""(in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
-                  case ..$cases
+        // The variable with presence flags is selected by the field index divided by 32, while shifts use only 5 lower
+        // bits of the index
+        val updateFlags =
+          if (!updatesFlagsByIndex) EmptyTree
+          else {
+            val updates = paramVarNames.map { n =>
+              if (cfg.checkFieldDuplication) {
+                q"""if (($n & m) == 0) in.duplicatedKeyError(ns(i))
+                    $n ^= m"""
+              } else q"$n &= ~m"
+            }
+            val update =
+              if (updates.size == 1) updates.head
+              else {
+                val cases = updates.map {
+                  var j = -1
+                  u =>
+                    j += 1
+                    if (j == lastParamVarIndex) cq"_ => $u"
+                    else cq"$j => $u"
+                }
+                q"""((i >> 5): @_root_.scala.annotation.switch) match {
+                      case ..$cases
+                    }"""
+              }
+            q"""if (i < $paramVarNum) {
+                  val m = 1 << i
+                  $update
                 }"""
           }
+
+        // Sets `i` to an index of the field for the key in the internal char buffer, or to the number of keys for
+        // unexpected ones. Keys of short objects are searched cyclically from the expected key at `i` to skip missing
+        // optional fields faster. If the key was not matched by bytes with the expected one, the search starts from the
+        // next key and the expected key is compared last (escaped keys are not matched by bytes). Keys of other objects
+        // are searched by hash codes
+        val findFieldIndex = {
+          val num = readFields.size
+          if (readFields.isEmpty) q"i = $num"
+          else if (isShortObject) {
+            if (isMatchedByBytes) {
+              q"""if (l >= 0) {
+                    while ({
+                      i += 1
+                      if (i >= $num) i = 0
+                      !in.isCharBufEqualsTo(l, ns(i)) && (i != s || { i = $num; false })
+                    }) ()
+                  }"""
+            } else {
+              q"""while (!in.isCharBufEqualsTo(l, ns(i)) && {
+                    i += 1
+                    if (i >= $num) i = 0
+                    i != s || { i = $num; false }
+                  }) ()"""
+            }
+          } else {
+            def genCollisions(fs: collection.Seq[FieldInfo]): Tree =
+              fs.foldRight(q"()": Tree) { (fieldInfo, acc) =>
+                q"if (in.isCharBufEqualsTo(l, ${fieldInfo.mappedName})) i = ${readFieldIndices(fieldInfo.mappedName)} else $acc"
+              }
+
+            val hashCode = (fi: FieldInfo) => JsonReader.toHashCode(fi.mappedName.toCharArray, fi.mappedName.length)
+            val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
+              cq"$hash => ${genCollisions(fs)}"
+            } :+ cq"_ => ()"
+            val setIndex =
+              q"""i = $num
+                  (in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
+                    case ..$cases
+                  }"""
+            if (isMatchedByBytes) q"if (l >= 0) $setIndex"
+            else setIndex
+          }
+        }
+
+        val readFields_ = {
+          // After skipping of an unexpected key the next expected key stays the same: `s + num - 1` turns to `s` on the
+          // next iteration
+          val handleUnexpectedField =
+            if (!cfg.skipUnexpectedFields || readFields.isEmpty) unexpectedFieldHandler
+            else q"$unexpectedFieldHandler; i = s + ${readFields.size - 1}"
+          // Folding from right preserves the order of codec generation and reporting of compile-time errors
+          val cases = readFields.foldRight(cq"_ => $handleUnexpectedField" :: Nil) { (fieldInfo, acc) =>
+            cq"${readFieldIndices(fieldInfo.mappedName)} => ${genReadValue(fieldInfo)}" :: acc
+          }
+          q"""$updateFlags
+              (i: @_root_.scala.annotation.switch) match {
+                case ..$cases
+              }"""
+        }
+        // Keys are expected in the order of writing: the discriminator (the last in the array) first, then fields in the
+        // order of definition. The next expected key after the last one is the first key, so that `i` is always a valid
+        // index of the expected key
+        val readFieldsLoop = {
+          val next =
+            q"""i += 1
+                if (i >= ${readFields.size}) i -= ${readFields.size}"""
+          q"""var i = -1
+              while (i < 0 || in.isNextToken(',')) {
+                ${
+                  // The discriminator key at the last index is expected first
+                  if (readFields.size > paramVarNum) q"if (i < 0) i = $paramVarNum else { ..$next }"
+                  else q"{ ..$next }"
+                }
+                val l = ${
+                  if (isMatchedByBytes) q"in.readKeyAsCharBufOrNonEscapedAsciiMatch(ns(i))"
+                  else q"in.readKeyAsCharBuf()"
+                }
+                val s = i
+                $findFieldIndex
+                $readFields_
+              }"""
+        }
         val discriminatorVar =
           if (discriminator.isEmpty || !cfg.checkFieldDuplication) EmptyTree
           else q"var pd = true"
         q"""if (in.isNextToken('{')) {
+              $nsVal
               ..$readVars
               ..$paramVars
               ..$discriminatorVar
               if (!in.isNextToken('}')) {
                 in.rollbackToken()
-                var l = -1
-                while (l < 0 || in.isNextToken(',')) {
-                  l = in.readKeyAsCharBuf()
-                  ..$readFieldsBlock
-                }
+                $readFieldsLoop
                 if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
               }
               ..$checkReqVars

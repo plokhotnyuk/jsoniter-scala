@@ -301,6 +301,13 @@ case class CCC(a: Int, b: String) extends Inner
 
 case object DDD extends AdtBase
 
+sealed trait BigAdt
+
+case class BigLeaf(f00: Int, f01: Int, f02: Int, f03: Int, f04: Int, f05: Int, f06: Int, f07: Int, f08: Int, f09: Int,
+  f10: Int, f11: Int, f12: Int, f13: Int, f14: Int, f15: Int, f16: Int, f17: Int, f18: Int, f19: Int, f20: Int,
+  f21: Int, f22: Int, f23: Int, f24: Int, f25: Int, f26: Int, f27: Int, f28: Int, f29: Int, f30: Int, f31: Int,
+  f32: Int) extends BigAdt
+
 object NestedAdts {
   sealed trait Base extends Product with Serializable
 
@@ -556,6 +563,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfStandardTypes,
         StandardTypes(text, BigInt(number), BigDecimal(s"$number.$number")),
         s"""{"s":"$text","bi":$number,"bd":$number.$number}""")
+      val obj = StandardTypes("VVV", BigInt(1), BigDecimal(2.0))
+      verifyDeser(codecOfStandardTypes, obj, """{"bd":2.0,"bi":1,"s":"VVV"}""")
+      verifyDeser(codecOfStandardTypes, obj, """{"bi":1,"s":"VVV","bd":2.0}""")
+      verifyDeser(codecOfStandardTypes, obj, "{\"\\u0073\":\"VVV\",\"b\\u0069\":1,\"bd\":2.0}")
+      verifyDeser(codecOfStandardTypes, obj, """{ "s" : "VVV" , "bi" : 1 , "bd" : 2.0 }""")
+      verifyDeser(codecOfStandardTypes, obj, """{"s":"VVV","x":1,"bi":1,"bd":2.0,"y":2}""")
+      verifyDeser(codecOfStandardTypes, obj, """{"x":0,"y":{},"s":"VVV","bi":1,"z":[],"bd":2.0,"w":null}""")
+      verifyDeserError(codecOfStandardTypes, """{"s":"VVV","x":1,"s":"XXX"}""", "duplicated field \"s\", offset: 0x00000014")
     }
     "throw parse exception in case of illegal value for case classes" in {
       verifyDeserError(codecOfStandardTypes, "null", "expected '{', offset: 0x00000000")
@@ -641,6 +656,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "throw parse exception in case of duplicated key for case classes was detected" in {
       verifyDeserError(codecOfStandardTypes, s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""",
         """duplicated field "s", offset: 0x0000000e""")
+      verifyDeserError(codecOfStandardTypes, s"""{"bi":1,"s":"VVV","bi":2,"bd":2.0}""",
+        """duplicated field "bi", offset: 0x00000016""")
+      verifyDeserError(codecOfStandardTypes, s"""{"s":"VVV","bi":1,"bd":2.0,"s":"XXX"}""",
+        """duplicated field "s", offset: 0x0000001e""")
     }
     "throw parse exception in case of illegal UTF-8 encoded field names" in {
       val jsonBytes = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes(UTF_8)
@@ -1532,14 +1551,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
               s = in.readKeyAsString()
               if (s == "id") {
                 if ((p0 & 0x1) != 0) p0 ^= 0x1
-                else duplicatedKeyError(in, s)
+                else in.duplicatedKeyError(s)
                 _id = in.readString(_id)
               } else if (s == "tags") {
                 if ((p0 & 0x2) != 0) p0 ^= 0x2
-                else duplicatedKeyError(in, s)
+                else in.duplicatedKeyError(s)
                 _tags = listOfStringCodec.decodeValue(in, _tags)
               } else if (supportedLangs.contains(s)) {
-                if (_langs.contains(s)) duplicatedKeyError(in, s)
+                if (_langs.contains(s)) in.duplicatedKeyError(s)
                 _langs = _langs.updated(s, langCodec.decodeValue(in, langCodec.nullValue))
               } else in.skip()
             }
@@ -1563,9 +1582,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         }
 
         override def nullValue: Doc = null
-
-        private[this] def duplicatedKeyError(in: JsonReader, fieldName: String): Throwable =
-          in.decodeError("duplicated field \"" + fieldName + "\" ")
       }
 
       val json = """{"id":"1","tags":["a","b"],"en":{"id":"en-1","content":"English text"},"de":{"id":"de-1","content":"German text"}}"""
@@ -2574,6 +2590,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}",
         WriterConfig.withEscapeUnicode(true))
+
+      case class MixedKeys(გასაღები: String, k: Int, ключ: Int)
+
+      val codecOfMixedKeys: JsonValueCodec[MixedKeys] = make
+      verifySerDeser(codecOfMixedKeys, MixedKeys("ვვვ", 1, 2), """{"გასაღები":"ვვვ","k":1,"ключ":2}""")
+      verifyDeser(codecOfMixedKeys, MixedKeys("ვვვ", 1, 2), """{"ключ":2,"x":0,"k":1,"გასაღები":"ვვვ"}""")
+      verifyDeserError(codecOfMixedKeys, """{"k":1,"ключ":2,"k":3}""", "duplicated field \"k\", offset: 0x00000017")
     }
     "serialize and deserialize case classes with Scala operators in field names" in {
       case class Operators(` =<>!#%^&|*/\\~+-:$ `: Int)
@@ -2850,6 +2873,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifyDeserError(make[DetectUnknown](CodecMakerConfig.withSkipUnexpectedFields(false)),
         """{"x":1,"y":[1,2],"z":{"a",3}}""", """unexpected field "x", offset: 0x00000004""")
+      verifyDeserError(make[StandardTypes](CodecMakerConfig.withSkipUnexpectedFields(false)),
+        """{"s":"VVV","x":1,"bi":1,"bd":2.0}""", """unexpected field "x", offset: 0x0000000e""")
     }
     "throw parse exception in case of null values for required fields of case classes are provided" in {
       verifyDeserError(codecOfStandardTypes, """{"s":null,"bi":0,"bd":1}""", """expected '"', offset: 0x00000005""")
@@ -2894,6 +2919,24 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |"r80":80,"r81":81,"r82":82,"r83":83,"r84":84,"r85":85,"r86":86,"r87":87,"r88":88,"r89":89,
           |"r90":90,"r91":91,"r92":92,"r93":93,"r94":94,"r95":95,"r96":96,"r97":97,"r98":98
           |}""".stripMargin, """missing required field "r99", offset: 0x0000037c""")
+      val required100 = Required100(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+        23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+        51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+        79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99)
+      val required100Fields = (0 to 99).map(i => f""""r$i%02d":$i""")
+      verifyDeser(make[Required100], required100, required100Fields.reverse.mkString("{", ",", "}"))
+      verifyDeser(make[Required100], required100,
+        (("\"x\":0" +: required100Fields.updated(5, "\"r\\u00305\":5")) :+ "\"y\":[]").mkString("{", ",", "}"))
+      verifyDeser(make[Required100](CodecMakerConfig.withCheckFieldDuplication(false)), required100,
+        (required100Fields.take(1) ++ ("\"r01\":-1" +: required100Fields.drop(1))).mkString("{", ",", "}"))
+      verifyDeserError(make[Required100],
+        (required100Fields.take(2) ++ required100Fields.drop(1)).mkString("{", ",", "}"),
+        """duplicated field "r01", offset: 0x00000016""")
+      verifyDeserError(make[Required100], (required100Fields.take(1) ++ required100Fields).mkString("{", ",", "}"),
+        """duplicated field "r00", offset: 0x0000000e""")
+      verifyDeserError(make[Required100](CodecMakerConfig.withSkipUnexpectedFields(false)),
+        (required100Fields.take(2) ++ ("\"x\":0" +: required100Fields.drop(2))).mkString("{", ",", "}"),
+        """unexpected field "x", offset: 0x00000014""")
     }
     "throw parse exception in case of missing required fields that are defined after optional was detected" in {
       case class RequiredAfterOptionalFields(f1: Option[Long], f2: Long, f3: Option[Long], f4: Long)
@@ -2922,6 +2965,25 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         .withRequireDiscriminatorFirst(false)
         .withDiscriminatorFieldName(_root_.scala.Some("t"))),
         List(CCC(2, "WWW"), CCC(1, "VVV")), """[{"a":2,"b":"WWW","t":"CCC"},{"a":1,"t":"CCC","b":"VVV"}]""")
+      val bigLeaf = BigLeaf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32)
+      val bigLeafFields = (0 to 32).map(i => f""""f$i%02d":$i""")
+      val bigLeafDiscriminator = "\"type\":\"BigLeaf\""
+      verifyDeser(make[BigAdt], bigLeaf, (bigLeafDiscriminator +: bigLeafFields).mkString("{", ",", "}"))
+      verifyDeser(make[BigAdt], bigLeaf, (bigLeafDiscriminator +: "\"x\":0" +: bigLeafFields).mkString("{", ",", "}"))
+      verifyDeser(make[BigAdt](CodecMakerConfig.withRequireDiscriminatorFirst(false)), bigLeaf,
+        (bigLeafFields :+ bigLeafDiscriminator).mkString("{", ",", "}"))
+      verifyDeser(make[BigAdt](CodecMakerConfig.withRequireDiscriminatorFirst(false)), bigLeaf,
+        (("\"x\":0" +: bigLeafFields.take(32)) ++ (bigLeafDiscriminator +: bigLeafFields.drop(32))).mkString("{", ",", "}"))
+      verifyDeserError(make[BigAdt], (bigLeafDiscriminator +: "\"f00\":0" +: bigLeafFields).mkString("{", ",", "}"),
+        """duplicated field "f00", offset: 0x0000001f""")
+      verifyDeserError(make[BigAdt], ((bigLeafDiscriminator +: bigLeafFields) :+ bigLeafDiscriminator).mkString("{", ",", "}"),
+        """duplicated field "type", offset: 0x00000137""")
+      verifyDeserError(make[BigAdt], ((bigLeafDiscriminator +: bigLeafFields) :+ "\"f32\":0").mkString("{", ",", "}"),
+        """duplicated field "f32", offset: 0x00000136""")
+      verifyDeser(codecOfADTList1, List(AAA(1)), "[{\"\\u0074ype\":\"AAA\",\"a\":1}]")
+      verifyDeser(codecOfADTList3, List(AAA(1), BBB(BigInt(1))),
+        "[{\"a\":1,\"typ\\u0065\":\"AAA\"},{\"typ\":0,\"types\":0,\"type\":\"BBB\",\"a\":1}]")
     }
     "serialize and deserialize case object ADTs without discriminator" in {
       verifySerDeser(makeWithoutDiscriminator[List[Weapon]], List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""")
@@ -3333,6 +3395,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "throw parse exception in case of missing discriminator field" in {
       verifyDeserError(codecOfADTList1, """[{"a":1}]""", """expected key: "type", offset: 0x00000005""")
       verifyDeserError(codecOfADTList3, """[{"a":1}]""", """missing required field "type", offset: 0x00000007""")
+      verifyDeserError(codecOfADTList3, """[{"a":1,"typex":2}]""", """missing required field "type", offset: 0x00000011""")
     }
     "throw parse exception in case of illegal value or position of discriminator field" in {
       verifyDeserError(codecOfADTList1, """[{"a":1,"type":"aaa"}]""", """expected key: "type", offset: 0x00000005""")

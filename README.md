@@ -134,7 +134,8 @@ Features:
 - Skips parsing and serialization of fields that are annotated with `@transient` or not defined in the constructor
 - Overrides field names with the `@named` annotation of constructor fields
 - Reads and writes numbers as strings for fields annotated with `@stringified`
-- Preserves the order of instance fields when serializing with generated codecs
+- Preserves the order of instance fields when serializing with generated codecs, and parses objects with keys in
+  that order faster
 - Reports the hex offset of the error in parse exceptions for `Array[Byte]`, `java.nio.ByteBuffer`, and
   `java.io.InputStream`/`java.io.FileInputStream` input, with an optional hex dump of the input around the error
 - Specializes key and value codecs for primitives, so they don't box or unbox values
