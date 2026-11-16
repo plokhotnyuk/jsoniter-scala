@@ -3039,20 +3039,89 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       intercept[NullPointerException](r.isCharBufEqualsTo(r.readStringAsCharBuf(), null))
     }
   }
-  "JsonReader.readKeyAsString" should {
+  "JsonReader.readKeyAsString and JsonReader.readKeyAsCharBufOrNonEscapedAsciiMatch" should {
     "throw parsing exception for missing ':' in the end" in {
       assert(intercept[JsonReaderException](reader("""""""").readKeyAsString())
         .getMessage.startsWith("unexpected end of input, offset: 0x00000002"))
       assert(intercept[JsonReaderException](reader("""""x""").readKeyAsString())
         .getMessage.startsWith("expected ':', offset: 0x00000002"))
+      assert(intercept[JsonReaderException](reader("""""""").readKeyAsCharBufOrNonEscapedAsciiMatch(""))
+        .getMessage.startsWith("unexpected end of input, offset: 0x00000002"))
+      assert(intercept[JsonReaderException](reader("""""x""").readKeyAsCharBufOrNonEscapedAsciiMatch(""))
+        .getMessage.startsWith("expected ':', offset: 0x00000002"))
+      assert(intercept[JsonReaderException](reader(""""x"x""").readKeyAsCharBufOrNonEscapedAsciiMatch(""))
+        .getMessage.startsWith("expected ':', offset: 0x00000003"))
+    }
+    "match keys split between chunks of input or followed by whitespaces without reading ahead" in {
+      val r = reader("""{"key1" : 1, "key2":2, "k3":3, "k":4}""")
+
+      // Keys that are not fully loaded yet are parsed to the internal char buffer instead of matching
+      def isMatched(l: Int, s: String): Boolean = l < 0 || r.isCharBufEqualsTo(l, s)
+
+      r.isNextToken('{') shouldBe true
+      isMatched(r.readKeyAsCharBufOrNonEscapedAsciiMatch("key1"), "key1") shouldBe true
+      r.readInt() shouldBe 1
+      r.isNextToken(',') shouldBe true
+      r.isCharBufEqualsTo(r.readKeyAsCharBufOrNonEscapedAsciiMatch("key3"), "key2") shouldBe true
+      r.readInt() shouldBe 2
+      r.isNextToken(',') shouldBe true
+      r.isCharBufEqualsTo(r.readKeyAsCharBufOrNonEscapedAsciiMatch("k"), "k3") shouldBe true
+      r.readInt() shouldBe 3
+      r.isNextToken(',') shouldBe true
+      isMatched(r.readKeyAsCharBufOrNonEscapedAsciiMatch("k"), "k") shouldBe true
+      r.readInt() shouldBe 4
+
+      // Not more input is read than required for the key and the buffer is not grown to match the expected key.
+      // The stream fails on reading after the end of the message, like a socket that blocks waiting for the next one
+      def stream(json: String): java.io.InputStream = new java.io.InputStream {
+        private[this] val bs = json.getBytes(UTF_8)
+        private[this] var pos = 0
+
+        override def read(): Int = throw new IllegalStateException("unexpected read")
+
+        override def read(b: Array[Byte], off: Int, len: Int): Int = {
+          if (pos >= bs.length) throw new IllegalStateException("unexpected read")
+          val n = Math.min(len, bs.length - pos)
+          System.arraycopy(bs, pos, b, off, n)
+          pos += n
+          n
+        }
+      }
+
+      val cfg = ReaderConfig.withPreferredBufSize(12).withMaxBufSize(12)
+      val r1 = new JsonReader(new Array[Byte](12), 0, 0, -1, new Array[Char](0), null,
+        stream("""{"id":1,"ok":true}"""), 0, cfg)
+      r1.isNextToken('{') shouldBe true
+      r1.readKeyAsCharBufOrNonEscapedAsciiMatch("id") shouldBe -1
+      r1.readInt() shouldBe 1
+      r1.isNextToken(',') shouldBe true
+      r1.isCharBufEqualsTo(r1.readKeyAsCharBufOrNonEscapedAsciiMatch("description"), "ok") shouldBe true
+      r1.readBoolean() shouldBe true
+      r1.isNextToken('}') shouldBe true
+      val r2 = new JsonReader(new Array[Byte](12), 0, 0, -1, new Array[Char](0), null,
+        new java.io.ByteArrayInputStream("""{"description1":1}""".getBytes(UTF_8)), 0, cfg)
+      r2.isNextToken('{') shouldBe true
+      r2.isCharBufEqualsTo(r2.readKeyAsCharBufOrNonEscapedAsciiMatch("description1"), "description1") shouldBe true
+      r2.readInt() shouldBe 1
+      r2.isNextToken('}') shouldBe true
     }
   }
-  "JsonReader.readString, JsonReader.readStringAsCharBuf and JsonReader.readKeyAsString" should {
+  "JsonReader.readString, JsonReader.readStringAsCharBuf, JsonReader.readKeyAsString and " +
+    "JsonReader.readKeyAsCharBufOrNonEscapedAsciiMatch" should {
     def check(s: String, ws: String): Unit = {
       reader(s"""$ws"$s"""").readString(null) shouldBe s
       val r = reader(s"""$ws"$s"""")
       r.isCharBufEqualsTo(r.readStringAsCharBuf(), s) shouldBe true
       reader(s"""$ws"$s":""").readKeyAsString() shouldBe s
+      val r2 = reader(s"""$ws"$s":""")
+      val l = r2.readKeyAsCharBufOrNonEscapedAsciiMatch(s)
+      if (l >= 0) r2.isCharBufEqualsTo(l, s) shouldBe true
+      val r4 = arrayReader(s"""$ws"$s":""") // only fully loaded ASCII keys are matched by bytes
+      val l4 = r4.readKeyAsCharBufOrNonEscapedAsciiMatch(s)
+      if (s.forall(_ < 0x80)) l4 shouldBe -1
+      else r4.isCharBufEqualsTo(l4, s) shouldBe true
+      val r3 = reader(s"""$ws"$s":""")
+      r3.isCharBufEqualsTo(r3.readKeyAsCharBufOrNonEscapedAsciiMatch(s + "x"), s) shouldBe true
     }
 
     def checkEscaped(s1: String, s2: String, ws: String): Unit = {
@@ -3060,18 +3129,25 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       val r = reader(s"""$ws"$s1"""")
       r.isCharBufEqualsTo(r.readStringAsCharBuf(), s2) shouldBe true
       reader(s"""$ws"$s1":""").readKeyAsString() shouldBe s2
+      if (s1 != s2) { // escaped keys are never matched by bytes
+        val r2 = reader(s"""$ws"$s1":""")
+        r2.isCharBufEqualsTo(r2.readKeyAsCharBufOrNonEscapedAsciiMatch(s2), s2) shouldBe true
+      }
     }
 
     def checkError(json: String, error: String): Unit = {
       assertReaderError(json, error)(_.readString(null))
       assertReaderError(json, error)(_.readStringAsCharBuf())
       assertReaderError(json, error)(_.readKeyAsString())
+      assertReaderError(json, error)(_.readKeyAsCharBufOrNonEscapedAsciiMatch(""))
     }
 
     def checkError2(jsonBytes: Array[Byte], error: String): Unit = {
       assert(intercept[JsonReaderException](reader2(jsonBytes).readString(null)).getMessage.startsWith(error))
       assert(intercept[JsonReaderException](reader2(jsonBytes).readStringAsCharBuf()).getMessage.startsWith(error))
       assert(intercept[JsonReaderException](reader2(jsonBytes).readKeyAsString()).getMessage.startsWith(error))
+      assert(intercept[JsonReaderException](reader2(jsonBytes).readKeyAsCharBufOrNonEscapedAsciiMatch(""))
+        .getMessage.startsWith(error))
     }
 
     "don't parse null value" in {
@@ -4593,6 +4669,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       val len = jsonReader.readStringAsCharBuf()
       assert(intercept[JsonReaderException](jsonReader.duplicatedKeyError(len))
         .getMessage.startsWith("""duplicated field "xxx", offset: 0x00000004"""))
+      assert(intercept[JsonReaderException](jsonReader.duplicatedKeyError("yyy"))
+        .getMessage.startsWith("""duplicated field "yyy", offset: 0x00000004"""))
     }
   }
   "JsonReader.unexpectedKeyError" should {
