@@ -111,9 +111,10 @@ Features:
 - Parses streams of JSON values and JSON arrays from `java.io.InputStream`/`java.io.FileInputStream` without holding
   all input and parsed values in memory
 - Parses escaped characters in JSON keys and string values
-- Derives codecs for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`,
-  `Either`, `java.util.UUID`, `java.time.*` (ISO-8601 representation only), Scala collections, arrays (including
-  immutable arrays in Scala 3), module classes, literal types, value classes, and case classes with fields of these types
+- Derives codecs for primitives, boxed primitives, Java enums, Scala enumerations, Scala 3 enums, tuples, `String`,
+  `BigInt`, `BigDecimal`, `Option`, `Either`, `java.util.UUID`, `java.time.*` (ISO-8601 representation only), Scala
+  collections, iterators, arrays (including immutable arrays in Scala 3), module classes, literal types, value classes,
+  and case classes with fields of these types
 - Derives codecs for non-case Scala classes that have getters for all arguments of the primary constructor
 - Supports primary constructors with multiple parameter lists and default values, including default values in
   non-first parameter lists that depend on preceding parameters (evaluated for missing fields after parsing all fields
@@ -143,6 +144,10 @@ Features:
 - Uses only black box macros, so codec derivation never changes your types
 - Orders generated code to preserve checksums and maximize hit rates of remote build caches
 - Prints generated codecs with an implicit `CodecMakerConfig.PrintCodec` in the scope of codec derivation
+- Provides predefined derivation calls for common configurations: `makeWithoutDiscriminator`,
+  `makeWithRequiredCollectionFields`, `makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName`,
+  `makeWithRequiredDefaultFields`, `makeWithSkipNestedOptionValues`, `makeCirceLike`, `makeCirceLikeSnakeCased`,
+  `makeOpenapiLike`, and `makeOpenapiLikeWithoutDiscriminator`
 - Suppresses all WartRemover warnings of generated codecs for Scala 2.12 and 2.13
 - Implements `java.io.Serializable` in codecs and runtime configurations for distributed computing
 - Supports simple opaque types like `opaque type Foo = Int` and `opaque type Bar <: String = String`
@@ -178,7 +183,8 @@ Compile-time options of `CodecMakerConfig`:
 - Skips unexpected fields, or rejects them with a parse exception (`skipUnexpectedFields`)
 - Turns off skipping serialization of fields with default values (`transientDefault`), empty collections
   (`transientEmpty`), or empty options (`transientNone`)
-- Skips serialization of fields with `null` values for custom codecs of Scala 3 union types with `Null` (`transientNull`)
+- Skips serialization of fields with `null` values for custom codecs of Scala 3 union types with `Null`
+  (`transientNull`, Scala 3 only)
 - Requires collection fields (`requireCollectionFields`) or fields with default values (`requireDefaultFields`) in JSON
   input
 - Uses default values of option and collection fields for missing fields only, instead of also for `null` values and
@@ -197,10 +203,10 @@ Compile-time options of `CodecMakerConfig`:
 - Parses both `null` and missing fields as `None` values of `Option[Option[_]]` when nested options are turned on
   (`distinguishNullAndMissingNestedOptions`)
 - Limits precision, scale, and digits of parsed `BigDecimal` values (`bigDecimalPrecision`, `bigDecimalScaleLimit`,
-  `bigDecimalDigitsLimit`)
-- Limits digits of parsed `BigInt` values (`bigIntDigitsLimit`)
-- Limits values of parsed bit sets (`bitSetValueLimit`)
-- Limits inserts when parsing maps or sets (`mapMaxInsertNumber`, `setMaxInsertNumber`)
+  `bigDecimalDigitsLimit`: 34, 6178, and 308 by default)
+- Limits digits of parsed `BigInt` values (`bigIntDigitsLimit`: 308 by default)
+- Limits values of parsed bit sets (`bitSetValueLimit`: 1024 by default)
+- Limits inserts when parsing maps or sets (`mapMaxInsertNumber`, `setMaxInsertNumber`: 1024 by default)
 - Allows recursive data structures, which are a compilation error by default (`allowRecursiveTypes`)
 - Turns off checking of field duplication for smaller and faster codecs (`checkFieldDuplication`)
 - Turns off generation of decoding or encoding for faster derivation and smaller class/JS/binary size (`encodingOnly`,
@@ -210,17 +216,18 @@ Compile-time options of `CodecMakerConfig`:
 
 Runtime options of `ReaderConfig` and `WriterConfig`:
 - Escapes non-ASCII chars for ASCII-only output (`escapeUnicode`)
-- Indents output with the given step (`indentionStep`)
+- Indents output with the given number of spaces per level, or writes compact output by default (`indentionStep`)
 - Turns on stack traces of exceptions for debugging, which are off by default for performance
   (`throwReaderExceptionWithStackTrace`, `throwWriterExceptionWithStackTrace`)
 - Turns off hex dumps in parse exceptions for performance (`appendHexDumpToParseException`), or sets their size in
-  16-byte lines (`hexDumpSize`)
+  16-byte lines before and after the error line (`hexDumpSize`: 2 by default)
 - Turns off the check for non-whitespace bytes after the parsed value (`checkForEndOfInput`)
 - Sets max and preferred sizes of input buffers for parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
-  (`maxBufSize`, `preferredBufSize`)
-- Sets max and preferred sizes of char buffers for parsing strings (`maxCharBufSize`, `preferredCharBufSize`)
-- Sets the preferred size of output buffers for serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
-  (`preferredBufSize`)
+  (`maxBufSize`, `preferredBufSize`: 32 MiB and 32 KiB by default)
+- Sets max and preferred sizes of char buffers for parsing strings, including Base16 and Base64 encoded ones
+  (`maxCharBufSize`, `preferredCharBufSize`: 4M and 4K chars by default)
+- Sets the preferred size of output buffers for all outputs except byte arrays and heap byte buffers passed as
+  arguments (`preferredBufSize`: 32 KiB by default)
 
 Last releases for older platforms:
 - [**v2.13.5.2**](https://github.com/plokhotnyuk/jsoniter-scala/releases/tag/v2.13.5.2): JDK 8+, and native images
