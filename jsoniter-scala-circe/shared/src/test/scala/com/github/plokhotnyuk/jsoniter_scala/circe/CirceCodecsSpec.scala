@@ -414,6 +414,10 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
         BigDecimal("1234567890123456789012345678901235E+6")
       Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1.23e2"))).getOrElse(null) shouldBe BigDecimal("123")
       Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e10000000000"))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1" * 307))).getOrElse(null) shouldBe
+        BigDecimal("1" * 307).apply(JsonReader.bigDecimalMathContext)
+      Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1" * 308))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1." + "1" * 200000))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
       Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e-6177"))).getOrElse(null) shouldBe BigDecimal("1e-6177")
       Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e-6178"))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
       Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e+6177"))).getOrElse(null) shouldBe BigDecimal("1e+6177")

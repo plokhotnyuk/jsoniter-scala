@@ -414,10 +414,12 @@ object JsoniterScalaCodec {
       case n: JNumber => n.value match {
         case jl: JsonLong => new Right(new BigDecimal(new java.math.BigDecimal(jl.value)))
         case jbd: JsonBigDecimal => withScaleLimit(jbd.value, c)
-        case x => x.toBigDecimal match {
-          case Some(v) => withScaleLimit(v.bigDecimal, c)
-          case _ => fail(c)
-        }
+        case x =>
+          if (hasTooManyDigits(x, JsonReader.bigDecimalDigitsLimit)) fail(c)
+          else x.toBigDecimal match {
+            case Some(v) => withScaleLimit(v.bigDecimal, c)
+            case _ => fail(c)
+          }
       }
       case s: JString => try new Right(fromString(s.value)) catch {
         case e if NonFatal(e) => fail(c)
@@ -482,7 +484,7 @@ object JsoniterScalaCodec {
 
   // checks the number of mantissa digits of string-based numbers before parsing them, like `JsonReader` does
   private[this] def hasTooManyDigits(x: JsonNumber, digitsLimit: Int): Boolean = x match {
-    case _: BiggerDecimalJsonNumber => hasTooManyDigits(x.toString, digitsLimit)
+    case bdjn: BiggerDecimalJsonNumber => hasTooManyDigits(bdjn.toString, digitsLimit)
     case _ => false
   }
 
