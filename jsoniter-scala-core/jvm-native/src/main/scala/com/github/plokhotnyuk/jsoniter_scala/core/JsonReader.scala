@@ -5894,7 +5894,7 @@ final class JsonReader private[jsoniter_scala](
             charBuf(i) = ch1
             charBuf(i + 1) = ((cp & 0x3FF) | 0xDC00).toChar
             if (b2 >= -64 || b3 >= -64 || b4 >= -64 ||
-              (ch1 & 0xF800) != 0xD800) malformedBytesError(b1, b2, b3, b4, pos)
+              (ch1 & 0xFC00) != 0xD800) malformedBytesError(b1, b2, b3, b4, pos)
             parseEncodedString(i + 2, lim, charBuf, pos + 4)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else malformedBytesError(b1, pos)
