@@ -791,7 +791,7 @@ final class JsonReader private[jsoniter_scala](
     *                             exceeds the provided limits, the JSON value and `default` are both `null`, or the
     *                             input ends unexpectedly
     */
-  def readNumber(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): java.lang.Number =
+  def readNumber(default: java.lang.Number, mc: MathContext, scaleLimit: Int, digitsLimit: Int): java.lang.Number =
     readNumber(isToken = true, default, mc, scaleLimit, digitsLimit)
 
   /**
