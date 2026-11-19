@@ -2481,6 +2481,19 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize fields that stringified by annotation" in {
       verifySerDeser(codecOfStringified, Stringified(1, 2, Option(1), List(2)),
         """{"i":"1","bi":"2","o":"1","l":["2"]}""")
+
+      case class StringifiedFirst(@stringified t1: (Int, Long), t2: (Int, Long),
+                                  @stringified e1: LocationType.LocationType, e2: LocationType.LocationType)
+
+      case class StringifiedLast(t1: (Int, Long), @stringified t2: (Int, Long),
+                                 e1: LocationType.LocationType, @stringified e2: LocationType.LocationType)
+
+      verifySerDeser(make[StringifiedFirst](CodecMakerConfig.withUseScalaEnumValueId(true)),
+        StringifiedFirst((1, 2L), (3, 4L), LocationType.GPS, LocationType.IP),
+        """{"t1":["1","2"],"t2":[3,4],"e1":"1","e2":0}""")
+      verifySerDeser(make[StringifiedLast](CodecMakerConfig.withUseScalaEnumValueId(true)),
+        StringifiedLast((1, 2L), (3, 4L), LocationType.GPS, LocationType.IP),
+        """{"t1":[1,2],"t2":["3","4"],"e1":1,"e2":"0"}""")
     }
     "serialize and deserialize fields that have field name mapper and stringified by annotation" in {
       verifySerDeser(make(CodecMakerConfig.withFieldNameMapper { case x => x + "_" }), Stringified(1, 2, Option(1), List(2)),
