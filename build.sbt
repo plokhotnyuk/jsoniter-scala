@@ -153,7 +153,7 @@ lazy val publishSettings = Seq(
   },
   mimaReportSignatureProblems := true,
   mimaBinaryIssueFilters := Seq(
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs$ShortAsciiStringCodec")
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.readNumber(scala.math.BigDecimal,java.math.MathContext,Int,Int)java.lang.Number")
   )
 )
 

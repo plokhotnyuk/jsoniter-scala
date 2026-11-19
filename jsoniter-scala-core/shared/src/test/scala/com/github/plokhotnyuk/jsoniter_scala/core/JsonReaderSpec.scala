@@ -4334,6 +4334,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         reader(fill(' ', n) + "null").readNumber(default) shouldBe default
         reader(fill(' ', n) + "null").readStringAsNumber(default) shouldBe default
         reader(fill(' ', n) + "null").readNumber(BigDecimal(1), MathContext.UNLIMITED, 10, 10) shouldBe BigDecimal(1)
+        reader(fill(' ', n) + "null").readNumber(default, MathContext.UNLIMITED, 10, 10) shouldBe default
+        reader(fill(' ', n) + "null").readStringAsNumber(default, MathContext.UNLIMITED, 10, 10) shouldBe default
       }
     }
   }
