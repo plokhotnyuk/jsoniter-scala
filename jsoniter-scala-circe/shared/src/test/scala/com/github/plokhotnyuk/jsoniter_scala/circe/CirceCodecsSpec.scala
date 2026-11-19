@@ -483,6 +483,8 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
     }
     "decode and encode ZonedDateTime" in {
       verifyDecoding[ZonedDateTime]("ZonedDateTime", ZonedDateTime.now())
+      Decoder[ZonedDateTime].decodeJson(Json.fromString("+999999999-12-31T23:59:59Z[Asia/Tokyo]")) shouldBe
+        Left(DecodingFailure("ZonedDateTime", Nil))
       verifyEncoding[ZonedDateTime](ZonedDateTime.now())
     }
   }
