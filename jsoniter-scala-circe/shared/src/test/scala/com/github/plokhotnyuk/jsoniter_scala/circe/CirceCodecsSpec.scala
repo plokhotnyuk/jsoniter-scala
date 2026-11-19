@@ -331,6 +331,9 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
       Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("0e+1000000000"))).getOrElse(null) shouldBe BigInt(0)
       Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+306"))).getOrElse(null) shouldBe BigInt(10).pow(306)
       Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal("1e+307"))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal(BigInt(10).pow(306)))).getOrElse(null) shouldBe BigInt(10).pow(306)
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal(BigInt(10).pow(307)))) shouldBe Left(DecodingFailure("BigInt", Nil))
+      Decoder[BigInt].decodeJson(Json.fromBigDecimal(BigDecimal(BigInt(10).pow(5000)))) shouldBe Left(DecodingFailure("BigInt", Nil))
       Decoder[BigInt].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e306"))).getOrElse(null) shouldBe BigInt(10).pow(306)
       Decoder[BigInt].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e307"))) shouldBe Left(DecodingFailure("BigInt", Nil))
       Decoder[BigInt].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1." + "0" * 306))).getOrElse(null) shouldBe BigInt(1)
@@ -411,6 +414,18 @@ class CirceCodecsSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyC
         BigDecimal("1234567890123456789012345678901235E+6")
       Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1.23e2"))).getOrElse(null) shouldBe BigDecimal("123")
       Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e10000000000"))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e-6177"))).getOrElse(null) shouldBe BigDecimal("1e-6177")
+      Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e-6178"))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e+6177"))).getOrElse(null) shouldBe BigDecimal("1e+6177")
+      Decoder[BigDecimal].decodeJson(Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1e+6178"))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(BigDecimal("1e-6177"))).getOrElse(null) shouldBe BigDecimal("1e-6177")
+      Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(BigDecimal("1e-6178"))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(BigDecimal("1e+6177"))).getOrElse(null) shouldBe BigDecimal("1e+6177")
+      Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(BigDecimal("1e+6178"))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(BigDecimal("1" * 40 + "e-6180"))).getOrElse(null) shouldBe
+        BigDecimal("1" * 34 + "e-6174").apply(JsonReader.bigDecimalMathContext) // the scale is checked after rounding
+      Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MinValue)))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
+      Decoder[BigDecimal].decodeJson(Json.fromBigDecimal(BigDecimal(new java.math.BigDecimal(java.math.BigInteger.ONE, Int.MaxValue)))) shouldBe Left(DecodingFailure("BigDecimal", Nil))
       Seq(Json.fromLong(1L), Json.fromBigDecimal(BigDecimal("1.0", java.math.MathContext.UNLIMITED)), Json.fromJsonNumber(JsonNumber.fromDecimalStringUnsafe("1.0")),
         Json.fromDoubleOrNull(1.0), Json.fromString("1.0")).foreach { json =>
         Decoder[BigDecimal].decodeJson(json).map(_.mc) shouldBe Right(JsonReader.bigDecimalMathContext)
