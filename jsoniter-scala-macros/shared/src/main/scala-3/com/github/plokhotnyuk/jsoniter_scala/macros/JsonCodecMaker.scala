@@ -3046,17 +3046,37 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           readVars.addOne(valDef)
           readVarsMap.addOne((mappedName, valDef))
     }
-    val argss = genParamValues(typeInfo.paramLists, tpe, fieldInfo => Ref(readVars(fieldInfo.nonTransientFieldIndex).symbol))
-    // Dependent default values are assigned in the order of params for missing fields only, after parsing of all fields
-    val setDependentDefaultValues =
-      if (withDependentDefaultValues.isEmpty) Nil
-      else {
-        val defaultValues = genDefaultValues(typeInfo.paramLists, argss)
-        fields.collect { case fieldInfo if withDependentDefaultValues.contains(fieldInfo.mappedName) =>
-          val i = fieldInfo.nonTransientFieldIndex
-          val n = Ref(paramVars(i >> 5).symbol).asExpr.asInstanceOf[Expr[Int]]
-          If('{ ($n & ${Expr(1 << i)}) != 0 }.asTerm, Assign(Ref(readVars(i).symbol), defaultValues(i).get), Literal(UnitConstant()))
+    // Dependent default values are assigned in the order of params for missing fields only, after parsing of all fields.
+    // Default values of transient fields are evaluated once in the same order and stored in local values, to pass the
+    // same values to the constructor and to default methods of the following parameter lists
+    val setDependentDefaultValues = new mutable.ListBuffer[Statement]
+    val argss =
+      if (withDependentDefaultValues.isEmpty) {
+        genParamValues(typeInfo.paramLists, tpe, fieldInfo => Ref(readVars(fieldInfo.nonTransientFieldIndex).symbol))
+      } else {
+        var reversedArgss: List[List[Term]] = Nil
+        typeInfo.paramLists.foreach { params =>
+          reversedArgss = params.map { fieldInfo =>
+            if (fieldInfo.isTransient) {
+              val sym = symbol(s"_t_${fieldInfo.symbol.name}", fieldInfo.resolvedTpe)
+              val defaultValue = genDefaultValue(fieldInfo, reversedArgss).getOrElse {
+                fail(s"Transient field '${fieldInfo.symbol.name}' in class '${tpe.show}' should have default value.")
+              }
+              setDependentDefaultValues.addOne(ValDef(sym, new Some(defaultValue.changeOwner(sym))))
+              Ref(sym)
+            } else {
+              val i = fieldInfo.nonTransientFieldIndex
+              val readVar = Ref(readVars(i).symbol)
+              if (withDependentDefaultValues.contains(fieldInfo.mappedName)) {
+                val n = Ref(paramVars(i >> 5).symbol).asExpr.asInstanceOf[Expr[Int]]
+                setDependentDefaultValues.addOne(If('{ ($n & ${Expr(1 << i)}) != 0 }.asTerm,
+                  Assign(readVar, genDefaultValue(fieldInfo, reversedArgss).get), Literal(UnitConstant())))
+              }
+              readVar
+            }
+          } :: reversedArgss
         }
+        reversedArgss.reverse
       }
     val construct = typeInfo.genNew(argss)
     val readFields =

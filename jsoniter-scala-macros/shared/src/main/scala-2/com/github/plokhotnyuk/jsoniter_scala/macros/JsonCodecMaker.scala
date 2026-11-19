@@ -2339,21 +2339,32 @@ object JsonCodecMaker {
                 }
             }
           }
-        val argss = genParamValues(classInfo.paramLists, tpe, fieldInfo => q"${fieldInfo.tmpName}")
-        // Dependent default values are assigned in the order of params for missing fields only, after parsing of all fields
-        val setDependentDefaultValues =
-          if (withDependentDefaultValues.isEmpty) Nil
+        // Dependent default values are assigned in the order of params for missing fields only, after parsing of all
+        // fields. Default values of transient fields are evaluated once in the same order and stored in local values, to
+        // pass the same values to the constructor and to default methods of the following parameter lists
+        val setDependentDefaultValues = new mutable.ListBuffer[Tree]
+        val argss =
+          if (withDependentDefaultValues.isEmpty) genParamValues(classInfo.paramLists, tpe, fieldInfo => q"${fieldInfo.tmpName}")
           else {
-            val defaultValues = genDefaultValues(classInfo.paramLists, argss)
-            val setters = new mutable.ListBuffer[Tree]
+            var reversedArgss: List[List[Tree]] = Nil
             var i = -1
-            fields.foreach { fieldInfo =>
-              i += 1
-              if (withDependentDefaultValues(fieldInfo.mappedName)) {
-                setters += q"if ((${paramVarNames(i >> 5)} & ${1 << i}) != 0) ${fieldInfo.tmpName} = ${defaultValues(i).get}"
-              }
+            classInfo.paramLists.foreach { params =>
+              reversedArgss = params.map { fieldInfo =>
+                if (fieldInfo.isTransient) {
+                  val defaultValue = genDefaultValue(fieldInfo, reversedArgss)
+                    .getOrElse(fail(s"Transient field '${fieldInfo.symbol.name}' in class '$tpe' should have default value."))
+                  setDependentDefaultValues += q"val ${fieldInfo.tmpName}: ${fieldInfo.resolvedTpe} = $defaultValue"
+                } else {
+                  i += 1
+                  if (withDependentDefaultValues(fieldInfo.mappedName)) {
+                    setDependentDefaultValues +=
+                      q"if ((${paramVarNames(i >> 5)} & ${1 << i}) != 0) ${fieldInfo.tmpName} = ${genDefaultValue(fieldInfo, reversedArgss).get}"
+                  }
+                }
+                q"${fieldInfo.tmpName}"
+              } :: reversedArgss
             }
-            setters.toList
+            reversedArgss.reverse
           }
         val construct = genNew(classInfo, argss)
         val readVars = fields.map { fieldInfo =>
@@ -2509,7 +2520,7 @@ object JsonCodecMaker {
                 if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
               }
               ..$checkReqVars
-              ..$setDependentDefaultValues
+              ..${setDependentDefaultValues.toList}
               $construct
             } else in.readNullOrTokenError(default, '{')"""
       }
