@@ -2024,8 +2024,7 @@ final class JsonReader private[jsoniter_scala](
       zoneIdKey = k
     }
     k.set(((hash >> 32) ^ hash).toInt, buf, from, pos)
-    var zoneId = zoneIds.get(k)
-    if (zoneId eq null) zoneId = toZoneId(k, pos + 1)
+    val zoneId = getZoneId(k, pos + 1)
     head = pos
     zoneId
   }
@@ -2218,8 +2217,7 @@ final class JsonReader private[jsoniter_scala](
         zoneIdKey = k
       }
       k.set(((hash >> 32) ^ hash).toInt, buf, from, pos - 1)
-      var zoneId = zoneIds.get(k)
-      if (zoneId eq null) zoneId = toZoneId(k, pos)
+      val zoneId = getZoneId(k, pos)
       head = pos
       ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
     }
@@ -3191,8 +3189,7 @@ final class JsonReader private[jsoniter_scala](
       zoneIdKey = k
     }
     k.set(((hash >> 32) ^ hash).toInt, buf, from, pos - 1)
-    var zoneId = zoneIds.get(k)
-    if (zoneId eq null) zoneId = toZoneId(k, pos)
+    val zoneId = getZoneId(k, pos)
     head = pos
     zoneId
   }
@@ -5451,8 +5448,7 @@ final class JsonReader private[jsoniter_scala](
         zoneIdKey = k
       }
       k.set(((hash >> 32) ^ hash).toInt, buf, from, pos - 1)
-      var zoneId = zoneIds.get(k)
-      if (zoneId eq null) zoneId = toZoneId(k, pos)
+      val zoneId = getZoneId(k, pos)
       if (pos >= tail) {
         pos = loadMoreOrError(pos)
         buf = this.buf
@@ -5461,6 +5457,17 @@ final class JsonReader private[jsoniter_scala](
       head = pos + 1
       ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
     } else zonedDateTimeError(nanoDigitWeight)
+  }
+
+  // The reused key is cleared after lookups to avoid retaining of the parsed buffer
+  @inline
+  private[this] def getZoneId(k: Key, pos: Int): ZoneId = {
+    val zoneId = zoneIds.get(k)
+    if (zoneId eq null) toZoneId(k, pos)
+    else {
+      k.clear()
+      zoneId
+    }
   }
 
   @noinline
@@ -5475,7 +5482,7 @@ final class JsonReader private[jsoniter_scala](
       return zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex, pos)
-    }
+    } finally k.clear()
 
   private[this] def parseZoneOffset(): ZoneOffset = {
     val b = nextByte(head)
@@ -6925,6 +6932,9 @@ private class Key {
     this.from = from
     this.to = to
   }
+
+  @inline
+  def clear(): Unit = bs = null
 
   @inline
   def copy: Key = {
