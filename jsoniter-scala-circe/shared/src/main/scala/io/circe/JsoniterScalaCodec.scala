@@ -370,7 +370,7 @@ object JsoniterScalaCodec {
           val bd = jbd.value
           val s = bd.scale
           val isZero = bd.signum == 0
-          if (s == 0 || isZero || bd.precision - s + Int.MaxValue < Int.MinValue + digitsLimit - 1) { // see `intValueExact`
+          if (isZero || bd.precision - s + Int.MaxValue < Int.MinValue + digitsLimit - 1) { // see `intValueExact`
             new Right(new BigInt({
               if (s == 0) bd.unscaledValue
               else if (isZero) java.math.BigInteger.ZERO
@@ -413,11 +413,9 @@ object JsoniterScalaCodec {
     final def apply(c: HCursor): Result[BigDecimal] = c.value match {
       case n: JNumber => n.value match {
         case jl: JsonLong => new Right(new BigDecimal(new java.math.BigDecimal(jl.value)))
-        case jbd: JsonBigDecimal =>
-          val mc = JsonReader.bigDecimalMathContext
-          new Right(new BigDecimal(jbd.value.round(mc), mc))
+        case jbd: JsonBigDecimal => withScaleLimit(jbd.value, c)
         case x => x.toBigDecimal match {
-          case Some(v) => new Right(v.apply(JsonReader.bigDecimalMathContext))
+          case Some(v) => withScaleLimit(v.bigDecimal, c)
           case _ => fail(c)
         }
       }
@@ -429,6 +427,17 @@ object JsoniterScalaCodec {
 
     @inline
     final def apply(x: BigDecimal): Json = new JNumber(new JsonBigDecimal(x.bigDecimal))
+
+    // rounds like `JsonReader.readBigDecimal` does and rejects values with the absolute scale out of its default limit
+    private[this] def withScaleLimit(x: java.math.BigDecimal, c: HCursor): Result[BigDecimal] = try {
+      val mc = JsonReader.bigDecimalMathContext
+      val bd = x.round(mc)
+      val s = bd.scale
+      if (s >= JsonReader.bigDecimalScaleLimit || s <= -JsonReader.bigDecimalScaleLimit) fail(c)
+      else new Right(new BigDecimal(bd, mc))
+    } catch {
+      case e if NonFatal(e) => fail(c) // the scale can overflow during rounding
+    }
 
     private[this] def fail(c: HCursor): Result[BigDecimal] = new Left(DecodingFailure("BigDecimal", c.history))
   }
