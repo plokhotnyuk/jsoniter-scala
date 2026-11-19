@@ -158,11 +158,13 @@ object JsoniterScalaCodec {
               if (b == l) return new Right(b)
             }
           case y =>
-            val ol = y.toLong
-            if (ol ne None) {
-              val l = ol.get
-              val b = l.toByte
-              if (b == l) return new Right(b)
+            if (!hasTooManyDigits(y, JsonReader.bigDecimalDigitsLimit)) {
+              val ol = y.toLong
+              if (ol ne None) {
+                val l = ol.get
+                val b = l.toByte
+                if (b == l) return new Right(b)
+              }
             }
         }
         fail(c)
@@ -205,11 +207,13 @@ object JsoniterScalaCodec {
               if (s == l) return new Right(s)
             }
           case y =>
-            val ol = y.toLong
-            if (ol ne None) {
-              val l = ol.get
-              val s = l.toShort
-              if (s == l) return new Right(s)
+            if (!hasTooManyDigits(y, JsonReader.bigDecimalDigitsLimit)) {
+              val ol = y.toLong
+              if (ol ne None) {
+                val l = ol.get
+                val s = l.toShort
+                if (s == l) return new Right(s)
+              }
             }
         }
         fail(c)
@@ -248,11 +252,13 @@ object JsoniterScalaCodec {
             val bd = intValueExact(jbd.value)
             if (bd ne null) return new Right(bd.intValue)
           case y =>
-            val ol = y.toLong
-            if (ol ne None) {
-              val l = ol.get
-              val i = l.toInt
-              if (i == l) return new Right(i)
+            if (!hasTooManyDigits(y, JsonReader.bigDecimalDigitsLimit)) {
+              val ol = y.toLong
+              if (ol ne None) {
+                val l = ol.get
+                val i = l.toInt
+                if (i == l) return new Right(i)
+              }
             }
         }
         fail(c)
@@ -288,8 +294,10 @@ object JsoniterScalaCodec {
             val bd = longValueExact(jbd.value)
             if (bd ne null) return new Right(bd.longValue)
           case x =>
-            val ol = x.toLong
-            if (ol ne None) return new Right(ol.get)
+            if (!hasTooManyDigits(x, JsonReader.bigDecimalDigitsLimit)) {
+              val ol = x.toLong
+              if (ol ne None) return new Right(ol.get)
+            }
         }
         fail(c)
       case s: JString =>
@@ -414,10 +422,12 @@ object JsoniterScalaCodec {
       case n: JNumber => n.value match {
         case jl: JsonLong => new Right(new BigDecimal(new java.math.BigDecimal(jl.value)))
         case jbd: JsonBigDecimal => withScaleLimit(jbd.value, c)
-        case x => x.toBigDecimal match {
-          case Some(v) => withScaleLimit(v.bigDecimal, c)
-          case _ => fail(c)
-        }
+        case x =>
+          if (hasTooManyDigits(x, JsonReader.bigDecimalDigitsLimit)) fail(c)
+          else x.toBigDecimal match {
+            case Some(v) => withScaleLimit(v.bigDecimal, c)
+            case _ => fail(c)
+          }
       }
       case s: JString => try new Right(fromString(s.value)) catch {
         case e if NonFatal(e) => fail(c)
@@ -482,11 +492,12 @@ object JsoniterScalaCodec {
 
   // checks the number of mantissa digits of string-based numbers before parsing them, like `JsonReader` does
   private[this] def hasTooManyDigits(x: JsonNumber, digitsLimit: Int): Boolean = x match {
-    case _: BiggerDecimalJsonNumber => hasTooManyDigits(x.toString, digitsLimit)
+    case bdjn: BiggerDecimalJsonNumber => hasTooManyDigits(bdjn.toString, digitsLimit)
     case _ => false
   }
 
-  // checks the number of mantissa digits before parsing, like `JsonReader` does
+  // checks the number of mantissa digits before parsing, like `JsonReader` does, and the number of exponent digits
+  // without leading zeros to avoid slow parsing of the exponent to `BigInteger` by circe
   private[this] def hasTooManyDigits(s: String, digitsLimit: Int): Boolean = {
     val len = s.length
     var digits, i = 0
@@ -495,7 +506,14 @@ object JsoniterScalaCodec {
       if (ch >= '0' && ch <= '9') digits += 1
       (ch | 0x20) != 'e'
     }) i += 1
-    digits >= digitsLimit
+    digits >= digitsLimit || {
+      i += 1
+      while (i < len && {
+        val ch = s.charAt(i)
+        ch == '0' || ch == '+' || ch == '-'
+      }) i += 1
+      len - i > 19
+    }
   }
 
   private[this] def wholeOrNull(x: java.math.BigDecimal): java.math.BigDecimal =
