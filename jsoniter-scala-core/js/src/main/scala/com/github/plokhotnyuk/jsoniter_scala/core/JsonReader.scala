@@ -4525,7 +4525,7 @@ final class JsonReader private[jsoniter_scala](
       val zoneId = ZoneId.of(k.toString)
       val normalizedZoneId = zoneId.normalized
       if (!normalizedZoneId.isInstanceOf[ZoneOffset] ||
-        (normalizedZoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0) {
+        (Math.abs(normalizedZoneId.asInstanceOf[ZoneOffset].getTotalSeconds) * 37283 & 0x1FF8000) == 0) { // cache offsets that are divisible by 900 seconds
         zoneIds.put(k.copy, zoneId)
       }
       return zoneId
