@@ -2650,6 +2650,11 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       ref
     }).asExpr.asInstanceOf[Expr[T]]
 
+  // Empty values of immutable collections are shared, others are created for each usage
+  private def withImmutableNullValueFor[T: Type](tpe: TypeRepr)(f: => Expr[T]): Expr[T] =
+    if (tpe <:< TypeRepr.of[immutable.Iterable[?]]) withNullValueFor(tpe)(f)
+    else f
+
   private def withEqualsFor[T: Type](refKey: EqualsMethodKey, arg1: Expr[T], arg2: Expr[T])
                                     (f: (Expr[T], Expr[T]) => Expr[Boolean]): Expr[Boolean] =
     Apply(refs.getOrElse(refKey, {
@@ -2810,19 +2815,25 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       else if (isNonEmptyList(tpe)) '{ null.asInstanceOf[T] }
       else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) '{ Nil }
       else if (tpe <:< TypeRepr.of[collection.SortedSet[?]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
-        val tpe1 = typeArg1(tpe)
-        Apply(scalaCollectionEmpty(tpe, tpe1), List(summonOrdering(tpe1))).asExpr
+        withImmutableNullValueFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaCollectionEmpty(tpe, tpe1), List(summonOrdering(tpe1))).asExpr
+        }
       } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] ||
           tpe <:< TypeRepr.of[mutable.UnrolledBuffer[?]]) {
-        val tpe1 = typeArg1(tpe)
-        Apply(scalaCollectionEmpty(tpe, tpe1), List(summonClassTag(tpe1))).asExpr
+        withImmutableNullValueFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaCollectionEmpty(tpe, tpe1), List(summonClassTag(tpe1))).asExpr
+        }
       } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]] || tpe <:< TypeRepr.of[immutable.LongMap[?]] ||
           tpe <:< TypeRepr.of[immutable.Seq[?]] || tpe <:< TypeRepr.of[immutable.Set[?]]) withNullValueFor(tpe) {
         scalaCollectionEmpty(tpe, typeArg1(tpe)).asExpr
       } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) scalaCollectionEmpty(tpe, typeArg1(tpe)).asExpr
       else if (tpe <:< TypeRepr.of[collection.SortedMap[?, ?]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) {
-        val tpe1 = typeArg1(tpe)
-        Apply(scalaMapEmpty(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExpr
+        withImmutableNullValueFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaMapEmpty(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExpr
+        }
       } else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[?, ?]]) withNullValueFor(tpe) {
         typeArg1(tpe).asType match { case '[t1] =>
           typeArg2(tpe).asType match { case '[t2] => '{ immutable.TreeSeqMap.empty[t1, t2] } }
