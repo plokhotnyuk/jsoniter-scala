@@ -2653,6 +2653,11 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       ref
     }).asExpr.asInstanceOf[Expr[T]]
 
+  // Empty values of immutable collections are shared, others are created for each usage
+  private def withImmutableNullValueFor[T: Type](tpe: TypeRepr)(f: => Expr[T]): Expr[T] =
+    if (tpe <:< TypeRepr.of[immutable.Iterable[?]]) withNullValueFor(tpe)(f)
+    else f
+
   private def withEqualsFor[T: Type](refKey: EqualsMethodKey, arg1: Expr[T], arg2: Expr[T])
                                     (f: (Expr[T], Expr[T]) => Expr[Boolean]): Expr[Boolean] =
     Apply(refs.getOrElse(refKey, {
@@ -2813,12 +2818,15 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       else if (isNonEmptyList(tpe)) '{ null.asInstanceOf[T] }
       else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) '{ Nil }
       else if (tpe <:< TypeRepr.of[collection.SortedSet[?]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
+        // Orderings are resolved per usage, because they can be not initialized yet when codecs are created
         val tpe1 = typeArg1(tpe)
         Apply(scalaCollectionEmpty(tpe, tpe1), List(summonOrdering(tpe1))).asExpr
       } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] ||
           tpe <:< TypeRepr.of[mutable.UnrolledBuffer[?]]) {
-        val tpe1 = typeArg1(tpe)
-        Apply(scalaCollectionEmpty(tpe, tpe1), List(summonClassTag(tpe1))).asExpr
+        withImmutableNullValueFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaCollectionEmpty(tpe, tpe1), List(summonClassTag(tpe1))).asExpr
+        }
       } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]] || tpe <:< TypeRepr.of[immutable.LongMap[?]] ||
           tpe <:< TypeRepr.of[immutable.Seq[?]] || tpe <:< TypeRepr.of[immutable.Set[?]]) withNullValueFor(tpe) {
         scalaCollectionEmpty(tpe, typeArg1(tpe)).asExpr
