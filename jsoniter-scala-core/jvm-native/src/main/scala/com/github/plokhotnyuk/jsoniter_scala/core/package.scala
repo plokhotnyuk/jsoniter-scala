@@ -428,6 +428,10 @@ package object core {
   /**
     * Serializes `x` to the given byte array slice as UTF-8 encoded JSON.
     *
+    * Reserves space for the longest possible representation of each value before writing it, so it can fail when the
+    * output fits: leave at least max(46, `config.indentionStep` * the maximum nesting depth + 10) spare bytes after the
+    * expected end of the output.
+    *
     * BEWARE: Nested calls of non-reentrant routines in the same thread fail. Use `...Reentrant` routines for all but
     * the innermost call.
     *
@@ -443,7 +447,8 @@ package object core {
     *                             values
     * @throws java.lang.NullPointerException if `x`, `codec`, `buf`, or `config` is `null`
     * @throws java.lang.ArrayIndexOutOfBoundsException if `from` or `to` is outside of `buf`, `from` is greater than
-    *                                                  `to`, or the output doesn't fit before `to`
+    *                                                  `to`, or the output with the reserved space doesn't fit
+    *                                                  before `to`
     */
   def writeToSubArray[@sp A](x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig = WriterConfig)
                             (implicit codec: JsonValueCodec[A]): Int = {
@@ -456,6 +461,10 @@ package object core {
 
   /**
     * Serializes `x` to the given byte array slice as UTF-8 encoded JSON.
+    *
+    * Reserves space for the longest possible representation of each value before writing it, so it can fail when the
+    * output fits: leave at least max(46, `config.indentionStep` * the maximum nesting depth + 10) spare bytes after the
+    * expected end of the output.
     *
     * Allocates a new writer, so it is slower than the pooled version but safe to nest in the same thread.
     *
@@ -471,7 +480,8 @@ package object core {
     *                             values
     * @throws java.lang.NullPointerException if `x`, `codec`, `buf`, or `config` is `null`
     * @throws java.lang.ArrayIndexOutOfBoundsException if `from` or `to` is outside of `buf`, `from` is greater than
-    *                                                  `to`, or the output doesn't fit before `to`
+    *                                                  `to`, or the output with the reserved space doesn't fit
+    *                                                  before `to`
     */
   def writeToSubArrayReentrant[@sp A](x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig = WriterConfig)
                                      (implicit codec: JsonValueCodec[A]): Int = {
@@ -488,6 +498,10 @@ package object core {
     * Serializes from the current position of `bbuf` up to its limit, then sets the position after the last written
     * byte.
     *
+    * Writes heap byte buffers in place, reserving space for the longest possible representation of each value before
+    * writing it, so it can fail when the output fits: leave at least max(46, `config.indentionStep` * the maximum
+    * nesting depth + 10) spare bytes after the expected end of the output.
+    *
     * BEWARE: Nested calls of non-reentrant routines in the same thread fail. Use `...Reentrant` routines for all but
     * the innermost call.
     *
@@ -503,7 +517,8 @@ package object core {
     *                             values
     * @throws java.lang.NullPointerException if `x`, `codec`, `bbuf`, or `config` is `null`
     * @throws java.nio.ReadOnlyBufferException if `bbuf` is read-only
-    * @throws java.nio.BufferOverflowException if the output doesn't fit in `bbuf`
+    * @throws java.nio.BufferOverflowException if the output doesn't fit in `bbuf`, or the output with the reserved space
+    *                                          doesn't fit in a heap byte buffer
     */
   def writeToByteBuffer[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = WriterConfig)
                               (implicit codec: JsonValueCodec[A]): Unit =
@@ -514,6 +529,10 @@ package object core {
     *
     * Serializes from the current position of `bbuf` up to its limit, then sets the position after the last written
     * byte.
+    *
+    * Writes heap byte buffers in place, reserving space for the longest possible representation of each value before
+    * writing it, so it can fail when the output fits: leave at least max(46, `config.indentionStep` * the maximum
+    * nesting depth + 10) spare bytes after the expected end of the output.
     *
     * Allocates a new writer, so it is slower than the pooled version but safe to nest in the same thread.
     *
@@ -526,7 +545,8 @@ package object core {
     *                             values
     * @throws java.lang.NullPointerException if `x`, `codec`, `bbuf`, or `config` is `null`
     * @throws java.nio.ReadOnlyBufferException if `bbuf` is read-only
-    * @throws java.nio.BufferOverflowException if the output doesn't fit in `bbuf`
+    * @throws java.nio.BufferOverflowException if the output doesn't fit in `bbuf`, or the output with the reserved space
+    *                                          doesn't fit in a heap byte buffer
     */
   def writeToByteBufferReentrant[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = WriterConfig)
                                        (implicit codec: JsonValueCodec[A]): Unit =
