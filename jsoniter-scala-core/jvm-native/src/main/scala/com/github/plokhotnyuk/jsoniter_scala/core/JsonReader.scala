@@ -609,7 +609,7 @@ final class JsonReader private[jsoniter_scala](
    *                             input ends unexpectedly
    */
   def readKeyAsNumber(): java.lang.Number =
-    readKeyAsBigDecimal(bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+    readKeyAsNumber(bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
 
   /**
    * Reads a JSON key into a `java.lang.Number` instance with the provided math context, scale limit, and digits limit.
