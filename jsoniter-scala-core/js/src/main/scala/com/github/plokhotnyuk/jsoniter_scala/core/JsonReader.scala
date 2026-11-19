@@ -3964,7 +3964,7 @@ final class JsonReader private[jsoniter_scala](
                   (buf(from + 13) * 10 + buf(from + 14)) * 1000 +
                   (buf(from + 15) * 10 + buf(from + 16)) * 10 +
                   buf(from + 17) - 53333328)) // 53333328 == '0' * 1111111
-          if (x1 < 9 || x1 == 9 && x2 <= 223372036854775807L) {
+          if (x1 < 9 || x1 == 9 && x2 + s <= 223372036854775807L) { // Long.MinValue overflows to itself
             x1 = x1 * 1000000000000000000L + x2
             if (s != 0) x1 = -x1
             (new java.lang.Long(x1): @annotation.nowarn("cat=deprecation"))
