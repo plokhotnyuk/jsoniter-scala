@@ -3283,6 +3283,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         "malformed byte(s): 0xf0, 0xff, 0x84, 0x9e, offset: 0x00000004")
       checkError(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte),
         "malformed byte(s): 0xf0, 0x9d, 0x84, 0x0e, offset: 0x00000004")
+      checkError(Array[Byte](0xF4.toByte, 0x90.toByte, 0x80.toByte, 0x80.toByte),
+        "malformed byte(s): 0xf4, 0x90, 0x80, 0x80, offset: 0x00000004")
+      checkError(Array[Byte](0xF7.toByte, 0xBF.toByte, 0xBF.toByte, 0xBF.toByte),
+        "malformed byte(s): 0xf7, 0xbf, 0xbf, 0xbf, offset: 0x00000004")
     }
     "throw parsing exception for too long strings" in {
       val sb = new StringBuilder
