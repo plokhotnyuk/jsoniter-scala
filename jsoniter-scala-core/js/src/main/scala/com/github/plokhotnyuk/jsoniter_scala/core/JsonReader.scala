@@ -1797,6 +1797,7 @@ final class JsonReader private[jsoniter_scala](
       k.set(hash, buf, from, pos - 1)
       val zoneId = getZoneId(k, pos)
       head = pos
+      if (Math.abs(year) == 999999999) checkZonedDateTimeRange(localDateTime, zoneOffset, zoneId, pos) // only boundary years can overflow
       ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
     } else ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
   }
@@ -4502,6 +4503,7 @@ final class JsonReader private[jsoniter_scala](
       }
       if (buf(pos) != '"') tokenError('"', pos)
       head = pos + 1
+      if (Math.abs(year) == 999999999) checkZonedDateTimeRange(localDateTime, zoneOffset, zoneId, pos) // only boundary years can overflow
       ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
     } else zonedDateTimeError(nanoDigitWeight)
   }
@@ -4530,6 +4532,23 @@ final class JsonReader private[jsoniter_scala](
     } catch {
       case ex: DateTimeException => timezoneError(ex, pos)
     } finally k.clear()
+
+  // Checks that the instant converted to the local date-time of the zone is in the range of `LocalDateTime` values like
+  // `ZonedDateTime.ofInstant` does, to throw a parse exception instead of `DateTimeException` for out of range values
+  @noinline
+  private[this] def checkZonedDateTimeRange(localDateTime: LocalDateTime, zoneOffset: ZoneOffset, zoneId: ZoneId,
+                                            pos: Int): Unit = {
+    val epochSecond = localDateTime.toEpochSecond(zoneOffset)
+    // Zone rules of far future years repeat with 400-year cycles of the Gregorian calendar, so get the offset for the
+    // year 9999 instead of the year 999999999 to avoid `DateTimeException` from `ZoneRules.getOffset` of JDK 8/11
+    val shift =
+      if (epochSecond > 0) 31556636430480000L // 2499975 cycles of 12622780800 seconds (146097 days)
+      else 0L
+    val localSecond = epochSecond + zoneId.getRules.getOffset(Instant.ofEpochSecond(epochSecond - shift)).getTotalSeconds
+    if (localSecond < -31557014135596800L || localSecond > 31556889832780799L) { // LocalDateTime.MIN and LocalDateTime.MAX
+      decodeError("illegal date-time", pos - 1)
+    }
+  }
 
   private[this] def parseZoneOffset(): ZoneOffset = {
     val b = nextByte(head)
