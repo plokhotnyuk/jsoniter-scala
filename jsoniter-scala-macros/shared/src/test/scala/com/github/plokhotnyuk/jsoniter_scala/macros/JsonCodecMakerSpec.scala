@@ -3878,6 +3878,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(codec3, new GenericMultiListOfArgs("A")()()(), """{"a":"A"}""")
       verifySer(codec3, new GenericMultiListOfArgs("A")()(List("B"))(), """{"a":"A","as":["B"]}""")
       verifySer(codec3, new GenericMultiListOfArgs("A")()(List("B"))(3), """{"a":"A","as":["B"],"m":3}""")
+
+      object Counter {
+        val n = new _root_.java.util.concurrent.atomic.AtomicInteger
+      }
+
+      case class MultiListOfArgsWithTransientCounter(@transient id: Int = Counter.n.incrementAndGet(), x: Int = 0)(val tag: String = s"t$id")
+
+      val codec4 = make[MultiListOfArgsWithTransientCounter]
+      verifyDeserByCheck(codec4, "{}", (x: MultiListOfArgsWithTransientCounter) => x.tag shouldBe s"t${x.id}")
+      verifyDeserByCheck(codec4, """{"x":1}""", (x: MultiListOfArgsWithTransientCounter) => x.tag shouldBe s"t${x.id}")
     }
     "generate codecs for case classes with multiple parameter lists in a primary constructor with depended default values when the requireDefaultFields is on" in {
       case class MultiListOfArgs(i: Int = 1)(val l: Long = i - 1)(var s: String = l.toString)
