@@ -4395,6 +4395,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       reader("9223372036854775808").readNumber(null) shouldBe new java.math.BigInteger("9223372036854775808")
       reader("-9223372036854775809").readNumber(null) shouldBe new java.math.BigInteger("-9223372036854775809")
+      reader("-9223372036854775808").readNumber(null) shouldBe java.lang.Long.valueOf(-9223372036854775808L)
+      reader(""""-9223372036854775808":""").readKeyAsNumber() shouldBe java.lang.Long.valueOf(-9223372036854775808L)
+      reader(""""-9223372036854775808"""").readStringAsNumber(null) shouldBe java.lang.Long.valueOf(-9223372036854775808L)
+      reader("-9223372036854775807").readNumber(null) shouldBe java.lang.Long.valueOf(-9223372036854775807L)
+      reader(""""-0000000000000000000":""").readKeyAsNumber() shouldBe java.lang.Long.valueOf(0L)
+      reader(""""-0000000000000000000"""").readStringAsNumber(null) shouldBe java.lang.Long.valueOf(0L)
       reader(""""9223372036854775807":""").readKeyAsNumber() shouldBe a[java.lang.Long]
       reader(""""9223372036854775807":""").readKeyAsNumber() shouldBe java.lang.Long.valueOf(9223372036854775807L)
       reader(""""9223372036854775808":""").readKeyAsNumber() shouldBe new java.math.BigInteger("9223372036854775808")
