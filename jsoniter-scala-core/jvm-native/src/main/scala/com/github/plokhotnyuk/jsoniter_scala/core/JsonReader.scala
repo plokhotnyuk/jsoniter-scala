@@ -2026,6 +2026,7 @@ final class JsonReader private[jsoniter_scala](
     k.set(((hash >> 32) ^ hash).toInt, buf, from, pos)
     var zoneId = zoneIds.get(k)
     if (zoneId eq null) zoneId = toZoneId(k, pos + 1)
+    k.clear() // to avoid retaining of the parsed buffer by the reused key
     head = pos
     zoneId
   }
@@ -2220,6 +2221,7 @@ final class JsonReader private[jsoniter_scala](
       k.set(((hash >> 32) ^ hash).toInt, buf, from, pos - 1)
       var zoneId = zoneIds.get(k)
       if (zoneId eq null) zoneId = toZoneId(k, pos)
+      k.clear() // to avoid retaining of the parsed buffer by the reused key
       head = pos
       ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
     }
@@ -3193,6 +3195,7 @@ final class JsonReader private[jsoniter_scala](
     k.set(((hash >> 32) ^ hash).toInt, buf, from, pos - 1)
     var zoneId = zoneIds.get(k)
     if (zoneId eq null) zoneId = toZoneId(k, pos)
+    k.clear() // to avoid retaining of the parsed buffer by the reused key
     head = pos
     zoneId
   }
@@ -5453,6 +5456,7 @@ final class JsonReader private[jsoniter_scala](
       k.set(((hash >> 32) ^ hash).toInt, buf, from, pos - 1)
       var zoneId = zoneIds.get(k)
       if (zoneId eq null) zoneId = toZoneId(k, pos)
+      k.clear() // to avoid retaining of the parsed buffer by the reused key
       if (pos >= tail) {
         pos = loadMoreOrError(pos)
         buf = this.buf
@@ -5474,7 +5478,9 @@ final class JsonReader private[jsoniter_scala](
       }
       return zoneId
     } catch {
-      case ex: DateTimeException => timezoneError(ex, pos)
+      case ex: DateTimeException =>
+        k.clear()
+        timezoneError(ex, pos)
     }
 
   private[this] def parseZoneOffset(): ZoneOffset = {
@@ -6924,6 +6930,9 @@ private class Key {
     this.from = from
     this.to = to
   }
+
+  @inline
+  def clear(): Unit = bs = null
 
   @inline
   def copy: Key = {
