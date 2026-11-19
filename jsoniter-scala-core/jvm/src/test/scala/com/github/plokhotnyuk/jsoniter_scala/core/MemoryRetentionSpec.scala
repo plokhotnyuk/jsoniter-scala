@@ -135,7 +135,7 @@ class MemoryRetentionSpec extends AnyWordSpec {
     key("readKeyAsBigInt with digits limit", "\"12345678901234567890\"", BigInt("12345678901234567890"))(_.readKeyAsBigInt(100)),
     key("readKeyAsBigDecimal", "\"1.5\"", BigDecimal("1.5"))(_.readKeyAsBigDecimal()),
     key("readKeyAsBigDecimal with limits", "\"1.5\"", BigDecimal("1.5"))(_.readKeyAsBigDecimal(MathContext.UNLIMITED, 6178, 308)),
-    key("readKeyAsNumber", "\"1.5\"", BigDecimal("1.5"))(_.readKeyAsNumber()),
+    key("readKeyAsNumber", "\"1.5\"", new java.math.BigDecimal("1.5"))(_.readKeyAsNumber()),
     key("readKeyAsNumber with limits", "\"1.5\"", new java.math.BigDecimal("1.5"))(_.readKeyAsNumber(MathContext.UNLIMITED, 6178, 308)),
     key("readKeyAsUUID", "\"00000000-0000-0001-0000-000000000002\"", new UUID(1, 2))(_.readKeyAsUUID())) ++
     timeValues.flatMap { case (tpe, s, expected, readValue, readKey, readBytes) =>
