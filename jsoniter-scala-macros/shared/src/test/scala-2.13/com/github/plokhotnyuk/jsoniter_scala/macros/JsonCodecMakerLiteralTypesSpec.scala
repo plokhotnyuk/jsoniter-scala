@@ -64,6 +64,11 @@ class JsonCodecMakerLiteralTypesSpec extends VerifyingSpec {
     }
     "throw parse exception with expected value in case of illegal input" in {
       verifyDeserError(make["VVV"], "\"XXX\"", "expected value: \"VVV\", offset: 0x00000004")
+      verifyDeserError(make["VVV"], "\"VV\"", "expected value: \"VVV\", offset: 0x00000003")
+      verifyDeserError(make["VVV"], "\"VVVV\"", "expected value: \"VVV\", offset: 0x00000005")
+      verifyDeserError(make["VVV"], "null", "expected '\"', offset: 0x00000000")
+      verifyDeser(make["VVV"], "VVV", "\"\\u0056VV\"")
+      verifyDeser(make["ВВВ"], "ВВВ", "\"ВВВ\"")
       verifyDeserError(make[true], "false", "expected value: true, offset: 0x00000004")
       verifyDeserError(make['1'], "\"0\"", "expected value: \"1\", offset: 0x00000002")
       verifyDeserError(make[2], "0", "expected value: 2, offset: 0x00000000")
@@ -82,6 +87,11 @@ class JsonCodecMakerLiteralTypesSpec extends VerifyingSpec {
     }
     "throw parse exception with expected key in case of illegal input" in {
       verifyDeserError(make[Map["VVV", Int]], "{\"XXX\":0}", "expected key: \"VVV\", offset: 0x00000006")
+      verifyDeserError(make[Map["VVV", Int]], "{\"VV\":0}", "expected key: \"VVV\", offset: 0x00000005")
+      verifyDeserError(make[Map["VVV", Int]], "{\"VVVV\":0}", "expected key: \"VVV\", offset: 0x00000007")
+      verifyDeserError(make[Map["ВВВ", Int]], "{\"XXX\":0}", "expected key: \"ВВВ\", offset: 0x00000006")
+      verifyDeser(make[Map["VVV", Int]], Map["VVV", Int](("VVV", 0)), "{\"\\u0056VV\":0}")
+      verifyDeser(make[Map["ВВВ", Int]], Map["ВВВ", Int](("ВВВ", 0)), "{\"ВВВ\":0}")
       verifyDeserError(make[Map[true, Int]], "{\"false\":0}", "expected key: \"true\", offset: 0x00000008")
       verifyDeserError(make[Map['1', Int]], "{\"0\":0}", "expected key: \"1\", offset: 0x00000004")
       verifyDeserError(make[Map[2, Int]], "{\"0\":0}", "expected key: \"2\", offset: 0x00000004")

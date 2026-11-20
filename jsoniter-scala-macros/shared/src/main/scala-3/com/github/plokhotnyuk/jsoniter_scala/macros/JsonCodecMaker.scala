@@ -1924,6 +1924,13 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     subTypes.toList
   }
 
+  private def genIsExpectedKey(in: Expr[JsonReader], name: String)(using Quotes): Expr[Boolean] =
+    if (isEncodingRequired(name)) '{ $in.isCharBufEqualsTo($in.readKeyAsCharBuf(), ${Expr(name)}) }
+    else '{ // Fast path: match non-escaped bytes of the key without parsing it to the char buffer
+      val l = $in.readKeyAsCharBufOrNonEscapedAsciiMatch(${Expr(name)})
+      l < 0 || $in.isCharBufEqualsTo(l, ${Expr(name)})
+    }
+
   private def genReadKey[T: Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] = {
     val tpe = types.head
     val implKeyCodec = findImplicitKeyCodec(tpe)
@@ -1991,7 +1998,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     } else if (isConstType(tpe)) {
       tpe match
         case ConstantType(StringConstant(v)) =>
-          '{ if ($in.readKeyAsString() != ${Expr(v)}) $in.decodeError(${Expr(s"expected key: \"$v\"")}); ${Expr(v)} }
+          '{ if (!${genIsExpectedKey(in, v)}) $in.decodeError(${Expr(s"expected key: \"$v\"")}); ${Expr(v)} }
         case ConstantType(BooleanConstant(v)) =>
           '{ if ($in.readKeyAsBoolean() != ${Expr(v)}) $in.decodeError(${Expr(s"expected key: \"$v\"")}); ${Expr(v)} }
         case ConstantType(ByteConstant(v)) =>
@@ -2959,13 +2966,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           if (cfg.requireDiscriminatorFirst) '{
             ${setMark}
             if ($in.isNextToken('{')) {
-              if (${
-                if (isEncodingRequired(discrFieldName)) '{ $in.isCharBufEqualsTo($in.readKeyAsCharBuf(), ${Expr(discrFieldName)}) }
-                else '{ // Fast path: match non-escaped bytes of the key without parsing it to the char buffer
-                  val k = $in.readKeyAsCharBufOrNonEscapedAsciiMatch(${Expr(discrFieldName)})
-                  k < 0 || $in.isCharBufEqualsTo(k, ${Expr(discrFieldName)})
-                }
-              }) {
+              if (${genIsExpectedKey(in, discrFieldName)}) {
                 val l = $in.readStringAsCharBuf()
                 ${genReadSubclassesBlock(objClasses, 'l, true)}
               } else $in.decodeError(${Expr("expected key: \"" + discrFieldName + '"')})
@@ -3399,7 +3400,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private def genReadConstType[T: Type](tpe: TypeRepr, isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] = {
     tpe match
       case ConstantType(StringConstant(v)) =>
-        '{ if ($in.readString(null) != ${Expr(v)}) $in.decodeError(${Expr(s"expected value: \"$v\"")}); ${Expr(v)} }
+        '{ if (!$in.isCharBufEqualsTo($in.readStringAsCharBuf(), ${Expr(v)})) $in.decodeError(${Expr(s"expected value: \"$v\"")}); ${Expr(v)} }
       case ConstantType(BooleanConstant(v)) =>
         if (isStringified)
           '{ if ($in.readStringAsBoolean() != ${Expr(v)}) $in.decodeError(${Expr(s"expected value: \"$v\"")}); ${Expr(v)} }
