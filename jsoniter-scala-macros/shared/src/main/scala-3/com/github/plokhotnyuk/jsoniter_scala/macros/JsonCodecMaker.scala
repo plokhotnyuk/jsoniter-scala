@@ -2754,6 +2754,10 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
 
   private def withDecoderFor[T: Type](refKey: DecoderMethodKey, arg: Expr[T], in: Expr[JsonReader])
                                      (f: (Expr[JsonReader], Expr[T]) => Expr[T]): Expr[T] =
+    withDecoderMethodFor(refKey, arg, in)((in, default, _) => f(in, default))
+
+  private def withDecoderMethodFor[T: Type](refKey: DecoderMethodKey, arg: Expr[T], in: Expr[JsonReader])
+                                           (f: (Expr[JsonReader], Expr[T], Symbol) => Expr[T]): Expr[T] =
     Apply(refs.getOrElse(refKey, {
       val sym = Symbol.newMethod(localDefsOwner, s"d${refs.size}",
         MethodType("in" :: "default" :: Nil)(_ => jsonReaderTpe :: refKey.tpe :: Nil, _ => refKey.tpe))
@@ -2761,7 +2765,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       refs.update(refKey, ref)
       decoderDefs.addOne(DefDef(sym, params => {
         val List(in, default) = params.head
-        new Some(f(in.asExpr.asInstanceOf[Expr[JsonReader]], default.asExpr.asInstanceOf[Expr[T]]).asTerm.changeOwner(sym))
+        new Some(f(in.asExpr.asInstanceOf[Expr[JsonReader]], default.asExpr.asInstanceOf[Expr[T]], sym).asTerm.changeOwner(sym))
       }))
       ref
     }), in.asTerm :: arg.asTerm :: Nil).asExpr.asInstanceOf[Expr[T]]
@@ -2858,7 +2862,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   }.asInstanceOf[Expr[T]]
 
   private def genReadSealedClass[T: Type](types: List[TypeRepr], in: Expr[JsonReader], default: Expr[T],
-                                          isStringified: Boolean)(using Quotes): Expr[T] = {
+                                          isStringified: Boolean, method: Symbol)(using Quotes): Expr[T] = {
     val tpe = types.head
     val leafClasses = adtLeafClasses(tpe)
     val currentDiscriminator = cfg.discriminatorFieldName
@@ -2874,21 +2878,35 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         genReadVal(allTypes, genNullValue[T](allTypes), isStringified, useDiscriminator, in)
       }
 
+    def genReadSubclass[st: Type](subTpe: TypeRepr)(using Quotes): Expr[st] =
+      if (currentDiscriminator.isDefined) '{
+        $in.rollbackToMark()
+        ${genReadLeafClass[st](subTpe)}
+      } else if (!cfg.circeLikeObjectEncoding && isEnumOrModuleValue(subTpe)) enumOrModuleValueRef(subTpe).asExpr.asInstanceOf[Expr[st]]
+      else genReadLeafClass[st](subTpe)
+
     def genReadCollisions(subTpes: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Expr[T] =
       subTpes.foldRight(discriminatorError.asInstanceOf[Expr[T]]) { (subTpe, acc) =>
         subTpe.asType match
           case '[st] => '{
-            if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) ${
-              if (currentDiscriminator.isDefined) '{
-                $in.rollbackToMark()
-                ${genReadLeafClass[st](subTpe)}
-              } else if (!cfg.circeLikeObjectEncoding && isEnumOrModuleValue(subTpe)) enumOrModuleValueRef(subTpe).asExpr
-              else genReadLeafClass[st](subTpe)
-            } else $acc
+            if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) ${genReadSubclass[st](subTpe)}
+            else $acc
           }.asInstanceOf[Expr[T]]
       }
 
-    def genReadSubclassesBlock(leafClasses: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Expr[T] =
+    def genReadCollisionsWithReturn(subTpes: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Expr[Unit] =
+      subTpes.map { subTpe =>
+        subTpe.asType match
+          case '[st] => '{
+            if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) ${
+              Return(genReadSubclass[st](subTpe).asTerm, method).asExpr
+            }
+          }.asInstanceOf[Expr[Unit]]
+      }.reduceLeft((acc, x) => '{ $acc; $x })
+
+    // When `useReturn` is `true` successfully parsed values are returned from the enclosing decoding method, so the
+    // discriminator error is thrown only once after the switch
+    def genReadSubclassesBlock(leafClasses: collection.Seq[TypeRepr], l: Expr[Int], useReturn: Boolean)(using Quotes): Expr[T] =
       if (leafClasses.size <= 8 && leafClasses.foldLeft(0)(_ + discriminatorValue(_).length) <= 64) {
         genReadCollisions(leafClasses, l)
       } else {
@@ -2896,12 +2914,22 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           val cs = discriminatorValue(t).toCharArray
           JsonReader.toHashCode(cs, cs.length)
         }
-        val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
-          CaseDef(Literal(IntConstant(hash)), None, genReadCollisions(ts, l).asTerm)
-        }
-        val lastCase = CaseDef(Wildcard(), None, discriminatorError.asTerm)
         val scrutinee = '{ $in.charBufToHashCode($l): @scala.annotation.switch }.asTerm
-        Match(scrutinee, (cases :+ lastCase).toList).asExpr.asInstanceOf[Expr[T]]
+        val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
+          val checkNameAndReadValue = if (useReturn) genReadCollisionsWithReturn(ts, l) else genReadCollisions(ts, l)
+          CaseDef(Literal(IntConstant(hash)), None, checkNameAndReadValue.asTerm)
+        }
+        if (useReturn) {
+          val lastCase = CaseDef(Wildcard(), None, '{ () }.asTerm)
+          val switch = Match(scrutinee, (cases :+ lastCase).toList).asExpr.asInstanceOf[Expr[Unit]]
+          '{
+            $switch
+            $discriminatorError
+          }.asInstanceOf[Expr[T]]
+        } else {
+          val lastCase = CaseDef(Wildcard(), None, discriminatorError.asTerm)
+          Match(scrutinee, (cases :+ lastCase).toList).asExpr.asInstanceOf[Expr[T]]
+        }
       }
 
     def genReadJsObjClass(objClasses: Seq[TypeRepr], useCurrentToken: Boolean)(using Quotes): Expr[T] = {
@@ -2919,7 +2947,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         case None => '{
           if (${checkToken}) {
             val l = $in.readKeyAsCharBuf()
-            val r = ${genReadSubclassesBlock(objClasses, 'l)}
+            val r = ${genReadSubclassesBlock(objClasses, 'l, false)}
             if ($in.isNextToken('}')) r
             else $in.objectEndOrCommaError()
           } else $in.readNullOrError($default, {
@@ -2931,9 +2959,15 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           if (cfg.requireDiscriminatorFirst) '{
             ${setMark}
             if ($in.isNextToken('{')) {
-              if ($in.isCharBufEqualsTo($in.readKeyAsCharBuf(), ${Expr(discrFieldName)})) {
+              if (${
+                if (isEncodingRequired(discrFieldName)) '{ $in.isCharBufEqualsTo($in.readKeyAsCharBuf(), ${Expr(discrFieldName)}) }
+                else '{ // Fast path: match non-escaped bytes of the key without parsing it to the char buffer
+                  val k = $in.readKeyAsCharBufOrNonEscapedAsciiMatch(${Expr(discrFieldName)})
+                  k < 0 || $in.isCharBufEqualsTo(k, ${Expr(discrFieldName)})
+                }
+              }) {
                 val l = $in.readStringAsCharBuf()
-                ${genReadSubclassesBlock(objClasses, 'l)}
+                ${genReadSubclassesBlock(objClasses, 'l, true)}
               } else $in.decodeError(${Expr("expected key: \"" + discrFieldName + '"')})
             } else {
               $in.resetMark()
@@ -2944,7 +2978,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             if ($in.isNextToken('{')) {
               if ($in.skipToKey(${Expr(discrFieldName)})) {
                 val l = $in.readStringAsCharBuf()
-                ${genReadSubclassesBlock(objClasses, 'l)}
+                ${genReadSubclassesBlock(objClasses, 'l, true)}
               } else $in.requiredFieldError(${Expr(discrFieldName)})
             } else {
               $in.resetMark()
@@ -2961,7 +2995,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
           if ($in.isNextToken('"')) {
             $in.rollbackToken()
             val l = $in.readStringAsCharBuf()
-            ${genReadSubclassesBlock(leafModuleClasses, 'l)}
+            ${genReadSubclassesBlock(leafModuleClasses, 'l, true)}
           } else ${genReadJsObjClass(leafCaseClasses, true)}
         }.asInstanceOf[Expr[T]]
       } else if (leafCaseClasses.nonEmpty) genReadJsObjClass(leafCaseClasses, false)
@@ -2969,7 +3003,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         if ($in.isNextToken('"')) {
           $in.rollbackToken()
           val l = $in.readStringAsCharBuf()
-          ${genReadSubclassesBlock(leafModuleClasses, 'l)}
+          ${genReadSubclassesBlock(leafModuleClasses, 'l, true)}
         } else $in.readNullOrTokenError($default, '"')
       }.asInstanceOf[Expr[T]]
     } else genReadJsObjClass(leafClasses, false)
@@ -3868,8 +3902,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
             ${enumOrModuleValueRef(tpe).asExpr}
           } else $in.readNullOrTokenError($default, '{')
         }.asInstanceOf[Expr[T]]
-      } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
-        genReadSealedClass(types, in, default, isStringified)
+      } else if (isSealedClass(tpe)) withDecoderMethodFor(methodKey, default, in) { (in, default, method) =>
+        genReadSealedClass(types, in, default, isStringified, method)
       } else if (isNonAbstractScalaClass(tpe)) {
         // Skip discriminators that are serialized for ADT leaf classes when `alwaysEmitDiscriminator` is turned on
         val useDiscr = useDiscriminator || cfg.alwaysEmitDiscriminator && hasSealedParent(tpe)
