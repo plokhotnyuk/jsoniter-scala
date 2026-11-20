@@ -1618,7 +1618,13 @@ object JsonCodecMaker {
         } else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(v: String)) =>
-              q"""if (in.readKeyAsString() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+              val isExpectedKey =
+                if (isEncodingRequired(v)) q"in.isCharBufEqualsTo(in.readKeyAsCharBuf(), $v)"
+                else { // Fast path: match non-escaped bytes of the key without parsing it to the char buffer
+                  q"""val l = in.readKeyAsCharBufOrNonEscapedAsciiMatch($v)
+                      l < 0 || in.isCharBufEqualsTo(l, $v)"""
+                }
+              q"""if (!{ $isExpectedKey }) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
             case ConstantType(Constant(v: Boolean)) =>
               q"""if (in.readKeyAsBoolean() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
             case ConstantType(Constant(v: Byte)) =>
@@ -2622,7 +2628,7 @@ object JsonCodecMaker {
 
         tpe match {
         case ConstantType(Constant(v: String)) =>
-          q"""if (in.readString(null) != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          q"""if (!in.isCharBufEqualsTo(in.readStringAsCharBuf(), $v)) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
         case ConstantType(Constant(v: Boolean)) =>
           if (isStringified) q"""if (in.readStringAsBoolean() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
           else q"""if (in.readBoolean() != $v) in.decodeError(${s"expected value: $v"}); $v"""

@@ -1988,7 +1988,13 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     } else if (isConstType(tpe)) {
       tpe match
         case ConstantType(StringConstant(v)) =>
-          '{ if ($in.readKeyAsString() != ${Expr(v)}) $in.decodeError(${Expr(s"expected key: \"$v\"")}); ${Expr(v)} }
+          val isExpectedKey =
+            if (isEncodingRequired(v)) '{ $in.isCharBufEqualsTo($in.readKeyAsCharBuf(), ${Expr(v)}) }
+            else '{ // Fast path: match non-escaped bytes of the key without parsing it to the char buffer
+              val l = $in.readKeyAsCharBufOrNonEscapedAsciiMatch(${Expr(v)})
+              l < 0 || $in.isCharBufEqualsTo(l, ${Expr(v)})
+            }
+          '{ if (!$isExpectedKey) $in.decodeError(${Expr(s"expected key: \"$v\"")}); ${Expr(v)} }
         case ConstantType(BooleanConstant(v)) =>
           '{ if ($in.readKeyAsBoolean() != ${Expr(v)}) $in.decodeError(${Expr(s"expected key: \"$v\"")}); ${Expr(v)} }
         case ConstantType(ByteConstant(v)) =>
@@ -3401,7 +3407,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private def genReadConstType[T: Type](tpe: TypeRepr, isStringified: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] = {
     tpe match
       case ConstantType(StringConstant(v)) =>
-        '{ if ($in.readString(null) != ${Expr(v)}) $in.decodeError(${Expr(s"expected value: \"$v\"")}); ${Expr(v)} }
+        '{ if (!$in.isCharBufEqualsTo($in.readStringAsCharBuf(), ${Expr(v)})) $in.decodeError(${Expr(s"expected value: \"$v\"")}); ${Expr(v)} }
       case ConstantType(BooleanConstant(v)) =>
         if (isStringified)
           '{ if ($in.readStringAsBoolean() != ${Expr(v)}) $in.decodeError(${Expr(s"expected value: \"$v\"")}); ${Expr(v)} }
