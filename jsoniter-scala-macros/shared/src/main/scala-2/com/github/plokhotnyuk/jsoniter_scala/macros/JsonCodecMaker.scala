@@ -886,7 +886,8 @@ object JsonCodecMaker {
 
       sealed trait TermNameKey
 
-      case class DecoderMethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree) extends TermNameKey
+      case class DecoderMethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree,
+                                  isDiscriminatorRead: Boolean = false) extends TermNameKey
 
       case class EncoderMethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree) extends TermNameKey
 
@@ -2285,7 +2286,7 @@ object JsonCodecMaker {
         else q"null.asInstanceOf[$tpe]"
       }
 
-      def genReadNonAbstractScalaClass(types: List[Type], discriminator: Tree): Tree = {
+      def genReadNonAbstractScalaClass(types: List[Type], discriminator: Tree, isDiscriminatorRead: Boolean = false): Tree = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
         val fields = classInfo.fields
@@ -2483,46 +2484,65 @@ object JsonCodecMaker {
                 case ..$cases
               }"""
         }
-        // Keys are expected in the order of writing: the discriminator (the last in the array) first, then fields in the
-        // order of definition. The next expected key after the last one is the first key, so that `i` is always a valid
-        // index of the expected key
-        val readFieldsLoop = {
-          val next =
-            q"""i += 1
-                if (i >= ${readFields.size}) i -= ${readFields.size}"""
-          q"""var i = -1
-              while (i < 0 || in.isNextToken(',')) {
-                ${
-                  // The discriminator key at the last index is expected first
-                  if (readFields.size > paramVarNum) q"if (i < 0) i = $paramVarNum else { ..$next }"
-                  else q"{ ..$next }"
-                }
-                val l = ${
-                  if (isMatchedByBytes) q"in.readKeyAsCharBufOrNonEscapedAsciiMatch(ns(i))"
-                  else q"in.readKeyAsCharBuf()"
-                }
-                val s = i
-                $findFieldIndex
-                $readFields_
-              }"""
-        }
+        val next =
+          q"""i += 1
+              if (i >= ${readFields.size}) i -= ${readFields.size}"""
+        val readField =
+          q"""val l = ${
+                if (isMatchedByBytes) q"in.readKeyAsCharBufOrNonEscapedAsciiMatch(ns(i))"
+                else q"in.readKeyAsCharBuf()"
+              }
+              val s = i
+              $findFieldIndex
+              $readFields_"""
         val discriminatorVar =
           if (discriminator.isEmpty || !cfg.checkFieldDuplication) EmptyTree
-          else q"var pd = true"
-        q"""if (in.isNextToken('{')) {
-              $nsVal
+          else q"var pd = ${!isDiscriminatorRead}"
+        if (isDiscriminatorRead) {
+          // The opening brace and the discriminator key and value are already parsed, so the discriminator (the last
+          // in the array) is the current key and the first field is expected next
+          q"""$nsVal
               ..$readVars
               ..$paramVars
               ..$discriminatorVar
-              if (!in.isNextToken('}')) {
-                in.rollbackToken()
-                $readFieldsLoop
-                if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
+              var i = $paramVarNum
+              while (in.isNextToken(',')) {
+                ..$next
+                ..$readField
               }
+              if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
               ..$checkReqVars
               ..${setDependentDefaultValues.toList}
-              $construct
-            } else in.readNullOrTokenError(default, '{')"""
+              $construct"""
+        } else {
+          // Keys are expected in the order of writing: the discriminator (the last in the array) first, then fields in
+          // the order of definition. The next expected key after the last one is the first key, so that `i` is always a
+          // valid index of the expected key
+          val readFieldsLoop =
+            q"""var i = -1
+                while (i < 0 || in.isNextToken(',')) {
+                  ${
+                    // The discriminator key at the last index is expected first
+                    if (readFields.size > paramVarNum) q"if (i < 0) i = $paramVarNum else { ..$next }"
+                    else q"{ ..$next }"
+                  }
+                  ..$readField
+                }"""
+          q"""if (in.isNextToken('{')) {
+                $nsVal
+                ..$readVars
+                ..$paramVars
+                ..$discriminatorVar
+                if (!in.isNextToken('}')) {
+                  in.rollbackToken()
+                  $readFieldsLoop
+                  if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
+                }
+                ..$checkReqVars
+                ..${setDependentDefaultValues.toList}
+                $construct
+              } else in.readNullOrTokenError(default, '{')"""
+        }
       }
 
       def genReadNumber(isStringified: Boolean, readString: Tree, readNumber: Tree): Tree =
@@ -2947,12 +2967,33 @@ object JsonCodecMaker {
                 genReadVal(allTypes, genNullValue(allTypes), isStringified, skipDiscriminatorField)
               }
 
+            // Leaf classes that are decoded by generated codecs continue parsing after the discriminator that is
+            // required to be the first key, others are decoded from the start of the JSON object
+            def isReadableAfterDiscriminator(subTpe: Type): Boolean = cfg.requireDiscriminatorFirst &&
+              !subTpe.typeSymbol.isModuleClass && !isCollection(subTpe) && findImplicitValueCodec(subTpe).isEmpty
+
+            def genReadLeafClassAfterDiscriminator(subTpe: Type): Tree =
+              if (subTpe =:= tpe) genReadNonAbstractScalaClass(types, skipDiscriminatorField, isDiscriminatorRead = true)
+              else {
+                val allTypes = subTpe :: types
+                checkRecursionInTypes(allTypes)
+                withDecoderFor(new DecoderMethodKey(subTpe, false, skipDiscriminatorField, isDiscriminatorRead = true),
+                  genNullValue(allTypes)) {
+                  genReadNonAbstractScalaClass(allTypes, skipDiscriminatorField, isDiscriminatorRead = true)
+                }
+              }
+
             def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
               subTpes.foldRight(discriminatorError) { (subTpe, acc) =>
                 val readVal =
                   if (cfg.discriminatorFieldName.isDefined) {
-                    q"""in.rollbackToMark()
-                        ..${genReadLeafClass(subTpe)}"""
+                    if (isReadableAfterDiscriminator(subTpe)) {
+                      q"""in.resetMark()
+                          ..${genReadLeafClassAfterDiscriminator(subTpe)}"""
+                    } else {
+                      q"""in.rollbackToMark()
+                          ..${genReadLeafClass(subTpe)}"""
+                    }
                   } else if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
                     q"${subTpe.typeSymbol.asClass.module}"
                   } else genReadLeafClass(subTpe)

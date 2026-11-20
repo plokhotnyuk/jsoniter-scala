@@ -912,7 +912,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
 
   private sealed trait RefKey
 
-  private case class DecoderMethodKey(tpe: TypeRepr, isStringified: Boolean, useDiscriminator: Boolean) extends RefKey
+  private case class DecoderMethodKey(tpe: TypeRepr, isStringified: Boolean, useDiscriminator: Boolean,
+                                      isDiscriminatorRead: Boolean = false) extends RefKey
 
   private case class EncoderMethodKey(tpe: TypeRepr, isStringified: Boolean, optWriteDiscriminator: Option[WriteDiscriminator]) extends RefKey
 
@@ -2650,6 +2651,11 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       ref
     }).asExpr.asInstanceOf[Expr[T]]
 
+  // Empty values of immutable collections are shared, others are created for each usage
+  private def withImmutableNullValueFor[T: Type](tpe: TypeRepr)(f: => Expr[T]): Expr[T] =
+    if (tpe <:< TypeRepr.of[immutable.Iterable[?]]) withNullValueFor(tpe)(f)
+    else f
+
   private def withEqualsFor[T: Type](refKey: EqualsMethodKey, arg1: Expr[T], arg2: Expr[T])
                                     (f: (Expr[T], Expr[T]) => Expr[Boolean]): Expr[Boolean] =
     Apply(refs.getOrElse(refKey, {
@@ -2810,19 +2816,25 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       else if (isNonEmptyList(tpe)) '{ null.asInstanceOf[T] }
       else if (tpe <:< TypeRepr.of[List[?]] || tpe.typeSymbol == TypeRepr.of[Seq[?]].typeSymbol) '{ Nil }
       else if (tpe <:< TypeRepr.of[collection.SortedSet[?]] || tpe <:< TypeRepr.of[mutable.PriorityQueue[?]]) {
-        val tpe1 = typeArg1(tpe)
-        Apply(scalaCollectionEmpty(tpe, tpe1), List(summonOrdering(tpe1))).asExpr
+        withImmutableNullValueFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaCollectionEmpty(tpe, tpe1), List(summonOrdering(tpe1))).asExpr
+        }
       } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[?]] || tpe <:< TypeRepr.of[immutable.ArraySeq[?]] ||
           tpe <:< TypeRepr.of[mutable.UnrolledBuffer[?]]) {
-        val tpe1 = typeArg1(tpe)
-        Apply(scalaCollectionEmpty(tpe, tpe1), List(summonClassTag(tpe1))).asExpr
+        withImmutableNullValueFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaCollectionEmpty(tpe, tpe1), List(summonClassTag(tpe1))).asExpr
+        }
       } else if (tpe <:< TypeRepr.of[immutable.IntMap[?]] || tpe <:< TypeRepr.of[immutable.LongMap[?]] ||
           tpe <:< TypeRepr.of[immutable.Seq[?]] || tpe <:< TypeRepr.of[immutable.Set[?]]) withNullValueFor(tpe) {
         scalaCollectionEmpty(tpe, typeArg1(tpe)).asExpr
       } else if (tpe <:< TypeRepr.of[mutable.LongMap[?]]) scalaCollectionEmpty(tpe, typeArg1(tpe)).asExpr
       else if (tpe <:< TypeRepr.of[collection.SortedMap[?, ?]] || tpe <:< TypeRepr.of[mutable.CollisionProofHashMap[?, ?]]) {
-        val tpe1 = typeArg1(tpe)
-        Apply(scalaMapEmpty(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExpr
+        withImmutableNullValueFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          Apply(scalaMapEmpty(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExpr
+        }
       } else if (tpe <:< TypeRepr.of[immutable.TreeSeqMap[?, ?]]) withNullValueFor(tpe) {
         typeArg1(tpe).asType match { case '[t1] =>
           typeArg2(tpe).asType match { case '[t2] => '{ immutable.TreeSeqMap.empty[t1, t2] } }
@@ -2863,14 +2875,35 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
         genReadVal(allTypes, genNullValue[T](allTypes), isStringified, useDiscriminator, in)
       }
 
+    // Leaf classes that are decoded by generated codecs continue parsing after the discriminator that is required to be
+    // the first key, others are decoded from the start of the JSON object
+    def isReadableAfterDiscriminator(subTpe: TypeRepr): Boolean = cfg.requireDiscriminatorFirst &&
+      !isEnumOrModuleValue(subTpe) && !isCollection(subTpe) && findImplicitValueCodec(subTpe).isEmpty
+
+    def genReadLeafClassAfterDiscriminator[T: Type](subTpe: TypeRepr)(using Quotes): Expr[T] =
+      if (subTpe =:= tpe) {
+        genReadNonAbstractScalaClass(getClassInfo(tpe), types, true, in, genNullValue[T](types), isDiscriminatorRead = true)
+      } else {
+        val allTypes = subTpe :: types
+        checkRecursionInTypes(allTypes)
+        withDecoderFor(new DecoderMethodKey(subTpe, false, true, isDiscriminatorRead = true), genNullValue[T](allTypes), in) {
+          (in, default) => genReadNonAbstractScalaClass(getClassInfo(subTpe), allTypes, true, in, default, isDiscriminatorRead = true)
+        }
+      }
+
     def genReadCollisions(subTpes: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Expr[T] =
       subTpes.foldRight(discriminatorError.asInstanceOf[Expr[T]]) { (subTpe, acc) =>
         subTpe.asType match
           case '[st] => '{
             if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) ${
-              if (currentDiscriminator.isDefined) '{
-                $in.rollbackToMark()
-                ${genReadLeafClass[st](subTpe)}
+              if (currentDiscriminator.isDefined) {
+                if (isReadableAfterDiscriminator(subTpe)) '{
+                  $in.resetMark()
+                  ${genReadLeafClassAfterDiscriminator[st](subTpe)}
+                } else '{
+                  $in.rollbackToMark()
+                  ${genReadLeafClass[st](subTpe)}
+                }
               } else if (!cfg.circeLikeObjectEncoding && isEnumOrModuleValue(subTpe)) enumOrModuleValueRef(subTpe).asExpr
               else genReadLeafClass[st](subTpe)
             } else $acc
@@ -2965,7 +2998,8 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   }
 
   private def genReadNonAbstractScalaClass[T: Type](typeInfo: ParametrizedTypeInfo, types: List[TypeRepr], useDiscriminator: Boolean,
-                                                    in: Expr[JsonReader], default: Expr[T])(using Quotes): Expr[T] = {
+                                                    in: Expr[JsonReader], default: Expr[T],
+                                                    isDiscriminatorRead: Boolean = false)(using Quotes): Expr[T] = {
     val tpe = types.head
     val fields = typeInfo.fields
     val mappedNames = fields.map(_.mappedName)
@@ -3087,7 +3121,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       if (useDiscriminator && cfg.discriminatorFieldName.isDefined) {
         new Some(new ReadDiscriminator(
           if (cfg.checkFieldDuplication) {
-            val valDef = ValDef(symbol("pd", booleanTpe, Flags.Mutable), new Some(Literal(BooleanConstant(true))))
+            val valDef = ValDef(symbol("pd", booleanTpe, Flags.Mutable), new Some(Literal(BooleanConstant(!isDiscriminatorRead))))
             readBlock.addOne(valDef)
             new Some(Ref(valDef.symbol))
           } else None
@@ -3213,41 +3247,63 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       }
     }
 
-    // Keys are expected in the order of writing: the discriminator (the last in the array) first, then fields in the order
-    // of definition. The next expected key after the last one is the first key, so that `i` is always a valid index of
-    // the expected key
     val num = Expr(readFields.size)
-    If('{ $in.isNextToken('{') }.asTerm,
+
+    def genNext(i: Expr[Int])(using Quotes): Expr[Unit] = '{
+      ${Assign(i.asTerm, '{ $i + 1 }.asTerm).asExpr.asInstanceOf[Expr[Unit]]}
+      if ($i >= $num) ${Assign(i.asTerm, '{ $i - $num }.asTerm).asExpr.asInstanceOf[Expr[Unit]]}
+    }
+
+    def genReadField(i: Expr[Int])(using Quotes): Expr[Unit] = '{
+      val l = ${
+        if (isMatchedByBytes) '{ $in.readKeyAsCharBufOrNonEscapedAsciiMatch($ns($i)) }
+        else '{ $in.readKeyAsCharBuf() }
+      }
+      val s = $i
+      ${genFindFieldIndex('l, i, 's)}
+      ${genReadFields('l, i, 's)}
+    }
+
+    if (isDiscriminatorRead) {
+      // The opening brace and the discriminator key and value are already parsed, so the discriminator (the last in the
+      // array) is the current key and the first field is expected next
       Block(readBlock.addOne({
         '{
-          if (!$in.isNextToken('}')) {
-            $in.rollbackToken()
-            var i = -1
-            while (i < 0 || $in.isNextToken(',')) {
-              ${
-                val next = '{
-                  i += 1
-                  if (i >= $num) i -= $num
-                }
-                // The discriminator key at the last index is expected first
-                if (readFields.size > paramVarNum) '{
-                  if (i < 0) i = ${Expr(paramVarNum)}
-                  else $next
-                } else next
-              }
-              val l = ${
-                if (isMatchedByBytes) '{ $in.readKeyAsCharBufOrNonEscapedAsciiMatch($ns(i)) }
-                else '{ $in.readKeyAsCharBuf() }
-              }
-              val s = i
-              ${genFindFieldIndex('l, 'i, 's)}
-              ${genReadFields('l, 'i, 's)}
-            }
-            if (!$in.isCurrentToken('}')) $in.objectEndOrCommaError()
+          var i = ${Expr(paramVarNum)}
+          while ($in.isNextToken(',')) {
+            ${genNext('i)}
+            ${genReadField('i)}
           }
+          if (!$in.isCurrentToken('}')) $in.objectEndOrCommaError()
         }
-      }.asTerm.changeOwner(Symbol.spliceOwner)).addAll(checkReqVars).addAll(setDependentDefaultValues).toList, construct),
-      '{ $in.readNullOrTokenError($default, '{') }.asTerm).asExpr.asInstanceOf[Expr[T]]
+      }.asTerm.changeOwner(Symbol.spliceOwner)).addAll(checkReqVars).addAll(setDependentDefaultValues).toList,
+        construct).asExpr.asInstanceOf[Expr[T]]
+    } else {
+      // Keys are expected in the order of writing: the discriminator (the last in the array) first, then fields in the
+      // order of definition. The next expected key after the last one is the first key, so that `i` is always a valid
+      // index of the expected key
+      If('{ $in.isNextToken('{') }.asTerm,
+        Block(readBlock.addOne({
+          '{
+            if (!$in.isNextToken('}')) {
+              $in.rollbackToken()
+              var i = -1
+              while (i < 0 || $in.isNextToken(',')) {
+                ${
+                  // The discriminator key at the last index is expected first
+                  if (readFields.size > paramVarNum) '{
+                    if (i < 0) i = ${Expr(paramVarNum)}
+                    else ${genNext('i)}
+                  } else genNext('i)
+                }
+                ${genReadField('i)}
+              }
+              if (!$in.isCurrentToken('}')) $in.objectEndOrCommaError()
+            }
+          }
+        }.asTerm.changeOwner(Symbol.spliceOwner)).addAll(checkReqVars).addAll(setDependentDefaultValues).toList, construct),
+        '{ $in.readNullOrTokenError($default, '{') }.asTerm).asExpr.asInstanceOf[Expr[T]]
+    }
   }
 
   private def genReadNumber[N: Type](isStringified: Boolean, in: Expr[JsonReader])
