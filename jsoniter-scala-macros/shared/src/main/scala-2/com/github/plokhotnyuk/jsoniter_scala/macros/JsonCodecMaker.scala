@@ -1563,6 +1563,15 @@ object JsonCodecMaker {
         subTypes.toList
       }
 
+      def genIsExpectedKey(name: String): Tree =
+        if (isEncodingRequired(name)) q"in.isCharBufEqualsTo(in.readKeyAsCharBuf(), $name)"
+        else { // Fast path: match non-escaped bytes of the key without parsing it to the char buffer
+          q"""{
+                val l = in.readKeyAsCharBufOrNonEscapedAsciiMatch($name)
+                l < 0 || in.isCharBufEqualsTo(l, $name)
+              }"""
+        }
+
       def genReadKey(types: List[Type]): Tree = {
         val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(tpe)
@@ -1618,7 +1627,7 @@ object JsonCodecMaker {
         } else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(v: String)) =>
-              q"""if (in.readKeyAsString() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+              q"""if (!${genIsExpectedKey(v)}) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
             case ConstantType(Constant(v: Boolean)) =>
               q"""if (in.readKeyAsBoolean() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
             case ConstantType(Constant(v: Byte)) =>
@@ -2622,7 +2631,7 @@ object JsonCodecMaker {
 
         tpe match {
         case ConstantType(Constant(v: String)) =>
-          q"""if (in.readString(null) != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          q"""if (!in.isCharBufEqualsTo(in.readStringAsCharBuf(), $v)) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
         case ConstantType(Constant(v: Boolean)) =>
           if (isStringified) q"""if (in.readStringAsBoolean() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
           else q"""if (in.readBoolean() != $v) in.decodeError(${s"expected value: $v"}); $v"""
@@ -3032,16 +3041,9 @@ object JsonCodecMaker {
                 }
               case Some(discrFieldName) =>
                 if (cfg.requireDiscriminatorFirst) {
-                  val isDiscriminatorKey =
-                    if (isEncodingRequired(discrFieldName)) {
-                      q"in.isCharBufEqualsTo(in.readKeyAsCharBuf(), $discrFieldName)"
-                    } else { // Fast path: match non-escaped bytes of the key without parsing it to the char buffer
-                      q"""val k = in.readKeyAsCharBufOrNonEscapedAsciiMatch($discrFieldName)
-                          k < 0 || in.isCharBufEqualsTo(k, $discrFieldName)"""
-                    }
                   q"""in.setMark()
                       if (in.isNextToken('{')) {
-                        if ($isDiscriminatorKey) {
+                        if (${genIsExpectedKey(discrFieldName)}) {
                           val l = in.readStringAsCharBuf()
                           ..${genReadSubclassesBlock(leafClasses, true)}
                         } else in.decodeError(${"expected key: \"" + discrFieldName + '"'})
