@@ -8,7 +8,7 @@ addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.12")
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.12.2")
 addSbtPlugin("com.github.sbt" % "sbt-release" % "1.5.0")
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.4.0")
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.8")
+addSbtPlugin("com.github.sbt" % "sbt-jmh" % "0.4.9")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.4.4")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.2.1")
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.15")
@@ -21,9 +21,3 @@ addSbtPlugin("net.nmoncho" % "sbt-osv" % "1.0.0")
 
 libraryDependencySchemes += "com.lihaoyi" %% "upickle" % VersionScheme.Always
 
-libraryDependencies ++= Seq(
-  "org.openjdk.jmh" % "jmh-core" % "1.37",
-  "org.openjdk.jmh" % "jmh-generator-asm" % "1.37",
-  "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.37",
-  "org.openjdk.jmh" % "jmh-generator-reflection" % "1.37"
-)
