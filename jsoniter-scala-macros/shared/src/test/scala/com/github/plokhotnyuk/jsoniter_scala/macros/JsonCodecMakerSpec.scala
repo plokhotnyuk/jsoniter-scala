@@ -3407,6 +3407,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "throw parse exception in case of missing discriminator field" in {
       verifyDeserError(codecOfADTList1, """[{"a":1}]""", """expected key: "type", offset: 0x00000005""")
+      verifyDeserError(codecOfADTList1, """[{"typ":"AAA","a":1}]""", """expected key: "type", offset: 0x00000007""")
+      verifyDeserError(codecOfADTList1, """[{"typex":"AAA","a":1}]""", """expected key: "type", offset: 0x00000009""")
+      verifyDeserError(codecOfADTList1, """[{"tYpe":"AAA","a":1}]""", """expected key: "type", offset: 0x00000008""")
       verifyDeserError(codecOfADTList3, """[{"a":1}]""", """missing required field "type", offset: 0x00000007""")
       verifyDeserError(codecOfADTList3, """[{"a":1,"typex":2}]""", """missing required field "type", offset: 0x00000011""")
     }
@@ -3421,6 +3424,59 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfADTList2, """[true]""", """expected '"' or '{', offset: 0x00000001""")
       verifyDeserError(codecOfADTList2, """[{{"a":1}}]""", """expected '"', offset: 0x00000002""")
       verifyDeserError(codecOfADTList2, """[{"aaa":{"a":1}}]""", """illegal discriminator, offset: 0x00000007""")
+    }
+    "serialize and deserialize ADTs with many leaf classes using hash code switch for discriminator values" in {
+      sealed trait Many extends Product with Serializable
+
+      case object Aa extends Many // "Aa", "BB", and "C#" have the same hash code
+
+      case object BB extends Many
+
+      case object M3 extends Many
+
+      case object M4 extends Many
+
+      case object M5 extends Many
+
+      case object M6 extends Many
+
+      case object M7 extends Many
+
+      case object M8 extends Many
+
+      case object M9 extends Many
+
+      case class C1(x: Int) extends Many
+
+      case class C2(x: Int) extends Many
+
+      val codecOfManyList1 = make[List[Many]]
+      val codecOfManyList2 = make[List[Many]](CodecMakerConfig.withRequireDiscriminatorFirst(false))
+      val codecOfManyList3 = make[List[Many]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None))
+      val codecOfManyList4 = make[List[Many]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)
+        .withCirceLikeObjectEncoding(true))
+      val manyList = List(Aa, BB, M3, M4, M5, M6, M7, M8, M9, C1(1), C2(2))
+      verifySerDeser(codecOfManyList1, manyList,
+        """[{"type":"Aa"},{"type":"BB"},{"type":"M3"},{"type":"M4"},{"type":"M5"},{"type":"M6"},{"type":"M7"},{"type":"M8"},{"type":"M9"},{"type":"C1","x":1},{"type":"C2","x":2}]""")
+      verifyDeser(codecOfManyList2, manyList,
+        """[{"type":"Aa"},{"type":"BB"},{"type":"M3"},{"type":"M4"},{"type":"M5"},{"type":"M6"},{"type":"M7"},{"type":"M8"},{"type":"M9"},{"x":1,"type":"C1"},{"x":2,"type":"C2"}]""")
+      verifySerDeser(codecOfManyList3, manyList,
+        """["Aa","BB","M3","M4","M5","M6","M7","M8","M9",{"C1":{"x":1}},{"C2":{"x":2}}]""")
+      verifySerDeser(codecOfManyList4, manyList,
+        """[{"Aa":{}},{"BB":{}},{"M3":{}},{"M4":{}},{"M5":{}},{"M6":{}},{"M7":{}},{"M8":{}},{"M9":{}},{"C1":{"x":1}},{"C2":{"x":2}}]""")
+      verifyDeserError(codecOfManyList1, """[{"type":"C#"}]""",
+        """illegal value of discriminator field "type", offset: 0x0000000c""")
+      verifyDeserError(codecOfManyList1, """[{"type":"XX"}]""",
+        """illegal value of discriminator field "type", offset: 0x0000000c""")
+      verifyDeserError(codecOfManyList2, """[{"x":1,"type":"C#"}]""",
+        """illegal value of discriminator field "type", offset: 0x00000012""")
+      verifyDeserError(codecOfManyList2, """[{"x":1,"type":"XX"}]""",
+        """illegal value of discriminator field "type", offset: 0x00000012""")
+      verifyDeserError(codecOfManyList3, """["C#"]""", """illegal discriminator, offset: 0x00000004""")
+      verifyDeserError(codecOfManyList3, """["XX"]""", """illegal discriminator, offset: 0x00000004""")
+      verifyDeserError(codecOfManyList4, """[{"C#":{}}]""", """illegal discriminator, offset: 0x00000006""")
+      verifyDeserError(codecOfManyList4, """[{"XX":{}}]""", """illegal discriminator, offset: 0x00000006""")
+      verifyDeserError(codecOfManyList4, """[{"Aa":{},"x":1}]""", """expected '}' or ',', offset: 0x00000009""")
     }
     "throw exception in attempt to serialize null values for ADTs" in {
       verifySerError[List[AdtBase]](codecOfADTList1, List[AdtBase](null), "", null, WriterConfig)

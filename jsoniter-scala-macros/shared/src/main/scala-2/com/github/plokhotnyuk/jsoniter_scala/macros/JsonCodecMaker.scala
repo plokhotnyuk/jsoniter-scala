@@ -2947,19 +2947,29 @@ object JsonCodecMaker {
                 genReadVal(allTypes, genNullValue(allTypes), isStringified, skipDiscriminatorField)
               }
 
+            def genReadSubclass(subTpe: Type): Tree =
+              if (cfg.discriminatorFieldName.isDefined) {
+                q"""in.rollbackToMark()
+                    ..${genReadLeafClass(subTpe)}"""
+              } else if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
+                q"${subTpe.typeSymbol.asClass.module}"
+              } else genReadLeafClass(subTpe)
+
             def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
               subTpes.foldRight(discriminatorError) { (subTpe, acc) =>
-                val readVal =
-                  if (cfg.discriminatorFieldName.isDefined) {
-                    q"""in.rollbackToMark()
-                        ..${genReadLeafClass(subTpe)}"""
-                  } else if (!cfg.circeLikeObjectEncoding && subTpe.typeSymbol.isModuleClass) {
-                    q"${subTpe.typeSymbol.asClass.module}"
-                  } else genReadLeafClass(subTpe)
-                q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) $readVal else $acc"
+                q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) ${genReadSubclass(subTpe)} else $acc"
               }
 
-            def genReadSubclassesBlock(leafClasses: collection.Seq[Type]): Tree =
+            def genReadCollisionsWithReturn(subTpes: collection.Seq[Type]): Tree = {
+              val checkNameAndReturnValues = subTpes.map { subTpe =>
+                q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) return ${genReadSubclass(subTpe)}"
+              }
+              q"..$checkNameAndReturnValues"
+            }
+
+            // When `useReturn` is `true` successfully parsed values are returned from the enclosing decoding method,
+            // so the discriminator error is thrown only once after the switch
+            def genReadSubclassesBlock(leafClasses: collection.Seq[Type], useReturn: Boolean): Tree =
               if (leafClasses.size <= 8 && leafClasses.foldLeft(0)(_ + discriminatorValue(_).length) <= 64) {
                 genReadCollisions(leafClasses)
               } else {
@@ -2967,14 +2977,26 @@ object JsonCodecMaker {
                   val cs = discriminatorValue(t).toCharArray
                   JsonReader.toHashCode(cs, cs.length)
                 }
-                val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
-                  val checkNameAndReadValue = genReadCollisions(ts)
-                  cq"$hash => $checkNameAndReadValue"
+                if (useReturn) {
+                  val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
+                    val checkNameAndReturnValue = genReadCollisionsWithReturn(ts)
+                    cq"$hash => $checkNameAndReturnValue"
+                  }
+                  q"""(in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
+                        case ..$cases
+                        case _ =>
+                      }
+                      $discriminatorError"""
+                } else {
+                  val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
+                    val checkNameAndReadValue = genReadCollisions(ts)
+                    cq"$hash => $checkNameAndReadValue"
+                  }
+                  q"""(in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
+                        case ..$cases
+                        case _ => $discriminatorError
+                      }"""
                 }
-                q"""(in.charBufToHashCode(l): @_root_.scala.annotation.switch) match {
-                      case ..$cases
-                      case _ => $discriminatorError
-                    }"""
               }
 
             checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
@@ -2986,10 +3008,10 @@ object JsonCodecMaker {
                   q"""if (in.isNextToken('"')) {
                         in.rollbackToken()
                         val l = in.readStringAsCharBuf()
-                        ${genReadSubclassesBlock(leafModuleClasses)}
+                        ${genReadSubclassesBlock(leafModuleClasses, true)}
                       } else if (in.isCurrentToken('{')) {
                         val l = in.readKeyAsCharBuf()
-                        val r = ${genReadSubclassesBlock(leafCaseClasses)}
+                        val r = ${genReadSubclassesBlock(leafCaseClasses, false)}
                         if (in.isNextToken('}')) r
                         else in.objectEndOrCommaError()
                       } else {
@@ -3001,7 +3023,7 @@ object JsonCodecMaker {
                 } else if (leafCaseClasses.nonEmpty) {
                   q"""if (in.isNextToken('{')) {
                         val l = in.readKeyAsCharBuf()
-                        val r = ${genReadSubclassesBlock(leafCaseClasses)}
+                        val r = ${genReadSubclassesBlock(leafCaseClasses, false)}
                         if (in.isNextToken('}')) r
                         else in.objectEndOrCommaError()
                       } else in.readNullOrTokenError(default, '{')"""
@@ -3009,16 +3031,23 @@ object JsonCodecMaker {
                   q"""if (in.isNextToken('"')) {
                         in.rollbackToken()
                         val l = in.readStringAsCharBuf()
-                        ${genReadSubclassesBlock(leafModuleClasses)}
+                        ${genReadSubclassesBlock(leafModuleClasses, true)}
                       } else in.readNullOrTokenError(default, '"')"""
                 }
               case Some(discrFieldName) =>
                 if (cfg.requireDiscriminatorFirst) {
+                  val isDiscriminatorKey =
+                    if (isEncodingRequired(discrFieldName)) {
+                      q"in.isCharBufEqualsTo(in.readKeyAsCharBuf(), $discrFieldName)"
+                    } else { // Fast path: match non-escaped bytes of the key without parsing it to the char buffer
+                      q"""val k = in.readKeyAsCharBufOrNonEscapedAsciiMatch($discrFieldName)
+                          k < 0 || in.isCharBufEqualsTo(k, $discrFieldName)"""
+                    }
                   q"""in.setMark()
                       if (in.isNextToken('{')) {
-                        if (in.isCharBufEqualsTo(in.readKeyAsCharBuf(), $discrFieldName)) {
+                        if ($isDiscriminatorKey) {
                           val l = in.readStringAsCharBuf()
-                          ..${genReadSubclassesBlock(leafClasses)}
+                          ..${genReadSubclassesBlock(leafClasses, true)}
                         } else in.decodeError(${"expected key: \"" + discrFieldName + '"'})
                       } else {
                         in.resetMark()
@@ -3029,7 +3058,7 @@ object JsonCodecMaker {
                       if (in.isNextToken('{')) {
                         if (in.skipToKey($discrFieldName)) {
                           val l = in.readStringAsCharBuf()
-                          ..${genReadSubclassesBlock(leafClasses)}
+                          ..${genReadSubclassesBlock(leafClasses, true)}
                         } else in.requiredFieldError($discrFieldName)
                       } else {
                         in.resetMark()
