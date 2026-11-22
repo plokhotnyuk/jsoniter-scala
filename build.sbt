@@ -230,7 +230,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativeP
     libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-        "com.beachape" %%% "enumeratum" % "1.9.8" % Test
+        "com.beachape" %%% "enumeratum" % "1.9.9" % Test
       )
       case _ => Seq()
     }) ++ Seq(
