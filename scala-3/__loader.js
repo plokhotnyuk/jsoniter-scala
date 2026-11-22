@@ -77,8 +77,8 @@ const scalaJSHelpers = {
   tD: (x) => typeof x === 'number',
 
   // Strings
-  jsValueToString: (x) => (x === void 0) ? "undefined" : x.toString(),
-  jsValueToStringForConcat: (x) => "" + x,
+  jsValueToStringCall: (x) => (x === void 0) ? "undefined" : x.toString(),
+  jsValueToString: String,
   booleanToString: (b) => b ? "true" : "false",
   intToString: (i) => "" + i,
   longToString: (l) => "" + l, // l must be a bigint here
@@ -137,6 +137,8 @@ const scalaJSHelpers = {
   jsSuperSelectSet: superSelectSet,
 }
 
+
+
 export async function load(wasmFileURL, exportSetters, privateJSFieldGetters,
     privateJSFieldSetters, customJSHelpers, wtf16Strings) {
   const myScalaJSHelpers = {
@@ -150,6 +152,7 @@ export async function load(wasmFileURL, exportSetters, privateJSFieldGetters,
     "privateJSFieldSetters": privateJSFieldSetters,
     "__scalaJSCustomHelpers": customJSHelpers,
     "wtf16Strings": wtf16Strings,
+    
   };
   const options = {
     builtins: ["js-string"],
