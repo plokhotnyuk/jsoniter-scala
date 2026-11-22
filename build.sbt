@@ -31,10 +31,12 @@ lazy val commonSettings = Seq(
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, 12)) => Seq(
       "-language:higherKinds",
-      "-opt:l:method"
+      "-opt:l:method",
+      "-release:11"
     )
     case Some((2, 13)) => Seq(
-      "-opt:l:method"
+      "-opt:l:method",
+      "-release:11"
     )
     case _ => Seq(
       "-explain",
@@ -48,6 +50,7 @@ lazy val commonSettings = Seq(
       ) else Seq()
     }
   }),
+  javacOptions ++= Seq("--release", "11"),
   compileOrder := CompileOrder.JavaThenScala,
   libraryDependencies ++= Seq(
     "org.scalatest" %%% "scalatest" % "3.2.20" % Test
