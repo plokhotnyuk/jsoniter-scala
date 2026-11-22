@@ -230,7 +230,7 @@ final class JsonWriter private[jsoniter_scala](
    * @throws JsonWriterException if the string has an illegal surrogate pair
    */
   def writeKey(x: String): Unit = {
-    val len = x.length
+    val len = x.length // throws NPE for null strings before any changes of the writer state
     val indention = this.indention
     var pos = ensureBufCapacity(indention + 10)
     val buf = this.buf
@@ -242,7 +242,8 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos += 1
-    pos = writeString(x, len, pos, buf)
+    if (ScanAndBulkCopy.ENABLED) pos = writeStringScanAndBulkCopy(x, len, 0, pos, buf)
+    else pos = writeStringSWAR(x, len, 0, pos, buf)
     if (pos + 4 >= limit) pos = flushAndGrowBuf(4, pos)
     ByteArrayAccess.setInt(this.buf, pos, 0x203A22)
     if (indention > 0) pos += 1
@@ -502,7 +503,7 @@ final class JsonWriter private[jsoniter_scala](
    * @throws JsonWriterException if the string has an illegal surrogate pair
    */
   def writeVal(x: String): Unit = {
-    val len = x.length
+    val len = x.length // throws NPE for null strings before any changes of the writer state
     val indention = this.indention
     var pos = ensureBufCapacity(indention + 10)
     val buf = this.buf
@@ -513,7 +514,8 @@ final class JsonWriter private[jsoniter_scala](
     } else comma = true
     buf(pos) = '"'
     pos += 1
-    pos = writeString(x, len, pos, buf)
+    if (ScanAndBulkCopy.ENABLED) pos = writeStringScanAndBulkCopy(x, len, 0, pos, buf)
+    else pos = writeStringSWAR(x, len, 0, pos, buf)
     this.buf(pos) = '"'
     count = pos + 1
   }
@@ -1830,59 +1832,70 @@ final class JsonWriter private[jsoniter_scala](
     java.lang.Long.reverseBytes(q + (q + 0x606060606060606L >> 4 & 0x101010101010101L) * 39 + 0x3030303030303030L)
   }
 
-  private[this] def writeString(s: String, len: Int, pos: Int, buf: Array[Byte]): Int = {
-    var i = 0
-    if (len < limit - pos) { // the string and the closing quote fit in the buffer
-      var m, bs = 0L
-      while (m == 0L && i + 7 < len) { // SWAR check of 8 chars for ones that need escaping or encoding
-        var c0 = s.charAt(i).toLong
-        m = c0
-        bs = c0
-        var c1 = s.charAt(i + 1).toLong
-        m |= c1
-        bs |= c1 << 8
-        var c2 = s.charAt(i + 2).toLong
-        m |= c2
-        bs |= c2 << 16
-        var c3 = s.charAt(i + 3).toLong
-        m |= c3
-        bs |= c3 << 24
-        c0 = s.charAt(i + 4).toLong
-        m |= c0
-        bs |= c0 << 32
-        c1 = s.charAt(i + 5).toLong
-        m |= c1
-        bs |= c1 << 40
-        c2 = s.charAt(i + 6).toLong
-        m |= c2
-        bs |= c2 << 48
-        c3 = s.charAt(i + 7).toLong
-        m |= c3
-        bs |= c3 << 56
-        m = (0x7FL - m) >>> 56 // non-ASCII chars set the lowest byte
-        ByteArrayAccess.setLong(buf, pos + i, bs) // bytes of special chars will be overwritten by the slow path
-        m = ((bs ^ 0x2222222222222222L) - 0x101010101010101L | (bs ^ 0x5C5C5C5C5C5C5C5CL) - 0x101010101010101L |
-          bs + 0x101010101010101L | bs - 0x2020202020202020L | m) & 0x8080808080808080L
-        i += 8
-      }
-      i += (java.lang.Long.numberOfTrailingZeros(m) >> 3) - 8 // move back to the first char that requires escaping or encoding
-    }
-    val newPos = pos + i
-    writeString(s, i, newPos, buf, Math.min(len - i, limit - newPos - 1) + newPos)
+  @tailrec
+  private[this] def writeStringScanAndBulkCopy(s: String, len: Int, from: Int, pos: Int, buf: Array[Byte]): Int = {
+    val d = pos - from
+    val lim = Math.min(limit - d - 1, len) // leave a room for the closing quote
+    var i = from
+    while (i < lim && {
+      val ch = s.charAt(i)
+      ch >= 0x20 && ch < 0x7F && ch != 0x22 && ch != 0x5C
+    }) i += 1
+    s.getBytes(from, i, buf, pos) // bulk copy of chars that don't require escaping or encoding
+    val newPos = i + d
+    if (i == len) return newPos
+    if (i < lim) return writeEscapedOrEncodedString(s, i, newPos) // stopped on a char that requires escaping or encoding
+    writeStringScanAndBulkCopy(s, len, i, flushAndGrowBuf(2, newPos), this.buf)
   }
 
   @tailrec
-  private[this] def writeString(s: String, from: Int, pos: Int, buf: Array[Byte], minLim: Int): Int =
-    if (pos < minLim) {
-      val ch = s.charAt(from).toInt
-      buf(pos) = ch.toByte
-      if (ch >= 0x20 && ch < 0x7F && ch != 0x22 && ch != 0x5C) writeString(s, from + 1, pos + 1, buf, minLim)
-      else writeEscapedOrEncodedString(s, from, pos)
-    } else if (s.length == from) pos
-    else {
-      val newPos = flushAndGrowBuf(2, pos)
-      writeString(s, from, newPos, this.buf, Math.min(s.length - from, limit - newPos - 1) + newPos)
+  private[this] def writeStringSWAR(s: String, len: Int, from: Int, pos: Int, buf: Array[Byte]): Int = {
+    val d = pos - from // a single induction variable allows unrolling of the counted loop
+    val lim = Math.min(limit - d - 1, len) // leave a room for the closing quote
+    var i = from
+    var m, bs = 0L
+    while (m == 0L && i + 7 < lim) { // SWAR check of 8 chars for ones that need escaping or encoding
+      var c0 = s.charAt(i).toLong
+      m = c0
+      bs = c0
+      var c1 = s.charAt(i + 1).toLong
+      m |= c1
+      bs |= c1 << 8
+      var c2 = s.charAt(i + 2).toLong
+      m |= c2
+      bs |= c2 << 16
+      var c3 = s.charAt(i + 3).toLong
+      m |= c3
+      bs |= c3 << 24
+      c0 = s.charAt(i + 4).toLong
+      m |= c0
+      bs |= c0 << 32
+      c1 = s.charAt(i + 5).toLong
+      m |= c1
+      bs |= c1 << 40
+      c2 = s.charAt(i + 6).toLong
+      m |= c2
+      bs |= c2 << 48
+      c3 = s.charAt(i + 7).toLong
+      m |= c3
+      bs |= c3 << 56
+      m = (0x7FL - m) >>> 56 // non-ASCII chars set the lowest byte
+      ByteArrayAccess.setLong(buf, i + d, bs) // bytes of special chars will be overwritten by the slow path
+      m = ((bs ^ 0x2222222222222222L) - 0x101010101010101L | (bs ^ 0x5C5C5C5C5C5C5C5CL) - 0x101010101010101L |
+        bs + 0x101010101010101L | bs - 0x2020202020202020L | m) & 0x8080808080808080L
+      i += 8
     }
+    i += (java.lang.Long.numberOfTrailingZeros(m) >> 3) - 8 // move back to the first char that requires escaping or encoding
+    while (i < lim && {
+      val ch = s.charAt(i)
+      buf(i + d) = ch.toByte
+      ch >= 0x20 && ch < 0x7F && ch != 0x22 && ch != 0x5C
+    }) i += 1
+    val newPos = i + d
+    if (i == len) return newPos
+    if (i < lim) return writeEscapedOrEncodedString(s, i, newPos) // stopped on a char that requires escaping or encoding
+    writeStringSWAR(s, len, i, flushAndGrowBuf(2, newPos), this.buf)
+  }
 
   @noinline
   private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int): Int =
