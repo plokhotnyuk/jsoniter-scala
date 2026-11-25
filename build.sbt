@@ -417,7 +417,10 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
       )
     } else {
       Seq(
-        Test / requireJsDomEnv := true
+        Test / requireJsDomEnv := true,
+        installJsdom / version := "26.1.0",
+        webpack / version := "5.113.0",
+        webpackCliVersion := "4.10.0"
       )
     }
   }*)

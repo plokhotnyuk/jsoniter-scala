@@ -50,7 +50,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
       - name: Test with Scala Next
         run: "sbt ++3.10.1 jsoniter-scala-macrosJVM/test jsoniter-scala-next-testsJVM/test"
         shell: bash    

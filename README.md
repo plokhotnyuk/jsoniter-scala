@@ -595,12 +595,12 @@ git remote add upstream git@github.com:plokhotnyuk/jsoniter-scala.git
 git fetch --tags upstream
 ```
 
-Building of Scala.js and Scala Native modules requires Clang 18.x and Node.js 16.x. These commands work for me:
+Building of Scala.js and Scala Native modules requires Clang 18.x and Node.js 20.x. These commands work for me:
 ```sh
 sudo apt install clang libstdc++-12-dev libgc-dev 
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash 
 source ~/.bashrc
-nvm install 16
+nvm install 20
 node -v
 ```
 
