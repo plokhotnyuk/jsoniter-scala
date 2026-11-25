@@ -119,7 +119,7 @@ lazy val nativeSettings = Seq(
     "org.scala-native" %% "test-interface_native0.5" % VersionScheme.Always
   ),
   nativeConfig ~= {
-    _.withMode(Mode.releaseFast) // TODO: Test with `Mode.releaseSize` and `Mode.releaseFull`
+    _.withMode(Mode.debug) // FIXME: Linking errors with `Mode.releaseFast`, `Mode.releaseSize` and `Mode.releaseFull` in Scala Native 0.5.13
       .withLTO(LTO.none)
   },
   coverageEnabled := false // FIXME: Unexpected linking error
