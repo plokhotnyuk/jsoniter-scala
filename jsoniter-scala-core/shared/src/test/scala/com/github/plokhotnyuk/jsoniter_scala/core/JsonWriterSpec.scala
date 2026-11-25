@@ -1212,5 +1212,6 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
 
   def writerConfig: WriterConfig =
-    WriterConfig.withPreferredBufSize(Random.nextInt(63) + 1).withThrowWriterExceptionWithStackTrace(true)
+    WriterConfig.withPreferredBufSize(Random.nextInt(63) + 1)
+      .withThrowWriterExceptionWithStackTrace(!TestUtils.isNative) // capturing of stack traces with libunwind of Scala Native 0.5.13 is too slow on macOS
 }

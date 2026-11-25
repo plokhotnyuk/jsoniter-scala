@@ -5010,7 +5010,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   def readerConfig: ReaderConfig = ReaderConfig
     .withPreferredBufSize(Random.nextInt(20) + 12) // 12 is a minimal allowed length to test resizing of the buffer
     .withPreferredCharBufSize(Random.nextInt(32))
-    .withThrowReaderExceptionWithStackTrace(true)
+    .withThrowReaderExceptionWithStackTrace(!TestUtils.isNative) // capturing of stack traces with libunwind of Scala Native 0.5.13 is too slow on macOS
 
   val tooLongNumber: String = fill('1', ReaderConfig.maxBufSize)
 
