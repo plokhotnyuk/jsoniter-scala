@@ -35,7 +35,7 @@ compare performance of jsoniter-scala with: [circe](https://github.com/circe/cir
 [uPickle](https://github.com/lihaoyi/upickle), [zio-blocks](https://github.com/zio/zio-blocks), 
 [zio-json](https://github.com/zio/zio-json), and [zio-schema-json](https://github.com/zio/zio-schema/tree/main/zio-schema-json)
 libraries compiled by Scala 3.9.0 with `-opt -opt-inline:**,!java.**` options for optimization and inlining
-using Scala.js 1.22.0 to ES 2021 with GCC v20220202 optimizations applied on 
+using Scala.js 1.23.0 to ES 2021 with Closure compiler v20240317 optimizations applied on 
 Apple M5 Pro CPU @ 3.0GHz (max 4.6GHz, 18-cores), RAM 64Gb LPDDR5X-9600, macOS (Golden Gate 27.2) 
 and latest versions of web browsers.
 
