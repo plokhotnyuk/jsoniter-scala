@@ -665,6 +665,41 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeser(make[StandardTypes](CodecMakerConfig.withCheckFieldDuplication(false)),
         StandardTypes("VVV", BigInt(1), BigDecimal(2.0)),
         s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""")
+      verifyDeserError(make[StandardTypes](CodecMakerConfig.withCheckFieldDuplication(false)),
+        s"""{"s":"XXX","s":null,"bi":1,"bd":2.0}""", """expected '"', offset: 0x0000000f""")
+      verifyDeserByCheck(make[Defaults](CodecMakerConfig.withCheckFieldDuplication(false)),
+        s"""{"st":"XXX","st":null,"oc":"Y","oc":null,"l":[1],"l":[],"m":{"2":false},"m":null}""", (x: Defaults) => {
+          x.st shouldBe "VVV"
+          x.oc shouldBe Option('X')
+          x.l shouldBe List(0)
+          x.m shouldBe Map(1 -> true)
+        })
+      verifyDeserByCheck(make[Defaults](CodecMakerConfig.withCheckFieldDuplication(false).withUseDefaultForNullOrEmpty(false)),
+        s"""{"st":"XXX","st":null,"oc":"Y","oc":null,"l":[1],"l":[]}""", (x: Defaults) => {
+          x.st shouldBe "VVV"
+          x.oc shouldBe Option.empty[Char]
+          x.l shouldBe List()
+        })
+
+      case class Ints(n: Int)
+
+      locally {
+        implicit val lenientIntCodec: JsonValueCodec[Int] = new JsonValueCodec[Int] {
+          override def decodeValue(in: JsonReader, default: Int): Int =
+            if (in.isNextToken('n')) in.readNullOrError(default, "expected int or null")
+            else {
+              in.rollbackToken()
+              in.readInt()
+            }
+
+          override def encodeValue(x: Int, out: JsonWriter): _root_.scala.Unit = out.writeVal(x)
+
+          override val nullValue: Int = -1
+        }
+        val codecOfInts = make[Ints](CodecMakerConfig.withCheckFieldDuplication(false))
+        verifyDeser(codecOfInts, Ints(1), """{"n":1,"n":null}""")
+        verifyDeser(codecOfInts, Ints(-1), """{"n":null}""")
+      }
     }
     "throw parse exception in case of duplicated key for case classes was detected" in {
       verifyDeserError(codecOfStandardTypes, s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""",
@@ -2829,6 +2864,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val acc = Set.newBuilder[Defaults3]
       verifyDeserByCheck(codecOfDefaults3, """{}""", (x: Defaults3) => acc += x)
       acc.result().size shouldBe 4
+
+      object Counter {
+        val n = new _root_.java.util.concurrent.atomic.AtomicInteger
+      }
+
+      case class Defaults4(i: Int = Counter.n.incrementAndGet(), s: String = Counter.n.incrementAndGet().toString)
+
+      verifyDeserByCheck(make[Defaults4](CodecMakerConfig.withCheckFieldDuplication(false)), """{}""",
+        (x: Defaults4) => x.s.toInt shouldBe x.i + 1)
     }
     "deserialize default values of polymorphic case classes that defined for fields" in {
       val polymorphicDefaults: JsonValueCodec[PolymorphicDefaults[Int, String]] = make
@@ -3934,6 +3978,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codec2 = make[MultiListOfArgs](CodecMakerConfig.withTransientDefault(false).withCheckFieldDuplication(false))
       verifyDeserByCheck(codec2, """{"i":3}""", check(3, 2L, "3-2"))
       verifyDeserByCheck(codec2, """{"l":5}""", check(1, 5L, "1-5"))
+      verifyDeserByCheck(codec2, """{"i":3,"s":"VVV","s":null}""", check(3, 2L, "3-2"))
       verifySer(codec2, new MultiListOfArgs(3)(2L)("3-2"), """{"i":3,"l":2,"s":"3-2"}""")
 
       case class GenericMultiListOfArgs[A](a: A)(@transient val n: Int = 2)(val as: List[A] = List.fill(n)(a))(val m: Int = as.size * n)

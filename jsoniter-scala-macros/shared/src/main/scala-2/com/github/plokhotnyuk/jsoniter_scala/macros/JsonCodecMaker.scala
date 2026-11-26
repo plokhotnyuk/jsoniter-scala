@@ -99,7 +99,10 @@ final class stringified extends StaticAnnotation
   * @param encodingOnly           turns on generation of the encoding implementation only (`false` by default)
   * @param requireDefaultFields   turns on checking of presence of fields with default values when parsing, and their
   *                               serialization (`false` by default)
-  * @param checkFieldDuplication  turns on checking of duplicated fields when parsing classes (`true` by default)
+  * @param checkFieldDuplication  turns on checking of duplicated fields when parsing classes, otherwise the last
+  *                               value of a duplicated field wins, but the first value of a duplicated discriminator
+  *                               field is used, and implicit codecs of non-reference types get previous values as
+  *                               defaults (`true` by default)
   * @param scalaTransientSupport  turns on support of `scala.transient` (`false` by default)
   * @param inlineOneValueClasses  turns on inlined codecs for non-value classes whose primary constructor has one
   *                               argument (`false` by default)
@@ -2321,28 +2324,43 @@ object JsonCodecMaker {
               !isNonEmptyList(fieldInfo.resolvedTpe))) => fieldInfo.mappedName
         }.toSet
         val withDependentDefaultValues = classInfo.withDependentDefaultValues
-        // Fields with dependent default values and reference types are missing after parsing if their read variables
-        // keep or are parsed to the initial null values, so JSON `null` values and values that decoders return as
-        // defaults, like empty collections when `useDefaultForNullOrEmpty` is turned on, are replaced by default values
-        // like for other fields with default values. Other fields with dependent default values, and fields with implicit
-        // codecs that can return their null values for present values, are missing if their presence flags are set
-        val withNullValuesOfDependentDefaults: Set[String] = fields.collect {
-          case fieldInfo if withDependentDefaultValues(fieldInfo.mappedName) && {
-            val fTpe = fieldInfo.resolvedTpe
-            fTpe <:< typeOf[AnyRef] && !isConstType(fTpe) && !isBoxedPrimitive(fTpe) &&
-              findImplicitValueCodec(fTpe).isEmpty &&
-              (cfg.useDefaultForNullOrEmpty || !isOption(fTpe, types) && !isCollection(fTpe))
-          } => fieldInfo.mappedName
-        }.toSet
-        // JSON `null` values of those fields are checked before parsing when their null values are `null`, which
-        // decoders don't return for JSON `null` values
-        val withNullChecksOfDependentDefaults: Set[String] = fields.collect {
-          case fieldInfo if withNullValuesOfDependentDefaults(fieldInfo.mappedName) && {
-            val fTpe = fieldInfo.resolvedTpe
-            !isOption(fTpe, types) &&
-              (!isCollection(fTpe) || isNonEmptyList(fTpe) && cfg.allowNullForCollections)
-          } => fieldInfo.mappedName
-        }.toSet
+        // Dependent default values use values of other fields, so they are set after parsing. A field of a reference
+        // type starts with the empty value of its type (`null`, `None`, or an empty collection). If the field still
+        // holds that value after parsing, it was missing, `null`, or empty, and it gets its default value like other
+        // fields with defaults. Fields of other types, and fields with implicit codecs that can return their empty values
+        // for present values, use presence flags instead.
+        // Read variables of reference types start from local values that are also passed to decoders as defaults, so a
+        // repeated key is parsed like the first one, and the last key wins
+        val nullValuesOfDependentDefaultsBuilder = Set.newBuilder[String]
+        val nullChecksOfDependentDefaultsBuilder = Set.newBuilder[String]
+        val initValsBuilder = Set.newBuilder[String]
+        fields.foreach { fieldInfo =>
+          val mappedName = fieldInfo.mappedName
+          val fTpe = fieldInfo.resolvedTpe
+          val isRef = fTpe <:< typeOf[AnyRef]
+          if (withDependentDefaultValues(mappedName) && isRef && !isConstType(fTpe) && !isBoxedPrimitive(fTpe) &&
+            findImplicitValueCodec(fTpe).isEmpty &&
+            (cfg.useDefaultForNullOrEmpty || !isOption(fTpe, types) && !isCollection(fTpe))) {
+            nullValuesOfDependentDefaultsBuilder += mappedName
+            // Decoders reject JSON `null` when the empty value is `null`, so it is checked before decoding
+            if (!isOption(fTpe, types) &&
+              (!isCollection(fTpe) || isNonEmptyList(fTpe) && cfg.allowNullForCollections)) {
+              nullChecksOfDependentDefaultsBuilder += mappedName
+            }
+            initValsBuilder += mappedName
+          } else if (!cfg.checkFieldDuplication && isRef) initValsBuilder += mappedName
+        }
+        val withNullValuesOfDependentDefaults = nullValuesOfDependentDefaultsBuilder.result()
+        val withNullChecksOfDependentDefaults = nullChecksOfDependentDefaultsBuilder.result()
+        val withInitVals = initValsBuilder.result()
+
+        // Fresh names cannot clash with `_<field>` names of read variables, like `_i_x` for `x` and `i_x` fields
+        val initValNames = withInitVals.foldLeft(Map.empty[String, TermName]) { (m, mappedName) =>
+          m.updated(mappedName, TermName(c.freshName("_i")))
+        }
+
+        def initValName(fieldInfo: FieldInfo): TermName = initValNames(fieldInfo.mappedName)
+
         val paramVarNum = fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
@@ -2395,7 +2413,7 @@ object JsonCodecMaker {
                   if (withDependentDefaultValues(fieldInfo.mappedName)) {
                     val isMissing =
                       if (withNullValuesOfDependentDefaults(fieldInfo.mappedName)) {
-                        q"${fieldInfo.tmpName} eq ${TermName("_n" + fieldInfo.tmpName)}"
+                        q"${fieldInfo.tmpName} eq ${initValName(fieldInfo)}"
                       } else q"(${paramVarNames(i >> 5)} & ${1 << i}) != 0"
                     setDependentDefaultValues +=
                       q"if ($isMissing) ${fieldInfo.tmpName} = ${genDefaultValue(fieldInfo, reversedArgss).get}"
@@ -2407,17 +2425,18 @@ object JsonCodecMaker {
             reversedArgss.reverse
           }
         val construct = genNew(classInfo, argss)
-        val readVars = fields.flatMap { fieldInfo =>
+        val readVars = new mutable.ListBuffer[Tree]
+        fields.foreach { fieldInfo =>
           val fTpe = fieldInfo.resolvedTpe
-          if (withNullValuesOfDependentDefaults(fieldInfo.mappedName)) {
-            val nullValName = TermName("_n" + fieldInfo.tmpName)
-            q"val $nullValName: $fTpe = ${genNullValue(fTpe :: types)}" :: q"var ${fieldInfo.tmpName}: $fTpe = $nullValName" :: Nil
-          } else {
-            val defaultValue =
-              if (withDependentDefaultValues(fieldInfo.mappedName)) None
-              else fieldInfo.defaultValue
-            q"var ${fieldInfo.tmpName}: $fTpe = ${defaultValue.getOrElse(genNullValue(fTpe :: types))}" :: Nil
-          }
+          val initVal = {
+            if (withDependentDefaultValues(fieldInfo.mappedName)) None
+            else fieldInfo.defaultValue
+          }.getOrElse(genNullValue(fTpe :: types))
+          if (withInitVals(fieldInfo.mappedName)) {
+            val name = initValName(fieldInfo)
+            readVars += q"val $name: $fTpe = $initVal"
+            readVars += q"var ${fieldInfo.tmpName}: $fTpe = $name"
+          } else readVars += q"var ${fieldInfo.tmpName}: $fTpe = $initVal"
         }
         val readFields =
           if (discriminator.isEmpty) fields
@@ -2434,11 +2453,14 @@ object JsonCodecMaker {
             val default =
               if (!cfg.useDefaultForNullOrEmpty && fieldInfo.defaultValue.isDefined &&
                 (isOption(fTpe, types) || isCollection(fTpe))) genNullValue(allTypes)
+              else if (withInitVals(fieldInfo.mappedName)) q"${initValName(fieldInfo)}"
               else q"${fieldInfo.tmpName}"
             val readVal = q"${fieldInfo.tmpName} = ${genReadVal(allTypes, default, fieldInfo.isStringified, EmptyTree)}"
             if (withNullChecksOfDependentDefaults(fieldInfo.mappedName)) {
-              q"""if (in.isNextToken('n')) in.readNullOrError((), "expected value or null")
-                  else {
+              q"""if (in.isNextToken('n')) {
+                    in.readNullOrError((), "expected value or null")
+                    ${fieldInfo.tmpName} = ${initValName(fieldInfo)}
+                  } else {
                     in.rollbackToken()
                     $readVal
                   }"""

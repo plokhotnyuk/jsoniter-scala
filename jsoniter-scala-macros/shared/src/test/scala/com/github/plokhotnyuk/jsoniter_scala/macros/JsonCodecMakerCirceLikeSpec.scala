@@ -36,7 +36,7 @@ object CirceLikeConformance {
 
   case class Others(b: Boolean, c: Char, s: String, u: UUID, ld: LocalDate, in: Instant, t: (Int, String))
 
-  case class Options(o: Option[Int], oo: Option[Option[Int]], loo: List[Option[Option[Int]]])
+  case class Options(o: Option[Int], i_o: Option[Option[Int]], loo: List[Option[Option[Int]]])
 
   case class Collections(l: List[Int], v: Vector[String], s: Set[Int], m: Map[String, Int], im: Map[Int, String])
 
@@ -155,12 +155,14 @@ class JsonCodecMakerCirceLikeSpec extends AnyWordSpec with Matchers {
         Options(Some(1), Some(Some(2)), List(Some(Some(3)))))
       conformDecoding[Options](
         """{"loo":[]}""",
-        """{"o":null,"oo":null,"loo":[null,1]}""",
-        """{"o":1,"oo":2,"loo":[3]}""",
-        """{"o":"1","oo":"2","loo":["3"]}""",
-        """{"o":[],"oo":2,"loo":[3]}""",
-        """{"o":1,"oo":2}""",
-        """{"o":1,"oo":2,"loo":null}""")
+        """{"o":null,"i_o":null,"loo":[null,1]}""",
+        """{"o":1,"i_o":2,"loo":[3]}""",
+        """{"o":"1","i_o":"2","loo":["3"]}""",
+        """{"o":[],"i_o":2,"loo":[3]}""",
+        """{"o":1,"i_o":2}""",
+        """{"o":1,"i_o":2,"loo":null}""",
+        """{"o":1,"o":null,"i_o":2,"i_o":null,"loo":[1],"loo":[]}""",
+        """{"o":null,"o":1,"i_o":null,"i_o":2,"loo":[],"loo":[1]}""")
     }
     "encode and decode collections like circe with its default derivation" in {
       conformEncoding(
@@ -179,7 +181,9 @@ class JsonCodecMakerCirceLikeSpec extends AnyWordSpec with Matchers {
         """{"l":[null],"v":[],"s":[],"m":{},"im":{}}""",
         """{"l":[],"v":[],"s":[],"m":{"VVV":null},"im":{}}""",
         """{"l":[],"v":[],"s":[],"m":{},"im":{"x":"VVV"}}""",
-        """{"l":{},"v":[],"s":[],"m":[],"im":{}}""")
+        """{"l":{},"v":[],"s":[],"m":[],"im":{}}""",
+        """{"l":[1],"v":["VVV"],"s":[3],"m":{"VVV":4},"im":{"5":"VVV"},"l":[],"v":[],"s":[],"m":{},"im":{}}""",
+        """{"l":[1],"v":[],"s":[],"m":{},"im":{},"l":null}""")
     }
     "ignore default values of fields like circe with its default derivation" in {
       conformEncoding(Defaults(), Defaults(Nil, None, 0, ""))
@@ -191,7 +195,10 @@ class JsonCodecMakerCirceLikeSpec extends AnyWordSpec with Matchers {
         """{"l":[],"o":null,"i":3,"s":"VVV"}""",
         """{"l":null,"o":2,"i":3,"s":"VVV"}""",
         """{"l":[1],"o":2,"i":null,"s":"VVV"}""",
-        """{"l":[1],"o":2,"i":3,"s":null}""")
+        """{"l":[1],"o":2,"i":3,"s":null}""",
+        """{"l":[1],"o":2,"i":3,"s":"x","s":"VVV"}""",
+        """{"l":[1],"o":2,"i":3,"s":"x","s":null}""",
+        """{"l":[1],"l":[],"o":2,"o":null,"i":3,"s":"VVV"}""")
     }
     "encode and decode classes and ADTs like circe with its default derivation" in {
       conformEncoding(Empty())
