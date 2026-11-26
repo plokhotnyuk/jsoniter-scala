@@ -863,6 +863,22 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         _root_.scala.collection.SortedMap[Level, Int](Level.HIGH -> 100, Level.LOW -> 10), """{"0":10,"1":100}""")
       verifyDeserByCheck(make[_root_.scala.collection.SortedMap[Level, Int]], """{"0":10,"1":100}""",
         check = (actual: _root_.scala.collection.SortedMap[Level, Int]) => actual.ordering shouldBe levelOrdering)
+
+      case class SortedLevelMaps(m: _root_.scala.collection.immutable.SortedMap[Level, Int],
+                                 tm: _root_.scala.collection.immutable.TreeMap[Level, Int])
+
+      object OrderingDefinedAfterCodec {
+        implicit val codec: JsonValueCodec[SortedLevelMaps] = make
+
+        implicit val levelOrdering: Ordering[Level] = new Ordering[Level] {
+          override def compare(x: Level, y: Level): Int = y.ordinal - x.ordinal
+        }
+      }
+
+      verifyDeserByCheck(OrderingDefinedAfterCodec.codec, "{}", check = (actual: SortedLevelMaps) => {
+        actual.m.ordering shouldBe OrderingDefinedAfterCodec.levelOrdering
+        actual.tm.ordering shouldBe OrderingDefinedAfterCodec.levelOrdering
+      })
     }
     "serialize and deserialize types using a custom value codec and a custom ordering for set values" in {
       implicit val codecOfLevel: JsonValueCodec[Level] = new JsonValueCodec[Level] {
@@ -903,6 +919,22 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         _root_.scala.collection.SortedSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
       verifyDeserByCheck(make[_root_.scala.collection.SortedSet[Level]], """[0,1]""",
         check = (actual: _root_.scala.collection.SortedSet[Level]) => actual.ordering shouldBe levelOrdering)
+
+      case class SortedLevelSets(s: _root_.scala.collection.immutable.SortedSet[Level],
+                                 ts: _root_.scala.collection.immutable.TreeSet[Level])
+
+      object OrderingDefinedAfterCodec {
+        implicit val codec: JsonValueCodec[SortedLevelSets] = make
+
+        implicit val levelOrdering: Ordering[Level] = new Ordering[Level] {
+          override def compare(x: Level, y: Level): Int = y.ordinal - x.ordinal
+        }
+      }
+
+      verifyDeserByCheck(OrderingDefinedAfterCodec.codec, "{}", check = (actual: SortedLevelSets) => {
+        actual.s.ordering shouldBe OrderingDefinedAfterCodec.levelOrdering
+        actual.ts.ordering shouldBe OrderingDefinedAfterCodec.levelOrdering
+      })
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(codecOfEnums1, Enums(LocationType.GPS), """{"lt":"GPS"}""")

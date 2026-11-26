@@ -2280,7 +2280,11 @@ object JsonCodecMaker {
           else if (tpe <:< typeOf[mutable.LongMap[?]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
           else if (isNonEmptyList(tpe)) q"null"
           else if (tpe <:< typeOf[List[?]] || tpe.typeSymbol == typeOf[Seq[?]].typeSymbol) q"_root_.scala.Nil"
-          else if (tpe <:< typeOf[immutable.IntMap[?]] || tpe <:< typeOf[immutable.LongMap[?]] ||
+          else if (tpe <:< typeOf[collection.SortedSet[?]]) { // Orderings are resolved per usage, because they can be not initialized yet when codecs are created
+            q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+          } else if (tpe <:< typeOf[collection.SortedMap[?, ?]]) {
+            q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
+          } else if (tpe <:< typeOf[immutable.IntMap[?]] || tpe <:< typeOf[immutable.LongMap[?]] ||
             tpe <:< typeOf[immutable.Seq[?]] || tpe <:< typeOf[immutable.Set[?]]) withNullValueFor(tpe) {
             q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
           } else if (tpe <:< typeOf[immutable.Map[?, ?]]) withNullValueFor(tpe) {
