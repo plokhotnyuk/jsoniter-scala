@@ -1098,6 +1098,12 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
 
   private def isNonEmptyList(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[::[?]]
 
+  private def isBoxedPrimitive(tpe: TypeRepr): Boolean =
+    tpe =:= TypeRepr.of[java.lang.Boolean] || tpe =:= TypeRepr.of[java.lang.Byte] ||
+      tpe =:= TypeRepr.of[java.lang.Short] || tpe =:= TypeRepr.of[java.lang.Integer] ||
+      tpe =:= TypeRepr.of[java.lang.Long] || tpe =:= TypeRepr.of[java.lang.Float] ||
+      tpe =:= TypeRepr.of[java.lang.Double] || tpe =:= TypeRepr.of[java.lang.Character]
+
   private def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[?]]
 
   private def scalaCollectionCompanion(tpe: TypeRepr): Term =
@@ -3038,6 +3044,28 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       acc
     }.result()
     val withDependentDefaultValues = typeInfo.withDependentDefaultValues
+    // Fields with dependent default values and reference types are missing after parsing if their read variables keep
+    // or are parsed to the initial null values, so JSON `null` values and values that decoders return as defaults, like
+    // empty collections when `useDefaultForNullOrEmpty` is turned on, are replaced by default values like for other
+    // fields with default values. Other fields with dependent default values, and fields with implicit codecs that can
+    // return their null values for present values, are missing if their presence flags are set
+    val withNullValuesOfDependentDefaults = fields.collect {
+      case fieldInfo if withDependentDefaultValues.contains(fieldInfo.mappedName) && {
+        val fTpe = fieldInfo.resolvedTpe
+        fTpe <:< TypeRepr.of[AnyRef] && !isConstType(fTpe) && !isBoxedPrimitive(fTpe) &&
+          findImplicitValueCodec(fTpe).isEmpty &&
+          (cfg.useDefaultForNullOrEmpty || !isOption(fTpe, types) && !isCollection(fTpe))
+      } => fieldInfo.mappedName
+    }.toSet
+    // JSON `null` values of those fields are checked before parsing when their null values are `null`, which decoders
+    // don't return for JSON `null` values
+    val withNullChecksOfDependentDefaults = fields.collect {
+      case fieldInfo if withNullValuesOfDependentDefaults.contains(fieldInfo.mappedName) && {
+        val fTpe = fieldInfo.resolvedTpe
+        !isOption(fTpe, types) &&
+          (!isCollection(fTpe) || isNonEmptyList(fTpe) && cfg.allowNullForCollections)
+      } => fieldInfo.mappedName
+    }.toSet
     val paramVarNum = fields.size
     val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
     val lastParamVarBits = -1 >>> -paramVarNum
@@ -3076,16 +3104,23 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       }
     val readVars = new mutable.ArrayBuffer[ValDef](paramVarNum)
     val readVarsMap = new mutable.HashMap[String, ValDef](paramVarNum << 1, 0.5)
+    val nullValVars = new mutable.LinkedHashMap[String, ValDef]
     fields.foreach { fieldInfo =>
       val fTpe = fieldInfo.resolvedTpe
       fTpe.asType match
         case '[ft] =>
           val mappedName = fieldInfo.mappedName
           val sym = symbol(s"_$mappedName", fTpe, Flags.Mutable)
-          val valDef = ValDef(sym, new Some({
-            if (withDependentDefaultValues.contains(mappedName)) None
-            else fieldInfo.defaultValue
-          }.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
+          val valDef =
+            if (withNullValuesOfDependentDefaults.contains(mappedName)) {
+              val nullSym = symbol(s"_n_$mappedName", fTpe)
+              val nullValDef = ValDef(nullSym, new Some(genNullValue[ft](fTpe :: types).asTerm.changeOwner(nullSym)))
+              nullValVars.addOne((mappedName, nullValDef))
+              ValDef(sym, new Some(Ref(nullSym)))
+            } else ValDef(sym, new Some({
+              if (withDependentDefaultValues.contains(mappedName)) None
+              else fieldInfo.defaultValue
+            }.getOrElse(genNullValue[ft](fTpe :: types).asTerm.changeOwner(sym))))
           readVars.addOne(valDef)
           readVarsMap.addOne((mappedName, valDef))
     }
@@ -3111,8 +3146,15 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               val i = fieldInfo.nonTransientFieldIndex
               val readVar = Ref(readVars(i).symbol)
               if (withDependentDefaultValues.contains(fieldInfo.mappedName)) {
-                val n = Ref(paramVars(i >> 5).symbol).asExpr.asInstanceOf[Expr[Int]]
-                setDependentDefaultValues.addOne(If('{ ($n & ${Expr(1 << i)}) != 0 }.asTerm,
+                val isMissing = nullValVars.get(fieldInfo.mappedName) match
+                  case Some(nullValDef) =>
+                    val x = readVar.asExpr.asInstanceOf[Expr[AnyRef]]
+                    val nullVal = Ref(nullValDef.symbol).asExpr.asInstanceOf[Expr[AnyRef]]
+                    '{ $x eq $nullVal }
+                  case _ =>
+                    val n = Ref(paramVars(i >> 5).symbol).asExpr.asInstanceOf[Expr[Int]]
+                    '{ ($n & ${Expr(1 << i)}) != 0 }
+                setDependentDefaultValues.addOne(If(isMissing.asTerm,
                   Assign(readVar, genDefaultValue(fieldInfo, reversedArgss).get), Literal(UnitConstant())))
               }
               readVar
@@ -3128,7 +3170,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       } else fields
     val readBlock = new mutable.ListBuffer[Statement]
     if (readFieldNames.nonEmpty) readBlock.addOne(nsVal)
-    readBlock.addAll(readVars).addAll(paramVars)
+    readBlock.addAll(nullValVars.values).addAll(readVars).addAll(paramVars)
     val discriminator =
       if (useDiscriminator && cfg.discriminatorFieldName.isDefined) {
         new Some(new ReadDiscriminator(
@@ -3187,7 +3229,15 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
               if (!cfg.useDefaultForNullOrEmpty && fieldInfo.defaultValue.isDefined &&
                 (isOption(fTpe, types) || isCollection(fTpe))) genNullValue[ft](allTypes)
               else tmpVar.asExpr.asInstanceOf[Expr[ft]]
-            Assign(tmpVar, genReadVal(allTypes, default, fieldInfo.isStringified, false, in).asTerm).asExpr.asInstanceOf[Expr[Unit]]
+            val readVal =
+              Assign(tmpVar, genReadVal(allTypes, default, fieldInfo.isStringified, false, in).asTerm).asExpr.asInstanceOf[Expr[Unit]]
+            if (withNullChecksOfDependentDefaults.contains(fieldInfo.mappedName)) '{
+              if ($in.isNextToken('n')) $in.readNullOrError((), "expected value or null")
+              else {
+                $in.rollbackToken()
+                $readVal
+              }
+            } else readVal
       }
 
     // Sets `i` to an index of the field for the key in the internal char buffer, or to the number of keys for unexpected

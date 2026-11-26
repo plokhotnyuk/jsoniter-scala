@@ -3926,6 +3926,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserByCheck(codec1, """{"i":3}""", check(3, 2L, "3-2"))
       verifyDeserByCheck(codec1, """{"l":5}""", check(1, 5L, "1-5"))
       verifyDeserByCheck(codec1, """{"s":"VVV","l":5,"i":3}""", check(3, 5L, "VVV"))
+      verifyDeserByCheck(codec1, """{"i":3,"s":null}""", check(3, 2L, "3-2"))
       verifyDeserError(codec1, """{"i":3,"i":3}""", """duplicated field "i", offset: 0x0000000a""")
       verifySer(codec1, new MultiListOfArgs(3)(2L)("3-2"), """{"i":3}""")
       verifySer(codec1, new MultiListOfArgs(3)(5L)("3-5"), """{"i":3,"l":5}""")
@@ -3947,6 +3948,23 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         x.as shouldBe List("B")
         x.m shouldBe 2
       })
+      verifyDeserByCheck(codec3, """{"a":"A","as":[]}""", (x: GenericMultiListOfArgs[String]) => {
+        x.as shouldBe List("A", "A")
+        x.m shouldBe 4
+      })
+      verifyDeserByCheck(codec3, """{"a":"A","as":null}""", (x: GenericMultiListOfArgs[String]) => {
+        x.as shouldBe List("A", "A")
+        x.m shouldBe 4
+      })
+      val codec5 = make[GenericMultiListOfArgs[String]](CodecMakerConfig.withUseDefaultForNullOrEmpty(false))
+      verifyDeserByCheck(codec5, """{"a":"A"}""", (x: GenericMultiListOfArgs[String]) => {
+        x.as shouldBe List("A", "A")
+        x.m shouldBe 4
+      })
+      verifyDeserByCheck(codec5, """{"a":"A","as":[]}""", (x: GenericMultiListOfArgs[String]) => {
+        x.as shouldBe List()
+        x.m shouldBe 0
+      })
       verifySer(codec3, new GenericMultiListOfArgs("A")()()(), """{"a":"A"}""")
       verifySer(codec3, new GenericMultiListOfArgs("A")()(List("B"))(), """{"a":"A","as":["B"]}""")
       verifySer(codec3, new GenericMultiListOfArgs("A")()(List("B"))(3), """{"a":"A","as":["B"],"m":3}""")
@@ -3960,6 +3978,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codec4 = make[MultiListOfArgsWithTransientCounter]
       verifyDeserByCheck(codec4, "{}", (x: MultiListOfArgsWithTransientCounter) => x.tag shouldBe s"t${x.id}")
       verifyDeserByCheck(codec4, """{"x":1}""", (x: MultiListOfArgsWithTransientCounter) => x.tag shouldBe s"t${x.id}")
+
+      class Name(val s: String)
+
+      implicit val nameCodec: JsonValueCodec[Name] = new JsonValueCodec[Name] {
+        override def decodeValue(in: JsonReader, default: Name): Name = {
+          val s = in.readString(null)
+          if (s.isEmpty) nullValue
+          else new Name(s)
+        }
+
+        override def encodeValue(x: Name, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.s)
+
+        override val nullValue: Name = new Name("")
+      }
+
+      case class MultiListOfArgsWithImplicitCodec(id: Int)(val name: Name = new Name(s"n$id"))
+
+      val codec6 = make[MultiListOfArgsWithImplicitCodec]
+      verifyDeserByCheck(codec6, """{"id":1}""", (x: MultiListOfArgsWithImplicitCodec) => x.name.s shouldBe "n1")
+      verifyDeserByCheck(codec6, """{"id":1,"name":""}""", (x: MultiListOfArgsWithImplicitCodec) => x.name.s shouldBe "")
     }
     "generate codecs for case classes with multiple parameter lists in a primary constructor with depended default values when the requireDefaultFields is on" in {
       case class MultiListOfArgs(i: Int = 1)(val l: Long = i - 1)(var s: String = l.toString)
