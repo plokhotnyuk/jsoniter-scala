@@ -652,7 +652,10 @@ object JsonCodecMaker {
     * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true).withDistinguishNullAndMissingNestedOptions(false)`
     * configuration, which matches decoding and encoding of codecs that are derived by circe with its defaults, except
     * for value classes that are serialized without wrapping JSON objects, ADT values with more than one key in their
-    * wrapping JSON objects that are rejected, and JSON `null` values of Scala objects that are accepted.
+    * wrapping JSON objects that are rejected, and JSON `null` values of Scala objects that are accepted. Integer values
+    * (`Byte`, `Short`, `Int`, `Long`, and `BigInt`) are parsed slower than by codecs derived by `make`, because they are
+    * accepted from JSON numbers with fractions or exponents and from JSON strings, like `1.0`, `1e0`, or `"1"`, so they
+    * are parsed as any numbers and boxed.
     *
     * @tparam A the type to encode and decode
     * @return the derived codec
@@ -662,7 +665,8 @@ object JsonCodecMaker {
   /**
     * Derives a JSON value codec for type `A`, like `make` with the
     * `CodecMakerConfig.withTransientEmpty(false).withTransientDefault(false).withTransientNone(false).withDiscriminatorFieldName(None).withAdtLeafClassNameMapper(x => enforce_snake_case(simpleClassName(x))).withFieldNameMapper(enforce_snake_case).withJavaEnumValueNameMapper(enforce_snake_case).withCirceLikeObjectEncoding(true).withRequireCollectionFields(true).withRequireDefaultFields(true).withCheckFieldDuplication(false).withSkipNestedOptionValues(true).withAllowNullForCollections(false).withUseDefaultForNullOrEmpty(false).withAllowStringifiedNumbers(true).withAllowDecimalNotationForIntegers(true).withDistinguishNullAndMissingNestedOptions(false)`
-    * configuration.
+    * configuration, with the same differences from circe and the same slower parsing of integer values as
+    * `makeCirceLike`.
     *
     * @tparam A the type to encode and decode
     * @return the derived codec
