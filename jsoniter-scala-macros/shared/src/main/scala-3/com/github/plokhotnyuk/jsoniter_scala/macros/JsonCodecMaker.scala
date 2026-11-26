@@ -3391,10 +3391,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
       withDecoderFor(new DecoderMethodKey(tpe, isStringified, false), zero, in) { (in, _) =>
         val msg = Expr(s"value is too large for ${tpe.typeSymbol.name.toLowerCase}")
         '{
-          (try ${genReadAnyNumber(isStringified, cfg.bigDecimalDigitsLimit, in)} catch {
-            case e: JsonReaderException if e.getMessage.startsWith("value exceeds limit for number of digits") =>
-              $in.decodeError($msg)
-          }) match {
+          ${genReadAnyNumber(isStringified, cfg.bigDecimalDigitsLimit, in)} match {
             case l: java.lang.Long => ${fromLong(in, '{ l.longValue }, msg)}
             case bd: java.math.BigDecimal =>
               if (bd.signum == 0) $zero

@@ -2622,10 +2622,7 @@ object JsonCodecMaker {
           // Decoding methods are never generated for primitive types, so their keys are free to use here
           withDecoderFor(DecoderMethodKey(tpe, isStringified, EmptyTree), zero) {
             val msg = s"value is too large for ${tpe.typeSymbol.name.decodedName.toString.toLowerCase}"
-            q"""(try ${genReadAnyNumber(isStringified, cfg.bigDecimalDigitsLimit)} catch {
-                  case e: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReaderException
-                    if e.getMessage.startsWith("value exceeds limit for number of digits") => in.decodeError($msg)
-                }) match {
+            q"""${genReadAnyNumber(isStringified, cfg.bigDecimalDigitsLimit)} match {
                   case l: _root_.java.lang.Long => ${fromLong(q"l.longValue", msg)}
                   case bd: _root_.java.math.BigDecimal =>
                     if (bd.signum == 0) $zero

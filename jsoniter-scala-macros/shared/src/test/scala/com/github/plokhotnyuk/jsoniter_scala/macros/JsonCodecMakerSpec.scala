@@ -655,7 +655,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(make[Long](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalScaleLimit(10)),
         "1e10", "value exceeds limit for scale, offset: 0x00000003")
       verifyDeserError(make[Long](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalDigitsLimit(10)),
-        "1234567890", "value is too large for long, offset: 0x00000000")
+        "1234567890", "value exceeds limit for number of digits, offset: 0x00000009")
+      verifyDeserError(make[Int](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalDigitsLimit(10)),
+        "0.000000001", "value exceeds limit for number of digits, offset: 0x0000000a")
       verifyDeserError(make[Long](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalScaleLimit(10)
         .withIsStringified(true)), """"1e10"""", "value exceeds limit for scale, offset: 0x00000004")
       verifyDeserError(make[BigInt](CodecMakerConfig.withAllowDecimalNotationForIntegers(true).withBigDecimalScaleLimit(10)),
@@ -2816,8 +2818,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfIntegers, """{"l":9223372036854775808.0}""", "value is too large for long, offset: 0x00000019")
       verifyDeserError(codecOfIntegers, """{"i":1e20}""", "value is too large for int, offset: 0x00000008")
       verifyDeserError(codecOfIntegers, """{"s":-1e19}""", "value is too large for short, offset: 0x00000009")
-      verifyDeserError(codecOfIntegers, s"""{"b":-1${"0" * 400}}""", "value is too large for byte, offset: 0x00000006")
-      verifyDeserError(codecOfIntegers, s"""{"l":1${"0" * 400}.0}""", "value is too large for long, offset: 0x00000005")
+      verifyDeserError(codecOfIntegers, s"""{"b":-1${"0" * 400}}""", "value exceeds limit for number of digits, offset: 0x00000139")
+      verifyDeserError(codecOfIntegers, s"""{"l":1${"0" * 400}.0}""", "value exceeds limit for number of digits, offset: 0x00000138")
+      verifyDeserError(codecOfIntegers, s"""{"i":1.${"0" * 400}}""", "value exceeds limit for number of digits, offset: 0x00000139")
       verifyDeserError(codecOfIntegers, """{"l":"1"}""", "illegal number, offset: 0x00000005")
       verifyDeserError(codecOfIntegers, """{"bi":1e400}""", "value exceeds limit for number of digits, offset: 0x0000000a")
       verifyDeserError(codecOfIntegers, """{"bi":null}""", "illegal number, offset: 0x00000006")
