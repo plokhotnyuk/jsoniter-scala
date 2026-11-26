@@ -4027,6 +4027,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserByCheck(codec4, "{}", (x: MultiListOfArgsWithTransientCounter) => x.tag shouldBe s"t${x.id}")
       verifyDeserByCheck(codec4, """{"x":1}""", (x: MultiListOfArgsWithTransientCounter) => x.tag shouldBe s"t${x.id}")
 
+      case class MultiListOfTransientArgsWithCounter(x: Int, @transient id: Int = Counter.n.incrementAndGet())(@transient val tag: String = s"t$id")
+
+      verifyDeserByCheck(make[MultiListOfTransientArgsWithCounter], """{"x":1}""",
+        (x: MultiListOfTransientArgsWithCounter) => x.tag shouldBe s"t${x.id}")
+      verifyDeserByCheck(make[List[MultiListOfTransientArgsWithCounter]](CodecMakerConfig.withInlineOneValueClasses(true)),
+        "[1]", (x: List[MultiListOfTransientArgsWithCounter]) => x.head.tag shouldBe s"t${x.head.id}")
+
       class Name(val s: String)
 
       implicit val nameCodec: JsonValueCodec[Name] = new JsonValueCodec[Name] {

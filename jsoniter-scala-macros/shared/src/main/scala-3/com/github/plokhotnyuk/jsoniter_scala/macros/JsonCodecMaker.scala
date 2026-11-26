@@ -1791,30 +1791,33 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
   private def genNewValueClass(tpe: TypeRepr, value: Term): Term =
     val classInfo = getClassInfo(tpe)
     val paramLists = classInfo.paramLists
-    val hasTransientFieldsInNonFirstParamLists = paramLists.exists {
-      var isFirstParamList = true
-      params =>
-        if (isFirstParamList) {
-          isFirstParamList = false
-          false
-        } else params.exists(_.isTransient)
-    }
-    if (hasTransientFieldsInNonFirstParamLists) { // the value can be an argument for dependent default values
+    if (paramLists.exists(_.exists(_.isTransient))) {
       val sym = symbol("v", valueClassValueType(tpe))
-      Block(List(ValDef(sym, new Some(value.changeOwner(sym)))), classInfo.genNew(genParamValues(paramLists, tpe, _ => Ref(sym))))
-    } else classInfo.genNew(genParamValues(paramLists, tpe, _ => value))
+      val stats = new mutable.ListBuffer[Statement]
+      stats.addOne(ValDef(sym, new Some(value.changeOwner(sym))))
+      val argss = genParamValues(paramLists, tpe, stats, (_, _) => Ref(sym))
+      Block(stats.toList, classInfo.genNew(argss))
+    } else classInfo.genNew(genParamValues(paramLists, tpe, null, (_, _) => value))
 
-  // Generates values for all params of the primary constructor using provided values for non-transient fields and
-  // default values for transient fields
-  private def genParamValues(paramLists: List[List[FieldInfo]], tpe: TypeRepr,
-                             nonTransientValue: FieldInfo => Term): List[List[Term]] =
+  // Generates values for all params of the primary constructor using provided values for non-transient fields, that can
+  // use values of params from preceding parameter lists, and default values for transient fields. If `stats` is not
+  // `null` then default values of transient fields are evaluated once in the order of params and stored in local
+  // values, to pass the same values to the constructor and to default methods of the following parameter lists
+  private def genParamValues(paramLists: List[List[FieldInfo]], tpe: TypeRepr, stats: mutable.ListBuffer[Statement],
+                             nonTransientValue: (FieldInfo, List[List[Term]]) => Term): List[List[Term]] =
     var reversedArgss: List[List[Term]] = Nil
     paramLists.foreach { params =>
       reversedArgss = params.map { fieldInfo =>
         if (fieldInfo.isTransient) {
-          genDefaultValue(fieldInfo, reversedArgss)
+          val defaultValue = genDefaultValue(fieldInfo, reversedArgss)
             .getOrElse(fail(s"Transient field '${fieldInfo.symbol.name}' in class '${tpe.show}' should have default value."))
-        } else nonTransientValue(fieldInfo)
+          if (stats eq null) defaultValue
+          else {
+            val sym = symbol(s"_t_${fieldInfo.symbol.name}", fieldInfo.resolvedTpe)
+            stats.addOne(ValDef(sym, new Some(defaultValue.changeOwner(sym))))
+            Ref(sym)
+          }
+        } else nonTransientValue(fieldInfo, reversedArgss)
       } :: reversedArgss
     }
     reversedArgss.reverse
@@ -3144,42 +3147,24 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     // Default values of transient fields are evaluated once in the same order and stored in local values, to pass the
     // same values to the constructor and to default methods of the following parameter lists
     val setDependentDefaultValues = new mutable.ListBuffer[Statement]
-    val argss =
-      if (withDependentDefaultValues.isEmpty) {
-        genParamValues(typeInfo.paramLists, tpe, fieldInfo => Ref(readVars(fieldInfo.nonTransientFieldIndex).symbol))
-      } else {
-        var reversedArgss: List[List[Term]] = Nil
-        typeInfo.paramLists.foreach { params =>
-          reversedArgss = params.map { fieldInfo =>
-            if (fieldInfo.isTransient) {
-              val sym = symbol(s"_t_${fieldInfo.symbol.name}", fieldInfo.resolvedTpe)
-              val defaultValue = genDefaultValue(fieldInfo, reversedArgss).getOrElse {
-                fail(s"Transient field '${fieldInfo.symbol.name}' in class '${tpe.show}' should have default value.")
-              }
-              setDependentDefaultValues.addOne(ValDef(sym, new Some(defaultValue.changeOwner(sym))))
-              Ref(sym)
-            } else {
-              val i = fieldInfo.nonTransientFieldIndex
-              val readVar = Ref(readVars(i).symbol)
-              if (withDependentDefaultValues.contains(fieldInfo.mappedName)) {
-                val isMissing =
-                  if (withNullValuesOfDependentDefaults.contains(fieldInfo.mappedName)) {
-                    val x = readVar.asExpr.asInstanceOf[Expr[AnyRef]]
-                    val nullVal = Ref(initValDefs(fieldInfo.mappedName).symbol).asExpr.asInstanceOf[Expr[AnyRef]]
-                    '{ $x eq $nullVal }
-                  } else {
-                    val n = Ref(paramVars(i >> 5).symbol).asExpr.asInstanceOf[Expr[Int]]
-                    '{ ($n & ${Expr(1 << i)}) != 0 }
-                  }
-                setDependentDefaultValues.addOne(If(isMissing.asTerm,
-                  Assign(readVar, genDefaultValue(fieldInfo, reversedArgss).get), Literal(UnitConstant())))
-              }
-              readVar
-            }
-          } :: reversedArgss
-        }
-        reversedArgss.reverse
+    val argss = genParamValues(typeInfo.paramLists, tpe, setDependentDefaultValues, (fieldInfo, reversedArgss) => {
+      val i = fieldInfo.nonTransientFieldIndex
+      val readVar = Ref(readVars(i).symbol)
+      if (withDependentDefaultValues.contains(fieldInfo.mappedName)) {
+        val isMissing =
+          if (withNullValuesOfDependentDefaults.contains(fieldInfo.mappedName)) {
+            val x = readVar.asExpr.asInstanceOf[Expr[AnyRef]]
+            val nullVal = Ref(initValDefs(fieldInfo.mappedName).symbol).asExpr.asInstanceOf[Expr[AnyRef]]
+            '{ $x eq $nullVal }
+          } else {
+            val n = Ref(paramVars(i >> 5).symbol).asExpr.asInstanceOf[Expr[Int]]
+            '{ ($n & ${Expr(1 << i)}) != 0 }
+          }
+        setDependentDefaultValues.addOne(If(isMissing.asTerm,
+          Assign(readVar, genDefaultValue(fieldInfo, reversedArgss).get), Literal(UnitConstant())))
       }
+      readVar
+    })
     val construct = typeInfo.genNew(argss)
     val readFields =
       if (useDiscriminator) cfg.discriminatorFieldName.fold(fields) { n =>
@@ -4013,7 +3998,7 @@ private class JsonCodecMakerInstance(cfg: CodecMakerConfig)(using Quotes) {
     // Default values of transient fields are used as arguments for dependent default values to be consistent with decoding
     val defaultValues =
       if (cfg.transientDefault && typeInfo.paramLists.exists(_.exists(_.defaultValue.isDefined))) {
-        genDefaultValues(typeInfo.paramLists, genParamValues(typeInfo.paramLists, tpe, fieldInfo => Select(valRef, fieldInfo.getterOrField)))
+        genDefaultValues(typeInfo.paramLists, genParamValues(typeInfo.paramLists, tpe, null, (fieldInfo, _) => Select(valRef, fieldInfo.getterOrField)))
       } else null
     var writeFields = typeInfo.fields.map { fieldInfo =>
       val fDefault =
