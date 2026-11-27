@@ -2974,134 +2974,197 @@ final class JsonWriter private[jsoniter_scala](
           m2 = m2IEEE
           e2 = -1074
         } else if (e2 == 972) illegalNumberError(x)
-        if (m2IEEE == 0) e10 = (e2 * 315653 - 131237) >> 20
-        else e10 = (e2 * 315653) >> 20
-        val h = (((e10 + 1) * -217707) >> 16) + e2
-        val pow10s = doublePow10s
-        val i = 292 - e10 << 1
-        val pow10_1 = pow10s(i)
-        val pow10_2 = pow10s(i + 1)
-        val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
-        val cb = m2 << (h + 7)
-        val lo64_1 = ByteArrayAccess.unsignedMultiplyHigh2(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
-        val lo64_2 = pow10_1 * cb
-        var hi64 = ByteArrayAccess.unsignedMultiplyHigh1(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
-        val lo64 = lo64_1 + lo64_2
-        hi64 += compareUnsigned(lo64, lo64_1) >>> 31
-        val dotOne = (hi64 << 58) | (lo64 >>> 6)
-        var mCorr = 0
-        if ({
-          if (compareUnsigned(-1 - dotOne, halfUlpPlusEven) < 0) {
-            mCorr = 10
-            false
-          } else if (m2IEEE != 0) compareUnsigned(halfUlpPlusEven, dotOne) <= 0
-          else {
-            val tmp = (dotOne >>> 4) * 10L
-            if (compareUnsigned(tmp & 0x0FFFFFFFFFFFFFFFL, (halfUlpPlusEven >>> 4) * 5L) > 0) {
-              mCorr = (tmp >>> 60).toInt + 1
-              false
-            } else compareUnsigned(halfUlpPlusEven >>> 1, dotOne) <= 0
-          }
+        e10 = e2 * 315653
+        if (m2IEEE == 0) e10 -= 131237
+        e10 >>= 20
+        // Fast path for short decimals (the reverse of Clinger's fast path in the parser): 10^e10 <= w < 10^(e10 + 1),
+        // where w is the width of the rounding interval: 2^e2 (the ulp of x), or 3/4 * 2^e2 for powers of 2, so
+        // r = rint(|x| * 10^(-1 - e10)) is a candidate in range 2^52 / 10 <= r <= 2^53. The scale 10^(e10 + 1) is
+        // greater than w, so only one decimal of r * 10^(e10 + 1) form can round to x, and if it is calculated with an
+        // exact power of 10 and one rounding (as in the parser) and is equal to |x| then r is that decimal. It is the
+        // shortest one: all decimals with up to 15 significant digits are of this form, and any other decimal that
+        // rounds to x has at least 16 digits, while for r >= 10^15 it can have 16 digits only if r == 10^15. For
+        // e10 == -1 the check always fails because the candidate is an integer while x is not (integers are handled
+        // above), but it is rare enough to not spend an additional comparison on it
+        var r = 0.0
+        val ax = Math.abs(x)
+        if (if (e10 < 0) e10 >= -23 && {
+          val p = pow10Doubles(e10 + 23) // 10^(-1 - e10), exact for e10 < 0
+          r = Math.rint(p * ax)
+          r / p == ax
+        } else e10 <= 21 && {
+          r = Math.rint(pow10Doubles(e10 + 23) * ax) // r of a short decimal is exact
+          pow10Doubles(21 - e10) * r == ax // 10^(e10 + 1) is exact here
         }) {
-          m10 = (hi64 * 10L + ByteArrayAccess.unsignedMultiplyHigh2(lo64, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
-            if (dotOne == 0x4000000000000000L) 0x1FL
-            else 0x20L
-          }) >>> 6
-        } else m10 = (hi64 >>> 6) * 10L + mCorr
+          m10 = r.toLong
+          e10 += 1
+        } else {
+          val h = (((e10 + 1) * -217707) >> 16) + e2
+          val pow10s = doublePow10s
+          val i = 292 - e10 << 1
+          val pow10_1 = pow10s(i)
+          val pow10_2 = pow10s(i + 1)
+          val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
+          val cb = m2 << (h + 7)
+          val lo64_1 = ByteArrayAccess.unsignedMultiplyHigh2(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
+          val lo64_2 = pow10_1 * cb
+          var hi64 = ByteArrayAccess.unsignedMultiplyHigh1(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
+          val lo64 = lo64_1 + lo64_2
+          hi64 += compareUnsigned(lo64, lo64_1) >>> 31
+          val dotOne = (hi64 << 58) | (lo64 >>> 6)
+          var mCorr = 0
+          if ({
+            if (compareUnsigned(-1 - dotOne, halfUlpPlusEven) < 0) {
+              mCorr = 10
+              false
+            } else if (m2IEEE != 0) compareUnsigned(halfUlpPlusEven, dotOne) <= 0
+            else {
+              val tmp = (dotOne >>> 4) * 10L
+              if (compareUnsigned(tmp & 0x0FFFFFFFFFFFFFFFL, (halfUlpPlusEven >>> 4) * 5L) > 0) {
+                mCorr = (tmp >>> 60).toInt + 1
+                false
+              } else compareUnsigned(halfUlpPlusEven >>> 1, dotOne) <= 0
+            }
+          }) {
+            m10 = (hi64 * 10L + ByteArrayAccess.unsignedMultiplyHigh2(lo64, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
+              if (dotOne == 0x4000000000000000L) 0x1FL
+              else 0x20L
+            }) >>> 6
+          } else m10 = (hi64 >>> 6) * 10L + mCorr
+        }
       }
       val ds = digits
       // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
       // d1 is the first digit, w1 and w2 hold the rest digits (up to 16) padded by '0' chars
       var d1 = 0
       var w1, w2 = 0x3030303030303030L
-      if (m10 < 10000000000000000L) {
-        var q0 = m10.toInt
-        if (m10 >= 100000000L) { // split to the high part and the last 8 digits
-          val q1 = Math.multiplyHigh(m10, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
-          w2 = get8DigitsSkippingTrailingZeros(m10 - q1 * 100000000L, ds)
-          q0 = q1.toInt
-          e10 += 8
-        }
-        // concatenate the rest digits of the high part with the last 8 digits (or '0' chars) from w2
-        if (q0 < 100) {
-          if (q0 < 10) {
-            d1 = q0 | '0'
-            w1 = w2
-            w2 = 0x3030303030303030L
-          } else {
-            val d = ds(q0)
-            d1 = d & 0xFF
-            w1 = d >> 8 | w2 << 8
-            w2 = w2 >>> 56 | 0x3030303030303000L
-            e10 += 1
-          }
-        } else if (q0 < 10000) {
-          val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
-          val d2 = ds(q0 - q1 * 100)
-          if (q0 < 1000) {
-            d1 = q1 | '0'
-            w1 = d2 | w2 << 16
-            w2 = w2 >>> 48 | 0x3030303030300000L
-            e10 += 2
-          } else {
-            val d = ds(q1)
-            d1 = d & 0xFF
-            w1 = d >> 8 | d2 << 8 | w2 << 24
-            w2 = w2 >>> 40 | 0x3030303030000000L
-            e10 += 3
-          }
-        } else if (q0 < 1000000) {
-          val q1 = q0 * 429497L
-          val m = 0xFFFFFFFFL
-          val q = 100L
-          val q2 = (q1 & m) * q
-          val q3 = (q2 & m) * q
-          val r1 = (q1 >>> 32).toInt
-          val d2 = ds((q2 >>> 32).toInt).toLong
-          val d3 = ds((q3 >>> 32).toInt).toLong
-          if (q0 < 100000) {
-            d1 = r1 | '0'
-            w1 = d2 | d3 << 16 | w2 << 32
-            w2 = w2 >>> 32 | 0x3030303000000000L
-            e10 += 4
-          } else {
-            val d = ds(r1)
-            d1 = d & 0xFF
-            w1 = d >> 8 | d2 << 8 | d3 << 24 | w2 << 40
-            w2 = w2 >>> 24 | 0x3030300000000000L
-            e10 += 5
-          }
-        } else {
-          val q1 = q0 * 140737489L
-          val m = 0x7FFFFFFFFFFFL
-          val q = 100L
-          val q2 = (q1 & m) * q
-          val q3 = (q2 & m) * q
-          val q4 = (q3 & m) * q
-          val r1 = (q1 >>> 47).toInt
-          val d2 = ds((q2 >>> 47).toInt).toLong
-          val d3 = ds((q3 >>> 47).toInt).toLong
-          val d4 = ds((q4 >>> 47).toInt).toLong
-          if (q0 < 10000000) {
-            d1 = r1 | '0'
-            w1 = d2 | d3 << 16 | d4 << 32 | w2 << 48
-            w2 = w2 >>> 16 | 0x3030000000000000L
-            e10 += 6
-          } else {
-            val d = ds(r1)
-            d1 = d & 0xFF
-            w1 = d >> 8 | d2 << 8 | d3 << 24 | d4 << 40 | w2 << 56
-            w2 = w2 >>> 8 | 0x3000000000000000L
-            e10 += 7
-          }
-        }
-      } else { // 17 digits
-        val q2 = Math.multiplyHigh(m10, 8307674973655724206L) >>> 52 // divide a positive long by 10^16
+      var q0 = m10.toInt
+      if (m10 >= 100000000L) { // split to the high part and the last 8 digits
         val q1 = Math.multiplyHigh(m10, 6189700196426901375L) >>> 25 // divide a positive long by 100000000
-        d1 = q2.toInt | '0'
-        w1 = get8DigitsSkippingTrailingZeros(q1 - q2 * 100000000L, ds)
-        w2 = get8DigitsSkippingTrailingZeros(m10 - q1 * 100000000L, ds)
-        e10 += 16
+        e10 += 8
+        q0 = q1.toInt
+        val x = m10 - q1 * 100000000L
+        if (x != 0L) {
+          // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+          // The same as write8Digits, but stops multiplications when the rest digits are zeros. The approximation error
+          // of the remainder is less than 0.65 * x * 100^(k - 1) for k-th pair of digits that is less than the minimal
+          // non-zero remainder (2^47 / 10^(8 - 2 * k)), so 10^(6 + 2 * k) are used as thresholds for detection of zero
+          // remainders
+          var r = x * 140737489L
+          w2 |= ds((r >> 47).toInt)
+          val m = 0x7FFFFFFFFFFFL
+          r &= m
+          if (r > 99999999L) {
+            val q = 100L
+            r *= q
+            w2 |= ds((r >> 47).toInt) << 16
+            r &= m
+            if (r > 9999999999L) {
+              r *= q
+              w2 |= ds((r >> 47).toInt).toLong << 32
+              r &= m
+              if (r > 999999999999L) w2 |= ds((r * q >> 47).toInt).toLong << 48
+            }
+          }
+        }
+      }
+      // concatenate the rest digits of the high part with the last 8 digits (or '0' chars) from w2
+      if (q0 >= 100000000) { // 9 digits of the high part (17 digits in total)
+        // Based on James Anhalt's algorithm for 9 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+        // The same as in writeSignificantFractionDigits: d1 is the first digit and w1 holds the rest 8 digits
+        var q1 = q0 * 1441151881L
+        e10 += 8
+        d1 = (q1 >>> 57).toInt | '0'
+        val m = 0x1FFFFFFFFFFFFFFL
+        q1 &= m
+        if (q1 > 999999999L) {
+          val q = 100L
+          q1 *= q
+          w1 |= ds((q1 >>> 57).toInt)
+          q1 &= m
+          if (q1 > 99999999999L) {
+            q1 *= q
+            w1 |= ds((q1 >>> 57).toInt).toLong << 16
+            q1 &= m
+            if (q1 > 9999999999999L) {
+              q1 *= q
+              w1 |= ds((q1 >>> 57).toInt).toLong << 32
+              q1 &= m
+              if (q1 > 999999999999999L) w1 |= ds((q1 * q >>> 57).toInt).toLong << 48
+            }
+          }
+        }
+      } else if (q0 < 100) {
+        if (q0 < 10) {
+          d1 = q0 | '0'
+          w1 = w2
+          w2 = 0x3030303030303030L
+        } else {
+          val d = ds(q0)
+          d1 = d & 0xFF
+          w1 = d >> 8 | w2 << 8
+          w2 = w2 >>> 56 | 0x3030303030303000L
+          e10 += 1
+        }
+      } else if (q0 < 10000) {
+        val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+        val d2 = ds(q0 - q1 * 100)
+        if (q0 < 1000) {
+          d1 = q1 | '0'
+          w1 = d2 | w2 << 16
+          w2 = w2 >>> 48 | 0x3030303030300000L
+          e10 += 2
+        } else {
+          val d = ds(q1)
+          d1 = d & 0xFF
+          w1 = d >> 8 | d2 << 8 | w2 << 24
+          w2 = w2 >>> 40 | 0x3030303030000000L
+          e10 += 3
+        }
+      } else if (q0 < 1000000) {
+        val q1 = q0 * 429497L
+        val m = 0xFFFFFFFFL
+        val q = 100L
+        val q2 = (q1 & m) * q
+        val q3 = (q2 & m) * q
+        val r1 = (q1 >>> 32).toInt
+        val d2 = ds((q2 >>> 32).toInt).toLong
+        val d3 = ds((q3 >>> 32).toInt).toLong
+        if (q0 < 100000) {
+          d1 = r1 | '0'
+          w1 = d2 | d3 << 16 | w2 << 32
+          w2 = w2 >>> 32 | 0x3030303000000000L
+          e10 += 4
+        } else {
+          val d = ds(r1)
+          d1 = d & 0xFF
+          w1 = d >> 8 | d2 << 8 | d3 << 24 | w2 << 40
+          w2 = w2 >>> 24 | 0x3030300000000000L
+          e10 += 5
+        }
+      } else {
+        val q1 = q0 * 140737489L
+        val m = 0x7FFFFFFFFFFFL
+        val q = 100L
+        val q2 = (q1 & m) * q
+        val q3 = (q2 & m) * q
+        val q4 = (q3 & m) * q
+        val r1 = (q1 >>> 47).toInt
+        val d2 = ds((q2 >>> 47).toInt).toLong
+        val d3 = ds((q3 >>> 47).toInt).toLong
+        val d4 = ds((q4 >>> 47).toInt).toLong
+        if (q0 < 10000000) {
+          d1 = r1 | '0'
+          w1 = d2 | d3 << 16 | d4 << 32 | w2 << 48
+          w2 = w2 >>> 16 | 0x3030000000000000L
+          e10 += 6
+        } else {
+          val d = ds(r1)
+          d1 = d & 0xFF
+          w1 = d >> 8 | d2 << 8 | d3 << 24 | d4 << 40 | w2 << 56
+          w2 = w2 >>> 8 | 0x3000000000000000L
+          e10 += 7
+        }
       }
       val tz =
         if (w2 != 0x3030303030303030L) java.lang.Long.numberOfLeadingZeros(w2 ^ 0x3030303030303030L) >> 3
@@ -3149,34 +3212,6 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     count = pos
-  }
-
-  @inline
-  private[this] def get8DigitsSkippingTrailingZeros(x: Long, ds: Array[Short]): Long = {
-    var w = 0x3030303030303030L
-    if (x != 0L) {
-      // Based on James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
-      // The same as write8Digits, but stops multiplications when the rest digits are zeros. The approximation error of the
-      // remainder is less than 0.65 * x * 100^(k - 1) for k-th pair of digits that is less than the minimal non-zero
-      // remainder (2^47 / 10^(8 - 2 * k)), so 10^(6 + 2 * k) are used as thresholds for detection of zero remainders
-      var q1 = x * 140737489L
-      w |= ds((q1 >> 47).toInt)
-      val m = 0x7FFFFFFFFFFFL
-      q1 &= m
-      if (q1 > 99999999L) {
-        val q = 100L
-        q1 *= q
-        w |= ds((q1 >> 47).toInt) << 16
-        q1 &= m
-        if (q1 > 9999999999L) {
-          q1 *= q
-          w |= ds((q1 >> 47).toInt).toLong << 32
-          q1 &= m
-          if (q1 > 999999999999L) w |= ds((q1 * q >> 47).toInt).toLong << 48
-        }
-      }
-    }
-    w
   }
 
   @inline
@@ -3481,6 +3516,10 @@ object JsonWriter {
     0xE596B7B0C643C71AL, // 43
     0x8F7E32CE7BEA5C70L // 44
   )
+  private final val pow10Doubles: Array[Double] = // powers of 10 in descending order: 10^22 ... 10^-22
+    Array(1e+22, 1e+21, 1e+20, 1e+19, 1e+18, 1e+17, 1e+16, 1e+15, 1e+14, 1e+13, 1e+12, 1e+11, 1e+10, 1e+9, 1e+8, 1e+7,
+      1e+6, 1e+5, 1e+4, 1e+3, 1e+2, 1e+1, 1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12,
+      1e-13, 1e-14, 1e-15, 1e-16, 1e-17, 1e-18, 1e-19, 1e-20, 1e-21, 1e-22)
   private final val doublePow10s: Array[Long] = Array(
     0xCC5FC196FEFD7D0CL, 0x1E53ED49A96272C9L, // -293
     0xFF77B1FCBEBCDC4FL, 0x25E8E89C13BB0F7BL, // -292
