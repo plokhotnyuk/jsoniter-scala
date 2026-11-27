@@ -3060,7 +3060,7 @@ final class JsonWriter private[jsoniter_scala](
       var e2 = e2IEEE - 1075
       var m2 = m2IEEE | 0x10000000000000L
       var m10 = 0L
-      var e10 = 0
+      var e10, hi, lo = 0 // the decimal mantissa as hi * 10^8 + lo, where hi < 10^9 and lo < 10^8, to avoid slow operations with longs
       if (e2 == 0) m10 = m2
       else if ((e2 >= -52 && e2 < 0) && m2 << e2 == 0) m10 = m2 >> -e2
       else {
@@ -3068,57 +3068,92 @@ final class JsonWriter private[jsoniter_scala](
           m2 = m2IEEE
           e2 = -1074
         } else if (e2 == 972) illegalNumberError(x)
-        if (m2IEEE == 0) e10 = (e2 * 315653 - 131237) >> 20
-        else e10 = (e2 * 315653) >> 20
-        val h = (((e10 + 1) * -217707) >> 16) + e2
-        val pow10s = doublePow10s
-        val i = 292 - e10 << 1
-        val pow10_1 = pow10s(i)
-        val pow10_2 = pow10s(i + 1)
-        val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
-        val cb = m2 << (h + 7)
-        val lo64_1 = unsignedMultiplyHigh(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
-        val lo64_2 = pow10_1 * cb
-        var hi64 = unsignedMultiplyHigh(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
-        val lo64 = lo64_1 + lo64_2
-        if ((lo64 ^ 0x8000000000000000L) < (lo64_1 ^ 0x8000000000000000L)) hi64 += 1L
-        val dotOne = (hi64 << 58) | (lo64 >>> 6)
-        var mCorr = 0
-        if ({
-          if (((-1 - dotOne) ^ 0x8000000000000000L) < (halfUlpPlusEven ^ 0x8000000000000000L)) {
-            mCorr = 10
-            false
-          } else if (m2IEEE != 0L) (halfUlpPlusEven ^ 0x8000000000000000L) <= (dotOne ^ 0x8000000000000000L)
-          else {
-            var tmp1 = dotOne >>> 4
-            tmp1 = (tmp1 << 3) + (tmp1 << 1)
-            var tmp2 = halfUlpPlusEven >>> 4
-            tmp2 += tmp2 << 2
-            if (((tmp1 & 0x0FFFFFFFFFFFFFFFL) ^ 0x8000000000000000L) > (tmp2 ^ 0x8000000000000000L)) {
-              mCorr = (tmp1 >>> 60).toInt + 1
-              false
-            } else dotOne < 0L || (halfUlpPlusEven >>> 1) <= dotOne
-          }
+        e10 = e2 * 315653
+        if (m2IEEE == 0) e10 -= 131237
+        e10 >>= 20
+        // Fast path for short decimals (the reverse of Clinger's fast path in the parser): 10^(e10 + 15) <= |x| <
+        // 2^53 * 10^(e10 - 1), so r = rint(|x| * 10^(-2 - e10)) is a candidate in range 10^13 <= r < 2^53 / 10. If
+        // r * 10^(e10 + 2) calculated with an exact power of 10 and a single rounding (as in the parser) is equal to |x|
+        // then it is the only decimal with up to 15 significant digits that rounds to x, so it is the shortest one
+        var r = 0.0
+        if (m2IEEE != 0L && e10 >= -24 && e10 <= 20 && {
+          val p = pow10Doubles(e10 + 24) // 10^(-2 - e10), exact for e10 <= -2, otherwise r of a short decimal is still exact
+          val ax = Math.abs(x)
+          r = (ax * p + 4503599627370496.0) - 4503599627370496.0 // rint for non-negative values less than 2^52
+          if (e10 <= -2) r / p == ax
+          else r * pow10Doubles(20 - e10) == ax // 10^(e10 + 2) is exact here
         }) {
-          m10 = ((hi64 << 3) + (hi64 << 1) + {
-            var x = (lo64 >>> 61).toInt
-            x += x >> 2
-            x += 0x20
-            if (dotOne == 0x4000000000000000L) x -= 1
-            val y = lo64 << 1
-            if ((((lo64 << 3) + y) ^ 0x8000000000000000L) < (y ^ 0x8000000000000000L)) x += 1
-            x
-          }) >>> 6
+          hi = (r * 1e-8).toInt // r and hi * 10^8 are exact integers less than 2^53, so the remainder is exact too
+          var l = r - hi * 1e8
+          if (l < 0.0) {
+            hi -= 1
+            l += 1e8
+          } else if (l >= 1e8) {
+            hi += 1
+            l -= 1e8
+          }
+          lo = l.toInt
+          e10 += 2
         } else {
-          m10 = hi64 >>> 6
-          m10 = (m10 << 3) + (m10 << 1) + mCorr
+          val h = (((e10 + 1) * -217707) >> 16) + e2
+          val pow10s = doublePow10s
+          val i = 292 - e10 << 1
+          val pow10_1 = pow10s(i)
+          val pow10_2 = pow10s(i + 1)
+          val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
+          val cb = m2 << (h + 7)
+          val lo64_1 = unsignedMultiplyHigh(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
+          val lo64_2 = pow10_1 * cb
+          var hi64 = unsignedMultiplyHigh(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
+          val lo64 = lo64_1 + lo64_2
+          if ((lo64 ^ 0x8000000000000000L) < (lo64_1 ^ 0x8000000000000000L)) hi64 += 1L
+          val dotOne = (hi64 << 58) | (lo64 >>> 6)
+          var mCorr = 0
+          if ({
+            if (((-1 - dotOne) ^ 0x8000000000000000L) < (halfUlpPlusEven ^ 0x8000000000000000L)) {
+              mCorr = 10
+              false
+            } else if (m2IEEE != 0L) (halfUlpPlusEven ^ 0x8000000000000000L) <= (dotOne ^ 0x8000000000000000L)
+            else {
+              var tmp1 = dotOne >>> 4
+              tmp1 = (tmp1 << 3) + (tmp1 << 1)
+              var tmp2 = halfUlpPlusEven >>> 4
+              tmp2 += tmp2 << 2
+              if (((tmp1 & 0x0FFFFFFFFFFFFFFFL) ^ 0x8000000000000000L) > (tmp2 ^ 0x8000000000000000L)) {
+                mCorr = (tmp1 >>> 60).toInt + 1
+                false
+              } else dotOne < 0L || (halfUlpPlusEven >>> 1) <= dotOne
+            }
+          }) {
+            m10 = ((hi64 << 3) + (hi64 << 1) + {
+              var x = (lo64 >>> 61).toInt
+              x += x >> 2
+              x += 0x20
+              if (dotOne == 0x4000000000000000L) x -= 1
+              val y = lo64 << 1
+              if ((((lo64 << 3) + y) ^ 0x8000000000000000L) < (y ^ 0x8000000000000000L)) x += 1
+              x
+            }) >>> 6
+          } else {
+            m10 = hi64 >>> 6
+            m10 = (m10 << 3) + (m10 << 1) + mCorr
+          }
         }
       }
-      val len = digitCount(m10)
+      if (hi == 0) { // r >= 10^13, so hi > 0 after the fast path
+        if ((m10 & 0xFFFFFFFF80000000L) == 0L) lo = m10.toInt
+        else {
+          hi = ((m10 >>> 8) * 2.56e-6).toInt // divide a medium positive long by 100000000
+          lo = (m10 - hi * 100000000L).toInt
+        }
+      }
+      val len =
+        if (hi == 0) digitCount(lo)
+        else digitCount(hi) + 8
       e10 += len - 1
       val ds = digits
       if (e10 < -3 || e10 >= 7) {
-        val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        val lastPos = writeSignificantFractionDigits(hi, lo, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         if (lastPos - 3 < pos) {
@@ -3147,10 +3182,10 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos + 2) = '0'
         buf(pos + 3) = '0'
         pos -= e10
-        pos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        pos = writeSignificantFractionDigits(hi, lo, pos + len, pos, buf, ds)
         buf(dotPos) = '.'
       } else if (e10 < len - 1) {
-        val lastPos = writeSignificantFractionDigits(m10, pos + len, pos, buf, ds)
+        val lastPos = writeSignificantFractionDigits(hi, lo, pos + len, pos, buf, ds)
         val beforeDotPos = pos + e10
         while (pos <= beforeDotPos) {
           buf(pos) = buf(pos + 1)
@@ -3160,7 +3195,7 @@ final class JsonWriter private[jsoniter_scala](
         pos = lastPos
       } else {
         pos += len
-        writePositiveIntDigits(m10.toInt, pos, buf, ds)
+        writePositiveIntDigits(lo, pos, buf, ds) // whole numbers here are less than 10^7, so hi == 0
         buf(pos) = '.'
         buf(pos + 1) = '0'
         pos += 2
@@ -3183,22 +3218,6 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private[this] def digitCount(x: Long): Int =
-    if (x >= 1000000000000000L) {
-      if (x >= 10000000000000000L) 17
-      else 16
-    } else if (x >= 10000000000000L) {
-      if (x >= 100000000000000L) 15
-      else 14
-    } else if (x >= 100000000000L) {
-      if (x >= 1000000000000L) 13
-      else 12
-    } else if (x >= 1000000000L) {
-      if (x >= 10000000000L) 11
-      else 10
-    } else digitCount(x.toInt)
-
-  @inline
   private[this] def digitCount(x: Int): Int =
     if (x < 100) {
       if (x < 10) 1
@@ -3218,25 +3237,13 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   @inline
-  private[this] def writeSignificantFractionDigits(x: Long, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var pos = p
-    var posLim = pl
-    var q0 = 0
-    if ((x & 0xFFFFFFFF80000000L) == 0L) q0 = x.toInt
+  private[this] def writeSignificantFractionDigits(hi: Int, lo: Int, p: Int, pl: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (hi == 0) writeSignificantFractionDigits(lo, p, pl, buf, ds)
+    else if (lo == 0) writeSignificantFractionDigits(hi, p - 8, pl, buf, ds)
     else {
-      val q1 = ((x >>> 8) * 2.56e-6).toInt  // divide a medium positive long by 100000000
-      val r1 = (x - q1 * 100000000L).toInt
-      if (r1 == 0) {
-        q0 = q1
-        pos -= 8
-      } else {
-        q0 = r1
-        writeFractionDigits(q1, pos - 8, posLim, buf, ds)
-        posLim = pos - 8
-      }
+      writeFractionDigits(hi, p - 8, pl, buf, ds)
+      writeSignificantFractionDigits(lo, p, p - 8, buf, ds)
     }
-    writeSignificantFractionDigits(q0, pos, posLim, buf, ds)
-  }
 
   @inline
   private[this] def writeSignificantFractionDigits(x: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
@@ -3497,6 +3504,10 @@ object JsonWriter {
     0xE596B7B0C643C71AL, // 43
     0x8F7E32CE7BEA5C70L // 44
   )
+  private final val pow10Doubles: Array[Double] = // powers of 10 in descending order: 10^22 ... 10^-22
+    Array(1e+22, 1e+21, 1e+20, 1e+19, 1e+18, 1e+17, 1e+16, 1e+15, 1e+14, 1e+13, 1e+12, 1e+11, 1e+10, 1e+9, 1e+8, 1e+7,
+      1e+6, 1e+5, 1e+4, 1e+3, 1e+2, 1e+1, 1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12,
+      1e-13, 1e-14, 1e-15, 1e-16, 1e-17, 1e-18, 1e-19, 1e-20, 1e-21, 1e-22)
   private final val doublePow10s: Array[Long] = Array(
     0xCC5FC196FEFD7D0CL, 0x1E53ED49A96272C9L, // -293
     0xFF77B1FCBEBCDC4FL, 0x25E8E89C13BB0F7BL, // -292

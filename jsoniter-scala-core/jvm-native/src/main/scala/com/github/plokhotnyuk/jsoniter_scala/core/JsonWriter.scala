@@ -2974,40 +2974,57 @@ final class JsonWriter private[jsoniter_scala](
           m2 = m2IEEE
           e2 = -1074
         } else if (e2 == 972) illegalNumberError(x)
-        if (m2IEEE == 0) e10 = (e2 * 315653 - 131237) >> 20
-        else e10 = (e2 * 315653) >> 20
-        val h = (((e10 + 1) * -217707) >> 16) + e2
-        val pow10s = doublePow10s
-        val i = 292 - e10 << 1
-        val pow10_1 = pow10s(i)
-        val pow10_2 = pow10s(i + 1)
-        val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
-        val cb = m2 << (h + 7)
-        val lo64_1 = ByteArrayAccess.unsignedMultiplyHigh2(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
-        val lo64_2 = pow10_1 * cb
-        var hi64 = ByteArrayAccess.unsignedMultiplyHigh1(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
-        val lo64 = lo64_1 + lo64_2
-        hi64 += compareUnsigned(lo64, lo64_1) >>> 31
-        val dotOne = (hi64 << 58) | (lo64 >>> 6)
-        var mCorr = 0
-        if ({
-          if (compareUnsigned(-1 - dotOne, halfUlpPlusEven) < 0) {
-            mCorr = 10
-            false
-          } else if (m2IEEE != 0) compareUnsigned(halfUlpPlusEven, dotOne) <= 0
-          else {
-            val tmp = (dotOne >>> 4) * 10L
-            if (compareUnsigned(tmp & 0x0FFFFFFFFFFFFFFFL, (halfUlpPlusEven >>> 4) * 5L) > 0) {
-              mCorr = (tmp >>> 60).toInt + 1
-              false
-            } else compareUnsigned(halfUlpPlusEven >>> 1, dotOne) <= 0
-          }
+        e10 = e2 * 315653
+        if (m2IEEE == 0) e10 -= 131237
+        e10 >>= 20
+        // Fast path for short decimals (the reverse of Clinger's fast path in the parser): 10^(e10 + 15) <= |x| <
+        // 2^53 * 10^(e10 - 1), so r = rint(|x| * 10^(-2 - e10)) is a candidate in range 10^13 <= r < 2^53 / 10. If
+        // r * 10^(e10 + 2) calculated with an exact power of 10 and a single rounding (as in the parser) is equal to |x|
+        // then it is the only decimal with up to 15 significant digits that rounds to x, so it is the shortest one
+        var r = 0.0
+        if (m2IEEE != 0 && e10 >= -24 && e10 <= 20 && {
+          val p = pow10Doubles(e10 + 24) // 10^(-2 - e10), exact for e10 <= -2, otherwise r of a short decimal is still exact
+          val ax = Math.abs(x)
+          r = Math.rint(p * ax)
+          if (e10 <= -2) r / p == ax
+          else r * pow10Doubles(20 - e10) == ax // 10^(e10 + 2) is exact here
         }) {
-          m10 = (hi64 * 10L + ByteArrayAccess.unsignedMultiplyHigh2(lo64, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
-            if (dotOne == 0x4000000000000000L) 0x1FL
-            else 0x20L
-          }) >>> 6
-        } else m10 = (hi64 >>> 6) * 10L + mCorr
+          m10 = r.toLong
+          e10 += 2
+        } else {
+          val h = (((e10 + 1) * -217707) >> 16) + e2
+          val pow10s = doublePow10s
+          val i = 292 - e10 << 1
+          val pow10_1 = pow10s(i)
+          val pow10_2 = pow10s(i + 1)
+          val halfUlpPlusEven = (pow10_1 >>> -h) + ((m2.toInt + 1) & 1)
+          val cb = m2 << (h + 7)
+          val lo64_1 = ByteArrayAccess.unsignedMultiplyHigh2(pow10_2, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_2, cb)
+          val lo64_2 = pow10_1 * cb
+          var hi64 = ByteArrayAccess.unsignedMultiplyHigh1(pow10_1, cb) // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(pow10_1, cb)
+          val lo64 = lo64_1 + lo64_2
+          hi64 += compareUnsigned(lo64, lo64_1) >>> 31
+          val dotOne = (hi64 << 58) | (lo64 >>> 6)
+          var mCorr = 0
+          if ({
+            if (compareUnsigned(-1 - dotOne, halfUlpPlusEven) < 0) {
+              mCorr = 10
+              false
+            } else if (m2IEEE != 0) compareUnsigned(halfUlpPlusEven, dotOne) <= 0
+            else {
+              val tmp = (dotOne >>> 4) * 10L
+              if (compareUnsigned(tmp & 0x0FFFFFFFFFFFFFFFL, (halfUlpPlusEven >>> 4) * 5L) > 0) {
+                mCorr = (tmp >>> 60).toInt + 1
+                false
+              } else compareUnsigned(halfUlpPlusEven >>> 1, dotOne) <= 0
+            }
+          }) {
+            m10 = (hi64 * 10L + ByteArrayAccess.unsignedMultiplyHigh2(lo64, 10L) + { // TODO: when dropping JDK 17 support replace by Math.unsignedMultiplyHigh(lo64, 10L)
+              if (dotOne == 0x4000000000000000L) 0x1FL
+              else 0x20L
+            }) >>> 6
+          } else m10 = (hi64 >>> 6) * 10L + mCorr
+        }
       }
       val ds = digits
       // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
@@ -3481,6 +3498,10 @@ object JsonWriter {
     0xE596B7B0C643C71AL, // 43
     0x8F7E32CE7BEA5C70L // 44
   )
+  private final val pow10Doubles: Array[Double] = // powers of 10 in descending order: 10^22 ... 10^-22
+    Array(1e+22, 1e+21, 1e+20, 1e+19, 1e+18, 1e+17, 1e+16, 1e+15, 1e+14, 1e+13, 1e+12, 1e+11, 1e+10, 1e+9, 1e+8, 1e+7,
+      1e+6, 1e+5, 1e+4, 1e+3, 1e+2, 1e+1, 1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12,
+      1e-13, 1e-14, 1e-15, 1e-16, 1e-17, 1e-18, 1e-19, 1e-20, 1e-21, 1e-22)
   private final val doublePow10s: Array[Long] = Array(
     0xCC5FC196FEFD7D0CL, 0x1E53ED49A96272C9L, // -293
     0xFF77B1FCBEBCDC4FL, 0x25E8E89C13BB0F7BL, // -292
